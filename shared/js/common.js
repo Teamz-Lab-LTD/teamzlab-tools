@@ -321,8 +321,103 @@ var TeamzTools = (function () {
   };
 })();
 
-// Auto-render header and footer
+// --- Central Analytics ---
+var TeamzAnalytics = (function () {
+  var GA_ID = ''; // Set your GA4 Measurement ID here, e.g. 'G-XXXXXXXXXX'
+  var STORAGE_KEY = 'teamztools_analytics';
+
+  function init() {
+    // Google Analytics 4 (if configured)
+    if (GA_ID) {
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+      document.head.appendChild(script);
+
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function () { window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', GA_ID, { send_page_view: true });
+    }
+
+    // Built-in lightweight tracker (always runs)
+    _trackPageView();
+  }
+
+  function _trackPageView() {
+    try {
+      var data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      var path = window.location.pathname;
+      var today = new Date().toISOString().split('T')[0];
+
+      if (!data.pages) data.pages = {};
+      if (!data.pages[path]) data.pages[path] = { views: 0, clicks: 0, first: today, last: today };
+
+      data.pages[path].views++;
+      data.pages[path].last = today;
+      data.totalViews = (data.totalViews || 0) + 1;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function trackClick(label) {
+    try {
+      var data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      var path = window.location.pathname;
+
+      if (!data.pages) data.pages = {};
+      if (!data.pages[path]) data.pages[path] = { views: 0, clicks: 0, first: '', last: '' };
+
+      data.pages[path].clicks++;
+      data.totalClicks = (data.totalClicks || 0) + 1;
+
+      // Track click labels
+      if (!data.clickLabels) data.clickLabels = {};
+      var key = path + '::' + label;
+      data.clickLabels[key] = (data.clickLabels[key] || 0) + 1;
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+      // Send to GA4 if configured
+      if (window.gtag) {
+        window.gtag('event', 'tool_click', {
+          event_category: 'engagement',
+          event_label: label,
+          page_path: path
+        });
+      }
+    } catch (e) {}
+  }
+
+  function getStats() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (e) { return {}; }
+  }
+
+  function getTopPages(limit) {
+    var data = getStats();
+    if (!data.pages) return [];
+    var pages = Object.keys(data.pages).map(function (path) {
+      return { path: path, views: data.pages[path].views, clicks: data.pages[path].clicks };
+    });
+    pages.sort(function (a, b) { return b.views - a.views; });
+    return pages.slice(0, limit || 20);
+  }
+
+  return {
+    init: init,
+    trackClick: trackClick,
+    getStats: getStats,
+    getTopPages: getTopPages,
+    GA_ID: GA_ID
+  };
+})();
+
+// Auto-render header, footer, and init analytics
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
+  TeamzAnalytics.init();
 });

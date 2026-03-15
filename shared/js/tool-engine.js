@@ -159,7 +159,7 @@ var ToolEngine = (function () {
 
     // Teamz Lab CTA in result
     html += '<div class="tool-result-cta">';
-    html += '<p>Need a custom calculator, dashboard, or app? <a href="https://teamzlab.com" target="_blank" rel="noopener">Teamz Lab</a> can build it.</p>';
+    html += '<p>Need a custom calculator, dashboard, or app? <a href="https://teamzlab.com" target="_blank" rel="noopener" id="tool-cta-link">Teamz Lab</a> can build it.</p>';
     html += '</div>';
 
     html += '</div>';
@@ -170,8 +170,15 @@ var ToolEngine = (function () {
 
     var copyBtn = document.getElementById('tool-copy');
     var printBtn = document.getElementById('tool-print');
+    var ctaLink = document.getElementById('tool-cta-link');
     if (copyBtn) copyBtn.addEventListener('click', _copyResult);
-    if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
+    if (printBtn) printBtn.addEventListener('click', function () {
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('print::' + _config.slug);
+      window.print();
+    });
+    if (ctaLink) ctaLink.addEventListener('click', function () {
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('cta::' + _config.slug);
+    });
   }
 
   // --- Events ---
@@ -265,6 +272,11 @@ var ToolEngine = (function () {
       if (result) {
         _renderResult(result);
         _saveHistory({ inputs: values, result: result, timestamp: Date.now() });
+
+        // Track calculation in analytics
+        if (typeof TeamzAnalytics !== 'undefined') {
+          TeamzAnalytics.trackClick('calculate::' + _config.slug);
+        }
       }
     } catch (e) {
       console.error('ToolEngine: calculation error', e);
@@ -303,6 +315,9 @@ var ToolEngine = (function () {
     var summary = resultEl.querySelector('.tool-result-summary');
     if (summary) text += '\n' + summary.textContent;
     text += '\n\nCalculated at tool.teamzlab.com/' + _config.slug;
+
+    // Track copy click
+    if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('copy::' + _config.slug);
 
     // Clipboard API with fallback
     if (navigator.clipboard && navigator.clipboard.writeText) {
