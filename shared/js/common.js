@@ -77,36 +77,61 @@ var TeamzTools = (function () {
       '<div class="footer-links">' +
         '<div class="footer-col">' +
           '<h4>Work &amp; Payroll</h4>' +
-          '<a href="/notice-period-calculator/">Notice Period Calculator</a>' +
-          '<a href="/notice-period-buyout-calculator/">Buyout Calculator</a>' +
+          '<a href="/notice-period-calculator/">Notice Period</a>' +
+          '<a href="/notice-period-buyout-calculator/">Notice Buyout</a>' +
           '<a href="/last-working-day-calculator/">Last Working Day</a>' +
           '<a href="/leave-encashment-calculator/">Leave Encashment</a>' +
-          '<a href="/probation-period-calculator/">Probation Period</a>' +
           '<a href="/salary-per-day-calculator/">Salary Per Day</a>' +
           '<a href="/salary-per-hour-calculator/">Salary Per Hour</a>' +
-          '<a href="/gratuity-calculator/">Gratuity Calculator</a>' +
+          '<a href="/gratuity-calculator/">Gratuity</a>' +
           '<a href="/overtime-pay-calculator/">Overtime Pay</a>' +
+          '<a href="/severance-pay-calculator/">Severance Pay</a>' +
+          '<a href="/final-settlement-estimator/">Final Settlement</a>' +
+          '<a href="/holiday-pay-calculator/">Holiday Pay</a>' +
+          '<a href="/salary-hike-calculator/">Salary Hike</a>' +
+          '<a href="/take-home-pay-estimator/">Take-Home Pay</a>' +
         '</div>' +
         '<div class="footer-col">' +
           '<h4>Invoice &amp; Freelance</h4>' +
           '<a href="/invoice-due-date-calculator/">Invoice Due Date</a>' +
-          '<a href="/net-30-calculator/">Net 30 Calculator</a>' +
-          '<a href="/late-fee-calculator/">Late Fee Calculator</a>' +
+          '<a href="/net-30-calculator/">Net 30</a>' +
+          '<a href="/late-fee-calculator/">Late Fee</a>' +
           '<a href="/freelance-rate-calculator/">Freelance Rate</a>' +
           '<a href="/project-pricing-calculator/">Project Pricing</a>' +
-          '<a href="/retainer-calculator/">Retainer Calculator</a>' +
-          '<a href="/day-rate-calculator/">Day Rate Calculator</a>' +
+          '<a href="/retainer-calculator/">Retainer</a>' +
           '<a href="/profit-margin-calculator/">Profit Margin</a>' +
-          '<a href="/utilization-rate-calculator/">Utilization Rate</a>' +
-          '<a href="/early-payment-discount-calculator/">Early Payment Discount</a>' +
+          '<a href="/quote-estimator/">Quote Estimator</a>' +
+          '<a href="/scope-creep-cost-calculator/">Scope Creep Cost</a>' +
+          '<a href="/milestone-payout-calculator/">Milestone Payout</a>' +
+          '<a href="/deposit-split-calculator/">Deposit Split</a>' +
+          '<a href="/revision-cost-calculator/">Revision Cost</a>' +
+          '<a href="/vat-calculator/">VAT Calculator</a>' +
+        '</div>' +
+        '<div class="footer-col">' +
+          '<h4>Creator &amp; Ads</h4>' +
+          '<a href="/ugc-rate-calculator/">UGC Rate</a>' +
+          '<a href="/sponsorship-rate-calculator/">Sponsorship Rate</a>' +
+          '<a href="/brand-deal-calculator/">Brand Deal</a>' +
+          '<a href="/cpm-calculator/">CPM Calculator</a>' +
+          '<a href="/cpv-calculator/">CPV Calculator</a>' +
+          '<a href="/creator-income-goal-calculator/">Income Goal</a>' +
+          '<a href="/digital-product-pricing-calculator/">Product Pricing</a>' +
+          '<a href="/course-pricing-calculator/">Course Pricing</a>' +
+          '<a href="/newsletter-sponsorship-calculator/">Newsletter Sponsor</a>' +
+          '<a href="/affiliate-income-goal-calculator/">Affiliate Income</a>' +
         '</div>' +
         '<div class="footer-col">' +
           '<h4>More Tools</h4>' +
-          '<a href="/business-day-calculator/">Business Day Calculator</a>' +
-          '<a href="/holiday-pay-calculator/">Holiday Pay</a>' +
-          '<a href="/attendance-percentage-calculator/">Attendance Calculator</a>' +
-          '<a href="/ugc-rate-calculator/">UGC Rate Calculator</a>' +
-          '<a href="/cpm-calculator/">CPM Calculator</a>' +
+          '<a href="/attendance-percentage-calculator/">Attendance %</a>' +
+          '<a href="/exam-countdown-planner/">Exam Countdown</a>' +
+          '<a href="/rent-burden-calculator/">Rent Burden</a>' +
+          '<a href="/app-development-cost-calculator/">App Dev Cost</a>' +
+          '<a href="/mvp-cost-estimator/">MVP Cost</a>' +
+          '<a href="/token-cost-calculator/">Token Cost</a>' +
+          '<a href="/offer-comparison-calculator/">Offer Compare</a>' +
+          '<a href="/contractor-vs-employee-calculator/">Contractor vs Employee</a>' +
+          '<a href="/business-day-calculator/">Business Day</a>' +
+          '<a href="/appliance-running-cost-calculator/">Appliance Cost</a>' +
         '</div>' +
         '<div class="footer-col">' +
           '<h4>Company</h4>' +
