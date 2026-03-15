@@ -321,29 +321,127 @@ var TeamzTools = (function () {
   };
 })();
 
-// --- Central Analytics ---
+// --- Central Analytics: Firebase + GA4 + Local Tracker ---
 var TeamzAnalytics = (function () {
-  var GA_ID = ''; // Set your GA4 Measurement ID here, e.g. 'G-XXXXXXXXXX'
+  // Firebase config
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyC9Spv8AEEST24cqHWOfWe4PKTJflJ6lPg",
+    authDomain: "teamzlab-tools.firebaseapp.com",
+    projectId: "teamzlab-tools",
+    storageBucket: "teamzlab-tools.firebasestorage.app",
+    messagingSenderId: "969055848716",
+    appId: "1:969055848716:web:b1283be103e3cf334d6129",
+    measurementId: "G-TDGVH91VS8"
+  };
+  var GA_ID = 'G-TDGVH91VS8';
   var STORAGE_KEY = 'teamztools_analytics';
+  var _firebaseReady = false;
 
   function init() {
-    // Google Analytics 4 (if configured)
-    if (GA_ID) {
-      var script = document.createElement('script');
-      script.async = true;
-      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
-      document.head.appendChild(script);
-
-      window.dataLayer = window.dataLayer || [];
-      window.gtag = function () { window.dataLayer.push(arguments); };
-      window.gtag('js', new Date());
-      window.gtag('config', GA_ID, { send_page_view: true });
-    }
-
-    // Built-in lightweight tracker (always runs)
+    _loadFirebase();
     _trackPageView();
+    _trackEngagement();
   }
 
+  // --- Firebase + GA4 Loading ---
+  function _loadFirebase() {
+    // Load Firebase SDK via CDN (compat version for var/function support)
+    var fbApp = document.createElement('script');
+    fbApp.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js';
+    fbApp.onload = function () {
+      var fbAnalytics = document.createElement('script');
+      fbAnalytics.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js';
+      fbAnalytics.onload = function () {
+        try {
+          var app = firebase.initializeApp(FIREBASE_CONFIG);
+          var analytics = firebase.analytics(app);
+          window._fbAnalytics = analytics;
+          _firebaseReady = true;
+
+          // Log initial page view with rich data
+          analytics.logEvent('page_view', _getPageContext());
+
+          // Track tool category view
+          var ctx = _getPageContext();
+          if (ctx.tool_category && ctx.tool_category !== 'home') {
+            analytics.logEvent('tool_category_view', {
+              category: ctx.tool_category,
+              tool_slug: ctx.tool_slug,
+              country: ctx.country,
+              language: document.documentElement.lang || 'en'
+            });
+          }
+        } catch (e) {
+          console.warn('Firebase init error:', e);
+        }
+      };
+      document.head.appendChild(fbAnalytics);
+    };
+    document.head.appendChild(fbApp);
+
+    // Also load gtag for GA4 (works alongside Firebase)
+    var gtagScript = document.createElement('script');
+    gtagScript.async = true;
+    gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    document.head.appendChild(gtagScript);
+
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', GA_ID, {
+      send_page_view: true,
+      custom_map: {
+        dimension1: 'tool_category',
+        dimension2: 'tool_slug',
+        dimension3: 'tool_country',
+        dimension4: 'tool_language'
+      }
+    });
+
+    // Send custom dimensions
+    var ctx = _getPageContext();
+    window.gtag('set', 'user_properties', {
+      preferred_language: document.documentElement.lang || 'en'
+    });
+    if (ctx.tool_category) {
+      window.gtag('event', 'page_view', {
+        tool_category: ctx.tool_category,
+        tool_slug: ctx.tool_slug,
+        tool_country: ctx.country,
+        tool_language: document.documentElement.lang || 'en'
+      });
+    }
+  }
+
+  // --- Page Context Extraction ---
+  function _getPageContext() {
+    var path = window.location.pathname;
+    var parts = path.split('/').filter(function (p) { return p.length > 0; });
+    var category = parts[0] || 'home';
+    var slug = parts[1] || '';
+    var country = 'global';
+
+    // Detect country from category
+    var countryCodes = {
+      'uk': 'UK', 'de': 'DE', 'fr': 'FR', 'se': 'SE', 'no': 'NO', 'fi': 'FI',
+      'in': 'IN', 'ca': 'CA', 'jp': 'JP', 'au': 'AU', 'my': 'MY', 'id': 'ID',
+      'ph': 'PH', 'sg': 'SG', 'vn': 'VN', 'sa': 'SA', 'ae': 'AE', 'eg': 'EG', 'ma': 'MA'
+    };
+    if (countryCodes[category]) {
+      country = countryCodes[category];
+    }
+
+    return {
+      page_path: path,
+      tool_category: category,
+      tool_slug: slug,
+      country: country,
+      page_title: document.title,
+      language: document.documentElement.lang || 'en'
+    };
+  }
+
+  // --- Local Tracker ---
   function _trackPageView() {
     try {
       var data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -361,39 +459,156 @@ var TeamzAnalytics = (function () {
     } catch (e) {}
   }
 
+  // --- Engagement Tracking ---
+  function _trackEngagement() {
+    // Track scroll depth
+    var scrollTracked = {};
+    window.addEventListener('scroll', function () {
+      var scrollPct = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
+      var milestones = [25, 50, 75, 90];
+      for (var i = 0; i < milestones.length; i++) {
+        if (scrollPct >= milestones[i] && !scrollTracked[milestones[i]]) {
+          scrollTracked[milestones[i]] = true;
+          _fireEvent('scroll_depth', { depth: milestones[i] + '%', page_path: window.location.pathname });
+        }
+      }
+    });
+
+    // Track time on page
+    var startTime = Date.now();
+    window.addEventListener('beforeunload', function () {
+      var timeSpent = Math.round((Date.now() - startTime) / 1000);
+      _fireEvent('time_on_page', {
+        seconds: timeSpent,
+        page_path: window.location.pathname,
+        tool_category: _getPageContext().tool_category
+      });
+    });
+
+    // Track outbound link clicks
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a');
+      if (link && link.hostname && link.hostname !== window.location.hostname) {
+        _fireEvent('outbound_click', {
+          url: link.href,
+          link_text: (link.textContent || '').substring(0, 50),
+          page_path: window.location.pathname
+        });
+      }
+    });
+
+    // Track FAQ opens
+    document.addEventListener('toggle', function (e) {
+      if (e.target.tagName === 'DETAILS' && e.target.open) {
+        var question = e.target.querySelector('summary');
+        _fireEvent('faq_open', {
+          question: question ? question.textContent.substring(0, 100) : '',
+          page_path: window.location.pathname
+        });
+      }
+    }, true);
+
+    // Track related tool clicks
+    document.addEventListener('click', function (e) {
+      var card = e.target.closest('.related-tool-card');
+      if (card) {
+        _fireEvent('related_tool_click', {
+          destination: card.getAttribute('href') || '',
+          source_page: window.location.pathname
+        });
+      }
+    });
+
+    // Track tool card clicks on homepage
+    document.addEventListener('click', function (e) {
+      var card = e.target.closest('.tool-card');
+      if (card) {
+        _fireEvent('tool_card_click', {
+          destination: card.getAttribute('href') || '',
+          source_page: window.location.pathname
+        });
+      }
+    });
+
+    // Track theme toggle
+    var themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function () {
+        var newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        _fireEvent('theme_toggle', { new_theme: newTheme });
+      });
+    }
+  }
+
+  // --- Core Event Dispatcher ---
+  function _fireEvent(eventName, params) {
+    // Firebase Analytics
+    if (_firebaseReady && window._fbAnalytics) {
+      try { window._fbAnalytics.logEvent(eventName, params); } catch (e) {}
+    }
+    // GA4 gtag
+    if (window.gtag) {
+      try { window.gtag('event', eventName, params); } catch (e) {}
+    }
+  }
+
+  // --- Public: Track Tool Actions ---
   function trackClick(label) {
+    var ctx = _getPageContext();
+
+    // Local storage
     try {
       var data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       var path = window.location.pathname;
-
       if (!data.pages) data.pages = {};
       if (!data.pages[path]) data.pages[path] = { views: 0, clicks: 0, first: '', last: '' };
-
       data.pages[path].clicks++;
       data.totalClicks = (data.totalClicks || 0) + 1;
-
-      // Track click labels
       if (!data.clickLabels) data.clickLabels = {};
-      var key = path + '::' + label;
-      data.clickLabels[key] = (data.clickLabels[key] || 0) + 1;
-
+      data.clickLabels[path + '::' + label] = (data.clickLabels[path + '::' + label] || 0) + 1;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
-      // Send to GA4 if configured
-      if (window.gtag) {
-        window.gtag('event', 'tool_click', {
-          event_category: 'engagement',
-          event_label: label,
-          page_path: path
-        });
-      }
     } catch (e) {}
+
+    // Determine action type from label
+    var action = label.split('::')[0]; // calculate, copy, print, cta, download, process
+    var toolSlug = label.split('::')[1] || ctx.tool_slug;
+
+    _fireEvent('tool_action', {
+      action: action,
+      tool_slug: toolSlug,
+      tool_category: ctx.tool_category,
+      country: ctx.country,
+      page_path: ctx.page_path
+    });
+
+    // Also fire specific events for key actions
+    if (action === 'calculate' || action === 'process') {
+      _fireEvent('tool_use', {
+        tool_slug: toolSlug,
+        tool_category: ctx.tool_category,
+        country: ctx.country
+      });
+    }
+    if (action === 'cta') {
+      _fireEvent('lead_click', {
+        tool_slug: toolSlug,
+        tool_category: ctx.tool_category,
+        country: ctx.country,
+        page_path: ctx.page_path
+      });
+    }
+    if (action === 'copy') {
+      _fireEvent('result_copy', { tool_slug: toolSlug });
+    }
+    if (action === 'download') {
+      _fireEvent('file_download', { tool_slug: toolSlug });
+    }
   }
 
+  // --- Public: Get Local Stats ---
   function getStats() {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    } catch (e) { return {}; }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch (e) { return {}; }
   }
 
   function getTopPages(limit) {
