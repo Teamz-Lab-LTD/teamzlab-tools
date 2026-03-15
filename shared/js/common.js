@@ -637,9 +637,31 @@ var TeamzAnalytics = (function () {
   };
 })();
 
-// Auto-render header, footer, and init analytics
+// Auto-render header, footer, floating CTA, and init analytics
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
+
+  // Floating CTA bar — always visible at bottom
+  var cta = document.createElement('div');
+  cta.className = 'floating-cta';
+  cta.innerHTML =
+    '<div class="floating-cta__text">' +
+      '<strong>Need a custom tool, app, or AI workflow?</strong> ' +
+      '<span>Teamz Lab builds web apps, mobile apps, and AI-powered products.</span>' +
+    '</div>' +
+    '<a href="https://teamzlab.com" target="_blank" rel="noopener" class="floating-cta__btn" id="floating-cta-btn">Get in Touch</a>';
+  document.body.appendChild(cta);
+
+  // Track floating CTA click
+  var ctaBtn = document.getElementById('floating-cta-btn');
+  if (ctaBtn) {
+    ctaBtn.addEventListener('click', function () {
+      if (typeof TeamzAnalytics !== 'undefined') {
+        TeamzAnalytics.trackClick('floating-cta::' + window.location.pathname);
+      }
+    });
+  }
+
   TeamzAnalytics.init();
 });
