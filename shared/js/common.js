@@ -336,11 +336,15 @@ var TeamzAnalytics = (function () {
   var GA_ID = 'G-TDGVH91VS8';
   var STORAGE_KEY = 'teamztools_analytics';
   var _firebaseReady = false;
+  var _isDevMode = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
 
   function init() {
-    _loadFirebase();
+    if (!_isDevMode) {
+      _loadFirebase();
+      _trackEngagement();
+    }
+    // Local tracker always runs (useful for dev too)
     _trackPageView();
-    _trackEngagement();
   }
 
   // --- Firebase + GA4 Loading ---
@@ -542,6 +546,9 @@ var TeamzAnalytics = (function () {
 
   // --- Core Event Dispatcher ---
   function _fireEvent(eventName, params) {
+    // Skip all remote analytics in dev mode
+    if (_isDevMode) return;
+
     // Firebase Analytics
     if (_firebaseReady && window._fbAnalytics) {
       try { window._fbAnalytics.logEvent(eventName, params); } catch (e) {}
