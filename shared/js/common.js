@@ -658,12 +658,14 @@ document.addEventListener('DOMContentLoaded', function () {
       '<span>Teamz Lab builds web apps, mobile apps, and AI-powered products.</span>' +
     '</div>' +
     '<div class="floating-cta__actions">' +
-      '<a href="https://teamzlab.com" target="_blank" rel="noopener" class="floating-cta__btn" id="floating-cta-btn">Get in Touch</a>' +
-      '<a href="https://play.google.com/store/apps/dev?id=7194763656319643086" target="_blank" rel="noopener" class="floating-cta__store" aria-label="Google Play">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4 2l16 10L4 22V2z"/></svg>' +
+      '<a href="https://play.google.com/store/apps/dev?id=7194763656319643086" target="_blank" rel="noopener" class="floating-cta__store">' +
+        '<svg width="16" height="16" viewBox="0 0 512 512" fill="currentColor"><path d="M48 59.49v393a11.27 11.27 0 0 0 7.3 10.65l218.77-218.77L55.3 48.84A11.27 11.27 0 0 0 48 59.49zM345.77 243.9L94.58 24.16l237.63 137.21zm-8.4 24.2L99.08 487.84l236.19-136.36zm38.67-10.92l94.34 54.47a27.39 27.39 0 0 0 0-47.44l-94.34-54.47z"/></svg>' +
+        'Play Store' +
       '</a>' +
-      '<a href="https://apps.apple.com/us/developer/teamz-lab-ltd/id1785282466" target="_blank" rel="noopener" class="floating-cta__store" aria-label="App Store">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>' +
+      '<a href="https://teamzlab.com" target="_blank" rel="noopener" class="floating-cta__btn" id="floating-cta-btn">Get in Touch</a>' +
+      '<a href="https://apps.apple.com/us/developer/teamz-lab-ltd/id1785282466" target="_blank" rel="noopener" class="floating-cta__store">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>' +
+        'App Store' +
       '</a>' +
     '</div>';
   document.body.appendChild(cta);
