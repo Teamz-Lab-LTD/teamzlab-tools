@@ -3,12 +3,24 @@
  * Config-driven tool system for static calculator pages.
  */
 
-const ToolEngine = (() => {
-  let _config = null;
-  let _history = [];
-  const STORAGE_PREFIX = 'teamztools_';
+var ToolEngine = (function () {
+  var _config = null;
+  var _history = [];
+  var STORAGE_PREFIX = 'teamztools_';
+
+  function _escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    var str = String(text);
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
 
   function init(config) {
+    if (!config || !config.slug || !config.inputs || !config.calculate) {
+      console.warn('ToolEngine: invalid config — slug, inputs, and calculate are required.');
+      return;
+    }
     _config = config;
     _history = _loadHistory();
     _renderCalculator();
@@ -23,9 +35,9 @@ const ToolEngine = (() => {
 
   function _loadHistory() {
     try {
-      const raw = localStorage.getItem(_storageKey() + '_history');
+      var raw = localStorage.getItem(_storageKey() + '_history');
       return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    } catch (e) { return []; }
   }
 
   function _saveHistory(entry) {
@@ -33,43 +45,47 @@ const ToolEngine = (() => {
     if (_history.length > 10) _history = _history.slice(0, 10);
     try {
       localStorage.setItem(_storageKey() + '_history', JSON.stringify(_history));
-    } catch {}
+    } catch (e) {}
   }
 
   function _saveLastInputs(values) {
     try {
       localStorage.setItem(_storageKey() + '_last', JSON.stringify(values));
-    } catch {}
+    } catch (e) {}
   }
 
   function _restoreLastInputs() {
     try {
-      const raw = localStorage.getItem(_storageKey() + '_last');
+      var raw = localStorage.getItem(_storageKey() + '_last');
       if (!raw) return;
-      const values = JSON.parse(raw);
-      _config.inputs.forEach(input => {
-        const el = document.getElementById('input-' + input.id);
+      var values = JSON.parse(raw);
+      _config.inputs.forEach(function (input) {
+        var el = document.getElementById('input-' + input.id);
         if (el && values[input.id] !== undefined) {
-          el.value = values[input.id];
+          if (input.type === 'checkbox') {
+            el.checked = !!values[input.id];
+          } else {
+            el.value = values[input.id];
+          }
         }
       });
-    } catch {}
+    } catch (e) {}
   }
 
   // --- Rendering ---
   function _renderCalculator() {
-    const container = document.getElementById('tool-calculator');
+    var container = document.getElementById('tool-calculator');
     if (!container) return;
 
-    let html = '<div class="tool-inputs">';
-    _config.inputs.forEach(input => {
+    var html = '<div class="tool-inputs">';
+    _config.inputs.forEach(function (input) {
       html += _renderInput(input);
     });
     html += '</div>';
 
     html += '<div class="tool-actions">';
-    html += `<button type="button" id="tool-calculate" class="btn-pill tool-calculate-btn">Calculate</button>`;
-    html += `<button type="button" id="tool-clear" class="btn-pill-ghost tool-clear-btn">Clear</button>`;
+    html += '<button type="button" id="tool-calculate" class="btn-pill tool-calculate-btn">Calculate</button>';
+    html += '<button type="button" id="tool-clear" class="btn-pill-ghost tool-clear-btn">Clear</button>';
     html += '</div>';
 
     html += '<div id="tool-result" class="tool-result" style="display:none;"></div>';
@@ -78,90 +94,106 @@ const ToolEngine = (() => {
   }
 
   function _renderInput(input) {
-    const id = 'input-' + input.id;
-    let html = `<div class="tool-field">`;
-    html += `<label for="${id}" class="tool-label">${input.label}`;
-    if (input.hint) html += ` <span class="tool-hint">${input.hint}</span>`;
-    html += `</label>`;
+    var id = 'input-' + input.id;
+    var label = _escapeHtml(input.label);
+    var hint = input.hint ? ' <span class="tool-hint">' + _escapeHtml(input.hint) + '</span>' : '';
+    var errorId = id + '-error';
+
+    var html = '<div class="tool-field">';
+    html += '<label for="' + id + '" class="tool-label">' + label + hint + '</label>';
 
     if (input.type === 'select') {
-      html += `<select id="${id}" class="tool-select">`;
-      (input.options || []).forEach(opt => {
-        const selected = opt.value === input.default ? ' selected' : '';
-        html += `<option value="${opt.value}"${selected}>${opt.label}</option>`;
+      html += '<select id="' + id + '" class="tool-select" aria-label="' + label + '">';
+      (input.options || []).forEach(function (opt) {
+        var selected = opt.value === input.default ? ' selected' : '';
+        html += '<option value="' + _escapeHtml(opt.value) + '"' + selected + '>' + _escapeHtml(opt.label) + '</option>';
       });
-      html += `</select>`;
+      html += '</select>';
     } else if (input.type === 'checkbox') {
-      html += `<label class="tool-checkbox-label">`;
-      html += `<input type="checkbox" id="${id}" class="tool-checkbox"${input.default ? ' checked' : ''}>`;
-      html += ` ${input.checkboxLabel || ''}`;
-      html += `</label>`;
+      html += '<label class="tool-checkbox-label">';
+      html += '<input type="checkbox" id="' + id + '" class="tool-checkbox"' + (input.default ? ' checked' : '') + ' aria-label="' + _escapeHtml(input.checkboxLabel || label) + '">';
+      html += ' ' + _escapeHtml(input.checkboxLabel || '');
+      html += '</label>';
     } else {
-      const type = input.type || 'text';
-      const placeholder = input.placeholder || '';
-      const step = input.step ? ` step="${input.step}"` : '';
-      const min = input.min !== undefined ? ` min="${input.min}"` : '';
-      const max = input.max !== undefined ? ` max="${input.max}"` : '';
-      const defaultVal = input.default !== undefined ? ` value="${input.default}"` : '';
-      html += `<input type="${type}" id="${id}" class="tool-input" placeholder="${placeholder}"${step}${min}${max}${defaultVal}>`;
+      var type = input.type || 'text';
+      var placeholder = input.placeholder ? ' placeholder="' + _escapeHtml(input.placeholder) + '"' : '';
+      var step = input.step ? ' step="' + input.step + '"' : '';
+      var min = input.min !== undefined ? ' min="' + input.min + '"' : '';
+      var max = input.max !== undefined ? ' max="' + input.max + '"' : '';
+      var defaultVal = input.default !== undefined ? ' value="' + _escapeHtml(String(input.default)) + '"' : '';
+      var ariaDesc = input.error ? ' aria-describedby="' + errorId + '"' : '';
+      html += '<input type="' + type + '" id="' + id + '" class="tool-input"' + placeholder + step + min + max + defaultVal + ariaDesc + '>';
     }
 
     if (input.error) {
-      html += `<span id="${id}-error" class="tool-error" style="display:none;">${input.error}</span>`;
+      html += '<span id="' + errorId + '" class="tool-error" role="alert" style="display:none;">' + _escapeHtml(input.error) + '</span>';
     }
-    html += `</div>`;
+    html += '</div>';
     return html;
   }
 
   function _renderResult(result) {
-    const container = document.getElementById('tool-result');
+    var container = document.getElementById('tool-result');
     if (!container) return;
 
-    let html = '<div class="tool-result-inner">';
-    html += `<h3 class="tool-result-title">Result</h3>`;
+    var html = '<div class="tool-result-inner">';
+    html += '<h3 class="tool-result-title">Result</h3>';
 
     if (result.items) {
-      result.items.forEach(item => {
-        html += `<div class="tool-result-row">`;
-        html += `<span class="tool-result-label">${item.label}</span>`;
-        html += `<span class="tool-result-value">${item.value}</span>`;
-        html += `</div>`;
+      result.items.forEach(function (item) {
+        html += '<div class="tool-result-row">';
+        html += '<span class="tool-result-label">' + _escapeHtml(item.label) + '</span>';
+        html += '<span class="tool-result-value">' + _escapeHtml(item.value) + '</span>';
+        html += '</div>';
       });
     }
 
     if (result.summary) {
-      html += `<div class="tool-result-summary">${result.summary}</div>`;
+      html += '<div class="tool-result-summary">' + _escapeHtml(result.summary) + '</div>';
     }
 
-    html += `<div class="tool-result-actions">`;
-    html += `<button type="button" id="tool-copy" class="btn-pill-ghost tool-copy-btn">Copy Result</button>`;
-    html += `<button type="button" id="tool-print" class="btn-pill-ghost tool-print-btn">Print</button>`;
-    html += `</div>`;
+    html += '<div class="tool-result-actions">';
+    html += '<button type="button" id="tool-copy" class="btn-pill-ghost tool-copy-btn">Copy Result</button>';
+    html += '<button type="button" id="tool-print" class="btn-pill-ghost tool-print-btn">Print</button>';
+    html += '</div>';
+
+    // Teamz Lab CTA in result
+    html += '<div class="tool-result-cta">';
+    html += '<p>Need a custom calculator, dashboard, or app? <a href="https://teamzlab.com" target="_blank" rel="noopener">Teamz Lab</a> can build it.</p>';
+    html += '</div>';
+
     html += '</div>';
 
     container.innerHTML = html;
     container.style.display = 'block';
     container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-    document.getElementById('tool-copy')?.addEventListener('click', _copyResult);
-    document.getElementById('tool-print')?.addEventListener('click', () => window.print());
+    var copyBtn = document.getElementById('tool-copy');
+    var printBtn = document.getElementById('tool-print');
+    if (copyBtn) copyBtn.addEventListener('click', _copyResult);
+    if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
   }
 
   // --- Events ---
   function _bindEvents() {
-    document.getElementById('tool-calculate')?.addEventListener('click', _calculate);
-    document.getElementById('tool-clear')?.addEventListener('click', _clear);
+    var calcBtn = document.getElementById('tool-calculate');
+    var clearBtn = document.getElementById('tool-clear');
+    var calcContainer = document.getElementById('tool-calculator');
 
-    // Enter key support
-    document.getElementById('tool-calculator')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') _calculate();
-    });
+    if (calcBtn) calcBtn.addEventListener('click', _calculate);
+    if (clearBtn) clearBtn.addEventListener('click', _clear);
+
+    if (calcContainer) {
+      calcContainer.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') _calculate();
+      });
+    }
   }
 
   function _getValues() {
-    const values = {};
-    _config.inputs.forEach(input => {
-      const el = document.getElementById('input-' + input.id);
+    var values = {};
+    _config.inputs.forEach(function (input) {
+      var el = document.getElementById('input-' + input.id);
       if (!el) return;
       if (input.type === 'checkbox') {
         values[input.id] = el.checked;
@@ -175,135 +207,204 @@ const ToolEngine = (() => {
   }
 
   function _validate(values) {
-    let valid = true;
-    _config.inputs.forEach(input => {
-      const errorEl = document.getElementById('input-' + input.id + '-error');
-      const inputEl = document.getElementById('input-' + input.id);
+    var valid = true;
+    _config.inputs.forEach(function (input) {
+      var errorEl = document.getElementById('input-' + input.id + '-error');
+      var inputEl = document.getElementById('input-' + input.id);
 
+      // Required check
       if (input.required !== false && (values[input.id] === null || values[input.id] === '')) {
-        if (errorEl) {
-          errorEl.textContent = input.error || 'This field is required';
-          errorEl.style.display = 'block';
-        }
-        inputEl?.classList.add('tool-input--error');
+        _showError(errorEl, inputEl, input.error || 'This field is required');
         valid = false;
-      } else {
-        if (errorEl) errorEl.style.display = 'none';
-        inputEl?.classList.remove('tool-input--error');
+        return;
       }
+
+      // Min/max validation for numbers
+      if (input.type === 'number' && values[input.id] !== null) {
+        var val = values[input.id];
+        if (input.min !== undefined && val < input.min) {
+          _showError(errorEl, inputEl, 'Minimum value is ' + input.min);
+          valid = false;
+          return;
+        }
+        if (input.max !== undefined && val > input.max) {
+          _showError(errorEl, inputEl, 'Maximum value is ' + input.max);
+          valid = false;
+          return;
+        }
+        if (isNaN(val)) {
+          _showError(errorEl, inputEl, 'Please enter a valid number');
+          valid = false;
+          return;
+        }
+      }
+
+      // Clear error
+      if (errorEl) errorEl.style.display = 'none';
+      if (inputEl) inputEl.classList.remove('tool-input--error');
     });
     return valid;
   }
 
+  function _showError(errorEl, inputEl, message) {
+    if (errorEl) {
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+    }
+    if (inputEl) inputEl.classList.add('tool-input--error');
+  }
+
   function _calculate() {
-    const values = _getValues();
+    var values = _getValues();
     if (!_validate(values)) return;
 
     _saveLastInputs(values);
 
-    const result = _config.calculate(values);
-    if (result) {
-      _renderResult(result);
-      _saveHistory({ inputs: values, result, timestamp: Date.now() });
+    try {
+      var result = _config.calculate(values);
+      if (result) {
+        _renderResult(result);
+        _saveHistory({ inputs: values, result: result, timestamp: Date.now() });
+      }
+    } catch (e) {
+      console.error('ToolEngine: calculation error', e);
     }
   }
 
   function _clear() {
-    _config.inputs.forEach(input => {
-      const el = document.getElementById('input-' + input.id);
+    _config.inputs.forEach(function (input) {
+      var el = document.getElementById('input-' + input.id);
       if (!el) return;
       if (input.type === 'checkbox') {
         el.checked = !!input.default;
       } else {
         el.value = input.default !== undefined ? input.default : '';
       }
-      const errorEl = document.getElementById('input-' + input.id + '-error');
+      var errorEl = document.getElementById('input-' + input.id + '-error');
       if (errorEl) errorEl.style.display = 'none';
       el.classList.remove('tool-input--error');
     });
-    const resultEl = document.getElementById('tool-result');
+    var resultEl = document.getElementById('tool-result');
     if (resultEl) resultEl.style.display = 'none';
   }
 
   function _copyResult() {
-    const resultEl = document.getElementById('tool-result');
+    var resultEl = document.getElementById('tool-result');
     if (!resultEl) return;
 
-    const rows = resultEl.querySelectorAll('.tool-result-row');
-    let text = _config.title + '\n';
+    var rows = resultEl.querySelectorAll('.tool-result-row');
+    var text = _config.title + '\n';
     text += '='.repeat(_config.title.length) + '\n\n';
-    rows.forEach(row => {
-      const label = row.querySelector('.tool-result-label')?.textContent || '';
-      const value = row.querySelector('.tool-result-value')?.textContent || '';
-      text += label + ': ' + value + '\n';
+    rows.forEach(function (row) {
+      var label = row.querySelector('.tool-result-label');
+      var value = row.querySelector('.tool-result-value');
+      text += (label ? label.textContent : '') + ': ' + (value ? value.textContent : '') + '\n';
     });
-    const summary = resultEl.querySelector('.tool-result-summary');
+    var summary = resultEl.querySelector('.tool-result-summary');
     if (summary) text += '\n' + summary.textContent;
     text += '\n\nCalculated at tool.teamzlab.com/' + _config.slug;
 
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = document.getElementById('tool-copy');
-      if (btn) {
-        const orig = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = orig, 2000);
-      }
-    }).catch(() => {});
+    // Clipboard API with fallback
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        _showCopyFeedback();
+      }).catch(function () {
+        _fallbackCopy(text);
+      });
+    } else {
+      _fallbackCopy(text);
+    }
+  }
+
+  function _fallbackCopy(text) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      _showCopyFeedback();
+    } catch (e) {
+      // Silent fail
+    }
+    document.body.removeChild(textarea);
+  }
+
+  function _showCopyFeedback() {
+    var btn = document.getElementById('tool-copy');
+    if (btn) {
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = orig; }, 2000);
+    }
   }
 
   // --- Utility exports ---
-  function formatCurrency(amount, currency = '') {
-    const formatted = amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function formatCurrency(amount, currency) {
+    if (typeof amount !== 'number' || isNaN(amount)) return '0.00';
+    var formatted = amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return currency ? currency + ' ' + formatted : formatted;
   }
 
   function formatDate(date) {
-    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    if (!date || isNaN(date.getTime())) return 'Invalid date';
+    return date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function parseInputDate(dateString) {
+    if (!dateString) return null;
+    var parts = dateString.split('-');
+    if (parts.length !== 3) return null;
+    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
   }
 
   function addBusinessDays(startDate, days) {
-    const date = new Date(startDate);
-    let added = 0;
+    var date = startDate instanceof Date ? new Date(startDate.getTime()) : parseInputDate(startDate) || new Date(startDate);
+    var added = 0;
     while (added < days) {
       date.setDate(date.getDate() + 1);
-      const dow = date.getDay();
+      var dow = date.getDay();
       if (dow !== 0 && dow !== 6) added++;
     }
     return date;
   }
 
   function addCalendarDays(startDate, days) {
-    const date = new Date(startDate);
+    var date = startDate instanceof Date ? new Date(startDate.getTime()) : parseInputDate(startDate) || new Date(startDate);
     date.setDate(date.getDate() + days);
     return date;
   }
 
   function daysBetween(date1, date2) {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    var d1 = date1 instanceof Date ? date1 : parseInputDate(date1) || new Date(date1);
+    var d2 = date2 instanceof Date ? date2 : parseInputDate(date2) || new Date(date2);
+    var diffMs = d2.getTime() - d1.getTime();
+    return Math.round(diffMs / (1000 * 60 * 60 * 24));
   }
 
   function businessDaysBetween(date1, date2) {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    let count = 0;
-    const current = new Date(d1);
+    var d1 = date1 instanceof Date ? date1 : parseInputDate(date1) || new Date(date1);
+    var d2 = date2 instanceof Date ? date2 : parseInputDate(date2) || new Date(date2);
+    var count = 0;
+    var current = new Date(d1.getTime());
     while (current < d2) {
       current.setDate(current.getDate() + 1);
-      const dow = current.getDay();
+      var dow = current.getDay();
       if (dow !== 0 && dow !== 6) count++;
     }
     return count;
   }
 
   return {
-    init,
-    formatCurrency,
-    formatDate,
-    addBusinessDays,
-    addCalendarDays,
-    daysBetween,
-    businessDaysBetween
+    init: init,
+    formatCurrency: formatCurrency,
+    formatDate: formatDate,
+    parseInputDate: parseInputDate,
+    addBusinessDays: addBusinessDays,
+    addCalendarDays: addCalendarDays,
+    daysBetween: daysBetween,
+    businessDaysBetween: businessDaysBetween
   };
 })();
