@@ -214,18 +214,29 @@
             return { output: buildUnsupportedHTML(), outputType: 'html', title: 'Battery Status', copyText: 'Battery API not supported in this browser.' };
           }
 
-          var resultContainer = null;
+          var outputEl = document.getElementById('util-output');
+          var timedOut = false;
+
+          var timeout = setTimeout(function () {
+            timedOut = true;
+            if (outputEl) {
+              outputEl.style.display = 'block';
+              outputEl.innerHTML = '<div class="tool-output-header"><span class="tool-output-title">Battery Status</span></div><div class="tool-output--preview">' + buildUnsupportedHTML() + '</div>';
+            }
+          }, 3000);
 
           navigator.getBattery().then(function (battery) {
-            resultContainer = document.querySelector('.utility-output-content');
-            if (resultContainer) {
-              resultContainer.innerHTML = buildBatteryHTML(battery);
+            if (timedOut) return;
+            clearTimeout(timeout);
+
+            if (outputEl) {
+              outputEl.style.display = 'block';
+              outputEl.innerHTML = '<div class="tool-output-header"><span class="tool-output-title">Battery Status</span><button type="button" id="util-copy" class="btn-pill-ghost tool-copy-btn">Copy</button></div><div class="tool-output--preview">' + buildBatteryHTML(battery) + '</div>';
             }
 
             var updateDisplay = function () {
-              var container = document.querySelector('.utility-output-content');
-              if (container) {
-                container.innerHTML = buildBatteryHTML(battery);
+              if (outputEl) {
+                outputEl.innerHTML = '<div class="tool-output-header"><span class="tool-output-title">Battery Status</span></div><div class="tool-output--preview">' + buildBatteryHTML(battery) + '</div>';
               }
             };
 
@@ -233,6 +244,12 @@
             battery.addEventListener('levelchange', updateDisplay);
             battery.addEventListener('chargingtimechange', updateDisplay);
             battery.addEventListener('dischargingtimechange', updateDisplay);
+          }).catch(function () {
+            clearTimeout(timeout);
+            if (outputEl) {
+              outputEl.style.display = 'block';
+              outputEl.innerHTML = '<div class="tool-output-header"><span class="tool-output-title">Battery Status</span></div><div class="tool-output--preview">' + buildUnsupportedHTML() + '</div>';
+            }
           });
 
           return { output: '<div style="text-align:center;padding:2rem;"><p>Reading battery status...</p></div>', outputType: 'html', title: 'Battery Status', copyText: 'Battery status loading...' };
