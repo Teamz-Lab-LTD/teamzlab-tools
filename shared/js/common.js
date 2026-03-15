@@ -474,7 +474,8 @@ var TeamzTranslate = (function () {
   }
 
   function _setGoogCookie(lang) {
-    var value = '/en/' + lang;
+    var pageLang = (document.documentElement.getAttribute('lang') || 'en').split('-')[0];
+    var value = '/' + pageLang + '/' + lang;
     var host = location.hostname;
     var parts = host.split('.');
     var domains = [host, '.' + host];
@@ -488,9 +489,14 @@ var TeamzTranslate = (function () {
   function _loadGT(callback) {
     if (gtLoaded) { callback(); return; }
 
+    // Detect page's actual language for proper translation
+    var pageLang = document.documentElement.getAttribute('lang') || 'en';
+    // Normalize: ja, ar, de, fr, etc. → use as source
+    var sourceLang = pageLang.split('-')[0]; // handle en-US, zh-CN etc.
+
     window.googleTranslateElementInit = function () {
       new google.translate.TranslateElement({
-        pageLanguage: 'en',
+        pageLanguage: sourceLang,
         autoDisplay: false,
         layout: google.translate.TranslateElement.InlineLayout.SIMPLE
       }, 'google_translate_element');
