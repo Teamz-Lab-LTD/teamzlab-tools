@@ -27,6 +27,10 @@
     <section class="hero">
       <h1>Free Online Calculators &amp; Tools</h1>
       <p>Instant, no-login tools for work transitions, invoicing, and freelancing. Built by <a href="https://teamzlab.com" target="_blank" rel="noopener">Teamz Lab</a>.</p>
+      <div style="max-width:500px;margin:1.5rem auto 0;">
+        <input type="text" id="tool-search" class="tool-input" placeholder="Search 294+ tools..." style="text-align:center;font-size:var(--text-lg);">
+      </div>
+      <div id="search-results" style="max-width:600px;margin:1rem auto 0;display:none;"></div>
     </section>
 
     <section class="tool-content" style="max-width:700px;margin:0 auto 2rem;">
@@ -407,6 +411,56 @@
   <script>
     TeamzTools.injectOrganizationSchema();
     TeamzTools.injectWebSiteSchema();
+
+    // Homepage search
+    document.addEventListener('DOMContentLoaded', function () {
+      var searchInput = document.getElementById('tool-search');
+      var searchResults = document.getElementById('search-results');
+      if (!searchInput || !searchResults) return;
+
+      // Build search index from all tool cards on the page
+      var allTools = [];
+      var cards = document.querySelectorAll('.tool-card');
+      cards.forEach(function (card) {
+        var h3 = card.querySelector('h3');
+        var p = card.querySelector('p');
+        if (h3) {
+          allTools.push({
+            title: h3.textContent,
+            desc: p ? p.textContent : '',
+            href: card.getAttribute('href') || ''
+          });
+        }
+      });
+
+      searchInput.addEventListener('input', function () {
+        var query = searchInput.value.toLowerCase().trim();
+        if (query.length < 2) {
+          searchResults.style.display = 'none';
+          searchResults.innerHTML = '';
+          return;
+        }
+
+        var matches = allTools.filter(function (t) {
+          return t.title.toLowerCase().indexOf(query) !== -1 ||
+                 t.desc.toLowerCase().indexOf(query) !== -1;
+        }).slice(0, 10);
+
+        if (matches.length === 0) {
+          searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">No tools found for "' + query + '"</p>';
+          searchResults.style.display = 'block';
+          return;
+        }
+
+        var html = '<div class="tools-grid" style="grid-template-columns:1fr;">';
+        matches.forEach(function (m) {
+          html += '<a href="' + m.href + '" class="tool-card" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + m.title + '</h3><p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);">' + m.desc.substring(0, 80) + '</p></div></a>';
+        });
+        html += '</div>';
+        searchResults.innerHTML = html;
+        searchResults.style.display = 'block';
+      });
+    });
   </script>
 </body>
 </html>
