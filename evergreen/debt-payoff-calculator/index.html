@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debt Payoff Calculator — How Long to Pay Off Debt | Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how long it takes to pay off debt and how much interest you will pay. See the impact of extra payments. Works for credit cards, loans, and any debt. Free calculator.">
+  <meta property="og:title" content="Debt Payoff Calculator | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate time to pay off debt and total interest. Free calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/debt-payoff-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/debt-payoff-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Debt Payoff Calculator</h1>
+      <p class="tool-description">Find out how long it will take to pay off your debt and how much interest you will pay. See how extra payments speed up payoff. Works for credit cards, personal loans, and any debt.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Debt Payoff Is Calculated</h2>
+      <p>This calculator simulates monthly payments on a balance with interest. Each month, interest accrues on the remaining balance, and your payment covers the interest plus some principal. The simulation runs until the balance reaches zero, giving you the exact payoff timeline and total interest cost.</p>
+      <div class="formula-box">
+        <h3>Payoff Formula</h3>
+        <p class="formula">Monthly Interest = Balance &times; (Annual Rate / 12)</p>
+        <p class="formula">Principal Payment = Monthly Payment &minus; Monthly Interest</p>
+        <p class="formula">New Balance = Old Balance &minus; Principal Payment</p>
+        <p class="formula">Months to Payoff = solve iteratively until balance = 0</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/debt-payoff-calculator', title: 'Debt Payoff Calculator',
+      description: 'Calculate time to pay off debt and total interest paid.',
+      inputs: [
+        { id: 'balance', type: 'number', label: 'Current Balance ($)', placeholder: 'e.g. 5000', min: 1, step: 100, error: 'Enter current balance.' },
+        { id: 'rate', type: 'number', label: 'Annual Interest Rate (%)', placeholder: 'e.g. 19.9', min: 0, max: 50, step: 0.1, error: 'Enter interest rate.' },
+        { id: 'payment', type: 'number', label: 'Monthly Payment ($)', placeholder: 'e.g. 200', min: 1, step: 10, error: 'Enter monthly payment.' },
+        { id: 'extra', type: 'number', label: 'Extra Monthly Payment ($)', hint: 'Optional — additional principal', placeholder: '0', min: 0, step: 10, default: 0, required: false }
+      ],
+      calculate: function (v) {
+        if (!v.balance || v.rate === null || !v.payment) return null;
+        var bal = v.balance, r = v.rate / 100 / 12, pmt = v.payment, extra = v.extra || 0;
+        var totalPmt = pmt + extra;
+        var minPayment = bal * r;
+        if (totalPmt <= minPayment) return { items: [{ label: 'Error', value: 'Payment of $' + totalPmt.toFixed(2) + ' doesn\'t cover monthly interest of $' + minPayment.toFixed(2) + '. Increase payment.' }] };
+
+        // Without extra
+        var b1 = v.balance, months1 = 0, interest1 = 0;
+        while (b1 > 0 && months1 < 600) { var int1 = b1 * r; interest1 += int1; var princ = Math.min(pmt - int1, b1); b1 -= princ; months1++; if (pmt - int1 <= 0) break; }
+
+        // With extra
+        var b2 = v.balance, months2 = 0, interest2 = 0;
+        while (b2 > 0 && months2 < 600) { var int2 = b2 * r; interest2 += int2; var princ2 = Math.min(totalPmt - int2, b2); b2 -= princ2; months2++; if (totalPmt - int2 <= 0) break; }
+
+        var saved = interest1 - interest2;
+        var monthsSaved = months1 - months2;
+        var y1 = Math.floor(months1 / 12), m1 = months1 % 12;
+        var y2 = Math.floor(months2 / 12), m2 = months2 % 12;
+
+        var items = [
+          { label: 'Payoff Time', value: (extra > 0 ? y2 + 'y ' + m2 + 'm' : y1 + 'y ' + m1 + 'm') + ' (' + (extra > 0 ? months2 : months1) + ' months)' },
+          { label: 'Total Interest', value: '$' + (extra > 0 ? interest2 : interest1).toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+          { label: 'Total Paid', value: '$' + ((extra > 0 ? interest2 : interest1) + v.balance).toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+          { label: 'Balance', value: '$' + v.balance.toLocaleString() },
+          { label: 'Interest Rate', value: v.rate + '% APR' },
+          { label: 'Monthly Payment', value: '$' + totalPmt.toFixed(2) }
+        ];
+        if (extra > 0) {
+          items.push({ label: 'Without Extra Payment', value: y1 + 'y ' + m1 + 'm, $' + interest1.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' interest' });
+          items.push({ label: 'You Save', value: '$' + saved.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' interest, ' + monthsSaved + ' months faster' });
+        }
+        return { items: items, summary: 'Paying $' + totalPmt.toFixed(2) + '/month on $' + v.balance.toLocaleString() + ' at ' + v.rate + '%, you will be debt-free in ' + (extra > 0 ? months2 : months1) + ' months. Total interest: $' + (extra > 0 ? interest2 : interest1).toLocaleString(undefined, { maximumFractionDigits: 0 }) + '.' + (extra > 0 ? ' The extra $' + extra + '/month saves you $' + saved.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' in interest!' : '') };
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Debt Payoff Calculator' }];
+    var FAQS = [
+      { q: 'How can I pay off debt faster?', a: 'Pay more than the minimum, target highest-interest debt first (avalanche method), or target smallest balances first (snowball method for motivation). Even $50 extra/month makes a significant difference.' },
+      { q: 'What if I can only make minimum payments?', a: 'Credit card minimum payments (typically 1-3% of balance) can take decades to pay off and cost thousands in interest. Try to pay more than the minimum whenever possible.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/loan-payment-calculator', name: 'Loan Payment Calculator', description: 'Calculate loan payments.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest', description: 'Calculate investment growth.' },
+      { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal', description: 'Plan savings goals.' },
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Calculate mortgage payments.' },
+      { slug: 'evergreen/percentage-decrease-calculator', name: 'Percentage Decrease', description: 'Calculate reductions.' },
+      { slug: 'career/take-home-pay-estimator', name: 'Take-Home Pay', description: 'Estimate net pay.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

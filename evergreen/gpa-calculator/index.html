@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GPA Calculator — Calculate Your Cumulative GPA | Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your cumulative GPA from multiple courses. Enter letter grades and credit hours to find your weighted GPA on a 4.0 scale. Free GPA calculator.">
+  <meta property="og:title" content="GPA Calculator — Cumulative GPA | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate cumulative GPA from courses and credit hours. Free calculator for students.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/gpa-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/gpa-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .gpa-rows { margin-bottom: 1rem; }
+    .gpa-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .gpa-row input, .gpa-row select { flex: 1; min-width: 70px; padding: 0.5rem; border: 1px solid var(--border-color, #d1d5db); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: var(--input-bg, #fff); color: var(--text-primary, #1a1a2e); }
+    .gpa-row input:focus, .gpa-row select:focus { outline: none; border-color: var(--brand-primary, #6c63ff); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
+    .gpa-row .remove-row { background: none; border: none; color: var(--text-secondary, #6b7280); cursor: pointer; font-size: 1.2rem; padding: 0.25rem 0.5rem; border-radius: 4px; }
+    .gpa-row .remove-row:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+    .add-row-btn { background: none; border: 1px dashed var(--border-color, #d1d5db); color: var(--brand-primary, #6c63ff); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.9rem; width: 100%; }
+    .add-row-btn:hover { border-color: var(--brand-primary, #6c63ff); background: rgba(108,99,255,0.05); }
+    .gpa-header { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--text-secondary, #6b7280); padding: 0 0.5rem; }
+    .gpa-header span { flex: 1; min-width: 70px; }
+    .gpa-header span:last-child { width: 2rem; flex: none; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>GPA Calculator</h1>
+      <p class="tool-description">Calculate your cumulative GPA from multiple courses. Enter each course name, letter grade, and credit hours. Supports 4.0 scale with plus/minus grades. Free and private.</p>
+    </section>
+    <section class="tool-calculator">
+      <div id="gpa-app">
+        <div class="gpa-header"><span>Course</span><span>Grade</span><span>Credits</span><span></span></div>
+        <div id="gpa-rows" class="gpa-rows"></div>
+        <button type="button" class="add-row-btn" id="add-row-btn">+ Add Course</button>
+        <div class="tool-actions" style="margin-top:1rem;">
+          <button type="button" id="tool-calculate" class="btn-pill tool-calculate-btn">Calculate GPA</button>
+          <button type="button" id="tool-clear" class="btn-pill-ghost tool-clear-btn">Clear</button>
+        </div>
+        <div id="tool-result" class="tool-result" style="display:none;"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How GPA Is Calculated</h2>
+      <p>GPA (Grade Point Average) is a weighted average of your grades, where each grade is weighted by the number of credit hours for that course. A 4-credit A counts more than a 2-credit A in your GPA. This calculator uses the standard 4.0 scale used by most US colleges and universities.</p>
+      <div class="formula-box">
+        <h3>GPA Formula</h3>
+        <p class="formula">GPA = &Sigma;(Grade Points &times; Credit Hours) / &Sigma;(Credit Hours)</p>
+        <p>Scale: A+=4.0, A=4.0, A-=3.7, B+=3.3, B=3.0, B-=2.7, C+=2.3, C=2.0, C-=1.7, D+=1.3, D=1.0, D-=0.7, F=0.0</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var gradePoints = { 'A+': 4.0, 'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7, 'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'D-': 0.7, 'F': 0.0 };
+    var rowCount = 0;
+    var gradeOptions = Object.keys(gradePoints).map(function(g) { return '<option value="' + g + '">' + g + ' (' + gradePoints[g].toFixed(1) + ')</option>'; }).join('');
+
+    function addRow(name, grade, credits) {
+      rowCount++;
+      var div = document.createElement('div'); div.className = 'gpa-row'; div.id = 'row-' + rowCount;
+      div.innerHTML = '<input type="text" placeholder="Course name" value="' + (name || '') + '" aria-label="Course name">' +
+        '<select aria-label="Grade">' + gradeOptions.replace('value="' + (grade || 'A') + '"', 'value="' + (grade || 'A') + '" selected') + '</select>' +
+        '<input type="number" placeholder="Credits" min="0.5" max="20" step="0.5" value="' + (credits || 3) + '" aria-label="Credit hours">' +
+        '<button type="button" class="remove-row" title="Remove">&times;</button>';
+      document.getElementById('gpa-rows').appendChild(div);
+      div.querySelector('.remove-row').addEventListener('click', function() { div.remove(); });
+    }
+
+    function calculate() {
+      var rows = document.querySelectorAll('.gpa-row');
+      var totalPoints = 0, totalCredits = 0, count = 0;
+      rows.forEach(function(row) {
+        var grade = row.querySelector('select').value;
+        var credits = parseFloat(row.querySelectorAll('input')[1].value);
+        if (!isNaN(credits) && credits > 0 && gradePoints[grade] !== undefined) {
+          totalPoints += gradePoints[grade] * credits;
+          totalCredits += credits;
+          count++;
+        }
+      });
+      if (count === 0 || totalCredits === 0) { alert('Add at least one course.'); return; }
+      var gpa = totalPoints / totalCredits;
+      var el = document.getElementById('tool-result');
+      el.innerHTML = '<div class="tool-result-inner"><h3 class="tool-result-title">Your GPA</h3>' +
+        '<div class="tool-result-row"><span class="tool-result-label">Cumulative GPA</span><span class="tool-result-value" style="font-size:1.5rem;font-weight:700;color:var(--brand-primary)">' + gpa.toFixed(2) + '</span></div>' +
+        '<div class="tool-result-row"><span class="tool-result-label">Total Credits</span><span class="tool-result-value">' + totalCredits + '</span></div>' +
+        '<div class="tool-result-row"><span class="tool-result-label">Total Quality Points</span><span class="tool-result-value">' + totalPoints.toFixed(1) + '</span></div>' +
+        '<div class="tool-result-row"><span class="tool-result-label">Courses Counted</span><span class="tool-result-value">' + count + '</span></div>' +
+        '<div class="tool-result-summary">Your cumulative GPA is ' + gpa.toFixed(2) + ' across ' + totalCredits + ' credit hours (' + count + ' courses). ' +
+        (gpa >= 3.7 ? 'Dean\'s List / Honors territory!' : gpa >= 3.0 ? 'Solid academic standing.' : gpa >= 2.0 ? 'Meets minimum requirements at most schools.' : 'Below 2.0 — academic probation risk.') + '</div>' +
+        '<div class="tool-result-cta"><p>Need a custom calculator? <a href="https://teamzlab.com" target="_blank" rel="noopener">Teamz Lab</a> can build it.</p></div></div>';
+      el.style.display = 'block';
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      for (var i = 0; i < 5; i++) addRow('', 'A', 3);
+      document.getElementById('add-row-btn').addEventListener('click', function() { addRow('', 'A', 3); });
+      document.getElementById('tool-calculate').addEventListener('click', calculate);
+      document.getElementById('tool-clear').addEventListener('click', function() {
+        document.getElementById('gpa-rows').innerHTML = '';
+        document.getElementById('tool-result').style.display = 'none';
+        rowCount = 0;
+        for (var i = 0; i < 5; i++) addRow('', 'A', 3);
+      });
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'GPA Calculator' }];
+      var FAQS = [
+        { q: 'How is GPA calculated?', a: 'Multiply each course\'s grade points by its credit hours, sum them all, then divide by total credit hours. This gives your weighted GPA on a 4.0 scale.' },
+        { q: 'What GPA do I need for Dean\'s List?', a: 'Most schools require 3.5-3.7+ GPA for Dean\'s List. Check your school\'s specific requirements.' },
+        { q: 'Does A+ count higher than A?', a: 'On the standard 4.0 scale, both A+ and A are 4.0. Some schools give A+ a 4.3 — check your institution\'s policy.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'evergreen/grade-calculator', name: 'Grade Calculator', description: 'Calculate weighted class grade.' },
+        { slug: 'evergreen/final-grade-calculator', name: 'Final Grade Calculator', description: 'Find what you need on your final.' },
+        { slug: 'student/attendance-percentage-calculator', name: 'Attendance Calculator', description: 'Track attendance percentage.' },
+        { slug: 'student/study-hours-estimator', name: 'Study Hours Estimator', description: 'Plan study time.' },
+        { slug: 'student/exam-countdown-planner', name: 'Exam Countdown', description: 'Count days until exam.' },
+        { slug: 'evergreen/percentage-increase-calculator', name: 'Percentage Calculator', description: 'Calculate percentages.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'evergreen/gpa-calculator', title: 'GPA Calculator', description: 'Calculate cumulative GPA from courses and credit hours.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

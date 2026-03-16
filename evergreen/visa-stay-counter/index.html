@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visa Stay Counter — Count Days in Country for Visa Compliance | Teamz Lab Tools</title>
+  <meta name="description" content="Count days spent in a country for visa compliance. Track 90/180, 183-day, and custom stay limits. Avoid overstaying your visa. Free visa day counter.">
+  <meta property="og:title" content="Visa Stay Counter | Teamz Lab Tools">
+  <meta property="og:description" content="Count days in country for visa compliance. Free calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/visa-stay-counter/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/visa-stay-counter/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Visa Stay Counter</h1>
+      <p class="tool-description">Count the number of days you have spent in a country to ensure visa compliance. Track against 90/180-day Schengen rules, 183-day tax residency thresholds, or any custom limit. Free and private.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Common Visa Stay Rules</h2>
+      <p>Many countries limit how long visitors can stay. The Schengen Area allows 90 days within any 180-day period. The US B1/B2 visa typically allows 90 or 180 days per entry. The UK standard visitor visa allows up to 180 days. Tax residency rules (usually 183 days/year) determine where you pay taxes.</p>
+      <div class="formula-box">
+        <h3>Stay Calculation</h3>
+        <p class="formula">Days Stayed = Departure Date &minus; Arrival Date + 1</p>
+        <p class="formula">Days Remaining = Allowed Days &minus; Days Stayed</p>
+        <p class="formula">Must Leave By = Arrival Date + Allowed Days &minus; 1</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/visa-stay-counter', title: 'Visa Stay Counter',
+      description: 'Count days in country for visa compliance.',
+      inputs: [
+        { id: 'arrival', type: 'date', label: 'Arrival Date', error: 'Enter arrival date.' },
+        { id: 'departure', type: 'date', label: 'Departure Date', hint: 'Leave blank if still in country', required: false },
+        { id: 'limit', type: 'select', label: 'Stay Limit', options: [
+          { value: '90', label: '90 days (Schengen, US ESTA)' },
+          { value: '180', label: '180 days (UK, US B1/B2)' },
+          { value: '183', label: '183 days (Tax residency)' },
+          { value: '30', label: '30 days (Visa on arrival)' },
+          { value: '60', label: '60 days (Some tourist visas)' },
+          { value: 'custom', label: 'Custom' }
+        ], default: '90' },
+        { id: 'custom_limit', type: 'number', label: 'Custom Limit (days)', placeholder: '90', min: 1, max: 365, required: false }
+      ],
+      calculate: function (v) {
+        if (!v.arrival) return null;
+        var arrival = ToolEngine.parseInputDate(v.arrival);
+        var departure = v.departure ? ToolEngine.parseInputDate(v.departure) : new Date();
+        departure.setHours(0, 0, 0, 0);
+        if (arrival > departure) return { items: [{ label: 'Error', value: 'Arrival must be before departure.' }] };
+        var daysStayed = Math.floor((departure - arrival) / (1000 * 60 * 60 * 24)) + 1;
+        var limit = v.limit === 'custom' ? (v.custom_limit || 90) : parseInt(v.limit);
+        var daysRemaining = limit - daysStayed;
+        var mustLeaveBy = new Date(arrival.getTime());
+        mustLeaveBy.setDate(mustLeaveBy.getDate() + limit - 1);
+        var overStayed = daysStayed > limit;
+
+        return {
+          items: [
+            { label: 'Days Stayed', value: daysStayed + ' days' },
+            { label: 'Days Remaining', value: overStayed ? 'OVERSTAYED by ' + Math.abs(daysRemaining) + ' days' : daysRemaining + ' days' },
+            { label: 'Stay Limit', value: limit + ' days' },
+            { label: 'Must Leave By', value: ToolEngine.formatDate(mustLeaveBy) },
+            { label: 'Arrival', value: ToolEngine.formatDate(arrival) },
+            { label: 'Status', value: overStayed ? 'OVER LIMIT — seek legal advice' : daysRemaining <= 7 ? 'WARNING — leaving soon' : 'Within limits' }
+          ],
+          summary: 'You have been in the country for ' + daysStayed + ' days (limit: ' + limit + '). ' + (overStayed ? 'You have OVERSTAYED by ' + Math.abs(daysRemaining) + ' days.' : 'You have ' + daysRemaining + ' days remaining. Must leave by ' + ToolEngine.formatDate(mustLeaveBy) + '.')
+        };
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Visa Stay Counter' }];
+    var FAQS = [
+      { q: 'What is the 90/180 Schengen rule?', a: 'You can stay up to 90 days within any 180-day rolling period in the Schengen Area. The 180-day window is counted backward from any given day.' },
+      { q: 'What is the 183-day rule?', a: 'Many countries consider you a tax resident if you spend 183 or more days in that country within a calendar or tax year. This determines where you pay income tax.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/tax-residency-day-counter', name: 'Tax Residency Counter', description: 'Track days for tax residency.' },
+      { slug: 'evergreen/date-calculator', name: 'Date Calculator', description: 'Add/subtract dates.' },
+      { slug: 'evergreen/age-calculator', name: 'Age Calculator', description: 'Calculate age.' },
+      { slug: 'work/business-day-calculator', name: 'Business Days', description: 'Count business days.' },
+      { slug: 'evergreen/time-calculator', name: 'Time Calculator', description: 'Add/subtract time.' },
+      { slug: 'work/notice-period-calculator', name: 'Notice Period', description: 'Calculate last working day.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

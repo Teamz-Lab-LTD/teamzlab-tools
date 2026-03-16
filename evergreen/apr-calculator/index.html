@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APR Calculator — Calculate Annual Percentage Rate | Teamz Lab Tools</title>
+  <meta name="description" content="Calculate APR (Annual Percentage Rate) from loan amount, fees, interest rate, and term. Compare the true cost of loans. Free APR calculator.">
+  <meta property="og:title" content="APR Calculator | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate true annual percentage rate including fees. Free loan comparison calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/apr-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/apr-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>APR Calculator</h1>
+      <p class="tool-description">Calculate the true Annual Percentage Rate of a loan including fees and closing costs. Compare loans fairly by their APR, not just the interest rate. Free and private.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>APR vs Interest Rate</h2>
+      <p>The interest rate is the cost of borrowing the principal. APR includes the interest rate PLUS fees, closing costs, and other charges, spread over the loan term. Two loans with the same interest rate can have different APRs if one has higher fees. APR gives you the true cost of borrowing.</p>
+      <div class="formula-box">
+        <h3>APR Calculation</h3>
+        <p class="formula">Effective Loan = Loan Amount &minus; Total Fees</p>
+        <p class="formula">APR = Rate that makes monthly payment on (Loan Amount) equal to monthly payment on (Effective Loan at nominal rate)</p>
+        <p>This calculator uses an iterative approximation method.</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/apr-calculator', title: 'APR Calculator',
+      description: 'Calculate true APR including fees and closing costs.',
+      inputs: [
+        { id: 'loan', type: 'number', label: 'Loan Amount ($)', placeholder: 'e.g. 200000', min: 1, step: 1000, error: 'Enter loan amount.' },
+        { id: 'rate', type: 'number', label: 'Interest Rate (%)', placeholder: 'e.g. 6.5', min: 0.01, max: 30, step: 0.01, error: 'Enter interest rate.' },
+        { id: 'term', type: 'number', label: 'Loan Term (years)', placeholder: 'e.g. 30', min: 1, max: 40, step: 1, error: 'Enter loan term.' },
+        { id: 'fees', type: 'number', label: 'Total Fees & Closing Costs ($)', hint: 'Origination, points, closing costs', placeholder: 'e.g. 5000', min: 0, step: 100, default: 0 }
+      ],
+      calculate: function (v) {
+        if (!v.loan || !v.rate || !v.term) return null;
+        var P = v.loan, r = v.rate / 100 / 12, n = v.term * 12, fees = v.fees || 0;
+        // Monthly payment at nominal rate
+        var pow = Math.pow(1 + r, n);
+        var M = P * (r * pow) / (pow - 1);
+        // Effective loan (what you actually receive)
+        var effectiveLoan = P - fees;
+        // Find APR: rate where payment M amortizes effectiveLoan over n months
+        // Binary search
+        var lo = 0, hi = 1; // monthly rates
+        for (var i = 0; i < 100; i++) {
+          var mid = (lo + hi) / 2;
+          var p2 = Math.pow(1 + mid, n);
+          var m2 = effectiveLoan * (mid * p2) / (p2 - 1);
+          if (m2 < M) lo = mid; else hi = mid;
+        }
+        var aprMonthly = (lo + hi) / 2;
+        var apr = aprMonthly * 12 * 100;
+        var totalPaid = M * n;
+        var totalInterest = totalPaid - P;
+
+        return {
+          items: [
+            { label: 'APR', value: apr.toFixed(3) + '%' },
+            { label: 'Interest Rate', value: v.rate + '%' },
+            { label: 'APR vs Rate Difference', value: '+' + (apr - v.rate).toFixed(3) + '% (from fees)' },
+            { label: 'Monthly Payment', value: '$' + M.toFixed(2) },
+            { label: 'Total Fees', value: '$' + fees.toLocaleString() },
+            { label: 'Effective Loan (after fees)', value: '$' + effectiveLoan.toLocaleString() },
+            { label: 'Total Interest', value: '$' + totalInterest.toLocaleString(undefined, { maximumFractionDigits: 0 }) },
+            { label: 'Total Cost', value: '$' + totalPaid.toLocaleString(undefined, { maximumFractionDigits: 0 }) }
+          ],
+          summary: 'Your APR is ' + apr.toFixed(3) + '% (vs ' + v.rate + '% interest rate). The $' + fees.toLocaleString() + ' in fees adds ' + (apr - v.rate).toFixed(3) + '% to the true cost. Monthly payment: $' + M.toFixed(2) + '.'
+        };
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'APR Calculator' }];
+    var FAQS = [
+      { q: 'Why is APR higher than the interest rate?', a: 'APR includes fees and closing costs spread over the loan term, making it higher than the base interest rate. It shows the true annual cost of borrowing.' },
+      { q: 'Should I compare loans by APR or interest rate?', a: 'APR is better for comparison because it includes all costs. A loan with a lower rate but higher fees may actually cost more than a loan with a slightly higher rate and lower fees.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Calculate mortgage payments.' },
+      { slug: 'evergreen/loan-payment-calculator', name: 'Loan Payment Calculator', description: 'Calculate loan payments.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest', description: 'Calculate compound growth.' },
+      { slug: 'evergreen/house-affordability-calculator', name: 'House Affordability', description: 'How much house can I afford?' },
+      { slug: 'evergreen/debt-payoff-calculator', name: 'Debt Payoff', description: 'Calculate debt payoff timeline.' },
+      { slug: 'evergreen/roi-calculator', name: 'ROI Calculator', description: 'Calculate investment returns.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

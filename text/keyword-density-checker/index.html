@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keyword Density Checker — Analyze Keyword Frequency in Text | Teamz Lab Tools</title>
+  <meta name="description" content="Check keyword density in your text. See frequency of each word and phrase, percentage of total, and top keywords. Free SEO keyword density analyzer.">
+  <meta property="og:title" content="Keyword Density Checker | Teamz Lab Tools">
+  <meta property="og:description" content="Analyze keyword density and frequency in text. Free SEO tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/text/keyword-density-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/text/keyword-density-checker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .density-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .density-table th, .density-table td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color, #e5e7eb); font-size: 0.9rem; }
+    .density-table th { font-weight: 600; color: var(--text-secondary, #6b7280); font-size: 0.8rem; text-transform: uppercase; }
+    .density-bar { height: 6px; background: var(--brand-primary, #6c63ff); border-radius: 3px; min-width: 2px; }
+    .density-bar-bg { width: 100px; height: 6px; background: var(--border-color, #e5e7eb); border-radius: 3px; display: inline-block; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Keyword Density Checker</h1>
+      <p class="tool-description">Analyze keyword density in your text. See the frequency and percentage of each word and two-word phrase. Optimize your content for SEO without over-stuffing keywords. Runs in your browser.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="tool-field">
+        <label for="text-input" class="tool-label">Paste Your Text</label>
+        <textarea id="text-input" class="tool-input" rows="6" placeholder="Paste your article, blog post, or page content here..." style="resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <div class="tool-field">
+        <label for="target-kw" class="tool-label">Target Keyword (optional)</label>
+        <input type="text" id="target-kw" class="tool-input" placeholder="e.g. mortgage calculator">
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="analyze-btn" class="btn-pill tool-calculate-btn">Analyze Density</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div id="density-result" style="display:none;">
+        <div id="density-stats" class="tool-result" style="display:block;margin-top:1rem;"></div>
+        <div id="density-tables"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is Keyword Density?</h2>
+      <p>Keyword density is the percentage of times a keyword appears in your text relative to the total word count. For SEO, a density of 1-2% is generally considered optimal. Over 3% may be seen as keyword stuffing by search engines, which can hurt rankings. This tool analyzes both single words and two-word phrases to give you a comprehensive view.</p>
+      <div class="formula-box">
+        <h3>Keyword Density Formula</h3>
+        <p class="formula">Keyword Density = (Keyword Count / Total Words) &times; 100</p>
+        <p>Ideal range: 1-2% for primary keywords, 0.5-1% for secondary keywords.</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','it','as','was','are','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','this','that','these','those','i','you','he','she','we','they','me','him','her','us','them','my','your','his','its','our','their','not','no','so','if','then','than','very','just','also','more','most','some','any','all','each','every','both','few','many','much','own','other','another','such','what','which','who','whom','when','where','how','why','about','up','out','into','over','after','before','between','under','above','below','through','during','without','within','along','around','against','among']);
+
+    function analyze(text, target) {
+      var words = text.toLowerCase().replace(/[^a-z0-9\s'-]/g, '').split(/\s+/).filter(function(w) { return w.length > 1; });
+      var totalWords = words.length;
+      if (totalWords === 0) return null;
+
+      // Single word frequency (exclude stop words)
+      var singleFreq = {};
+      words.forEach(function(w) { if (!stopWords.has(w)) { singleFreq[w] = (singleFreq[w] || 0) + 1; } });
+
+      // Two-word phrase frequency
+      var bigramFreq = {};
+      for (var i = 0; i < words.length - 1; i++) {
+        if (!stopWords.has(words[i]) || !stopWords.has(words[i + 1])) {
+          var bg = words[i] + ' ' + words[i + 1];
+          bigramFreq[bg] = (bigramFreq[bg] || 0) + 1;
+        }
+      }
+
+      // Sort by frequency
+      var singleSorted = Object.entries(singleFreq).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 20);
+      var bigramSorted = Object.entries(bigramFreq).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 15);
+
+      // Target keyword
+      var targetInfo = null;
+      if (target) {
+        var tl = target.toLowerCase().trim();
+        var regex = new RegExp(tl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+        var matches = text.match(regex);
+        var count = matches ? matches.length : 0;
+        var density = (count / totalWords * 100);
+        targetInfo = { keyword: target, count: count, density: density };
+      }
+
+      return { totalWords: totalWords, singles: singleSorted, bigrams: bigramSorted, target: targetInfo };
+    }
+
+    function renderTable(data, totalWords, label) {
+      var html = '<h3 style="margin:1.5rem 0 0.5rem;">' + label + '</h3><table class="density-table"><thead><tr><th>Keyword</th><th>Count</th><th>Density</th><th>Bar</th></tr></thead><tbody>';
+      var maxCount = data.length > 0 ? data[0][1] : 1;
+      data.forEach(function(d) {
+        var pct = (d[1] / totalWords * 100).toFixed(2);
+        var barW = Math.round((d[1] / maxCount) * 100);
+        html += '<tr><td>' + d[0] + '</td><td>' + d[1] + '</td><td>' + pct + '%</td><td><div class="density-bar-bg"><div class="density-bar" style="width:' + barW + '%;"></div></div></td></tr>';
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('analyze-btn').addEventListener('click', function() {
+        var text = document.getElementById('text-input').value;
+        var target = document.getElementById('target-kw').value;
+        if (!text.trim()) { alert('Paste text to analyze.'); return; }
+        var result = analyze(text, target);
+        if (!result) return;
+
+        var statsHtml = '<div class="tool-result-inner"><h3 class="tool-result-title">Analysis</h3>';
+        statsHtml += '<div class="tool-result-row"><span class="tool-result-label">Total Words</span><span class="tool-result-value">' + result.totalWords.toLocaleString() + '</span></div>';
+        statsHtml += '<div class="tool-result-row"><span class="tool-result-label">Unique Words</span><span class="tool-result-value">' + result.singles.length + ' (top shown)</span></div>';
+        if (result.target) {
+          var color = result.target.density > 3 ? '#ef4444' : result.target.density >= 1 ? '#22c55e' : '#f59e0b';
+          var verdict = result.target.density > 3 ? 'Too high — may be keyword stuffing' : result.target.density >= 1 ? 'Good density' : result.target.density > 0 ? 'Low — consider adding more' : 'Not found in text';
+          statsHtml += '<div class="tool-result-row"><span class="tool-result-label">Target: "' + result.target.keyword + '"</span><span class="tool-result-value" style="color:' + color + '">' + result.target.count + ' times (' + result.target.density.toFixed(2) + '%) — ' + verdict + '</span></div>';
+        }
+        statsHtml += '</div>';
+
+        document.getElementById('density-stats').innerHTML = statsHtml;
+        document.getElementById('density-tables').innerHTML = renderTable(result.singles, result.totalWords, 'Top Single Keywords') + renderTable(result.bigrams, result.totalWords, 'Top Two-Word Phrases');
+        document.getElementById('density-result').style.display = 'block';
+      });
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('text-input').value = '';
+        document.getElementById('target-kw').value = '';
+        document.getElementById('density-result').style.display = 'none';
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Text Tools', url: '/text/' }, { name: 'Keyword Density Checker' }];
+      var FAQS = [
+        { q: 'What is ideal keyword density?', a: '1-2% for primary keywords. Over 3% may be seen as keyword stuffing. Focus on natural writing that serves the reader.' },
+        { q: 'Are stop words excluded?', a: 'Yes. Common words like "the", "a", "and", "is" are excluded from the single-word analysis to show meaningful keywords only.' },
+        { q: 'Is my content sent anywhere?', a: 'No. All analysis runs in your browser. Your text never leaves your device.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'text/word-counter', name: 'Word Counter', description: 'Count words and characters.' },
+        { slug: 'text/word-frequency-counter', name: 'Word Frequency Counter', description: 'Count word occurrences.' },
+        { slug: 'text/readability-checker', name: 'Readability Checker', description: 'Check reading level.' },
+        { slug: 'text/meta-title-generator', name: 'Meta Title Generator', description: 'Generate SEO titles.' },
+        { slug: 'text/meta-description-generator', name: 'Meta Description Generator', description: 'Generate meta descriptions.' },
+        { slug: 'text/passive-voice-checker', name: 'Passive Voice Checker', description: 'Find passive voice.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'text/keyword-density-checker', title: 'Keyword Density Checker', description: 'Analyze keyword density and frequency in text.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

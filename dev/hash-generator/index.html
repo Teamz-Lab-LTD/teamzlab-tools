@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hash Generator — SHA256, SHA1, MD5 Hash Online | Teamz Lab Tools</title>
+  <meta name="description" content="Generate SHA-256, SHA-1, SHA-384, SHA-512 hashes from any text. Uses browser's built-in Web Crypto API. Free online hash generator — private and instant.">
+  <meta property="og:title" content="Hash Generator — SHA256, SHA1 | Teamz Lab Tools">
+  <meta property="og:description" content="Generate SHA-256, SHA-1, SHA-384, SHA-512 hashes. Free online tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/dev/hash-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/dev/hash-generator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .hash-output { margin-top: 1rem; }
+    .hash-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; padding: 0.75rem; background: var(--surface-bg, #f8f9fa); border-radius: 8px; }
+    .hash-algo { font-weight: 600; min-width: 80px; font-size: 0.85rem; color: var(--brand-primary, #6c63ff); }
+    .hash-value { flex: 1; font-family: 'Courier New', monospace; font-size: 0.8rem; word-break: break-all; color: var(--text-primary, #1a1a2e); }
+    .hash-copy { background: none; border: 1px solid var(--border-color, #d1d5db); border-radius: 6px; padding: 0.25rem 0.5rem; cursor: pointer; font-size: 0.8rem; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Hash Generator</h1>
+      <p class="tool-description">Generate cryptographic hashes (SHA-256, SHA-1, SHA-384, SHA-512) from any text using the browser's Web Crypto API. Instant, secure, and private — nothing is sent to any server.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="tool-field">
+        <label for="hash-input" class="tool-label">Text to Hash</label>
+        <textarea id="hash-input" class="tool-input" rows="3" placeholder="Enter text to generate hashes..." style="resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="hash-btn" class="btn-pill tool-calculate-btn">Generate Hashes</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div id="hash-output" class="hash-output" style="display:none;"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Are Hash Functions?</h2>
+      <p>A hash function converts input data into a fixed-size string of characters. The same input always produces the same hash, but even a tiny change in input produces a completely different hash. Hashes are used for data integrity verification, password storage, digital signatures, and checksums.</p>
+      <div class="formula-box">
+        <h3>Supported Algorithms</h3>
+        <ul>
+          <li><strong>SHA-256</strong> — 256-bit hash, most widely used for security (Bitcoin, SSL)</li>
+          <li><strong>SHA-384</strong> — 384-bit hash, stronger variant</li>
+          <li><strong>SHA-512</strong> — 512-bit hash, maximum security</li>
+          <li><strong>SHA-1</strong> — 160-bit hash, legacy (not recommended for security)</li>
+        </ul>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    async function generateHash(algo, text) {
+      var encoder = new TextEncoder();
+      var data = encoder.encode(text);
+      var hashBuffer = await crypto.subtle.digest(algo, data);
+      var hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('hash-btn').addEventListener('click', async function() {
+        var text = document.getElementById('hash-input').value;
+        if (!text) { alert('Enter text to hash.'); return; }
+        var algos = [
+          { name: 'SHA-256', algo: 'SHA-256' },
+          { name: 'SHA-384', algo: 'SHA-384' },
+          { name: 'SHA-512', algo: 'SHA-512' },
+          { name: 'SHA-1', algo: 'SHA-1' }
+        ];
+        var html = '';
+        for (var i = 0; i < algos.length; i++) {
+          var hash = await generateHash(algos[i].algo, text);
+          html += '<div class="hash-row"><span class="hash-algo">' + algos[i].name + '</span><span class="hash-value" id="hash-' + i + '">' + hash + '</span><button type="button" class="hash-copy" data-idx="' + i + '">Copy</button></div>';
+        }
+        var output = document.getElementById('hash-output');
+        output.innerHTML = html;
+        output.style.display = 'block';
+        output.querySelectorAll('.hash-copy').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var val = document.getElementById('hash-' + this.dataset.idx).textContent;
+            navigator.clipboard.writeText(val).then(function() { btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = 'Copy'; }, 2000); });
+          });
+        });
+      });
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('hash-input').value = '';
+        document.getElementById('hash-output').style.display = 'none';
+      });
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Developer Tools', url: '/dev/' }, { name: 'Hash Generator' }];
+      var FAQS = [
+        { q: 'Is this secure?', a: 'Yes. Hashes are generated using the Web Crypto API in your browser. Nothing is sent to any server.' },
+        { q: 'Can I reverse a hash?', a: 'No. Hash functions are one-way. You cannot recover the original text from a hash. That is what makes them useful for security.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'dev/base64-encode-decode', name: 'Base64 Encode/Decode', description: 'Encode/decode Base64.' },
+        { slug: 'dev/uuid-generator', name: 'UUID Generator', description: 'Generate UUIDs.' },
+        { slug: 'dev/jwt-decoder', name: 'JWT Decoder', description: 'Decode JWT tokens.' },
+        { slug: 'evergreen/password-generator', name: 'Password Generator', description: 'Generate passwords.' },
+        { slug: 'dev/url-encode-decode', name: 'URL Encode/Decode', description: 'Encode/decode URLs.' },
+        { slug: 'dev/html-entity-encoder-decoder', name: 'HTML Entity Encoder', description: 'Encode HTML entities.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'dev/hash-generator', title: 'Hash Generator', description: 'Generate SHA-256, SHA-1, SHA-384, SHA-512 hashes.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

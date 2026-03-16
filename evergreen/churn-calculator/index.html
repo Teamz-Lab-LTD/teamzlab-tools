@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Churn Rate Calculator — Calculate Customer Churn | Teamz Lab Tools</title>
+  <meta name="description" content="Calculate customer churn rate and revenue churn rate. See the impact of churn on your business over time. Free churn calculator for SaaS and subscriptions.">
+  <meta property="og:title" content="Churn Rate Calculator | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate customer and revenue churn rate. Free SaaS calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/churn-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/churn-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Churn Rate Calculator</h1>
+      <p class="tool-description">Calculate your customer churn rate — the percentage of customers who cancel within a period. See annual churn projection, customer half-life, and average lifespan.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is Churn Rate?</h2>
+      <p>Churn rate is the percentage of customers who stop using your service during a given period. It is the inverse of retention. A 5% monthly churn means you lose 5% of customers each month — which compounds to ~46% annual churn. Reducing churn is often more impactful than acquiring new customers.</p>
+      <div class="formula-box">
+        <h3>Churn Formulas</h3>
+        <p class="formula">Monthly Churn Rate = (Customers Lost / Customers at Start) &times; 100</p>
+        <p class="formula">Annual Churn = 1 &minus; (1 &minus; Monthly Churn)^12</p>
+        <p class="formula">Avg Customer Lifespan = 1 / Monthly Churn Rate</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/churn-calculator', title: 'Churn Rate Calculator',
+      description: 'Calculate customer and revenue churn rate.',
+      inputs: [
+        { id: 'start_customers', type: 'number', label: 'Customers at Start of Period', placeholder: 'e.g. 1000', min: 1, step: 1, error: 'Enter starting customers.' },
+        { id: 'lost_customers', type: 'number', label: 'Customers Lost During Period', placeholder: 'e.g. 50', min: 0, step: 1, error: 'Enter customers lost.' },
+        { id: 'period', type: 'select', label: 'Period', options: [
+          { value: 'monthly', label: 'Monthly' }, { value: 'quarterly', label: 'Quarterly' }, { value: 'annual', label: 'Annual' }
+        ], default: 'monthly' }
+      ],
+      calculate: function (v) {
+        if (!v.start_customers || v.lost_customers === null) return null;
+        var churn = (v.lost_customers / v.start_customers) * 100;
+        var retention = 100 - churn;
+        var monthlyChurn, annualChurn;
+        if (v.period === 'monthly') { monthlyChurn = churn; annualChurn = (1 - Math.pow(1 - churn / 100, 12)) * 100; }
+        else if (v.period === 'quarterly') { monthlyChurn = (1 - Math.pow(1 - churn / 100, 1 / 3)) * 100; annualChurn = (1 - Math.pow(1 - churn / 100, 4)) * 100; }
+        else { annualChurn = churn; monthlyChurn = (1 - Math.pow(1 - churn / 100, 1 / 12)) * 100; }
+        var lifespan = monthlyChurn > 0 ? 1 / (monthlyChurn / 100) : Infinity;
+        var halfLife = monthlyChurn > 0 ? Math.log(0.5) / Math.log(1 - monthlyChurn / 100) : Infinity;
+
+        return {
+          items: [
+            { label: 'Churn Rate (' + v.period + ')', value: churn.toFixed(2) + '%' },
+            { label: 'Retention Rate', value: retention.toFixed(2) + '%' },
+            { label: 'Monthly Churn', value: monthlyChurn.toFixed(2) + '%' },
+            { label: 'Annual Churn', value: annualChurn.toFixed(1) + '%' },
+            { label: 'Avg Customer Lifespan', value: lifespan === Infinity ? 'Infinite' : lifespan.toFixed(1) + ' months (' + (lifespan / 12).toFixed(1) + ' years)' },
+            { label: 'Customer Half-Life', value: halfLife === Infinity ? 'Infinite' : halfLife.toFixed(1) + ' months' },
+            { label: 'Customers Remaining', value: (v.start_customers - v.lost_customers).toLocaleString() }
+          ],
+          summary: 'Your ' + v.period + ' churn is ' + churn.toFixed(2) + '% (' + v.lost_customers + ' lost out of ' + v.start_customers + '). Annual churn: ' + annualChurn.toFixed(1) + '%. Average customer stays ' + (lifespan === Infinity ? 'forever' : lifespan.toFixed(1) + ' months') + '.'
+        };
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Churn Rate Calculator' }];
+    var FAQS = [{ q: 'What is a good churn rate?', a: 'For SaaS: 3-5% monthly is average, under 2% is excellent. For consumer subscriptions: 5-10% monthly is common. Enterprise SaaS often sees under 1% monthly churn.' }];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/ltv-calculator', name: 'LTV Calculator', description: 'Calculate lifetime value.' },
+      { slug: 'evergreen/mrr-calculator', name: 'MRR Calculator', description: 'Calculate MRR.' },
+      { slug: 'evergreen/cac-calculator', name: 'CAC Calculator', description: 'Calculate acquisition cost.' },
+      { slug: 'evergreen/burn-rate-calculator', name: 'Burn Rate', description: 'Calculate cash burn.' },
+      { slug: 'evergreen/roi-calculator', name: 'ROI Calculator', description: 'Calculate ROI.' },
+      { slug: 'evergreen/percentage-decrease-calculator', name: 'Percentage Decrease', description: 'Calculate decreases.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro Timer — Free Online Focus Timer | Teamz Lab Tools</title>
+  <meta name="description" content="Free Pomodoro timer for focused work sessions. 25-minute work intervals with 5-minute breaks. Customizable durations. Boost productivity with the Pomodoro Technique.">
+  <meta property="og:title" content="Pomodoro Timer — Focus Timer | Teamz Lab Tools">
+  <meta property="og:description" content="Free Pomodoro timer. 25-min work, 5-min break. Boost productivity.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/pomodoro-timer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/pomodoro-timer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .timer-display { text-align: center; padding: 2rem; }
+    .timer-time { font-size: 4rem; font-weight: 800; color: var(--brand-primary, #6c63ff); font-family: 'Poppins', sans-serif; letter-spacing: 2px; }
+    .timer-status { font-size: 1.2rem; color: var(--text-secondary, #6b7280); margin: 0.5rem 0 1.5rem; }
+    .timer-controls { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .timer-controls button { padding: 0.6rem 1.5rem; border-radius: 999px; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; }
+    .timer-btn-start { background: var(--brand-primary, #6c63ff); color: #fff; }
+    .timer-btn-start:hover { opacity: 0.9; }
+    .timer-btn-pause { background: #f59e0b; color: #fff; }
+    .timer-btn-reset { background: none; border: 1px solid var(--border-color, #d1d5db) !important; color: var(--text-primary, #1a1a2e); }
+    .timer-stats { margin-top: 1.5rem; text-align: center; font-size: 0.9rem; color: var(--text-secondary, #6b7280); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Pomodoro Timer</h1>
+      <p class="tool-description">Boost your productivity with the Pomodoro Technique. Work for 25 minutes, take a 5-minute break, repeat. After 4 pomodoros, take a longer 15-minute break. Customizable durations.</p>
+    </section>
+    <section class="tool-calculator">
+      <div id="tool-calculator">
+        <div class="tool-inputs">
+          <div class="tool-field">
+            <label class="tool-label">Work Duration (minutes)</label>
+            <input type="number" id="work-dur" class="tool-input" value="25" min="1" max="120">
+          </div>
+          <div class="tool-field">
+            <label class="tool-label">Short Break (minutes)</label>
+            <input type="number" id="break-dur" class="tool-input" value="5" min="1" max="60">
+          </div>
+          <div class="tool-field">
+            <label class="tool-label">Long Break (minutes)</label>
+            <input type="number" id="long-break-dur" class="tool-input" value="15" min="1" max="60">
+          </div>
+        </div>
+        <div class="timer-display">
+          <div class="timer-time" id="timer-time">25:00</div>
+          <div class="timer-status" id="timer-status">Ready to focus</div>
+          <div class="timer-controls">
+            <button type="button" class="timer-btn-start" id="btn-start">Start</button>
+            <button type="button" class="timer-btn-pause" id="btn-pause" style="display:none;">Pause</button>
+            <button type="button" class="timer-btn-reset" id="btn-reset">Reset</button>
+          </div>
+          <div class="timer-stats" id="timer-stats">Pomodoros completed: 0</div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is the Pomodoro Technique?</h2>
+      <p>The Pomodoro Technique was created by Francesco Cirillo in the late 1980s. It breaks work into focused 25-minute intervals ("pomodoros") separated by short breaks. After every 4 pomodoros, you take a longer break. The method reduces burnout, improves focus, and helps you track how much focused work you do each day.</p>
+      <div class="formula-box">
+        <h3>Standard Pomodoro Cycle</h3>
+        <p class="formula">1 Pomodoro = 25 min work + 5 min break</p>
+        <p class="formula">4 Pomodoros = 100 min work + 15 min long break</p>
+        <p class="formula">Full cycle = ~2 hours for 100 min of focused work</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var timer = null, remaining = 0, isWork = true, pomodoroCount = 0, isRunning = false;
+
+    function updateDisplay() {
+      var m = Math.floor(remaining / 60), s = remaining % 60;
+      document.getElementById('timer-time').textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      document.title = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + ' — ' + (isWork ? 'Focus' : 'Break') + ' | Teamz Lab Tools';
+    }
+
+    function tick() {
+      if (remaining <= 0) {
+        clearInterval(timer); timer = null; isRunning = false;
+        if (isWork) {
+          pomodoroCount++;
+          document.getElementById('timer-stats').textContent = 'Pomodoros completed: ' + pomodoroCount;
+          isWork = false;
+          var longBreak = pomodoroCount % 4 === 0;
+          remaining = (longBreak ? parseInt(document.getElementById('long-break-dur').value) : parseInt(document.getElementById('break-dur').value)) * 60;
+          document.getElementById('timer-status').textContent = longBreak ? 'Long break — relax!' : 'Short break — stretch!';
+        } else {
+          isWork = true;
+          remaining = parseInt(document.getElementById('work-dur').value) * 60;
+          document.getElementById('timer-status').textContent = 'Time to focus!';
+        }
+        updateDisplay();
+        // Audio notification
+        try { var ctx = new (window.AudioContext || window.webkitAudioContext)(); var osc = ctx.createOscillator(); osc.frequency.value = 800; osc.connect(ctx.destination); osc.start(); setTimeout(function() { osc.stop(); ctx.close(); }, 300); } catch(e) {}
+        document.getElementById('btn-start').style.display = '';
+        document.getElementById('btn-pause').style.display = 'none';
+        return;
+      }
+      remaining--;
+      updateDisplay();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      remaining = parseInt(document.getElementById('work-dur').value) * 60;
+      updateDisplay();
+
+      document.getElementById('btn-start').addEventListener('click', function() {
+        if (!isRunning) {
+          if (remaining === 0) remaining = parseInt(document.getElementById('work-dur').value) * 60;
+          timer = setInterval(tick, 1000); isRunning = true;
+          document.getElementById('timer-status').textContent = isWork ? 'Focusing...' : 'Breaking...';
+          this.style.display = 'none';
+          document.getElementById('btn-pause').style.display = '';
+        }
+      });
+      document.getElementById('btn-pause').addEventListener('click', function() {
+        clearInterval(timer); timer = null; isRunning = false;
+        document.getElementById('timer-status').textContent = 'Paused';
+        this.style.display = 'none';
+        document.getElementById('btn-start').style.display = '';
+      });
+      document.getElementById('btn-reset').addEventListener('click', function() {
+        clearInterval(timer); timer = null; isRunning = false; isWork = true;
+        remaining = parseInt(document.getElementById('work-dur').value) * 60;
+        updateDisplay();
+        document.getElementById('timer-status').textContent = 'Ready to focus';
+        document.getElementById('btn-start').style.display = '';
+        document.getElementById('btn-pause').style.display = 'none';
+        document.title = 'Pomodoro Timer — Teamz Lab Tools';
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Pomodoro Timer' }];
+      var FAQS = [
+        { q: 'What is the Pomodoro Technique?', a: 'A time management method: work for 25 minutes, take a 5-minute break. After 4 cycles, take a 15-minute break. It helps maintain focus and prevent burnout.' },
+        { q: 'Can I change the timer durations?', a: 'Yes. Adjust the work, short break, and long break durations above. Some people prefer 50/10 or 45/15 splits. Experiment to find what works for you.' },
+        { q: 'Does this work in the background?', a: 'Yes. The timer continues running in the background tab and plays a sound when complete. The page title also shows the countdown.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'evergreen/time-calculator', name: 'Time Calculator', description: 'Add/subtract time.' },
+        { slug: 'student/study-hours-estimator', name: 'Study Hours', description: 'Plan study time.' },
+        { slug: 'student/assignment-deadline-planner', name: 'Deadline Planner', description: 'Plan assignment deadlines.' },
+        { slug: 'evergreen/sleep-calculator', name: 'Sleep Calculator', description: 'Calculate ideal sleep time.' },
+        { slug: 'evergreen/hours-calculator', name: 'Hours Calculator', description: 'Track work hours.' },
+        { slug: 'evergreen/age-calculator', name: 'Age Calculator', description: 'Calculate your age.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'evergreen/pomodoro-timer', title: 'Pomodoro Timer', description: 'Focus timer using the Pomodoro Technique.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

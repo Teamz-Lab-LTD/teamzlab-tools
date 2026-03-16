@@ -155,6 +155,7 @@ var ToolEngine = (function () {
     html += '<div class="tool-result-actions">';
     html += '<button type="button" id="tool-copy" class="btn-pill-ghost tool-copy-btn">Copy Result</button>';
     html += '<button type="button" id="tool-print" class="btn-pill-ghost tool-print-btn">Print</button>';
+    html += '<button type="button" id="tool-add-home" class="btn-pill-ghost" style="display:none;">Add to Home Screen</button>';
     html += '</div>';
 
     // Teamz Lab CTA in result
@@ -179,6 +180,7 @@ var ToolEngine = (function () {
     if (ctaLink) ctaLink.addEventListener('click', function () {
       if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('cta::' + _config.slug);
     });
+    _bindInstallBtn();
   }
 
   // --- Events ---
@@ -410,6 +412,30 @@ var ToolEngine = (function () {
       if (dow !== 0 && dow !== 6) count++;
     }
     return count;
+  }
+
+  // PWA install prompt capture for individual tools
+  var _deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    _deferredInstall = e;
+    // Show "Add to Home Screen" button in results if visible
+    var btn = document.getElementById('tool-add-home');
+    if (btn) btn.style.display = '';
+  });
+
+  function _bindInstallBtn() {
+    var btn = document.getElementById('tool-add-home');
+    if (btn && _deferredInstall) {
+      btn.style.display = '';
+      btn.addEventListener('click', function () {
+        _deferredInstall.prompt();
+        _deferredInstall.userChoice.then(function () {
+          _deferredInstall = null;
+          btn.style.display = 'none';
+        });
+      });
+    }
   }
 
   return {

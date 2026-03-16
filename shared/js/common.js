@@ -899,4 +899,46 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   TeamzAnalytics.init();
+
+  // PWA: Inject manifest, favicon, and apple-touch-icon into every page
+  (function injectPWA() {
+    var head = document.head;
+    if (!head.querySelector('link[rel="manifest"]')) {
+      var manifest = document.createElement('link');
+      manifest.rel = 'manifest';
+      manifest.href = '/manifest.json';
+      head.appendChild(manifest);
+    }
+    if (!head.querySelector('meta[name="theme-color"]')) {
+      var theme = document.createElement('meta');
+      theme.name = 'theme-color';
+      theme.content = '#6c63ff';
+      head.appendChild(theme);
+    }
+    if (!head.querySelector('link[rel="icon"]')) {
+      var icon32 = document.createElement('link');
+      icon32.rel = 'icon';
+      icon32.type = 'image/png';
+      icon32.sizes = '32x32';
+      icon32.href = '/icons/icon-32x32.png';
+      head.appendChild(icon32);
+      var icon16 = document.createElement('link');
+      icon16.rel = 'icon';
+      icon16.type = 'image/png';
+      icon16.sizes = '16x16';
+      icon16.href = '/icons/icon-16x16.png';
+      head.appendChild(icon16);
+    }
+    if (!head.querySelector('link[rel="apple-touch-icon"]')) {
+      var apple = document.createElement('link');
+      apple.rel = 'apple-touch-icon';
+      apple.sizes = '180x180';
+      apple.href = '/apple-touch-icon.png';
+      head.appendChild(apple);
+    }
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    }
+  })();
 });

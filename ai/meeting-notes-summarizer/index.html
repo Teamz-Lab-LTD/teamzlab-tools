@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Notes Summarizer — AI-Powered Meeting Summary | Teamz Lab Tools</title>
+  <meta name="description" content="Summarize meeting notes and extract action items using Chrome's built-in AI. Get key points, decisions, and next steps. 100% private — nothing leaves your browser.">
+  <meta property="og:title" content="Meeting Notes Summarizer — AI in Browser | Teamz Lab Tools">
+  <meta property="og:description" content="Summarize meeting notes and extract action items using on-device AI. Nothing uploaded. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/ai/meeting-notes-summarizer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/ai/meeting-notes-summarizer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: linear-gradient(135deg, #6c63ff, #a855f7); color: #fff; padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .ai-notice { background: var(--surface-bg, #f0f1ff); border: 1px solid var(--brand-primary, #6c63ff); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+    .ai-fallback { background: #fef3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 1rem; font-size: 0.9rem; display: none; }
+    #ai-output { white-space: pre-wrap; font-family: inherit; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">AI-Powered — Runs On Your Device</span>
+      <h1>Meeting Notes Summarizer</h1>
+      <p class="tool-description">Paste your meeting notes and get key points, decisions, and action items extracted instantly. Uses Chrome's built-in AI. Runs on your device — nothing is sent anywhere.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="ai-notice" id="ai-notice">
+        This tool uses Chrome's built-in Summarizer API (Gemini Nano) with type=key-points. It runs 100% on your device for complete privacy. Requires Chrome 138+ with AI features enabled.
+      </div>
+      <div class="ai-fallback" id="ai-fallback">
+        Chrome AI is not available in your browser. This tool requires Chrome 138+ desktop with built-in AI enabled. <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        <br><br>
+        <strong>Fallback mode:</strong> The tool will extract lines containing "action", "todo", "deadline", "decision", and similar keywords instead.
+      </div>
+      <div class="tool-field">
+        <label for="input-text" class="tool-label">Paste Meeting Notes</label>
+        <textarea id="input-text" class="tool-input" rows="12" placeholder="Paste your meeting notes, transcript, or minutes here..." style="resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="analyze-btn" class="btn-pill tool-calculate-btn">Summarize Meeting</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div id="tool-result" class="tool-result" style="display:none;">
+        <div class="tool-result-inner">
+          <h3 class="tool-result-title">Meeting Summary</h3>
+          <div id="ai-output"></div>
+          <div id="extracted-data" style="margin-top:1rem;"></div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How This AI Tool Works</h2>
+      <p>This tool uses Chrome's built-in Summarizer API with the key-points type to distill your meeting notes into actionable summaries. The AI identifies the most important discussion points, decisions made, and action items assigned.</p>
+      <p>If Chrome AI is not available, the tool uses keyword-based extraction to find lines mentioning actions, todos, deadlines, decisions, owners, and follow-ups.</p>
+      <div class="formula-box">
+        <h3>What Gets Extracted</h3>
+        <ul>
+          <li><strong>Key decisions</strong> — What was agreed or decided during the meeting</li>
+          <li><strong>Action items</strong> — Tasks assigned with owners and deadlines</li>
+          <li><strong>Discussion points</strong> — Main topics covered</li>
+          <li><strong>Follow-ups</strong> — Items needing future attention</li>
+        </ul>
+      </div>
+      <h2>Privacy-First AI</h2>
+      <p>Meeting notes often contain sensitive business information. This tool processes everything locally on your device — your notes never leave your browser. Chrome runs the Gemini Nano AI model on your hardware for complete privacy.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var hasAI = false;
+
+    async function checkAI() {
+      try {
+        if ('Summarizer' in self || (self.ai && self.ai.summarizer)) {
+          hasAI = true;
+          document.getElementById('ai-notice').style.display = 'block';
+          document.getElementById('ai-fallback').style.display = 'none';
+        } else {
+          throw new Error('No AI');
+        }
+      } catch (e) {
+        hasAI = false;
+        document.getElementById('ai-notice').style.display = 'none';
+        document.getElementById('ai-fallback').style.display = 'block';
+      }
+    }
+
+    function fallbackAnalysis(text) {
+      var results = [];
+      var lines = text.split(/\n/).map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+
+      // Extract action items
+      var actionKeywords = /\b(action|todo|to-do|to do|task|assign|assigned|owner|responsible|follow[\s-]?up|deadline|due|by\s+\w+day|next\s+step)/i;
+      var actions = lines.filter(function(l) { return actionKeywords.test(l); });
+      if (actions.length > 0) {
+        results.push('**Action Items / Todos:**');
+        actions.forEach(function(a) { results.push('- ' + a); });
+      }
+
+      // Extract decisions
+      var decisionKeywords = /\b(decided|agreed|decision|approved|confirmed|resolved|conclusion|we will|going to|plan is)/i;
+      var decisions = lines.filter(function(l) { return decisionKeywords.test(l); });
+      if (decisions.length > 0) {
+        results.push('\n**Decisions:**');
+        decisions.forEach(function(d) { results.push('- ' + d); });
+      }
+
+      // Extract dates and deadlines
+      var dates = text.match(/\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b|\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b|\b(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b/gi);
+      if (dates && dates.length > 0) results.push('\n**Dates/Deadlines mentioned:** ' + [...new Set(dates)].join(', '));
+
+      // Attendees (look for @mentions or name patterns)
+      var mentions = text.match(/@\w+/g);
+      if (mentions && mentions.length > 0) results.push('\n**People mentioned:** ' + [...new Set(mentions)].join(', '));
+
+      // Stats
+      var words = text.trim().split(/\s+/).length;
+      results.push('\n**Notes length:** ' + words + ' words, ' + lines.length + ' lines');
+
+      if (actions.length === 0 && decisions.length === 0) {
+        results.unshift('**Tip:** No action items or decisions detected by keyword matching. Try including words like "action", "todo", "decided", or "agreed" in your notes for better extraction.');
+      }
+
+      return results.join('\n');
+    }
+
+    async function analyze() {
+      var text = document.getElementById('input-text').value.trim();
+      if (!text) { alert('Paste meeting notes first.'); return; }
+
+      var btn = document.getElementById('analyze-btn');
+      btn.textContent = 'Summarizing...';
+      btn.disabled = true;
+
+      var output = document.getElementById('ai-output');
+      var extracted = document.getElementById('extracted-data');
+      var resultEl = document.getElementById('tool-result');
+
+      try {
+        if (hasAI) {
+          var SummarizerAPI = self.Summarizer || (self.ai && self.ai.summarizer);
+          var summarizer = await SummarizerAPI.create({ type: 'key-points', length: 'long', format: 'markdown' });
+          var summary = await summarizer.summarize(text, { context: 'These are meeting notes. Extract key discussion points, decisions, and action items.' });
+          output.innerHTML = summary.replace(/\n/g, '<br>');
+          extracted.innerHTML = '<h4 style="margin-top:1rem;">Keyword-Based Extraction</h4><div style="white-space:pre-wrap;">' + fallbackAnalysis(text) + '</div>';
+        } else {
+          output.innerHTML = '<strong>Keyword-Based Extraction</strong> (Chrome AI not available)<br><br>' + fallbackAnalysis(text).replace(/\n/g, '<br>');
+          extracted.innerHTML = '';
+        }
+        resultEl.style.display = 'block';
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        output.innerHTML = 'Error: ' + e.message + '<br><br><strong>Fallback Analysis:</strong><br><br>' + fallbackAnalysis(text).replace(/\n/g, '<br>');
+        resultEl.style.display = 'block';
+      }
+
+      btn.textContent = 'Summarize Meeting';
+      btn.disabled = false;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAI();
+      document.getElementById('analyze-btn').addEventListener('click', analyze);
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('input-text').value = '';
+        document.getElementById('tool-result').style.display = 'none';
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'AI Tools', url: '/ai/' }, { name: 'Meeting Notes Summarizer' }];
+      var FAQS = [
+        { q: 'Are my meeting notes private?', a: 'Yes. This tool uses Chrome\'s built-in AI which runs entirely on your device. Your meeting notes are never sent to any server.' },
+        { q: 'What format should the notes be in?', a: 'Any text format works — bullet points, paragraphs, transcripts, or structured minutes. The AI handles all formats.' },
+        { q: 'What if Chrome AI is not available?', a: 'The tool uses keyword matching to extract lines containing action items, decisions, deadlines, and follow-ups. It works in any browser.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'ai/meeting-notes-summarizer', name: 'TL;DR Summarizer', description: 'Summarize any long text.' },
+        { slug: 'ai/contract-summarizer', name: 'Text to Checklist', description: 'Convert text to a checklist.' },
+        { slug: 'ai/contract-summarizer', name: 'Contract Summarizer', description: 'Summarize contracts with AI.' },
+        { slug: 'ai/email-improver', name: 'Email Improver', description: 'Improve email drafts.' },
+        { slug: 'text/word-counter', name: 'Word Counter', description: 'Count words and characters.' },
+        { slug: 'text/readability-checker', name: 'Readability Checker', description: 'Check reading level.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'ai/meeting-notes-summarizer', title: 'Meeting Notes Summarizer', description: 'Summarize meeting notes and extract action items using on-device AI.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

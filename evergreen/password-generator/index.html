@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Generator — Generate Strong Random Passwords | Teamz Lab Tools</title>
+  <meta name="description" content="Generate strong, random passwords instantly. Customize length, include uppercase, lowercase, numbers, and symbols. Uses cryptographic randomness. Free password generator.">
+  <meta property="og:title" content="Password Generator | Teamz Lab Tools">
+  <meta property="og:description" content="Generate strong random passwords. Customize characters and length. Free generator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/password-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/password-generator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Password Generator</h1>
+      <p class="tool-description">Generate strong, random passwords using cryptographic randomness. Customize length and character types. Nothing is sent to any server — your password is generated entirely in your browser.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Makes a Strong Password?</h2>
+      <p>A strong password is long (12+ characters), random, and includes a mix of uppercase, lowercase, numbers, and symbols. It should not contain dictionary words, personal information, or predictable patterns. This generator uses the Web Crypto API for true cryptographic randomness.</p>
+      <div class="formula-box">
+        <h3>Password Strength</h3>
+        <p class="formula">Entropy (bits) = Length &times; log₂(Character Pool Size)</p>
+        <p>Pool sizes: lowercase=26, +uppercase=52, +digits=62, +symbols=~90</p>
+        <p>12 chars with all types = ~78 bits of entropy (very strong)</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    function cryptoRandom() {
+      if (window.crypto && window.crypto.getRandomValues) {
+        var arr = new Uint32Array(1); window.crypto.getRandomValues(arr);
+        return arr[0] / (0xFFFFFFFF + 1);
+      }
+      return Math.random();
+    }
+    var TOOL_CONFIG = {
+      slug: 'evergreen/password-generator', title: 'Password Generator',
+      description: 'Generate strong random passwords with customizable options.',
+      inputs: [
+        { id: 'length', type: 'number', label: 'Password Length', placeholder: '16', min: 4, max: 128, default: 16, step: 1, error: 'Length must be 4-128.' },
+        { id: 'uppercase', type: 'checkbox', label: 'Character Types', checkboxLabel: 'Include uppercase (A-Z)', default: true },
+        { id: 'lowercase', type: 'checkbox', label: '', checkboxLabel: 'Include lowercase (a-z)', default: true },
+        { id: 'numbers', type: 'checkbox', label: '', checkboxLabel: 'Include numbers (0-9)', default: true },
+        { id: 'symbols', type: 'checkbox', label: '', checkboxLabel: 'Include symbols (!@#$%...)', default: true },
+        { id: 'count', type: 'number', label: 'How Many Passwords?', placeholder: '1', min: 1, max: 20, default: 1, step: 1 }
+      ],
+      calculate: function (v) {
+        var chars = '';
+        if (v.lowercase) chars += 'abcdefghijklmnopqrstuvwxyz';
+        if (v.uppercase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        if (v.numbers) chars += '0123456789';
+        if (v.symbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+        if (chars.length === 0) return { items: [{ label: 'Error', value: 'Select at least one character type.' }] };
+
+        var len = v.length || 16;
+        var count = Math.min(v.count || 1, 20);
+        var passwords = [];
+        for (var p = 0; p < count; p++) {
+          var pw = '';
+          for (var i = 0; i < len; i++) {
+            pw += chars.charAt(Math.floor(cryptoRandom() * chars.length));
+          }
+          passwords.push(pw);
+        }
+
+        var entropy = (len * Math.log2(chars.length)).toFixed(0);
+        var strength = entropy >= 80 ? 'Very Strong' : entropy >= 60 ? 'Strong' : entropy >= 40 ? 'Moderate' : 'Weak';
+
+        var items = passwords.map(function(pw, i) {
+          return { label: count > 1 ? 'Password ' + (i + 1) : 'Password', value: pw };
+        });
+        items.push({ label: 'Length', value: len + ' characters' });
+        items.push({ label: 'Entropy', value: entropy + ' bits' });
+        items.push({ label: 'Strength', value: strength });
+        items.push({ label: 'Character Pool', value: chars.length + ' unique characters' });
+
+        return { items: items, summary: 'Generated ' + count + ' password' + (count > 1 ? 's' : '') + ' with ' + entropy + ' bits of entropy (' + strength + '). Uses cryptographic randomness — nothing is sent to any server.' };
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Password Generator' }];
+    var FAQS = [
+      { q: 'Is this password generator secure?', a: 'Yes. It uses the Web Crypto API for cryptographic randomness and runs entirely in your browser. No passwords are sent to any server or stored anywhere.' },
+      { q: 'How long should my password be?', a: 'At least 12 characters for most accounts, 16+ for sensitive accounts. Longer passwords with mixed character types are exponentially harder to crack.' },
+      { q: 'What is password entropy?', a: 'Entropy measures password randomness in bits. Higher entropy = harder to crack. 80+ bits is very strong. The formula is length × log2(character pool size).' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/random-number-generator', name: 'Random Number Generator', description: 'Generate random numbers.' },
+      { slug: 'dev/uuid-generator', name: 'UUID Generator', description: 'Generate random UUIDs.' },
+      { slug: 'dev/base64-encode-decode', name: 'Base64 Encode/Decode', description: 'Encode or decode Base64.' },
+      { slug: 'evergreen/coin-flip', name: 'Coin Flip', description: 'Flip a virtual coin.' },
+      { slug: 'evergreen/dice-roller', name: 'Dice Roller', description: 'Roll virtual dice.' },
+      { slug: 'text/word-counter', name: 'Word Counter', description: 'Count words and characters.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

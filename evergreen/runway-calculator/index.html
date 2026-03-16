@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runway Calculator — How Long Will Your Startup Funding Last? | Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your startup runway — how many months your cash will last at current burn rate. Plan fundraising timelines. Free runway calculator for founders.">
+  <meta property="og:title" content="Runway Calculator — Startup Funding Duration | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate how long your startup funding will last. Free runway calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/runway-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/runway-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Runway Calculator</h1>
+      <p class="tool-description">Calculate how many months your startup or business can operate before running out of cash. Enter your cash balance, monthly expenses, and revenue to see your runway and cash-out date.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Runway Is Calculated</h2>
+      <p>Runway is the number of months a company can continue operating at its current burn rate before running out of cash. It is the most critical planning metric for startups and any business managing limited cash reserves. Investors typically want to see 12-18 months of runway when evaluating a company.</p>
+      <div class="formula-box">
+        <h3>Runway Formula</h3>
+        <p class="formula">Runway (months) = Cash Balance / Net Monthly Burn</p>
+        <p class="formula">Net Monthly Burn = Monthly Expenses &minus; Monthly Revenue</p>
+        <p class="formula">Cash-Out Date = Today + Runway months</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/runway-calculator', title: 'Runway Calculator',
+      description: 'Calculate how many months your startup funding will last at current burn rate.',
+      inputs: [
+        { id: 'cash_balance', type: 'number', label: 'Cash Balance ($)', placeholder: 'e.g. 500000', min: 0, step: 1000, error: 'Enter current cash balance.' },
+        { id: 'monthly_expenses', type: 'number', label: 'Monthly Expenses ($)', placeholder: 'e.g. 45000', min: 0, step: 100, error: 'Enter monthly expenses.' },
+        { id: 'monthly_revenue', type: 'number', label: 'Monthly Revenue ($)', placeholder: 'e.g. 15000', min: 0, step: 100, default: 0, required: false },
+        { id: 'revenue_growth', type: 'number', label: 'Monthly Revenue Growth (%)', hint: 'Optional — for growth-adjusted runway', placeholder: '0', min: 0, max: 100, step: 0.5, default: 0, required: false }
+      ],
+      calculate: function (v) {
+        if (!v.cash_balance || !v.monthly_expenses) return null;
+        var cash = v.cash_balance;
+        var expenses = v.monthly_expenses;
+        var revenue = v.monthly_revenue || 0;
+        var netBurn = expenses - revenue;
+
+        if (netBurn <= 0) {
+          return {
+            items: [
+              { label: 'Runway', value: 'Infinite — cash flow positive!' },
+              { label: 'Monthly Surplus', value: '$' + Math.abs(netBurn).toLocaleString() + '/month' },
+              { label: 'Cash Balance', value: '$' + cash.toLocaleString() }
+            ],
+            summary: 'Your revenue exceeds expenses by $' + Math.abs(netBurn).toLocaleString() + '/month. You are cash flow positive with infinite runway.'
+          };
+        }
+
+        var simpleRunway = cash / netBurn;
+
+        // Growth-adjusted runway
+        var growthRate = (v.revenue_growth || 0) / 100;
+        var adjustedRunway = simpleRunway;
+        if (growthRate > 0) {
+          var remaining = cash;
+          var rev = revenue;
+          var months = 0;
+          while (remaining > 0 && months < 600) {
+            months++;
+            rev = rev * (1 + growthRate);
+            var burn = expenses - rev;
+            if (burn <= 0) { adjustedRunway = 999; break; }
+            remaining -= burn;
+          }
+          if (adjustedRunway !== 999) adjustedRunway = months;
+        }
+
+        var cashOutDate = new Date();
+        cashOutDate.setMonth(cashOutDate.getMonth() + Math.floor(simpleRunway));
+
+        var items = [
+          { label: 'Runway (simple)', value: simpleRunway.toFixed(1) + ' months (' + (simpleRunway / 12).toFixed(1) + ' years)' },
+          { label: 'Net Monthly Burn', value: '$' + netBurn.toLocaleString() },
+          { label: 'Cash Balance', value: '$' + cash.toLocaleString() },
+          { label: 'Estimated Cash-Out Date', value: ToolEngine.formatDate(cashOutDate) },
+          { label: 'Monthly Revenue', value: '$' + revenue.toLocaleString() },
+          { label: 'Monthly Expenses', value: '$' + expenses.toLocaleString() }
+        ];
+
+        if (growthRate > 0 && adjustedRunway !== simpleRunway) {
+          items.splice(1, 0, { label: 'Runway (with growth)', value: adjustedRunway >= 999 ? 'Reaches profitability!' : adjustedRunway.toFixed(0) + ' months' });
+        }
+
+        var urgency = simpleRunway < 6 ? 'CRITICAL — start fundraising immediately' : simpleRunway < 12 ? 'Caution — begin fundraising soon' : simpleRunway < 18 ? 'Healthy — good position to fundraise' : 'Strong — comfortable runway';
+        items.push({ label: 'Status', value: urgency });
+
+        return { items: items, summary: 'At $' + netBurn.toLocaleString() + '/month net burn with $' + cash.toLocaleString() + ' in the bank, you have ' + simpleRunway.toFixed(1) + ' months of runway. ' + urgency + '.' };
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Runway Calculator' }];
+    var FAQS = [
+      { q: 'How much runway should a startup have?', a: '12-18 months is the standard recommendation. This gives enough time to hit milestones, demonstrate traction, and raise the next round if needed. Less than 6 months is critical.' },
+      { q: 'Should I use gross or net burn for runway?', a: 'Use net burn (expenses minus revenue) for a realistic runway. Gross burn ignores revenue and gives a worst-case scenario.' },
+      { q: 'When should I start fundraising?', a: 'Begin when you have 6-9 months of runway left. Fundraising typically takes 3-6 months, so starting early prevents running out of cash during the process.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/burn-rate-calculator', name: 'Burn Rate Calculator', description: 'Calculate monthly cash burn rate.' },
+      { slug: 'evergreen/cac-calculator', name: 'CAC Calculator', description: 'Calculate Customer Acquisition Cost.' },
+      { slug: 'evergreen/ltv-calculator', name: 'LTV Calculator', description: 'Calculate Customer Lifetime Value.' },
+      { slug: 'evergreen/roi-calculator', name: 'ROI Calculator', description: 'Calculate Return on Investment.' },
+      { slug: 'freelance/break-even-calculator', name: 'Break-Even Calculator', description: 'Find break-even point.' },
+      { slug: 'software/mvp-cost-estimator', name: 'MVP Cost Estimator', description: 'Estimate MVP development cost.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

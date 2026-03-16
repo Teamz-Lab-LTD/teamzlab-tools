@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sleep Calculator — Find Your Ideal Bedtime & Wake Time | Teamz Lab Tools</title>
+  <meta name="description" content="Calculate the best time to sleep or wake up based on sleep cycles. Get 5-6 complete 90-minute cycles for refreshing sleep. Free sleep calculator.">
+  <meta property="og:title" content="Sleep Calculator — Ideal Bedtime | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate ideal bedtime or wake time based on sleep cycles. Free calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/sleep-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/sleep-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Sleep Calculator</h1>
+      <p class="tool-description">Find the best time to go to bed or wake up based on 90-minute sleep cycles. Waking up between cycles (not during one) helps you feel refreshed. Accounts for the average 15 minutes to fall asleep.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Sleep Cycles Work</h2>
+      <p>Sleep occurs in cycles of approximately 90 minutes. Each cycle includes light sleep, deep sleep, and REM (dream) sleep. Adults need 5-6 complete cycles (7.5-9 hours) per night. Waking up at the end of a cycle (during light sleep) feels much better than waking in the middle of deep sleep.</p>
+      <div class="formula-box">
+        <h3>Sleep Cycle Timing</h3>
+        <p class="formula">1 cycle = 90 minutes</p>
+        <p class="formula">Fall asleep time = ~15 minutes</p>
+        <p class="formula">Recommended: 5 cycles (7.5h) or 6 cycles (9h)</p>
+        <p class="formula">Bedtime = Wake time &minus; (cycles &times; 90 min) &minus; 15 min</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/sleep-calculator', title: 'Sleep Calculator',
+      description: 'Find ideal bedtime or wake time based on sleep cycles.',
+      inputs: [
+        { id: 'mode', type: 'select', label: 'I want to...', options: [
+          { value: 'bedtime', label: 'Find when to go to bed (I know my wake time)' },
+          { value: 'waketime', label: 'Find when to wake up (I know my bedtime)' }
+        ], default: 'bedtime' },
+        { id: 'time', type: 'time', label: 'Wake Time / Bedtime', error: 'Enter a time.' },
+        { id: 'fall_asleep', type: 'number', label: 'Minutes to Fall Asleep', placeholder: '15', min: 0, max: 120, default: 15, step: 5 }
+      ],
+      calculate: function (v) {
+        if (!v.time) return null;
+        var parts = v.time.split(':');
+        var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+        var baseMin = h * 60 + m;
+        var fallAsleep = v.fall_asleep || 15;
+        var cycleMin = 90;
+        var items = [];
+
+        if (v.mode === 'bedtime') {
+          // Wake time given, find bedtimes
+          for (var c = 6; c >= 3; c--) {
+            var sleepDuration = c * cycleMin;
+            var bedMin = baseMin - sleepDuration - fallAsleep;
+            if (bedMin < 0) bedMin += 1440;
+            var bh = Math.floor(bedMin / 60) % 24;
+            var bm = bedMin % 60;
+            var label = c + ' cycles (' + (sleepDuration / 60).toFixed(1) + 'h)';
+            var timeStr = String(bh).padStart(2, '0') + ':' + String(bm).padStart(2, '0');
+            var recommended = c >= 5 ? ' — Recommended' : c === 4 ? ' — Minimum' : ' — Short';
+            items.push({ label: label, value: timeStr + recommended });
+          }
+          items.push({ label: 'Wake Time', value: v.time });
+          items.push({ label: 'Fall Asleep Time', value: fallAsleep + ' minutes' });
+          return { items: items, summary: 'To wake up at ' + v.time + ', go to bed at one of the times above. 5-6 cycles (7.5-9 hours) is ideal for adults.' };
+        } else {
+          // Bedtime given, find wake times
+          var sleepStart = baseMin + fallAsleep;
+          for (var c = 3; c <= 6; c++) {
+            var wakeMin = (sleepStart + c * cycleMin) % 1440;
+            var wh = Math.floor(wakeMin / 60) % 24;
+            var wm = wakeMin % 60;
+            var label = c + ' cycles (' + (c * cycleMin / 60).toFixed(1) + 'h)';
+            var timeStr = String(wh).padStart(2, '0') + ':' + String(wm).padStart(2, '0');
+            var recommended = c >= 5 ? ' — Recommended' : c === 4 ? ' — Minimum' : ' — Short';
+            items.push({ label: label, value: timeStr + recommended });
+          }
+          items.push({ label: 'Bedtime', value: v.time });
+          items.push({ label: 'You Fall Asleep At', value: (function() { var t = (baseMin + fallAsleep) % 1440; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); })() });
+          return { items: items, summary: 'If you go to bed at ' + v.time + ', set your alarm for one of the times above. 5-6 cycles (7.5-9 hours) is ideal.' };
+        }
+      }
+    };
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Sleep Calculator' }];
+    var FAQS = [
+      { q: 'Why 90-minute cycles?', a: 'Each sleep cycle lasts about 90 minutes and includes light sleep, deep sleep, and REM sleep. Waking at the end of a cycle (during light sleep) helps you feel alert rather than groggy.' },
+      { q: 'How many hours of sleep do I need?', a: 'Most adults need 7-9 hours (5-6 cycles). Teenagers need 8-10 hours. Children need even more. Consistently getting less than 7 hours impairs cognitive function.' },
+      { q: 'What if I take longer to fall asleep?', a: 'Adjust the "Minutes to Fall Asleep" field. The default is 15 minutes, which is average. If you take 30+ minutes, enter that for more accurate results.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/age-calculator', name: 'Age Calculator', description: 'Calculate your age.' },
+      { slug: 'evergreen/time-calculator', name: 'Time Calculator', description: 'Add/subtract time.' },
+      { slug: 'evergreen/bmi-calculator', name: 'BMI Calculator', description: 'Calculate BMI.' },
+      { slug: 'student/study-hours-estimator', name: 'Study Hours', description: 'Plan study time.' },
+      { slug: 'evergreen/pomodoro-timer', name: 'Pomodoro Timer', description: 'Focus timer for productivity.' },
+      { slug: 'evergreen/date-calculator', name: 'Date Calculator', description: 'Add/subtract dates.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>
