@@ -33,3 +33,8 @@ echo "];" >> "$OUTPUT"
 
 count=$(grep -c "^  {" "$OUTPUT")
 echo "Search index rebuilt: $count tools indexed in $OUTPUT"
+
+# Auto-update cache buster in index.html
+DATEVER=$(date +%Y%m%d%H%M)
+sed -i '' "s|search-index.js?v=[0-9]*|search-index.js?v=$DATEVER|" "$BASE/index.html" 2>/dev/null
+echo "Cache buster updated to v=$DATEVER in index.html"
