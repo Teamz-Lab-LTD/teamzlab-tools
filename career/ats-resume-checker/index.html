@@ -270,6 +270,119 @@
           return { output: html, outputType: 'html', title: 'ATS Compatibility Score', copyText: copyText };
         }
       });
+
+      /* ===============================================
+         Chrome AI Enhancement — Optional, Non-Breaking
+         =============================================== */
+      var hasAI = typeof window !== 'undefined' && window.ai && window.ai.languageModel;
+
+      if (hasAI) {
+        // Inject AI banner into the tool-calculator section area
+        var aiBannerATS = document.createElement('div');
+        aiBannerATS.id = 'ats-ai-banner';
+        aiBannerATS.style.cssText = 'margin:1rem auto;max-width:800px;padding:0.75rem 1.25rem;border-radius:10px;background:var(--surface);border:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;';
+        aiBannerATS.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;">'
+          + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);"></span>'
+          + '<span style="font-weight:600;color:var(--text);font-size:0.9rem;">AI Enhanced Mode Available</span>'
+          + '<span style="font-size:0.75rem;color:var(--text-muted);">Chrome built-in AI detected</span>'
+          + '</div>'
+          + '<button id="ats-ai-toggle-btn" style="padding:0.4rem 1rem;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-weight:600;font-size:0.8125rem;cursor:pointer;transition:background 0.2s,color 0.2s;">Enable AI Analysis</button>';
+
+        var toolCalcATS = document.getElementById('tool-calculator');
+        if (toolCalcATS && toolCalcATS.parentNode) {
+          toolCalcATS.parentNode.insertBefore(aiBannerATS, toolCalcATS.nextSibling);
+        }
+
+        var atsAIEnabled = false;
+        var atsAIToggleBtn = document.getElementById('ats-ai-toggle-btn');
+
+        // Create the AI results container (hidden by default)
+        var atsAIContainer = document.createElement('div');
+        atsAIContainer.id = 'ats-ai-results';
+        atsAIContainer.style.cssText = 'display:none;margin:1.5rem auto;max-width:800px;';
+        if (aiBannerATS.parentNode) {
+          aiBannerATS.parentNode.insertBefore(atsAIContainer, aiBannerATS.nextSibling);
+        }
+
+        atsAIToggleBtn.addEventListener('click', function () {
+          atsAIEnabled = !atsAIEnabled;
+          if (atsAIEnabled) {
+            atsAIToggleBtn.textContent = 'Disable AI Analysis';
+            atsAIToggleBtn.style.background = 'var(--accent)';
+            atsAIToggleBtn.style.color = 'var(--surface)';
+            atsAIContainer.style.display = 'block';
+            atsAIContainer.innerHTML = '<div style="padding:1.25rem;border-radius:12px;background:var(--surface);border:1px solid var(--accent);border-left:4px solid var(--accent);">'
+              + '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">'
+              + '<h3 style="margin:0;font-size:1.125rem;color:var(--text);">AI-Enhanced Analysis</h3>'
+              + '<span style="padding:0.15rem 0.5rem;border-radius:999px;background:var(--accent);color:var(--surface);font-size:0.6875rem;font-weight:700;">AI</span>'
+              + '</div>'
+              + '<p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">Paste your resume and job description above, run the standard check, then click the button below for AI-powered deep analysis.</p>'
+              + '<button id="ats-run-ai-btn" style="padding:0.5rem 1.25rem;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);font-weight:600;font-size:0.875rem;cursor:pointer;">Run AI Analysis</button>'
+              + '<div id="ats-ai-output" style="margin-top:1rem;"></div>'
+              + '<p style="margin:1rem 0 0;font-size:0.75rem;color:var(--text-muted);">Powered by Chrome\'s built-in AI. Runs entirely on your device.</p>'
+              + '</div>';
+
+            var runAIBtn = document.getElementById('ats-run-ai-btn');
+            runAIBtn.addEventListener('click', function () {
+              var resumeEl = document.getElementById('resume_text');
+              var jdEl = document.getElementById('job_description');
+              var resumeText = resumeEl ? resumeEl.value.trim() : '';
+              var jdText = jdEl ? jdEl.value.trim() : '';
+              var aiOutput = document.getElementById('ats-ai-output');
+
+              if (!resumeText || resumeText.length < 50) {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);">Please paste your resume text above first (at least a few sentences).</p>';
+                return;
+              }
+              if (!jdText || jdText.length < 30) {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);">Please paste the job description above first.</p>';
+                return;
+              }
+
+              runAIBtn.disabled = true;
+              runAIBtn.textContent = 'Analyzing...';
+              aiOutput.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;padding:1rem 0;">'
+                + '<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:ats-ai-spin 0.8s linear infinite;"></div>'
+                + '<span style="color:var(--text-muted);font-size:0.875rem;">AI model is analyzing your resume... This may take a moment.</span>'
+                + '</div>'
+                + '<style>@keyframes ats-ai-spin{to{transform:rotate(360deg)}}</style>';
+
+              var aiPrompt = 'You are an ATS resume expert. Compare this resume against this job description. Identify: 1) Skills match percentage 2) Missing critical keywords 3) Top 3 improvement suggestions 4) Overall ATS compatibility score. Be specific and concise.\n\nResume:\n' + resumeText + '\n\nJob Description:\n' + jdText;
+
+              window.ai.languageModel.create().then(function (session) {
+                return session.prompt(aiPrompt);
+              }).then(function (response) {
+                var formatted = response.replace(/\n/g, '<br>');
+                aiOutput.innerHTML = '<div style="padding:1rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;line-height:1.7;color:var(--text);">'
+                  + formatted
+                  + '</div>'
+                  + '<button id="ats-ai-copy-btn" style="margin-top:0.75rem;padding:0.4rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.8125rem;cursor:pointer;">Copy AI Analysis</button>';
+                runAIBtn.disabled = false;
+                runAIBtn.textContent = 'Run AI Analysis';
+
+                var copyBtn = document.getElementById('ats-ai-copy-btn');
+                copyBtn.addEventListener('click', function () {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(response).then(function () {
+                      copyBtn.textContent = 'Copied!';
+                      setTimeout(function () { copyBtn.textContent = 'Copy AI Analysis'; }, 1500);
+                    });
+                  }
+                });
+              }).catch(function () {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">AI analysis is not available right now. The AI model may still be downloading. Please try again later.</p>';
+                runAIBtn.disabled = false;
+                runAIBtn.textContent = 'Run AI Analysis';
+              });
+            });
+          } else {
+            atsAIToggleBtn.textContent = 'Enable AI Analysis';
+            atsAIToggleBtn.style.background = 'transparent';
+            atsAIToggleBtn.style.color = 'var(--accent)';
+            atsAIContainer.style.display = 'none';
+          }
+        });
+      }
     });
   </script>
 </body>

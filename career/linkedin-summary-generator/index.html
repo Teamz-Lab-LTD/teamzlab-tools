@@ -251,6 +251,126 @@
           return { output: html, outputType: 'html', title: 'LinkedIn Summaries', copyText: copyText };
         }
       });
+
+      /* ===============================================
+         Chrome AI Enhancement — Optional, Non-Breaking
+         =============================================== */
+      var hasAI = typeof window !== 'undefined' && window.ai && window.ai.languageModel;
+
+      if (hasAI) {
+        var aiBannerLinkedIn = document.createElement('div');
+        aiBannerLinkedIn.id = 'linkedin-ai-banner';
+        aiBannerLinkedIn.style.cssText = 'margin:1rem auto;max-width:800px;padding:0.75rem 1.25rem;border-radius:10px;background:var(--surface);border:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;';
+        aiBannerLinkedIn.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;">'
+          + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);"></span>'
+          + '<span style="font-weight:600;color:var(--text);font-size:0.9rem;">AI Enhanced Mode Available</span>'
+          + '<span style="font-size:0.75rem;color:var(--text-muted);">Chrome built-in AI detected</span>'
+          + '</div>'
+          + '<button id="linkedin-ai-toggle-btn" style="padding:0.4rem 1rem;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-weight:600;font-size:0.8125rem;cursor:pointer;transition:background 0.2s,color 0.2s;">Enable AI Summary</button>';
+
+        var toolCalcLinkedIn = document.getElementById('tool-calculator');
+        if (toolCalcLinkedIn && toolCalcLinkedIn.parentNode) {
+          toolCalcLinkedIn.parentNode.insertBefore(aiBannerLinkedIn, toolCalcLinkedIn.nextSibling);
+        }
+
+        var linkedinAIEnabled = false;
+        var linkedinAIToggleBtn = document.getElementById('linkedin-ai-toggle-btn');
+
+        var linkedinAIContainer = document.createElement('div');
+        linkedinAIContainer.id = 'linkedin-ai-results';
+        linkedinAIContainer.style.cssText = 'display:none;margin:1.5rem auto;max-width:800px;';
+        if (aiBannerLinkedIn.parentNode) {
+          aiBannerLinkedIn.parentNode.insertBefore(linkedinAIContainer, aiBannerLinkedIn.nextSibling);
+        }
+
+        linkedinAIToggleBtn.addEventListener('click', function () {
+          linkedinAIEnabled = !linkedinAIEnabled;
+          if (linkedinAIEnabled) {
+            linkedinAIToggleBtn.textContent = 'Disable AI Summary';
+            linkedinAIToggleBtn.style.background = 'var(--accent)';
+            linkedinAIToggleBtn.style.color = 'var(--surface)';
+            linkedinAIContainer.style.display = 'block';
+            linkedinAIContainer.innerHTML = '<div style="padding:1.25rem;border-radius:12px;background:var(--surface);border:1px solid var(--accent);border-left:4px solid var(--accent);">'
+              + '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">'
+              + '<h3 style="margin:0;font-size:1.125rem;color:var(--text);">AI-Generated Summary</h3>'
+              + '<span style="padding:0.15rem 0.5rem;border-radius:999px;background:var(--accent);color:var(--surface);font-size:0.6875rem;font-weight:700;">AI</span>'
+              + '</div>'
+              + '<p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">Fill in your details above, then click below to generate an AI-powered LinkedIn summary.</p>'
+              + '<button id="linkedin-run-ai-btn" style="padding:0.5rem 1.25rem;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);font-weight:600;font-size:0.875rem;cursor:pointer;">Generate with AI</button>'
+              + '<div id="linkedin-ai-output" style="margin-top:1rem;"></div>'
+              + '<p style="margin:1rem 0 0;font-size:0.75rem;color:var(--text-muted);">Powered by Chrome\'s built-in AI. Runs entirely on your device.</p>'
+              + '</div>';
+
+            var runAILinkedInBtn = document.getElementById('linkedin-run-ai-btn');
+            runAILinkedInBtn.addEventListener('click', function () {
+              var roleEl = document.getElementById('current_role');
+              var yearsEl = document.getElementById('years_experience');
+              var industryEl = document.getElementById('industry');
+              var skillsEl = document.getElementById('top_skills');
+              var achievementEl = document.getElementById('achievement');
+              var toneEl = document.getElementById('tone');
+
+              var role = roleEl ? roleEl.value.trim() : '';
+              var years = yearsEl ? yearsEl.value.trim() : '5';
+              var industry = industryEl ? industryEl.value.trim() : '';
+              var skills = skillsEl ? skillsEl.value.trim() : '';
+              var achievement = achievementEl ? achievementEl.value.trim() : '';
+              var tone = toneEl ? toneEl.value : 'professional';
+              var aiOutput = document.getElementById('linkedin-ai-output');
+
+              if (!role) {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);">Please enter your current role above first.</p>';
+                return;
+              }
+
+              runAILinkedInBtn.disabled = true;
+              runAILinkedInBtn.textContent = 'Generating...';
+              aiOutput.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;padding:1rem 0;">'
+                + '<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:linkedin-ai-spin 0.8s linear infinite;"></div>'
+                + '<span style="color:var(--text-muted);font-size:0.875rem;">AI is crafting your summary... This may take a moment.</span>'
+                + '</div>'
+                + '<style>@keyframes linkedin-ai-spin{to{transform:rotate(360deg)}}</style>';
+
+              var aiPrompt = 'Write a professional LinkedIn About section for a ' + role + ' with ' + years + ' years experience in ' + (industry || 'technology') + '. Key skills: ' + (skills || 'leadership, strategy, execution') + '. Notable achievement: ' + (achievement || 'delivering high-impact projects') + '. Tone: ' + tone + '. Write 150-250 words in first person. Make it engaging and authentic.';
+
+              window.ai.languageModel.create().then(function (session) {
+                return session.prompt(aiPrompt);
+              }).then(function (response) {
+                var wordCount = response.trim().split(/\s+/).length;
+                var formatted = response.replace(/\n\n/g, '</p><p style="margin:0.75rem 0;">').replace(/\n/g, '<br>');
+                aiOutput.innerHTML = '<div style="margin:0.5rem 0;">'
+                  + '<h4 style="margin-bottom:0.5rem;color:var(--text);">AI-Crafted Summary <span style="font-weight:400;color:var(--text-muted);font-size:0.8125rem;">(' + wordCount + ' words)</span></h4>'
+                  + '<div style="padding:1rem;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;line-height:1.7;color:var(--text);">'
+                  + '<p style="margin:0;">' + formatted + '</p>'
+                  + '</div>'
+                  + '<button id="linkedin-ai-copy-btn" style="margin-top:0.75rem;padding:0.4rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.8125rem;cursor:pointer;">Copy AI Summary</button>'
+                  + '</div>';
+                runAILinkedInBtn.disabled = false;
+                runAILinkedInBtn.textContent = 'Generate with AI';
+
+                var copyBtn = document.getElementById('linkedin-ai-copy-btn');
+                copyBtn.addEventListener('click', function () {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText(response).then(function () {
+                      copyBtn.textContent = 'Copied!';
+                      setTimeout(function () { copyBtn.textContent = 'Copy AI Summary'; }, 1500);
+                    });
+                  }
+                });
+              }).catch(function () {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">AI generation is not available right now. The AI model may still be downloading. Please try again later.</p>';
+                runAILinkedInBtn.disabled = false;
+                runAILinkedInBtn.textContent = 'Generate with AI';
+              });
+            });
+          } else {
+            linkedinAIToggleBtn.textContent = 'Enable AI Summary';
+            linkedinAIToggleBtn.style.background = 'transparent';
+            linkedinAIToggleBtn.style.color = 'var(--accent)';
+            linkedinAIContainer.style.display = 'none';
+          }
+        });
+      }
     });
   </script>
 </body>

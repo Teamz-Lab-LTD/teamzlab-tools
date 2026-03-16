@@ -227,6 +227,140 @@
           return { output: html, outputType: 'html', title: 'Generated Bullet Points', copyText: copyText };
         }
       });
+
+      /* ===============================================
+         Chrome AI Enhancement — Optional, Non-Breaking
+         =============================================== */
+      var hasAI = typeof window !== 'undefined' && window.ai && window.ai.languageModel;
+
+      if (hasAI) {
+        var aiBannerBullet = document.createElement('div');
+        aiBannerBullet.id = 'bullet-ai-banner';
+        aiBannerBullet.style.cssText = 'margin:1rem auto;max-width:800px;padding:0.75rem 1.25rem;border-radius:10px;background:var(--surface);border:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;';
+        aiBannerBullet.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;">'
+          + '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);"></span>'
+          + '<span style="font-weight:600;color:var(--text);font-size:0.9rem;">AI Enhanced Mode Available</span>'
+          + '<span style="font-size:0.75rem;color:var(--text-muted);">Chrome built-in AI detected</span>'
+          + '</div>'
+          + '<button id="bullet-ai-toggle-btn" style="padding:0.4rem 1rem;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-weight:600;font-size:0.8125rem;cursor:pointer;transition:background 0.2s,color 0.2s;">Enable AI Bullets</button>';
+
+        var toolCalcBullet = document.getElementById('tool-calculator');
+        if (toolCalcBullet && toolCalcBullet.parentNode) {
+          toolCalcBullet.parentNode.insertBefore(aiBannerBullet, toolCalcBullet.nextSibling);
+        }
+
+        var bulletAIEnabled = false;
+        var bulletAIToggleBtn = document.getElementById('bullet-ai-toggle-btn');
+
+        var bulletAIContainer = document.createElement('div');
+        bulletAIContainer.id = 'bullet-ai-results';
+        bulletAIContainer.style.cssText = 'display:none;margin:1.5rem auto;max-width:800px;';
+        if (aiBannerBullet.parentNode) {
+          aiBannerBullet.parentNode.insertBefore(bulletAIContainer, aiBannerBullet.nextSibling);
+        }
+
+        bulletAIToggleBtn.addEventListener('click', function () {
+          bulletAIEnabled = !bulletAIEnabled;
+          if (bulletAIEnabled) {
+            bulletAIToggleBtn.textContent = 'Disable AI Bullets';
+            bulletAIToggleBtn.style.background = 'var(--accent)';
+            bulletAIToggleBtn.style.color = 'var(--surface)';
+            bulletAIContainer.style.display = 'block';
+            bulletAIContainer.innerHTML = '<div style="padding:1.25rem;border-radius:12px;background:var(--surface);border:1px solid var(--accent);border-left:4px solid var(--accent);">'
+              + '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;">'
+              + '<h3 style="margin:0;font-size:1.125rem;color:var(--text);">AI-Generated Bullets</h3>'
+              + '<span style="padding:0.15rem 0.5rem;border-radius:999px;background:var(--accent);color:var(--surface);font-size:0.6875rem;font-weight:700;">AI</span>'
+              + '</div>'
+              + '<p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">Fill in your task details above, then click below to generate AI-powered bullet points.</p>'
+              + '<button id="bullet-run-ai-btn" style="padding:0.5rem 1.25rem;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);font-weight:600;font-size:0.875rem;cursor:pointer;">Generate with AI</button>'
+              + '<div id="bullet-ai-output" style="margin-top:1rem;"></div>'
+              + '<p style="margin:1rem 0 0;font-size:0.75rem;color:var(--text-muted);">Powered by Chrome\'s built-in AI. Runs entirely on your device.</p>'
+              + '</div>';
+
+            var runAIBulletBtn = document.getElementById('bullet-run-ai-btn');
+            runAIBulletBtn.addEventListener('click', function () {
+              var taskEl = document.getElementById('task');
+              var resultEl = document.getElementById('result');
+              var metricEl = document.getElementById('metric');
+              var task = taskEl ? taskEl.value.trim() : '';
+              var result = resultEl ? resultEl.value.trim() : '';
+              var metric = metricEl ? metricEl.value.trim() : '';
+              var aiOutput = document.getElementById('bullet-ai-output');
+
+              if (!task) {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);">Please describe what you did in the task field above first.</p>';
+                return;
+              }
+
+              runAIBulletBtn.disabled = true;
+              runAIBulletBtn.textContent = 'Generating...';
+              aiOutput.innerHTML = '<div style="display:flex;align-items:center;gap:0.5rem;padding:1rem 0;">'
+                + '<div style="width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:bullet-ai-spin 0.8s linear infinite;"></div>'
+                + '<span style="color:var(--text-muted);font-size:0.875rem;">AI is generating bullet points... This may take a moment.</span>'
+                + '</div>'
+                + '<style>@keyframes bullet-ai-spin{to{transform:rotate(360deg)}}</style>';
+
+              var aiPrompt = 'You are a professional resume writer. Generate 3 unique, impactful resume bullet points for someone who: Task: ' + task;
+              if (result) { aiPrompt += '. Result: ' + result; }
+              if (metric) { aiPrompt += '. Metric: ' + metric; }
+              aiPrompt += '. Use strong action verbs. Each bullet should be 1-2 lines. Format as a numbered list.';
+
+              window.ai.languageModel.create().then(function (session) {
+                return session.prompt(aiPrompt);
+              }).then(function (response) {
+                var lines = response.split('\n');
+                var bulletItems = [];
+                var j;
+                for (j = 0; j < lines.length; j++) {
+                  var line = lines[j].replace(/^\d+[\.\)]\s*/, '').trim();
+                  if (line.length > 10) {
+                    bulletItems.push(line);
+                  }
+                }
+                if (bulletItems.length === 0) {
+                  bulletItems.push(response.trim());
+                }
+
+                var outHtml = '';
+                for (j = 0; j < bulletItems.length; j++) {
+                  var escapedBullet = bulletItems[j].replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                  outHtml += '<div style="padding:0.75rem 1rem;margin:0.5rem 0;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;">';
+                  outHtml += '<p style="margin:0;line-height:1.6;flex:1;">' + bulletItems[j] + '</p>';
+                  outHtml += '<button class="bullet-ai-copy" data-text="' + escapedBullet + '" style="flex-shrink:0;padding:0.3rem 0.75rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.75rem;cursor:pointer;white-space:nowrap;">Copy</button>';
+                  outHtml += '</div>';
+                }
+                aiOutput.innerHTML = outHtml;
+                runAIBulletBtn.disabled = false;
+                runAIBulletBtn.textContent = 'Generate with AI';
+
+                var copyBtns = aiOutput.querySelectorAll('.bullet-ai-copy');
+                for (j = 0; j < copyBtns.length; j++) {
+                  (function (btn) {
+                    btn.addEventListener('click', function () {
+                      var textToCopy = btn.getAttribute('data-text');
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(textToCopy).then(function () {
+                          btn.textContent = 'Copied!';
+                          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+                        });
+                      }
+                    });
+                  })(copyBtns[j]);
+                }
+              }).catch(function () {
+                aiOutput.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">AI generation is not available right now. The AI model may still be downloading. Please try again later.</p>';
+                runAIBulletBtn.disabled = false;
+                runAIBulletBtn.textContent = 'Generate with AI';
+              });
+            });
+          } else {
+            bulletAIToggleBtn.textContent = 'Enable AI Bullets';
+            bulletAIToggleBtn.style.background = 'transparent';
+            bulletAIToggleBtn.style.color = 'var(--accent)';
+            bulletAIContainer.style.display = 'none';
+          }
+        });
+      }
     });
   </script>
 </body>
