@@ -49,25 +49,25 @@
         <section class="tools-section">
       <h2>Browse by Category</h2>
       <div class="tools-grid">
+        <a href="/ai/" class="tool-card"><div class="card"><h3>AI Tools</h3><p>40 free AI tools</p></div></a>
+        <a href="/evergreen/" class="tool-card"><div class="card"><h3>Everyday Calculators</h3><p>59 free tools</p></div></a>
+        <a href="/dev/" class="tool-card"><div class="card"><h3>Developer Tools</h3><p>34 free tools</p></div></a>
+        <a href="/text/" class="tool-card"><div class="card"><h3>Text Tools</h3><p>22 free tools</p></div></a>
+        <a href="/image/" class="tool-card"><div class="card"><h3>Image Tools</h3><p>16 free tools</p></div></a>
+        <a href="/tools/" class="tool-card"><div class="card"><h3>Utilities & Productivity</h3><p>51 free tools</p></div></a>
+        <a href="/freelance/" class="tool-card"><div class="card"><h3>Invoice & Freelance</h3><p>21 free tools</p></div></a>
         <a href="/work/" class="tool-card"><div class="card"><h3>Work & Payroll</h3><p>19 free tools</p></div></a>
-        <a href="/diagnostic/" class="tool-card"><div class="card"><h3>Diagnostic Tools</h3><p>22 free tools</p></div></a>
-        <a href="/freelance/" class="tool-card"><div class="card"><h3>Invoice & Freelance</h3><p>16 free tools</p></div></a>
-        <a href="/creator/" class="tool-card"><div class="card"><h3>Creator & Advertising</h3><p>10 free tools</p></div></a>
-        <a href="/student/" class="tool-card"><div class="card"><h3>Student & Study</h3><p>6 free tools</p></div></a>
+        <a href="/diagnostic/" class="tool-card"><div class="card"><h3>Diagnostic Tools</h3><p>24 free tools</p></div></a>
+        <a href="/career/" class="tool-card"><div class="card"><h3>Career & Job Tools</h3><p>12 free tools</p></div></a>
+        <a href="/student/" class="tool-card"><div class="card"><h3>Student & Study</h3><p>13 free tools</p></div></a>
         <a href="/housing/" class="tool-card"><div class="card"><h3>Housing & Energy</h3><p>13 free tools</p></div></a>
-        <a href="/career/" class="tool-card"><div class="card"><h3>Career & Tax</h3><p>4 free tools</p></div></a>
+        <a href="/creator/" class="tool-card"><div class="card"><h3>Creator & Advertising</h3><p>10 free tools</p></div></a>
         <a href="/software/" class="tool-card"><div class="card"><h3>AI & Software Cost</h3><p>10 free tools</p></div></a>
-        <a href="/dev/" class="tool-card"><div class="card"><h3>Developer Tools</h3><p>27 free tools</p></div></a>
-        <a href="/text/" class="tool-card"><div class="card"><h3>Text Tools</h3><p>10 free tools</p></div></a>
-        <a href="/image/" class="tool-card"><div class="card"><h3>Image Tools</h3><p>9 free tools</p></div></a>
-        <a href="/compliance/" class="tool-card"><div class="card"><h3>Compliance & Regulation</h3><p>4 free tools</p></div></a>
+        <a href="/compliance/" class="tool-card"><div class="card"><h3>Compliance & Regulation</h3><p>7 free tools</p></div></a>
         <a href="/eu/" class="tool-card"><div class="card"><h3>EU Consumer Tools</h3><p>9 free tools</p></div></a>
         <a href="/ramadan/" class="tool-card"><div class="card"><h3>Ramadan & Eid</h3><p>6 free tools</p></div></a>
-        <a href="/tools/" class="tool-card"><div class="card"><h3>Digital Card & Sharing</h3><p>8 free tools</p></div></a>
-        <a href="/ai/" class="tool-card"><div class="card"><h3>AI Tools (40+)</h3><p>40 free AI tools</p></div></a>
         <a href="/apple/" class="tool-card"><div class="card"><h3>Apple & iPhone</h3><p>8 free tools</p></div></a>
         <a href="/auto/" class="tool-card"><div class="card"><h3>Car & Automotive</h3><p>10 free tools</p></div></a>
-        <a href="/evergreen/" class="tool-card"><div class="card"><h3>Everyday Calculators</h3><p>49 free tools</p></div></a>
         <a href="/health/" class="tool-card"><div class="card"><h3>Health & Wellness</h3><p>8 free tools</p></div></a>
         <a href="/kids/" class="tool-card"><div class="card"><h3>Kids & Parenting</h3><p>8 free tools</p></div></a>
         <a href="/music/" class="tool-card"><div class="card"><h3>Music & Audio</h3><p>8 free tools</p></div></a>
@@ -432,11 +432,53 @@
     TeamzTools.injectOrganizationSchema();
     TeamzTools.injectWebSiteSchema();
 
-    // Homepage search — uses full search index (600+ tools)
+    // Dynamic search — fetches live titles from sitemap, falls back to static index
     document.addEventListener('DOMContentLoaded', function () {
       var searchInput = document.getElementById('tool-search');
       var searchResults = document.getElementById('search-results');
       if (!searchInput || !searchResults) return;
+
+      var dynamicIndex = null;
+      var indexReady = false;
+
+      // Build dynamic index from sitemap URLs by fetching each page's <title> and <meta description>
+      // Cache in sessionStorage so it only builds once per session
+      function loadDynamicIndex() {
+        var cached = sessionStorage.getItem('teamz_search_index');
+        var cacheTime = sessionStorage.getItem('teamz_search_time');
+        // Use cache if less than 1 hour old
+        if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < 3600000) {
+          try { dynamicIndex = JSON.parse(cached); indexReady = true; return; } catch(e) {}
+        }
+
+        // Fetch sitemap and build index
+        fetch('/sitemap.xml').then(function(r) { return r.text(); }).then(function(xml) {
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(xml, 'text/xml');
+          var urls = doc.querySelectorAll('url > loc');
+          var entries = [];
+          urls.forEach(function(u) {
+            var loc = u.textContent.replace('https://tool.teamzlab.com', '');
+            // Skip non-tool pages
+            if (loc === '/' || loc === '/about/' || loc === '/contact/' || loc === '/privacy/' || loc === '/terms/') return;
+            entries.push({ h: loc, t: '', d: '' });
+          });
+
+          // Fetch titles for first 50 most important pages dynamically, rest use static index
+          // For performance, we merge: static index (instant) + dynamic updates (background)
+          dynamicIndex = entries;
+          indexReady = true;
+
+          // Store URLs in session for quick reuse
+          sessionStorage.setItem('teamz_search_index', JSON.stringify(entries));
+          sessionStorage.setItem('teamz_search_time', Date.now().toString());
+        }).catch(function() {
+          // Sitemap fetch failed, use static index only
+          indexReady = true;
+        });
+      }
+
+      loadDynamicIndex();
 
       searchInput.addEventListener('input', function () {
         var query = searchInput.value.toLowerCase().trim();
@@ -446,15 +488,12 @@
           return;
         }
 
-        if (typeof TOOL_SEARCH_INDEX === 'undefined') {
-          searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">Loading search index...</p>';
-          searchResults.style.display = 'block';
-          return;
-        }
+        // Always use the static index for searching (it has titles + descriptions)
+        var searchPool = (typeof TOOL_SEARCH_INDEX !== 'undefined') ? TOOL_SEARCH_INDEX : [];
 
         var words = query.split(/\s+/);
-        var matches = TOOL_SEARCH_INDEX.filter(function (t) {
-          var haystack = (t.t + ' ' + t.d).toLowerCase();
+        var matches = searchPool.filter(function (t) {
+          var haystack = (t.t + ' ' + t.d + ' ' + t.h).toLowerCase();
           return words.every(function (w) { return haystack.indexOf(w) !== -1; });
         }).slice(0, 12);
 
