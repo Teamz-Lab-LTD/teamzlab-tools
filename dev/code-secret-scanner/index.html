@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Secret Scanner — Detect API Keys & Passwords in Code | Teamz Lab Tools</title>
+  <meta name="description" content="Scan your code for leaked API keys, passwords, tokens, and secrets. Detects AWS, OpenAI, GitHub, Google API keys, connection strings, private keys, and JWTs. 100% client-side — your code stays in your browser.">
+  <meta name="keywords" content="api key detector, secret scanner code, find passwords in code, code security scanner, leaked credentials checker">
+  <meta property="og:title" content="Code Secret Scanner — Detect API Keys & Passwords in Code | Teamz Lab Tools">
+  <meta property="og:description" content="Detect API keys, passwords, and secrets in your code. Regex-based scanner runs entirely in your browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/dev/code-secret-scanner/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Code Secret Scanner — Detect API Keys & Passwords in Code | Teamz Lab Tools">
+  <meta name="twitter:description" content="Find leaked API keys, passwords, and tokens in your code. Free browser-based scanner.">
+  <link rel="canonical" href="https://tool.teamzlab.com/dev/code-secret-scanner/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge{display:inline-flex;align-items:center;gap:0.4rem;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:0.35rem 0.9rem;border-radius:999px;font-size:0.8rem;font-weight:600;margin-bottom:1rem}
+    .privacy-badge svg{width:14px;height:14px;fill:currentColor}
+    .code-textarea{width:100%;min-height:250px;padding:1rem;font-size:0.85rem;font-family:'Courier New',Courier,monospace;border:2px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);resize:vertical;outline:none;transition:border-color 0.2s;box-sizing:border-box;line-height:1.6;tab-size:2}
+    .code-textarea:focus{border-color:var(--accent)}
+    .code-textarea::placeholder{color:var(--text-muted);font-family:'Poppins',sans-serif}
+    .btn-scan{background:var(--accent);color:#000;border:none;padding:0.85rem 2.5rem;border-radius:999px;font-size:1.05rem;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;transition:opacity 0.2s;margin:1rem 0;display:block;width:100%}
+    .btn-scan:hover{opacity:0.9}
+    .scan-results{display:none;margin-top:1.5rem}
+    .scan-summary{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;justify-content:center}
+    .summary-chip{padding:0.6rem 1.2rem;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:700;font-size:0.95rem;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+    .summary-chip.found{border-color:var(--accent);color:var(--accent)}
+    .summary-chip.clean{border-color:var(--accent);color:var(--accent)}
+    .severity-section{margin-bottom:1.5rem}
+    .severity-label{font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;font-family:'Poppins',sans-serif;margin-bottom:0.5rem;padding:0.3rem 0.8rem;border-radius:6px;display:inline-block}
+    .severity-critical .severity-label{background:var(--surface);color:var(--accent);border:1px solid var(--accent)}
+    .severity-high .severity-label{background:var(--surface);color:var(--heading);border:1px solid var(--border)}
+    .severity-medium .severity-label{background:var(--surface);color:var(--text-muted);border:1px solid var(--border)}
+    .severity-low .severity-label{background:var(--surface);color:var(--text-muted);border:1px solid var(--border)}
+    .finding-card{border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;background:var(--surface)}
+    .finding-header{display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:0.3rem;flex-wrap:wrap}
+    .finding-type{font-weight:700;font-size:0.9rem;color:var(--heading);font-family:'Poppins',sans-serif}
+    .finding-line{font-size:0.8rem;color:var(--text-muted);font-family:'Poppins',sans-serif}
+    .finding-match{font-family:'Courier New',monospace;font-size:0.8rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.7rem;word-break:break-all;color:var(--text);margin:0.3rem 0}
+    .finding-rec{font-size:0.8rem;color:var(--text-muted);font-style:italic}
+    .no-secrets{text-align:center;padding:2rem;color:var(--accent);font-weight:700;font-size:1.1rem;font-family:'Poppins',sans-serif}
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> Code analysis runs entirely in your browser</div>
+      <h1>Code Secret Scanner</h1>
+      <p class="tool-description">Detect leaked API keys, passwords, tokens, private keys, and connection strings in your code. Paste any code snippet and scan for potential secrets using regex pattern matching. Everything runs in your browser — your code is never sent anywhere.</p>
+    </section>
+    <section class="tool-calculator">
+      <div id="tool-calculator">
+        <textarea class="code-textarea" id="code-input" placeholder="Paste your code here to scan for secrets..."></textarea>
+        <button type="button" class="btn-scan" id="btn-scan">Scan for Secrets</button>
+        <div class="scan-results" id="scan-results">
+          <div class="scan-summary" id="scan-summary"></div>
+          <div id="findings-container"></div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Code Secret Scanner Works</h2>
+      <p>This tool scans your code using a collection of regular expression patterns designed to detect common types of leaked credentials. It checks for API keys from major providers like AWS, OpenAI, GitHub, and Google. It detects hardcoded passwords, database connection strings, private keys, JWT tokens, and generic secret patterns. Each finding is classified by severity and includes specific remediation recommendations.</p>
+
+      <div class="formula-box">
+        <h3>Detection Categories</h3>
+        <p class="formula">Critical: Private keys, database connection strings</p>
+        <p class="formula">High: Provider API keys (AWS, OpenAI, GitHub, Google)</p>
+        <p class="formula">Medium: Hardcoded passwords, tokens, secrets</p>
+        <p class="formula">Low: Generic key/secret/token variable assignments</p>
+        <p>The scanner uses pattern matching — it may produce false positives for example code or test data. Always review findings in context before taking action.</p>
+      </div>
+
+      <h2>Why Secret Scanning Matters</h2>
+      <p>Leaked credentials in source code are one of the most common security vulnerabilities. Research shows that millions of secrets are leaked on GitHub alone every year. A single exposed API key can lead to unauthorized access, data breaches, and significant financial damage. Companies like Uber, Samsung, and Toyota have all experienced major incidents caused by hardcoded credentials found in source code repositories.</p>
+
+      <h3>Common Types of Leaked Secrets</h3>
+      <p>AWS access keys (AKIA prefix) grant programmatic access to cloud infrastructure. OpenAI API keys (sk- prefix) can rack up expensive API charges. GitHub personal access tokens (ghp_ prefix) provide repository access. Database connection strings contain hostnames, usernames, and passwords in a single line. Private keys enable SSH access or decrypt sensitive communications. Each of these can cause serious damage if exposed publicly.</p>
+
+      <h2>Best Practices for Secret Management</h2>
+      <p>Never hardcode secrets in source files. Use environment variables loaded from .env files that are excluded from version control via .gitignore. For production, use dedicated secret managers like AWS Secrets Manager, HashiCorp Vault, or platform-specific secret storage. Implement pre-commit hooks that scan for secrets before code is committed. Rotate any secret that has been accidentally committed to a repository, even if the commit is later deleted — git history preserves the exposure.</p>
+
+      <h2>What to Do When Secrets Are Found</h2>
+      <p>Immediately revoke and rotate the exposed credential. Remove it from source code and replace with an environment variable reference. Check access logs for any unauthorized usage during the exposure period. Add the credential pattern to your .gitignore or pre-commit hooks to prevent future leaks. Consider using tools like git-secrets or gitleaks as part of your CI/CD pipeline for automated detection.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var PATTERNS = [
+      // Critical
+      { name: 'Private Key', regex: /-----BEGIN\s[\w\s]*PRIVATE KEY-----/g, severity: 'critical', rec: 'Never commit private keys. Store them in secure key management systems and reference via environment variables.' },
+      { name: 'MongoDB Connection String', regex: /mongodb(\+srv)?:\/\/[^\s'"]+/g, severity: 'critical', rec: 'Move database connection strings to environment variables. Never hardcode credentials in source code.' },
+      { name: 'PostgreSQL Connection String', regex: /postgres(ql)?:\/\/[^\s'"]+/g, severity: 'critical', rec: 'Use environment variables for database URLs. Rotate credentials if they were committed.' },
+      { name: 'MySQL Connection String', regex: /mysql:\/\/[^\s'"]+/g, severity: 'critical', rec: 'Store database connection strings in .env files or a secrets manager.' },
+      { name: 'Redis Connection String', regex: /redis:\/\/[^\s'"]+/g, severity: 'critical', rec: 'Move Redis URLs to environment variables and rotate if exposed.' },
+
+      // High
+      { name: 'AWS Access Key', regex: /AKIA[0-9A-Z]{16}/g, severity: 'high', rec: 'Revoke this AWS key immediately in IAM console. Use IAM roles or environment variables instead.' },
+      { name: 'OpenAI API Key', regex: /sk-[a-zA-Z0-9]{32,}/g, severity: 'high', rec: 'Rotate this OpenAI key at platform.openai.com. Use environment variables to store API keys.' },
+      { name: 'GitHub Personal Access Token', regex: /ghp_[a-zA-Z0-9]{36}/g, severity: 'high', rec: 'Revoke this token at github.com/settings/tokens. Generate a new one with minimum required scopes.' },
+      { name: 'Google API Key', regex: /AIza[0-9A-Za-z_-]{35}/g, severity: 'high', rec: 'Restrict this key in Google Cloud Console. Add API key restrictions and use environment variables.' },
+      { name: 'Slack Token', regex: /xox[baprs]-[0-9a-zA-Z-]{10,}/g, severity: 'high', rec: 'Revoke this Slack token and generate a new one. Store in environment variables.' },
+      { name: 'Stripe API Key', regex: /sk_live_[0-9a-zA-Z]{24,}/g, severity: 'high', rec: 'Roll this Stripe key immediately in the Stripe dashboard. Use restricted keys for specific operations.' },
+
+      // Medium
+      { name: 'Hardcoded Password', regex: /(?:password|passwd|pwd)\s*[=:]\s*['"][^'"]{4,}['"]/gi, severity: 'medium', rec: 'Remove hardcoded passwords. Use environment variables or a secrets manager.' },
+      { name: 'Secret Assignment', regex: /(?:secret|api_secret)\s*[=:]\s*['"][^'"]{8,}['"]/gi, severity: 'medium', rec: 'Move secrets to environment variables. Never store them directly in source code.' },
+      { name: 'Token Assignment', regex: /(?:token|auth_token|access_token)\s*[=:]\s*['"][^'"]{8,}['"]/gi, severity: 'medium', rec: 'Store tokens in environment variables and load at runtime.' },
+      { name: 'JWT Token', regex: /eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, severity: 'medium', rec: 'JWT tokens should not be hardcoded. Store in secure session storage and transmit via HTTPS only.' },
+
+      // Low
+      { name: 'Generic Key/Secret Pattern', regex: /[a-zA-Z_]*(?:key|secret|credential)[a-zA-Z_]*\s*[=:]\s*['"][^'"]{8,}['"]/gi, severity: 'low', rec: 'Review this assignment — it may contain a sensitive value. Consider moving to environment variables.' }
+    ];
+
+    function scanCode(code) {
+      var findings = [];
+      var lines = code.split('\n');
+
+      PATTERNS.forEach(function(pattern) {
+        // Reset regex
+        pattern.regex.lastIndex = 0;
+        var match;
+        while ((match = pattern.regex.exec(code)) !== null) {
+          // Find line number
+          var pos = match.index;
+          var lineNum = code.substring(0, pos).split('\n').length;
+          // Avoid duplicate matches at same position for overlapping patterns
+          var duplicate = findings.some(function(f) {
+            return f.match === match[0] && f.line === lineNum;
+          });
+          if (!duplicate) {
+            findings.push({
+              type: pattern.name,
+              severity: pattern.severity,
+              match: match[0].length > 120 ? match[0].substring(0, 120) + '...' : match[0],
+              line: lineNum,
+              rec: pattern.rec
+            });
+          }
+        }
+      });
+
+      // Sort by severity
+      var order = { critical: 0, high: 1, medium: 2, low: 3 };
+      findings.sort(function(a, b) { return order[a.severity] - order[b.severity]; });
+      return findings;
+    }
+
+    document.getElementById('btn-scan').addEventListener('click', function() {
+      var code = document.getElementById('code-input').value;
+      if (code.trim().length < 10) {
+        alert('Please paste at least 10 characters of code to scan.');
+        return;
+      }
+
+      var findings = scanCode(code);
+      var resultsEl = document.getElementById('scan-results');
+      var summaryEl = document.getElementById('scan-summary');
+      var containerEl = document.getElementById('findings-container');
+
+      summaryEl.innerHTML = '';
+      containerEl.innerHTML = '';
+
+      if (findings.length === 0) {
+        summaryEl.innerHTML = '<div class="summary-chip clean">No secrets detected</div>';
+        containerEl.innerHTML = '<div class="no-secrets">No potential secrets found in your code. Looking good!</div>';
+      } else {
+        summaryEl.innerHTML = '<div class="summary-chip found">Found ' + findings.length + ' potential secret' + (findings.length > 1 ? 's' : '') + '</div>';
+
+        var grouped = { critical: [], high: [], medium: [], low: [] };
+        findings.forEach(function(f) { grouped[f.severity].push(f); });
+
+        var labels = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+        ['critical', 'high', 'medium', 'low'].forEach(function(sev) {
+          if (grouped[sev].length === 0) return;
+          var section = document.createElement('div');
+          section.className = 'severity-section severity-' + sev;
+          section.innerHTML = '<div class="severity-label">' + labels[sev] + ' (' + grouped[sev].length + ')</div>';
+
+          grouped[sev].forEach(function(f) {
+            var card = document.createElement('div');
+            card.className = 'finding-card';
+            card.innerHTML = '<div class="finding-header"><span class="finding-type">' + f.type + '</span><span class="finding-line">Line ' + f.line + '</span></div><div class="finding-match">' + escapeHtml(f.match) + '</div><div class="finding-rec">' + f.rec + '</div>';
+            section.appendChild(card);
+          });
+
+          containerEl.appendChild(section);
+        });
+      }
+
+      resultsEl.style.display = 'block';
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Developer Tools',url:'/dev/'},{name:'Code Secret Scanner'}];
+      var FAQS = [
+        {q:'Is my code sent to any server?', a:'No. All scanning runs entirely in your browser using JavaScript regex pattern matching. Your code never leaves your device — it is not uploaded, stored, or transmitted to any server.'},
+        {q:'What types of secrets can this tool detect?', a:'The scanner detects AWS access keys (AKIA prefix), OpenAI API keys (sk- prefix), GitHub tokens (ghp_ prefix), Google API keys (AIza prefix), Slack tokens, Stripe keys, database connection strings (MongoDB, PostgreSQL, MySQL, Redis), private keys, JWT tokens, and generic password/secret/token assignments.'},
+        {q:'Can this tool produce false positives?', a:'Yes. Pattern-based scanning may flag example code, test fixtures, or placeholder values as potential secrets. Always review findings in context. A string that matches an API key pattern in test data is not necessarily a real leaked credential.'},
+        {q:'Should I use this instead of a CI/CD secret scanner?', a:'This tool is great for quick manual checks before committing code. For automated protection, pair it with CI/CD tools like gitleaks, git-secrets, or TruffleHog that scan every commit automatically. Defense in depth is the best approach.'},
+        {q:'What should I do if a real secret is found?', a:'Immediately revoke and rotate the credential. Remove it from source code. Check access logs for unauthorized usage. Replace it with an environment variable reference. Add the file pattern to .gitignore if applicable.'},
+        {q:'Does this detect secrets in all programming languages?', a:'Yes. The patterns are language-agnostic because they match credential formats rather than language syntax. AWS keys, GitHub tokens, and connection strings look the same regardless of whether they appear in Python, JavaScript, Go, or any other language.'},
+        {q:'How often should I scan my code?', a:'Scan before every commit to a repository. Also scan when onboarding new team members, during code reviews, and whenever you copy code from external sources. Automated pre-commit hooks are the most reliable approach for continuous protection.'}
+      ];
+      var RELATED_TOOLS = [
+        {slug:'dev/json-formatter', name:'JSON Formatter', description:'Format and validate JSON data.'},
+        {slug:'dev/jwt-decoder', name:'JWT Decoder', description:'Decode and inspect JWT tokens.'},
+        {slug:'dev/base64-encode-decode', name:'Base64 Encode/Decode', description:'Encode and decode Base64 strings.'},
+        {slug:'dev/regex-tester', name:'Regex Tester', description:'Test regular expressions in real time.'},
+        {slug:'dev/url-encode-decode', name:'URL Encode/Decode', description:'Encode and decode URLs.'},
+        {slug:'dev/uuid-generator', name:'UUID Generator', description:'Generate random UUIDs.'}
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({slug:'dev/code-secret-scanner', title:'Code Secret Scanner', description:'Detect API keys, passwords, and secrets in your code. Free browser-based scanner.'});
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  })();
+  </script>
+</body>
+</html>
