@@ -25,6 +25,27 @@
 
 4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
 
+## LOCAL DEV SERVER
+
+**ALWAYS test locally before committing.** After any UI/HTML/CSS/JS change:
+
+```bash
+# Start local server (if not already running):
+cd "/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
+python3 -m http.server 9090
+
+# Then open in browser:
+# http://localhost:9090
+```
+
+- **ALWAYS use port 9090** — other ports (8080, 8081, 4000) have cached PWAs from other projects
+- The server serves from the project root — all paths work like production
+- Test the specific tool page you changed at `http://localhost:9090/[hub]/[tool]/`
+- Check: does it render correctly? Are colors using design tokens? Is the result visible without buried padding?
+- NEVER use port 8080 (Hazira Khata PWA cached there)
+
+**RULE: After making UI changes, ALWAYS tell the user to check `localhost:8080/[path]` before committing.**
+
 ## CRITICAL RULES — READ BEFORE EVERY TASK
 
 ### Rule 1: NEVER use hardcoded colors
