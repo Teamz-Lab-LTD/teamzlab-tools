@@ -242,7 +242,7 @@ var TeamzTools = (function () {
         "name": "Teamz Lab",
         "url": TEAMZ_URL
       },
-      "inLanguage": "en"
+      "inLanguage": document.documentElement.lang || "en"
     });
   }
 
