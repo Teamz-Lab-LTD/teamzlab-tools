@@ -75,6 +75,35 @@ if [ $unlinked -eq 0 ]; then
   echo "  All tools are linked!"
 fi
 
+# 6. Check for duplicate tools (same slug name in different hubs)
+echo ""
+echo "[6/6] Checking for duplicate tools..."
+dupes=$(find "$BASE" -name "index.html" -path "*/*/index.html" \
+  -not -path "*/about/*" -not -path "*/contact/*" -not -path "*/privacy/*" \
+  -not -path "*/terms/*" -not -path "*/docs/*" -not -path "*/node_modules/*" \
+  -not -path "*/.git/*" | sed "s|$BASE/||;s|/index.html||" | awk -F/ '{print $NF}' | sort | uniq -d)
+if [ -n "$dupes" ]; then
+  echo "  DUPLICATES FOUND (same tool name in multiple hubs):"
+  for d in $dupes; do
+    echo "    '$d' exists in:"
+    find "$BASE" -path "*/$d/index.html" | sed "s|$BASE/|      /|;s|/index.html||"
+    ERRORS=$((ERRORS + 1))
+  done
+else
+  echo "  No duplicate tool names found!"
+fi
+
+# Also check for very similar tool names (potential overlaps)
+similar=$(find "$BASE" -name "index.html" -path "*/*/index.html" \
+  -not -path "*/about/*" -not -path "*/contact/*" -not -path "*/privacy/*" \
+  -not -path "*/terms/*" -not -path "*/docs/*" -not -path "*/node_modules/*" \
+  -not -path "*/.git/*" | sed "s|$BASE/||;s|/index.html||" | awk -F/ '{print $NF}' | sort | \
+  awk 'prev && index($0, prev)==1 || index(prev, $0)==1 {print prev " <-> " $0} {prev=$0}')
+if [ -n "$similar" ]; then
+  echo "  SIMILAR names (possible overlaps):"
+  echo "$similar" | sed 's/^/    /'
+fi
+
 echo ""
 echo "============================================="
 total=$(grep -c '<url>' "$BASE/sitemap.xml")

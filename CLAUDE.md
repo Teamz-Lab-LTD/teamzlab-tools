@@ -50,6 +50,17 @@ Example output to user:
 
 4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
 
+5. **BEFORE building ANY new tool**, run this to check for duplicates:
+   ```bash
+   find . -path "*/<proposed-slug>/index.html" 2>/dev/null
+   grep -ri "<proposed tool name>" --include="*.html" -l | head -5
+   ```
+   If a similar tool exists, ENHANCE it instead of creating a duplicate.
+   Known duplicates to be aware of:
+   - sleep-calculator exists in `/health/` AND `/evergreen/`
+   - YouTube thumbnail tools exist in `/tools/`, `/video/`, `/design/`
+   - Resume/ATS tools exist in `/career/resume-ats-scorer/` AND `/career/ats-resume-checker/`
+
 ## LOCAL DEV SERVER
 
 **ALWAYS test locally before committing.** After any UI/HTML/CSS/JS change:
