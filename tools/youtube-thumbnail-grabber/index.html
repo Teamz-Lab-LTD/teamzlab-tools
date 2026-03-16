@@ -29,7 +29,8 @@
     .btn-grab:hover{opacity:0.9}
     .privacy-note{font-size:0.8rem;color:var(--text-muted);text-align:center;margin-bottom:1rem}
     .thumb-results{display:none}
-    .thumb-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem;background:var(--surface)}
+    .thumb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem}
+    .thumb-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
     .thumb-card img{width:100%;display:block;background:var(--bg)}
     .thumb-info{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;flex-wrap:wrap;gap:0.5rem}
     .thumb-label{font-weight:700;font-size:0.95rem;color:var(--text);font-family:'Poppins',sans-serif}
@@ -39,6 +40,11 @@
     .error-msg{color:var(--accent);font-weight:600;text-align:center;display:none;margin:1rem 0}
     .video-id-display{text-align:center;color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem}
     .video-id-display code{background:var(--surface);border:1px solid var(--border);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.85rem;color:var(--text)}
+    .app-banner{margin-top:2rem;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:center}
+    .app-banner .title{font-size:1.1rem;font-weight:600;margin:0 0 0.5rem;color:var(--text)}
+    .app-banner .desc{margin:0 0 1rem;color:var(--text-muted)}
+    .app-banner .store-links{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap}
+    .app-banner .store-links a{display:inline-block;padding:0.6rem 1.5rem;background:transparent;color:var(--text);border:2px solid var(--border);border-radius:2rem;text-decoration:none;font-weight:600}
   </style>
 </head>
 <body>
@@ -76,8 +82,12 @@
         <p>Note: Not all videos have a maxresdefault thumbnail. If the HD version shows a gray placeholder, try the SD or HQ version instead.</p>
       </div>
 
+      <h2>Understanding YouTube Thumbnail Resolutions</h2>
+      <p>The maximum resolution thumbnail (maxresdefault.jpg) is 1280x720 pixels and provides the highest quality image available. However, this resolution is not generated for every video, particularly older videos or those uploaded at lower resolutions. If you see a grey placeholder instead of the actual thumbnail, the maxres version is not available for that video. The standard definition thumbnail (sddefault.jpg) at 640x480 pixels is a reliable fallback that exists for nearly all videos. The high quality version (hqdefault.jpg) at 480x360 is the most commonly used resolution for embedding and sharing purposes.</p>
+      <p>The medium quality thumbnail (mqdefault.jpg) at 320x180 is useful for smaller displays and mobile applications where bandwidth conservation matters. The default thumbnail (default.jpg) at 120x90 is the smallest available and is primarily used in search results and sidebar suggestions within the YouTube interface itself. For most content creation and design purposes, the high quality or standard definition versions provide the best balance of quality and file size.</p>
+
       <h2>Supported YouTube URL Formats</h2>
-      <p>This tool supports all common YouTube URL formats: <strong>youtube.com/watch?v=ID</strong>, <strong>youtu.be/ID</strong>, <strong>youtube.com/embed/ID</strong>, and <strong>youtube.com/shorts/ID</strong>. You can also paste just the 11-character video ID directly. The tool automatically detects the format and extracts the ID.</p>
+      <p>This tool supports all common YouTube URL formats: <strong>youtube.com/watch?v=ID</strong>, <strong>youtu.be/ID</strong>, <strong>youtube.com/embed/ID</strong>, <strong>youtube.com/shorts/ID</strong>, and <strong>youtube.com/v/ID</strong>. You can also paste just the 11-character video ID directly. The tool automatically detects the format and extracts the ID. YouTube thumbnails follow a consistent URL structure: <code>https://img.youtube.com/vi/{VIDEO_ID}/{RESOLUTION}.jpg</code>.</p>
 
       <h3>Common Uses for YouTube Thumbnails</h3>
       <p>Content creators often need thumbnails for blog posts, presentations, social media sharing, or video analysis. Teachers use thumbnails in educational materials. Marketers include them in campaign reports. Developers use them when building apps that display YouTube content. This tool provides instant access to all thumbnail sizes without needing the YouTube Data API or any authentication.</p>
@@ -120,6 +130,9 @@
       // youtube.com/shorts/ID
       m = input.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
       if (m) return m[1];
+      // youtube.com/v/ID
+      m = input.match(/youtube\.com\/v\/([a-zA-Z0-9_-]{11})/);
+      if (m) return m[1];
       return null;
     }
 
@@ -142,6 +155,9 @@
       idDisplay.innerHTML = 'Video ID: <code>' + videoId + '</code>';
       results.innerHTML = '';
 
+      var grid = document.createElement('div');
+      grid.className = 'thumb-grid';
+
       THUMB_SIZES.forEach(function(size) {
         var url = 'https://img.youtube.com/vi/' + videoId + '/' + size.file;
         var card = document.createElement('div');
@@ -163,14 +179,28 @@
         link.target = '_blank';
         link.rel = 'noopener';
         link.className = 'btn-download';
-        link.textContent = 'Open / Download';
+        link.download = 'youtube-thumb-' + videoId + '-' + size.file;
+        link.textContent = 'Download';
 
         info.appendChild(labelSpan);
         info.appendChild(link);
         card.appendChild(img);
         card.appendChild(info);
-        results.appendChild(card);
+        grid.appendChild(card);
       });
+
+      results.appendChild(grid);
+
+      // App banner
+      var banner = document.createElement('div');
+      banner.className = 'app-banner';
+      banner.innerHTML = '<p class="title">Want to capture frames from YouTube videos?</p>'
+        + '<p class="desc">Try YouTube Frame Catch app.</p>'
+        + '<div class="store-links">'
+        + '<a href="https://apps.apple.com/us/developer/teamz-lab-ltd/id1785282466" target="_blank" rel="noopener">App Store</a>'
+        + '<a href="https://play.google.com/store/apps/dev?id=7194763656319643086" target="_blank" rel="noopener">Google Play</a>'
+        + '</div>';
+      results.appendChild(banner);
 
       results.style.display = 'block';
     }
@@ -189,15 +219,17 @@
         {q:'What YouTube URL formats are supported?', a:'The tool supports youtube.com/watch?v=, youtu.be/, youtube.com/embed/, youtube.com/shorts/, and direct 11-character video IDs. Any valid YouTube URL or video ID will work.'},
         {q:'Is my data stored or tracked?', a:'No. The YouTube URL you paste is processed entirely in your browser. Nothing is sent to any server, stored in any database, or tracked in any way. Your privacy is fully protected.'},
         {q:'Can I use downloaded thumbnails commercially?', a:'YouTube thumbnails are copyrighted by the video uploader. Using them in presentations, blog posts with attribution, or for personal reference is generally fine. For commercial use, always seek permission from the content creator.'},
-        {q:'How do I download the thumbnail image?', a:'Click the "Open / Download" button to open the thumbnail in a new tab. From there, right-click the image and select "Save Image As" to download it to your device.'}
+        {q:'How do I download the thumbnail image?', a:'Click the "Download" button next to each thumbnail. The image will either download directly or open in a new tab, depending on your browser. From a new tab, right-click the image and select "Save Image As" to save it to your device.'},
+        {q:'Can I download thumbnails from private or unlisted videos?', a:'YouTube thumbnail URLs only work for public and unlisted videos where the video ID is accessible. Private videos restrict access to their thumbnail images as well.'},
+        {q:'Does this tool work with YouTube Shorts?', a:'Yes. YouTube Shorts use the same video ID system as regular videos, so you can paste a Shorts URL and download thumbnails in all available resolutions.'}
       ];
       var RELATED_TOOLS = [
+        {slug:'design/youtube-thumbnail-maker', name:'YouTube Thumbnail Maker', description:'Design custom YouTube thumbnails with text and graphics.'},
+        {slug:'video/youtube-timestamp-link-maker', name:'YouTube Timestamp Link Generator', description:'Create shareable YouTube links that start at a specific time.'},
+        {slug:'video/watch-speed-calculator', name:'Watch Speed Calculator', description:'Calculate how long a video takes at different playback speeds.'},
+        {slug:'video/playlist-duration-calculator', name:'Playlist Duration Calculator', description:'Add up the total watch time of a playlist.'},
         {slug:'tools/gif-maker', name:'GIF Maker', description:'Create animated GIFs from images.'},
-        {slug:'tools/ai-background-remover', name:'AI Background Remover', description:'Remove image backgrounds with AI.'},
-        {slug:'tools/ai-image-captioner', name:'AI Image Captioner', description:'Generate captions for images.'},
-        {slug:'tools/ai-object-detector', name:'AI Object Detector', description:'Detect objects in images.'},
-        {slug:'dev/base64-encode-decode', name:'Base64 Encode/Decode', description:'Encode and decode Base64 strings.'},
-        {slug:'tools/signature-maker', name:'Signature Maker', description:'Create digital signatures.'}
+        {slug:'tools/ai-background-remover', name:'AI Background Remover', description:'Remove image backgrounds with AI.'}
       ];
       TeamzTools.renderBreadcrumbs(BREADCRUMBS);
       TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);

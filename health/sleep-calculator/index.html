@@ -75,11 +75,11 @@
     description: 'Calculate optimal bed and wake times based on sleep cycles.',
     inputs: [
       { id: 'calc_mode', type: 'select', label: 'I want to calculate...', options: [
-        { value: 'bedtime', label: 'I need to wake up at...' },
-        { value: 'waketime', label: 'I want to go to bed at...' }
+        { value: 'bedtime', label: 'Find when to go to bed (I know my wake time)' },
+        { value: 'waketime', label: 'Find when to wake up (I know my bedtime)' }
       ], default: 'bedtime' },
-      { id: 'time_input', type: 'text', label: 'Time (HH:MM)', placeholder: '07:00', default: '07:00', error: 'Enter a valid time in HH:MM format.' },
-      { id: 'fall_asleep_mins', type: 'number', label: 'Minutes to Fall Asleep', placeholder: '15', min: 0, max: 120, step: 1, default: 15, error: 'Enter minutes to fall asleep.' }
+      { id: 'time_input', type: 'time', label: 'Wake Time / Bedtime', default: '07:00', error: 'Enter a valid time.' },
+      { id: 'fall_asleep_mins', type: 'number', label: 'Minutes to Fall Asleep', placeholder: '15', min: 0, max: 120, step: 5, default: 15, error: 'Enter minutes to fall asleep.' }
     ],
     calculate: function(v) {
       var timeStr = v.time_input;
@@ -103,6 +103,7 @@
         return displayH + ':' + (m < 10 ? '0' + m : m) + ' ' + ampm;
       };
       var targetMins = hours * 60 + mins;
+      var qualityLabel = function(c) { return c >= 5 ? ' — Recommended' : c === 4 ? ' — Minimum' : ' — Short'; };
       if (v.calc_mode === 'bedtime') {
         for (var i = 0; i < cycles.length; i++) {
           var sleepDuration = cycles[i] * cycleMin;
@@ -110,19 +111,22 @@
           if (bedMins < 0) bedMins = bedMins + 1440;
           var sleepHours = (sleepDuration / 60).toFixed(1);
           var label = cycles[i] + ' cycles (' + sleepHours + ' hrs)';
-          if (cycles[i] >= 5) label = label + ' - Recommended';
-          results.push({ label: label, value: 'Go to bed at ' + formatTime(bedMins) });
+          results.push({ label: label, value: formatTime(bedMins) + qualityLabel(cycles[i]) });
         }
+        results.push({ label: 'Wake Time', value: formatTime(targetMins) });
+        results.push({ label: 'Fall Asleep Time', value: fallAsleep + ' minutes' });
       } else {
+        var sleepStart = targetMins + fallAsleep;
         for (var j = 0; j < cycles.length; j++) {
           var sleepDur = cycles[j] * cycleMin;
-          var wakeMins = targetMins + fallAsleep + sleepDur;
-          if (wakeMins >= 1440) wakeMins = wakeMins - 1440;
+          var wakeMins = (sleepStart + sleepDur) % 1440;
           var sleepH = (sleepDur / 60).toFixed(1);
           var lbl = cycles[j] + ' cycles (' + sleepH + ' hrs)';
-          if (cycles[j] >= 5) lbl = lbl + ' - Recommended';
-          results.push({ label: lbl, value: 'Wake up at ' + formatTime(wakeMins) });
+          results.push({ label: lbl, value: formatTime(wakeMins) + qualityLabel(cycles[j]) });
         }
+        results.push({ label: 'Bedtime', value: formatTime(targetMins) });
+        var fallAsleepAt = (targetMins + fallAsleep) % 1440;
+        results.push({ label: 'You Fall Asleep At', value: formatTime(fallAsleepAt) });
       }
       var modeLabel = v.calc_mode === 'bedtime' ? 'wake up at ' + formatTime(targetMins) : 'go to bed at ' + formatTime(targetMins);
       return {
@@ -135,14 +139,19 @@
   var FAQS = [
     { q: 'Why do I feel groggy even after 8 hours of sleep?', a: 'You are likely waking up in the middle of a deep sleep phase. Sleep cycles last about 90 minutes, and waking during deep sleep (stage N3) causes sleep inertia. Try adjusting your alarm by 15-30 minutes earlier or later to align with the end of a cycle. Also check for sleep quality issues like sleep apnea or a poor sleep environment.' },
     { q: 'Is it better to sleep 6 hours or 7.5 hours?', a: 'For most adults, 7.5 hours (5 complete cycles) is significantly better than 6 hours (4 cycles). The 5th cycle contains a large proportion of REM sleep, which is critical for memory, learning, and emotional health. Chronic 6-hour sleep has been shown to impair cognitive performance equivalent to two nights of no sleep.' },
-    { q: 'How long should it take to fall asleep?', a: 'A healthy sleep onset latency is 10-20 minutes. Falling asleep in under 5 minutes suggests significant sleep deprivation or a sleep disorder. Taking more than 30 minutes regularly indicates insomnia, which may benefit from cognitive behavioral therapy for insomnia (CBT-I) or other interventions.' },
+    { q: 'How many hours of sleep do I actually need?', a: 'Most adults need 7-9 hours (5-6 complete cycles). Teenagers need 8-10 hours and children need even more. Consistently getting less than 7 hours impairs cognitive function, immune health, and emotional regulation. About 3% of the population has a genetic variant allowing them to function on 6 hours, but this is rare.' },
+    { q: 'How long should it take to fall asleep?', a: 'A healthy sleep onset latency is 10-20 minutes. Falling asleep in under 5 minutes suggests significant sleep deprivation or a sleep disorder. Taking more than 30 minutes regularly indicates insomnia, which may benefit from cognitive behavioral therapy for insomnia (CBT-I) or other interventions. Adjust the "Minutes to Fall Asleep" field if you take longer than the default 15 minutes for more accurate results.' },
     { q: 'Should I keep the same sleep schedule on weekends?', a: 'Yes, ideally. Social jet lag (the difference between weekday and weekend sleep patterns) disrupts your circadian rhythm and is associated with increased health risks. If you must shift your schedule, limit the change to 30-60 minutes. Sleeping in excessively on weekends makes Monday mornings harder.' },
-    { q: 'Do naps affect nighttime sleep?', a: 'Short naps (20-30 minutes) taken before 3 PM generally do not affect nighttime sleep and can boost alertness and performance. Longer naps or napping later in the day can reduce sleep drive and make it harder to fall asleep at night. If you have insomnia, avoiding naps entirely is usually recommended.' }
+    { q: 'Do naps affect nighttime sleep?', a: 'Short naps (20-30 minutes) taken before 3 PM generally do not affect nighttime sleep and can boost alertness and performance. Longer naps or napping later in the day can reduce sleep drive and make it harder to fall asleep at night. If you have insomnia, avoiding naps entirely is usually recommended.' },
+    { q: 'Why does the calculator show a "Short" label for 3 cycles?', a: 'Three sleep cycles provide only 4.5 hours of sleep, which is well below the recommended minimum for adults. While it may be unavoidable occasionally, regular short sleep causes cumulative cognitive impairment. The "Recommended" label appears on 5-6 cycles (7.5-9 hours), and "Minimum" on 4 cycles (6 hours).' }
   ];
   var RELATED_TOOLS = [
     { slug: 'kids/child-sleep-calculator', name: 'Child Sleep Calculator', description: 'Calculate optimal sleep schedules for children.' },
     { slug: 'health/water-intake-calculator', name: 'Water Intake Calculator', description: 'Calculate your daily hydration target.' },
-    { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate your daily calorie needs.' }
+    { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate your daily calorie needs.' },
+    { slug: 'evergreen/bmi-calculator', name: 'BMI Calculator', description: 'Calculate your body mass index.' },
+    { slug: 'evergreen/pomodoro-timer', name: 'Pomodoro Timer', description: 'Focus timer for productivity.' },
+    { slug: 'evergreen/age-calculator', name: 'Age Calculator', description: 'Calculate your exact age in years, months, and days.' }
   ];
   document.addEventListener('DOMContentLoaded', function() {
     TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG); TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
