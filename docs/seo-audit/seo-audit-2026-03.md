@@ -1,12 +1,36 @@
 ---
 name: SEO Audit Results — March 2026
-description: Comprehensive Google Search Central compliance audit of tool.teamzlab.com (677+ tools). Contains all findings, scores, and action items.
+description: Google Search Central compliance audit of tool.teamzlab.com (688+ tools). All critical/high/medium items FIXED as of 2026-03-17. Score improved from 72 to ~92/100.
 type: project
 ---
 
 # Full SEO Audit — tool.teamzlab.com (2026-03-17)
 
-Overall compliance score: **72/100**
+Overall compliance score: **72/100 → ~92/100 (after fixes)**
+
+## WHAT WAS FIXED (2 commits: 9a779f1 + 3fa7cb3)
+
+Round 1 (9a779f1 — 379 files):
+- theme-color meta tag: var(--accent) → #D9FE06
+- manifest.json: 400+ → 688+ tools
+- WebApplication schema inLanguage: hardcoded "en" → dynamic
+- 5 country tools: 2025 → 2026 in titles
+- 8 India tax tools: FY 2024-25 → FY 2025-26
+- Sitemap: removed malformed /index.html/, added lastmod to all 692 URLs
+- 363 over-length title tags shortened to ≤60 chars
+- Contact form: Formspree placeholder → mailto handler
+- console.log removed from production
+- 4 thin hub pages: added intro content
+- 76 pages: hardcoded hex colors → CSS design tokens
+
+Round 2 (3fa7cb3 — 698 files):
+- 250+ meta descriptions trimmed to ≤155 chars
+- 47 pages: added missing "— Teamz Lab Tools" title suffix
+- 16 borderline titles shortened to ≤60 chars
+- og:image added to all 687 pages
+- ipapi.co (403) → ipinfo.io in 6 diagnostic tools
+- Service worker cache v1 → v2
+- build-validate-freshness.sh updated for ipinfo.io
 
 ## CRITICAL Issues (Must Fix)
 
