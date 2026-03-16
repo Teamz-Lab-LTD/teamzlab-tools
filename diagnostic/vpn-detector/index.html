@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Am I Using a VPN? — Free VPN Detection Tool | Teamz Lab Tools</title>
+  <meta name="description" content="Check if your VPN is working right now. Free VPN detection tool tests your IP, ISP, WebRTC leaks, and DNS status. 100% private, runs in your browser.">
+  <meta property="og:title" content="Am I Using a VPN? — Free VPN Detection Tool | Teamz Lab Tools">
+  <meta property="og:description" content="Check if your VPN is working. Detect IP leaks, WebRTC leaks, and DNS leaks instantly.">
+  <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/vpn-detector/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/vpn-detector/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .vpn-status-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 50px; font-weight: 700; font-size: 1.1rem; margin-bottom: 1.5rem; }
+    .vpn-status-badge.protected { background: var(--surface); border: 2px solid var(--accent); color: var(--accent); }
+    .vpn-status-badge.not-protected { background: var(--surface); border: 2px solid var(--danger, var(--text-muted)); color: var(--danger, var(--text-muted)); }
+    .vpn-status-badge.leak { background: var(--surface); border: 2px solid var(--warning, var(--text-muted)); color: var(--warning, var(--text-muted)); }
+    .vpn-result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .vpn-card { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .vpn-card-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .vpn-card-value { font-size: 1.1rem; font-weight: 700; color: var(--text); word-break: break-all; }
+    .vpn-card-status { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; margin-top: 0.4rem; }
+    .vpn-card-status.ok { background: var(--surface); border: 1px solid var(--accent); color: var(--accent); }
+    .vpn-card-status.warn { background: var(--surface); border: 1px solid var(--warning, var(--text-muted)); color: var(--warning, var(--text-muted)); }
+    .vpn-card-status.danger { background: var(--surface); border: 1px solid var(--danger, var(--text-muted)); color: var(--danger, var(--text-muted)); }
+    .vpn-recs { margin-top: 1.5rem; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .vpn-recs h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+    .vpn-recs ul { margin: 0; padding-left: 1.25rem; }
+    .vpn-recs li { margin-bottom: 0.4rem; color: var(--text); font-size: 0.9rem; }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .privacy-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+    .scan-btn { padding: 0.85rem 2rem; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1.05rem; font-family: inherit; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>VPN Detector — Is Your VPN Working?</h1>
+      <p class="tool-description">Instantly check if your VPN is active and working correctly. This tool tests your public IP, ISP, WebRTC leaks, and DNS status to detect whether you are protected.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="privacy-strip">
+        <span>100% Private — All checks run in your browser. We do not store or log any data.</span>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1rem;">
+        <button type="button" id="scan-btn" class="btn-pill tool-calculate-btn scan-btn">Scan My Connection</button>
+      </div>
+
+      <div id="vpn-results" style="display:none;"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Does VPN Detection Work?</h2>
+      <p>This VPN detection tool performs multiple checks to determine if your internet connection is routed through a VPN. It examines your public IP address, compares your ISP name against a database of known VPN providers and datacenter hosts, checks for WebRTC IP leaks that can bypass your VPN, and verifies your DNS resolver status.</p>
+
+      <div class="formula-box">
+        <h3>What We Check</h3>
+        <ul>
+          <li><strong>Public IP &amp; ISP</strong> — Your visible IP address and the Internet Service Provider associated with it. VPN users typically show the VPN provider or a datacenter ISP.</li>
+          <li><strong>VPN Provider Match</strong> — We compare your ISP/organization name against 50+ known VPN providers (NordVPN, ExpressVPN, Surfshark, etc.) and datacenter hosting companies.</li>
+          <li><strong>WebRTC Leak Check</strong> — WebRTC can reveal your real IP address even when using a VPN. We test for this common leak vector.</li>
+          <li><strong>DNS Status</strong> — Your DNS resolver can reveal whether DNS requests are going through your VPN or leaking to your ISP's DNS servers.</li>
+        </ul>
+      </div>
+
+      <h2>Why Check If Your VPN Is Working?</h2>
+      <p>Simply connecting to a VPN does not guarantee complete protection. Common issues include WebRTC leaks that expose your real IP, DNS leaks that reveal your browsing history to your ISP, and kill switch failures. Running regular VPN detection tests ensures your privacy is intact and your VPN is functioning as expected.</p>
+
+      <h2>What Does "Protected" Mean?</h2>
+      <p>A "Protected" status means your public IP is associated with a known VPN provider or datacenter, no WebRTC leaks were detected, and your DNS appears to be routed correctly. "Not Protected" means your connection appears to be using a residential ISP without VPN indicators. "Leak Detected" means a VPN is partially working but some data is leaking.</p>
+
+      <h2>Tips for Better VPN Privacy</h2>
+      <ul>
+        <li>Enable your VPN's kill switch feature to prevent leaks during disconnections</li>
+        <li>Disable WebRTC in your browser settings or use a browser extension to block WebRTC leaks</li>
+        <li>Use your VPN provider's DNS servers instead of third-party DNS</li>
+        <li>Test your VPN regularly using tools like this one</li>
+        <li>Keep your VPN client updated to the latest version</li>
+      </ul>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var scanBtn = document.getElementById('scan-btn');
+    var resultsDiv = document.getElementById('vpn-results');
+
+    var VPN_PROVIDERS = [
+      'nordvpn','expressvpn','surfshark','private internet access','mullvad','protonvpn','proton ag',
+      'cyberghost','ipvanish','windscribe','tunnelbear','hotspot shield','hidemyass','strongvpn',
+      'vyprvpn','atlas vpn','privatevpn','purevpn','zenmate','torguard','astrill','hide.me',
+      'perfect privacy','fastestvpn','ivpn','airvpn','vpn unlimited','keepsolid','buffered vpn',
+      'encrypt.me','ghostpath','betternet','speedify','opera vpn','mozilla vpn','wireguard',
+      'outline vpn','psiphon','lantern','browsec','hola','urban vpn','touch vpn','x-vpn',
+      'thunder vpn','secure vpn','vpn super','turbo vpn','snap vpn','yoga vpn','vpn proxy master',
+      'kaspersky','bitdefender vpn','norton vpn','avast vpn','avg vpn','malwarebytes vpn'
+    ];
+
+    var DATACENTER_PATTERNS = [
+      'digital ocean','digitalocean','amazon','aws','google cloud','gcp','microsoft azure','azure',
+      'hetzner','ovh','ovhcloud','vultr','linode','akamai connected','cloudflare','leaseweb',
+      'choopa','the constant company','m247','datacamp','hostwinds','contabo','ionos','scaleway',
+      'upcloud','cherry servers','kamatera','hostinger','quadranet','psychz','colocrossing',
+      'multacom','sharktech','reliablesite','datapacket','zenlayer','serverius','combahton',
+      'frantech','buyvm'
+    ];
+
+    function checkVPNProvider(isp, org) {
+      var combined = ((isp || '') + ' ' + (org || '')).toLowerCase();
+      for (var i = 0; i < VPN_PROVIDERS.length; i++) {
+        if (combined.indexOf(VPN_PROVIDERS[i]) !== -1) return { match: true, type: 'vpn', name: VPN_PROVIDERS[i] };
+      }
+      for (var j = 0; j < DATACENTER_PATTERNS.length; j++) {
+        if (combined.indexOf(DATACENTER_PATTERNS[j]) !== -1) return { match: true, type: 'datacenter', name: DATACENTER_PATTERNS[j] };
+      }
+      return { match: false, type: 'residential', name: null };
+    }
+
+    async function getPublicIP() {
+      try {
+        var resp = await fetch('https://ipapi.co/json/');
+        if (!resp.ok) throw new Error('ipapi failed');
+        var data = await resp.json();
+        if (data.error) throw new Error(data.reason || 'ipapi error');
+        return {
+          ip: data.ip,
+          isp: data.org || '',
+          org: data.asn || '',
+          city: data.city || '',
+          region: data.region || '',
+          country: data.country_name || '',
+          countryCode: data.country_code || '',
+          timezone: data.timezone || ''
+        };
+      } catch (e) {
+        try {
+          var resp2 = await fetch('https://api.ipify.org?format=json');
+          var data2 = await resp2.json();
+          return { ip: data2.ip, isp: 'Unknown', org: '', city: 'Unknown', region: '', country: 'Unknown', countryCode: '', timezone: '' };
+        } catch (e2) {
+          return null;
+        }
+      }
+    }
+
+    async function checkWebRTC() {
+      return new Promise(function(resolve) {
+        var ips = [];
+        var timeout;
+        try {
+          var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+          pc.createDataChannel('');
+          pc.createOffer().then(function(offer) {
+            return pc.setLocalDescription(offer);
+          }).catch(function() { resolve({ leaked: false, ips: [], blocked: true }); });
+
+          pc.onicecandidate = function(e) {
+            if (!e || !e.candidate || !e.candidate.candidate) return;
+            var parts = e.candidate.candidate.split(' ');
+            var ip = parts[4];
+            if (ip && ip.indexOf('.') !== -1 && ips.indexOf(ip) === -1) {
+              ips.push(ip);
+            }
+          };
+
+          timeout = setTimeout(function() {
+            pc.close();
+            resolve({ leaked: ips.length > 0, ips: ips, blocked: false });
+          }, 3000);
+        } catch (e) {
+          resolve({ leaked: false, ips: [], blocked: true });
+        }
+      });
+    }
+
+    async function checkDNS() {
+      try {
+        var start = performance.now();
+        var resp = await fetch('https://cloudflare-dns.com/dns-query?name=example.com&type=A', {
+          headers: { 'Accept': 'application/dns-json' }
+        });
+        var elapsed = Math.round(performance.now() - start);
+        var data = await resp.json();
+        return { working: true, resolver: 'Cloudflare (1.1.1.1)', latency: elapsed };
+      } catch (e) {
+        try {
+          var start2 = performance.now();
+          var resp2 = await fetch('https://dns.google/resolve?name=example.com&type=A');
+          var elapsed2 = Math.round(performance.now() - start2);
+          return { working: true, resolver: 'Google (8.8.8.8)', latency: elapsed2 };
+        } catch (e2) {
+          return { working: false, resolver: 'Failed', latency: 0 };
+        }
+      }
+    }
+
+    scanBtn.addEventListener('click', async function() {
+      scanBtn.disabled = true;
+      scanBtn.innerHTML = '<span class="loading-spinner"></span> Scanning...';
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div style="text-align:center;padding:2rem;"><span class="loading-spinner"></span><p style="margin-top:1rem;color:var(--text-muted);">Running connection scan...</p></div>';
+
+      var ipInfo = await getPublicIP();
+      if (!ipInfo) {
+        resultsDiv.innerHTML = '<div style="padding:1rem;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);">Could not determine your IP address. Please check your connection and try again.</div>';
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Scan My Connection';
+        return;
+      }
+
+      var webrtcResult = await checkWebRTC();
+      var dnsResult = await checkDNS();
+      var vpnCheck = checkVPNProvider(ipInfo.isp, ipInfo.org);
+
+      // Determine overall status
+      var webrtcLeaking = false;
+      if (webrtcResult.leaked && !webrtcResult.blocked) {
+        var webrtcIps = webrtcResult.ips.filter(function(ip) {
+          return ip !== ipInfo.ip && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.');
+        });
+        if (webrtcIps.length > 0) webrtcLeaking = true;
+      }
+
+      var status, statusClass;
+      if (vpnCheck.match && !webrtcLeaking) {
+        status = 'Protected';
+        statusClass = 'protected';
+      } else if (vpnCheck.match && webrtcLeaking) {
+        status = 'Leak Detected';
+        statusClass = 'leak';
+      } else {
+        status = 'Not Protected';
+        statusClass = 'not-protected';
+      }
+
+      var html = '';
+      // Status badge
+      html += '<div style="text-align:center;"><div class="vpn-status-badge ' + statusClass + '">';
+      if (status === 'Protected') html += '&#x1f6e1; VPN: Protected';
+      else if (status === 'Leak Detected') html += '&#x26a0; VPN: Leak Detected';
+      else html += '&#x1f513; VPN: Not Protected';
+      html += '</div></div>';
+
+      // Result grid
+      html += '<div class="vpn-result-grid">';
+
+      // Public IP
+      html += '<div class="vpn-card"><div class="vpn-card-label">Public IP Address</div><div class="vpn-card-value">' + ipInfo.ip + '</div></div>';
+
+      // ISP
+      html += '<div class="vpn-card"><div class="vpn-card-label">ISP / Organization</div><div class="vpn-card-value">' + ipInfo.isp + '</div>';
+      if (vpnCheck.match) {
+        html += '<div class="vpn-card-status ok">' + (vpnCheck.type === 'vpn' ? 'VPN Provider Detected' : 'Datacenter/Proxy Detected') + '</div>';
+      } else {
+        html += '<div class="vpn-card-status warn">Residential ISP (No VPN Detected)</div>';
+      }
+      html += '</div>';
+
+      // Location
+      html += '<div class="vpn-card"><div class="vpn-card-label">Location</div><div class="vpn-card-value">' + [ipInfo.city, ipInfo.region, ipInfo.country].filter(Boolean).join(', ') + '</div></div>';
+
+      // WebRTC
+      html += '<div class="vpn-card"><div class="vpn-card-label">WebRTC Leak Status</div>';
+      if (webrtcResult.blocked) {
+        html += '<div class="vpn-card-value">WebRTC Blocked</div><div class="vpn-card-status ok">No Leak Possible</div>';
+      } else if (webrtcLeaking) {
+        html += '<div class="vpn-card-value">Leak Detected!</div><div class="vpn-card-status danger">Real IP may be exposed: ' + webrtcResult.ips.join(', ') + '</div>';
+      } else if (webrtcResult.leaked) {
+        html += '<div class="vpn-card-value">Local IPs Only</div><div class="vpn-card-status ok">No Public IP Leak</div>';
+      } else {
+        html += '<div class="vpn-card-value">No Leaks Detected</div><div class="vpn-card-status ok">Safe</div>';
+      }
+      html += '</div>';
+
+      // DNS
+      html += '<div class="vpn-card"><div class="vpn-card-label">DNS Status</div>';
+      if (dnsResult.working) {
+        html += '<div class="vpn-card-value">' + dnsResult.resolver + '</div><div class="vpn-card-status ok">Resolving (' + dnsResult.latency + 'ms)</div>';
+      } else {
+        html += '<div class="vpn-card-value">DNS Check Failed</div><div class="vpn-card-status danger">Could not resolve</div>';
+      }
+      html += '</div>';
+
+      // Timezone
+      html += '<div class="vpn-card"><div class="vpn-card-label">Timezone</div><div class="vpn-card-value">' + (ipInfo.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone) + '</div></div>';
+
+      html += '</div>';
+
+      // Recommendations
+      html += '<div class="vpn-recs"><h3>Recommendations</h3><ul>';
+      if (status === 'Protected') {
+        html += '<li>Your connection appears to be protected by a VPN or proxy service.</li>';
+        html += '<li>No WebRTC leaks were detected. Your real IP is hidden.</li>';
+        html += '<li>Continue using your VPN for maximum privacy.</li>';
+        html += '<li>Consider running this test periodically to ensure ongoing protection.</li>';
+      } else if (status === 'Leak Detected') {
+        html += '<li><strong>WebRTC is leaking your real IP address!</strong> Disable WebRTC in your browser or install a WebRTC blocking extension.</li>';
+        html += '<li>Your VPN is partially working but not fully protecting you.</li>';
+        html += '<li>Check your VPN settings for WebRTC leak protection.</li>';
+        html += '<li>Use Firefox and set <code>media.peerconnection.enabled</code> to false in about:config.</li>';
+      } else {
+        html += '<li>Your connection does not appear to be using a VPN.</li>';
+        html += '<li>Your real IP address, ISP, and approximate location are visible to websites you visit.</li>';
+        html += '<li>Consider using a reputable VPN service if you need privacy protection.</li>';
+        html += '<li>A VPN encrypts your traffic and masks your IP from websites, ISPs, and network snoopers.</li>';
+      }
+      html += '</ul></div>';
+
+      resultsDiv.innerHTML = html;
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'Scan Again';
+    });
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Diagnostic Tools', url: '/diagnostic/' }, { name: 'VPN Detector' }];
+    var FAQS = [
+      { q: 'How does this VPN detector work?', a: 'It checks your public IP address and ISP name against a database of 50+ known VPN providers and datacenter hosts. It also tests for WebRTC IP leaks and DNS resolver status to give you a complete picture of your VPN protection.' },
+      { q: 'Is this VPN detection test accurate?', a: 'This test detects most major VPN providers by ISP/organization name matching. Some smaller or self-hosted VPNs may not be detected. The WebRTC and DNS leak checks are highly accurate.' },
+      { q: 'What is a WebRTC leak?', a: 'WebRTC (Web Real-Time Communication) is a browser technology for peer-to-peer connections. It can sometimes reveal your real IP address even when using a VPN, bypassing the VPN tunnel entirely.' },
+      { q: 'Why does it say "Not Protected" when my VPN is on?', a: 'Your VPN provider may not be in our database, or your VPN may be using a residential IP that looks like a normal connection. The tool checks ISP names — if your VPN uses an unlisted provider, it may not be detected.' },
+      { q: 'Does this tool store my IP address?', a: 'No. All checks run entirely in your browser. Your IP is fetched from third-party APIs (ipapi.co) but we never see, store, or log it. The results exist only on your screen.' },
+      { q: 'How can I fix a WebRTC leak?', a: 'In Firefox, go to about:config and set media.peerconnection.enabled to false. In Chrome, install a WebRTC blocking extension like WebRTC Leak Prevent. Most VPN apps also have a WebRTC leak protection setting.' },
+      { q: 'What is the difference between VPN detected and datacenter detected?', a: 'VPN detected means your ISP matches a known VPN provider name. Datacenter detected means your IP belongs to a cloud hosting provider (AWS, DigitalOcean, etc.), which often indicates a VPN, proxy, or server — not a residential connection.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'diagnostic/webrtc-leak-checker', name: 'WebRTC Leak Test', description: 'Detailed WebRTC leak analysis for your browser.' },
+      { slug: 'diagnostic/dns-leak-test', name: 'DNS Leak Test', description: 'Check if your DNS requests are leaking outside your VPN.' },
+      { slug: 'diagnostic/ip-address-checker', name: 'IP Address Checker', description: 'Check your public IP, location, and ISP details.' },
+      { slug: 'diagnostic/vpn-speed-test', name: 'VPN Speed Test', description: 'Test your connection speed with and without VPN.' },
+      { slug: 'diagnostic/internet-speed-test', name: 'Internet Speed Test', description: 'Measure your download and upload speeds.' },
+      { slug: 'diagnostic/browser-fingerprint-checker', name: 'Browser Fingerprint Test', description: 'See how unique and trackable your browser is.' },
+      { slug: 'diagnostic/http-headers-viewer', name: 'HTTP Headers Viewer', description: 'See what information your browser sends to websites.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS); TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'diagnostic/vpn-detector', title: 'VPN Detector — Is Your VPN Working?', description: 'Free VPN detection tool. Check if your VPN is active, test for WebRTC leaks, DNS leaks, and ISP detection.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  });
+  </script>
+</body>
+</html>

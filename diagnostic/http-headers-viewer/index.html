@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTTP Headers Viewer — See What Your Browser Sends | Teamz Lab Tools</title>
+  <meta name="description" content="See what HTTP headers your browser sends and receives. View User-Agent, Accept-Language, cookies, DNT, and response headers from any URL. Free and private.">
+  <meta property="og:title" content="HTTP Headers Viewer — See What Your Browser Sends | Teamz Lab Tools">
+  <meta property="og:description" content="See what HTTP headers your browser sends to websites. View User-Agent, Accept-Language, DNT, and more.">
+  <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/http-headers-viewer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/http-headers-viewer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .headers-section { margin-bottom: 1.5rem; }
+    .headers-section h3 { font-size: 1rem; margin: 0 0 0.75rem; padding: 0.5rem 1rem; background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+    .headers-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .headers-table th { text-align: left; padding: 0.6rem 0.75rem; background: var(--surface); color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+    .headers-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .headers-table td:first-child { font-weight: 600; min-width: 180px; white-space: nowrap; }
+    .headers-table td:nth-child(2) { word-break: break-all; font-family: 'Courier New', monospace; font-size: 0.82rem; }
+    .headers-table td:nth-child(3) { font-size: 0.8rem; color: var(--text-muted); min-width: 180px; }
+    .headers-table tr:last-child td { border-bottom: none; }
+    .headers-table tr:hover td { background: var(--surface); }
+    .security-summary { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-top: 1.5rem; }
+    .security-summary h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+    .security-item { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.9rem; }
+    .security-icon { font-size: 1rem; }
+    .response-headers-section { margin-top: 1.5rem; }
+    .url-input-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .url-input-row input { flex: 1; min-width: 200px; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95rem; font-family: inherit; background: var(--surface); color: var(--text); }
+    .url-input-row input:focus { border-color: var(--accent); outline: none; }
+    .url-input-row button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; font-family: inherit; white-space: nowrap; }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .privacy-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+    .copy-btn { background: none; border: 1px solid var(--border); padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); font-family: inherit; }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .header-count { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 50px; font-size: 0.75rem; font-weight: 700; border: 1px solid var(--accent); color: var(--accent); margin-left: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>HTTP Headers Viewer</h1>
+      <p class="tool-description">See what information your browser exposes to every website you visit. View your browser's request headers and inspect response headers from any URL.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="privacy-strip">
+        <span>100% Private — Header detection runs locally. Response headers are fetched directly in your browser.</span>
+      </div>
+
+      <div id="browser-headers"></div>
+
+      <div class="response-headers-section">
+        <h3 style="margin:1.5rem 0 0.75rem;font-size:1rem;">Inspect Response Headers from a URL</h3>
+        <div class="url-input-row">
+          <input type="text" id="url-input" placeholder="Enter URL (e.g., https://example.com)" autocomplete="off" spellcheck="false">
+          <button type="button" id="fetch-btn" class="btn-pill tool-calculate-btn">Fetch Headers</button>
+        </div>
+        <div id="response-results" style="display:none;"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Are HTTP Headers?</h2>
+      <p>HTTP headers are metadata sent between your browser and web servers with every request and response. Request headers tell the server about your browser, language preferences, accepted content types, and more. Response headers tell your browser about caching, security policies, content type, and server configuration. Headers are invisible during normal browsing but reveal significant information about you.</p>
+
+      <div class="formula-box">
+        <h3>Common Request Headers Explained</h3>
+        <ul>
+          <li><strong>User-Agent</strong> — Identifies your browser, version, and operating system. Used for compatibility but also for fingerprinting.</li>
+          <li><strong>Accept-Language</strong> — Your preferred languages. Reveals your location and nationality.</li>
+          <li><strong>DNT (Do Not Track)</strong> — A signal requesting websites not track you. Not all websites honor this.</li>
+          <li><strong>Connection Type</strong> — Your network connection type (WiFi, 4G, etc.). Available via the Network Information API.</li>
+          <li><strong>Cookies Enabled</strong> — Whether your browser accepts cookies. Cookies are the primary tracking mechanism on the web.</li>
+          <li><strong>Referrer Policy</strong> — Controls what URL information is sent when you click links.</li>
+        </ul>
+      </div>
+
+      <h2>Common Response Headers</h2>
+      <p>Response headers sent by web servers include security headers (Content-Security-Policy, Strict-Transport-Security, X-Frame-Options), caching headers (Cache-Control, ETag, Expires), content headers (Content-Type, Content-Length), and server identification (Server, X-Powered-By). Missing security headers can indicate a poorly configured server.</p>
+
+      <h2>Why Should You Care About HTTP Headers?</h2>
+      <ul>
+        <li>Headers expose your browser, OS, language, and connection type to every website</li>
+        <li>Combining headers creates a semi-unique profile for fingerprinting</li>
+        <li>Missing security response headers leave you vulnerable to attacks</li>
+        <li>Understanding headers helps you make informed privacy decisions</li>
+        <li>Developers use headers for debugging, caching optimization, and security hardening</li>
+      </ul>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var browserHeadersDiv = document.getElementById('browser-headers');
+    var urlInput = document.getElementById('url-input');
+    var fetchBtn = document.getElementById('fetch-btn');
+    var responseResults = document.getElementById('response-results');
+
+    // Detect browser-visible request headers
+    function detectBrowserHeaders() {
+      var headers = [];
+
+      // User-Agent
+      headers.push({
+        name: 'User-Agent',
+        value: navigator.userAgent,
+        explanation: 'Identifies your browser, version, and operating system to websites.'
+      });
+
+      // Accept-Language
+      var langs = navigator.languages ? navigator.languages.join(', ') : navigator.language;
+      headers.push({
+        name: 'Accept-Language',
+        value: langs,
+        explanation: 'Your preferred languages, ordered by preference. Reveals locale and nationality.'
+      });
+
+      // DNT
+      var dnt = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      headers.push({
+        name: 'DNT (Do Not Track)',
+        value: dnt === '1' ? '1 (Enabled)' : dnt === '0' ? '0 (Disabled)' : 'Not Set',
+        explanation: 'A signal to websites requesting they do not track you. Not all websites honor this.'
+      });
+
+      // Platform
+      headers.push({
+        name: 'Platform',
+        value: navigator.platform || navigator.userAgentData?.platform || 'Unknown',
+        explanation: 'Your operating system platform. Used for compatibility and fingerprinting.'
+      });
+
+      // Cookies
+      headers.push({
+        name: 'Cookies Enabled',
+        value: navigator.cookieEnabled ? 'Yes' : 'No',
+        explanation: 'Whether your browser accepts cookies. Cookies are the primary web tracking mechanism.'
+      });
+
+      // Connection type
+      var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      if (conn) {
+        headers.push({
+          name: 'Connection Type',
+          value: (conn.effectiveType || 'Unknown') + (conn.downlink ? ' (' + conn.downlink + ' Mbps)' : ''),
+          explanation: 'Your network connection type and speed estimate. Reveals if you are on WiFi, 4G, etc.'
+        });
+        if (conn.saveData !== undefined) {
+          headers.push({
+            name: 'Save-Data',
+            value: conn.saveData ? 'On' : 'Off',
+            explanation: 'Whether data saver mode is enabled. Servers may send smaller content when on.'
+          });
+        }
+      }
+
+      // Online status
+      headers.push({
+        name: 'Online Status',
+        value: navigator.onLine ? 'Online' : 'Offline',
+        explanation: 'Whether your browser detects an active internet connection.'
+      });
+
+      // Max touch points
+      headers.push({
+        name: 'Max Touch Points',
+        value: navigator.maxTouchPoints !== undefined ? String(navigator.maxTouchPoints) : 'Unknown',
+        explanation: 'Number of touch points supported. Reveals if you are on a touch device.'
+      });
+
+      // Hardware concurrency
+      if (navigator.hardwareConcurrency) {
+        headers.push({
+          name: 'Hardware Concurrency',
+          value: navigator.hardwareConcurrency + ' cores',
+          explanation: 'Number of CPU cores. A fingerprinting data point that helps identify your device.'
+        });
+      }
+
+      // Device memory
+      if (navigator.deviceMemory) {
+        headers.push({
+          name: 'Device Memory',
+          value: navigator.deviceMemory + ' GB',
+          explanation: 'Approximate device memory. Another fingerprinting data point.'
+        });
+      }
+
+      // Screen info
+      headers.push({
+        name: 'Screen Resolution',
+        value: screen.width + 'x' + screen.height + ' (' + screen.colorDepth + '-bit color)',
+        explanation: 'Your screen resolution and color depth. Part of your browser fingerprint.'
+      });
+
+      // Timezone
+      headers.push({
+        name: 'Timezone',
+        value: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        explanation: 'Your timezone setting. Reveals your approximate geographic location.'
+      });
+
+      // Referrer
+      headers.push({
+        name: 'Document Referrer',
+        value: document.referrer || '(empty — direct visit or referrer blocked)',
+        explanation: 'The URL of the page that linked you here. Can reveal your browsing path.'
+      });
+
+      return headers;
+    }
+
+    function renderBrowserHeaders() {
+      var headers = detectBrowserHeaders();
+      var html = '<div class="headers-section">';
+      html += '<h3>Your Browser Request Headers <span class="header-count">' + headers.length + ' headers detected</span></h3>';
+      html += '<table class="headers-table">';
+      html += '<tr><th>Header</th><th>Value</th><th>What It Means</th></tr>';
+
+      var identifyingCount = 0;
+      headers.forEach(function(h) {
+        html += '<tr><td>' + h.name + '</td><td>' + h.value + '</td><td>' + h.explanation + '</td></tr>';
+        if (h.name !== 'Online Status' && h.name !== 'DNT (Do Not Track)') identifyingCount++;
+      });
+      html += '</table></div>';
+
+      // Security assessment
+      html += '<div class="security-summary"><h3>Privacy Assessment</h3>';
+      html += '<div class="security-item"><span class="security-icon">&#x1f4cb;</span> Your browser exposes <strong>' + identifyingCount + ' identifying data points</strong> to every website you visit.</div>';
+
+      var dntVal = navigator.doNotTrack || window.doNotTrack;
+      if (dntVal === '1') {
+        html += '<div class="security-item"><span class="security-icon">&#x2705;</span> Do Not Track is enabled.</div>';
+      } else {
+        html += '<div class="security-item"><span class="security-icon">&#x26a0;</span> Do Not Track is not enabled. Consider enabling it in browser settings.</div>';
+      }
+
+      if (navigator.cookieEnabled) {
+        html += '<div class="security-item"><span class="security-icon">&#x26a0;</span> Cookies are enabled. Consider blocking third-party cookies.</div>';
+      } else {
+        html += '<div class="security-item"><span class="security-icon">&#x2705;</span> Cookies are disabled.</div>';
+      }
+
+      var ua = navigator.userAgent;
+      if (ua.length > 100) {
+        html += '<div class="security-item"><span class="security-icon">&#x26a0;</span> Your User-Agent string is detailed (' + ua.length + ' chars). Consider using a UA-spoofing extension.</div>';
+      }
+
+      html += '</div>';
+
+      // Copy button
+      var copyText = 'Browser Headers Report\n' + '='.repeat(40) + '\n';
+      headers.forEach(function(h) { copyText += h.name + ': ' + h.value + '\n'; });
+      html += '<div style="text-align:center;margin-top:1rem;"><button class="copy-btn" id="copy-browser-btn">Copy All Headers</button></div>';
+
+      browserHeadersDiv.innerHTML = html;
+
+      document.getElementById('copy-browser-btn').addEventListener('click', function() {
+        navigator.clipboard.writeText(copyText).then(function() {
+          document.getElementById('copy-browser-btn').textContent = 'Copied!';
+          setTimeout(function() { document.getElementById('copy-browser-btn').textContent = 'Copy All Headers'; }, 2000);
+        });
+      });
+    }
+
+    renderBrowserHeaders();
+
+    // Response headers fetcher
+    fetchBtn.addEventListener('click', async function() {
+      var url = urlInput.value.trim();
+      if (!url) {
+        responseResults.innerHTML = '<div style="padding:1rem;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);">Please enter a URL.</div>';
+        responseResults.style.display = 'block';
+        return;
+      }
+      if (!url.startsWith('http')) url = 'https://' + url;
+
+      fetchBtn.disabled = true;
+      fetchBtn.innerHTML = '<span class="loading-spinner"></span> Fetching...';
+      responseResults.style.display = 'block';
+      responseResults.innerHTML = '<div style="text-align:center;padding:1.5rem;"><span class="loading-spinner"></span><p style="margin-top:0.75rem;color:var(--text-muted);">Fetching headers from ' + url + '...</p></div>';
+
+      try {
+        var resp = await fetch(url, { method: 'HEAD', mode: 'cors', cache: 'no-store' });
+        var headerEntries = [];
+        resp.headers.forEach(function(value, key) {
+          headerEntries.push({ name: key, value: value });
+        });
+
+        if (headerEntries.length === 0) {
+          // Try GET as fallback
+          var resp2 = await fetch(url, { mode: 'cors', cache: 'no-store' });
+          resp2.headers.forEach(function(value, key) {
+            headerEntries.push({ name: key, value: value });
+          });
+        }
+
+        var html = '<div class="headers-section">';
+        html += '<h3>Response Headers from ' + url + ' <span class="header-count">' + headerEntries.length + ' headers</span></h3>';
+
+        if (headerEntries.length === 0) {
+          html += '<p style="color:var(--text-muted);padding:0.5rem;">No headers were accessible. This can happen due to CORS restrictions — the server does not allow cross-origin header inspection from a browser.</p>';
+        } else {
+          var HEADER_EXPLANATIONS = {
+            'content-type': 'The MIME type of the content (HTML, JSON, image, etc.).',
+            'content-length': 'The size of the response body in bytes.',
+            'cache-control': 'Caching directives for browsers and CDNs.',
+            'etag': 'A unique tag for the resource version, used for cache validation.',
+            'server': 'The web server software. Can reveal technology stack.',
+            'x-powered-by': 'The technology running the server. Should be hidden for security.',
+            'strict-transport-security': 'Forces HTTPS connections. A critical security header.',
+            'content-security-policy': 'Restricts resource loading to prevent XSS attacks.',
+            'x-frame-options': 'Prevents the page from being embedded in iframes (clickjacking protection).',
+            'x-content-type-options': 'Prevents MIME type sniffing. Should be "nosniff".',
+            'x-xss-protection': 'Legacy XSS filter. Largely replaced by CSP.',
+            'referrer-policy': 'Controls how much referrer info is sent with requests.',
+            'permissions-policy': 'Controls which browser features the page can use.',
+            'access-control-allow-origin': 'CORS header — which origins can access this resource.',
+            'date': 'The date and time the response was generated.',
+            'expires': 'When the cached response expires.',
+            'vary': 'Which request headers affect caching.',
+            'set-cookie': 'Sets cookies in your browser. Can be used for tracking.',
+            'alt-svc': 'Advertises alternative services (HTTP/3, QUIC).',
+            'cf-ray': 'Cloudflare request identifier. Indicates Cloudflare CDN usage.'
+          };
+
+          html += '<table class="headers-table">';
+          html += '<tr><th>Header</th><th>Value</th><th>Explanation</th></tr>';
+          headerEntries.forEach(function(h) {
+            var explanation = HEADER_EXPLANATIONS[h.name.toLowerCase()] || '';
+            html += '<tr><td>' + h.name + '</td><td>' + h.value + '</td><td>' + explanation + '</td></tr>';
+          });
+          html += '</table>';
+
+          // Security check
+          var secHeaders = ['strict-transport-security', 'content-security-policy', 'x-frame-options', 'x-content-type-options'];
+          var presentSec = secHeaders.filter(function(sh) {
+            return headerEntries.some(function(h) { return h.name.toLowerCase() === sh; });
+          });
+          var missingSec = secHeaders.filter(function(sh) {
+            return !headerEntries.some(function(h) { return h.name.toLowerCase() === sh; });
+          });
+
+          html += '<div style="margin-top:1rem;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);">';
+          html += '<strong>Security Headers: ' + presentSec.length + '/' + secHeaders.length + ' present</strong><br>';
+          if (presentSec.length > 0) html += '<span style="color:var(--accent);">Present: ' + presentSec.join(', ') + '</span><br>';
+          if (missingSec.length > 0) html += '<span style="color:var(--text-muted);">Missing: ' + missingSec.join(', ') + '</span>';
+          html += '</div>';
+        }
+        html += '</div>';
+
+        // Copy
+        var copyText = 'Response Headers from ' + url + '\n' + '='.repeat(40) + '\n';
+        headerEntries.forEach(function(h) { copyText += h.name + ': ' + h.value + '\n'; });
+        html += '<div style="text-align:center;margin-top:1rem;"><button class="copy-btn" id="copy-response-btn">Copy Response Headers</button></div>';
+
+        responseResults.innerHTML = html;
+
+        if (document.getElementById('copy-response-btn')) {
+          document.getElementById('copy-response-btn').addEventListener('click', function() {
+            navigator.clipboard.writeText(copyText).then(function() {
+              document.getElementById('copy-response-btn').textContent = 'Copied!';
+              setTimeout(function() { document.getElementById('copy-response-btn').textContent = 'Copy Response Headers'; }, 2000);
+            });
+          });
+        }
+      } catch (e) {
+        responseResults.innerHTML = '<div style="padding:1rem;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);">Could not fetch headers: ' + e.message + '. This usually means the server blocks cross-origin requests (CORS). Try a URL that allows CORS, like <code>https://httpbin.org/headers</code> or <code>https://api.github.com</code>.</div>';
+      }
+
+      fetchBtn.disabled = false;
+      fetchBtn.textContent = 'Fetch Headers';
+    });
+
+    urlInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') fetchBtn.click(); });
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Diagnostic Tools', url: '/diagnostic/' }, { name: 'HTTP Headers Viewer' }];
+    var FAQS = [
+      { q: 'What are HTTP headers?', a: 'HTTP headers are metadata sent between your browser and web servers with every request. They include information like your browser type, preferred language, cookie settings, and more. Servers also send headers back with caching rules, security policies, and content type info.' },
+      { q: 'Can websites see my request headers?', a: 'Yes. Every website you visit receives your request headers including User-Agent, Accept-Language, DNT setting, and any cookies for that domain. This is how the web works — headers are sent automatically with every request.' },
+      { q: 'Why can I not see all response headers?', a: 'Due to browser security (CORS), JavaScript can only read response headers that the server explicitly allows. Some servers restrict which headers are visible in cross-origin requests. Use browser developer tools (F12, Network tab) to see all headers.' },
+      { q: 'What security headers should a website have?', a: 'Critical security headers include Strict-Transport-Security (forces HTTPS), Content-Security-Policy (prevents XSS), X-Frame-Options (prevents clickjacking), and X-Content-Type-Options (prevents MIME sniffing). Missing these headers indicates weaker security.' },
+      { q: 'How can I hide my HTTP headers?', a: 'You cannot completely hide headers, but you can minimize information exposure. Use a VPN, install a User-Agent spoofing extension, enable Do Not Track, block third-party cookies, and use a privacy-focused browser like Firefox or Brave.' },
+      { q: 'Does this tool store my headers?', a: 'No. All header detection happens locally in your browser. For response header checks, the fetch request goes directly from your browser to the target URL. We do not proxy, store, or log any data.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'diagnostic/browser-fingerprint-checker', name: 'Browser Fingerprint Test', description: 'See your full browser fingerprint details.' },
+      { slug: 'diagnostic/privacy-score-checker', name: 'Privacy Score Checker', description: 'Get a comprehensive privacy score for your browser.' },
+      { slug: 'diagnostic/vpn-detector', name: 'VPN Detector', description: 'Check if your VPN is active and working.' },
+      { slug: 'diagnostic/device-info-checker', name: 'Device Info Checker', description: 'See what your browser reveals about your device.' },
+      { slug: 'diagnostic/dns-lookup', name: 'DNS Lookup', description: 'Check DNS records for any domain.' },
+      { slug: 'diagnostic/ip-address-checker', name: 'IP Address Checker', description: 'Check your public IP and ISP.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS); TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'diagnostic/http-headers-viewer', title: 'HTTP Headers Viewer', description: 'See what HTTP headers your browser sends and receives. View User-Agent, Accept-Language, DNT, and response headers.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  });
+  </script>
+</body>
+</html>

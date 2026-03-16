@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Privacy Score — How Private Is Your Browser? | Teamz Lab Tools</title>
+  <meta name="description" content="Check your online privacy score. This free tool tests your browser for VPN usage, tracking protection, WebRTC leaks, cookie settings, and fingerprint resistance. 100% private.">
+  <meta property="og:title" content="Online Privacy Score — How Private Is Your Browser? | Teamz Lab Tools">
+  <meta property="og:description" content="Check your online privacy score. Test VPN, tracking protection, leaks, cookies, and fingerprint resistance.">
+  <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/privacy-score-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/privacy-score-checker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .score-ring { text-align: center; margin: 1.5rem 0; }
+    .score-ring svg { width: 180px; height: 180px; }
+    .score-ring-bg { fill: none; stroke: var(--border); stroke-width: 12; }
+    .score-ring-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+    .score-number { font-size: 2.5rem; font-weight: 800; }
+    .score-label { font-size: 1rem; font-weight: 600; color: var(--text-muted); margin-top: 0.25rem; }
+    .grade-badge { display: inline-block; padding: 0.3rem 1rem; border-radius: 50px; font-weight: 700; font-size: 1.1rem; margin-top: 0.5rem; }
+    .grade-a { background: var(--surface); border: 2px solid var(--accent); color: var(--accent); }
+    .grade-b { background: var(--surface); border: 2px solid var(--text-muted); color: var(--text-muted); }
+    .grade-c { background: var(--surface); border: 2px solid var(--warning, var(--text-muted)); color: var(--warning, var(--text-muted)); }
+    .grade-d { background: var(--surface); border: 2px solid var(--danger, var(--text-muted)); color: var(--danger, var(--text-muted)); }
+    .checks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem; margin: 1.5rem 0; }
+    .check-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+    .check-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .check-info { flex: 1; }
+    .check-name { font-weight: 600; font-size: 0.9rem; color: var(--text); }
+    .check-detail { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .check-status { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 50px; font-size: 0.7rem; font-weight: 700; margin-top: 0.25rem; }
+    .check-status.pass { border: 1px solid var(--accent); color: var(--accent); }
+    .check-status.warn { border: 1px solid var(--text-muted); color: var(--text-muted); }
+    .check-status.fail { border: 1px solid var(--danger, var(--text-muted)); color: var(--danger, var(--text-muted)); }
+    .recs-section { margin-top: 1.5rem; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .recs-section h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+    .recs-section ul { margin: 0; padding-left: 1.25rem; }
+    .recs-section li { margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text); }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .privacy-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Online Privacy Score Checker</h1>
+      <p class="tool-description">Get a comprehensive privacy score for your current browser session. We test for VPN usage, WebRTC leaks, tracking protection, cookie settings, fingerprint resistance, and more — all without leaving your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="privacy-strip">
+        <span>100% Private — This test runs entirely in your browser. No data is stored or transmitted to our servers.</span>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1rem;">
+        <button type="button" id="scan-btn" class="btn-pill tool-calculate-btn" style="padding:0.85rem 2rem;font-size:1.05rem;">Check My Privacy Score</button>
+      </div>
+
+      <div id="privacy-results" style="display:none;"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is a Privacy Score?</h2>
+      <p>Your privacy score represents how well your browser protects you from online tracking and identification. A higher score means your browser leaks less information and is harder for websites, advertisers, and trackers to identify and follow. The score is based on multiple factors including VPN usage, leak prevention, tracking protection settings, and browser configuration.</p>
+
+      <div class="formula-box">
+        <h3>What We Test</h3>
+        <ul>
+          <li><strong>VPN / Proxy Detection</strong> — Whether your IP is associated with a VPN, proxy, or datacenter, hiding your real location.</li>
+          <li><strong>WebRTC Leak Prevention</strong> — Whether your browser blocks WebRTC from revealing your real IP address.</li>
+          <li><strong>Do Not Track</strong> — Whether your browser sends the DNT header to request websites not track you.</li>
+          <li><strong>Cookie Settings</strong> — Whether cookies and third-party storage are enabled, which can be used for tracking.</li>
+          <li><strong>Canvas Fingerprint Resistance</strong> — Whether your browser protects against canvas-based fingerprinting techniques.</li>
+          <li><strong>WebGL Information</strong> — How much graphics hardware information your browser exposes.</li>
+          <li><strong>Connection Security</strong> — Whether you are accessing this page over a secure HTTPS connection.</li>
+          <li><strong>Browser API Exposure</strong> — How many privacy-sensitive APIs your browser makes available to websites.</li>
+        </ul>
+      </div>
+
+      <h2>How to Improve Your Privacy Score</h2>
+      <p>The most impactful step is using a reputable VPN, which hides your IP and encrypts your traffic. Beyond that, use a privacy-focused browser like Firefox or Brave, install extensions like uBlock Origin and Privacy Badger, disable WebRTC, enable Do Not Track, and regularly clear cookies and site data.</p>
+
+      <h2>Why Does Privacy Matter?</h2>
+      <ul>
+        <li>Websites and advertisers build detailed profiles about your interests, location, and habits</li>
+        <li>Data brokers sell your browsing data to third parties without your knowledge</li>
+        <li>Browser fingerprinting can track you even without cookies</li>
+        <li>Your ISP can see every website you visit without a VPN</li>
+        <li>Public WiFi networks expose your traffic to anyone nearby</li>
+      </ul>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var scanBtn = document.getElementById('scan-btn');
+    var resultsDiv = document.getElementById('privacy-results');
+
+    var DATACENTER_PATTERNS = [
+      'digital ocean','digitalocean','amazon','aws','google cloud','gcp','microsoft azure','azure',
+      'hetzner','ovh','ovhcloud','vultr','linode','akamai','cloudflare','leaseweb',
+      'nordvpn','expressvpn','surfshark','private internet access','mullvad','protonvpn','proton ag',
+      'cyberghost','ipvanish','windscribe','tunnelbear','hotspot shield','hidemyass','strongvpn',
+      'vyprvpn','atlas vpn','privatevpn','purevpn','torguard','astrill','hide.me'
+    ];
+
+    function checkVPN(isp) {
+      var lower = (isp || '').toLowerCase();
+      for (var i = 0; i < DATACENTER_PATTERNS.length; i++) {
+        if (lower.indexOf(DATACENTER_PATTERNS[i]) !== -1) return true;
+      }
+      return false;
+    }
+
+    async function checkWebRTCLeak() {
+      return new Promise(function(resolve) {
+        try {
+          var pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+          var publicIPs = [];
+          pc.createDataChannel('');
+          pc.createOffer().then(function(offer) { return pc.setLocalDescription(offer); }).catch(function() { resolve({ leaking: false, blocked: true }); });
+          pc.onicecandidate = function(e) {
+            if (!e || !e.candidate || !e.candidate.candidate) return;
+            var parts = e.candidate.candidate.split(' ');
+            var ip = parts[4];
+            if (ip && ip.indexOf('.') !== -1 && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.') && publicIPs.indexOf(ip) === -1) {
+              publicIPs.push(ip);
+            }
+          };
+          setTimeout(function() { pc.close(); resolve({ leaking: publicIPs.length > 0, blocked: false, ips: publicIPs }); }, 3000);
+        } catch (e) {
+          resolve({ leaking: false, blocked: true });
+        }
+      });
+    }
+
+    function checkCanvasFingerprint() {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = 200; canvas.height = 50;
+        var ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#f60';
+        ctx.fillRect(125, 1, 62, 20);
+        ctx.fillStyle = '#069';
+        ctx.fillText('Privacy Test', 2, 15);
+        ctx.fillStyle = 'rgba(102,204,0,0.7)';
+        ctx.fillText('Privacy Test', 4, 17);
+        var dataUrl = canvas.toDataURL();
+        // If canvas returns very short data, it may be blocked/randomized
+        return { protected: dataUrl.length < 100, dataLength: dataUrl.length };
+      } catch (e) {
+        return { protected: true, dataLength: 0 };
+      }
+    }
+
+    function checkWebGL() {
+      try {
+        var canvas = document.createElement('canvas');
+        var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) return { available: false, renderer: 'Blocked', vendor: 'Blocked' };
+        var debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        var renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Hidden';
+        var vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Hidden';
+        return { available: true, renderer: renderer, vendor: vendor };
+      } catch (e) {
+        return { available: false, renderer: 'Blocked', vendor: 'Blocked' };
+      }
+    }
+
+    scanBtn.addEventListener('click', async function() {
+      scanBtn.disabled = true;
+      scanBtn.innerHTML = '<span class="loading-spinner"></span> Scanning...';
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div style="text-align:center;padding:2rem;"><span class="loading-spinner"></span><p style="margin-top:1rem;color:var(--text-muted);">Running privacy checks...</p></div>';
+
+      var checks = [];
+      var totalPoints = 0;
+      var maxPoints = 0;
+
+      // 1. VPN check (20 points)
+      maxPoints += 20;
+      try {
+        var ipResp = await fetch('https://ipapi.co/json/');
+        var ipData = await ipResp.json();
+        var isVPN = checkVPN(ipData.org || '');
+        if (isVPN) {
+          totalPoints += 20;
+          checks.push({ name: 'VPN / Proxy Active', detail: 'Your IP (' + ipData.ip + ') is associated with a VPN or datacenter.', status: 'pass', icon: '&#x1f6e1;', points: 20 });
+        } else {
+          checks.push({ name: 'VPN / Proxy Active', detail: 'No VPN detected. ISP: ' + (ipData.org || 'Unknown') + '. Your real IP is visible.', status: 'fail', icon: '&#x1f513;', points: 0 });
+        }
+      } catch (e) {
+        checks.push({ name: 'VPN / Proxy Active', detail: 'Could not check IP. Connection may be blocking requests.', status: 'warn', icon: '&#x2753;', points: 10 });
+        totalPoints += 10;
+      }
+
+      // 2. WebRTC leak (15 points)
+      maxPoints += 15;
+      var webrtc = await checkWebRTCLeak();
+      if (webrtc.blocked) {
+        totalPoints += 15;
+        checks.push({ name: 'WebRTC Leak Prevention', detail: 'WebRTC is blocked in your browser. No IP leak possible.', status: 'pass', icon: '&#x1f6e1;', points: 15 });
+      } else if (!webrtc.leaking) {
+        totalPoints += 15;
+        checks.push({ name: 'WebRTC Leak Prevention', detail: 'No public IP addresses leaked via WebRTC.', status: 'pass', icon: '&#x2705;', points: 15 });
+      } else {
+        checks.push({ name: 'WebRTC Leak Prevention', detail: 'WebRTC is leaking IPs: ' + webrtc.ips.join(', '), status: 'fail', icon: '&#x26a0;', points: 0 });
+      }
+
+      // 3. Do Not Track (10 points)
+      maxPoints += 10;
+      var dnt = navigator.doNotTrack === '1' || window.doNotTrack === '1';
+      if (dnt) {
+        totalPoints += 10;
+        checks.push({ name: 'Do Not Track (DNT)', detail: 'DNT header is enabled. You are requesting not to be tracked.', status: 'pass', icon: '&#x2705;', points: 10 });
+      } else {
+        checks.push({ name: 'Do Not Track (DNT)', detail: 'DNT is not enabled. Websites can track you without this signal.', status: 'warn', icon: '&#x26a0;', points: 0 });
+      }
+
+      // 4. Cookies enabled (10 points - less is more private)
+      maxPoints += 10;
+      var cookiesEnabled = navigator.cookieEnabled;
+      if (!cookiesEnabled) {
+        totalPoints += 10;
+        checks.push({ name: 'Cookies Disabled', detail: 'Cookies are disabled, reducing tracking ability.', status: 'pass', icon: '&#x2705;', points: 10 });
+      } else {
+        totalPoints += 3;
+        checks.push({ name: 'Cookies Enabled', detail: 'Cookies are enabled. Websites can store tracking identifiers.', status: 'warn', icon: '&#x26a0;', points: 3 });
+      }
+
+      // 5. HTTPS (10 points)
+      maxPoints += 10;
+      var isHTTPS = location.protocol === 'https:';
+      if (isHTTPS) {
+        totalPoints += 10;
+        checks.push({ name: 'HTTPS Connection', detail: 'You are connected over a secure HTTPS connection.', status: 'pass', icon: '&#x1f512;', points: 10 });
+      } else {
+        checks.push({ name: 'HTTPS Connection', detail: 'You are on an insecure HTTP connection. Data is not encrypted.', status: 'fail', icon: '&#x26a0;', points: 0 });
+      }
+
+      // 6. Canvas fingerprint resistance (10 points)
+      maxPoints += 10;
+      var canvasTest = checkCanvasFingerprint();
+      if (canvasTest.protected) {
+        totalPoints += 10;
+        checks.push({ name: 'Canvas Fingerprint Protection', detail: 'Canvas fingerprinting appears to be blocked or randomized.', status: 'pass', icon: '&#x1f6e1;', points: 10 });
+      } else {
+        totalPoints += 2;
+        checks.push({ name: 'Canvas Fingerprint Protection', detail: 'Canvas fingerprinting is possible. Your browser has a unique canvas signature.', status: 'warn', icon: '&#x26a0;', points: 2 });
+      }
+
+      // 7. WebGL info exposure (10 points)
+      maxPoints += 10;
+      var webgl = checkWebGL();
+      if (!webgl.available || webgl.renderer === 'Blocked' || webgl.renderer === 'Hidden') {
+        totalPoints += 10;
+        checks.push({ name: 'WebGL Info Hidden', detail: 'WebGL renderer information is not exposed.', status: 'pass', icon: '&#x2705;', points: 10 });
+      } else {
+        totalPoints += 2;
+        checks.push({ name: 'WebGL Info Exposed', detail: 'GPU: ' + webgl.renderer + ' (' + webgl.vendor + '). This aids fingerprinting.', status: 'warn', icon: '&#x26a0;', points: 2 });
+      }
+
+      // 8. Hardware concurrency (5 points)
+      maxPoints += 5;
+      var cores = navigator.hardwareConcurrency;
+      if (!cores || cores === undefined) {
+        totalPoints += 5;
+        checks.push({ name: 'CPU Cores Hidden', detail: 'CPU core count is not exposed to websites.', status: 'pass', icon: '&#x2705;', points: 5 });
+      } else {
+        totalPoints += 1;
+        checks.push({ name: 'CPU Cores Exposed', detail: cores + ' CPU cores detected. This is a fingerprinting data point.', status: 'warn', icon: '&#x26a0;', points: 1 });
+      }
+
+      // 9. Device memory (5 points)
+      maxPoints += 5;
+      var mem = navigator.deviceMemory;
+      if (!mem || mem === undefined) {
+        totalPoints += 5;
+        checks.push({ name: 'Device Memory Hidden', detail: 'Device memory is not exposed to websites.', status: 'pass', icon: '&#x2705;', points: 5 });
+      } else {
+        totalPoints += 1;
+        checks.push({ name: 'Device Memory Exposed', detail: mem + ' GB reported. This is a fingerprinting data point.', status: 'warn', icon: '&#x26a0;', points: 1 });
+      }
+
+      // 10. Language exposure (5 points)
+      maxPoints += 5;
+      var langs = navigator.languages;
+      if (!langs || langs.length <= 1) {
+        totalPoints += 5;
+        checks.push({ name: 'Language Preference Minimal', detail: 'Only 1 language exposed, reducing fingerprint uniqueness.', status: 'pass', icon: '&#x2705;', points: 5 });
+      } else {
+        totalPoints += 2;
+        checks.push({ name: 'Multiple Languages Exposed', detail: langs.length + ' languages: ' + langs.join(', ') + '. More languages = more unique.', status: 'warn', icon: '&#x26a0;', points: 2 });
+      }
+
+      // Calculate score
+      var scorePercent = Math.round((totalPoints / maxPoints) * 100);
+      var grade, gradeClass;
+      if (scorePercent >= 80) { grade = 'A'; gradeClass = 'grade-a'; }
+      else if (scorePercent >= 60) { grade = 'B'; gradeClass = 'grade-b'; }
+      else if (scorePercent >= 40) { grade = 'C'; gradeClass = 'grade-c'; }
+      else { grade = 'D'; gradeClass = 'grade-d'; }
+
+      // Build results
+      var circumference = 2 * Math.PI * 70;
+      var dashOffset = circumference * (1 - scorePercent / 100);
+      var strokeColor = scorePercent >= 80 ? 'var(--accent)' : scorePercent >= 60 ? 'var(--text-muted)' : 'var(--danger, var(--text-muted))';
+
+      var html = '';
+      html += '<div class="score-ring">';
+      html += '<svg viewBox="0 0 160 160">';
+      html += '<circle class="score-ring-bg" cx="80" cy="80" r="70"></circle>';
+      html += '<circle class="score-ring-fill" cx="80" cy="80" r="70" style="stroke:' + strokeColor + ';stroke-dasharray:' + circumference + ';stroke-dashoffset:' + dashOffset + ';transform:rotate(-90deg);transform-origin:center;"></circle>';
+      html += '</svg>';
+      html += '<div style="margin-top:-110px;position:relative;">';
+      html += '<div class="score-number" style="color:' + strokeColor + ';">' + scorePercent + '</div>';
+      html += '<div class="score-label">out of 100</div>';
+      html += '</div>';
+      html += '<div style="margin-top:40px;"><span class="grade-badge ' + gradeClass + '">Grade: ' + grade + '</span></div>';
+      html += '</div>';
+
+      // Individual checks
+      html += '<div class="checks-grid">';
+      checks.forEach(function(check) {
+        html += '<div class="check-item">';
+        html += '<div class="check-icon">' + check.icon + '</div>';
+        html += '<div class="check-info">';
+        html += '<div class="check-name">' + check.name + '</div>';
+        html += '<div class="check-detail">' + check.detail + '</div>';
+        html += '<div class="check-status ' + check.status + '">' + (check.status === 'pass' ? 'PASS' : check.status === 'warn' ? 'WARNING' : 'FAIL') + ' (+' + check.points + ' pts)</div>';
+        html += '</div></div>';
+      });
+      html += '</div>';
+
+      // Recommendations
+      var recs = [];
+      checks.forEach(function(check) {
+        if (check.status === 'fail') {
+          if (check.name.indexOf('VPN') !== -1) recs.push('Use a VPN to hide your real IP address and encrypt your traffic.');
+          if (check.name.indexOf('WebRTC') !== -1) recs.push('Disable WebRTC in your browser settings or install a WebRTC blocking extension.');
+          if (check.name.indexOf('HTTPS') !== -1) recs.push('Always access websites over HTTPS. Install the HTTPS Everywhere extension.');
+        }
+        if (check.status === 'warn') {
+          if (check.name.indexOf('DNT') !== -1) recs.push('Enable Do Not Track in your browser privacy settings.');
+          if (check.name.indexOf('Cookie') !== -1) recs.push('Consider blocking third-party cookies in your browser settings.');
+          if (check.name.indexOf('Canvas') !== -1) recs.push('Use a privacy browser like Firefox with resist fingerprinting enabled, or install CanvasBlocker.');
+          if (check.name.indexOf('WebGL') !== -1) recs.push('Consider disabling WebGL or using a browser that masks GPU info.');
+          if (check.name.indexOf('Language') !== -1) recs.push('Reduce exposed languages in your browser settings to minimize fingerprint uniqueness.');
+        }
+      });
+      if (recs.length > 0) {
+        html += '<div class="recs-section"><h3>How to Improve Your Score</h3><ul>';
+        recs.forEach(function(r) { html += '<li>' + r + '</li>'; });
+        html += '</ul></div>';
+      }
+
+      resultsDiv.innerHTML = html;
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'Check Again';
+    });
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Diagnostic Tools', url: '/diagnostic/' }, { name: 'Privacy Score Checker' }];
+    var FAQS = [
+      { q: 'What does the privacy score measure?', a: 'It measures 10 aspects of your browser privacy: VPN usage, WebRTC leak protection, Do Not Track, cookie settings, HTTPS, canvas fingerprint resistance, WebGL exposure, CPU core exposure, device memory exposure, and language preferences.' },
+      { q: 'Is a score of 100 possible?', a: 'Yes, but it requires aggressive privacy settings: a VPN, WebRTC disabled, cookies disabled, canvas fingerprint protection, and more. Most users score 30-60 with default browser settings. Using a VPN alone significantly boosts your score.' },
+      { q: 'Does this test track me?', a: 'No. All checks run entirely in your browser using JavaScript. Your IP is fetched from a third-party API (ipapi.co) to check VPN status, but we never see, store, or log any of your data. Results only exist on your screen.' },
+      { q: 'What browser gives the best privacy score?', a: 'Firefox with strict tracking protection and resist fingerprinting enabled typically scores highest. Brave browser also scores well out of the box. Chrome with default settings tends to score lower due to more exposed APIs.' },
+      { q: 'Why is using a VPN worth 20 points?', a: 'A VPN is the single most impactful privacy measure. It hides your real IP address, encrypts all traffic, and prevents your ISP from seeing your browsing activity. That is why it has the highest point value in our scoring.' },
+      { q: 'What is canvas fingerprinting?', a: 'Canvas fingerprinting draws hidden graphics on an HTML5 canvas element and reads the pixel data. Different hardware and software produce slightly different results, creating a unique "fingerprint" that can track you without cookies.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'diagnostic/vpn-detector', name: 'VPN Detector', description: 'Check if your VPN is active and working.' },
+      { slug: 'diagnostic/browser-fingerprint-checker', name: 'Browser Fingerprint Test', description: 'See your full browser fingerprint details.' },
+      { slug: 'diagnostic/webrtc-leak-checker', name: 'WebRTC Leak Test', description: 'Detailed WebRTC leak analysis.' },
+      { slug: 'diagnostic/dns-leak-test', name: 'DNS Leak Test', description: 'Check if DNS requests are leaking.' },
+      { slug: 'diagnostic/ip-address-checker', name: 'IP Address Checker', description: 'Check your public IP and ISP.' },
+      { slug: 'diagnostic/http-headers-viewer', name: 'HTTP Headers Viewer', description: 'See what your browser reveals in HTTP headers.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS); TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'diagnostic/privacy-score-checker', title: 'Online Privacy Score Checker', description: 'Check your online privacy score. Test VPN, WebRTC, tracking protection, fingerprint resistance, and more.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  });
+  </script>
+</body>
+</html>

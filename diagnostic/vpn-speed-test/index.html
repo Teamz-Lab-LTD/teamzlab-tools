@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPN Speed Test — Test Your VPN Connection Speed | Teamz Lab Tools</title>
+  <meta name="description" content="Test your VPN connection speed with download speed, latency, and jitter measurements. Compare with and without VPN. Free, private, runs in your browser.">
+  <meta property="og:title" content="VPN Speed Test — Test Your VPN Connection Speed | Teamz Lab Tools">
+  <meta property="og:description" content="Measure your VPN connection speed. Test download speed, latency, and jitter. Compare results with and without VPN.">
+  <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/vpn-speed-test/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/vpn-speed-test/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .speed-gauge { text-align: center; margin: 1.5rem 0; }
+    .speed-value { font-size: 3.5rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .speed-unit { font-size: 1.1rem; font-weight: 600; color: var(--text-muted); }
+    .speed-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .metric-card { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); text-align: center; }
+    .metric-value { font-size: 1.8rem; font-weight: 800; color: var(--text); }
+    .metric-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .metric-rating { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 50px; font-size: 0.7rem; font-weight: 700; margin-top: 0.3rem; }
+    .metric-rating.good { background: var(--surface); border: 1px solid var(--accent); color: var(--accent); }
+    .metric-rating.ok { background: var(--surface); border: 1px solid var(--text-muted); color: var(--text-muted); }
+    .metric-rating.poor { background: var(--surface); border: 1px solid var(--danger, var(--text-muted)); color: var(--danger, var(--text-muted)); }
+    .progress-bar-track { width: 100%; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; margin: 1rem 0; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.3s; width: 0%; }
+    .progress-status { text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .history-section { margin-top: 1.5rem; }
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .history-table th { text-align: left; padding: 0.5rem 0.75rem; background: var(--surface); color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+    .history-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .history-table tr:last-child td { border-bottom: none; }
+    .tip-box { padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); margin-top: 1rem; font-size: 0.9rem; color: var(--text); }
+    .tip-box strong { color: var(--heading); }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .privacy-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+    .test-btn { padding: 0.85rem 2rem; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1.05rem; font-family: inherit; }
+    .clear-history-btn { background: none; border: 1px solid var(--border); padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); font-family: inherit; }
+    .clear-history-btn:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>VPN Speed Test</h1>
+      <p class="tool-description">Measure your connection speed to see how your VPN affects performance. Test download speed, latency, and jitter. Run with VPN on and off to compare the difference.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="privacy-strip">
+        <span>100% Private — Speed measurements run in your browser. No data stored on any server.</span>
+      </div>
+
+      <div style="text-align:center;margin-bottom:1rem;">
+        <button type="button" id="test-btn" class="btn-pill tool-calculate-btn test-btn">Start Speed Test</button>
+      </div>
+
+      <div id="progress-section" style="display:none;">
+        <div class="progress-status" id="progress-status">Preparing test...</div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-fill"></div></div>
+      </div>
+
+      <div id="speed-results" style="display:none;"></div>
+
+      <div id="history-section" class="history-section" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+          <h3 style="margin:0;font-size:1rem;">Test History</h3>
+          <button type="button" class="clear-history-btn" id="clear-history-btn">Clear History</button>
+        </div>
+        <table class="history-table" id="history-table">
+          <thead><tr><th>Time</th><th>Download</th><th>Latency</th><th>Jitter</th><th>Label</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+
+      <div class="tip-box">
+        <strong>Tip:</strong> Run this test once with your VPN connected, then disconnect your VPN and run it again. Compare the results to see exactly how much speed your VPN costs. Your results are saved in test history below.
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Does the VPN Speed Test Work?</h2>
+      <p>This speed test measures three key metrics of your internet connection. Download speed is measured by fetching a known file from a CDN multiple times and calculating the transfer rate. Latency is measured by timing round-trip requests to DNS resolvers. Jitter is calculated from the variation between latency measurements. These are the same metrics that affect your VPN experience.</p>
+
+      <div class="formula-box">
+        <h3>What Each Metric Means</h3>
+        <ul>
+          <li><strong>Download Speed (Mbps)</strong> — How fast data travels to your device. Higher is better. VPNs typically reduce speed by 10-30% due to encryption overhead and routing.</li>
+          <li><strong>Latency (ms)</strong> — The time for a round-trip request. Lower is better. VPNs add latency because traffic routes through the VPN server. Under 50ms is excellent, 50-100ms is good, over 100ms may feel slow.</li>
+          <li><strong>Jitter (ms)</strong> — Variation in latency between requests. Lower is better. High jitter causes stuttering in video calls and gaming. Under 10ms is excellent, 10-30ms is acceptable.</li>
+        </ul>
+      </div>
+
+      <h2>Why Is My VPN Slow?</h2>
+      <p>VPN speed depends on several factors: the distance to the VPN server (closer servers are faster), the VPN protocol used (WireGuard is fastest, OpenVPN is slower), server load (popular servers get congested), your base internet speed, and your VPN provider's infrastructure quality.</p>
+
+      <h2>Tips to Improve VPN Speed</h2>
+      <ul>
+        <li>Connect to the nearest VPN server to your physical location</li>
+        <li>Use WireGuard protocol if your VPN supports it — it is significantly faster than OpenVPN</li>
+        <li>Try different servers — some may be less congested than others</li>
+        <li>Use a wired connection instead of WiFi for more consistent speeds</li>
+        <li>Close background apps that consume bandwidth</li>
+        <li>Upgrade your VPN plan if your provider offers faster tiers</li>
+      </ul>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var testBtn = document.getElementById('test-btn');
+    var resultsDiv = document.getElementById('speed-results');
+    var progressSection = document.getElementById('progress-section');
+    var progressStatus = document.getElementById('progress-status');
+    var progressFill = document.getElementById('progress-fill');
+    var historySection = document.getElementById('history-section');
+    var historyBody = document.getElementById('history-body');
+    var clearHistoryBtn = document.getElementById('clear-history-btn');
+
+    var TEST_FILE_URL = 'https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js';
+    var TEST_FILE_SIZE = 89476; // ~87KB approximate
+
+    function setProgress(pct, text) {
+      progressFill.style.width = pct + '%';
+      if (text) progressStatus.textContent = text;
+    }
+
+    async function measureDownload() {
+      var speeds = [];
+      for (var i = 0; i < 3; i++) {
+        var cacheBuster = '?_=' + Date.now() + '_' + i;
+        var start = performance.now();
+        try {
+          var resp = await fetch(TEST_FILE_URL + cacheBuster, { cache: 'no-store' });
+          var blob = await resp.blob();
+          var elapsed = (performance.now() - start) / 1000; // seconds
+          var fileSizeBytes = blob.size || TEST_FILE_SIZE;
+          var bitsPerSecond = (fileSizeBytes * 8) / elapsed;
+          var mbps = bitsPerSecond / 1000000;
+          speeds.push(mbps);
+        } catch (e) {
+          speeds.push(0);
+        }
+        setProgress(10 + (i + 1) * 20, 'Testing download speed... (' + (i + 1) + '/3)');
+      }
+      var validSpeeds = speeds.filter(function(s) { return s > 0; });
+      if (validSpeeds.length === 0) return 0;
+      return validSpeeds.reduce(function(a, b) { return a + b; }, 0) / validSpeeds.length;
+    }
+
+    async function measureLatency() {
+      var latencies = [];
+      var endpoints = [
+        'https://cloudflare-dns.com/dns-query?name=test.com&type=A',
+        'https://dns.google/resolve?name=test.com&type=A'
+      ];
+      for (var e = 0; e < endpoints.length; e++) {
+        for (var i = 0; i < 3; i++) {
+          var start = performance.now();
+          try {
+            await fetch(endpoints[e] + '&_=' + Date.now() + '_' + i, {
+              headers: endpoints[e].indexOf('cloudflare') !== -1 ? { 'Accept': 'application/dns-json' } : {},
+              cache: 'no-store'
+            });
+            var elapsed = performance.now() - start;
+            latencies.push(elapsed);
+          } catch (ex) {
+            // skip failed
+          }
+          setProgress(70 + (e * 3 + i + 1) * 4, 'Testing latency... (' + (e * 3 + i + 1) + '/6)');
+        }
+      }
+      if (latencies.length === 0) return { avg: 0, jitter: 0, samples: [] };
+      var avg = latencies.reduce(function(a, b) { return a + b; }, 0) / latencies.length;
+      var diffs = [];
+      for (var j = 1; j < latencies.length; j++) {
+        diffs.push(Math.abs(latencies[j] - latencies[j - 1]));
+      }
+      var jitter = diffs.length > 0 ? diffs.reduce(function(a, b) { return a + b; }, 0) / diffs.length : 0;
+      return { avg: avg, jitter: jitter, samples: latencies };
+    }
+
+    function rateSpeed(mbps) {
+      if (mbps >= 10) return { text: 'Excellent', cls: 'good' };
+      if (mbps >= 3) return { text: 'Good', cls: 'ok' };
+      return { text: 'Slow', cls: 'poor' };
+    }
+    function rateLatency(ms) {
+      if (ms <= 50) return { text: 'Excellent', cls: 'good' };
+      if (ms <= 100) return { text: 'Good', cls: 'ok' };
+      return { text: 'High', cls: 'poor' };
+    }
+    function rateJitter(ms) {
+      if (ms <= 10) return { text: 'Excellent', cls: 'good' };
+      if (ms <= 30) return { text: 'Acceptable', cls: 'ok' };
+      return { text: 'Unstable', cls: 'poor' };
+    }
+
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem('vpn_speed_history') || '[]'); } catch (e) { return []; }
+    }
+    function saveHistory(entry) {
+      var history = loadHistory();
+      history.unshift(entry);
+      if (history.length > 20) history = history.slice(0, 20);
+      localStorage.setItem('vpn_speed_history', JSON.stringify(history));
+    }
+    function renderHistory() {
+      var history = loadHistory();
+      if (history.length === 0) { historySection.style.display = 'none'; return; }
+      historySection.style.display = 'block';
+      var html = '';
+      history.forEach(function(h) {
+        html += '<tr><td>' + h.time + '</td><td>' + h.download + ' Mbps</td><td>' + h.latency + ' ms</td><td>' + h.jitter + ' ms</td><td>' + (h.label || '-') + '</td></tr>';
+      });
+      historyBody.innerHTML = html;
+    }
+
+    clearHistoryBtn.addEventListener('click', function() {
+      localStorage.removeItem('vpn_speed_history');
+      renderHistory();
+    });
+
+    testBtn.addEventListener('click', async function() {
+      testBtn.disabled = true;
+      testBtn.innerHTML = '<span class="loading-spinner"></span> Testing...';
+      progressSection.style.display = 'block';
+      resultsDiv.style.display = 'none';
+      setProgress(5, 'Starting download speed test...');
+
+      var downloadMbps = await measureDownload();
+      setProgress(65, 'Starting latency test...');
+      var latencyResult = await measureLatency();
+      setProgress(100, 'Complete!');
+
+      var speedRating = rateSpeed(downloadMbps);
+      var latencyRating = rateLatency(latencyResult.avg);
+      var jitterRating = rateJitter(latencyResult.jitter);
+
+      var html = '';
+      html += '<div class="speed-gauge"><div class="speed-value">' + downloadMbps.toFixed(2) + '</div><div class="speed-unit">Mbps</div><div class="speed-label">Download Speed</div></div>';
+
+      html += '<div class="metrics-grid">';
+      html += '<div class="metric-card"><div class="metric-value">' + downloadMbps.toFixed(2) + '</div><div class="metric-label">Download (Mbps)</div><div class="metric-rating ' + speedRating.cls + '">' + speedRating.text + '</div></div>';
+      html += '<div class="metric-card"><div class="metric-value">' + Math.round(latencyResult.avg) + '</div><div class="metric-label">Latency (ms)</div><div class="metric-rating ' + latencyRating.cls + '">' + latencyRating.text + '</div></div>';
+      html += '<div class="metric-card"><div class="metric-value">' + Math.round(latencyResult.jitter) + '</div><div class="metric-label">Jitter (ms)</div><div class="metric-rating ' + jitterRating.cls + '">' + jitterRating.text + '</div></div>';
+      html += '</div>';
+
+      // Label prompt
+      html += '<div style="text-align:center;margin-top:1rem;">';
+      html += '<label style="font-size:0.85rem;color:var(--text-muted);margin-right:0.5rem;">Label this test:</label>';
+      html += '<select id="result-label" style="padding:0.4rem 0.75rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;font-size:0.85rem;">';
+      html += '<option value="VPN On">VPN On</option><option value="VPN Off">VPN Off</option><option value="Other">Other</option>';
+      html += '</select>';
+      html += '<button type="button" id="save-result-btn" style="margin-left:0.5rem;padding:0.4rem 1rem;border:1px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:6px;cursor:pointer;font-family:inherit;font-weight:600;font-size:0.85rem;">Save to History</button>';
+      html += '</div>';
+
+      resultsDiv.innerHTML = html;
+      resultsDiv.style.display = 'block';
+
+      document.getElementById('save-result-btn').addEventListener('click', function() {
+        var label = document.getElementById('result-label').value;
+        var now = new Date();
+        saveHistory({
+          time: now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          download: downloadMbps.toFixed(2),
+          latency: Math.round(latencyResult.avg),
+          jitter: Math.round(latencyResult.jitter),
+          label: label
+        });
+        renderHistory();
+        this.textContent = 'Saved!';
+        this.disabled = true;
+      });
+
+      setTimeout(function() { progressSection.style.display = 'none'; }, 1000);
+      testBtn.disabled = false;
+      testBtn.textContent = 'Run Again';
+      renderHistory();
+    });
+
+    renderHistory();
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Diagnostic Tools', url: '/diagnostic/' }, { name: 'VPN Speed Test' }];
+    var FAQS = [
+      { q: 'How does this VPN speed test work?', a: 'It downloads a known file from a CDN three times to measure average download speed in Mbps, then measures round-trip latency to DNS resolvers to calculate latency and jitter. All measurements happen in your browser.' },
+      { q: 'How do I compare VPN vs non-VPN speed?', a: 'Run the test with your VPN connected and save the result as "VPN On". Then disconnect your VPN and run again, saving as "VPN Off". Both results appear in the history table for easy comparison.' },
+      { q: 'Why is my VPN speed slow?', a: 'VPN speed depends on server distance, protocol (WireGuard is fastest), server load, and your base internet speed. VPNs add encryption overhead which typically reduces speed by 10-30%.' },
+      { q: 'What is jitter and why does it matter?', a: 'Jitter is the variation in latency between consecutive requests. High jitter means your connection is unstable, causing buffering in video streaming and lag in gaming. Under 10ms is excellent.' },
+      { q: 'Is this speed test accurate?', a: 'This test provides a good relative measurement for comparing VPN vs non-VPN speeds. For absolute speed measurement of very fast connections (100+ Mbps), dedicated speed test services that use larger files may be more precise.' },
+      { q: 'How often should I test my VPN speed?', a: 'Test whenever you switch VPN servers, change VPN protocols, or notice slow performance. Periodic testing helps you identify the fastest server locations for your needs.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'diagnostic/internet-speed-test', name: 'Internet Speed Test', description: 'Full internet speed test with upload and download measurements.' },
+      { slug: 'diagnostic/vpn-detector', name: 'VPN Detector', description: 'Check if your VPN is active and working correctly.' },
+      { slug: 'diagnostic/dns-leak-test', name: 'DNS Leak Test', description: 'Check if your DNS requests are leaking outside your VPN.' },
+      { slug: 'diagnostic/webrtc-leak-checker', name: 'WebRTC Leak Test', description: 'Detect WebRTC IP leaks that bypass your VPN.' },
+      { slug: 'diagnostic/network-connection-info', name: 'Network Info', description: 'View your network connection details.' },
+      { slug: 'diagnostic/vpn-comparison-calculator', name: 'VPN Cost Calculator', description: 'Compare VPN prices and find the best deal.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS); TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'diagnostic/vpn-speed-test', title: 'VPN Speed Test', description: 'Test your VPN connection speed. Measure download speed, latency, and jitter. Compare VPN on vs off.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  });
+  </script>
+</body>
+</html>
