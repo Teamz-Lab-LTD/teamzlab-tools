@@ -348,6 +348,154 @@ var TeamzTools = (function () {
     container.innerHTML = html;
   }
 
+  // --- Star Rating Widget ---
+  function _getToolSlug() {
+    var path = window.location.pathname.replace(/^\/|\/$/g, '');
+    return path || 'home';
+  }
+
+  function _getRatingData(slug) {
+    try {
+      var data = JSON.parse(localStorage.getItem('tz_rating_' + slug));
+      return data && data.rating ? data : null;
+    } catch (e) { return null; }
+  }
+
+  function _setRatingData(slug, rating) {
+    try {
+      localStorage.setItem('tz_rating_' + slug, JSON.stringify({
+        rating: rating,
+        ts: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function _sendRatingToGA(slug, rating) {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'tool_rating', {
+        event_category: 'engagement',
+        event_label: slug,
+        value: rating,
+        tool_slug: slug,
+        rating_value: rating
+      });
+    }
+    if (window._fbAnalytics) {
+      try {
+        window._fbAnalytics.logEvent('tool_rating', {
+          tool_slug: slug,
+          rating_value: rating
+        });
+      } catch (e) {}
+    }
+  }
+
+  function _injectAggregateRating(rating) {
+    var slug = _getToolSlug();
+    // Find existing WebApplication schema and add aggregateRating
+    var scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    for (var i = 0; i < scripts.length; i++) {
+      try {
+        var schema = JSON.parse(scripts[i].textContent);
+        if (schema['@type'] === 'WebApplication' && !schema.aggregateRating) {
+          schema.aggregateRating = {
+            '@type': 'AggregateRating',
+            'ratingValue': String(rating),
+            'ratingCount': '1',
+            'bestRating': '5',
+            'worstRating': '1'
+          };
+          scripts[i].textContent = JSON.stringify(schema);
+          break;
+        }
+      } catch (e) {}
+    }
+  }
+
+  function renderRating() {
+    // Only render on tool pages (pages with tool-faqs or related-tools)
+    var anchor = document.getElementById('tool-faqs') || document.getElementById('related-tools');
+    if (!anchor) return;
+
+    var slug = _getToolSlug();
+    var existing = _getRatingData(slug);
+
+    // Create container
+    var wrapper = document.createElement('div');
+    wrapper.className = 'tool-rating';
+    wrapper.id = 'tool-rating';
+
+    var label = document.createElement('p');
+    label.className = 'rating-label';
+    label.textContent = existing ? 'Thanks for rating!' : 'Rate this tool';
+
+    var starsDiv = document.createElement('div');
+    starsDiv.className = 'rating-stars';
+
+    for (var i = 1; i <= 5; i++) {
+      var star = document.createElement('button');
+      star.className = 'rating-star' + (existing && i <= existing.rating ? ' active' : '');
+      star.setAttribute('data-value', i);
+      star.setAttribute('aria-label', 'Rate ' + i + ' star' + (i > 1 ? 's' : ''));
+      star.innerHTML = '&#9733;';
+      if (existing) {
+        star.disabled = true;
+      }
+      starsDiv.appendChild(star);
+    }
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(starsDiv);
+
+    // Insert before the anchor
+    anchor.parentNode.insertBefore(wrapper, anchor);
+
+    // If already rated, inject aggregateRating schema
+    if (existing) {
+      _injectAggregateRating(existing.rating);
+    }
+
+    // Click handler
+    if (!existing) {
+      starsDiv.addEventListener('click', function (e) {
+        var btn = e.target.closest('.rating-star');
+        if (!btn) return;
+
+        var value = parseInt(btn.getAttribute('data-value'), 10);
+        _setRatingData(slug, value);
+        _sendRatingToGA(slug, value);
+
+        // Update UI
+        var stars = starsDiv.querySelectorAll('.rating-star');
+        for (var j = 0; j < stars.length; j++) {
+          stars[j].classList.toggle('active', j < value);
+          stars[j].disabled = true;
+        }
+        label.textContent = 'Thanks for rating!';
+
+        // Inject schema
+        _injectAggregateRating(value);
+      });
+
+      // Hover effect
+      starsDiv.addEventListener('mouseover', function (e) {
+        var btn = e.target.closest('.rating-star');
+        if (!btn) return;
+        var val = parseInt(btn.getAttribute('data-value'), 10);
+        var stars = starsDiv.querySelectorAll('.rating-star');
+        for (var j = 0; j < stars.length; j++) {
+          stars[j].classList.toggle('hover', j < val);
+        }
+      });
+      starsDiv.addEventListener('mouseout', function () {
+        var stars = starsDiv.querySelectorAll('.rating-star');
+        for (var j = 0; j < stars.length; j++) {
+          stars[j].classList.remove('hover');
+        }
+      });
+    }
+  }
+
   return {
     renderHeader: renderHeader,
     renderFooter: renderFooter,
@@ -359,6 +507,7 @@ var TeamzTools = (function () {
     injectWebSiteSchema: injectWebSiteSchema,
     renderRelatedTools: renderRelatedTools,
     renderFAQs: renderFAQs,
+    renderRating: renderRating,
     SITE_NAME: SITE_NAME,
     SITE_URL: SITE_URL
   };
@@ -896,6 +1045,7 @@ var TeamzAnalytics = (function () {
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
+  TeamzTools.renderRating();
   TeamzTranslate.init();
 
   // Floating CTA bar — always visible at bottom
