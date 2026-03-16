@@ -237,78 +237,94 @@
 
       var UCL_EVENTS = FALLBACK_EVENTS;
 
-      // Fetch live UCL data from TheSportsDB (free, no API key)
+      // Fetch live UCL match data from TheSportsDB (free, no API key)
+      // Only uses matches from September onwards (skips qualifying rounds)
       function fetchLiveUCLData() {
-        var season = new Date().getMonth() >= 6 ? new Date().getFullYear() + '-' + (new Date().getFullYear() + 1) : (new Date().getFullYear() - 1) + '-' + new Date().getFullYear();
+        var now = new Date();
+        var seasonYear = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+        var season = seasonYear + '-' + (seasonYear + 1);
         var url = 'https://www.thesportsdb.com/api/v1/json/3/eventsseason.php?id=4480&s=' + season;
 
         fetch(url).then(function(r) { return r.json(); }).then(function(data) {
           var events = data.events;
-          if (!events || events.length === 0) return; // Keep fallback
+          if (!events || events.length === 0) return;
 
-          // Group events by round/date to create meaningful entries
-          var grouped = {};
-          events.forEach(function(e) {
-            var dateKey = e.dateEvent;
-            var round = e.intRound || '?';
-            var key = dateKey + '_R' + round;
-            if (!grouped[key]) {
-              grouped[key] = {
-                date: e.dateEvent + 'T' + (e.strTime || '21:00:00') + '+00:00',
-                matches: [],
-                round: round,
-                venue: e.strVenue || 'Various venues',
-                stage: detectStage(round, e.strEvent || '')
-              };
-            }
-            grouped[key].matches.push(e.strEvent || 'TBD');
+          // Filter: only matches from September onwards (skip July/Aug qualifying)
+          var mainEvents = events.filter(function(e) {
+            var month = parseInt((e.dateEvent || '').split('-')[1]);
+            return month >= 9 || month <= 6; // Sep-Jun = main tournament
           });
 
-          // Convert to sorted event list
-          var liveEvents = Object.values(grouped).sort(function(a, b) {
+          if (mainEvents.length === 0) return;
+
+          // Group by date to create matchday entries
+          var grouped = {};
+          mainEvents.forEach(function(e) {
+            var dateKey = e.dateEvent;
+            if (!grouped[dateKey]) {
+              grouped[dateKey] = {
+                date: e.dateEvent + 'T' + (e.strTime || '21:00:00') + '+00:00',
+                matches: [],
+                venue: e.strVenue || 'Various venues',
+                round: parseInt(e.intRound || 0)
+              };
+            }
+            grouped[dateKey].matches.push({
+              name: e.strEvent || 'TBD',
+              venue: e.strVenue || '',
+              status: e.strStatus || ''
+            });
+          });
+
+          // Sort by date
+          var sortedDays = Object.values(grouped).sort(function(a, b) {
             return new Date(a.date) - new Date(b.date);
           });
 
-          // Build final events array
-          UCL_EVENTS = liveEvents.map(function(g) {
-            var matchCount = g.matches.length;
-            var name = g.stage + ' - Round ' + g.round;
-            if (matchCount <= 3) {
-              name = g.matches.join(', ');
+          // Build events with proper stage detection based on date position
+          var total = sortedDays.length;
+          UCL_EVENTS = sortedDays.map(function(day, idx) {
+            var matchCount = day.matches.length;
+            var stage = detectStageByPosition(idx, total, day.round);
+            var name;
+
+            if (matchCount === 1) {
+              name = day.matches[0].name;
+            } else if (matchCount <= 3) {
+              name = day.matches.map(function(m) { return m.name; }).join(', ');
             } else {
-              name = g.stage + ' (' + matchCount + ' matches)';
+              name = stage + ' (' + matchCount + ' matches)';
             }
+
             return {
-              date: g.date,
+              date: day.date,
               name: name,
-              venue: matchCount === 1 ? g.venue : 'Various venues',
-              stage: g.stage
+              venue: matchCount === 1 ? day.matches[0].venue || 'TBD' : 'Various venues',
+              stage: stage
             };
           });
 
-          // Re-render with live data
           renderTimeline();
           updateCountdown();
         }).catch(function() {
-          // API failed — keep using fallback data
+          // API failed — fallback data already loaded
         });
       }
 
-      function detectStage(round, eventName) {
-        var r = parseInt(round);
-        var name = eventName.toLowerCase();
-        if (name.indexOf('final') !== -1 && name.indexOf('semi') === -1 && name.indexOf('quarter') === -1) return 'Final';
-        if (name.indexOf('semi') !== -1) return 'Semi-finals';
-        if (name.indexOf('quarter') !== -1) return 'Quarter-finals';
-        if (r <= 8) return 'League Phase';
-        if (r <= 10) return 'Knockout Playoffs';
-        if (r <= 12) return 'Round of 16';
-        if (r <= 14) return 'Quarter-finals';
-        if (r <= 16) return 'Semi-finals';
+      function detectStageByPosition(idx, total, round) {
+        // UCL structure: ~16 league phase matchdays, then knockouts
+        // Use position in the season to determine stage
+        if (total <= 0) return 'UCL';
+        var pct = idx / total;
+        if (pct < 0.55) return 'League Phase';
+        if (pct < 0.65) return 'Knockout Playoffs';
+        if (pct < 0.75) return 'Round of 16';
+        if (pct < 0.85) return 'Quarter-finals';
+        if (pct < 0.95) return 'Semi-finals';
         return 'Final';
       }
 
-      // Try to load live data
+      // Try live data, fallback is already set
       fetchLiveUCLData();
 
       function findNextEvent() {

@@ -20,6 +20,7 @@
    - `./build-search-index.sh` — rebuilds search + counts + sitemap
    - `./build-sitemap.sh` — rebuilds sitemap only
    - `./build.sh` — full validation (search + sitemap + counts + lint + unlinked check)
+   - `./build-validate-freshness.sh` — checks for stale/outdated data (run annually or when rates change)
 
 3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, or search placeholder. The pre-commit hook does it automatically.
 
