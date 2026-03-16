@@ -460,7 +460,13 @@ var TeamzTools = (function () {
   }
 
   function renderRating() {
-    var anchor = document.getElementById('tool-faqs') || document.getElementById('related-tools');
+    // Skip if already rendered
+    if (document.getElementById('tool-rating')) return;
+
+    // Insert after related-tools, or after tool-faqs, or skip
+    var relTools = document.getElementById('related-tools');
+    var faqSection = document.getElementById('tool-faqs');
+    var anchor = relTools || faqSection;
     if (!anchor) return;
 
     var slug = _getToolSlug();
@@ -490,7 +496,12 @@ var TeamzTools = (function () {
 
     wrapper.appendChild(label);
     wrapper.appendChild(starsDiv);
-    anchor.parentNode.insertBefore(wrapper, anchor);
+    // Insert after the anchor (after related-tools or after tool-faqs)
+    if (anchor.nextSibling) {
+      anchor.parentNode.insertBefore(wrapper, anchor.nextSibling);
+    } else {
+      anchor.parentNode.appendChild(wrapper);
+    }
 
     // Fetch aggregate rating from Firebase and update UI + schema
     _fetchRatingFromFirebase(slug, function (data) {
@@ -1098,8 +1109,9 @@ var TeamzAnalytics = (function () {
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
-  TeamzTools.renderRating();
   TeamzTranslate.init();
+  // Rating widget renders after a short delay to ensure FAQs/related tools are rendered first
+  setTimeout(function () { TeamzTools.renderRating(); }, 100);
 
   // Floating CTA bar — always visible at bottom
   var cta = document.createElement('div');
