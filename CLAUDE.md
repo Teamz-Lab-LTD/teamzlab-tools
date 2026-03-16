@@ -6,6 +6,30 @@
 - Design system uses CSS custom properties (tokens) — NEVER hardcode colors
 - Privacy-first: everything runs client-side
 
+## FIRST THING TO DO — HEALTH CHECK (run at start of EVERY conversation)
+
+**At the START of every new conversation, BEFORE doing any work, run this:**
+
+```bash
+cd "/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
+./build-validate-freshness.sh
+./build.sh
+```
+
+**Then tell the user what's broken/stale and what they should do.**
+
+Example output to user:
+> "I ran a health check on your project. Here's what I found:
+> - 3 UK tax tools have 2025 rates — new 2026 rates should be updated (April update)
+> - 2 tools are not linked from any hub page
+> - UCL player stats last updated 6 months ago
+> - All APIs are working fine
+> - Search index and sitemap are up to date
+>
+> Want me to fix any of these?"
+
+**This is MANDATORY.** The user wants to be informed about what's broken or stale every time they start a conversation. Do not skip this.
+
 ## AUTOMATED SAFEGUARDS (already in place)
 
 1. **Pre-commit hook** (`.git/hooks/pre-commit`) — runs automatically before every commit:
