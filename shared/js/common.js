@@ -302,13 +302,20 @@ var TeamzTools = (function () {
 
   function _injectSchema(schema) {
     try {
+      // Skip if static schema already exists (injected by build-static-schema.py)
+      var existing = document.querySelectorAll('script[type="application/ld+json"]');
+      var schemaType = schema['@type'];
+      for (var i = 0; i < existing.length; i++) {
+        try {
+          var parsed = JSON.parse(existing[i].textContent);
+          if (parsed['@type'] === schemaType) return; // already present
+        } catch (e) {}
+      }
       var script = document.createElement('script');
       script.type = 'application/ld+json';
       script.textContent = JSON.stringify(schema);
       document.head.appendChild(script);
-    } catch (e) {
-      console.warn('TeamzTools: schema injection failed', e);
-    }
+    } catch (e) {}
   }
 
   function renderRelatedTools(tools) {
