@@ -221,9 +221,10 @@
       try {
         await loadModel();
         const output = await segmenter(currentImageSrc);
-        // output is an array; get the mask from the first result
+        // output is an array of segments; RMBG returns a single foreground mask
         const maskData = output[0];
-        // Create canvas to compose result
+
+        // Load original image
         const img = new Image();
         img.crossOrigin = 'anonymous';
         await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = currentImageSrc; });
@@ -234,19 +235,62 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
 
-        // Apply mask if available
+        // Apply mask — handle different output formats from Transformers.js
         if (maskData && maskData.mask) {
-          const maskImg = new Image();
-          await new Promise((resolve, reject) => { maskImg.onload = resolve; maskImg.onerror = reject; maskImg.src = maskData.mask.toDataURL(); });
-          const maskCanvas = document.createElement('canvas');
-          maskCanvas.width = canvas.width;
-          maskCanvas.height = canvas.height;
-          const maskCtx = maskCanvas.getContext('2d');
-          maskCtx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
-          const maskPixels = maskCtx.getImageData(0, 0, canvas.width, canvas.height);
+          const mask = maskData.mask;
+          // RawImage has .toCanvas(), .toDataURL(), or raw data
+          let maskCanvas;
+          if (typeof mask.toCanvas === 'function') {
+            maskCanvas = mask.toCanvas();
+          } else if (mask instanceof ImageData) {
+            maskCanvas = document.createElement('canvas');
+            maskCanvas.width = mask.width;
+            maskCanvas.height = mask.height;
+            maskCanvas.getContext('2d').putImageData(mask, 0, 0);
+          } else if (mask.data && mask.width && mask.height) {
+            // RawImage object — construct ImageData from raw pixel data
+            maskCanvas = document.createElement('canvas');
+            maskCanvas.width = mask.width;
+            maskCanvas.height = mask.height;
+            const maskCtx = maskCanvas.getContext('2d');
+            const channels = mask.channels || 1;
+            const imgData = maskCtx.createImageData(mask.width, mask.height);
+            for (let i = 0; i < mask.width * mask.height; i++) {
+              const val = channels === 1 ? mask.data[i] : mask.data[i * channels];
+              const alpha = val > 0.5 ? 255 : Math.round(val * 255);
+              imgData.data[i * 4] = 255;
+              imgData.data[i * 4 + 1] = 255;
+              imgData.data[i * 4 + 2] = 255;
+              imgData.data[i * 4 + 3] = alpha;
+            }
+            maskCtx.putImageData(imgData, 0, 0);
+          } else {
+            // Last resort: try toDataURL if it exists
+            try {
+              const url = typeof mask.toDataURL === 'function' ? mask.toDataURL() : mask;
+              const maskImg = new Image();
+              await new Promise((res, rej) => { maskImg.onload = res; maskImg.onerror = rej; maskImg.src = url; });
+              maskCanvas = document.createElement('canvas');
+              maskCanvas.width = canvas.width;
+              maskCanvas.height = canvas.height;
+              maskCanvas.getContext('2d').drawImage(maskImg, 0, 0, canvas.width, canvas.height);
+            } catch (e) {
+              console.error('Could not process mask:', e, mask);
+              throw new Error('Unsupported mask format. Please try a different image.');
+            }
+          }
+
+          // Scale mask to match original image size
+          const scaledMask = document.createElement('canvas');
+          scaledMask.width = canvas.width;
+          scaledMask.height = canvas.height;
+          scaledMask.getContext('2d').drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
+
+          const maskPixels = scaledMask.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
           const imgPixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
           for (let i = 0; i < imgPixels.data.length; i += 4) {
-            imgPixels.data[i + 3] = maskPixels.data[i];
+            // Use mask red/alpha channel as alpha for original
+            imgPixels.data[i + 3] = maskPixels.data[i + 3] > 0 ? maskPixels.data[i] : maskPixels.data[i + 3];
           }
           ctx.putImageData(imgPixels, 0, 0);
         }
