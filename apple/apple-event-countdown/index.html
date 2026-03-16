@@ -118,14 +118,74 @@
         slug: 'apple/apple-event-countdown'
       });
 
-      var events = [
-        { name: 'WWDC 2026', date: new Date(2026, 5, 1, 10, 0, 0), expect: 'iOS 20, macOS 17, iPadOS 20, watchOS 13, visionOS 3. Possible Mac hardware announcements.' },
-        { name: 'iPhone 18 Event', date: new Date(2026, 8, 8, 10, 0, 0), expect: 'iPhone 18 lineup, Apple Watch Series 12, AirPods updates. Public iOS 20 release.' },
-        { name: 'iPad & Mac Event', date: new Date(2026, 9, 27, 10, 0, 0), expect: 'New MacBook Pro, Mac mini, iPad Pro, or iPad Air updates with latest Apple Silicon.' },
-        { name: 'Spring Event 2027', date: new Date(2027, 2, 24, 10, 0, 0), expect: 'Updated iPad, MacBook Air, iPhone SE, new color options, or new product categories.' }
+      var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+      // Calculate the Nth occurrence of a weekday in a given month/year
+      // weekday: 0=Sun, 1=Mon, 2=Tue, ... 6=Sat
+      // weekNum: 1=first, 2=second, ... -1=last, -2=second-to-last
+      function getNthWeekdayOfMonth(year, month, weekday, weekNum) {
+        if (weekNum > 0) {
+          // Find the first occurrence of this weekday in the month
+          var first = new Date(year, month, 1);
+          var firstDay = first.getDay();
+          var offset = (weekday - firstDay + 7) % 7;
+          var day = 1 + offset + (weekNum - 1) * 7;
+          return new Date(year, month, day, 10, 0, 0);
+        } else {
+          // Find from end of month: -1 = last, -2 = second-to-last
+          var lastDay = new Date(year, month + 1, 0); // last day of month
+          var lastWeekday = lastDay.getDay();
+          var offset = (lastWeekday - weekday + 7) % 7;
+          var day = lastDay.getDate() - offset + (weekNum + 1) * 7;
+          return new Date(year, month, day, 10, 0, 0);
+        }
+      }
+
+      // Apple event patterns (month, weekday, weekNum):
+      // Spring Event: last Tuesday of March (month 2, weekday 2, weekNum -1)
+      // WWDC: second Monday of June (month 5, weekday 1, weekNum 2)
+      // iPhone Event: second Tuesday of September (month 8, weekday 2, weekNum 2)
+      // Mac/iPad Event: last Tuesday of October (month 9, weekday 2, weekNum -1)
+      var EVENT_PATTERNS = [
+        { key: 'spring', label: 'Spring Event', month: 2, weekday: 2, weekNum: -1,
+          expect: 'Updated iPad, MacBook Air, iPhone SE, new color options, or new product categories.' },
+        { key: 'wwdc', label: 'WWDC', month: 5, weekday: 1, weekNum: 2,
+          expect: 'Next-gen iOS, macOS, iPadOS, watchOS, visionOS. Possible Mac hardware announcements.' },
+        { key: 'iphone', label: 'iPhone Event', month: 8, weekday: 2, weekNum: 2,
+          expect: 'New iPhone lineup, Apple Watch, AirPods updates. Public iOS release.' },
+        { key: 'mac', label: 'iPad & Mac Event', month: 9, weekday: 2, weekNum: -1,
+          expect: 'New MacBook Pro, Mac mini, iPad Pro, or iPad Air updates with latest Apple Silicon.' }
       ];
 
-      var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      function generateUpcomingEvents() {
+        var now = new Date();
+        var currentYear = now.getFullYear();
+        var upcoming = [];
+
+        // Check this year and next year to always have 4 upcoming events
+        for (var y = currentYear; y <= currentYear + 1; y++) {
+          for (var p = 0; p < EVENT_PATTERNS.length; p++) {
+            var pattern = EVENT_PATTERNS[p];
+            var eventDate = getNthWeekdayOfMonth(y, pattern.month, pattern.weekday, pattern.weekNum);
+            if (eventDate.getTime() > now.getTime() - 86400000) { // include today's events
+              var yearLabel = y;
+              var iPhoneNum = 4 + (y - 2012); // iPhone numbering: 2024=iPhone 16, 2025=17, etc.
+              var name = pattern.label;
+              if (pattern.key === 'spring') name = 'Spring Event ' + yearLabel;
+              else if (pattern.key === 'wwdc') name = 'WWDC ' + yearLabel;
+              else if (pattern.key === 'iphone') name = 'iPhone ' + iPhoneNum + ' Event';
+              else if (pattern.key === 'mac') name = pattern.label;
+              upcoming.push({ name: name, date: eventDate, expect: pattern.expect });
+            }
+          }
+        }
+
+        // Sort by date and take the next 4
+        upcoming.sort(function(a, b) { return a.date.getTime() - b.date.getTime(); });
+        return upcoming.slice(0, 4);
+      }
+
+      var events = generateUpcomingEvents();
 
       function formatDate(d) {
         return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
@@ -191,15 +251,22 @@
         }
         html += '</div>';
 
-        html += '<p style="font-weight:600;margin:1.5rem 0 0.5rem;color:var(--text);">Historical Apple Event Dates</p>';
+        html += '<p style="font-weight:600;margin:1.5rem 0 0.5rem;color:var(--text);">Predicted Apple Event Dates</p>';
+        var tableYear = new Date().getFullYear();
         html += '<div style="overflow-x:auto;"><table class="history-table">';
-        html += '<thead><tr><th>Event</th><th>2024</th><th>2025</th><th>2026 (Expected)</th></tr></thead>';
+        html += '<thead><tr><th>Event</th><th>' + tableYear + '</th><th>' + (tableYear + 1) + '</th><th>' + (tableYear + 2) + '</th></tr></thead>';
         html += '<tbody>';
-        html += '<tr><td>Spring Event</td><td>May 7</td><td>March 25</td><td>March 24, 2027</td></tr>';
-        html += '<tr><td>WWDC</td><td>June 10</td><td>June 9</td><td>June 1</td></tr>';
-        html += '<tr><td>iPhone Event</td><td>September 9</td><td>September 9</td><td>September 8</td></tr>';
-        html += '<tr><td>Mac/iPad Event</td><td>October 28</td><td>October 28</td><td>October 27</td></tr>';
+        for (var tp = 0; tp < EVENT_PATTERNS.length; tp++) {
+          var pat = EVENT_PATTERNS[tp];
+          html += '<tr><td>' + pat.label + '</td>';
+          for (var ty = tableYear; ty <= tableYear + 2; ty++) {
+            var td2 = getNthWeekdayOfMonth(ty, pat.month, pat.weekday, pat.weekNum);
+            html += '<td>' + months[td2.getMonth()] + ' ' + td2.getDate() + '</td>';
+          }
+          html += '</tr>';
+        }
         html += '</tbody></table></div>';
+        html += '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.5rem 0 0;">Dates are predicted from historical patterns and auto-advance each year. Official dates are confirmed by Apple 1-3 weeks before each event.</p>';
 
         html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-top:1rem;">';
         html += '<p style="font-weight:600;margin:0 0 0.5rem;color:var(--text);">Upgrade Timing Advice</p>';
