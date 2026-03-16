@@ -91,9 +91,9 @@ echo "[6/6] Testing external API endpoints..."
 SPORTS_OK=$(curl -s -o /dev/null -w "%{http_code}" "https://www.thesportsdb.com/api/v1/json/3/eventsseason.php?id=4480&s=$CURRENT_YEAR-$NEXT_YEAR" 2>/dev/null)
 echo "  TheSportsDB UCL API: HTTP $SPORTS_OK"
 
-# ipapi.co (used by DNS leak test)
-IP_OK=$(curl -s -o /dev/null -w "%{http_code}" "https://ipapi.co/json/" 2>/dev/null)
-echo "  ipapi.co (IP lookup): HTTP $IP_OK"
+# ipinfo.io (used by IP/VPN/DNS diagnostic tools)
+IP_OK=$(curl -s -o /dev/null -w "%{http_code}" "https://ipinfo.io/json" 2>/dev/null)
+echo "  ipinfo.io (IP lookup): HTTP $IP_OK"
 
 # Cloudflare DoH
 CF_OK=$(curl -s -o /dev/null -w "%{http_code}" "https://cloudflare-dns.com/dns-query?name=example.com&type=A" -H "Accept: application/dns-json" 2>/dev/null)

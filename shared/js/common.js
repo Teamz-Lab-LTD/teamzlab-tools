@@ -88,6 +88,28 @@ var TeamzTools = (function () {
           '</div>' +
         '</div>' +
       '</div>' +
+      '<div class="footer-engage">' +
+        '<div class="engage-card">' +
+          '<div class="engage-card__icon">' +
+            '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+          '</div>' +
+          '<div class="engage-card__text">' +
+            '<strong>Got a tool idea or feedback?</strong>' +
+            '<span>Tell us what to build next — we read every message.</span>' +
+          '</div>' +
+          '<a href="' + TEAMZ_URL + '/contact" target="_blank" rel="noopener" class="engage-card__btn btn-pill">Share Feedback</a>' +
+        '</div>' +
+        '<div class="engage-card">' +
+          '<div class="engage-card__icon">' +
+            '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
+          '</div>' +
+          '<div class="engage-card__text">' +
+            '<strong>Want custom tools for your business?</strong>' +
+            '<span>We build apps, dashboards &amp; AI workflows. Drop us your email.</span>' +
+          '</div>' +
+          '<a href="' + TEAMZ_URL + '/contact" target="_blank" rel="noopener" class="engage-card__btn btn-pill">Get in Touch</a>' +
+        '</div>' +
+      '</div>' +
       '<div class="footer-links">' +
         '<div class="footer-col">' +
           '<h4>Work &amp; Payroll</h4>' +

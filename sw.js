@@ -3,7 +3,7 @@
  * Enables PWA install, offline caching, and fast repeat visits.
  */
 
-var CACHE_NAME = 'teamztools-v1';
+var CACHE_NAME = 'teamztools-v2';
 var PRECACHE_URLS = [
   '/',
   '/branding/css/teamz-branding.css',

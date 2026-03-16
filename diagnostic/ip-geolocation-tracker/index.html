@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IP Geolocation Lookup — Teamz Lab Tools</title>
-  <meta name="description" content="Look up the geographic location of any IP address. Find city, region, country, ISP, timezone, and coordinates. Free IP geolocation tool, private and instant.">
+  <meta name="description" content="Look up the geographic location of any IP address. Find city, region, country, ISP, timezone, and coordinates. Free, private, and instant.">
   <meta property="og:title" content="IP Geolocation Lookup — Teamz Lab Tools">
-  <meta property="og:description" content="Look up the geographic location of any IP address. Find city, country, ISP, timezone, and coordinates instantly.">
+  <meta property="og:description" content="Look up the geographic location of any IP address. Find city, region, country, ISP, timezone, and coordinates. Free, private, and instant.">
   <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/ip-geolocation-tracker/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/icon-512x512.png">
   <meta name="twitter:card" content="summary">
   <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/ip-geolocation-tracker/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -129,57 +130,57 @@
       resultsDiv.innerHTML = '<div style="text-align:center;padding:2rem;"><span class="loading-spinner"></span><p style="margin-top:1rem;color:var(--text-muted);">Looking up ' + ip + '...</p></div>';
 
       try {
-        var resp = await fetch('https://ipapi.co/' + ip + '/json/');
+        var resp = await fetch('https://ipinfo.io/' + ip + '/json');
         if (!resp.ok) throw new Error('Lookup failed');
         var data = await resp.json();
-        if (data.error) throw new Error(data.reason || 'IP not found');
+        if (data.error || data.bogon) throw new Error(data.error ? (data.error.message || 'IP not found') : 'bogon IP');
+
+        var loc = (data.loc || '').split(',');
+        var lat = loc[0] || '?';
+        var lon = loc[1] || '?';
+        var asn = '';
+        if (data.org) { var asnMatch = data.org.match(/^(AS\d+)/); asn = asnMatch ? asnMatch[1] : ''; }
 
         var html = '';
         html += '<div class="geo-grid">';
         html += '<div class="geo-card"><div class="geo-card-label">IP Address</div><div class="geo-card-value">' + (data.ip || ip) + '</div></div>';
         html += '<div class="geo-card"><div class="geo-card-label">City</div><div class="geo-card-value">' + (data.city || 'Unknown') + '</div></div>';
         html += '<div class="geo-card"><div class="geo-card-label">Region</div><div class="geo-card-value">' + (data.region || 'Unknown') + '</div></div>';
-        html += '<div class="geo-card"><div class="geo-card-label">Country</div><div class="geo-card-value">' + (data.country_name || 'Unknown') + (data.country_code ? ' (' + data.country_code + ')' : '') + '</div></div>';
+        html += '<div class="geo-card"><div class="geo-card-label">Country</div><div class="geo-card-value">' + (data.country || 'Unknown') + '</div></div>';
         html += '<div class="geo-card"><div class="geo-card-label">ISP / Organization</div><div class="geo-card-value">' + (data.org || 'Unknown') + '</div></div>';
-        html += '<div class="geo-card"><div class="geo-card-label">ASN</div><div class="geo-card-value">' + (data.asn || 'Unknown') + '</div></div>';
+        html += '<div class="geo-card"><div class="geo-card-label">ASN</div><div class="geo-card-value">' + (asn || 'Unknown') + '</div></div>';
         html += '<div class="geo-card"><div class="geo-card-label">Timezone</div><div class="geo-card-value">' + (data.timezone || 'Unknown') + '</div></div>';
         html += '<div class="geo-card"><div class="geo-card-label">Postal Code</div><div class="geo-card-value">' + (data.postal || 'Unknown') + '</div></div>';
-        html += '<div class="geo-card"><div class="geo-card-label">Coordinates</div><div class="geo-card-value">' + (data.latitude || '?') + ', ' + (data.longitude || '?') + '</div></div>';
-        html += '<div class="geo-card"><div class="geo-card-label">Country Calling Code</div><div class="geo-card-value">' + (data.country_calling_code || 'Unknown') + '</div></div>';
-        html += '<div class="geo-card"><div class="geo-card-label">Currency</div><div class="geo-card-value">' + (data.currency || 'Unknown') + (data.currency_name ? ' (' + data.currency_name + ')' : '') + '</div></div>';
-        html += '<div class="geo-card"><div class="geo-card-label">Languages</div><div class="geo-card-value">' + (data.languages || 'Unknown') + '</div></div>';
+        html += '<div class="geo-card"><div class="geo-card-label">Coordinates</div><div class="geo-card-value">' + lat + ', ' + lon + '</div></div>';
         html += '</div>';
 
         // Map link
-        if (data.latitude && data.longitude) {
+        if (lat !== '?' && lon !== '?') {
           html += '<div class="geo-map-placeholder">';
-          html += '<p style="color:var(--text-muted);margin:0 0 0.5rem;">Approximate location: ' + (data.city || '') + ', ' + (data.country_name || '') + '</p>';
-          html += '<p style="color:var(--text-muted);margin:0 0 0.5rem;font-size:0.85rem;">Latitude: ' + data.latitude + ' | Longitude: ' + data.longitude + '</p>';
-          html += '<a href="https://www.openstreetmap.org/?mlat=' + data.latitude + '&mlon=' + data.longitude + '#map=12/' + data.latitude + '/' + data.longitude + '" target="_blank" rel="noopener" class="geo-map-link">View on OpenStreetMap</a>';
+          html += '<p style="color:var(--text-muted);margin:0 0 0.5rem;">Approximate location: ' + (data.city || '') + ', ' + (data.country || '') + '</p>';
+          html += '<p style="color:var(--text-muted);margin:0 0 0.5rem;font-size:0.85rem;">Latitude: ' + lat + ' | Longitude: ' + lon + '</p>';
+          html += '<a href="https://www.openstreetmap.org/?mlat=' + lat + '&mlon=' + lon + '#map=12/' + lat + '/' + lon + '" target="_blank" rel="noopener" class="geo-map-link">View on OpenStreetMap</a>';
           html += '</div>';
         }
 
         // Additional network info
         html += '<div class="whois-section"><h3>Network Details</h3>';
         html += '<table class="whois-table">';
-        html += '<tr><td>IP Version</td><td>' + (data.version || (ip.indexOf(':') !== -1 ? 'IPv6' : 'IPv4')) + '</td></tr>';
-        html += '<tr><td>Network</td><td>' + (data.network || 'Unknown') + '</td></tr>';
+        html += '<tr><td>IP Version</td><td>' + (ip.indexOf(':') !== -1 ? 'IPv6' : 'IPv4') + '</td></tr>';
         html += '<tr><td>ISP</td><td>' + (data.org || 'Unknown') + '</td></tr>';
-        html += '<tr><td>ASN</td><td>' + (data.asn || 'Unknown') + '</td></tr>';
-        html += '<tr><td>Country Area (km2)</td><td>' + (data.country_area ? data.country_area.toLocaleString() : 'Unknown') + '</td></tr>';
-        html += '<tr><td>Country Population</td><td>' + (data.country_population ? data.country_population.toLocaleString() : 'Unknown') + '</td></tr>';
-        html += '<tr><td>UTC Offset</td><td>' + (data.utc_offset || 'Unknown') + '</td></tr>';
+        html += '<tr><td>ASN</td><td>' + (asn || 'Unknown') + '</td></tr>';
+        html += '<tr><td>Hostname</td><td>' + (data.hostname || 'Unknown') + '</td></tr>';
         html += '</table></div>';
 
         // Copy button
         var copyText = 'IP Geolocation for ' + (data.ip || ip) + '\n';
         copyText += 'City: ' + (data.city || 'Unknown') + '\n';
         copyText += 'Region: ' + (data.region || 'Unknown') + '\n';
-        copyText += 'Country: ' + (data.country_name || 'Unknown') + '\n';
+        copyText += 'Country: ' + (data.country || 'Unknown') + '\n';
         copyText += 'ISP: ' + (data.org || 'Unknown') + '\n';
-        copyText += 'ASN: ' + (data.asn || 'Unknown') + '\n';
+        copyText += 'ASN: ' + (asn || 'Unknown') + '\n';
         copyText += 'Timezone: ' + (data.timezone || 'Unknown') + '\n';
-        copyText += 'Coordinates: ' + (data.latitude || '?') + ', ' + (data.longitude || '?') + '\n';
+        copyText += 'Coordinates: ' + lat + ', ' + lon + '\n';
 
         html += '<div style="text-align:center;margin-top:1rem;"><button class="copy-btn" id="copy-results-btn">Copy Results</button></div>';
         resultsDiv.innerHTML = html;
@@ -221,7 +222,7 @@
         lookupIP(data.ip);
       } catch (e) {
         try {
-          var resp2 = await fetch('https://ipapi.co/json/');
+          var resp2 = await fetch('https://ipinfo.io/json');
           var data2 = await resp2.json();
           ipInput.value = data2.ip;
           lookupIP(data2.ip);
@@ -240,7 +241,7 @@
       { q: 'Can someone find my exact address from my IP?', a: 'No. IP geolocation provides only an approximate area, usually at the city or regional level. It cannot reveal your street address, apartment number, or exact location. Only your ISP can link an IP to a specific address, and they require a legal order to do so.' },
       { q: 'Why does the location show the wrong city?', a: 'IP geolocation databases are not always perfectly up to date. Your ISP may register IPs in a different city than where you are. Mobile networks often show the ISP headquarters city. VPN users see the VPN server location.' },
       { q: 'Can I look up any IP address?', a: 'You can look up any public IP address. Private IPs (like 192.168.x.x or 10.x.x.x) are used within local networks and cannot be geolocated because they do not appear on the public internet.' },
-      { q: 'Does this tool store my IP lookups?', a: 'No. We do not store, log, or track any IP addresses you look up. The query is sent directly to the geolocation API (ipapi.co) and the results are displayed only in your browser.' },
+      { q: 'Does this tool store my IP lookups?', a: 'No. We do not store, log, or track any IP addresses you look up. The query is sent directly to the geolocation API (ipinfo.io) and the results are displayed only in your browser.' },
       { q: 'What is an ASN?', a: 'ASN (Autonomous System Number) is a unique identifier for a network on the internet. Each ISP, hosting provider, or large organization has one or more ASNs. It helps identify who operates the network an IP belongs to.' },
       { q: 'How can I hide my IP location?', a: 'Use a VPN to route your traffic through a server in a different location. When using a VPN, IP geolocation tools will show the VPN server location instead of your real location.' }
     ];
