@@ -50,7 +50,21 @@ Example output to user:
 
 4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
 
-5. **BEFORE building ANY new tool**, run this to check for duplicates:
+5. **BEFORE building ANY new tool**, follow the **Research-First Workflow**:
+
+   **a) Trend research (MANDATORY):**
+   - Search **Google Trends** for rising/breakout keywords in the tool's category
+   - Check **Reddit** trending topics (r/InternetIsBeautiful, r/personalfinance, r/webdev, r/technology, niche subs)
+   - Check **news cycle** for new laws, regulations, viral events, product launches
+   - Check **seasonal calendar** in `/docs/research/022-growth-playbook.md`
+   - Present findings to user BEFORE writing any code
+
+   **b) Validate the keyword:**
+   - Does it have search volume? (Google Trends rising = good)
+   - Can we build it client-side? (Must be yes)
+   - Is there a monetizable audience? (Finance > jokes)
+
+   **c) Check for duplicates:**
    ```bash
    find . -path "*/<proposed-slug>/index.html" 2>/dev/null
    grep -ri "<proposed tool name>" --include="*.html" -l | head -5
@@ -60,6 +74,8 @@ Example output to user:
    - sleep-calculator exists in `/health/` AND `/evergreen/`
    - YouTube thumbnail tools exist in `/tools/`, `/video/`, `/design/`
    - Resume/ATS tools exist in `/career/resume-ats-scorer/` AND `/career/ats-resume-checker/`
+
+   **Full playbook:** See `/docs/research/022-growth-playbook.md` for monetization strategy, seasonal calendar, virality checklist, and revenue targets.
 
 ## LOCAL DEV SERVER
 
@@ -188,6 +204,20 @@ All SEO findings are stored in `/docs/seo-audit/` so they travel with the repo:
 - The 76-page hardcoded color fix list organized by category
 
 **After fixing issues, update the audit doc** to reflect current state.
+
+## Growth Playbook (committed to repo)
+
+The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It contains:
+- **Research-first workflow** — Google Trends + Reddit + news cycle before building
+- **Monetization strategy** — AdSense, affiliates, lead gen, newsletter, premium tier
+- **Seasonal playbook** — what to build each month for trend-jacking
+- **Virality checklist** — share buttons, OG images, embed codes
+- **Revenue targets** — phased approach from $0 to $10K+/mo
+- **Data-driven decisions** — monthly review cadence using Firebase Analytics
+
+**Influences:** Marc Lou (ship fast, monetize day 1) + Adam Lyttle (portfolio model, trend-jacking, ASO/SEO niche targeting, $800K from 50 simple apps)
+
+**Read this doc before suggesting new tools or strategy changes.**
 
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
