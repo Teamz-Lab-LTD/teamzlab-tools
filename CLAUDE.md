@@ -39,6 +39,10 @@ Example output to user:
    - Updates search placeholder ("Search N+ tools...")
    - Updates cache-buster version on search-index.js
    - Warns about hardcoded colors on accent backgrounds
+   - **Warns if title >60 chars** (will show in pre-commit output)
+   - **Warns if meta description >155 chars** (decoded length)
+   - **Warns if og:image is missing**
+   - Rebuilds static JSON-LD schema in all pages (`build-static-schema.py`)
 
 2. **Build scripts** — run manually or via hook:
    - `./build-search-index.sh` — rebuilds search + counts + sitemap
