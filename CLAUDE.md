@@ -6,6 +6,25 @@
 - Design system uses CSS custom properties (tokens) — NEVER hardcode colors
 - Privacy-first: everything runs client-side
 
+## AUTOMATED SAFEGUARDS (already in place)
+
+1. **Pre-commit hook** (`.git/hooks/pre-commit`) — runs automatically before every commit:
+   - Rebuilds `search-index.js` with ALL tool titles + descriptions
+   - Rebuilds `sitemap.xml` with ALL tool URLs
+   - Updates homepage card counts to match actual tool counts
+   - Updates search placeholder ("Search N+ tools...")
+   - Updates cache-buster version on search-index.js
+   - Warns about hardcoded colors on accent backgrounds
+
+2. **Build scripts** — run manually or via hook:
+   - `./build-search-index.sh` — rebuilds search + counts + sitemap
+   - `./build-sitemap.sh` — rebuilds sitemap only
+   - `./build.sh` — full validation (search + sitemap + counts + lint + unlinked check)
+
+3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, or search placeholder. The pre-commit hook does it automatically.
+
+4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
+
 ## CRITICAL RULES — READ BEFORE EVERY TASK
 
 ### Rule 1: NEVER use hardcoded colors
