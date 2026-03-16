@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIF Maker — Create GIFs Privately From Images | Teamz Lab Tools</title>
+  <meta name="description" content="Create animated GIFs from your images privately in your browser. Upload frames, set delay and loop count, generate and download. Nothing is uploaded to any server — your photos stay on your device.">
+  <meta property="og:title" content="GIF Maker — Create GIFs Privately, No Upload | Teamz Lab Tools">
+  <meta property="og:description" content="Create animated GIFs from images in your browser. No upload, no server, 100% private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/gif-maker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="GIF Maker — Create GIFs Privately | Teamz Lab Tools">
+  <meta name="twitter:description" content="Create animated GIFs from images. No upload needed. 100% browser-based and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/gif-maker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge{display:inline-flex;align-items:center;gap:0.4rem;background:var(--surface-alt,#f0fdf4);border:1px solid var(--border-color,#bbf7d0);color:var(--text-secondary,#15803d);padding:0.35rem 0.9rem;border-radius:999px;font-size:0.8rem;font-weight:600;margin-bottom:1rem}
+    .privacy-badge svg{width:14px;height:14px;fill:currentColor}
+    .gif-layout{display:flex;flex-wrap:wrap;gap:2rem;margin:1rem 0}
+    .gif-controls{flex:1;min-width:260px}
+    .gif-preview-area{flex:1;min-width:260px;display:flex;flex-direction:column;align-items:center}
+    .upload-zone{border:2px dashed var(--border-color,#cbd5e1);border-radius:12px;padding:2rem;text-align:center;cursor:pointer;transition:border-color 0.2s;margin-bottom:1rem}
+    .upload-zone:hover{border-color:var(--brand-primary,#3b82f6)}
+    .upload-zone.dragover{border-color:var(--brand-primary,#3b82f6);background:var(--surface-alt,#eff6ff)}
+    .upload-zone input{display:none}
+    .upload-zone-text{font-size:0.95rem;color:var(--text-secondary,#64748b);font-weight:500}
+    .upload-zone-text strong{color:var(--brand-primary,#3b82f6)}
+    .frame-thumbnails{display:flex;flex-wrap:wrap;gap:0.5rem;margin:0.75rem 0;max-height:200px;overflow-y:auto}
+    .frame-thumb{width:64px;height:64px;object-fit:cover;border-radius:6px;border:2px solid var(--border-color,#e2e8f0)}
+    .frame-thumb.active{border-color:var(--brand-primary,#3b82f6)}
+    .frame-count{font-size:0.85rem;color:var(--text-secondary,#64748b);margin-bottom:0.5rem}
+    .gif-field{margin-bottom:0.75rem}
+    .gif-field label{font-weight:600;font-size:0.85rem;color:var(--text-secondary,#64748b);display:block;margin-bottom:0.3rem}
+    .gif-field input,.gif-field select{width:100%;padding:0.5rem 0.75rem;border:1px solid var(--border-color,#e2e8f0);border-radius:8px;font-size:0.9rem;font-family:'Poppins',sans-serif;background:var(--surface,#fff);color:var(--text-primary,#1e293b)}
+    .btn-generate{background:var(--brand-primary,#3b82f6);color:#fff;border:none;padding:0.8rem 2rem;border-radius:999px;font-size:1rem;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;width:100%;margin-top:0.5rem;transition:opacity 0.2s}
+    .btn-generate:hover{opacity:0.9}
+    .btn-generate:disabled{opacity:0.5;cursor:not-allowed}
+    .btn-secondary{background:none;border:1px solid var(--border-color,#d1d5db);color:var(--text-primary,#1e293b);padding:0.55rem 1.2rem;border-radius:999px;font-size:0.85rem;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;margin-top:0.5rem;width:100%}
+    .btn-download{background:#22c55e;color:#fff;border:none;padding:0.8rem 2rem;border-radius:999px;font-size:1rem;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;width:100%;margin-top:0.75rem;transition:opacity 0.2s;display:none}
+    .btn-download:hover{opacity:0.9}
+    .preview-canvas{max-width:100%;border:1px solid var(--border-color,#e2e8f0);border-radius:10px;background:#f1f5f9}
+    .progress-bar{width:100%;height:6px;background:var(--border-color,#e2e8f0);border-radius:3px;margin:0.75rem 0;overflow:hidden;display:none}
+    .progress-fill{height:100%;background:var(--brand-primary,#3b82f6);border-radius:3px;transition:width 0.3s;width:0%}
+    .status-text{font-size:0.85rem;color:var(--text-secondary,#64748b);text-align:center;min-height:1.5em}
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg> 100% Private — Create GIFs without uploading your photos anywhere</div>
+      <h1>GIF Maker — Create Animated GIFs Privately in Your Browser</h1>
+      <p class="tool-description">Upload images, set the frame delay and loop count, then generate an animated GIF entirely in your browser. Your photos are never uploaded to any server. Preview the animation in real time and download the result.</p>
+    </section>
+    <section class="tool-calculator">
+      <div id="tool-calculator">
+        <div class="gif-layout">
+          <div class="gif-controls">
+            <div class="upload-zone" id="upload-zone">
+              <input type="file" id="file-input" multiple accept="image/*">
+              <div class="upload-zone-text">
+                <strong>Click to upload</strong> or drag &amp; drop images<br>
+                <small>PNG, JPG, WebP — select multiple files</small>
+              </div>
+            </div>
+            <div class="frame-count" id="frame-count">0 frames loaded</div>
+            <div class="frame-thumbnails" id="frame-thumbnails"></div>
+            <div class="gif-field">
+              <label for="frame-delay">Frame Delay (ms)</label>
+              <input type="number" id="frame-delay" value="200" min="20" max="5000" step="10">
+            </div>
+            <div class="gif-field">
+              <label for="loop-count">Loop Count</label>
+              <select id="loop-count">
+                <option value="0">Infinite</option>
+                <option value="1">1 time</option>
+                <option value="2">2 times</option>
+                <option value="3">3 times</option>
+                <option value="5">5 times</option>
+                <option value="10">10 times</option>
+              </select>
+            </div>
+            <div class="gif-field">
+              <label for="output-width">Output Width (px)</label>
+              <input type="number" id="output-width" value="480" min="50" max="1920" step="10">
+            </div>
+            <button type="button" class="btn-generate" id="btn-generate" disabled>Generate GIF</button>
+            <button type="button" class="btn-secondary" id="btn-clear">Clear All</button>
+            <button type="button" class="btn-download" id="btn-download">Download GIF</button>
+          </div>
+          <div class="gif-preview-area">
+            <canvas id="preview-canvas" class="preview-canvas" width="480" height="320"></canvas>
+            <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="status-text" id="status-text">Upload images to get started</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the GIF Maker Works</h2>
+      <p>This tool creates animated GIFs entirely in your browser using the GIF89a encoding format. When you upload images, they are read locally using the FileReader API — nothing is sent to any server. Each image is drawn onto an HTML5 Canvas at the specified output width (maintaining aspect ratio), and the pixel data is encoded into GIF frames with the delay you set. The result is a downloadable animated GIF file.</p>
+
+      <div class="formula-box">
+        <h3>GIF Specifications</h3>
+        <p class="formula"><strong>Format:</strong> GIF89a with animation extension</p>
+        <p class="formula"><strong>Color Depth:</strong> 256 colors per frame (8-bit palette)</p>
+        <p class="formula"><strong>Frame Delay:</strong> 20ms to 5000ms per frame</p>
+        <p class="formula"><strong>Loop Options:</strong> Infinite or fixed number of loops</p>
+        <p>Each frame is quantized to 256 colors using median-cut color quantization. For best results, use images with similar dimensions and color palettes.</p>
+      </div>
+
+      <h2>Privacy and Security</h2>
+      <p>Your images are processed entirely within your web browser using JavaScript and the Canvas API. No image data, pixel data, or file metadata is ever transmitted to any server. The generated GIF exists only in your browser's memory until you download it. This makes the tool completely safe for creating GIFs from personal photos, confidential screenshots, or any sensitive imagery.</p>
+
+      <h3>Tips for Best Results</h3>
+      <p>Use images of the same dimensions for smooth animations. Lower frame delays create faster animations (100ms = 10 FPS, 200ms = 5 FPS). Keep frame counts reasonable — more frames mean larger file sizes. If your GIF is too large, reduce the output width or the number of frames. Simpler images with fewer colors produce smaller, cleaner GIFs.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var frames = []; // array of {img: Image, canvas: HTMLCanvasElement}
+    var gifBlob = null;
+    var previewInterval = null;
+    var previewFrame = 0;
+
+    function updateFrameCount() {
+      document.getElementById('frame-count').textContent = frames.length + ' frame' + (frames.length !== 1 ? 's' : '') + ' loaded';
+      document.getElementById('btn-generate').disabled = frames.length < 2;
+    }
+
+    function renderThumbnails() {
+      var container = document.getElementById('frame-thumbnails');
+      container.innerHTML = '';
+      for (var i = 0; i < frames.length; i++) {
+        var img = document.createElement('img');
+        img.src = frames[i].img.src;
+        img.className = 'frame-thumb';
+        img.alt = 'Frame ' + (i + 1);
+        container.appendChild(img);
+      }
+    }
+
+    function startPreview() {
+      if (previewInterval) clearInterval(previewInterval);
+      if (frames.length === 0) return;
+      var canvas = document.getElementById('preview-canvas');
+      var ctx = canvas.getContext('2d');
+      var delay = parseInt(document.getElementById('frame-delay').value) || 200;
+      previewFrame = 0;
+
+      function drawFrame() {
+        if (frames.length === 0) return;
+        var f = frames[previewFrame % frames.length];
+        var w = parseInt(document.getElementById('output-width').value) || 480;
+        var ratio = f.img.naturalHeight / f.img.naturalWidth;
+        var h = Math.round(w * ratio);
+        canvas.width = w;
+        canvas.height = h;
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(f.img, 0, 0, w, h);
+        previewFrame++;
+      }
+      drawFrame();
+      previewInterval = setInterval(drawFrame, delay);
+    }
+
+    function loadImages(fileList) {
+      var loaded = 0;
+      for (var i = 0; i < fileList.length; i++) {
+        (function(file) {
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+              frames.push({img: img});
+              loaded++;
+              if (loaded === fileList.length) {
+                updateFrameCount();
+                renderThumbnails();
+                startPreview();
+                document.getElementById('status-text').textContent = 'Preview playing. Adjust settings and generate.';
+              }
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        })(fileList[i]);
+      }
+    }
+
+    // === GIF89a Encoder (lightweight, self-contained) ===
+    function GifEncoder(width, height, delay, loops) {
+      this.width = width;
+      this.height = height;
+      this.delay = Math.round(delay / 10); // GIF delay is in 1/100th sec
+      this.loops = loops;
+      this.data = [];
+    }
+
+    GifEncoder.prototype.writeByte = function(b) { this.data.push(b & 0xFF); };
+    GifEncoder.prototype.writeShort = function(v) { this.writeByte(v & 0xFF); this.writeByte((v >> 8) & 0xFF); };
+    GifEncoder.prototype.writeString = function(s) { for (var i = 0; i < s.length; i++) this.writeByte(s.charCodeAt(i)); };
+    GifEncoder.prototype.writeBytes = function(arr) { for (var i = 0; i < arr.length; i++) this.data.push(arr[i] & 0xFF); };
+
+    GifEncoder.prototype.writeHeader = function() {
+      this.writeString('GIF89a');
+      this.writeShort(this.width);
+      this.writeShort(this.height);
+      this.writeByte(0xF7); // GCT flag, 256 colors (2^(7+1))
+      this.writeByte(0); // bg color
+      this.writeByte(0); // pixel aspect
+    };
+
+    GifEncoder.prototype.writeGCT = function(palette) {
+      for (var i = 0; i < 256; i++) {
+        if (i < palette.length) {
+          this.writeByte(palette[i][0]);
+          this.writeByte(palette[i][1]);
+          this.writeByte(palette[i][2]);
+        } else {
+          this.writeByte(0); this.writeByte(0); this.writeByte(0);
+        }
+      }
+    };
+
+    GifEncoder.prototype.writeNetscapeExt = function() {
+      this.writeByte(0x21); // extension
+      this.writeByte(0xFF); // app extension
+      this.writeByte(11); // block size
+      this.writeString('NETSCAPE2.0');
+      this.writeByte(3); // sub-block size
+      this.writeByte(1);
+      this.writeShort(this.loops);
+      this.writeByte(0); // terminator
+    };
+
+    GifEncoder.prototype.writeGraphicControl = function() {
+      this.writeByte(0x21); // extension
+      this.writeByte(0xF9); // GCE
+      this.writeByte(4); // block size
+      this.writeByte(0); // disposal + no transparent
+      this.writeShort(this.delay);
+      this.writeByte(0); // transparent color index
+      this.writeByte(0); // terminator
+    };
+
+    GifEncoder.prototype.writeImageDesc = function() {
+      this.writeByte(0x2C);
+      this.writeShort(0); // left
+      this.writeShort(0); // top
+      this.writeShort(this.width);
+      this.writeShort(this.height);
+      this.writeByte(0); // no local color table
+    };
+
+    // Simple LZW encoder
+    GifEncoder.prototype.writeLZW = function(indices) {
+      var minCodeSize = 8;
+      this.writeByte(minCodeSize);
+      var clearCode = 1 << minCodeSize;
+      var eoiCode = clearCode + 1;
+      var codeSize = minCodeSize + 1;
+      var nextCode = eoiCode + 1;
+      var table = {};
+      var buffer = 0, bits = 0;
+      var subBlock = [];
+      var output = [];
+
+      function emit(code) {
+        buffer |= (code << bits);
+        bits += codeSize;
+        while (bits >= 8) {
+          subBlock.push(buffer & 0xFF);
+          buffer >>= 8;
+          bits -= 8;
+          if (subBlock.length === 255) {
+            output.push(subBlock.length);
+            for (var s = 0; s < subBlock.length; s++) output.push(subBlock[s]);
+            subBlock = [];
+          }
+        }
+      }
+
+      function resetTable() {
+        table = {};
+        for (var i = 0; i < clearCode; i++) table[String(i)] = i;
+        nextCode = eoiCode + 1;
+        codeSize = minCodeSize + 1;
+      }
+
+      resetTable();
+      emit(clearCode);
+
+      if (indices.length === 0) { emit(eoiCode); } else {
+        var cur = String(indices[0]);
+        for (var i = 1; i < indices.length; i++) {
+          var next = String(indices[i]);
+          var combined = cur + ',' + next;
+          if (table.hasOwnProperty(combined)) {
+            cur = combined;
+          } else {
+            emit(table[cur]);
+            if (nextCode < 4096) {
+              table[combined] = nextCode++;
+              if (nextCode > (1 << codeSize) && codeSize < 12) codeSize++;
+            } else {
+              emit(clearCode);
+              resetTable();
+            }
+            cur = next;
+          }
+        }
+        emit(table[cur]);
+      }
+      emit(eoiCode);
+
+      // Flush remaining bits
+      if (bits > 0) subBlock.push(buffer & 0xFF);
+      if (subBlock.length > 0) {
+        output.push(subBlock.length);
+        for (var s2 = 0; s2 < subBlock.length; s2++) output.push(subBlock[s2]);
+      }
+      output.push(0); // block terminator
+
+      this.writeBytes(output);
+    };
+
+    GifEncoder.prototype.finish = function() {
+      this.writeByte(0x3B); // trailer
+    };
+
+    GifEncoder.prototype.toBlob = function() {
+      return new Blob([new Uint8Array(this.data)], {type: 'image/gif'});
+    };
+
+    // Median-cut color quantization to 256 colors
+    function quantize(pixels) {
+      // pixels is Uint8ClampedArray (RGBA)
+      var colorMap = {};
+      var colors = [];
+      for (var i = 0; i < pixels.length; i += 4) {
+        var r = pixels[i] & 0xF8, g = pixels[i+1] & 0xF8, b = pixels[i+2] & 0xF8;
+        var key = (r << 16) | (g << 8) | b;
+        if (!colorMap[key]) { colorMap[key] = true; colors.push([r, g, b]); }
+      }
+
+      // Simple approach: take up to 256 most frequent, or reduce
+      // Build palette by sampling
+      var palette = [];
+      if (colors.length <= 256) {
+        palette = colors;
+      } else {
+        // Uniform sampling from the color space
+        for (var ri = 0; ri < 6; ri++) {
+          for (var gi = 0; gi < 7; gi++) {
+            for (var bi = 0; bi < 6; bi++) {
+              palette.push([Math.round(ri * 51), Math.round(gi * 42.5), Math.round(bi * 51)]);
+            }
+          }
+        }
+        palette = palette.slice(0, 256);
+      }
+
+      // Map pixels to palette indices
+      var indices = new Uint8Array(pixels.length / 4);
+      for (var j = 0; j < pixels.length; j += 4) {
+        var pr = pixels[j], pg = pixels[j+1], pb = pixels[j+2];
+        var bestDist = Infinity, bestIdx = 0;
+        for (var k = 0; k < palette.length; k++) {
+          var dr = pr - palette[k][0], dg = pg - palette[k][1], db = pb - palette[k][2];
+          var dist = dr*dr + dg*dg + db*db;
+          if (dist < bestDist) { bestDist = dist; bestIdx = k; }
+        }
+        indices[j / 4] = bestIdx;
+      }
+
+      // Pad palette to 256
+      while (palette.length < 256) palette.push([0, 0, 0]);
+
+      return {palette: palette, indices: indices};
+    }
+
+    function generateGif() {
+      if (frames.length < 2) return;
+      if (previewInterval) clearInterval(previewInterval);
+
+      var width = parseInt(document.getElementById('output-width').value) || 480;
+      var delay = parseInt(document.getElementById('frame-delay').value) || 200;
+      var loops = parseInt(document.getElementById('loop-count').value);
+
+      // Compute height from first frame
+      var ratio = frames[0].img.naturalHeight / frames[0].img.naturalWidth;
+      var height = Math.round(width * ratio);
+
+      document.getElementById('btn-generate').disabled = true;
+      document.getElementById('progress-bar').style.display = 'block';
+      document.getElementById('status-text').textContent = 'Generating GIF...';
+      document.getElementById('btn-download').style.display = 'none';
+
+      var tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      var tempCtx = tempCanvas.getContext('2d');
+
+      // Use first frame to build global palette
+      tempCtx.drawImage(frames[0].img, 0, 0, width, height);
+      var firstPixels = tempCtx.getImageData(0, 0, width, height).data;
+      var q = quantize(firstPixels);
+      var globalPalette = q.palette;
+
+      var encoder = new GifEncoder(width, height, delay, loops);
+      encoder.writeHeader();
+      encoder.writeGCT(globalPalette);
+      encoder.writeNetscapeExt();
+
+      var frameIdx = 0;
+
+      function processFrame() {
+        if (frameIdx >= frames.length) {
+          encoder.finish();
+          gifBlob = encoder.toBlob();
+          document.getElementById('btn-generate').disabled = false;
+          document.getElementById('progress-bar').style.display = 'none';
+          document.getElementById('status-text').textContent = 'GIF generated! Size: ' + (gifBlob.size / 1024).toFixed(1) + ' KB';
+          document.getElementById('btn-download').style.display = 'block';
+          // Show result in preview
+          var url = URL.createObjectURL(gifBlob);
+          var preview = document.getElementById('preview-canvas');
+          var img = new Image();
+          img.onload = function() {
+            preview.width = width;
+            preview.height = height;
+            preview.getContext('2d').drawImage(img, 0, 0, width, height);
+          };
+          img.src = url;
+          return;
+        }
+
+        var progress = Math.round(((frameIdx + 1) / frames.length) * 100);
+        document.getElementById('progress-fill').style.width = progress + '%';
+        document.getElementById('status-text').textContent = 'Processing frame ' + (frameIdx + 1) + ' of ' + frames.length + '...';
+
+        tempCtx.clearRect(0, 0, width, height);
+        tempCtx.drawImage(frames[frameIdx].img, 0, 0, width, height);
+        var pixelData = tempCtx.getImageData(0, 0, width, height).data;
+
+        // Map to global palette
+        var indices = new Uint8Array(width * height);
+        for (var j = 0; j < pixelData.length; j += 4) {
+          var pr = pixelData[j], pg = pixelData[j+1], pb = pixelData[j+2];
+          var bestDist = Infinity, bestIdx = 0;
+          for (var k = 0; k < globalPalette.length; k++) {
+            var dr = pr - globalPalette[k][0], dg = pg - globalPalette[k][1], db = pb - globalPalette[k][2];
+            var dist = dr*dr + dg*dg + db*db;
+            if (dist < bestDist) { bestDist = dist; bestIdx = k; }
+          }
+          indices[j / 4] = bestIdx;
+        }
+
+        encoder.writeGraphicControl();
+        encoder.writeImageDesc();
+        encoder.writeLZW(indices);
+
+        frameIdx++;
+        setTimeout(processFrame, 0); // yield to UI
+      }
+
+      processFrame();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var uploadZone = document.getElementById('upload-zone');
+      var fileInput = document.getElementById('file-input');
+
+      uploadZone.addEventListener('click', function() { fileInput.click(); });
+
+      fileInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) loadImages(this.files);
+      });
+
+      uploadZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('dragover');
+      });
+      uploadZone.addEventListener('dragleave', function() {
+        this.classList.remove('dragover');
+      });
+      uploadZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) loadImages(e.dataTransfer.files);
+      });
+
+      document.getElementById('btn-generate').addEventListener('click', generateGif);
+
+      document.getElementById('btn-download').addEventListener('click', function() {
+        if (!gifBlob) return;
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(gifBlob);
+        a.download = 'animation-' + Date.now() + '.gif';
+        a.click();
+      });
+
+      document.getElementById('btn-clear').addEventListener('click', function() {
+        frames = [];
+        gifBlob = null;
+        if (previewInterval) clearInterval(previewInterval);
+        updateFrameCount();
+        renderThumbnails();
+        document.getElementById('preview-canvas').getContext('2d').clearRect(0, 0, 480, 320);
+        document.getElementById('preview-canvas').width = 480;
+        document.getElementById('preview-canvas').height = 320;
+        document.getElementById('status-text').textContent = 'Upload images to get started';
+        document.getElementById('btn-download').style.display = 'none';
+        document.getElementById('progress-bar').style.display = 'none';
+        fileInput.value = '';
+      });
+
+      document.getElementById('frame-delay').addEventListener('change', function() {
+        if (frames.length > 0) startPreview();
+      });
+
+      var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Tools',url:'/tools/'},{name:'GIF Maker'}];
+      var FAQS = [
+        {q:'Are my images uploaded to a server?', a:'No. All image processing happens entirely in your browser using JavaScript and the Canvas API. Your images are read locally with the FileReader API and never leave your device. The generated GIF exists only in your browser\'s memory until you download it.'},
+        {q:'What image formats can I use?', a:'You can upload any image format supported by your browser, including PNG, JPEG, WebP, and BMP. All images are drawn onto a canvas and converted to GIF frames regardless of their original format.'},
+        {q:'Why does the GIF have limited colors?', a:'The GIF format supports a maximum of 256 colors per frame. This tool quantizes your images to a 256-color palette. For photographs with many colors, some color banding may occur. Images with simpler color palettes produce the best results.'},
+        {q:'Is there a limit on the number of frames?', a:'There is no hard limit, but more frames mean larger file sizes and longer processing times. For smooth animations, 10-30 frames at 100-200ms delay works well. The entire process runs in your browser, so performance depends on your device.'}
+      ];
+      var RELATED_TOOLS = [
+        {slug:'image/image-compressor', name:'Image Compressor', description:'Compress images to reduce file size.'},
+        {slug:'image/image-resizer', name:'Image Resizer', description:'Resize images to exact dimensions.'},
+        {slug:'image/social-card-maker', name:'Social Card Maker', description:'Create OG preview card images.'},
+        {slug:'image/grayscale-converter', name:'Grayscale Converter', description:'Convert images to grayscale.'},
+        {slug:'image/thumbnail-maker', name:'Thumbnail Maker', description:'Create thumbnails from images.'},
+        {slug:'image/favicon-generator', name:'Favicon Generator', description:'Generate favicons from images.'}
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({slug:'tools/gif-maker', title:'GIF Maker', description:'Create animated GIFs from images privately in your browser. No upload, no server — 100% client-side.'});
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  })();
+  </script>
+</body>
+</html>

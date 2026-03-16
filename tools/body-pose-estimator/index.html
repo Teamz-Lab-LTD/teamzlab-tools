@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Body Pose Estimator — AI Pose Detection, Private | Teamz Lab Tools</title>
+  <meta name="description" content="Detect body poses in images using AI running in your browser. Free, private, no upload required. Visualize skeleton landmarks for fitness, yoga, dance, and physical therapy.">
+  <meta name="keywords" content="pose estimation online, body pose detector, AI pose analyzer, skeleton detection, body landmark detection">
+  <meta property="og:title" content="Free Body Pose Estimator — AI Pose Detection, Private | Teamz Lab Tools">
+  <meta property="og:description" content="Detect body poses in photos with AI running in your browser. Free, private, no upload.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/body-pose-estimator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/body-pose-estimator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.75rem; margin-bottom: 1rem; margin-left: 0.5rem; }
+    .model-status { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+    .model-status.ready { border-color: var(--accent); }
+    .progress-bar-wrap { width: 100%; height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; margin-top: 0.5rem; display: none; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; width: 0%; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 1rem; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--surface); }
+    .upload-zone p { margin: 0.5rem 0; color: var(--text-muted); font-size: 0.9rem; }
+    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .canvas-wrap { position: relative; text-align: center; margin-bottom: 1rem; }
+    .canvas-wrap canvas { max-width: 100%; border-radius: 8px; display: none; }
+    input[type="file"] { display: none; }
+    .landmark-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; margin-top: 1rem; }
+    .landmark-item { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.8rem; display: flex; justify-content: space-between; }
+    .landmark-name { font-weight: 600; text-transform: capitalize; }
+    .landmark-conf { color: var(--text-muted); }
+    .detection-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .detection-summary h4 { margin: 0 0 0.5rem 0; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">Browser AI — Works in All Browsers</span>
+      <span class="privacy-badge">&#128274; Photo Never Leaves Your Browser</span>
+      <h1>Body Pose Estimator</h1>
+      <p class="tool-description">Upload a photo and AI will detect body poses, drawing skeleton landmarks on the image. Perfect for analyzing workout form, yoga poses, dance moves, and physical therapy exercises. Runs entirely in your browser — your photo stays private.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="model-status" id="model-status">
+        <span id="model-status-text">Upload an image to load the pose detection model. After loading, it works offline.</span>
+        <div class="progress-bar-wrap" id="progress-wrap">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">&#127939;</div>
+        <p><strong>Click to upload or drag & drop a photo</strong></p>
+        <p>Best results: full-body photos with clear visibility. JPG, PNG, WebP — max 10 MB</p>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+      <div class="canvas-wrap">
+        <canvas id="pose-canvas"></canvas>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="detect-btn" class="btn-pill tool-calculate-btn" disabled>Detect Pose</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+        <button type="button" id="download-btn" class="btn-pill-ghost" style="display:none;">Download Image</button>
+      </div>
+      <div id="tool-result" class="tool-result" style="display:none;">
+        <div class="tool-result-inner">
+          <h3 class="tool-result-title">Pose Detection Results</h3>
+          <div id="detection-summary" class="detection-summary"></div>
+          <div id="landmark-list" class="landmark-list"></div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>AI Pose Estimation — Free, Private, Browser-Only</h2>
+      <p>Body pose estimation is an AI technique that detects human body joints and limbs in images. This tool uses MediaPipe's Pose Landmarker model running directly in your browser to identify 33 key body landmarks including the head, shoulders, elbows, wrists, hips, knees, and ankles.</p>
+      <p>Unlike cloud-based pose detection services, your photos are never uploaded anywhere. The AI model downloads once and runs entirely on your device. This makes it safe for personal fitness photos, medical rehabilitation images, or any private content.</p>
+
+      <div class="formula-box">
+        <h3>What Gets Detected</h3>
+        <ul>
+          <li><strong>Head & Face</strong> — Nose, eyes, ears, mouth landmarks</li>
+          <li><strong>Upper Body</strong> — Shoulders, elbows, wrists, fingers</li>
+          <li><strong>Torso</strong> — Hip joints, spine alignment indicators</li>
+          <li><strong>Lower Body</strong> — Knees, ankles, feet, toes</li>
+          <li><strong>Skeleton Lines</strong> — Connections between joints drawn on the image</li>
+        </ul>
+      </div>
+
+      <h2>Use Cases for Pose Detection</h2>
+      <p><strong>Fitness form checking:</strong> Upload a photo of your squat, deadlift, or push-up and see if your joints are aligned correctly. The skeleton overlay makes it easy to spot form issues. <strong>Yoga poses:</strong> Compare your pose against reference images to improve your practice. <strong>Physical therapy:</strong> Track range of motion and body alignment during rehabilitation exercises. <strong>Dance:</strong> Analyze choreography and body positions frame by frame.</p>
+
+      <h2>TikTok-Worthy AI</h2>
+      <p>This tool has viral potential: "Check your workout form with AI." Upload a gym selfie, a yoga photo, or a dance move and see the AI skeleton overlay. Download the annotated image to share on social media. The neon skeleton lines look amazing on any photo.</p>
+
+      <h2>Privacy You Can Trust</h2>
+      <p>Fitness and body photos are deeply personal. This tool ensures your privacy by processing everything locally. The pose detection model runs via MediaPipe in your browser — no server involved. Open the Network tab in your browser's developer tools to verify: zero data is transmitted when analyzing your photo.</p>
+
+      <h2>Works in All Browsers, Offline Too</h2>
+      <p>After the initial model download, the pose detection model is cached and works offline. Compatible with Chrome, Firefox, Safari, Edge, and all modern browsers. No special hardware or GPU required — it runs on any device.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="module">
+    // Use MediaPipe Vision Tasks for pose landmark detection
+    import { FilesetResolver, PoseLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.mjs';
+
+    let poseLandmarker = null;
+    let loadedImage = null;
+    const statusEl = document.getElementById('model-status');
+    const statusText = document.getElementById('model-status-text');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+    const canvas = document.getElementById('pose-canvas');
+    const ctx = canvas.getContext('2d');
+
+    async function loadModel() {
+      if (poseLandmarker) return poseLandmarker;
+      statusText.textContent = 'Loading pose detection model...';
+      progressWrap.style.display = 'block';
+      progressFill.style.width = '30%';
+
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
+      );
+      progressFill.style.width = '60%';
+
+      poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+          delegate: 'GPU'
+        },
+        runningMode: 'IMAGE',
+        numPoses: 3
+      });
+
+      progressFill.style.width = '100%';
+      statusText.textContent = 'AI Ready — Works offline now';
+      statusEl.classList.add('ready');
+      progressWrap.style.display = 'none';
+      return poseLandmarker;
+    }
+
+    // Skeleton connections (MediaPipe Pose Landmarker)
+    const POSE_CONNECTIONS = [
+      [0,1],[1,2],[2,3],[3,7],[0,4],[4,5],[5,6],[6,8],
+      [9,10],[11,12],[11,13],[13,15],[15,17],[15,19],[15,21],
+      [12,14],[14,16],[16,18],[16,20],[16,22],
+      [11,23],[12,24],[23,24],[23,25],[24,26],[25,27],[26,28],
+      [27,29],[28,30],[29,31],[30,32],[27,31],[28,32]
+    ];
+
+    const LANDMARK_NAMES = [
+      'nose','left eye inner','left eye','left eye outer','right eye inner',
+      'right eye','right eye outer','left ear','right ear','mouth left',
+      'mouth right','left shoulder','right shoulder','left elbow','right elbow',
+      'left wrist','right wrist','left pinky','right pinky','left index',
+      'right index','left thumb','right thumb','left hip','right hip',
+      'left knee','right knee','left ankle','right ankle','left heel',
+      'right heel','left foot index','right foot index'
+    ];
+
+    // File handling
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+    const detectBtn = document.getElementById('detect-btn');
+
+    uploadZone.addEventListener('click', function() { fileInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('drag-over'); });
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function() {
+      if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
+      if (file.size > 10 * 1024 * 1024) { alert('Image is too large. Max 10 MB.'); return; }
+      const img = new Image();
+      img.onload = function() {
+        loadedImage = img;
+        // Draw on canvas
+        const maxW = Math.min(img.width, 800);
+        const scale = maxW / img.width;
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'block';
+        detectBtn.disabled = false;
+        document.getElementById('tool-result').style.display = 'none';
+        document.getElementById('download-btn').style.display = 'none';
+      };
+      img.src = URL.createObjectURL(file);
+    }
+
+    async function detectPose() {
+      if (!loadedImage) { alert('Please upload an image first.'); return; }
+
+      const btn = detectBtn;
+      btn.textContent = 'Loading AI...';
+      btn.disabled = true;
+
+      try {
+        const model = await loadModel();
+        btn.textContent = 'Detecting poses...';
+
+        // Redraw image clean
+        ctx.drawImage(loadedImage, 0, 0, canvas.width, canvas.height);
+
+        const results = model.detect(canvas);
+        const scaleX = 1;
+        const scaleY = 1;
+
+        if (!results.landmarks || results.landmarks.length === 0) {
+          document.getElementById('detection-summary').innerHTML = '<h4>No poses detected</h4><p>Try uploading a clearer photo with a full or partial body visible. The person should be reasonably well-lit and not too far from the camera.</p>';
+          document.getElementById('landmark-list').innerHTML = '';
+          document.getElementById('tool-result').style.display = 'block';
+          btn.textContent = 'Detect Pose';
+          btn.disabled = false;
+          return;
+        }
+
+        const colors = ['#00ff88', '#ff4488', '#44aaff'];
+
+        for (let p = 0; p < results.landmarks.length; p++) {
+          const landmarks = results.landmarks[p];
+          const color = colors[p % colors.length];
+
+          // Draw connections
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.globalAlpha = 0.8;
+          for (const [i, j] of POSE_CONNECTIONS) {
+            if (i < landmarks.length && j < landmarks.length) {
+              const a = landmarks[i];
+              const b = landmarks[j];
+              if (a.visibility > 0.3 && b.visibility > 0.3) {
+                ctx.beginPath();
+                ctx.moveTo(a.x * canvas.width, a.y * canvas.height);
+                ctx.lineTo(b.x * canvas.width, b.y * canvas.height);
+                ctx.stroke();
+              }
+            }
+          }
+
+          // Draw landmarks
+          ctx.globalAlpha = 1;
+          for (let i = 0; i < landmarks.length; i++) {
+            const lm = landmarks[i];
+            if (lm.visibility > 0.3) {
+              ctx.beginPath();
+              ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 5, 0, 2 * Math.PI);
+              ctx.fillStyle = color;
+              ctx.fill();
+              ctx.strokeStyle = '#000';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+          }
+        }
+
+        // Summary
+        const poseCount = results.landmarks.length;
+        const firstPose = results.landmarks[0];
+        const visibleCount = firstPose.filter(lm => lm.visibility > 0.3).length;
+        let summaryHtml = '<h4>' + poseCount + ' ' + (poseCount === 1 ? 'Person' : 'People') + ' Detected</h4>';
+        summaryHtml += '<p>' + visibleCount + ' of 33 body landmarks detected with high confidence on the primary person.</p>';
+        document.getElementById('detection-summary').innerHTML = summaryHtml;
+
+        // Landmark list for first person
+        let listHtml = '';
+        for (let i = 0; i < firstPose.length; i++) {
+          const lm = firstPose[i];
+          if (lm.visibility > 0.3) {
+            const name = LANDMARK_NAMES[i] || ('landmark ' + i);
+            const conf = Math.round(lm.visibility * 100);
+            listHtml += '<div class="landmark-item"><span class="landmark-name">' + name + '</span><span class="landmark-conf">' + conf + '%</span></div>';
+          }
+        }
+        document.getElementById('landmark-list').innerHTML = listHtml;
+
+        document.getElementById('tool-result').style.display = 'block';
+        document.getElementById('download-btn').style.display = 'inline-block';
+        document.getElementById('tool-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        document.getElementById('detection-summary').innerHTML = '<h4>Error</h4><p>' + escapeHtml(e.message) + '</p>';
+        document.getElementById('landmark-list').innerHTML = '';
+        document.getElementById('tool-result').style.display = 'block';
+      }
+
+      btn.textContent = 'Detect Pose';
+      btn.disabled = false;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    detectBtn.addEventListener('click', detectPose);
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      canvas.style.display = 'none';
+      loadedImage = null;
+      fileInput.value = '';
+      detectBtn.disabled = true;
+      document.getElementById('tool-result').style.display = 'none';
+      document.getElementById('download-btn').style.display = 'none';
+    });
+    document.getElementById('download-btn').addEventListener('click', function() {
+      const link = document.createElement('a');
+      link.download = 'pose-estimation.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    // Schema and common UI
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Body Pose Estimator' }];
+    var FAQS = [
+      { q: 'Is my photo kept private?', a: 'Yes. Your photo never leaves your browser. The MediaPipe pose detection model runs entirely on your device. No image data is transmitted to any server.' },
+      { q: 'What does the skeleton overlay show?', a: 'The overlay draws 33 body landmarks (joints) connected by lines forming a skeleton. These include the head, shoulders, elbows, wrists, hips, knees, ankles, and feet. Each landmark shows its detection confidence.' },
+      { q: 'Can it detect multiple people?', a: 'Yes. The model can detect up to 3 people in a single image. Each person gets a different colored skeleton overlay.' },
+      { q: 'Does it work in all browsers?', a: 'Yes. It uses MediaPipe Vision Tasks which run via WebAssembly in Chrome, Firefox, Safari, Edge, and other modern browsers.' },
+      { q: 'What kind of photos work best?', a: 'Full-body photos with clear lighting work best. The person should be facing the camera or at a slight angle. Very dark images, heavily occluded bodies, or extreme angles may reduce accuracy.' },
+      { q: 'Can I use this for fitness form checking?', a: 'Yes. Upload a photo of your exercise form and the skeleton overlay will show your joint positions. Look for asymmetries, improper angles, or misalignment that could indicate form issues.' },
+      { q: 'Can I download the annotated image?', a: 'Yes. After pose detection, click the "Download Image" button to save the photo with the skeleton overlay as a PNG file.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'tools/ai-image-classifier', name: 'Image Classifier', description: 'Identify what is in any photo.' },
+      { slug: 'tools/ai-text-summarizer', name: 'AI Text Summarizer', description: 'Summarize text with browser AI.' },
+      { slug: 'tools/ai-named-entity-extractor', name: 'Named Entity Extractor', description: 'Extract names and entities from text.' },
+      { slug: 'tools/ai-zero-shot-classifier', name: 'Text Classifier', description: 'Categorize text with AI.' },
+      { slug: 'tools/gif-maker', name: 'GIF Maker', description: 'Create GIFs from images and video.' },
+      { slug: 'ai/contract-summarizer', name: 'Contract Summarizer', description: 'Summarize legal contracts with AI.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'tools/body-pose-estimator', title: 'Free Body Pose Estimator', description: 'Detect body poses in photos with AI in your browser. Free, private, no upload.' });
+    TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  </script>
+</body>
+</html>

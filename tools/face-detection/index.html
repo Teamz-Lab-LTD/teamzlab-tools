@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Face Detection Tool — Count Faces in Photos Privately | Teamz Lab Tools</title>
+  <meta name="description" content="Detect and count faces in any photo free and privately in your browser. No upload needed. Uses MediaPipe AI to draw bounding boxes around every face with confidence scores.">
+  <meta name="keywords" content="face detection online, count faces in photo, detect faces in image free, face finder, face counter tool">
+  <meta property="og:title" content="Free Face Detection Tool — Count Faces in Photos | Teamz Lab Tools">
+  <meta property="og:description" content="Detect and count faces in photos privately using browser AI. No upload. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/face-detection/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/face-detection/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; }
+    .privacy-badge svg { flex-shrink: 0; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--surface); }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-zone p { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 0.9rem; }
+    .mode-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .mode-tab { padding: 0.5rem 1.25rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
+    .mode-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .canvas-wrapper { position: relative; margin: 1rem 0; display: none; }
+    .canvas-wrapper canvas { max-width: 100%; border-radius: 8px; display: block; }
+    .webcam-container { display: none; position: relative; margin: 1rem 0; }
+    .webcam-container video { max-width: 100%; border-radius: 8px; display: block; transform: scaleX(-1); }
+    .webcam-container canvas { position: absolute; top: 0; left: 0; max-width: 100%; border-radius: 8px; transform: scaleX(-1); }
+    .status-text { font-size: 0.85rem; color: var(--text-muted); margin: 0.5rem 0; display: none; }
+    .face-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-top: 1rem; display: none; text-align: center; }
+    .face-count { font-size: 2.5rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .face-label { font-size: 0.95rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .face-list { margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">AI-Powered — Runs In Your Browser</span>
+      <h1>Face Detection Tool</h1>
+      <p class="tool-description">Upload a photo or use your webcam to detect and count every face. See bounding boxes with confidence scores drawn around each detected face. Runs 100% in your browser using MediaPipe AI.</p>
+      <div class="privacy-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Your photos and camera feed never leave your device
+      </div>
+    </section>
+    <section class="tool-calculator">
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-photo" type="button">Upload Photo</button>
+        <button class="mode-tab" id="tab-webcam" type="button">Use Webcam</button>
+      </div>
+
+      <!-- Photo mode -->
+      <div id="photo-mode">
+        <div class="upload-zone" id="upload-zone">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <p><strong>Drop a photo here</strong> or click to upload</p>
+          <p>Works best with clear, well-lit photos</p>
+          <input type="file" id="image-input" accept="image/*">
+        </div>
+        <div class="tool-actions">
+          <button type="button" id="detect-btn" class="btn-pill tool-calculate-btn" disabled>Detect Faces</button>
+          <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Webcam mode -->
+      <div id="webcam-mode" style="display:none;">
+        <div class="tool-actions">
+          <button type="button" id="start-webcam-btn" class="btn-pill tool-calculate-btn">Start Webcam</button>
+          <button type="button" id="stop-webcam-btn" class="btn-pill-ghost tool-clear-btn" disabled>Stop</button>
+        </div>
+        <div class="webcam-container" id="webcam-container">
+          <video id="webcam-video" autoplay playsinline></video>
+          <canvas id="webcam-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="status-text" id="status-text">Loading face detection model...</div>
+      <div class="canvas-wrapper" id="canvas-wrapper">
+        <canvas id="detection-canvas"></canvas>
+      </div>
+      <div class="face-summary" id="face-summary">
+        <div class="face-count" id="face-count">0</div>
+        <div class="face-label" id="face-label">faces detected</div>
+        <div class="face-list" id="face-list"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Face Detection Works</h2>
+      <p>This tool uses Google's MediaPipe Face Detection model, one of the most accurate and efficient face detection systems available. The model uses a lightweight neural network architecture called BlazeFace that was designed to run in real time on mobile devices. It can detect multiple faces simultaneously, even at various angles and sizes.</p>
+      <p>MediaPipe runs entirely in your browser using WebAssembly. The model is very small (under 1 MB) and loads almost instantly. No images or video frames are ever sent to any server. Your camera feed stays 100% local.</p>
+
+      <div class="formula-box">
+        <h3>What Gets Detected</h3>
+        <ul>
+          <li><strong>Face bounding boxes</strong> — Rectangle around each detected face</li>
+          <li><strong>Confidence scores</strong> — How certain the model is about each detection (0-100%)</li>
+          <li><strong>Face count</strong> — Total number of faces found in the image</li>
+          <li><strong>Multiple faces</strong> — Detects all visible faces in group photos</li>
+          <li><strong>Various angles</strong> — Works with frontal, profile, and slightly tilted faces</li>
+        </ul>
+      </div>
+
+      <h2>Fun Uses for Face Detection</h2>
+      <p>Try it with group photos to see how many faces the AI can spot. Use it at events, parties, or family gatherings for a fun face count. Teachers can use it to quickly count students in a class photo. Photographers can verify everyone is in the frame. It is also great for educational purposes — learn how AI identifies faces in images.</p>
+      <p>The webcam mode lets you experience real-time face detection. Move around, bring friends into the frame, and watch the bounding boxes update in real time. It demonstrates how modern AI can process video at high frame rates directly on consumer hardware.</p>
+
+      <h2>Tips for Better Detection</h2>
+      <p>Good lighting is the most important factor. Ensure faces are well-lit and not heavily shadowed. The model works best when faces are at least 20 pixels wide. Very distant or blurry faces may not be detected. Sunglasses and hats are usually fine, but heavy face coverings may reduce accuracy.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="module">
+    import { FaceDetector, FilesetResolver } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs';
+
+    let faceDetector = null;
+    let currentImageUrl = null;
+    let currentImage = null;
+    let webcamRunning = false;
+    let animationId = null;
+
+    const tabPhoto = document.getElementById('tab-photo');
+    const tabWebcam = document.getElementById('tab-webcam');
+    const photoMode = document.getElementById('photo-mode');
+    const webcamMode = document.getElementById('webcam-mode');
+    const uploadZone = document.getElementById('upload-zone');
+    const imageInput = document.getElementById('image-input');
+    const detectBtn = document.getElementById('detect-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const statusText = document.getElementById('status-text');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const canvas = document.getElementById('detection-canvas');
+    const ctx = canvas.getContext('2d');
+    const faceSummary = document.getElementById('face-summary');
+    const faceCount = document.getElementById('face-count');
+    const faceLabel = document.getElementById('face-label');
+    const faceList = document.getElementById('face-list');
+    const startWebcamBtn = document.getElementById('start-webcam-btn');
+    const stopWebcamBtn = document.getElementById('stop-webcam-btn');
+    const webcamContainer = document.getElementById('webcam-container');
+    const webcamVideo = document.getElementById('webcam-video');
+    const webcamCanvas = document.getElementById('webcam-canvas');
+    const webcamCtx = webcamCanvas.getContext('2d');
+
+    // Initialize model
+    async function initModel() {
+      statusText.style.display = 'block';
+      statusText.textContent = 'Loading face detection model...';
+      try {
+        const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
+        faceDetector = await FaceDetector.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',
+            delegate: 'GPU'
+          },
+          runningMode: 'IMAGE',
+          minDetectionConfidence: 0.5
+        });
+        statusText.textContent = 'Model ready!';
+        setTimeout(() => { statusText.style.display = 'none'; }, 1500);
+      } catch (err) {
+        statusText.textContent = 'Error loading model: ' + err.message;
+      }
+    }
+
+    initModel();
+
+    // Tab switching
+    tabPhoto.addEventListener('click', () => {
+      tabPhoto.classList.add('active');
+      tabWebcam.classList.remove('active');
+      photoMode.style.display = 'block';
+      webcamMode.style.display = 'none';
+      stopWebcam();
+    });
+
+    tabWebcam.addEventListener('click', () => {
+      tabWebcam.classList.add('active');
+      tabPhoto.classList.remove('active');
+      photoMode.style.display = 'none';
+      webcamMode.style.display = 'block';
+      canvasWrapper.style.display = 'none';
+    });
+
+    // Photo upload
+    uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
+      if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = URL.createObjectURL(file);
+      currentImage = new Image();
+      currentImage.onload = () => {
+        detectBtn.disabled = false;
+        canvasWrapper.style.display = 'block';
+        const maxW = canvasWrapper.clientWidth || 700;
+        const scale = Math.min(1, maxW / currentImage.naturalWidth);
+        canvas.width = currentImage.naturalWidth * scale;
+        canvas.height = currentImage.naturalHeight * scale;
+        ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+        faceSummary.style.display = 'none';
+      };
+      currentImage.src = currentImageUrl;
+    }
+
+    detectBtn.addEventListener('click', async () => {
+      if (!currentImage || !faceDetector) return;
+      detectBtn.disabled = true;
+      detectBtn.textContent = 'Detecting...';
+      statusText.style.display = 'block';
+      statusText.textContent = 'Detecting faces...';
+
+      try {
+        // Run detection on the original image element
+        const tempImg = new Image();
+        tempImg.src = currentImageUrl;
+        await new Promise(r => { tempImg.onload = r; });
+
+        const result = faceDetector.detect(tempImg);
+        const detections = result.detections || [];
+
+        // Redraw image
+        const maxW = canvasWrapper.clientWidth || 700;
+        const scale = Math.min(1, maxW / currentImage.naturalWidth);
+        canvas.width = currentImage.naturalWidth * scale;
+        canvas.height = currentImage.naturalHeight * scale;
+        ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+
+        // Draw boxes
+        detections.forEach((det, i) => {
+          const box = det.boundingBox;
+          const x = box.originX * scale;
+          const y = box.originY * scale;
+          const w = box.width * scale;
+          const h = box.height * scale;
+          const conf = det.categories[0] ? Math.round(det.categories[0].score * 100) : 0;
+
+          ctx.strokeStyle = '#4ECDC4';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, w, h);
+
+          const label = 'Face ' + (i + 1) + ' — ' + conf + '%';
+          ctx.font = 'bold 14px Poppins, sans-serif';
+          const textW = ctx.measureText(label).width + 8;
+          ctx.fillStyle = '#4ECDC4';
+          ctx.fillRect(x, y - 22, textW, 22);
+          ctx.fillStyle = '#000';
+          ctx.fillText(label, x + 4, y - 6);
+        });
+
+        // Summary
+        faceCount.textContent = detections.length;
+        faceLabel.textContent = detections.length === 1 ? 'face detected' : 'faces detected';
+        let listHtml = '';
+        detections.forEach((det, i) => {
+          const conf = det.categories[0] ? Math.round(det.categories[0].score * 100) : 0;
+          listHtml += 'Face ' + (i + 1) + ': ' + conf + '% confidence';
+          if (i < detections.length - 1) listHtml += ' | ';
+        });
+        faceList.innerHTML = listHtml;
+        faceSummary.style.display = 'block';
+
+        statusText.textContent = 'Done! ' + detections.length + ' face(s) detected.';
+        if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('process::face-detection');
+      } catch (err) {
+        statusText.textContent = 'Error: ' + err.message;
+      }
+
+      detectBtn.textContent = 'Detect Faces';
+      detectBtn.disabled = false;
+      setTimeout(() => { statusText.style.display = 'none'; }, 3000);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (currentImageUrl) { URL.revokeObjectURL(currentImageUrl); currentImageUrl = null; }
+      currentImage = null;
+      canvasWrapper.style.display = 'none';
+      faceSummary.style.display = 'none';
+      detectBtn.disabled = true;
+      imageInput.value = '';
+    });
+
+    // Webcam
+    async function startWebcam() {
+      if (!faceDetector) { alert('Model still loading. Please wait.'); return; }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+        webcamVideo.srcObject = stream;
+        await webcamVideo.play();
+
+        webcamCanvas.width = webcamVideo.videoWidth;
+        webcamCanvas.height = webcamVideo.videoHeight;
+        webcamContainer.style.display = 'block';
+        startWebcamBtn.disabled = true;
+        stopWebcamBtn.disabled = false;
+        webcamRunning = true;
+
+        // Switch to VIDEO mode
+        faceDetector.setOptions({ runningMode: 'VIDEO' });
+
+        let lastTime = -1;
+        function processFrame() {
+          if (!webcamRunning) return;
+          const now = performance.now();
+          if (now !== lastTime) {
+            lastTime = now;
+            try {
+              const result = faceDetector.detectForVideo(webcamVideo, now);
+              const detections = result.detections || [];
+
+              webcamCtx.clearRect(0, 0, webcamCanvas.width, webcamCanvas.height);
+
+              detections.forEach((det, i) => {
+                const box = det.boundingBox;
+                webcamCtx.strokeStyle = '#4ECDC4';
+                webcamCtx.lineWidth = 3;
+                webcamCtx.strokeRect(box.originX, box.originY, box.width, box.height);
+
+                const conf = det.categories[0] ? Math.round(det.categories[0].score * 100) : 0;
+                const label = 'Face ' + (i + 1) + ' ' + conf + '%';
+                webcamCtx.font = 'bold 14px Poppins, sans-serif';
+                const tw = webcamCtx.measureText(label).width + 8;
+                webcamCtx.fillStyle = '#4ECDC4';
+                webcamCtx.fillRect(box.originX, box.originY - 22, tw, 22);
+                webcamCtx.fillStyle = '#000';
+                webcamCtx.fillText(label, box.originX + 4, box.originY - 6);
+              });
+
+              faceCount.textContent = detections.length;
+              faceLabel.textContent = detections.length === 1 ? 'face detected' : 'faces detected';
+              faceSummary.style.display = 'block';
+            } catch (e) {}
+          }
+          animationId = requestAnimationFrame(processFrame);
+        }
+        processFrame();
+      } catch (err) {
+        alert('Cannot access webcam: ' + err.message);
+      }
+    }
+
+    function stopWebcam() {
+      webcamRunning = false;
+      if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+      if (webcamVideo.srcObject) {
+        webcamVideo.srcObject.getTracks().forEach(t => t.stop());
+        webcamVideo.srcObject = null;
+      }
+      webcamContainer.style.display = 'none';
+      startWebcamBtn.disabled = false;
+      stopWebcamBtn.disabled = true;
+      // Switch back to IMAGE mode
+      if (faceDetector) {
+        try { faceDetector.setOptions({ runningMode: 'IMAGE' }); } catch (e) {}
+      }
+    }
+
+    startWebcamBtn.addEventListener('click', startWebcam);
+    stopWebcamBtn.addEventListener('click', stopWebcam);
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Face Detection' }];
+      var FAQS = [
+        { q: 'Is my photo or camera feed uploaded anywhere?', a: 'No. Face detection runs entirely in your browser using MediaPipe. Your photos and webcam feed never leave your device. No data is sent to any server.' },
+        { q: 'Can it detect faces in group photos?', a: 'Yes. The model can detect multiple faces simultaneously. It works well with group photos, event photos, and crowd shots as long as faces are reasonably visible and at least 20 pixels wide.' },
+        { q: 'Does the webcam mode store any video?', a: 'No. The webcam feed is processed frame by frame in real time and immediately discarded. Nothing is recorded or stored. When you stop the webcam, all video data is gone.' },
+        { q: 'What affects detection accuracy?', a: 'Good lighting, clear face visibility, and reasonable face size are the main factors. Sunglasses and hats usually work fine. Very small, blurry, or heavily occluded faces may not be detected.' },
+        { q: 'Does it work offline?', a: 'Yes. The MediaPipe model is very small and loads quickly. After the initial load, face detection works completely offline.' },
+        { q: 'What browsers are supported?', a: 'All modern browsers: Chrome, Firefox, Safari, and Edge. For webcam mode, your browser needs camera permission.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'tools/ai-object-detector', name: 'AI Object Detector', description: 'Identify objects in photos with AI.' },
+        { slug: 'tools/ai-depth-map', name: 'AI Depth Map', description: 'Generate 3D depth maps from photos.' },
+        { slug: 'tools/ai-ocr', name: 'AI OCR', description: 'Extract text from images using AI.' },
+        { slug: 'tools/ai-text-to-speech', name: 'Text to Speech', description: 'Convert text to spoken audio.' },
+        { slug: 'tools/ai-image-captioner', name: 'AI Image Captioner', description: 'Generate captions for images.' },
+        { slug: 'tools/ai-background-remover', name: 'Background Remover', description: 'Remove backgrounds from images.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'tools/face-detection', title: 'Free Face Detection Tool', description: 'Detect and count faces in photos privately using browser AI. No upload needed.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

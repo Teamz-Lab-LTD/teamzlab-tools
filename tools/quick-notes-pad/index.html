@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Notes — Private Notepad, Works Offline, Auto-Saves | Teamz Lab Tools</title>
+  <meta name="description" content="Distraction-free private notepad that auto-saves to your device. Multiple notes, word count, and download as .txt. No account needed. Works offline.">
+  <meta property="og:title" content="Quick Notes — Private Notepad, Auto-Saves | Teamz Lab Tools">
+  <meta property="og:description" content="Private notepad that auto-saves locally. Multiple notes, offline support. No account needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/quick-notes-pad/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/quick-notes-pad/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 1rem; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .privacy-badge::before { content: '\1F512'; }
+    .notes-app { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 2rem; overflow: hidden; }
+    .notes-sidebar { display: flex; gap: 0; border-bottom: 1px solid var(--border); overflow-x: auto; background: var(--bg); }
+    .note-tab { padding: 0.6rem 1rem; font-size: var(--text-sm); font-family: var(--font); font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; position: relative; }
+    .note-tab:hover { color: var(--heading); }
+    .note-tab.active { color: var(--heading); border-bottom-color: var(--heading); background: var(--surface); }
+    .note-tab-close { display: inline-block; margin-left: 0.4rem; font-size: 0.8rem; opacity: 0.5; }
+    .note-tab-close:hover { opacity: 1; }
+    .note-tab-new { color: var(--text-muted); font-weight: 800; font-size: 1.1rem; padding: 0.6rem 1rem; border: none; background: none; cursor: pointer; }
+    .note-tab-new:hover { color: var(--heading); }
+    .notes-editor { padding: 1.5rem; }
+    .note-title-input { width: 100%; padding: 0.5rem 0; font-size: var(--text-h4); font-weight: 700; font-family: var(--font); color: var(--heading); background: none; border: none; outline: none; border-bottom: 1px solid var(--border); margin-bottom: 1rem; box-sizing: border-box; }
+    .note-title-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+    .note-textarea { width: 100%; min-height: 350px; padding: 1rem; font-size: var(--text-lg); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; resize: vertical; line-height: 1.8; box-sizing: border-box; }
+    .note-textarea:focus { border-color: var(--heading); }
+    .note-textarea::placeholder { color: var(--text-muted); opacity: 0.4; }
+    .notes-footer { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1.5rem; border-top: 1px solid var(--border); background: var(--bg); flex-wrap: wrap; gap: 0.5rem; }
+    .notes-stats { font-size: var(--text-sm); color: var(--text-muted); }
+    .notes-actions { display: flex; gap: 0.5rem; }
+    .note-action-btn { padding: 0.4rem 1rem; font-size: var(--text-sm); font-family: var(--font); font-weight: 600; border: 1px solid var(--border); background: none; color: var(--text); border-radius: 6px; cursor: pointer; }
+    .note-action-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .note-action-btn.danger { color: var(--text-muted); }
+    .note-action-btn.danger:hover { color: #ef4444; border-color: #ef4444; }
+    .save-indicator { font-size: var(--text-xs); color: var(--text-muted); font-style: italic; }
+    .privacy-note { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-top: 1rem; font-style: italic; padding: 0 1.5rem 1.5rem; }
+    @media (max-width: 700px) {
+      .notes-editor { padding: 1rem; }
+      .notes-footer { padding: 0.75rem 1rem; }
+      .note-textarea { min-height: 250px; font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge">100% Private — Data saved on your device only</div>
+      <h1>Quick Notes</h1>
+      <p class="tool-description">A distraction-free notepad that auto-saves every keystroke. Create multiple notes, see word counts, and download as .txt. Your notes. Your device. Not our cloud.</p>
+    </section>
+    <section class="notes-app" id="notes-app">
+      <div class="notes-sidebar" id="notes-tabs"></div>
+      <div class="notes-editor">
+        <input type="text" class="note-title-input" id="note-title" placeholder="Note title..." aria-label="Note title">
+        <textarea class="note-textarea" id="note-content" placeholder="Start typing your note here..."></textarea>
+      </div>
+      <div class="notes-footer">
+        <div class="notes-stats"><span id="word-count">0 words</span> &middot; <span id="char-count">0 characters</span> &middot; <span class="save-indicator" id="save-status">Saved</span></div>
+        <div class="notes-actions">
+          <button type="button" class="note-action-btn" id="download-btn">Download .txt</button>
+          <button type="button" class="note-action-btn danger" id="delete-note-btn">Delete Note</button>
+        </div>
+      </div>
+      <div class="privacy-note">Your notes. Your device. Not our cloud.</div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>A Truly Private Notepad</h2>
+      <p>Most online notepads store your text on their servers. Quick Notes is different — everything is saved in your browser's localStorage. Your notes never leave your device. No account, no sync, no data collection. Just a clean writing space that remembers your notes.</p>
+      <h2>Features</h2>
+      <ul>
+        <li><strong>Auto-save:</strong> Every keystroke is saved automatically (debounced for performance)</li>
+        <li><strong>Multiple notes:</strong> Create and switch between notes using tabs</li>
+        <li><strong>Word and character count:</strong> Real-time count displayed below the editor</li>
+        <li><strong>Download:</strong> Export any note as a .txt file</li>
+        <li><strong>Works offline:</strong> After first load, works completely without internet</li>
+        <li><strong>Distraction-free:</strong> Minimal design focused on writing</li>
+      </ul>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var STORAGE_KEY = 'teamz_quick_notes';
+      var notes = [];
+      var activeIdx = 0;
+      var saveTimer = null;
+
+      function load() {
+        try { notes = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { notes = []; }
+        if (notes.length === 0) notes.push({ title: 'Untitled Note', content: '', created: Date.now() });
+      }
+      function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(notes)); }
+
+      function renderTabs() {
+        var tabsEl = document.getElementById('notes-tabs');
+        var html = '';
+        for (var i = 0; i < notes.length; i++) {
+          var title = notes[i].title || 'Untitled';
+          if (title.length > 20) title = title.substring(0, 20) + '...';
+          html += '<button type="button" class="note-tab' + (i === activeIdx ? ' active' : '') + '" data-idx="' + i + '">' + escHtml(title);
+          if (notes.length > 1) html += '<span class="note-tab-close" data-close="' + i + '">&times;</span>';
+          html += '</button>';
+        }
+        html += '<button type="button" class="note-tab-new" id="new-note-btn" title="New note">+</button>';
+        tabsEl.innerHTML = html;
+        tabsEl.querySelectorAll('.note-tab').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            if (e.target.classList.contains('note-tab-close')) {
+              var ci = parseInt(e.target.getAttribute('data-close'));
+              deleteNote(ci);
+              return;
+            }
+            switchTo(parseInt(btn.getAttribute('data-idx')));
+          });
+        });
+        document.getElementById('new-note-btn').addEventListener('click', function() {
+          notes.push({ title: 'Untitled Note', content: '', created: Date.now() });
+          save();
+          switchTo(notes.length - 1);
+        });
+      }
+
+      function switchTo(idx) {
+        saveCurrentNote();
+        activeIdx = idx;
+        var note = notes[activeIdx];
+        document.getElementById('note-title').value = note.title || '';
+        document.getElementById('note-content').value = note.content || '';
+        updateCounts();
+        renderTabs();
+      }
+
+      function saveCurrentNote() {
+        if (!notes[activeIdx]) return;
+        notes[activeIdx].title = document.getElementById('note-title').value;
+        notes[activeIdx].content = document.getElementById('note-content').value;
+        save();
+      }
+
+      function deleteNote(idx) {
+        if (notes.length <= 1) { alert('Cannot delete the last note.'); return; }
+        if (!confirm('Delete "' + (notes[idx].title || 'Untitled') + '"?')) return;
+        notes.splice(idx, 1);
+        if (activeIdx >= notes.length) activeIdx = notes.length - 1;
+        save();
+        switchTo(activeIdx);
+      }
+
+      function updateCounts() {
+        var text = document.getElementById('note-content').value;
+        var words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        var chars = text.length;
+        document.getElementById('word-count').textContent = words + ' word' + (words !== 1 ? 's' : '');
+        document.getElementById('char-count').textContent = chars + ' character' + (chars !== 1 ? 's' : '');
+      }
+
+      function debouncedSave() {
+        document.getElementById('save-status').textContent = 'Saving...';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function() {
+          saveCurrentNote();
+          document.getElementById('save-status').textContent = 'Saved';
+        }, 400);
+      }
+
+      function downloadNote() {
+        var title = document.getElementById('note-title').value || 'note';
+        var content = document.getElementById('note-content').value;
+        var blob = new Blob([content], { type: 'text/plain' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = title.replace(/[^a-zA-Z0-9_-]/g, '_') + '.txt';
+        a.click();
+      }
+
+      function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        load();
+        switchTo(0);
+
+        document.getElementById('note-content').addEventListener('input', function() { updateCounts(); debouncedSave(); });
+        document.getElementById('note-title').addEventListener('input', function() { debouncedSave(); renderTabs(); });
+        document.getElementById('download-btn').addEventListener('click', downloadNote);
+        document.getElementById('delete-note-btn').addEventListener('click', function() { deleteNote(activeIdx); });
+
+        var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Quick Notes' }];
+        var FAQS = [
+          { q: 'Are my notes private?', a: 'Yes. All notes are stored in your browser\'s localStorage. Nothing is sent to any server. Your notes remain entirely on your device and cannot be accessed by anyone else.' },
+          { q: 'Will my notes persist after closing the browser?', a: 'Yes. localStorage persists across browser sessions. Your notes will be there when you return, unless you manually clear your browser data.' },
+          { q: 'Can I create multiple notes?', a: 'Yes. Click the "+" button in the tab bar to create a new note. Switch between notes by clicking their tabs. Each note has its own title and content.' },
+          { q: 'Does this work offline?', a: 'Yes. After the initial page load, the notepad works entirely offline. You can type, save, and even download notes without an internet connection.' }
+        ];
+        var RELATED_TOOLS = [
+          { slug: 'tools/daily-planner', name: 'Daily Planner', description: 'Plan your day with time blocks.' },
+          { slug: 'tools/habit-streak-tracker', name: 'Habit Tracker', description: 'Build daily habits with streaks.' },
+          { slug: 'tools/focus-timer', name: 'Focus Timer', description: 'Distraction-free countdown timer.' },
+          { slug: 'evergreen/pomodoro-timer', name: 'Pomodoro Timer', description: 'Focus with 25-min work intervals.' },
+          { slug: 'tools/job-application-tracker', name: 'Job Tracker', description: 'Track job applications privately.' },
+          { slug: 'tools/personal-budget-tracker', name: 'Budget Tracker', description: 'Track income and expenses.' }
+        ];
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'tools/quick-notes-pad', title: 'Quick Notes', description: 'Private auto-saving notepad. No account needed.' });
+        TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>

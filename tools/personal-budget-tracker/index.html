@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Budget Tracker — Private, No Login, Saves Locally | Teamz Lab Tools</title>
+  <meta name="description" content="Track income and expenses privately. No login required. All financial data stays on your device. Monthly view, category breakdown, CSV export.">
+  <meta property="og:title" content="Personal Budget Tracker — Private, No Login | Teamz Lab Tools">
+  <meta property="og:description" content="Track your budget privately. No account, no server. Data saved locally on your device.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/personal-budget-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/personal-budget-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 1rem; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .privacy-badge::before { content: '\1F512'; }
+    .budget-app { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+    .budget-dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .budget-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .budget-card-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.25rem; }
+    .budget-card-value { font-size: var(--text-h4); font-weight: 800; color: var(--heading); }
+    .budget-card-value.income { color: #22c55e; }
+    .budget-card-value.expense { color: #ef4444; }
+    .budget-card-value.balance-pos { color: #22c55e; }
+    .budget-card-value.balance-neg { color: #ef4444; }
+    .budget-controls { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+    .budget-month-select { padding: 0.5rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; }
+    .budget-month-select:focus { border-color: var(--heading); }
+    .budget-tab { padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); border-radius: 8px; font-family: var(--font); font-weight: 600; font-size: var(--text-sm); cursor: pointer; }
+    .budget-tab.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .budget-form { display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .budget-form.visible { display: block; }
+    .budget-form-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 1rem; }
+    .budget-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .budget-form-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .budget-form-field.full { grid-column: 1 / -1; }
+    .budget-form-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+    .budget-form-field input, .budget-form-field select { padding: 0.6rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; outline: none; box-sizing: border-box; }
+    .budget-form-field input:focus, .budget-form-field select:focus { border-color: var(--heading); }
+    .budget-form-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .budget-save-btn { padding: 0.6rem 1.5rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-family: var(--font); font-weight: 700; cursor: pointer; }
+    .budget-save-btn:hover { opacity: 0.85; }
+    .budget-cancel-btn { padding: 0.6rem 1.5rem; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: var(--font); font-weight: 600; cursor: pointer; }
+    .budget-table-wrap { overflow-x: auto; }
+    .budget-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .budget-table th { text-align: left; padding: 0.6rem 0.75rem; font-weight: 700; color: var(--heading); border-bottom: 2px solid var(--border); font-size: var(--text-sm); }
+    .budget-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .budget-table .type-income { color: #22c55e; font-weight: 600; }
+    .budget-table .type-expense { color: #ef4444; font-weight: 600; }
+    .budget-table .delete-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+    .budget-table .delete-btn:hover { color: var(--danger, #ef4444); }
+    .budget-category-breakdown { margin-top: 1.5rem; }
+    .budget-category-breakdown h3 { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .cat-bar-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
+    .cat-bar-label { min-width: 100px; font-size: var(--text-sm); color: var(--text); font-weight: 600; text-transform: capitalize; }
+    .cat-bar-track { flex: 1; height: 20px; background: var(--bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .cat-bar-fill { height: 100%; background: var(--heading); border-radius: 10px; transition: width 0.3s; }
+    .cat-bar-value { min-width: 70px; font-size: var(--text-sm); color: var(--text-muted); text-align: right; }
+    .budget-actions-bar { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .budget-export-btn { padding: 0.5rem 1rem; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: var(--font); font-weight: 600; font-size: var(--text-sm); cursor: pointer; }
+    .budget-export-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: var(--text-md); }
+    .privacy-note { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-top: 1rem; font-style: italic; }
+    @media (max-width: 700px) {
+      .budget-app { padding: 1.25rem; }
+      .budget-dashboard { grid-template-columns: 1fr; }
+      .budget-form-grid { grid-template-columns: 1fr; }
+      .budget-controls { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge">100% Private — Data saved on your device only</div>
+      <h1>Personal Budget Tracker</h1>
+      <p class="tool-description">Track your income and expenses without giving up your financial data. No login, no cloud, no server. Everything stays on your device. Export to CSV anytime.</p>
+    </section>
+    <section class="budget-app" id="budget-app">
+      <div class="budget-dashboard" id="dashboard">
+        <div class="budget-card"><div class="budget-card-label">Total Income</div><div class="budget-card-value income" id="total-income">$0.00</div></div>
+        <div class="budget-card"><div class="budget-card-label">Total Expenses</div><div class="budget-card-value expense" id="total-expenses">$0.00</div></div>
+        <div class="budget-card"><div class="budget-card-label">Balance</div><div class="budget-card-value" id="total-balance">$0.00</div></div>
+      </div>
+      <div class="budget-controls">
+        <input type="month" class="budget-month-select" id="month-filter" aria-label="Filter by month">
+        <button type="button" class="budget-tab" id="btn-show-all">All</button>
+        <div style="flex:1;"></div>
+        <button type="button" class="budget-tab" id="btn-add-income" style="background:#22c55e;color:#fff;border-color:#22c55e;">+ Income</button>
+        <button type="button" class="budget-tab" id="btn-add-expense" style="background:#ef4444;color:#fff;border-color:#ef4444;">+ Expense</button>
+      </div>
+      <div class="budget-form" id="entry-form">
+        <div class="budget-form-title" id="form-title">Add Income</div>
+        <div class="budget-form-grid">
+          <div class="budget-form-field"><label>Name</label><input type="text" id="entry-name" placeholder="e.g., Salary, Groceries"></div>
+          <div class="budget-form-field"><label>Amount ($)</label><input type="number" id="entry-amount" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="budget-form-field"><label>Date</label><input type="date" id="entry-date"></div>
+          <div class="budget-form-field"><label>Category</label>
+            <select id="entry-category">
+              <option value="salary">Salary</option><option value="freelance">Freelance</option><option value="rent">Rent</option><option value="food">Food</option><option value="transport">Transport</option><option value="entertainment">Entertainment</option><option value="utilities">Utilities</option><option value="health">Health</option><option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" id="entry-type" value="income">
+        <div class="budget-form-actions">
+          <button type="button" class="budget-save-btn" id="save-entry-btn">Save</button>
+          <button type="button" class="budget-cancel-btn" id="cancel-entry-btn">Cancel</button>
+        </div>
+      </div>
+      <div class="budget-table-wrap">
+        <table class="budget-table" id="entries-table">
+          <thead><tr><th>Date</th><th>Name</th><th>Category</th><th>Type</th><th>Amount</th><th></th></tr></thead>
+          <tbody id="entries-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="empty-state">No entries yet. Add income or expenses above.</div>
+      <div class="budget-category-breakdown" id="category-breakdown" style="display:none;">
+        <h3>Spending by Category</h3>
+        <div id="cat-bars"></div>
+      </div>
+      <div class="budget-actions-bar">
+        <button type="button" class="budget-export-btn" id="export-csv-btn">Export CSV</button>
+      </div>
+      <div class="privacy-note">Your financial data never touches any server</div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Track Your Budget?</h2>
+      <p>A budget gives you control over your money instead of wondering where it went. Studies show people who track their spending save 10-15% more than those who don't. This tool makes it simple — add entries, see your balance, and understand your spending patterns by category.</p>
+      <h2>Privacy-First Financial Tracking</h2>
+      <p>Most budget apps require you to create an account and store your financial data on their servers. This tool takes a different approach: everything is stored in your browser's localStorage. Your income, expenses, and spending habits remain 100% private.</p>
+      <div class="formula-box">
+        <h3>Budgeting Basics</h3>
+        <p class="formula">Balance = Total Income - Total Expenses</p>
+        <p class="formula">50/30/20 Rule: 50% needs, 30% wants, 20% savings</p>
+        <p class="formula">Savings Rate = (Income - Expenses) / Income x 100%</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var STORAGE_KEY = 'teamz_budget_tracker';
+      var entries = [];
+      var filterMonth = '';
+
+      function load() { try { entries = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { entries = []; } }
+      function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+      function fmt(n) { return '$' + Math.abs(n).toFixed(2); }
+
+      function getFiltered() {
+        if (!filterMonth) return entries;
+        return entries.filter(function(e) { return e.date && e.date.substring(0, 7) === filterMonth; });
+      }
+
+      function render() {
+        var filtered = getFiltered();
+        var income = 0, expenses = 0, catTotals = {};
+        filtered.forEach(function(e) {
+          if (e.type === 'income') income += e.amount;
+          else { expenses += e.amount; catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; }
+        });
+        var balance = income - expenses;
+        document.getElementById('total-income').textContent = fmt(income);
+        document.getElementById('total-expenses').textContent = fmt(expenses);
+        var balEl = document.getElementById('total-balance');
+        balEl.textContent = (balance >= 0 ? '+' : '-') + fmt(balance);
+        balEl.className = 'budget-card-value ' + (balance >= 0 ? 'balance-pos' : 'balance-neg');
+
+        var tbody = document.getElementById('entries-body');
+        var empty = document.getElementById('empty-state');
+        if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = ''; } else { empty.style.display = 'none'; }
+        var sorted = filtered.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
+        var html = '';
+        sorted.forEach(function(e) {
+          var idx = entries.indexOf(e);
+          html += '<tr>';
+          html += '<td>' + escHtml(e.date) + '</td>';
+          html += '<td>' + escHtml(e.name) + '</td>';
+          html += '<td style="text-transform:capitalize;">' + escHtml(e.category) + '</td>';
+          html += '<td class="type-' + e.type + '">' + (e.type === 'income' ? 'Income' : 'Expense') + '</td>';
+          html += '<td>' + fmt(e.amount) + '</td>';
+          html += '<td><button class="delete-btn" onclick="window.budgetApp.remove(' + idx + ')">&times;</button></td>';
+          html += '</tr>';
+        });
+        tbody.innerHTML = html;
+
+        var catSection = document.getElementById('category-breakdown');
+        var catBars = document.getElementById('cat-bars');
+        var catKeys = Object.keys(catTotals);
+        if (catKeys.length > 0) {
+          catSection.style.display = '';
+          var maxCat = Math.max.apply(null, catKeys.map(function(k) { return catTotals[k]; }));
+          var bhtml = '';
+          catKeys.sort(function(a, b) { return catTotals[b] - catTotals[a]; });
+          catKeys.forEach(function(k) {
+            var pct = maxCat > 0 ? (catTotals[k] / maxCat * 100) : 0;
+            bhtml += '<div class="cat-bar-item"><span class="cat-bar-label">' + escHtml(k) + '</span><div class="cat-bar-track"><div class="cat-bar-fill" style="width:' + pct + '%"></div></div><span class="cat-bar-value">' + fmt(catTotals[k]) + '</span></div>';
+          });
+          catBars.innerHTML = bhtml;
+        } else { catSection.style.display = 'none'; }
+      }
+
+      function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+      function showForm(type) {
+        document.getElementById('entry-form').classList.add('visible');
+        document.getElementById('entry-type').value = type;
+        document.getElementById('form-title').textContent = type === 'income' ? 'Add Income' : 'Add Expense';
+        document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('entry-name').value = '';
+        document.getElementById('entry-amount').value = '';
+        if (type === 'income') document.getElementById('entry-category').value = 'salary';
+        else document.getElementById('entry-category').value = 'food';
+        document.getElementById('entry-name').focus();
+      }
+
+      function hideForm() { document.getElementById('entry-form').classList.remove('visible'); }
+
+      function saveEntry() {
+        var name = document.getElementById('entry-name').value.trim();
+        var amount = parseFloat(document.getElementById('entry-amount').value);
+        var date = document.getElementById('entry-date').value;
+        var category = document.getElementById('entry-category').value;
+        var type = document.getElementById('entry-type').value;
+        if (!name || isNaN(amount) || amount <= 0 || !date) { alert('Please fill in all fields.'); return; }
+        entries.push({ name: name, amount: amount, date: date, category: category, type: type, id: Date.now() });
+        save(); hideForm(); render();
+      }
+
+      function exportCSV() {
+        var filtered = getFiltered();
+        if (filtered.length === 0) { alert('No entries to export.'); return; }
+        var csv = 'Date,Name,Category,Type,Amount\n';
+        filtered.forEach(function(e) { csv += e.date + ',"' + e.name.replace(/"/g, '""') + '",' + e.category + ',' + e.type + ',' + e.amount.toFixed(2) + '\n'; });
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'budget-' + (filterMonth || 'all') + '.csv'; a.click();
+      }
+
+      window.budgetApp = {
+        remove: function(idx) {
+          if (confirm('Delete this entry?')) { entries.splice(idx, 1); save(); render(); }
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', function() {
+        load();
+        var now = new Date();
+        document.getElementById('month-filter').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        filterMonth = document.getElementById('month-filter').value;
+        render();
+
+        document.getElementById('month-filter').addEventListener('change', function() { filterMonth = this.value; render(); });
+        document.getElementById('btn-show-all').addEventListener('click', function() { filterMonth = ''; document.getElementById('month-filter').value = ''; render(); });
+        document.getElementById('btn-add-income').addEventListener('click', function() { showForm('income'); });
+        document.getElementById('btn-add-expense').addEventListener('click', function() { showForm('expense'); });
+        document.getElementById('save-entry-btn').addEventListener('click', saveEntry);
+        document.getElementById('cancel-entry-btn').addEventListener('click', hideForm);
+        document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+
+        var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Personal Budget Tracker' }];
+        var FAQS = [
+          { q: 'Is my financial data private?', a: 'Absolutely. All data is stored in your browser\'s localStorage. Nothing is ever sent to any server. Your income, expenses, and financial habits remain entirely on your device.' },
+          { q: 'Can I export my budget data?', a: 'Yes. Click the "Export CSV" button to download your entries as a CSV file. You can open it in Excel, Google Sheets, or any spreadsheet application.' },
+          { q: 'Can I filter by month?', a: 'Yes. Use the month picker at the top to view entries for a specific month. Click "All" to see all entries across all months.' },
+          { q: 'What happens if I clear my browser data?', a: 'Clearing browser data (including localStorage) will remove your budget entries. We recommend exporting to CSV periodically as a backup.' }
+        ];
+        var RELATED_TOOLS = [
+          { slug: 'tools/subscription-tracker', name: 'Subscription Tracker', description: 'Track monthly subscription costs.' },
+          { slug: 'tools/habit-streak-tracker', name: 'Habit Tracker', description: 'Build daily habits with streaks.' },
+          { slug: 'tools/daily-planner', name: 'Daily Planner', description: 'Plan your day with time blocks.' },
+          { slug: 'tools/quick-notes-pad', name: 'Quick Notes', description: 'Private auto-saving notepad.' },
+          { slug: 'evergreen/percentage-calculator', name: 'Percentage Calculator', description: 'Quick percentage calculations.' },
+          { slug: 'tools/job-application-tracker', name: 'Job Tracker', description: 'Track job applications privately.' }
+        ];
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'tools/personal-budget-tracker', title: 'Personal Budget Tracker', description: 'Private budget tracker. No login. Data saved locally.' });
+        TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>

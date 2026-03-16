@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Voice to Text — Private Speech-to-Text, No Upload | Teamz Lab Tools</title>
+  <meta name="description" content="Transcribe audio and voice to text for free using Whisper AI running in your browser. No upload required — your audio stays private. Works offline after first use.">
+  <meta name="keywords" content="speech to text online free, transcribe audio free, voice to text no upload, private transcription, whisper transcribe">
+  <meta property="og:title" content="Free Voice to Text — Private Speech-to-Text | Teamz Lab Tools">
+  <meta property="og:description" content="Transcribe audio to text with Whisper AI in your browser. Private, free, no upload.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/voice-to-text/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/voice-to-text/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-badge { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+    .privacy-badge svg { flex-shrink: 0; color: var(--accent); }
+    .model-status { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .model-status.loading { border-color: var(--accent); }
+    .model-status.ready { border-color: #22c55e; color: #22c55e; }
+    .model-status.error { border-color: #ef4444; color: #ef4444; }
+    .progress-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; margin-top: 0.5rem; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; width: 0%; }
+    .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+    .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: var(--surface); }
+    .input-tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 2px solid var(--border); }
+    .input-tab { padding: 0.6rem 1.2rem; border: none; background: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s, border-color 0.2s; }
+    .input-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .input-panel { display: none; }
+    .input-panel.active { display: block; }
+    .record-btn { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--accent); background: var(--surface); cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 1rem auto; transition: background 0.2s; }
+    .record-btn:hover { background: var(--accent); }
+    .record-btn.recording { background: #ef4444; border-color: #ef4444; animation: pulse 1.5s infinite; }
+    .record-btn.recording svg { color: #fff; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+    .transcript-output { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-height: 120px; white-space: pre-wrap; font-family: inherit; line-height: 1.7; font-size: 0.95rem; }
+    .audio-info { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">AI-Powered — Runs In Your Browser</span>
+      <h1>Voice to Text Transcriber</h1>
+      <p class="tool-description">Transcribe audio and voice recordings to text for free using OpenAI's Whisper model running directly in your browser. Your audio never leaves your device. Upload a file or record from your microphone. Works in all browsers.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="privacy-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <span>Your audio never leaves your device. Whisper AI runs locally in your browser.</span>
+      </div>
+      <div class="model-status" id="model-status">
+        AI Model: Click "Transcribe" to load Whisper. First download ~75MB (then works offline).
+      </div>
+      <div class="input-tabs">
+        <button class="input-tab active" data-tab="upload">Upload Audio/Video</button>
+        <button class="input-tab" data-tab="record">Record Microphone</button>
+      </div>
+      <div class="input-panel active" id="panel-upload">
+        <div class="upload-area" id="upload-area">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p style="margin:0;font-weight:600;">Drop an audio or video file here, or click to upload</p>
+          <p style="margin:0.25rem 0 0;font-size:0.85rem;color:var(--text-muted);">MP3, WAV, M4A, OGG, MP4, WebM — max 100MB</p>
+          <input type="file" id="file-input" accept="audio/*,video/*" style="display:none;">
+        </div>
+        <div class="audio-info" id="audio-info" style="display:none;"></div>
+        <audio id="audio-player" controls style="display:none;width:100%;margin-top:1rem;"></audio>
+      </div>
+      <div class="input-panel" id="panel-record">
+        <div style="text-align:center;padding:1rem 0;">
+          <p style="margin:0 0 0.5rem;font-size:0.9rem;color:var(--text-muted);">Click the button to start recording from your microphone.</p>
+          <button type="button" class="record-btn" id="record-btn" title="Start recording">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <p id="record-status" style="font-size:0.85rem;color:var(--text-muted);margin:0;">Not recording</p>
+          <p id="record-timer" style="font-size:1.2rem;font-weight:700;margin:0.5rem 0;display:none;">00:00</p>
+        </div>
+      </div>
+      <div class="tool-actions" style="margin-top:1rem;">
+        <button type="button" id="transcribe-btn" class="btn-pill tool-calculate-btn" disabled>Transcribe</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div id="tool-result" class="tool-result" style="display:none;">
+        <div class="tool-result-inner">
+          <h3 class="tool-result-title">Transcription</h3>
+          <div class="transcript-output" id="transcript-output"></div>
+          <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button type="button" id="copy-btn" class="btn-pill tool-calculate-btn">Copy Text</button>
+            <button type="button" id="download-txt-btn" class="btn-pill-ghost">Download .txt</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Voice-to-Text Transcription Works in Your Browser</h2>
+      <p>This tool uses <strong>Whisper</strong>, OpenAI's state-of-the-art speech recognition model, running locally in your browser through Transformers.js. Whisper was trained on 680,000 hours of multilingual audio and delivers remarkable accuracy for English transcription.</p>
+      <p>When you upload an audio file or record from your microphone, the audio is decoded locally into a waveform, then processed by the Whisper neural network — all without any data leaving your device. The model is downloaded once (~75MB) and cached for future offline use.</p>
+      <div class="formula-box">
+        <h3>How It Works</h3>
+        <ul>
+          <li><strong>Audio input:</strong> Upload a file (MP3, WAV, M4A, OGG, MP4, WebM) or record directly from your microphone.</li>
+          <li><strong>Audio decoding:</strong> The file is decoded into raw waveform data using the Web Audio API — all locally.</li>
+          <li><strong>AI transcription:</strong> Whisper processes the audio and generates text with timestamps.</li>
+          <li><strong>Output:</strong> The transcribed text appears on screen. Copy or download as .txt.</li>
+        </ul>
+      </div>
+      <h2>Use Cases for Speech-to-Text</h2>
+      <h3>Meeting Transcription</h3>
+      <p>Record your meetings and transcribe them instantly without relying on cloud-based services. Keep sensitive business discussions private while getting accurate written records.</p>
+      <h3>Lecture Notes and Study</h3>
+      <p>Upload lecture recordings and get text transcripts you can search, highlight, and study. Ideal for students who want to focus on listening rather than note-taking during class.</p>
+      <h3>Podcast and Video Transcripts</h3>
+      <p>Create transcripts for podcasts, YouTube videos, or interviews. Use the text for blog posts, show notes, subtitles, or SEO content — all without paying for transcription services.</p>
+      <h3>Accessibility</h3>
+      <p>Make audio content accessible to hearing-impaired users by generating text versions. This tool helps content creators meet accessibility standards without costly services.</p>
+      <h2>Privacy-First Transcription</h2>
+      <p>Unlike services like Otter.ai or Google Transcribe that upload your audio to cloud servers, this tool processes everything on your device. Your audio files, voice recordings, and transcripts never leave your browser. This is critical for confidential meetings, legal recordings, medical dictation, or any sensitive audio content.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+    env.allowLocalModels = false;
+
+    let transcriber = null;
+    let audioData = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordingTimer = null;
+    let recordingSeconds = 0;
+
+    const statusEl = document.getElementById('model-status');
+    const transcribeBtn = document.getElementById('transcribe-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const fileInput = document.getElementById('file-input');
+    const uploadArea = document.getElementById('upload-area');
+    const audioPlayer = document.getElementById('audio-player');
+    const audioInfo = document.getElementById('audio-info');
+    const resultEl = document.getElementById('tool-result');
+    const outputEl = document.getElementById('transcript-output');
+    const recordBtn = document.getElementById('record-btn');
+
+    // Tabs
+    document.querySelectorAll('.input-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.input-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // File upload
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) handleFile(fileInput.files[0]); });
+
+    async function handleFile(file) {
+      if (file.size > 100 * 1024 * 1024) { alert('File too large. Max 100MB.'); return; }
+      audioInfo.textContent = `File: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+      audioInfo.style.display = 'block';
+      const url = URL.createObjectURL(file);
+      audioPlayer.src = url;
+      audioPlayer.style.display = 'block';
+
+      // Decode audio to Float32Array at 16kHz for Whisper
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+        audioData = decoded.getChannelData(0); // mono
+        transcribeBtn.disabled = false;
+        audioCtx.close();
+      } catch (e) {
+        alert('Could not decode audio file: ' + e.message);
+      }
+    }
+
+    // Microphone recording
+    recordBtn.addEventListener('click', async () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          recordBtn.classList.remove('recording');
+          document.getElementById('record-status').textContent = 'Recording stopped.';
+          clearInterval(recordingTimer);
+          document.getElementById('record-timer').style.display = 'none';
+          const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+          audioPlayer.src = URL.createObjectURL(blob);
+          audioPlayer.style.display = 'block';
+          audioInfo.textContent = `Recording: ${(blob.size / 1024).toFixed(0)} KB`;
+          audioInfo.style.display = 'block';
+          // Decode
+          try {
+            const arrayBuffer = await blob.arrayBuffer();
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+            audioData = decoded.getChannelData(0);
+            transcribeBtn.disabled = false;
+            audioCtx.close();
+          } catch (e) {
+            alert('Could not decode recording: ' + e.message);
+          }
+        };
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        recordingSeconds = 0;
+        document.getElementById('record-status').textContent = 'Recording...';
+        document.getElementById('record-timer').style.display = 'block';
+        recordingTimer = setInterval(() => {
+          recordingSeconds++;
+          const m = String(Math.floor(recordingSeconds / 60)).padStart(2, '0');
+          const s = String(recordingSeconds % 60).padStart(2, '0');
+          document.getElementById('record-timer').textContent = m + ':' + s;
+        }, 1000);
+      } catch (e) {
+        alert('Microphone access denied: ' + e.message);
+      }
+    });
+
+    // Load model
+    async function loadModel() {
+      if (transcriber) return transcriber;
+      statusEl.className = 'model-status loading';
+      statusEl.innerHTML = 'Downloading Whisper AI model... (~75MB, first time only)<div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>';
+      try {
+        transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
+          progress_callback: (p) => {
+            if (p.status === 'progress' && p.total) {
+              const pct = Math.round((p.loaded / p.total) * 100);
+              const fill = document.getElementById('progress-fill');
+              if (fill) fill.style.width = pct + '%';
+            }
+          }
+        });
+        statusEl.className = 'model-status ready';
+        statusEl.textContent = 'AI Ready — Whisper loaded, works offline now';
+        return transcriber;
+      } catch (e) {
+        statusEl.className = 'model-status error';
+        statusEl.textContent = 'Failed to load Whisper model: ' + e.message;
+        throw e;
+      }
+    }
+
+    // Transcribe
+    transcribeBtn.addEventListener('click', async () => {
+      if (!audioData) { alert('Please upload an audio file or record from your microphone first.'); return; }
+      transcribeBtn.disabled = true;
+      transcribeBtn.textContent = 'Transcribing...';
+      resultEl.style.display = 'none';
+      try {
+        await loadModel();
+        const result = await transcriber(audioData, {
+          chunk_length_s: 30,
+          stride_length_s: 5,
+          return_timestamps: true
+        });
+        let text = '';
+        if (result.chunks && result.chunks.length > 0) {
+          result.chunks.forEach(chunk => {
+            const start = chunk.timestamp[0] != null ? formatTime(chunk.timestamp[0]) : '';
+            const end = chunk.timestamp[1] != null ? formatTime(chunk.timestamp[1]) : '';
+            const ts = start && end ? `[${start} - ${end}] ` : start ? `[${start}] ` : '';
+            text += ts + chunk.text.trim() + '\n';
+          });
+        } else {
+          text = result.text || 'No speech detected.';
+        }
+        outputEl.textContent = text.trim();
+        resultEl.style.display = 'block';
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        alert('Transcription error: ' + e.message);
+      }
+      transcribeBtn.textContent = 'Transcribe';
+      transcribeBtn.disabled = false;
+    });
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    // Copy
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(outputEl.textContent).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy Text', 1500);
+      });
+    });
+
+    // Download txt
+    document.getElementById('download-txt-btn').addEventListener('click', () => {
+      const blob = new Blob([outputEl.textContent], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'transcript.txt';
+      a.click();
+    });
+
+    // Clear
+    clearBtn.addEventListener('click', () => {
+      audioData = null;
+      audioPlayer.style.display = 'none';
+      audioPlayer.src = '';
+      audioInfo.style.display = 'none';
+      fileInput.value = '';
+      resultEl.style.display = 'none';
+      outputEl.textContent = '';
+      transcribeBtn.disabled = true;
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Voice to Text' }];
+      var FAQS = [
+        { q: 'How do I transcribe audio to text without uploading my file?', a: 'Upload your audio file on this page or record directly from your microphone. The Whisper AI model runs entirely in your browser. Your audio is never sent to any server — all processing happens locally.' },
+        { q: 'Is this speech-to-text tool really free?', a: 'Yes, completely free with no time limits or accounts required. The Whisper model is open-source and runs in your browser via Transformers.js.' },
+        { q: 'What audio formats are supported?', a: 'MP3, WAV, M4A, OGG, WebM, MP4, and most audio/video formats supported by your browser. Files up to 100MB.' },
+        { q: 'Does it work offline after the first use?', a: 'Yes. The Whisper model (~75MB) is cached in your browser after the first download. Subsequent transcriptions work without internet.' },
+        { q: 'How accurate is the transcription?', a: 'Whisper tiny.en provides good accuracy for clear English audio. For best results, use audio with minimal background noise. Accuracy may decrease with heavy accents, overlapping speakers, or noisy environments.' },
+        { q: 'Can I record directly from my microphone?', a: 'Yes. Click the "Record Microphone" tab and allow microphone access. Recording uses the MediaRecorder API — your audio stays on your device.' },
+        { q: 'Does it support other languages?', a: 'This version uses Whisper tiny.en which is optimized for English. Multilingual Whisper models exist but are larger and slower in-browser.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'tools/ai-background-remover', name: 'AI Background Remover', description: 'Remove image backgrounds with AI.' },
+        { slug: 'tools/ai-image-captioner', name: 'AI Image Captioner', description: 'Generate captions for images.' },
+        { slug: 'tools/ai-sentiment-analyzer', name: 'Sentiment Analyzer', description: 'Analyze text sentiment with AI.' },
+        { slug: 'tools/ai-translator', name: 'AI Translator', description: 'Translate text in 200+ languages.' },
+        { slug: 'ai/contract-summarizer', name: 'Contract Summarizer', description: 'Summarize contracts with AI.' },
+        { slug: 'ai/meeting-notes-summarizer', name: 'TL;DR Summarizer', description: 'Summarize long text with AI.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'tools/voice-to-text', title: 'Free Voice to Text Transcriber', description: 'Transcribe audio to text with Whisper AI in your browser. Private, free, no upload.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

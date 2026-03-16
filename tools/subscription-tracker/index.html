@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscription Tracker — Track Monthly Costs Privately | Teamz Lab Tools</title>
+  <meta name="description" content="Track all your subscriptions and recurring costs privately. See total monthly/yearly spending, upcoming renewals, and export to CSV. No account needed. Data saved locally.">
+  <meta property="og:title" content="Subscription Tracker — Track Costs Privately | Teamz Lab Tools">
+  <meta property="og:description" content="Monitor recurring subscription costs privately. No account, no server. Data saved locally.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/subscription-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/subscription-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 1rem; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .privacy-badge::before { content: '\1F512'; }
+    .sub-app { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+    .sub-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .sub-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .sub-card-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.25rem; }
+    .sub-card-value { font-size: var(--text-h4); font-weight: 800; color: var(--heading); }
+    .sub-controls { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+    .sub-sort-select { padding: 0.5rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; }
+    .sub-sort-select:focus { border-color: var(--heading); }
+    .sub-add-btn { padding: 0.6rem 1.5rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-family: var(--font); font-weight: 700; font-size: var(--text-md); cursor: pointer; margin-left: auto; }
+    .sub-add-btn:hover { opacity: 0.85; }
+    .sub-form { display: none; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .sub-form.visible { display: block; }
+    .sub-form-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 1rem; }
+    .sub-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .sub-form-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .sub-form-field.full { grid-column: 1 / -1; }
+    .sub-form-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+    .sub-form-field input, .sub-form-field select { padding: 0.6rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; outline: none; box-sizing: border-box; }
+    .sub-form-field input:focus, .sub-form-field select:focus { border-color: var(--heading); }
+    .sub-form-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .sub-save-btn { padding: 0.6rem 1.5rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-family: var(--font); font-weight: 700; cursor: pointer; }
+    .sub-save-btn:hover { opacity: 0.85; }
+    .sub-cancel-btn { padding: 0.6rem 1.5rem; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: var(--font); font-weight: 600; cursor: pointer; }
+    .sub-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .sub-item { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .sub-item-info { flex: 1; min-width: 150px; }
+    .sub-item-name { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+    .sub-item-meta { font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.2rem; }
+    .sub-item-cost { font-size: var(--text-h5); font-weight: 800; color: var(--heading); white-space: nowrap; }
+    .sub-item-cycle { font-size: var(--text-xs); color: var(--text-muted); }
+    .sub-item-renewal { font-size: var(--text-sm); padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+    .renewal-soon { background: #f59e0b20; color: #f59e0b; border: 1px solid #f59e0b40; }
+    .renewal-ok { background: #22c55e10; color: #22c55e; border: 1px solid #22c55e30; }
+    .renewal-overdue { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+    .sub-item-actions { display: flex; gap: 0.3rem; }
+    .sub-edit-btn, .sub-delete-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1rem; padding: 0.2rem 0.4rem; }
+    .sub-edit-btn:hover { color: var(--heading); }
+    .sub-delete-btn:hover { color: #ef4444; }
+    .sub-actions-bar { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .sub-export-btn { padding: 0.5rem 1rem; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: var(--font); font-weight: 600; font-size: var(--text-sm); cursor: pointer; }
+    .sub-export-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: var(--text-md); }
+    .privacy-note { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-top: 1rem; font-style: italic; }
+    @media (max-width: 700px) {
+      .sub-app { padding: 1.25rem; }
+      .sub-dashboard { grid-template-columns: repeat(2, 1fr); }
+      .sub-form-grid { grid-template-columns: 1fr; }
+      .sub-controls { flex-direction: column; align-items: stretch; }
+      .sub-add-btn { margin-left: 0; }
+      .sub-item { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge">100% Private — Data saved on your device only</div>
+      <h1>Subscription Tracker</h1>
+      <p class="tool-description">See where your money goes without sharing it with another app. Track all subscriptions, see total costs, get renewal reminders. Everything stays on your device.</p>
+    </section>
+    <section class="sub-app" id="sub-app">
+      <div class="sub-dashboard" id="dashboard">
+        <div class="sub-card"><div class="sub-card-label">Monthly Cost</div><div class="sub-card-value" id="total-monthly">$0</div></div>
+        <div class="sub-card"><div class="sub-card-label">Yearly Cost</div><div class="sub-card-value" id="total-yearly">$0</div></div>
+        <div class="sub-card"><div class="sub-card-label">Most Expensive</div><div class="sub-card-value" id="most-expensive">—</div></div>
+        <div class="sub-card"><div class="sub-card-label">Active Subs</div><div class="sub-card-value" id="sub-count">0</div></div>
+      </div>
+      <div class="sub-controls">
+        <select class="sub-sort-select" id="sort-select" aria-label="Sort by">
+          <option value="cost-desc">Sort: Cost (high to low)</option>
+          <option value="cost-asc">Sort: Cost (low to high)</option>
+          <option value="date-asc">Sort: Next billing (soonest)</option>
+          <option value="name-asc">Sort: Name (A-Z)</option>
+          <option value="category">Sort: Category</option>
+        </select>
+        <button type="button" class="sub-add-btn" id="add-sub-btn">+ Add Subscription</button>
+      </div>
+      <div class="sub-form" id="sub-form">
+        <div class="sub-form-title" id="form-title">Add Subscription</div>
+        <div class="sub-form-grid">
+          <div class="sub-form-field"><label>Service Name</label><input type="text" id="sub-name" placeholder="e.g., Netflix, Spotify"></div>
+          <div class="sub-form-field"><label>Cost ($)</label><input type="number" id="sub-cost" min="0" step="0.01" placeholder="9.99"></div>
+          <div class="sub-form-field"><label>Billing Cycle</label>
+            <select id="sub-cycle"><option value="monthly">Monthly</option><option value="yearly">Yearly</option></select>
+          </div>
+          <div class="sub-form-field"><label>Category</label>
+            <select id="sub-category"><option value="streaming">Streaming</option><option value="software">Software</option><option value="music">Music</option><option value="cloud">Cloud Storage</option><option value="fitness">Fitness</option><option value="news">News/Media</option><option value="gaming">Gaming</option><option value="other">Other</option></select>
+          </div>
+          <div class="sub-form-field"><label>Next Billing Date</label><input type="date" id="sub-next-date"></div>
+        </div>
+        <input type="hidden" id="edit-idx" value="">
+        <div class="sub-form-actions">
+          <button type="button" class="sub-save-btn" id="save-sub-btn">Save</button>
+          <button type="button" class="sub-cancel-btn" id="cancel-sub-btn">Cancel</button>
+        </div>
+      </div>
+      <div class="sub-list" id="sub-list"></div>
+      <div class="empty-state" id="empty-state">No subscriptions tracked yet. Click "+ Add Subscription" to start.</div>
+      <div class="sub-actions-bar">
+        <button type="button" class="sub-export-btn" id="export-csv-btn">Export CSV</button>
+      </div>
+      <div class="privacy-note">See where your money goes — without sharing it with another app</div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Track Subscriptions?</h2>
+      <p>The average person spends $219/month on subscriptions — and most underestimate their spending by 2-3x. Between streaming services, software, gym memberships, and cloud storage, costs add up quietly. This tracker gives you a clear picture of your recurring expenses.</p>
+      <h2>Privacy-First Subscription Management</h2>
+      <p>Most subscription tracking apps require access to your bank accounts or email. This tool takes a different approach: you manually add subscriptions, and everything is stored locally in your browser. No server, no account, no data sharing.</p>
+      <div class="formula-box">
+        <h3>Subscription Math</h3>
+        <p class="formula">Monthly equivalent of yearly sub = Yearly cost / 12</p>
+        <p class="formula">Yearly equivalent of monthly sub = Monthly cost x 12</p>
+        <p class="formula">Tip: A $10/month sub = $120/year. Is it worth it?</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var STORAGE_KEY = 'teamz_subscription_tracker';
+      var subs = [];
+      var sortBy = 'cost-desc';
+
+      function load() { try { subs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { subs = []; } }
+      function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(subs)); }
+      function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+      function fmt(n) { return '$' + n.toFixed(2); }
+
+      function monthlyEquiv(sub) {
+        return sub.cycle === 'yearly' ? sub.cost / 12 : sub.cost;
+      }
+
+      function yearlyEquiv(sub) {
+        return sub.cycle === 'monthly' ? sub.cost * 12 : sub.cost;
+      }
+
+      function daysUntil(dateStr) {
+        if (!dateStr) return 999;
+        var d = new Date(dateStr); d.setHours(0,0,0,0);
+        var today = new Date(); today.setHours(0,0,0,0);
+        return Math.round((d - today) / 86400000);
+      }
+
+      function getSorted() {
+        var arr = subs.slice();
+        switch (sortBy) {
+          case 'cost-desc': arr.sort(function(a, b) { return monthlyEquiv(b) - monthlyEquiv(a); }); break;
+          case 'cost-asc': arr.sort(function(a, b) { return monthlyEquiv(a) - monthlyEquiv(b); }); break;
+          case 'date-asc': arr.sort(function(a, b) { return daysUntil(a.nextDate) - daysUntil(b.nextDate); }); break;
+          case 'name-asc': arr.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); }); break;
+          case 'category': arr.sort(function(a, b) { return (a.category || '').localeCompare(b.category || ''); }); break;
+        }
+        return arr;
+      }
+
+      function render() {
+        var totalMonthly = 0, totalYearly = 0, maxMonthly = 0, maxName = '—';
+        subs.forEach(function(s) {
+          var m = monthlyEquiv(s);
+          var y = yearlyEquiv(s);
+          totalMonthly += m;
+          totalYearly += y;
+          if (m > maxMonthly) { maxMonthly = m; maxName = s.name; }
+        });
+        document.getElementById('total-monthly').textContent = fmt(totalMonthly);
+        document.getElementById('total-yearly').textContent = fmt(totalYearly);
+        document.getElementById('most-expensive').textContent = subs.length > 0 ? escHtml(maxName) : '—';
+        document.getElementById('sub-count').textContent = subs.length;
+
+        var empty = document.getElementById('empty-state');
+        var listEl = document.getElementById('sub-list');
+        if (subs.length === 0) { listEl.innerHTML = ''; empty.style.display = ''; return; }
+        empty.style.display = 'none';
+
+        var sorted = getSorted();
+        var html = '';
+        sorted.forEach(function(s) {
+          var idx = subs.indexOf(s);
+          var days = daysUntil(s.nextDate);
+          var renewalClass = 'renewal-ok';
+          var renewalText = 'Due in ' + days + ' days';
+          if (days < 0) { renewalClass = 'renewal-overdue'; renewalText = 'Overdue by ' + Math.abs(days) + ' days'; }
+          else if (days <= 7) { renewalClass = 'renewal-soon'; renewalText = days === 0 ? 'Due today!' : 'Due in ' + days + ' day' + (days > 1 ? 's' : ''); }
+          else if (days > 365) { renewalText = 'Due ' + s.nextDate; }
+
+          html += '<div class="sub-item">';
+          html += '<div class="sub-item-info">';
+          html += '<div class="sub-item-name">' + escHtml(s.name) + '</div>';
+          html += '<div class="sub-item-meta"><span style="text-transform:capitalize;">' + escHtml(s.category || 'other') + '</span><span>' + escHtml(s.cycle) + '</span></div>';
+          html += '</div>';
+          html += '<div style="text-align:center;"><div class="sub-item-cost">' + fmt(s.cost) + '</div><div class="sub-item-cycle">/' + (s.cycle === 'monthly' ? 'mo' : 'yr') + '</div></div>';
+          if (s.nextDate) html += '<span class="sub-item-renewal ' + renewalClass + '">' + renewalText + '</span>';
+          html += '<div class="sub-item-actions">';
+          html += '<button class="sub-edit-btn" onclick="window.subApp.edit(' + idx + ')" title="Edit">&#9998;</button>';
+          html += '<button class="sub-delete-btn" onclick="window.subApp.remove(' + idx + ')" title="Delete">&times;</button>';
+          html += '</div></div>';
+        });
+        listEl.innerHTML = html;
+      }
+
+      function showForm(editIdx) {
+        var form = document.getElementById('sub-form');
+        form.classList.add('visible');
+        if (typeof editIdx === 'number') {
+          var s = subs[editIdx];
+          document.getElementById('form-title').textContent = 'Edit Subscription';
+          document.getElementById('sub-name').value = s.name || '';
+          document.getElementById('sub-cost').value = s.cost || '';
+          document.getElementById('sub-cycle').value = s.cycle || 'monthly';
+          document.getElementById('sub-category').value = s.category || 'other';
+          document.getElementById('sub-next-date').value = s.nextDate || '';
+          document.getElementById('edit-idx').value = editIdx;
+        } else {
+          document.getElementById('form-title').textContent = 'Add Subscription';
+          document.getElementById('sub-name').value = '';
+          document.getElementById('sub-cost').value = '';
+          document.getElementById('sub-cycle').value = 'monthly';
+          document.getElementById('sub-category').value = 'streaming';
+          document.getElementById('sub-next-date').value = '';
+          document.getElementById('edit-idx').value = '';
+        }
+        document.getElementById('sub-name').focus();
+      }
+
+      function hideForm() { document.getElementById('sub-form').classList.remove('visible'); }
+
+      function saveSub() {
+        var name = document.getElementById('sub-name').value.trim();
+        var cost = parseFloat(document.getElementById('sub-cost').value);
+        var cycle = document.getElementById('sub-cycle').value;
+        var category = document.getElementById('sub-category').value;
+        var nextDate = document.getElementById('sub-next-date').value;
+        if (!name || isNaN(cost) || cost <= 0) { alert('Please enter a name and valid cost.'); return; }
+        var editIdx = document.getElementById('edit-idx').value;
+        var entry = { name: name, cost: cost, cycle: cycle, category: category, nextDate: nextDate, id: Date.now() };
+        if (editIdx !== '') {
+          entry.id = subs[parseInt(editIdx)].id || Date.now();
+          subs[parseInt(editIdx)] = entry;
+        } else {
+          subs.push(entry);
+        }
+        save(); hideForm(); render();
+      }
+
+      function exportCSV() {
+        if (subs.length === 0) { alert('No subscriptions to export.'); return; }
+        var csv = 'Name,Cost,Cycle,Category,Next Billing Date,Monthly Equivalent,Yearly Equivalent\n';
+        subs.forEach(function(s) {
+          csv += '"' + s.name.replace(/"/g, '""') + '",' + s.cost.toFixed(2) + ',' + s.cycle + ',' + (s.category || '') + ',' + (s.nextDate || '') + ',' + monthlyEquiv(s).toFixed(2) + ',' + yearlyEquiv(s).toFixed(2) + '\n';
+        });
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'subscriptions.csv'; a.click();
+      }
+
+      window.subApp = {
+        edit: function(idx) { showForm(idx); },
+        remove: function(idx) {
+          if (confirm('Delete "' + subs[idx].name + '"?')) { subs.splice(idx, 1); save(); render(); }
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', function() {
+        load(); render();
+        document.getElementById('add-sub-btn').addEventListener('click', function() { showForm(); });
+        document.getElementById('save-sub-btn').addEventListener('click', saveSub);
+        document.getElementById('cancel-sub-btn').addEventListener('click', hideForm);
+        document.getElementById('sort-select').addEventListener('change', function() { sortBy = this.value; render(); });
+        document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+
+        var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Subscription Tracker' }];
+        var FAQS = [
+          { q: 'Is my subscription data private?', a: 'Yes. All data is stored in your browser\'s localStorage. Nothing is sent to any server. Your subscription details remain entirely on your device — we never see what services you use or how much you spend.' },
+          { q: 'How are monthly and yearly costs calculated?', a: 'Monthly subscriptions are multiplied by 12 for the yearly total. Yearly subscriptions are divided by 12 for the monthly equivalent. The dashboard shows combined totals across all billing cycles.' },
+          { q: 'Can I export my subscription list?', a: 'Yes. Click "Export CSV" to download your subscriptions as a CSV file with monthly and yearly cost equivalents. Open it in Excel or Google Sheets for further analysis.' },
+          { q: 'How do renewal reminders work?', a: 'Each subscription shows how many days until the next billing date. Subscriptions due within 7 days are highlighted in yellow, overdue ones in red. This helps you decide whether to cancel before renewal.' }
+        ];
+        var RELATED_TOOLS = [
+          { slug: 'tools/personal-budget-tracker', name: 'Budget Tracker', description: 'Track all income and expenses.' },
+          { slug: 'tools/habit-streak-tracker', name: 'Habit Tracker', description: 'Build daily habits with streaks.' },
+          { slug: 'tools/daily-planner', name: 'Daily Planner', description: 'Plan your day with time blocks.' },
+          { slug: 'tools/quick-notes-pad', name: 'Quick Notes', description: 'Private auto-saving notepad.' },
+          { slug: 'tools/focus-timer', name: 'Focus Timer', description: 'Distraction-free countdown timer.' },
+          { slug: 'tools/job-application-tracker', name: 'Job Tracker', description: 'Track job applications privately.' }
+        ];
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'tools/subscription-tracker', title: 'Subscription Tracker', description: 'Private subscription cost tracker. No account needed.' });
+        TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>

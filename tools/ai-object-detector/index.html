@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free AI Object Detector — Identify Objects in Photos Privately | Teamz Lab Tools</title>
+  <meta name="description" content="Detect and identify objects in any photo using AI, free and privately in your browser. No upload needed. Draw bounding boxes with labels and confidence scores instantly.">
+  <meta name="keywords" content="object detection online, identify objects in image, what is in this image AI, object detector free, image recognition tool">
+  <meta property="og:title" content="Free AI Object Detector — Identify Objects in Photos | Teamz Lab Tools">
+  <meta property="og:description" content="Identify objects in photos privately using browser AI. No upload. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/ai-object-detector/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/ai-object-detector/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem; }
+    .privacy-badge svg { flex-shrink: 0; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; position: relative; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--surface); }
+    .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-zone p { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 0.9rem; }
+    .canvas-wrapper { position: relative; margin: 1rem 0; display: none; }
+    .canvas-wrapper canvas { max-width: 100%; border-radius: 8px; display: block; }
+    .progress-bar { width: 100%; height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; margin: 1rem 0; display: none; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; width: 0%; }
+    .status-text { font-size: 0.85rem; color: var(--text-muted); margin: 0.5rem 0; display: none; }
+    .detection-list { margin-top: 1rem; display: none; }
+    .detection-list h3 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+    .detection-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    .detection-item:nth-child(odd) { background: var(--surface); }
+    .detection-item .label { font-weight: 600; text-transform: capitalize; }
+    .detection-item .confidence { color: var(--text-muted); font-size: 0.85rem; }
+    .detection-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-top: 1rem; display: none; font-size: 0.95rem; }
+    .detection-summary strong { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">AI-Powered — Runs In Your Browser</span>
+      <h1>AI Object Detector</h1>
+      <p class="tool-description">Upload any photo and let AI identify every object in it. See bounding boxes, labels, and confidence scores drawn directly on your image. Everything runs locally in your browser.</p>
+      <div class="privacy-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Photo analysis happens entirely on your device
+      </div>
+    </section>
+    <section class="tool-calculator">
+      <div class="upload-zone" id="upload-zone">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <p><strong>Drop a photo here</strong> or click to upload</p>
+        <p>Supports JPG, PNG, WebP</p>
+        <input type="file" id="image-input" accept="image/*">
+      </div>
+      <div class="progress-bar" id="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+      <div class="status-text" id="status-text">Downloading AI model... (one-time, then works offline)</div>
+      <div class="tool-actions">
+        <button type="button" id="detect-btn" class="btn-pill tool-calculate-btn" disabled>Detect Objects</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div class="canvas-wrapper" id="canvas-wrapper">
+        <canvas id="detection-canvas"></canvas>
+      </div>
+      <div class="detection-summary" id="detection-summary"></div>
+      <div class="detection-list" id="detection-list">
+        <h3>Detected Objects</h3>
+        <div id="detection-items"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How AI Object Detection Works</h2>
+      <p>This tool uses DETR (DEtection TRansformer), a state-of-the-art object detection model developed by Facebook Research. It combines a convolutional neural network backbone (ResNet-50) with a Transformer encoder-decoder to locate and classify objects in images. The model can detect 91 different object categories from the COCO dataset.</p>
+      <p>The model runs entirely in your browser using Transformers.js, which converts the PyTorch model into a format that runs on WebAssembly and WebGPU. The model is downloaded once (about 100 MB) and cached for offline use.</p>
+
+      <div class="formula-box">
+        <h3>What Objects Can Be Detected</h3>
+        <ul>
+          <li><strong>People</strong> — Persons, faces in group photos, crowds</li>
+          <li><strong>Vehicles</strong> — Cars, trucks, buses, motorcycles, bicycles, airplanes, boats</li>
+          <li><strong>Animals</strong> — Dogs, cats, birds, horses, cows, sheep, elephants, bears</li>
+          <li><strong>Food</strong> — Bananas, apples, pizza, sandwiches, cakes, bottles</li>
+          <li><strong>Furniture</strong> — Chairs, couches, beds, dining tables, desks</li>
+          <li><strong>Electronics</strong> — TVs, laptops, cell phones, keyboards, remotes</li>
+        </ul>
+      </div>
+
+      <h2>Fun and Educational Uses</h2>
+      <p>Object detection is one of the most visual and intuitive AI tasks. Try uploading photos from your camera roll and see what the AI finds. It is great for learning how computer vision works — you can see exactly where the model places bounding boxes and how confident it is about each detection.</p>
+      <p>Teachers can use this to demonstrate AI concepts in classrooms. Photographers can analyze scene composition. Developers can prototype vision features without writing backend code. Since everything runs locally, there is no API cost and no rate limit.</p>
+
+      <h2>Tips for Better Detection</h2>
+      <p>Use clear, well-lit photos where objects are reasonably sized. The model works best when objects are not heavily occluded. Outdoor scenes, room interiors, street scenes, and nature photos tend to produce the most interesting results with multiple detections.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+    env.allowLocalModels = false;
+
+    let detector = null;
+    let currentImageUrl = null;
+    let currentImage = null;
+
+    const uploadZone = document.getElementById('upload-zone');
+    const imageInput = document.getElementById('image-input');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+    const statusText = document.getElementById('status-text');
+    const detectBtn = document.getElementById('detect-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const canvas = document.getElementById('detection-canvas');
+    const ctx = canvas.getContext('2d');
+    const detectionSummary = document.getElementById('detection-summary');
+    const detectionList = document.getElementById('detection-list');
+    const detectionItems = document.getElementById('detection-items');
+
+    // Colors for bounding boxes
+    const COLORS = ['#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#98D8C8','#F7DC6F','#BB8FCE','#85C1E9','#F0B27A','#AED6F1'];
+
+    uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
+      if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = URL.createObjectURL(file);
+
+      currentImage = new Image();
+      currentImage.onload = () => {
+        detectBtn.disabled = false;
+        canvasWrapper.style.display = 'block';
+        const maxW = canvasWrapper.clientWidth || 700;
+        const scale = Math.min(1, maxW / currentImage.naturalWidth);
+        canvas.width = currentImage.naturalWidth * scale;
+        canvas.height = currentImage.naturalHeight * scale;
+        ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+        detectionSummary.style.display = 'none';
+        detectionList.style.display = 'none';
+      };
+      currentImage.src = currentImageUrl;
+    }
+
+    detectBtn.addEventListener('click', async () => {
+      if (!currentImageUrl) { alert('Upload an image first.'); return; }
+      detectBtn.disabled = true;
+      detectBtn.textContent = 'Loading model...';
+      statusText.style.display = 'block';
+      progressBar.style.display = 'block';
+
+      try {
+        if (!detector) {
+          statusText.textContent = 'Downloading AI model... (one-time, then works offline)';
+          progressFill.style.width = '20%';
+          detector = await pipeline('object-detection', 'Xenova/detr-resnet-50', {
+            progress_callback: (p) => {
+              if (p.status === 'progress' && p.total) {
+                const pct = Math.round((p.loaded / p.total) * 100);
+                progressFill.style.width = pct + '%';
+                statusText.textContent = 'Downloading model... ' + pct + '%';
+              }
+              if (p.status === 'ready') {
+                progressFill.style.width = '100%';
+                statusText.textContent = 'Model ready!';
+              }
+            }
+          });
+        }
+
+        statusText.textContent = 'Detecting objects...';
+        detectBtn.textContent = 'Detecting...';
+        progressFill.style.width = '100%';
+
+        const results = await detector(currentImageUrl, { threshold: 0.5 });
+
+        // Redraw image
+        const maxW = canvasWrapper.clientWidth || 700;
+        const scale = Math.min(1, maxW / currentImage.naturalWidth);
+        canvas.width = currentImage.naturalWidth * scale;
+        canvas.height = currentImage.naturalHeight * scale;
+        ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
+
+        // Draw bounding boxes
+        results.forEach((det, i) => {
+          const color = COLORS[i % COLORS.length];
+          const x = det.box.xmin * scale;
+          const y = det.box.ymin * scale;
+          const w = (det.box.xmax - det.box.xmin) * scale;
+          const h = (det.box.ymax - det.box.ymin) * scale;
+
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, w, h);
+
+          const label = det.label + ' ' + Math.round(det.score * 100) + '%';
+          ctx.font = 'bold 14px Poppins, sans-serif';
+          const textW = ctx.measureText(label).width + 8;
+          ctx.fillStyle = color;
+          ctx.fillRect(x, y - 22, textW, 22);
+          ctx.fillStyle = '#000';
+          ctx.fillText(label, x + 4, y - 6);
+        });
+
+        // Build summary
+        const counts = {};
+        results.forEach(d => { counts[d.label] = (counts[d.label] || 0) + 1; });
+        const countStr = Object.entries(counts).map(([k, v]) => v + ' ' + k + (v > 1 ? 's' : '')).join(', ');
+
+        detectionSummary.innerHTML = '<strong>' + results.length + ' object' + (results.length !== 1 ? 's' : '') + ' detected</strong>' + (countStr ? ': ' + countStr : '');
+        detectionSummary.style.display = 'block';
+
+        // Build list
+        let listHtml = '';
+        results.forEach((det, i) => {
+          const color = COLORS[i % COLORS.length];
+          listHtml += '<div class="detection-item"><span class="label" style="color:' + color + '">' + det.label + '</span><span class="confidence">' + Math.round(det.score * 100) + '% confidence</span></div>';
+        });
+        if (results.length === 0) listHtml = '<p style="color:var(--text-muted)">No objects detected above 50% confidence. Try a different image.</p>';
+        detectionItems.innerHTML = listHtml;
+        detectionList.style.display = 'block';
+
+        statusText.textContent = 'Done! ' + results.length + ' object(s) detected.';
+        if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('process::ai-object-detector');
+      } catch (err) {
+        statusText.textContent = 'Error: ' + err.message;
+        detectionSummary.innerHTML = 'Error: ' + err.message;
+        detectionSummary.style.display = 'block';
+      }
+
+      detectBtn.textContent = 'Detect Objects';
+      detectBtn.disabled = false;
+      setTimeout(() => { progressBar.style.display = 'none'; }, 2000);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if (currentImageUrl) { URL.revokeObjectURL(currentImageUrl); currentImageUrl = null; }
+      currentImage = null;
+      canvasWrapper.style.display = 'none';
+      detectionSummary.style.display = 'none';
+      detectionList.style.display = 'none';
+      statusText.style.display = 'none';
+      progressBar.style.display = 'none';
+      detectBtn.disabled = true;
+      imageInput.value = '';
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'AI Object Detector' }];
+      var FAQS = [
+        { q: 'Is my photo uploaded to any server?', a: 'No. The object detection model runs entirely in your browser. Your photos never leave your device. Nothing is sent to any server.' },
+        { q: 'What objects can the AI detect?', a: 'The DETR model can detect 91 categories from the COCO dataset including people, vehicles (cars, trucks, buses), animals (dogs, cats, birds), food items, furniture, electronics, sports equipment, and more.' },
+        { q: 'Does it work offline?', a: 'Yes. After the first use, the AI model is cached in your browser. Subsequent uses work completely offline without an internet connection.' },
+        { q: 'How accurate is the detection?', a: 'DETR achieves high accuracy on common objects. Results depend on image quality, object size, and occlusion. Objects that are clearly visible and well-lit produce the best results.' },
+        { q: 'Why are some objects not detected?', a: 'The model uses a 50% confidence threshold. Objects that are partially hidden, very small, or unusual angles may score below this threshold. The model only detects the 91 COCO categories, so uncommon objects may not be recognized.' },
+        { q: 'What browsers are supported?', a: 'This tool works in all modern browsers: Chrome, Firefox, Safari, and Edge. It uses WebAssembly which is supported everywhere.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'tools/ai-ocr', name: 'AI OCR', description: 'Extract text from images using AI.' },
+        { slug: 'tools/ai-depth-map', name: 'AI Depth Map', description: 'Generate 3D depth maps from photos.' },
+        { slug: 'tools/face-detection', name: 'Face Detection', description: 'Detect and count faces in photos.' },
+        { slug: 'tools/ai-text-to-speech', name: 'Text to Speech', description: 'Convert text to spoken audio.' },
+        { slug: 'tools/ai-image-captioner', name: 'AI Image Captioner', description: 'Generate captions for images.' },
+        { slug: 'tools/ai-sentiment-analyzer', name: 'Sentiment Analyzer', description: 'Analyze text sentiment with AI.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'tools/ai-object-detector', title: 'Free AI Object Detector', description: 'Detect and identify objects in photos privately using browser AI. No upload needed.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

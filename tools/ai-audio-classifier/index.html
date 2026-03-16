@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free AI Audio Classifier — Identify Sounds Privately | Teamz Lab Tools</title>
+  <meta name="description" content="Identify and classify sounds using AI that runs in your browser. Free, private, and browser-only. Upload audio or record via microphone to detect speech, music, dog barking, and 500+ sound types.">
+  <meta name="keywords" content="audio classification AI, identify sound online, what sound is this, sound recognition free, AI audio analyzer private">
+  <meta property="og:title" content="Free AI Audio Classifier — Private Sound Identification | Teamz Lab Tools">
+  <meta property="og:description" content="Classify and identify sounds with AI running in your browser. 100% private, free, no upload.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/ai-audio-classifier/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/ai-audio-classifier/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-badge { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+    .privacy-badge svg { flex-shrink: 0; color: var(--accent); }
+    .model-status { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .model-status.loading { border-color: var(--accent); }
+    .model-status.ready { border-color: #22c55e; color: #22c55e; }
+    .model-status.error { border-color: #ef4444; color: #ef4444; }
+    .progress-bar { width: 100%; height: 6px; background: var(--border); border-radius: 3px; margin-top: 0.5rem; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; width: 0%; }
+    .source-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .source-tabs button { padding: 0.5rem 1.25rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 0.9rem; font-weight: 500; }
+    .source-tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+    .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: var(--surface); }
+    .upload-area svg { margin-bottom: 0.5rem; color: var(--text-muted); }
+    .record-panel { display: none; text-align: center; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .record-btn { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #ef4444; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: background 0.2s; }
+    .record-btn:hover { background: rgba(239, 68, 68, 0.1); }
+    .record-btn.recording { background: #ef4444; animation: pulse-record 1.5s infinite; }
+    .record-btn .dot { width: 20px; height: 20px; border-radius: 50%; background: #ef4444; transition: border-radius 0.2s, background 0.2s; }
+    .record-btn.recording .dot { border-radius: 4px; background: #fff; }
+    @keyframes pulse-record { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); } }
+    .record-timer { font-size: 1.25rem; font-weight: 600; color: var(--text); margin-top: 0.75rem; font-variant-numeric: tabular-nums; }
+    .waveform-canvas { width: 100%; height: 80px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); margin: 1rem 0; display: none; }
+    .audio-info { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .result-container { display: none; margin-top: 1.5rem; }
+    .classification-top { text-align: center; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin-bottom: 1rem; }
+    .classification-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .classification-label { font-size: 1.4rem; font-weight: 700; color: var(--text); text-transform: capitalize; }
+    .classification-score { font-size: 1rem; color: var(--accent); font-weight: 600; margin-top: 0.25rem; }
+    .classification-bars { display: flex; flex-direction: column; gap: 0.6rem; }
+    .class-bar-row { display: flex; align-items: center; gap: 0.75rem; }
+    .class-bar-rank { min-width: 24px; text-align: center; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
+    .class-bar-name { min-width: 180px; font-weight: 500; font-size: 0.9rem; text-transform: capitalize; }
+    .class-bar-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .class-bar-fill { height: 100%; border-radius: 5px; background: var(--accent); transition: width 0.6s ease; }
+    .class-bar-pct { min-width: 50px; text-align: right; font-size: 0.85rem; font-weight: 600; }
+    @media (max-width: 600px) { .class-bar-name { min-width: 100px; font-size: 0.8rem; } }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">AI-Powered — Runs In Your Browser</span>
+      <h1>AI Audio Classifier</h1>
+      <p class="tool-description">Identify and classify sounds using AI that runs 100% in your browser. Upload an audio file or record via your microphone to detect speech, music, dog barking, car horns, and 500+ sound types. Your audio files never leave your browser — completely private.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="privacy-badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <span>100% Private — Your audio files never leave your browser. AI runs locally on your device.</span>
+      </div>
+      <div class="model-status" id="model-status">
+        AI Model: Click "Classify Audio" to load the model. First time downloads ~130MB (then works offline).
+      </div>
+      <div class="source-tabs" id="source-tabs">
+        <button class="active" data-source="upload">Upload Audio</button>
+        <button data-source="record">Record Microphone</button>
+      </div>
+      <div id="upload-panel">
+        <div class="upload-area" id="upload-area">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <p style="margin:0;font-weight:600;">Drop an audio file here or click to upload</p>
+          <p style="margin:0.25rem 0 0;font-size:0.85rem;color:var(--text-muted);">Supports WAV, MP3, OGG, WebM, FLAC — max 25MB</p>
+          <input type="file" id="file-input" accept="audio/*" style="display:none;">
+        </div>
+      </div>
+      <div id="record-panel" class="record-panel">
+        <p style="margin:0 0 1rem;font-weight:500;">Click to start recording from your microphone</p>
+        <button type="button" id="record-btn" class="record-btn"><span class="dot"></span></button>
+        <div class="record-timer" id="record-timer">0:00</div>
+      </div>
+      <div class="audio-info" id="audio-info" style="display:none;"></div>
+      <canvas class="waveform-canvas" id="waveform-canvas"></canvas>
+      <audio id="audio-player" controls style="width:100%;display:none;margin:0.5rem 0;"></audio>
+      <div class="tool-actions" style="margin-top:1rem;">
+        <button type="button" id="classify-btn" class="btn-pill tool-calculate-btn" disabled>Classify Audio</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div class="result-container" id="result-container">
+        <div class="tool-result" style="display:block;">
+          <div class="tool-result-inner">
+            <h3 class="tool-result-title">Classification Results</h3>
+            <div class="classification-top" id="classification-top">
+              <div class="classification-icon" id="class-icon"></div>
+              <div class="classification-label" id="class-label"></div>
+              <div class="classification-score" id="class-score"></div>
+            </div>
+            <h4 style="margin-bottom:0.75rem;font-size:0.95rem;">Top 5 Classifications</h4>
+            <div class="classification-bars" id="classification-bars"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How AI Audio Classification Works in Your Browser</h2>
+      <p>This tool uses the Audio Spectrogram Transformer (AST) model, fine-tuned on the AudioSet dataset containing over 500 sound categories. Running directly in your browser via Transformers.js, it converts your audio into a mel spectrogram (a visual representation of frequencies over time) and then classifies what type of sound it is. The entire process happens locally — your audio files are never uploaded to any server.</p>
+      <p>The AudioSet dataset includes categories ranging from everyday sounds (dog barking, car horn, doorbell) to musical instruments, human activities, nature sounds, and environmental noise. The model can identify subtle differences between similar sounds, such as distinguishing between a piano and a guitar, or between rain and a waterfall.</p>
+      <div class="formula-box">
+        <h3>Types of Sounds Detected</h3>
+        <ul>
+          <li><strong>Human sounds</strong> — Speech, singing, laughter, coughing, clapping, whistling</li>
+          <li><strong>Animal sounds</strong> — Dog barking, cat meowing, bird chirping, rooster crowing</li>
+          <li><strong>Music</strong> — Piano, guitar, drums, violin, electronic music, and many more instruments</li>
+          <li><strong>Environmental</strong> — Rain, thunder, wind, ocean waves, fire crackling</li>
+          <li><strong>Vehicles</strong> — Car horn, engine, siren, train, airplane</li>
+          <li><strong>Household</strong> — Doorbell, alarm clock, keyboard typing, microwave, vacuum cleaner</li>
+        </ul>
+      </div>
+      <h2>Use Cases for Audio Classification</h2>
+      <h3>Sound Identification and Education</h3>
+      <p>Ever wondered "What sound is this?" Just upload or record the audio and the AI will tell you. This is perfect for identifying bird songs, unusual noises around your house, or sounds in field recordings. Students studying acoustics, audio engineering, or machine learning can explore how AI perceives different types of sounds.</p>
+      <h3>Content Creation and Production</h3>
+      <p>Audio engineers, podcasters, and video creators can use this tool to quickly catalog and tag sound effects, music samples, or field recordings. Identify the dominant sound in an audio clip for metadata tagging, library organization, or content moderation purposes.</p>
+      <h3>Accessibility and Assistive Technology</h3>
+      <p>People who are deaf or hard of hearing can use audio classification to understand environmental sounds around them. The tool can identify doorbells, alarms, phone rings, and other important auditory signals, displaying the results visually on screen.</p>
+      <h2>Complete Privacy for Your Audio</h2>
+      <p>Unlike cloud-based audio analysis services that upload your recordings to remote servers, this tool processes everything locally. The AST model is downloaded once (approximately 130MB) and cached in your browser for offline use. No audio data is ever transmitted, making it safe for private conversations, proprietary recordings, or any audio you want to keep confidential.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+    env.allowLocalModels = false;
+
+    let classifier = null;
+    let audioBlob = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordInterval = null;
+    let recordStartTime = 0;
+
+    const SOUND_ICONS = {
+      'speech': '\u{1F5E3}\u{FE0F}', 'singing': '\u{1F3A4}', 'music': '\u{1F3B5}', 'piano': '\u{1F3B9}',
+      'guitar': '\u{1F3B8}', 'drum': '\u{1F941}', 'violin': '\u{1F3BB}', 'trumpet': '\u{1F3BA}',
+      'dog': '\u{1F436}', 'cat': '\u{1F431}', 'bird': '\u{1F426}', 'rooster': '\u{1F413}',
+      'frog': '\u{1F438}', 'insect': '\u{1F41B}', 'rain': '\u{1F327}\u{FE0F}', 'thunder': '\u{26C8}\u{FE0F}',
+      'wind': '\u{1F32C}\u{FE0F}', 'water': '\u{1F30A}', 'fire': '\u{1F525}', 'car': '\u{1F697}',
+      'siren': '\u{1F6A8}', 'train': '\u{1F682}', 'airplane': '\u{2708}\u{FE0F}', 'bell': '\u{1F514}',
+      'alarm': '\u{23F0}', 'telephone': '\u{260E}\u{FE0F}', 'laughter': '\u{1F602}', 'clap': '\u{1F44F}',
+      'knock': '\u{1F6AA}', 'engine': '\u{2699}\u{FE0F}', 'explosion': '\u{1F4A5}', 'whistle': '\u{1F4E2}',
+      'crowd': '\u{1F46B}', 'baby': '\u{1F476}', 'cry': '\u{1F622}', 'scream': '\u{1F631}'
+    };
+
+    function getSoundIcon(label) {
+      const lower = label.toLowerCase();
+      for (const [key, icon] of Object.entries(SOUND_ICONS)) {
+        if (lower.includes(key)) return icon;
+      }
+      return '\u{1F50A}';
+    }
+
+    const statusEl = document.getElementById('model-status');
+    const classifyBtn = document.getElementById('classify-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const fileInput = document.getElementById('file-input');
+    const uploadArea = document.getElementById('upload-area');
+    const audioPlayer = document.getElementById('audio-player');
+    const audioInfo = document.getElementById('audio-info');
+    const waveformCanvas = document.getElementById('waveform-canvas');
+    const resultContainer = document.getElementById('result-container');
+    const recordBtn = document.getElementById('record-btn');
+    const recordTimer = document.getElementById('record-timer');
+
+    // Source tabs
+    document.getElementById('source-tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      document.querySelectorAll('#source-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const source = btn.dataset.source;
+      document.getElementById('upload-panel').style.display = source === 'upload' ? 'block' : 'none';
+      document.getElementById('record-panel').style.display = source === 'record' ? 'block' : 'none';
+    });
+
+    // Upload handling
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => { if (fileInput.files.length > 0) handleFile(fileInput.files[0]); });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('audio/')) { alert('Please upload an audio file.'); return; }
+      if (file.size > 25 * 1024 * 1024) { alert('File too large. Max 25MB.'); return; }
+      audioBlob = file;
+      const url = URL.createObjectURL(file);
+      audioPlayer.src = url;
+      audioPlayer.style.display = 'block';
+      audioInfo.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + ' MB)';
+      audioInfo.style.display = 'block';
+      classifyBtn.disabled = false;
+      resultContainer.style.display = 'none';
+      drawWaveform(file);
+    }
+
+    async function drawWaveform(blob) {
+      try {
+        const arrayBuf = await blob.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const decoded = await audioCtx.decodeAudioData(arrayBuf);
+        const data = decoded.getChannelData(0);
+        const canvas = waveformCanvas;
+        canvas.style.display = 'block';
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        ctx.scale(dpr, dpr);
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+        const step = Math.ceil(data.length / w);
+        const mid = h / 2;
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6366f1';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < w; i++) {
+          let min = 1, max = -1;
+          for (let j = 0; j < step; j++) {
+            const idx = i * step + j;
+            if (idx < data.length) {
+              if (data[idx] < min) min = data[idx];
+              if (data[idx] > max) max = data[idx];
+            }
+          }
+          ctx.moveTo(i, mid + min * mid);
+          ctx.lineTo(i, mid + max * mid);
+        }
+        ctx.stroke();
+        audioCtx.close();
+      } catch (e) {
+        console.warn('Waveform draw failed:', e);
+      }
+    }
+
+    // Recording
+    recordBtn.addEventListener('click', async () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        clearInterval(recordInterval);
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+          const url = URL.createObjectURL(audioBlob);
+          audioPlayer.src = url;
+          audioPlayer.style.display = 'block';
+          audioInfo.textContent = 'Recorded audio (' + (audioBlob.size / 1024).toFixed(0) + ' KB)';
+          audioInfo.style.display = 'block';
+          classifyBtn.disabled = false;
+          resultContainer.style.display = 'none';
+          drawWaveform(audioBlob);
+        };
+
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        recordStartTime = Date.now();
+        recordInterval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+          const mins = Math.floor(elapsed / 60);
+          const secs = elapsed % 60;
+          recordTimer.textContent = mins + ':' + String(secs).padStart(2, '0');
+        }, 200);
+      } catch (err) {
+        alert('Could not access microphone: ' + err.message);
+      }
+    });
+
+    async function loadModel() {
+      if (classifier) return classifier;
+      statusEl.className = 'model-status loading';
+      statusEl.innerHTML = 'Loading AI model... 0% (one-time download)<div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>';
+      try {
+        classifier = await pipeline('audio-classification', 'Xenova/ast-finetuned-audioset-10-10-0.4593', {
+          progress_callback: (p) => {
+            if (p.status === 'progress' && p.total) {
+              const pct = Math.round((p.loaded / p.total) * 100);
+              const fill = document.getElementById('progress-fill');
+              if (fill) fill.style.width = pct + '%';
+              const textNode = statusEl.childNodes[0];
+              if (textNode && textNode.nodeType === 3) {
+                textNode.textContent = `Loading AI model... ${pct}% (one-time download) `;
+              }
+            }
+          }
+        });
+      } catch (err) {
+        statusEl.className = 'model-status error';
+        statusEl.textContent = 'Failed to load AI model: ' + err.message;
+        throw err;
+      }
+      statusEl.className = 'model-status ready';
+      statusEl.textContent = 'AI Ready — Model loaded, works offline now';
+      return classifier;
+    }
+
+    async function blobToAudioData(blob) {
+      const arrayBuf = await blob.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const decoded = await audioCtx.decodeAudioData(arrayBuf);
+      const channel = decoded.getChannelData(0);
+      audioCtx.close();
+      return channel;
+    }
+
+    classifyBtn.addEventListener('click', async () => {
+      if (!audioBlob) return;
+      classifyBtn.disabled = true;
+      classifyBtn.textContent = 'Classifying...';
+
+      try {
+        await loadModel();
+        const audioData = await blobToAudioData(audioBlob);
+        const results = await classifier(audioData, { topk: 5 });
+
+        // Top result
+        const top = results[0];
+        const pct = Math.round(top.score * 100);
+        document.getElementById('class-icon').textContent = getSoundIcon(top.label);
+        document.getElementById('class-label').textContent = top.label;
+        document.getElementById('class-score').textContent = pct + '% confidence';
+
+        // All bars
+        const barsEl = document.getElementById('classification-bars');
+        barsEl.innerHTML = '';
+        results.forEach((r, i) => {
+          const rPct = Math.round(r.score * 100);
+          const row = document.createElement('div');
+          row.className = 'class-bar-row';
+          row.innerHTML = `
+            <span class="class-bar-rank">${i + 1}</span>
+            <span class="class-bar-name">${r.label}</span>
+            <div class="class-bar-track"><div class="class-bar-fill" style="width:${rPct}%;"></div></div>
+            <span class="class-bar-pct">${rPct}%</span>
+          `;
+          barsEl.appendChild(row);
+        });
+
+        resultContainer.style.display = 'block';
+        resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+
+      classifyBtn.textContent = 'Classify Audio';
+      classifyBtn.disabled = false;
+    });
+
+    clearBtn.addEventListener('click', () => {
+      audioBlob = null;
+      audioPlayer.style.display = 'none';
+      audioPlayer.src = '';
+      audioInfo.style.display = 'none';
+      waveformCanvas.style.display = 'none';
+      fileInput.value = '';
+      resultContainer.style.display = 'none';
+      classifyBtn.disabled = true;
+      recordTimer.textContent = '0:00';
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'AI Audio Classifier' }];
+      var FAQS = [
+        { q: 'Is my audio kept private when using this classifier?', a: 'Yes, completely. The AI model runs directly in your browser using Transformers.js. Your audio files and microphone recordings are never sent to any server. Everything is processed locally on your device.' },
+        { q: 'What types of sounds can this tool identify?', a: 'The model is trained on AudioSet which contains over 500 sound categories including speech, music, animal sounds, vehicle sounds, environmental noises, household sounds, and more. It can distinguish between specific instruments, animal species, and types of human vocalizations.' },
+        { q: 'Can I record audio directly from my microphone?', a: 'Yes. Switch to the "Record Microphone" tab to record audio directly. The recording stays on your device and is processed locally. Microphone access requires a secure context (HTTPS or localhost).' },
+        { q: 'What audio formats are supported?', a: 'You can upload WAV, MP3, OGG, WebM, FLAC, and other audio formats supported by your browser. The audio is decoded locally using the Web Audio API before classification.' },
+        { q: 'Does this work offline?', a: 'Yes. After the first model download (approximately 130MB), the AI is cached in your browser and works without internet. You can classify audio anytime, anywhere.' },
+        { q: 'Why does the classification show multiple results?', a: 'Real-world sounds often contain multiple elements. A recording might include both speech and background music, or a bird singing near a road with traffic. The top-5 results with confidence scores help you understand all the sounds the AI detects in the audio.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'tools/ai-document-qa', name: 'AI Document Q&A', description: 'Ask questions about documents.' },
+        { slug: 'tools/ai-sentiment-analyzer', name: 'Sentiment Analyzer', description: 'Analyze text sentiment.' },
+        { slug: 'tools/ai-emotion-detector', name: 'AI Emotion Detector', description: 'Detect emotions in faces.' },
+        { slug: 'tools/ai-image-captioner', name: 'AI Image Captioner', description: 'Generate image captions.' },
+        { slug: 'tools/ai-translator', name: 'AI Translator', description: 'Translate text in 200+ languages.' },
+        { slug: 'tools/ai-text-to-speech', name: 'AI Text to Speech', description: 'Convert text to speech.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'tools/ai-audio-classifier', title: 'Free AI Audio Classifier — Identify Sounds Privately', description: 'Classify sounds with AI running in your browser. Free, private, no upload.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

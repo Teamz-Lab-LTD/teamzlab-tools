@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonus Tax Estimator — Private Bonus Take-Home Calculator | Teamz Lab Tools</title>
+  <meta name="description" content="Estimate how much of your bonus you'll take home after federal, state, and FICA taxes. 100% private — your bonus and salary data are never stored or transmitted.">
+  <meta property="og:title" content="Bonus Tax Estimator — Private Bonus Take-Home Calculator | Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your bonus take-home pay privately. Supports flat and aggregate methods. No data stored.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/bonus-tax-estimator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Bonus Tax Estimator — Private | Teamz Lab Tools">
+  <meta name="twitter:description" content="Estimate bonus take-home pay privately. No data stored, browser-only.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/bonus-tax-estimator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Private Bonus Tax Estimator — No Compensation Data Stored</h1>
+      <p class="tool-description">Find out how much of your bonus you will actually take home after federal income tax, state tax, Social Security, and Medicare. Supports the flat supplemental rate (22%) and aggregate method. 100% private — your bonus and salary data never leave your device.</p>
+      <div class="privacy-badge-strip">
+        <span class="privacy-badge">🔒 Private</span>
+        <span class="privacy-badge">🚫 No Compensation Data Stored</span>
+        <span class="privacy-badge">✅ Browser-Only Calculation</span>
+      </div>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Bonus Taxes Work in the US</h2>
+      <p>Bonuses are classified as "supplemental wages" by the IRS. Employers can withhold taxes using two methods: the flat rate method (22% federal on bonuses up to $1 million) or the aggregate method (adding the bonus to your regular paycheck and withholding based on the combined amount).</p>
+
+      <div class="formula-box">
+        <h3>Flat Supplemental Rate Method</h3>
+        <ul>
+          <li><strong>Federal:</strong> Flat 22% on bonuses up to $1 million (37% above $1M)</li>
+          <li><strong>Social Security:</strong> 6.2% up to annual wage cap ($168,600)</li>
+          <li><strong>Medicare:</strong> 1.45% on all wages (+ 0.9% above $200K)</li>
+          <li><strong>State Tax:</strong> Varies by state (0% to 13.3%)</li>
+        </ul>
+      </div>
+
+      <div class="formula-box">
+        <h3>Aggregate Method</h3>
+        <p>The employer adds the bonus to your regular paycheck, calculates withholding on the total as if it were a single payment, then subtracts the tax already withheld on your regular pay. This often results in higher withholding, especially if the combined amount pushes you into a higher bracket.</p>
+      </div>
+
+      <h2>Flat Rate vs Aggregate: Which Is Better?</h2>
+      <p>The flat rate method (22%) is simpler and often results in lower withholding for high earners whose marginal rate exceeds 22%. The aggregate method may over-withhold because it temporarily treats the bonus + salary as your normal pay rate. Either way, you will reconcile at tax filing time.</p>
+
+      <h2>Privacy Guarantee</h2>
+      <p>Your bonus amount, salary, and all tax calculations are processed entirely in your browser. Nothing is sent to any server, stored in any database, or shared with any party.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/bonus-tax-estimator', title: 'Bonus Tax Estimator',
+      description: 'Estimate bonus take-home pay after all taxes. Private and browser-only.',
+      inputs: [
+        { id: 'bonus', type: 'number', label: 'Bonus Amount ($)', placeholder: 'e.g. 10000', min: 0, step: 500, error: 'Enter your bonus amount.' },
+        { id: 'salary', type: 'number', label: 'Annual Regular Salary ($)', placeholder: 'e.g. 85000', min: 0, step: 1000, error: 'Enter your regular salary.' },
+        {
+          id: 'filing_status', type: 'select', label: 'Filing Status',
+          options: [
+            { value: 'single', label: 'Single' },
+            { value: 'married', label: 'Married Filing Jointly' },
+            { value: 'head', label: 'Head of Household' }
+          ],
+          default: 'single'
+        },
+        {
+          id: 'method', type: 'select', label: 'Withholding Method',
+          options: [
+            { value: 'flat', label: 'Flat Rate (22%)' },
+            { value: 'aggregate', label: 'Aggregate Method' }
+          ],
+          default: 'flat'
+        },
+        { id: 'state_rate', type: 'number', label: 'State Tax Rate (%)', placeholder: 'e.g. 5', min: 0, max: 15, step: 0.1, default: 0, required: false }
+      ],
+      calculate: function (v) {
+        if (!v.bonus || v.bonus <= 0 || !v.salary) return null;
+        var bonus = parseFloat(v.bonus);
+        var salary = parseFloat(v.salary);
+        var stateRate = (parseFloat(v.state_rate) || 0) / 100;
+        var items = [];
+
+        var ssCap = 168600;
+        var totalWages = salary + bonus;
+
+        // Social Security on bonus
+        var ssTax = 0;
+        if (salary < ssCap) {
+          var ssableBonus = Math.min(bonus, ssCap - salary);
+          ssTax = ssableBonus * 0.062;
+        }
+
+        // Medicare on bonus
+        var medicareTax = bonus * 0.0145;
+        var additionalMedicare = 0;
+        var medicareThreshold = v.filing_status === 'married' ? 250000 : 200000;
+        if (totalWages > medicareThreshold && salary < medicareThreshold) {
+          additionalMedicare = Math.min(bonus, totalWages - medicareThreshold) * 0.009;
+        } else if (salary >= medicareThreshold) {
+          additionalMedicare = bonus * 0.009;
+        }
+
+        var federalTax = 0;
+
+        if (v.method === 'flat') {
+          // Flat 22% (37% if bonus over $1M)
+          if (bonus <= 1000000) {
+            federalTax = bonus * 0.22;
+          } else {
+            federalTax = 1000000 * 0.22 + (bonus - 1000000) * 0.37;
+          }
+        } else {
+          // Aggregate method: calculate tax on (salary + bonus) minus tax on salary
+          var brackets = [
+            { limit: 11600, rate: 0.10 },
+            { limit: 47150, rate: 0.12 },
+            { limit: 100525, rate: 0.22 },
+            { limit: 191950, rate: 0.24 },
+            { limit: 243725, rate: 0.32 },
+            { limit: 609350, rate: 0.35 },
+            { limit: Infinity, rate: 0.37 }
+          ];
+          var stdDeduction = 14600;
+
+          function calcFedTax(income) {
+            var taxable = income - stdDeduction;
+            if (taxable < 0) taxable = 0;
+            var tax = 0, prev = 0;
+            for (var i = 0; i < brackets.length; i++) {
+              var chunk = Math.min(taxable, brackets[i].limit) - prev;
+              if (chunk > 0) tax += chunk * brackets[i].rate;
+              prev = brackets[i].limit;
+              if (prev >= taxable) break;
+            }
+            return tax;
+          }
+
+          var taxOnTotal = calcFedTax(totalWages);
+          var taxOnSalary = calcFedTax(salary);
+          federalTax = taxOnTotal - taxOnSalary;
+        }
+
+        var stateTax = bonus * stateRate;
+        var totalTax = federalTax + ssTax + medicareTax + additionalMedicare + stateTax;
+        var netBonus = bonus - totalTax;
+        var effectiveRate = (totalTax / bonus * 100);
+
+        items.push({ label: 'Bonus Amount', value: '$' + bonus.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        items.push({ label: 'Withholding Method', value: v.method === 'flat' ? 'Flat Supplemental Rate (22%)' : 'Aggregate Method' });
+        items.push({ label: 'Federal Income Tax', value: '$' + federalTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        items.push({ label: 'Social Security (6.2%)', value: '$' + ssTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        items.push({ label: 'Medicare (1.45%)', value: '$' + medicareTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        if (additionalMedicare > 0) {
+          items.push({ label: 'Additional Medicare (0.9%)', value: '$' + additionalMedicare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        }
+        if (stateTax > 0) {
+          items.push({ label: 'State Tax (' + v.state_rate + '%)', value: '$' + stateTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        }
+        items.push({ label: 'Total Tax on Bonus', value: '$' + totalTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        items.push({ label: 'Net Bonus (Take-Home)', value: '$' + netBonus.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        items.push({ label: 'Effective Bonus Tax Rate', value: effectiveRate.toFixed(2) + '%' });
+
+        return {
+          items: items,
+          shareText: 'My $' + bonus.toLocaleString() + ' bonus becomes $' + netBonus.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' after tax (' + effectiveRate.toFixed(1) + '% effective rate)',
+          summary: 'Your $' + bonus.toLocaleString() + ' bonus will be approximately $' + netBonus.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ' after all taxes (' + effectiveRate.toFixed(1) + '% effective rate). Federal withholding: $' + federalTax.toLocaleString(undefined, { minimumFractionDigits: 2 }) + ', FICA: $' + (ssTax + medicareTax + additionalMedicare).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '.'
+        };
+      }
+    };
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Bonus Tax Estimator' }];
+    var FAQS = [
+      { q: 'Is my bonus and salary data kept private?', a: 'Yes — completely. All calculations run in your browser using JavaScript. Your bonus amount, salary, and tax calculations are never sent to any server, stored in any database, or tracked in any way.' },
+      { q: 'What is the flat 22% bonus tax rate?', a: 'The IRS allows employers to withhold federal income tax on bonuses at a flat 22% rate (for bonuses up to $1 million). This is the most common method. Bonuses above $1 million are withheld at 37% on the excess. Note: this is withholding only — your actual tax may differ at filing time.' },
+      { q: 'What is the aggregate method?', a: 'The aggregate method adds your bonus to your regular paycheck and calculates withholding on the total as if it were a single regular payment. This often results in higher withholding because the combined amount may fall in a higher tax bracket. You get the difference back when you file your tax return.' },
+      { q: 'Will I get money back if too much is withheld?', a: 'Yes. Withholding is an estimate. When you file your annual tax return, your actual tax liability is calculated on your total income. If more was withheld than owed, you will receive a refund. The flat 22% rate often results in slight over-withholding for lower earners and under-withholding for higher earners.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/gross-up-calculator', name: 'Gross-Up Calculator', description: 'Calculate pre-tax amount needed.' },
+      { slug: 'evergreen/payroll-tax-calculator', name: 'Payroll Tax Calculator', description: 'Calculate payroll deductions.' },
+      { slug: 'evergreen/self-employment-tax-estimator', name: 'Self-Employment Tax Estimator', description: 'Estimate self-employment tax.' },
+      { slug: 'evergreen/corporation-tax-planner', name: 'Corporation Tax Planner', description: 'Plan corporate tax obligations.' },
+      { slug: 'evergreen/saas-valuation-calculator', name: 'SaaS Valuation Calculator', description: 'Value a SaaS business privately.' },
+      { slug: 'evergreen/roi-calculator', name: 'ROI Calculator', description: 'Calculate investment returns.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

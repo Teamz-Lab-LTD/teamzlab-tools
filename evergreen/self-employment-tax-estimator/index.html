@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Self-Employment Tax Estimator — Private, No Data Stored | Teamz Lab Tools</title>
+  <meta name="description" content="Estimate self-employment tax (Social Security, Medicare, NI) for US and UK. 100% private — your income data stays in your browser and is never sent to any server.">
+  <meta property="og:title" content="Self-Employment Tax Estimator — Private, No Data Stored | Teamz Lab Tools">
+  <meta property="og:description" content="Estimate self-employment tax privately. Calculates Social Security, Medicare (US) or National Insurance (UK). No data stored.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/self-employment-tax-estimator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Self-Employment Tax Estimator — Private | Teamz Lab Tools">
+  <meta name="twitter:description" content="Estimate self-employment tax privately. No data stored, browser-only calculation.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/self-employment-tax-estimator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Private Self-Employment Tax Estimator — No Data Stored</h1>
+      <p class="tool-description">Estimate your self-employment tax for the US (Social Security + Medicare) or UK (National Insurance). 100% confidential — your income data stays on your device and is never transmitted anywhere.</p>
+      <div class="privacy-badge-strip">
+        <span class="privacy-badge">🔒 Browser-Only</span>
+        <span class="privacy-badge">🚫 No Data Stored</span>
+        <span class="privacy-badge">✅ Your Income Data Stays on Your Device</span>
+      </div>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Self-Employment Tax Works</h2>
+      <p>When you are self-employed, you pay both the employer and employee portions of payroll taxes. In the US, this means paying the full 15.3% for Social Security and Medicare, rather than the 7.65% employees pay. In the UK, self-employed individuals pay Class 2 and Class 4 National Insurance contributions.</p>
+
+      <div class="formula-box">
+        <h3>US Self-Employment Tax Breakdown</h3>
+        <ul>
+          <li><strong>Social Security:</strong> 12.4% on net earnings up to $168,600 (2024)</li>
+          <li><strong>Medicare:</strong> 2.9% on all net earnings</li>
+          <li><strong>Additional Medicare:</strong> 0.9% on earnings over $200,000 (single) / $250,000 (married)</li>
+          <li><strong>Total SE tax rate:</strong> 15.3% (below SS cap)</li>
+        </ul>
+      </div>
+
+      <div class="formula-box">
+        <h3>UK National Insurance for Self-Employed</h3>
+        <ul>
+          <li><strong>Class 2 NI:</strong> £3.45/week flat rate (if profits above £12,570)</li>
+          <li><strong>Class 4 NI:</strong> 9% on profits between £12,570 and £50,270</li>
+          <li><strong>Class 4 NI (upper):</strong> 2% on profits above £50,270</li>
+        </ul>
+      </div>
+
+      <h2>Deductible Portion of SE Tax</h2>
+      <p>In the US, you can deduct half of your self-employment tax from your gross income for income tax purposes. This is known as the "employer-equivalent" portion. This calculator shows the gross SE tax; consult a tax professional for your full income tax situation.</p>
+
+      <h2>Privacy Guarantee</h2>
+      <p>Your income figures are processed entirely in your browser using JavaScript. No data is sent to any server, no cookies track your financial information, and nothing is stored after you close this page. This tool is designed for people who value confidentiality in their financial planning.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/self-employment-tax-estimator', title: 'Self-Employment Tax Estimator',
+      description: 'Estimate self-employment tax privately. No data stored.',
+      inputs: [
+        { id: 'income', type: 'number', label: 'Annual Self-Employment Income', placeholder: 'e.g. 85000', min: 0, step: 1000, error: 'Enter your self-employment income.' },
+        {
+          id: 'country', type: 'select', label: 'Country',
+          options: [
+            { value: 'US', label: 'United States' },
+            { value: 'UK', label: 'United Kingdom' }
+          ],
+          default: 'US'
+        },
+        {
+          id: 'filing_status', type: 'select', label: 'Filing Status (US only)',
+          options: [
+            { value: 'single', label: 'Single' },
+            { value: 'married', label: 'Married Filing Jointly' },
+            { value: 'head', label: 'Head of Household' }
+          ],
+          default: 'single'
+        }
+      ],
+      calculate: function (v) {
+        if (!v.income || v.income <= 0) return null;
+        var income = parseFloat(v.income);
+        var items = [];
+        var totalTax = 0;
+
+        if (v.country === 'US') {
+          var ssCap = 168600;
+          var ssIncome = Math.min(income, ssCap);
+          var ssTax = ssIncome * 0.124;
+          var medicareTax = income * 0.029;
+          var additionalMedicareThreshold = v.filing_status === 'married' ? 250000 : 200000;
+          var additionalMedicare = 0;
+          if (income > additionalMedicareThreshold) {
+            additionalMedicare = (income - additionalMedicareThreshold) * 0.009;
+          }
+          totalTax = ssTax + medicareTax + additionalMedicare;
+          var deductibleHalf = totalTax / 2;
+
+          items.push({ label: 'Social Security Tax (12.4%)', value: '$' + ssTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Medicare Tax (2.9%)', value: '$' + medicareTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          if (additionalMedicare > 0) {
+            items.push({ label: 'Additional Medicare (0.9%)', value: '$' + additionalMedicare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          }
+          items.push({ label: 'Total Self-Employment Tax', value: '$' + totalTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Effective SE Tax Rate', value: (totalTax / income * 100).toFixed(2) + '%' });
+          items.push({ label: 'Deductible Half (for income tax)', value: '$' + deductibleHalf.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Take-Home After SE Tax', value: '$' + (income - totalTax).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        } else {
+          var class2 = 0;
+          var class4Lower = 0;
+          var class4Upper = 0;
+          if (income > 12570) {
+            class2 = 3.45 * 52;
+            var bandLower = Math.min(income, 50270) - 12570;
+            if (bandLower > 0) class4Lower = bandLower * 0.09;
+            if (income > 50270) class4Upper = (income - 50270) * 0.02;
+          }
+          totalTax = class2 + class4Lower + class4Upper;
+
+          items.push({ label: 'Class 2 NI (£3.45/week)', value: '£' + class2.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Class 4 NI (9% on £12,570–£50,270)', value: '£' + class4Lower.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Class 4 NI (2% above £50,270)', value: '£' + class4Upper.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Total NI Contributions', value: '£' + totalTax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+          items.push({ label: 'Effective NI Rate', value: (totalTax / income * 100).toFixed(2) + '%' });
+          items.push({ label: 'Take-Home After NI', value: '£' + (income - totalTax).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+        }
+
+        var curr = v.country === 'US' ? '$' : '£';
+        return {
+          items: items,
+          summary: 'On ' + curr + income.toLocaleString() + ' of self-employment income (' + v.country + '), your estimated self-employment tax is ' + curr + totalTax.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' (effective rate: ' + (totalTax / income * 100).toFixed(2) + '%).'
+        };
+      }
+    };
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Self-Employment Tax Estimator' }];
+    var FAQS = [
+      { q: 'Is my income data private when using this tool?', a: 'Yes — 100%. All calculations happen in your browser using JavaScript. No data is sent to any server, no cookies are set, and nothing is stored. Your financial information never leaves your device.' },
+      { q: 'What is the US self-employment tax rate?', a: 'The combined SE tax rate is 15.3% — that is 12.4% for Social Security (on earnings up to $168,600) plus 2.9% for Medicare. An additional 0.9% Medicare tax applies to earnings above $200,000 for single filers or $250,000 for married filing jointly.' },
+      { q: 'How is UK National Insurance calculated for self-employed?', a: 'Self-employed people in the UK pay Class 2 NI at a flat £3.45/week and Class 4 NI at 9% on profits between £12,570 and £50,270, plus 2% on profits above £50,270.' },
+      { q: 'Can I deduct self-employment tax?', a: 'In the US, you can deduct the employer-equivalent portion (half) of your SE tax when calculating your adjusted gross income. This reduces your income tax but not your SE tax itself.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/payroll-tax-calculator', name: 'Payroll Tax Calculator', description: 'Calculate payroll deductions for employees.' },
+      { slug: 'evergreen/bonus-tax-estimator', name: 'Bonus Tax Estimator', description: 'Estimate take-home from bonuses.' },
+      { slug: 'evergreen/gross-up-calculator', name: 'Gross-Up Calculator', description: 'Calculate pre-tax amount needed.' },
+      { slug: 'evergreen/corporation-tax-planner', name: 'Corporation Tax Planner', description: 'Plan corporate tax obligations.' },
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Calculate monthly mortgage payments.' },
+      { slug: 'evergreen/roi-calculator', name: 'ROI Calculator', description: 'Calculate investment returns.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS); ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

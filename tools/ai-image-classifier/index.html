@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free AI Image Classifier — Identify What's in Photos Privately | Teamz Lab Tools</title>
+  <meta name="description" content="Identify what is in any photo using AI running in your browser. Free, private, no upload to servers. Get top 5 classifications with confidence scores. Works in all browsers.">
+  <meta name="keywords" content="image classification AI free, what is in this image, identify image contents, photo identifier, image recognition online">
+  <meta property="og:title" content="Free AI Image Classifier — Identify What's in Photos Privately | Teamz Lab Tools">
+  <meta property="og:description" content="Identify what is in any photo with AI running in your browser. Free, private, no upload.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/ai-image-classifier/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/ai-image-classifier/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ai-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.75rem; margin-bottom: 1rem; margin-left: 0.5rem; }
+    .model-status { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; font-size: 0.9rem; }
+    .model-status.ready { border-color: var(--accent); }
+    .progress-bar-wrap { width: 100%; height: 8px; background: var(--surface); border-radius: 4px; overflow: hidden; margin-top: 0.5rem; display: none; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s; width: 0%; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 1rem; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: var(--surface); }
+    .upload-zone p { margin: 0.5rem 0; color: var(--text-muted); font-size: 0.9rem; }
+    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .preview-img { max-width: 100%; max-height: 400px; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    .result-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .result-label { min-width: 160px; font-weight: 600; font-size: 0.9rem; text-align: right; text-transform: capitalize; }
+    .result-bar-track { flex: 1; height: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .result-bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 0.5rem; }
+    .result-score { min-width: 55px; text-align: left; font-size: 0.9rem; font-weight: 700; }
+    .bar-1 { background: var(--accent, #6366f1); }
+    .bar-2 { background: #3b82f6; }
+    .bar-3 { background: #10b981; }
+    .bar-4 { background: #f59e0b; }
+    .bar-5 { background: #ef4444; }
+    .top-label { display: inline-block; background: var(--accent); color: #fff; padding: 0.5rem 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 700; text-transform: capitalize; margin-bottom: 1rem; }
+    input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="ai-badge">Browser AI — Works in All Browsers</span>
+      <span class="privacy-badge">&#128274; Photo Never Leaves Your Browser</span>
+      <h1>AI Image Classifier</h1>
+      <p class="tool-description">Upload any photo and AI will identify what is in it — animals, objects, food, vehicles, landmarks, and more. The AI model (Vision Transformer) runs directly in your browser. Your photo never leaves your device.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="model-status" id="model-status">
+        <span id="model-status-text">Upload an image to load the AI model (~90 MB one-time download). After loading, it works offline.</span>
+        <div class="progress-bar-wrap" id="progress-wrap">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">&#128247;</div>
+        <p><strong>Click to upload or drag & drop an image</strong></p>
+        <p>Supports JPG, PNG, WebP, GIF — max 10 MB</p>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+      <img id="preview-img" class="preview-img" alt="Uploaded image preview">
+      <div class="tool-actions">
+        <button type="button" id="classify-btn" class="btn-pill tool-calculate-btn" disabled>Classify Image</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div id="tool-result" class="tool-result" style="display:none;">
+        <div class="tool-result-inner">
+          <h3 class="tool-result-title">What's in This Image?</h3>
+          <div id="top-result"></div>
+          <div id="result-chart"></div>
+          <div style="margin-top:1rem;">
+            <button type="button" id="copy-btn" class="btn-pill-ghost" style="font-size:0.85rem;">Copy Results</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Identify What Is in Any Photo — Free, Private, No Upload</h2>
+      <p>Ever wondered what breed of dog is in a photo, what type of flower you spotted, or what landmark you are looking at? This AI image classifier uses a Vision Transformer (ViT) model to identify objects, animals, food, vehicles, and much more in any photo you upload.</p>
+      <p>Unlike Google Lens or other cloud-based services, this tool runs the AI model entirely in your browser. Your photos are never uploaded to any server. This is especially important for private or sensitive images — they stay on your device the entire time.</p>
+
+      <div class="formula-box">
+        <h3>What It Can Identify</h3>
+        <ul>
+          <li><strong>Animals</strong> — Dog breeds, cat breeds, birds, fish, insects, wildlife</li>
+          <li><strong>Objects</strong> — Electronics, furniture, tools, vehicles, instruments</li>
+          <li><strong>Food</strong> — Dishes, fruits, vegetables, prepared meals</li>
+          <li><strong>Places & Scenes</strong> — Landscapes, buildings, interiors</li>
+          <li><strong>Plants</strong> — Flowers, trees, mushrooms</li>
+        </ul>
+      </div>
+
+      <h2>How the Vision Transformer Works</h2>
+      <p>The model (ViT-Base-Patch16-224) was trained on the ImageNet dataset, which contains over 1 million images across 1,000 categories. It divides your image into 16x16 pixel patches, processes them through a transformer architecture (the same type used in language models like GPT), and outputs the most likely categories with confidence scores.</p>
+
+      <h2>Fun and Educational</h2>
+      <p>This tool is great for learning about AI image recognition. Try uploading photos of different dog breeds, unusual objects, or tricky images to see how the AI performs. It shows the top 5 predictions with confidence bars, so you can see how certain (or uncertain) the model is. Share your interesting results with friends — it makes for great conversation.</p>
+
+      <h2>Works Everywhere, Offline Too</h2>
+      <p>Once the model is downloaded (approximately 90 MB one-time), it is cached in your browser. You can classify images even without an internet connection. The tool works in Chrome, Firefox, Safari, Edge, and all other modern browsers.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
+    env.allowLocalModels = false;
+
+    let classifierModel = null;
+    let currentImageURL = null;
+    const statusEl = document.getElementById('model-status');
+    const statusText = document.getElementById('model-status-text');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+
+    function updateProgress(progress) {
+      if (progress && progress.progress !== undefined) {
+        progressWrap.style.display = 'block';
+        progressFill.style.width = Math.round(progress.progress) + '%';
+        statusText.textContent = 'Downloading model... ' + Math.round(progress.progress) + '%';
+      }
+    }
+
+    async function loadModel() {
+      if (classifierModel) return classifierModel;
+      statusText.textContent = 'Loading Vision AI model (one-time ~90 MB download)...';
+      progressWrap.style.display = 'block';
+      classifierModel = await pipeline('image-classification', 'Xenova/vit-base-patch16-224', {
+        progress_callback: updateProgress
+      });
+      statusText.textContent = 'AI Ready — Works offline now';
+      statusEl.classList.add('ready');
+      progressWrap.style.display = 'none';
+      return classifierModel;
+    }
+
+    let lastResults = [];
+
+    // File handling
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+    const previewImg = document.getElementById('preview-img');
+    const classifyBtn = document.getElementById('classify-btn');
+
+    uploadZone.addEventListener('click', function() { fileInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('drag-over'); });
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function() {
+      if (fileInput.files.length > 0) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) { alert('Please upload an image file.'); return; }
+      if (file.size > 10 * 1024 * 1024) { alert('Image is too large. Max 10 MB.'); return; }
+      if (currentImageURL) URL.revokeObjectURL(currentImageURL);
+      currentImageURL = URL.createObjectURL(file);
+      previewImg.src = currentImageURL;
+      previewImg.style.display = 'block';
+      classifyBtn.disabled = false;
+      document.getElementById('tool-result').style.display = 'none';
+    }
+
+    async function classify() {
+      if (!currentImageURL) { alert('Please upload an image first.'); return; }
+
+      const btn = classifyBtn;
+      btn.textContent = 'Loading AI...';
+      btn.disabled = true;
+
+      try {
+        const model = await loadModel();
+        btn.textContent = 'Classifying...';
+
+        const results = await model(currentImageURL, { topk: 5 });
+        lastResults = results;
+
+        // Top result
+        const topLabel = results[0].label.replace(/_/g, ' ');
+        const topScore = Math.round(results[0].score * 100);
+        document.getElementById('top-result').innerHTML = '<div class="top-label">' + escapeHtml(topLabel) + ' — ' + topScore + '%</div>';
+
+        // Bar chart
+        const chartEl = document.getElementById('result-chart');
+        let html = '';
+        for (let i = 0; i < results.length; i++) {
+          const label = results[i].label.replace(/_/g, ' ');
+          const score = Math.round(results[i].score * 100);
+          const barWidth = Math.max(score, 2);
+          html += '<div class="result-bar">';
+          html += '<span class="result-label">' + escapeHtml(label) + '</span>';
+          html += '<div class="result-bar-track"><div class="result-bar-fill bar-' + (i + 1) + '" style="width:' + barWidth + '%;"></div></div>';
+          html += '<span class="result-score">' + score + '%</span>';
+          html += '</div>';
+        }
+        chartEl.innerHTML = html;
+
+        document.getElementById('tool-result').style.display = 'block';
+        document.getElementById('tool-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        document.getElementById('result-chart').innerHTML = '<p>Error: ' + escapeHtml(e.message) + '</p>';
+        document.getElementById('tool-result').style.display = 'block';
+      }
+
+      btn.textContent = 'Classify Image';
+      btn.disabled = false;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    classifyBtn.addEventListener('click', classify);
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      previewImg.style.display = 'none';
+      previewImg.src = '';
+      if (currentImageURL) { URL.revokeObjectURL(currentImageURL); currentImageURL = null; }
+      fileInput.value = '';
+      classifyBtn.disabled = true;
+      document.getElementById('tool-result').style.display = 'none';
+    });
+    document.getElementById('copy-btn').addEventListener('click', function() {
+      if (!lastResults.length) return;
+      let text = 'Image Classification Results:\n';
+      for (const r of lastResults) {
+        text += r.label.replace(/_/g, ' ') + ': ' + Math.round(r.score * 100) + '%\n';
+      }
+      navigator.clipboard.writeText(text).then(function() {
+        document.getElementById('copy-btn').textContent = 'Copied!';
+        setTimeout(function() { document.getElementById('copy-btn').textContent = 'Copy Results'; }, 2000);
+      });
+    });
+
+    // Schema and common UI
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'AI Image Classifier' }];
+    var FAQS = [
+      { q: 'Does my photo get uploaded to any server?', a: 'No. Your photo never leaves your browser. The Vision Transformer model runs locally via Transformers.js. You can verify by checking the Network tab in developer tools — no image data is sent anywhere.' },
+      { q: 'What types of images can it classify?', a: 'The model is trained on ImageNet with 1,000 categories including animals (hundreds of dog and cat breeds), objects, food, vehicles, plants, scenes, and more. It works best with clear photos of single subjects.' },
+      { q: 'How accurate is it?', a: 'The ViT-Base model achieves about 81% top-1 accuracy on ImageNet. For common objects and animals it is very accurate. For unusual or ambiguous images, the top-5 results usually contain the correct answer.' },
+      { q: 'Does it work in all browsers?', a: 'Yes. It works in Chrome, Firefox, Safari, Edge, and other modern browsers. It uses Transformers.js with WebAssembly which is universally supported.' },
+      { q: 'Does it work offline?', a: 'Yes. After the initial model download (~90 MB), the model is cached in your browser. You can classify images without an internet connection.' },
+      { q: 'What image formats are supported?', a: 'JPG, PNG, WebP, and GIF. The maximum file size is 10 MB. The model resizes images to 224x224 internally so the original resolution does not matter much.' },
+      { q: 'Can it detect multiple objects?', a: 'This classifier identifies the dominant subject of the image. For detecting multiple objects with bounding boxes, try our AI Object Detector tool instead.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'tools/body-pose-estimator', name: 'Body Pose Estimator', description: 'Detect body poses in images.' },
+      { slug: 'tools/ai-named-entity-extractor', name: 'Named Entity Extractor', description: 'Extract names and entities from text.' },
+      { slug: 'tools/ai-zero-shot-classifier', name: 'Text Classifier', description: 'Categorize any text with AI.' },
+      { slug: 'tools/ai-text-summarizer', name: 'AI Text Summarizer', description: 'Summarize text with browser AI.' },
+      { slug: 'ai/contract-summarizer', name: 'Contract Summarizer', description: 'Summarize contracts privately.' },
+      { slug: 'tools/gif-maker', name: 'GIF Maker', description: 'Create GIFs from images and video.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'tools/ai-image-classifier', title: 'Free AI Image Classifier', description: 'Identify what is in any photo with AI in your browser. Free, private, no upload.' });
+    TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  </script>
+</body>
+</html>

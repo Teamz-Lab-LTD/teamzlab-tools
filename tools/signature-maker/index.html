@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Signature Maker — Create Digital Signatures Privately | Teamz Lab Tools</title>
+  <meta name="description" content="Create digital signatures privately in your browser — no upload, no account, no tracking. Draw with mouse/touch or type your name in cursive. Download as transparent PNG. Your signature never leaves your device.">
+  <meta property="og:title" content="Free Private Signature Maker — No Upload, Browser-Only | Teamz Lab Tools">
+  <meta property="og:description" content="Create digital signatures 100% in your browser. Draw or type, download as transparent PNG. No upload, no tracking.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/signature-maker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Free Private Signature Maker — No Upload, Browser-Only | Teamz Lab Tools">
+  <meta name="twitter:description" content="Create digital signatures privately. Draw or type, download as transparent PNG. No server, no tracking.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/signature-maker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Sacramento&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-block; background: var(--surface); border: 1px solid var(--accent); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-strip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text); text-align: center; margin-bottom: 1rem; }
+    .privacy-strip strong { color: var(--heading); }
+    .sig-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .sig-tab { flex: 1; padding: 0.75rem; text-align: center; background: var(--surface); border: none; color: var(--text); font-family: var(--font, 'Poppins', sans-serif); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .sig-tab.active { background: var(--heading); color: var(--bg); }
+    .sig-tab:not(.active):hover { background: var(--border); }
+    .sig-panel { display: none; }
+    .sig-panel.active { display: block; }
+    .sig-canvas-wrap { position: relative; background: #ffffff; border: 2px dashed var(--border); border-radius: 12px; cursor: crosshair; touch-action: none; margin-bottom: 1rem; }
+    .sig-canvas-wrap canvas { display: block; width: 100%; border-radius: 10px; }
+    .sig-canvas-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #999; font-size: 0.9rem; pointer-events: none; transition: opacity 0.3s; }
+    .sig-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+    .sig-controls .tool-field { margin-bottom: 0; flex: 1; min-width: 100px; }
+    .sig-type-preview { background: #ffffff; border: 2px dashed var(--border); border-radius: 12px; padding: 2rem; text-align: center; margin-bottom: 1rem; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+    .sig-type-preview .sig-typed { font-size: 48px; color: #000; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="privacy-badge">100% Private — Browser-Only, No Upload</span>
+      <h1>Free Signature Maker — Create Digital Signatures Privately, Offline</h1>
+      <p class="tool-description">Create digital signatures entirely in your browser. Draw your signature with mouse or touch, or type your name in a cursive font. Download as a transparent PNG. No upload, no server, no account, no tracking. Your signature never leaves your device. Works offline.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="privacy-strip"><strong>100% Private</strong> — Your signature never leaves your browser. Everything runs locally on your device.</div>
+
+      <div class="sig-tabs">
+        <button type="button" class="sig-tab active" data-tab="draw">Draw Signature</button>
+        <button type="button" class="sig-tab" data-tab="type">Type Signature</button>
+      </div>
+
+      <!-- Draw Panel -->
+      <div class="sig-panel active" id="panel-draw">
+        <div class="sig-canvas-wrap" id="canvas-wrap">
+          <canvas id="sig-canvas" width="800" height="300"></canvas>
+          <div class="sig-canvas-hint" id="canvas-hint">Draw your signature here</div>
+        </div>
+        <div class="sig-controls">
+          <div class="tool-field">
+            <label for="pen-color" class="tool-label">Pen Color</label>
+            <input type="color" id="pen-color" value="#000000" class="tool-input">
+          </div>
+          <div class="tool-field">
+            <label for="pen-width" class="tool-label">Pen Width</label>
+            <input type="range" id="pen-width" min="1" max="8" value="3" class="tool-input">
+          </div>
+        </div>
+        <div class="tool-actions">
+          <button type="button" id="download-draw" class="btn-pill tool-calculate-btn">Download Signature (PNG)</button>
+          <button type="button" id="undo-btn" class="btn-pill-ghost tool-clear-btn">Undo</button>
+          <button type="button" id="clear-draw" class="btn-pill-ghost tool-clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Type Panel -->
+      <div class="sig-panel" id="panel-type">
+        <div class="tool-field">
+          <label for="type-name" class="tool-label">Your Name</label>
+          <input type="text" id="type-name" class="tool-input" placeholder="John Doe">
+        </div>
+        <div class="tool-field">
+          <label for="type-font" class="tool-label">Cursive Font</label>
+          <select id="type-font" class="tool-select">
+            <option value="'Dancing Script', cursive">Dancing Script</option>
+            <option value="'Great Vibes', cursive">Great Vibes</option>
+            <option value="'Sacramento', cursive">Sacramento</option>
+          </select>
+        </div>
+        <div class="sig-controls">
+          <div class="tool-field">
+            <label for="type-color" class="tool-label">Text Color</label>
+            <input type="color" id="type-color" value="#000000" class="tool-input">
+          </div>
+          <div class="tool-field">
+            <label for="type-size" class="tool-label">Font Size</label>
+            <input type="range" id="type-size" min="24" max="80" value="48" class="tool-input">
+          </div>
+        </div>
+        <div class="sig-type-preview" id="type-preview">
+          <span class="sig-typed" id="typed-sig" style="font-family:'Dancing Script',cursive;">Your Name</span>
+        </div>
+        <div class="tool-actions">
+          <button type="button" id="download-type" class="btn-pill tool-calculate-btn">Download Signature (PNG)</button>
+          <button type="button" id="clear-type" class="btn-pill-ghost tool-clear-btn">Clear</button>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How This Private Signature Maker Works</h2>
+      <p>This tool uses the HTML5 Canvas API to let you create digital signatures entirely in your browser. In draw mode, the canvas captures your mouse or touch input and renders smooth strokes with your chosen pen color and width. In type mode, your name is rendered in a cursive web font at your specified size and color. Both modes produce a transparent PNG image that you can download and use in documents.</p>
+
+      <div class="formula-box">
+        <h3>Why This Signature Maker Is Different</h3>
+        <ul>
+          <li><strong>No Upload</strong> — Your signature is created and stays on your device. Zero server communication.</li>
+          <li><strong>No Account Required</strong> — No sign-up, no email, no login. Just create and download.</li>
+          <li><strong>Transparent Background</strong> — The PNG has a transparent background, ready to overlay on any document.</li>
+          <li><strong>Works Offline</strong> — Once loaded, create signatures without internet.</li>
+          <li><strong>Touch Support</strong> — Works on tablets and smartphones with touch drawing.</li>
+        </ul>
+      </div>
+
+      <h2>Privacy-First Signature Creation</h2>
+      <p>Your signature is one of the most sensitive pieces of personal information. Online signature tools that upload your signature to their servers create a permanent record of your handwriting on third-party infrastructure. This tool is fundamentally different — everything runs in your browser using client-side JavaScript. Your signature exists only in your browser's memory and on your local device after download. No copy is ever made on any server.</p>
+
+      <h3>Tips for a Good Digital Signature</h3>
+      <p>Use a stylus or finger on a touchscreen for the most natural-looking signature. If using a mouse, draw slowly and smoothly. The undo feature lets you remove the last stroke if you make a mistake. For typed signatures, choose the cursive font that most closely matches your style. A pen width of 2-4 pixels produces the most realistic look.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    var tabs = document.querySelectorAll('.sig-tab');
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        document.querySelectorAll('.sig-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.getElementById('panel-' + tab.getAttribute('data-tab')).classList.add('active');
+      });
+    });
+
+    // ============ DRAW MODE ============
+    var canvas = document.getElementById('sig-canvas');
+    var ctx = canvas.getContext('2d');
+    var penColorInput = document.getElementById('pen-color');
+    var penWidthInput = document.getElementById('pen-width');
+    var downloadDrawBtn = document.getElementById('download-draw');
+    var undoBtn = document.getElementById('undo-btn');
+    var clearDrawBtn = document.getElementById('clear-draw');
+    var hint = document.getElementById('canvas-hint');
+
+    var drawing = false;
+    var strokes = []; // Array of stroke arrays for undo
+    var currentStroke = [];
+    var hasDrawn = false;
+
+    function getPos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var clientX, clientY;
+      if (e.touches && e.touches.length) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function redrawAll() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      strokes.forEach(function(stroke) {
+        if (stroke.length < 2) return;
+        ctx.beginPath();
+        ctx.strokeStyle = stroke[0].color;
+        ctx.lineWidth = stroke[0].width;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.moveTo(stroke[0].x, stroke[0].y);
+        for (var i = 1; i < stroke.length; i++) {
+          ctx.lineTo(stroke[i].x, stroke[i].y);
+        }
+        ctx.stroke();
+      });
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      drawing = true;
+      hasDrawn = true;
+      hint.style.opacity = '0';
+      var pos = getPos(e);
+      currentStroke = [{ x: pos.x, y: pos.y, color: penColorInput.value, width: parseInt(penWidthInput.value, 10) }];
+      ctx.beginPath();
+      ctx.strokeStyle = penColorInput.value;
+      ctx.lineWidth = parseInt(penWidthInput.value, 10);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.moveTo(pos.x, pos.y);
+    }
+
+    function moveDraw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      var pos = getPos(e);
+      currentStroke.push({ x: pos.x, y: pos.y, color: penColorInput.value, width: parseInt(penWidthInput.value, 10) });
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
+
+    function endDraw(e) {
+      if (!drawing) return;
+      drawing = false;
+      if (currentStroke.length > 0) {
+        strokes.push(currentStroke);
+        currentStroke = [];
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
+
+    undoBtn.addEventListener('click', function() {
+      if (strokes.length === 0) return;
+      strokes.pop();
+      redrawAll();
+      if (strokes.length === 0) {
+        hasDrawn = false;
+        hint.style.opacity = '1';
+      }
+    });
+
+    clearDrawBtn.addEventListener('click', function() {
+      strokes = [];
+      currentStroke = [];
+      hasDrawn = false;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hint.style.opacity = '1';
+    });
+
+    downloadDrawBtn.addEventListener('click', function() {
+      if (!hasDrawn) { alert('Draw your signature first.'); return; }
+      canvas.toBlob(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'signature-' + Date.now() + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+      }, 'image/png');
+    });
+
+    // ============ TYPE MODE ============
+    var typeNameInput = document.getElementById('type-name');
+    var typeFontSelect = document.getElementById('type-font');
+    var typeColorInput = document.getElementById('type-color');
+    var typeSizeInput = document.getElementById('type-size');
+    var typedSig = document.getElementById('typed-sig');
+    var downloadTypeBtn = document.getElementById('download-type');
+    var clearTypeBtn = document.getElementById('clear-type');
+
+    function updateTypedSig() {
+      var name = typeNameInput.value || 'Your Name';
+      var font = typeFontSelect.value;
+      var color = typeColorInput.value;
+      var size = typeSizeInput.value;
+      typedSig.textContent = name;
+      typedSig.style.fontFamily = font;
+      typedSig.style.color = color;
+      typedSig.style.fontSize = size + 'px';
+    }
+
+    [typeNameInput, typeFontSelect, typeColorInput, typeSizeInput].forEach(function(el) {
+      el.addEventListener('input', updateTypedSig);
+      el.addEventListener('change', updateTypedSig);
+    });
+
+    clearTypeBtn.addEventListener('click', function() {
+      typeNameInput.value = '';
+      typeFontSelect.selectedIndex = 0;
+      typeColorInput.value = '#000000';
+      typeSizeInput.value = 48;
+      updateTypedSig();
+    });
+
+    downloadTypeBtn.addEventListener('click', function() {
+      var name = typeNameInput.value.trim();
+      if (!name) { alert('Type your name first.'); return; }
+      var font = typeFontSelect.value;
+      var color = typeColorInput.value;
+      var size = parseInt(typeSizeInput.value, 10);
+
+      var tmpCanvas = document.createElement('canvas');
+      var tmpCtx = tmpCanvas.getContext('2d');
+      tmpCtx.font = size + 'px ' + font;
+      var metrics = tmpCtx.measureText(name);
+      var textWidth = metrics.width;
+      var textHeight = size * 1.4;
+
+      tmpCanvas.width = Math.ceil(textWidth + 40);
+      tmpCanvas.height = Math.ceil(textHeight + 20);
+
+      // Transparent background (default)
+      tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
+      tmpCtx.font = size + 'px ' + font;
+      tmpCtx.fillStyle = color;
+      tmpCtx.textBaseline = 'middle';
+      tmpCtx.fillText(name, 20, tmpCanvas.height / 2);
+
+      tmpCanvas.toBlob(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'signature-typed-' + Date.now() + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+      }, 'image/png');
+    });
+
+    // ============ SCHEMA & SEO ============
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Tools',url:'/tools/'},{name:'Signature Maker'}];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+
+    var FAQS = [
+      {q:'Is my signature uploaded to a server?', a:'No. This signature maker runs entirely in your browser using the HTML5 Canvas API. Your signature is drawn or typed locally and never sent to any server. Your signature data exists only in browser memory and on your device after download.'},
+      {q:'Does the downloaded image have a transparent background?', a:'Yes. Both the drawn and typed signatures are exported as PNG files with a fully transparent background. This makes them easy to overlay on documents, PDFs, or images without a visible bounding box.'},
+      {q:'Can I use this on a phone or tablet?', a:'Yes. The drawing canvas supports touch input, making it work on smartphones and tablets. Using a stylus on a tablet produces the most natural-looking signature. The tool is fully responsive and adapts to any screen size.'},
+      {q:'What cursive fonts are available for typed signatures?', a:'The tool offers three popular cursive web fonts: Dancing Script (modern and flowing), Great Vibes (elegant and formal), and Sacramento (casual and relaxed). You can also adjust the font size and color to match your preference.'}
+    ];
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectFAQSchema(FAQS);
+
+    TeamzTools.renderRelatedTools([
+      {slug:'tools/pdf-merge', name:'PDF Merge', description:'Combine multiple PDFs privately in your browser.'},
+      {slug:'tools/pdf-split', name:'PDF Split', description:'Extract pages from a PDF without uploading.'},
+      {slug:'tools/pdf-compress', name:'PDF Compress', description:'Reduce PDF file size without uploading.'},
+      {slug:'image/image-compressor', name:'Image Compressor', description:'Compress images privately in your browser.'},
+      {slug:'tools/digital-business-card-maker', name:'Business Card Maker', description:'Create digital business cards privately.'},
+      {slug:'tools/email-signature-generator', name:'Email Signature Generator', description:'Generate professional email signatures.'}
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug:'tools/signature-maker',
+      title:'Free Signature Maker — Create Digital Signatures Privately',
+      description:'Create digital signatures privately in your browser. Draw or type, download as transparent PNG. No upload, no tracking.'
+    });
+  });
+  </script>
+</body>
+</html>

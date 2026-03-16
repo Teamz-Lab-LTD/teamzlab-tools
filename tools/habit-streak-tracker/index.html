@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Streak Tracker — Private, Offline, No Account | Teamz Lab Tools</title>
+  <meta name="description" content="Track your daily habits and build streaks privately. No account needed. All data stays on your device. See current streaks, longest streaks, and completion rates.">
+  <meta property="og:title" content="Habit Streak Tracker — Private, Offline | Teamz Lab Tools">
+  <meta property="og:description" content="Build daily habits with streak tracking. 100% private — data saved locally on your device.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/habit-streak-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/habit-streak-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 1rem; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .privacy-badge::before { content: '\1F512'; }
+    .habit-app { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+    .habit-add-form { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .habit-add-form input { flex: 1; min-width: 180px; padding: 0.75rem 1rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; box-sizing: border-box; }
+    .habit-add-form input:focus { border-color: var(--heading); }
+    .habit-add-form input.emoji-input { flex: 0 0 60px; min-width: 60px; text-align: center; font-size: 1.2rem; }
+    .habit-add-btn { padding: 0.75rem 1.5rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-family: var(--font); font-weight: 700; font-size: var(--text-md); cursor: pointer; white-space: nowrap; }
+    .habit-add-btn:hover { opacity: 0.85; }
+    .habit-list { display: flex; flex-direction: column; gap: 1.5rem; }
+    .habit-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+    .habit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .habit-name { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+    .habit-stats { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .habit-stat { text-align: center; font-size: var(--text-sm); color: var(--text-muted); }
+    .habit-stat-value { font-size: var(--text-h5); font-weight: 800; color: var(--heading); display: block; }
+    .habit-stat-value.fire::before { content: '\1F525 '; }
+    .habit-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; padding: 0.25rem; }
+    .habit-delete:hover { color: var(--danger, #ef4444); }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .calendar-label { font-size: var(--text-xs); color: var(--text-muted); text-align: center; padding: 0.25rem 0; font-weight: 600; }
+    .calendar-day { aspect-ratio: 1; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); transition: background 0.15s; border: 1px solid transparent; }
+    .calendar-day:hover { border-color: var(--heading); }
+    .calendar-day.done { background: #22c55e; color: #fff; }
+    .calendar-day.missed { background: var(--bg); }
+    .calendar-day.future { opacity: 0.3; cursor: default; }
+    .calendar-day.today { border: 2px solid var(--heading); font-weight: 700; }
+    .calendar-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .calendar-nav button { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.75rem; color: var(--text); font-family: var(--font); cursor: pointer; font-size: var(--text-sm); }
+    .calendar-nav button:hover { border-color: var(--heading); }
+    .calendar-month { font-weight: 700; color: var(--heading); font-size: var(--text-md); }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: var(--text-lg); }
+    .privacy-note { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-top: 1rem; font-style: italic; }
+    @media (max-width: 700px) {
+      .habit-app { padding: 1.25rem; }
+      .habit-add-form { flex-direction: column; }
+      .habit-add-form input.emoji-input { flex: unset; width: 60px; }
+      .habit-stats { gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge">100% Private — Data saved on your device only</div>
+      <h1>Habit Streak Tracker</h1>
+      <p class="tool-description">Build lasting habits with daily check-ins and streak tracking. Your habits are your business — all data stays on your device, never touches any server. No account needed.</p>
+    </section>
+    <section class="habit-app" id="habit-app">
+      <div class="habit-add-form">
+        <input type="text" id="habit-emoji" class="emoji-input" placeholder="&#x1F3AF;" maxlength="2" aria-label="Emoji icon">
+        <input type="text" id="habit-name" placeholder="New habit name (e.g., Exercise, Read, Meditate)" aria-label="Habit name">
+        <button type="button" class="habit-add-btn" id="add-habit-btn">Add Habit</button>
+      </div>
+      <div id="habit-list" class="habit-list">
+        <div class="empty-state" id="empty-state">No habits yet. Add one above to start tracking!</div>
+      </div>
+      <div class="privacy-note">Your habits are your business — data stays on your device</div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Track Habit Streaks?</h2>
+      <p>Research shows that consistency is the single most important factor in forming new habits. Tracking your streaks provides visual accountability and motivation — once you see a long streak, you become more reluctant to break it. This "don't break the chain" method was famously used by Jerry Seinfeld to write jokes daily.</p>
+      <h2>How This Tracker Works</h2>
+      <p>Add any habit you want to build. Each day, click the calendar to mark the habit as done. The tracker automatically calculates your current streak, longest streak, and overall completion rate. All data is saved locally in your browser using localStorage — nothing is sent to any server.</p>
+      <div class="formula-box">
+        <h3>Streak Science</h3>
+        <p class="formula">Current Streak = consecutive days completed (ending today/yesterday)</p>
+        <p class="formula">Completion Rate = (days completed / total days tracked) x 100%</p>
+        <p class="formula">Research: 66 days average to form an automatic habit (Lally et al., 2010)</p>
+      </div>
+      <h2>Tips for Building Habits</h2>
+      <ul>
+        <li><strong>Start small:</strong> Begin with 2-minute versions of habits</li>
+        <li><strong>Stack habits:</strong> Attach new habits to existing routines</li>
+        <li><strong>Never miss twice:</strong> One miss is an accident, two is a new pattern</li>
+        <li><strong>Track visually:</strong> Seeing your streak motivates consistency</li>
+      </ul>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var STORAGE_KEY = 'teamz_habit_tracker';
+      var habits = [];
+      var viewMonths = {};
+
+      function load() { try { habits = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { habits = []; } }
+      function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(habits)); }
+
+      function dateStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+      function todayStr() { return dateStr(new Date()); }
+
+      function calcStreak(checkins) {
+        if (!checkins || checkins.length === 0) return { current: 0, longest: 0, rate: 0 };
+        var sorted = checkins.slice().sort();
+        var today = new Date(); today.setHours(0,0,0,0);
+        var current = 0;
+        var d = new Date(today);
+        var ds = dateStr(d);
+        if (sorted.indexOf(ds) === -1) { d.setDate(d.getDate()-1); }
+        while (sorted.indexOf(dateStr(d)) !== -1) { current++; d.setDate(d.getDate()-1); }
+        var longest = 0, streak = 0;
+        for (var i = 0; i < sorted.length; i++) {
+          if (i === 0) { streak = 1; } else {
+            var prev = new Date(sorted[i-1]); var curr = new Date(sorted[i]);
+            var diff = (curr - prev) / 86400000;
+            streak = (diff === 1) ? streak + 1 : 1;
+          }
+          if (streak > longest) longest = streak;
+        }
+        var first = new Date(sorted[0]); first.setHours(0,0,0,0);
+        var totalDays = Math.floor((today - first) / 86400000) + 1;
+        var rate = totalDays > 0 ? Math.round((sorted.length / totalDays) * 100) : 0;
+        return { current: current, longest: longest, rate: rate };
+      }
+
+      function renderCalendar(habitIdx, year, month) {
+        var h = habits[habitIdx];
+        var firstDay = new Date(year, month, 1);
+        var lastDay = new Date(year, month + 1, 0);
+        var startDow = firstDay.getDay();
+        var today = new Date(); today.setHours(0,0,0,0);
+        var html = '<div class="calendar-nav">';
+        html += '<button type="button" onclick="window.habitApp.navMonth(' + habitIdx + ',-1)">&laquo; Prev</button>';
+        html += '<span class="calendar-month">' + firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + '</span>';
+        html += '<button type="button" onclick="window.habitApp.navMonth(' + habitIdx + ',1)">Next &raquo;</button>';
+        html += '</div><div class="calendar-grid">';
+        var days = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+        for (var d = 0; d < 7; d++) html += '<div class="calendar-label">' + days[d] + '</div>';
+        for (var e = 0; e < startDow; e++) html += '<div></div>';
+        for (var day = 1; day <= lastDay.getDate(); day++) {
+          var dd = new Date(year, month, day);
+          var ds = dateStr(dd);
+          var isDone = h.checkins && h.checkins.indexOf(ds) !== -1;
+          var isFuture = dd > today;
+          var isToday = ds === todayStr();
+          var cls = 'calendar-day';
+          if (isDone) cls += ' done';
+          else if (!isFuture) cls += ' missed';
+          if (isFuture) cls += ' future';
+          if (isToday) cls += ' today';
+          var onclick = isFuture ? '' : ' onclick="window.habitApp.toggle(' + habitIdx + ',\'' + ds + '\')"';
+          html += '<div class="' + cls + '"' + onclick + '>' + day + '</div>';
+        }
+        html += '</div>';
+        return html;
+      }
+
+      function render() {
+        var list = document.getElementById('habit-list');
+        var empty = document.getElementById('empty-state');
+        if (habits.length === 0) { list.innerHTML = ''; list.appendChild(empty); empty.style.display = ''; return; }
+        empty.style.display = 'none';
+        var html = '';
+        var now = new Date();
+        for (var i = 0; i < habits.length; i++) {
+          var h = habits[i];
+          if (!viewMonths[i]) viewMonths[i] = { y: now.getFullYear(), m: now.getMonth() };
+          var stats = calcStreak(h.checkins || []);
+          html += '<div class="habit-card">';
+          html += '<div class="habit-header">';
+          html += '<span class="habit-name">' + (h.emoji ? h.emoji + ' ' : '') + escHtml(h.name) + '</span>';
+          html += '<div style="display:flex;align-items:center;gap:0.75rem;">';
+          html += '<div class="habit-stats">';
+          html += '<div class="habit-stat"><span class="habit-stat-value fire">' + stats.current + '</span>Current</div>';
+          html += '<div class="habit-stat"><span class="habit-stat-value">' + stats.longest + '</span>Best</div>';
+          html += '<div class="habit-stat"><span class="habit-stat-value">' + stats.rate + '%</span>Rate</div>';
+          html += '</div>';
+          html += '<button class="habit-delete" onclick="window.habitApp.remove(' + i + ')" title="Delete habit">&times;</button>';
+          html += '</div></div>';
+          html += '<div id="cal-' + i + '">' + renderCalendar(i, viewMonths[i].y, viewMonths[i].m) + '</div>';
+          html += '</div>';
+        }
+        list.innerHTML = html;
+      }
+
+      function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+      function addHabit() {
+        var nameEl = document.getElementById('habit-name');
+        var emojiEl = document.getElementById('habit-emoji');
+        var name = nameEl.value.trim();
+        if (!name) { nameEl.focus(); return; }
+        habits.push({ name: name, emoji: emojiEl.value.trim(), checkins: [], created: todayStr() });
+        save(); nameEl.value = ''; emojiEl.value = ''; render();
+      }
+
+      window.habitApp = {
+        toggle: function(idx, ds) {
+          var h = habits[idx];
+          if (!h.checkins) h.checkins = [];
+          var pos = h.checkins.indexOf(ds);
+          if (pos === -1) h.checkins.push(ds); else h.checkins.splice(pos, 1);
+          save(); render();
+        },
+        navMonth: function(idx, dir) {
+          var vm = viewMonths[idx];
+          vm.m += dir;
+          if (vm.m < 0) { vm.m = 11; vm.y--; }
+          if (vm.m > 11) { vm.m = 0; vm.y++; }
+          var el = document.getElementById('cal-' + idx);
+          if (el) el.innerHTML = renderCalendar(idx, vm.y, vm.m);
+        },
+        remove: function(idx) {
+          if (confirm('Delete "' + habits[idx].name + '"? This cannot be undone.')) {
+            habits.splice(idx, 1); save(); render();
+          }
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', function() {
+        load(); render();
+        document.getElementById('add-habit-btn').addEventListener('click', addHabit);
+        document.getElementById('habit-name').addEventListener('keydown', function(e) { if (e.key === 'Enter') addHabit(); });
+
+        var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Habit Streak Tracker' }];
+        var FAQS = [
+          { q: 'Is my habit data private?', a: 'Yes, 100%. All data is stored in your browser\'s localStorage. Nothing is ever sent to any server. Your habits and check-in history remain entirely on your device.' },
+          { q: 'Will my data persist if I close the browser?', a: 'Yes. localStorage persists across browser sessions. Your data stays until you manually clear browser data or delete habits from this tool.' },
+          { q: 'How are streaks calculated?', a: 'Your current streak counts consecutive days completed ending with today (or yesterday if you haven\'t checked in today yet). The longest streak tracks the maximum consecutive days you\'ve ever achieved.' },
+          { q: 'Does this work offline?', a: 'Yes. After the first page load, the tool works entirely offline. No internet connection is needed to track habits, view streaks, or manage your data.' }
+        ];
+        var RELATED_TOOLS = [
+          { slug: 'tools/daily-planner', name: 'Daily Planner', description: 'Plan your day with time blocks.' },
+          { slug: 'tools/focus-timer', name: 'Focus Timer', description: 'Distraction-free countdown timer.' },
+          { slug: 'tools/quick-notes-pad', name: 'Quick Notes', description: 'Private auto-saving notepad.' },
+          { slug: 'evergreen/pomodoro-timer', name: 'Pomodoro Timer', description: 'Focus with 25-min work intervals.' },
+          { slug: 'tools/personal-budget-tracker', name: 'Budget Tracker', description: 'Track income and expenses privately.' },
+          { slug: 'tools/subscription-tracker', name: 'Subscription Tracker', description: 'Monitor recurring costs.' }
+        ];
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'tools/habit-streak-tracker', title: 'Habit Streak Tracker', description: 'Private daily habit and streak tracker. No account needed.' });
+        TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>

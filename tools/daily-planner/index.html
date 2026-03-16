@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Planner — Private, Offline, No Account Needed | Teamz Lab Tools</title>
+  <meta name="description" content="Plan your day with time-blocked scheduling. Private, offline, no account needed. Color-coded categories, navigate between days. All data saved locally.">
+  <meta property="og:title" content="Daily Planner — Private, Offline | Teamz Lab Tools">
+  <meta property="og:description" content="Plan your day privately with time blocks. No account, no server. Data saved locally.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/daily-planner/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/daily-planner/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 1rem; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .privacy-badge::before { content: '\1F512'; }
+    .planner-app { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+    .planner-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 0.75rem; flex-wrap: wrap; }
+    .planner-nav button { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; font-family: var(--font); font-weight: 600; font-size: var(--text-sm); color: var(--text); cursor: pointer; }
+    .planner-nav button:hover { border-color: var(--heading); color: var(--heading); }
+    .planner-date { font-size: var(--text-h4); font-weight: 800; color: var(--heading); text-align: center; }
+    .planner-date-sub { font-size: var(--text-sm); color: var(--text-muted); text-align: center; }
+    .planner-today-btn { background: var(--heading) !important; color: var(--bg) !important; border-color: var(--heading) !important; }
+    .time-grid { display: flex; flex-direction: column; gap: 0; }
+    .time-slot { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 52px; }
+    .time-slot:last-child { border-bottom: none; }
+    .time-label { width: 70px; flex-shrink: 0; padding: 0.6rem 0.5rem; font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 0.75rem; display: flex; align-items: flex-start; justify-content: flex-end; }
+    .time-slot-content { flex: 1; padding: 0.4rem 0.5rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border-left: 3px solid transparent; min-height: 44px; transition: background 0.15s; }
+    .time-slot-content:hover { background: var(--bg); }
+    .time-slot-content.has-event { cursor: default; }
+    .time-slot-content.cat-work { border-left-color: #3b82f6; background: #3b82f608; }
+    .time-slot-content.cat-personal { border-left-color: #22c55e; background: #22c55e08; }
+    .time-slot-content.cat-health { border-left-color: #f59e0b; background: #f59e0b08; }
+    .time-slot-content.cat-other { border-left-color: #8b5cf6; background: #8b5cf608; }
+    .event-text { flex: 1; font-size: var(--text-md); color: var(--text); font-weight: 500; }
+    .event-cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .event-cat-dot.work { background: #3b82f6; }
+    .event-cat-dot.personal { background: #22c55e; }
+    .event-cat-dot.health { background: #f59e0b; }
+    .event-cat-dot.other { background: #8b5cf6; }
+    .event-actions { display: flex; gap: 0.25rem; }
+    .event-edit-btn, .event-del-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.85rem; padding: 0.15rem 0.3rem; }
+    .event-edit-btn:hover { color: var(--heading); }
+    .event-del-btn:hover { color: #ef4444; }
+    .slot-placeholder { font-size: var(--text-sm); color: var(--text-muted); opacity: 0.4; }
+    /* Modal */
+    .planner-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .planner-modal-overlay.visible { display: flex; }
+    .planner-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 400px; }
+    .planner-modal h3 { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0 0 1rem; }
+    .planner-modal-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
+    .planner-modal-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+    .planner-modal-field input, .planner-modal-field select { padding: 0.6rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; outline: none; box-sizing: border-box; }
+    .planner-modal-field input:focus, .planner-modal-field select:focus { border-color: var(--heading); }
+    .planner-modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .planner-modal-save { padding: 0.6rem 1.5rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-family: var(--font); font-weight: 700; cursor: pointer; }
+    .planner-modal-save:hover { opacity: 0.85; }
+    .planner-modal-cancel { padding: 0.6rem 1.5rem; background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-family: var(--font); font-weight: 600; cursor: pointer; }
+    .privacy-note { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-top: 1rem; font-style: italic; }
+    .category-legend { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: var(--text-sm); color: var(--text-muted); }
+    @media (max-width: 700px) {
+      .planner-app { padding: 1.25rem; }
+      .time-label { width: 55px; font-size: var(--text-xs); }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge">100% Private — Data saved on your device only</div>
+      <h1>Daily Planner</h1>
+      <p class="tool-description">Plan your day with time-blocked scheduling. Click any time slot to add tasks or events. Color-code by category. Navigate between days. All data saved locally — nothing synced anywhere.</p>
+    </section>
+    <section class="planner-app" id="planner-app">
+      <div class="planner-nav">
+        <button type="button" id="prev-day">&laquo; Previous Day</button>
+        <div style="text-align:center;">
+          <div class="planner-date" id="planner-date"></div>
+          <div class="planner-date-sub" id="planner-date-sub"></div>
+        </div>
+        <button type="button" id="next-day">Next Day &raquo;</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;">
+        <div class="category-legend">
+          <div class="legend-item"><span class="event-cat-dot work"></span> Work</div>
+          <div class="legend-item"><span class="event-cat-dot personal"></span> Personal</div>
+          <div class="legend-item"><span class="event-cat-dot health"></span> Health</div>
+          <div class="legend-item"><span class="event-cat-dot other"></span> Other</div>
+        </div>
+        <button type="button" id="today-btn" class="planner-today-btn" style="padding:0.4rem 1rem;border-radius:8px;font-family:var(--font);font-weight:700;font-size:var(--text-sm);cursor:pointer;border:none;">Today</button>
+      </div>
+      <div class="time-grid" id="time-grid"></div>
+      <div class="privacy-note">Plan your day privately — nothing synced anywhere</div>
+    </section>
+    <!-- Modal -->
+    <div class="planner-modal-overlay" id="modal-overlay">
+      <div class="planner-modal">
+        <h3 id="modal-title">Add Event</h3>
+        <div class="planner-modal-field"><label>Time Slot</label><input type="text" id="modal-time" readonly></div>
+        <div class="planner-modal-field"><label>Event / Task</label><input type="text" id="modal-event" placeholder="What's happening?"></div>
+        <div class="planner-modal-field"><label>Category</label>
+          <select id="modal-category"><option value="work">Work</option><option value="personal">Personal</option><option value="health">Health</option><option value="other">Other</option></select>
+        </div>
+        <div class="planner-modal-actions">
+          <button type="button" class="planner-modal-save" id="modal-save">Save</button>
+          <button type="button" class="planner-modal-cancel" id="modal-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Time-Block Your Day?</h2>
+      <p>Time-blocking is a productivity method where you divide your day into blocks of time, each dedicated to a specific task or group of tasks. Cal Newport, author of "Deep Work," calls it "the most productive way to organize your day." Studies show that time-blocking reduces decision fatigue and increases focus.</p>
+      <h2>How to Use This Planner</h2>
+      <p>Click any empty time slot to add an event or task. Choose a color category (work, personal, health, or other) to visually organize your day. Navigate between days using the arrow buttons. All data is saved to your browser's localStorage — it's completely private and works offline.</p>
+      <div class="formula-box">
+        <h3>Productivity Tips</h3>
+        <p class="formula">Time-blocking: Assign every hour a purpose</p>
+        <p class="formula">Batch similar tasks: Group meetings, group deep work</p>
+        <p class="formula">Protect your peak hours: Schedule hardest tasks when you're most alert</p>
+      </div>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var STORAGE_KEY = 'teamz_daily_planner';
+      var currentDate = new Date();
+      currentDate.setHours(0,0,0,0);
+      var editingSlot = null;
+
+      function dateKey(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+      function loadDay(dk) {
+        try { var all = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; return all[dk] || {}; } catch(e) { return {}; }
+      }
+      function saveDay(dk, slots) {
+        try { var all = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; all[dk] = slots; localStorage.setItem(STORAGE_KEY, JSON.stringify(all)); } catch(e) {}
+      }
+
+      function formatTime(hour) {
+        var h = hour % 12 || 12;
+        var ampm = hour < 12 ? 'AM' : 'PM';
+        return h + ':00 ' + ampm;
+      }
+
+      function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+      function render() {
+        var dk = dateKey(currentDate);
+        var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('planner-date').textContent = dayNames[currentDate.getDay()] + ', ' + monthNames[currentDate.getMonth()] + ' ' + currentDate.getDate();
+        document.getElementById('planner-date-sub').textContent = currentDate.getFullYear();
+
+        var slots = loadDay(dk);
+        var grid = document.getElementById('time-grid');
+        var html = '';
+        for (var hour = 6; hour <= 22; hour++) {
+          var key = String(hour);
+          var event = slots[key];
+          html += '<div class="time-slot">';
+          html += '<div class="time-label">' + formatTime(hour) + '</div>';
+          if (event && event.text) {
+            html += '<div class="time-slot-content has-event cat-' + (event.cat || 'other') + '">';
+            html += '<span class="event-cat-dot ' + (event.cat || 'other') + '"></span>';
+            html += '<span class="event-text">' + escHtml(event.text) + '</span>';
+            html += '<div class="event-actions">';
+            html += '<button class="event-edit-btn" data-hour="' + hour + '" title="Edit">&#9998;</button>';
+            html += '<button class="event-del-btn" data-hour="' + hour + '" title="Delete">&times;</button>';
+            html += '</div>';
+          } else {
+            html += '<div class="time-slot-content" data-hour="' + hour + '">';
+            html += '<span class="slot-placeholder">Click to add...</span>';
+          }
+          html += '</div></div>';
+        }
+        grid.innerHTML = html;
+
+        grid.querySelectorAll('.time-slot-content:not(.has-event)').forEach(function(el) {
+          el.addEventListener('click', function() { openModal(parseInt(el.getAttribute('data-hour')), null); });
+        });
+        grid.querySelectorAll('.event-edit-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var h = parseInt(btn.getAttribute('data-hour'));
+            var ev = slots[String(h)];
+            openModal(h, ev);
+          });
+        });
+        grid.querySelectorAll('.event-del-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var h = parseInt(btn.getAttribute('data-hour'));
+            delete slots[String(h)];
+            saveDay(dk, slots);
+            render();
+          });
+        });
+      }
+
+      function openModal(hour, existing) {
+        editingSlot = hour;
+        document.getElementById('modal-time').value = formatTime(hour);
+        document.getElementById('modal-event').value = existing ? existing.text : '';
+        document.getElementById('modal-category').value = existing ? (existing.cat || 'work') : 'work';
+        document.getElementById('modal-title').textContent = existing ? 'Edit Event' : 'Add Event';
+        document.getElementById('modal-overlay').classList.add('visible');
+        setTimeout(function() { document.getElementById('modal-event').focus(); }, 100);
+      }
+
+      function closeModal() {
+        document.getElementById('modal-overlay').classList.remove('visible');
+        editingSlot = null;
+      }
+
+      function saveModal() {
+        var text = document.getElementById('modal-event').value.trim();
+        if (!text) { alert('Please enter an event or task.'); return; }
+        var cat = document.getElementById('modal-category').value;
+        var dk = dateKey(currentDate);
+        var slots = loadDay(dk);
+        slots[String(editingSlot)] = { text: text, cat: cat };
+        saveDay(dk, slots);
+        closeModal();
+        render();
+      }
+
+      function navDay(offset) {
+        currentDate.setDate(currentDate.getDate() + offset);
+        render();
+      }
+
+      function goToday() {
+        currentDate = new Date(); currentDate.setHours(0,0,0,0);
+        render();
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        render();
+        document.getElementById('prev-day').addEventListener('click', function() { navDay(-1); });
+        document.getElementById('next-day').addEventListener('click', function() { navDay(1); });
+        document.getElementById('today-btn').addEventListener('click', goToday);
+        document.getElementById('modal-save').addEventListener('click', saveModal);
+        document.getElementById('modal-cancel').addEventListener('click', closeModal);
+        document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+
+        var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Tools', url: '/tools/' }, { name: 'Daily Planner' }];
+        var FAQS = [
+          { q: 'Is my schedule data private?', a: 'Yes. All schedule data is stored in your browser\'s localStorage. Nothing is sent to any server. Your daily plans remain entirely on your device.' },
+          { q: 'Can I plan future and past days?', a: 'Yes. Use the arrow buttons to navigate to any day — past or future. Each day\'s schedule is saved separately in localStorage.' },
+          { q: 'What are the color categories?', a: 'There are four categories: Work (blue), Personal (green), Health (yellow), and Other (purple). They help you visually distinguish different types of activities in your schedule.' },
+          { q: 'Does this work offline?', a: 'Yes. After the first page load, the planner works entirely offline. All data is stored locally and no internet connection is required.' }
+        ];
+        var RELATED_TOOLS = [
+          { slug: 'tools/focus-timer', name: 'Focus Timer', description: 'Distraction-free countdown timer.' },
+          { slug: 'tools/habit-streak-tracker', name: 'Habit Tracker', description: 'Build daily habits with streaks.' },
+          { slug: 'evergreen/pomodoro-timer', name: 'Pomodoro Timer', description: 'Focus with 25-min work intervals.' },
+          { slug: 'tools/quick-notes-pad', name: 'Quick Notes', description: 'Private auto-saving notepad.' },
+          { slug: 'tools/job-application-tracker', name: 'Job Tracker', description: 'Track job applications privately.' },
+          { slug: 'tools/personal-budget-tracker', name: 'Budget Tracker', description: 'Track income and expenses.' }
+        ];
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS); TeamzTools.injectWebAppSchema({ slug: 'tools/daily-planner', title: 'Daily Planner', description: 'Private daily time-blocked planner. No account needed.' });
+        TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>
