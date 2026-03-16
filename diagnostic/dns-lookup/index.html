@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free DNS Lookup — Check DNS Records for Any Domain | Teamz Lab Tools</title>
+  <meta name="description" content="Free DNS lookup tool. Check A, AAAA, CNAME, MX, NS, TXT, and SOA records for any domain. Fast, private, no data stored. Works entirely in your browser.">
+  <meta property="og:title" content="Free DNS Lookup Tool — Check DNS Records | Teamz Lab Tools">
+  <meta property="og:description" content="Check DNS records (A, AAAA, CNAME, MX, NS, TXT, SOA) for any domain. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/dns-lookup/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/dns-lookup/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .dns-input-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .dns-input-row input { flex: 1; min-width: 200px; padding: 0.75rem 1rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: inherit; background: var(--surface); color: var(--text); }
+    .dns-input-row input:focus { border-color: var(--accent); outline: none; }
+    .dns-input-row button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; font-family: inherit; white-space: nowrap; }
+    .record-type-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .record-pill { padding: 0.4rem 1rem; border: 2px solid var(--border); border-radius: 50px; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: var(--surface); color: var(--text); transition: all 0.2s; }
+    .record-pill.active { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .record-pill:hover { border-color: var(--accent); }
+    .dns-results { margin-top: 1.5rem; }
+    .dns-section { margin-bottom: 1.5rem; }
+    .dns-section h3 { font-size: 1rem; margin: 0 0 0.75rem; padding: 0.5rem 1rem; background: var(--surface); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; }
+    .dns-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .dns-table th { text-align: left; padding: 0.6rem 0.75rem; background: var(--surface); color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); }
+    .dns-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); word-break: break-all; }
+    .dns-table tr:last-child td { border-bottom: none; }
+    .dns-table tr:hover td { background: var(--surface); }
+    .timing-bar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.75rem 1rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
+    .timing-label { font-weight: 600; font-size: 0.85rem; min-width: 100px; }
+    .timing-value { font-family: 'Courier New', monospace; font-weight: 700; font-size: 1rem; }
+    .timing-fill { height: 8px; border-radius: 4px; background: var(--accent); transition: width 0.3s; }
+    .timing-track { flex: 1; height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+    .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .privacy-strip { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted); }
+    .error-msg { padding: 1rem; background: var(--surface); border: 1px solid var(--danger, #e74c3c); border-radius: 8px; color: var(--danger, #e74c3c); }
+    .copy-btn { background: none; border: 1px solid var(--border); padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: var(--text-muted); }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>DNS Lookup</h1>
+      <p class="tool-description">Check DNS records for any domain. Lookup A, AAAA, CNAME, MX, NS, TXT, and SOA records with response timing. Uses DNS-over-HTTPS — fast, accurate, and private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="privacy-strip">
+        <span>100% Private — DNS queries via encrypted HTTPS. No data stored.</span>
+      </div>
+
+      <div class="dns-input-row">
+        <input type="text" id="domain-input" placeholder="Enter domain (e.g., google.com, teamzlab.com)" autocomplete="off" spellcheck="false">
+        <button type="button" id="lookup-btn" class="btn-pill tool-calculate-btn">Lookup DNS</button>
+      </div>
+
+      <div class="record-type-pills" id="record-pills">
+        <span class="record-pill active" data-type="ALL">ALL</span>
+        <span class="record-pill" data-type="A">A</span>
+        <span class="record-pill" data-type="AAAA">AAAA</span>
+        <span class="record-pill" data-type="CNAME">CNAME</span>
+        <span class="record-pill" data-type="MX">MX</span>
+        <span class="record-pill" data-type="NS">NS</span>
+        <span class="record-pill" data-type="TXT">TXT</span>
+        <span class="record-pill" data-type="SOA">SOA</span>
+      </div>
+
+      <div id="dns-results" class="dns-results" style="display:none;"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is DNS Lookup?</h2>
+      <p>A DNS lookup queries the Domain Name System to find records associated with a domain name. DNS is the internet's address book — it translates human-readable domains (like google.com) into IP addresses (like 142.250.80.46) that computers use to connect. Different record types serve different purposes:</p>
+
+      <div class="formula-box">
+        <h3>DNS Record Types Explained</h3>
+        <ul>
+          <li><strong>A Record</strong> — Maps a domain to an IPv4 address (e.g., 192.168.1.1)</li>
+          <li><strong>AAAA Record</strong> — Maps a domain to an IPv6 address</li>
+          <li><strong>CNAME Record</strong> — Aliases one domain to another (e.g., www → example.com)</li>
+          <li><strong>MX Record</strong> — Specifies mail servers and priority for email delivery</li>
+          <li><strong>NS Record</strong> — Lists authoritative nameservers for the domain</li>
+          <li><strong>TXT Record</strong> — Contains verification, SPF, DKIM, and other text data</li>
+          <li><strong>SOA Record</strong> — Start of Authority — primary nameserver, admin email, serial number</li>
+        </ul>
+      </div>
+
+      <h2>How This Tool Works</h2>
+      <p>This tool uses DNS-over-HTTPS (DoH) to query Cloudflare's DNS resolver (1.1.1.1) and Google's DNS resolver (8.8.8.8). Your queries are encrypted in transit — no plain-text DNS requests are exposed. The tool measures response time for each query type so you can see how fast DNS resolves for any domain.</p>
+
+      <h2>Common Use Cases</h2>
+      <ul>
+        <li><strong>Website troubleshooting</strong> — Check if DNS is propagated after changes</li>
+        <li><strong>Email configuration</strong> — Verify MX records point to the correct mail servers</li>
+        <li><strong>Domain verification</strong> — Check TXT records for SPF, DKIM, and domain ownership</li>
+        <li><strong>Performance analysis</strong> — Compare DNS resolution times</li>
+        <li><strong>Security audit</strong> — Identify unexpected CNAME chains or suspicious records</li>
+      </ul>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var domainInput = document.getElementById('domain-input');
+    var lookupBtn = document.getElementById('lookup-btn');
+    var resultsDiv = document.getElementById('dns-results');
+    var pillsContainer = document.getElementById('record-pills');
+    var selectedTypes = ['ALL'];
+
+    // Record type pill selection
+    pillsContainer.addEventListener('click', function(e) {
+      var pill = e.target.closest('.record-pill');
+      if (!pill) return;
+      var type = pill.dataset.type;
+      if (type === 'ALL') {
+        selectedTypes = ['ALL'];
+        pillsContainer.querySelectorAll('.record-pill').forEach(function(p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+      } else {
+        var allPill = pillsContainer.querySelector('[data-type="ALL"]');
+        allPill.classList.remove('active');
+        selectedTypes = selectedTypes.filter(function(t) { return t !== 'ALL'; });
+        pill.classList.toggle('active');
+        if (pill.classList.contains('active')) {
+          selectedTypes.push(type);
+        } else {
+          selectedTypes = selectedTypes.filter(function(t) { return t !== type; });
+        }
+        if (selectedTypes.length === 0) {
+          selectedTypes = ['ALL'];
+          allPill.classList.add('active');
+        }
+      }
+    });
+
+    // Enter key support
+    domainInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') lookupBtn.click();
+    });
+
+    lookupBtn.addEventListener('click', async function() {
+      var domain = domainInput.value.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+      if (!domain || !domain.includes('.')) {
+        resultsDiv.innerHTML = '<div class="error-msg">Please enter a valid domain name (e.g., google.com)</div>';
+        resultsDiv.style.display = 'block';
+        return;
+      }
+
+      lookupBtn.disabled = true;
+      lookupBtn.innerHTML = '<span class="loading-spinner"></span> Looking up...';
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div style="text-align:center;padding:2rem;"><span class="loading-spinner"></span><p style="margin-top:1rem;color:var(--text-muted);">Querying DNS records for <strong>' + domain + '</strong>...</p></div>';
+
+      var types = selectedTypes.includes('ALL') ? ['A', 'AAAA', 'CNAME', 'MX', 'NS', 'TXT', 'SOA'] : selectedTypes;
+      var allResults = {};
+      var timings = {};
+
+      async function queryDNS(type) {
+        var startTime = performance.now();
+        try {
+          // Try Cloudflare DoH first
+          var resp = await fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(domain) + '&type=' + type, {
+            headers: { 'Accept': 'application/dns-json' }
+          });
+          var data = await resp.json();
+          var elapsed = Math.round(performance.now() - startTime);
+          timings[type] = elapsed;
+
+          if (data.Answer && data.Answer.length > 0) {
+            allResults[type] = data.Answer.map(function(r) {
+              return { name: r.name, type: r.type, ttl: r.TTL, data: r.data };
+            });
+          } else if (data.Authority && data.Authority.length > 0 && type === 'SOA') {
+            allResults[type] = data.Authority.map(function(r) {
+              return { name: r.name, type: r.type, ttl: r.TTL, data: r.data };
+            });
+          } else {
+            allResults[type] = [];
+          }
+        } catch (e) {
+          timings[type] = Math.round(performance.now() - startTime);
+          // Fallback to Google DoH
+          try {
+            var resp2 = await fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=' + type);
+            var data2 = await resp2.json();
+            if (data2.Answer && data2.Answer.length > 0) {
+              allResults[type] = data2.Answer.map(function(r) {
+                return { name: r.name, type: r.type, ttl: r.TTL, data: r.data };
+              });
+            } else {
+              allResults[type] = [];
+            }
+          } catch (e2) {
+            allResults[type] = [{ error: 'Query failed: ' + e2.message }];
+          }
+        }
+      }
+
+      // Query all types in parallel
+      await Promise.all(types.map(function(t) { return queryDNS(t); }));
+
+      // Build results HTML
+      var html = '';
+
+      // Timing summary
+      var totalTime = Object.values(timings).reduce(function(a, b) { return a + b; }, 0);
+      var maxTime = Math.max.apply(null, Object.values(timings).concat([1]));
+      html += '<div style="margin-bottom:1.5rem;">';
+      html += '<h3 style="margin:0 0 0.75rem;">Response Timing</h3>';
+      types.forEach(function(type) {
+        var ms = timings[type] || 0;
+        var pct = Math.max(5, Math.round((ms / maxTime) * 100));
+        var color = ms < 100 ? 'var(--success, #27ae60)' : ms < 300 ? 'var(--warning, #f39c12)' : 'var(--danger, #e74c3c)';
+        html += '<div class="timing-bar">';
+        html += '<span class="timing-label">' + type + '</span>';
+        html += '<div class="timing-track"><div class="timing-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>';
+        html += '<span class="timing-value">' + ms + 'ms</span>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      // Record sections
+      var typeNames = { 1: 'A', 2: 'NS', 5: 'CNAME', 6: 'SOA', 15: 'MX', 16: 'TXT', 28: 'AAAA' };
+      var hasAnyRecords = false;
+
+      types.forEach(function(type) {
+        var records = allResults[type] || [];
+        html += '<div class="dns-section">';
+        html += '<h3>' + type + ' Records' + (records.length > 0 ? ' (' + records.length + ')' : ' — None found') + '</h3>';
+
+        if (records.length > 0 && !records[0].error) {
+          hasAnyRecords = true;
+          html += '<table class="dns-table">';
+          if (type === 'MX') {
+            html += '<tr><th>Priority</th><th>Mail Server</th><th>TTL</th></tr>';
+            records.forEach(function(r) {
+              var parts = (r.data || '').split(' ');
+              var priority = parts[0] || '-';
+              var server = parts.slice(1).join(' ') || r.data;
+              html += '<tr><td>' + priority + '</td><td>' + server + '</td><td>' + r.ttl + 's</td></tr>';
+            });
+          } else if (type === 'SOA') {
+            html += '<tr><th>Field</th><th>Value</th></tr>';
+            records.forEach(function(r) {
+              var parts = (r.data || '').split(' ');
+              var fields = ['Primary NS', 'Admin Email', 'Serial', 'Refresh', 'Retry', 'Expire', 'Min TTL'];
+              parts.forEach(function(val, i) {
+                if (fields[i]) html += '<tr><td>' + fields[i] + '</td><td>' + val + '</td></tr>';
+              });
+            });
+          } else {
+            html += '<tr><th>Name</th><th>Value</th><th>TTL</th></tr>';
+            records.forEach(function(r) {
+              var displayType = typeNames[r.type] || type;
+              html += '<tr><td>' + (r.name || domain) + '</td><td>' + (r.data || '-') + '</td><td>' + (r.ttl || '-') + 's</td></tr>';
+            });
+          }
+          html += '</table>';
+        } else if (records[0] && records[0].error) {
+          html += '<p style="color:var(--danger);padding:0.5rem;">' + records[0].error + '</p>';
+        } else {
+          html += '<p style="color:var(--text-muted);padding:0.5rem;">No ' + type + ' records found for this domain.</p>';
+        }
+        html += '</div>';
+      });
+
+      // Copy all results button
+      var copyText = 'DNS Lookup Results for ' + domain + '\n' + '='.repeat(40) + '\n';
+      types.forEach(function(type) {
+        var records = allResults[type] || [];
+        copyText += '\n' + type + ' Records:\n';
+        if (records.length > 0 && !records[0].error) {
+          records.forEach(function(r) { copyText += '  ' + (r.data || '-') + ' (TTL: ' + (r.ttl || '-') + 's)\n'; });
+        } else {
+          copyText += '  None found\n';
+        }
+      });
+      copyText += '\nTiming:\n';
+      types.forEach(function(type) { copyText += '  ' + type + ': ' + (timings[type] || 0) + 'ms\n'; });
+
+      html += '<div style="text-align:center;margin-top:1rem;"><button class="copy-btn" id="copy-results-btn">Copy All Results</button></div>';
+
+      resultsDiv.innerHTML = html;
+
+      document.getElementById('copy-results-btn').addEventListener('click', function() {
+        navigator.clipboard.writeText(copyText).then(function() {
+          document.getElementById('copy-results-btn').textContent = 'Copied!';
+          setTimeout(function() { document.getElementById('copy-results-btn').textContent = 'Copy All Results'; }, 2000);
+        });
+      });
+
+      lookupBtn.disabled = false;
+      lookupBtn.textContent = 'Lookup DNS';
+    });
+
+    // Schema and SEO
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Diagnostic Tools', url: '/diagnostic/' }, { name: 'DNS Lookup' }];
+    var FAQS = [
+      { q: 'What is a DNS lookup?', a: 'A DNS lookup queries the Domain Name System to find records (IP addresses, mail servers, nameservers, etc.) associated with a domain name. It is like looking up a phone number in a directory.' },
+      { q: 'Is this DNS lookup tool private?', a: 'Yes. Queries are sent via DNS-over-HTTPS (encrypted) to Cloudflare or Google DNS resolvers. We do not log or store any queries.' },
+      { q: 'What do the different DNS record types mean?', a: 'A records point to IPv4 addresses, AAAA to IPv6, CNAME creates an alias, MX routes email, NS identifies nameservers, TXT holds verification/SPF data, and SOA has zone authority info.' },
+      { q: 'Why is my DNS query slow?', a: 'DNS speed depends on your internet connection, the DNS resolver distance, and domain complexity (CNAME chains, multiple records). Under 100ms is fast, 100-300ms is normal, over 300ms may indicate issues.' },
+      { q: 'Can I check DNS propagation with this tool?', a: 'This tool queries Cloudflare and Google DNS. If your records show correctly here but not in your browser, your local DNS cache may be stale. Try flushing your DNS cache or waiting for the TTL to expire.' },
+      { q: 'What is TTL in DNS?', a: 'TTL (Time To Live) is how long a DNS record is cached before being re-queried. A TTL of 3600 means the record is cached for 1 hour. Lower TTLs mean faster propagation but more DNS queries.' },
+      { q: 'Why do I see different results than other DNS tools?', a: 'Different DNS tools query different resolvers. This tool uses Cloudflare (1.1.1.1) with Google (8.8.8.8) as fallback. Other tools may use different resolvers or query authoritative nameservers directly.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'diagnostic/dns-leak-test', name: 'DNS Leak Test', description: 'Check if your DNS requests are leaking outside your VPN.' },
+      { slug: 'diagnostic/ip-address-checker', name: 'IP Address Checker', description: 'Check your public IP, location, and ISP.' },
+      { slug: 'diagnostic/webrtc-leak-checker', name: 'WebRTC Leak Checker', description: 'Detect WebRTC IP leaks.' },
+      { slug: 'diagnostic/internet-speed-test', name: 'Internet Speed Test', description: 'Measure download and upload speeds.' },
+      { slug: 'diagnostic/network-connection-info', name: 'Network Info', description: 'View your network connection details.' },
+      { slug: 'dev/url-encode-decode', name: 'URL Encoder/Decoder', description: 'Encode or decode URLs.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS); TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'diagnostic/dns-lookup', title: 'DNS Lookup', description: 'Free DNS lookup tool. Check A, AAAA, CNAME, MX, NS, TXT, SOA records for any domain.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  });
+  </script>
+</body>
+</html>
