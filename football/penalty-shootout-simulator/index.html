@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penalty Shootout Simulator — Simulate UCL Penalties | Teamz Lab Tools</title>
+  <meta name="description" content="Simulate a penalty shootout between two teams. Choose goal, save, or miss — or let the simulator decide randomly. Sudden death, live scoreboard, and celebration effects. Free and instant.">
+  <meta name="keywords" content="penalty shootout simulator, penalty kick game, simulate penalties football, ucl penalty simulator">
+  <meta property="og:title" content="Penalty Shootout Simulator — Simulate UCL Penalties | Teamz Lab Tools">
+  <meta property="og:description" content="Simulate a penalty shootout between any two teams. Interactive game with scoreboard and sudden death.">
+  <meta property="og:url" content="https://tool.teamzlab.com/football/penalty-shootout-simulator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Penalty Shootout Simulator | Teamz Lab Tools">
+  <meta name="twitter:description" content="Simulate penalty shootouts with an interactive game. Free and instant.">
+  <link rel="canonical" href="https://tool.teamzlab.com/football/penalty-shootout-simulator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sim-setup {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .sim-setup .field {
+      flex: 1;
+      min-width: 150px;
+    }
+    .sim-setup label {
+      display: block;
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+    }
+    .sim-setup input, .sim-setup select {
+      width: 100%;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.95rem;
+    }
+    .sim-setup input:focus, .sim-setup select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .sim-btn {
+      padding: 0.65rem 1.5rem;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .sim-btn:hover { opacity: 0.85; }
+    .sim-btn:disabled { opacity: 0.4; cursor: default; }
+    .scoreboard {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .score-team {
+      text-align: center;
+      min-width: 120px;
+    }
+    .score-team-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--heading);
+      margin-bottom: 0.3rem;
+    }
+    .score-num {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .score-vs {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .penalty-history {
+      margin: 1.5rem 0;
+    }
+    .penalty-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    .penalty-row .round-label {
+      width: 80px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .penalty-row .pen-result {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+    .pen-goal {
+      background: var(--accent);
+      color: #000;
+    }
+    .pen-miss {
+      border: 2px solid var(--border);
+      color: var(--text-muted);
+      background: var(--surface);
+    }
+    .pen-save {
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      background: var(--surface);
+    }
+    .pen-pending {
+      border: 2px dashed var(--border);
+      color: var(--text-muted);
+      background: transparent;
+    }
+    .action-row {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .current-info {
+      text-align: center;
+      font-weight: 600;
+      color: var(--heading);
+      font-size: 1.05rem;
+      margin-bottom: 1rem;
+    }
+    .winner-banner {
+      text-align: center;
+      padding: 1.5rem;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      margin: 1.5rem 0;
+      background: var(--surface);
+    }
+    .winner-banner h2 {
+      color: var(--accent);
+      font-size: 1.6rem;
+      margin: 0 0 0.5rem;
+    }
+    .winner-banner p {
+      color: var(--text);
+      margin: 0;
+      font-size: 1rem;
+    }
+    .confetti-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 9999;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      position: absolute;
+      top: -10px;
+      width: 10px;
+      height: 10px;
+      opacity: 0;
+      animation: confettiFall 3s ease-out forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+    .sim-hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Penalty Shootout Simulator</h1>
+      <p class="tool-description">Simulate a penalty shootout between any two teams. Choose the outcome of each kick or let the simulator randomly decide. Features a live scoreboard, penalty-by-penalty history, sudden death rounds, and celebration effects. Completely free and runs in your browser.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="sim-setup" id="setupArea">
+        <div class="field">
+          <label>Team A</label>
+          <input type="text" id="teamA" placeholder="e.g. Real Madrid" value="Real Madrid">
+        </div>
+        <div class="field">
+          <label>Team B</label>
+          <input type="text" id="teamB" placeholder="e.g. Liverpool" value="Liverpool">
+        </div>
+        <div class="field">
+          <label>Or Pick a Preset</label>
+          <select id="presetMatch">
+            <option value="">Custom Teams</option>
+            <option value="Real Madrid|Barcelona">Real Madrid vs Barcelona</option>
+            <option value="Liverpool|Manchester United">Liverpool vs Man United</option>
+            <option value="Bayern Munich|Borussia Dortmund">Bayern vs Dortmund</option>
+            <option value="AC Milan|Inter Milan">AC Milan vs Inter Milan</option>
+            <option value="PSG|Marseille">PSG vs Marseille</option>
+            <option value="Juventus|Napoli">Juventus vs Napoli</option>
+            <option value="Arsenal|Tottenham">Arsenal vs Tottenham</option>
+            <option value="Manchester City|Chelsea">Man City vs Chelsea</option>
+          </select>
+        </div>
+        <button class="sim-btn" id="startBtn">Start Shootout</button>
+      </div>
+      <div id="gameArea" class="sim-hidden">
+        <div class="scoreboard">
+          <div class="score-team">
+            <div class="score-team-name" id="nameA">Team A</div>
+            <div class="score-num" id="scoreA">0</div>
+          </div>
+          <div class="score-vs">vs</div>
+          <div class="score-team">
+            <div class="score-team-name" id="nameB">Team B</div>
+            <div class="score-num" id="scoreB">0</div>
+          </div>
+        </div>
+        <div class="current-info" id="currentInfo">Round 1 — Team A to shoot</div>
+        <div class="penalty-history" id="penHistory"></div>
+        <div class="action-row" id="actionRow">
+          <button class="sim-btn" onclick="takePenalty('goal')">Goal</button>
+          <button class="sim-btn" onclick="takePenalty('save')" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">Save</button>
+          <button class="sim-btn" onclick="takePenalty('miss')" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">Miss</button>
+          <button class="sim-btn" onclick="takePenalty('random')">Random</button>
+        </div>
+        <div id="winnerBanner" class="sim-hidden"></div>
+        <div style="text-align:center;margin-top:1rem;">
+          <button class="sim-btn" id="resetBtn" onclick="resetGame()" style="background: var(--surface); color: var(--text); border: 1px solid var(--border);">Reset &amp; Play Again</button>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Penalty Shootout Simulator Works</h2>
+      <p>This interactive tool lets you simulate a full penalty shootout between any two football teams. You control every penalty kick by choosing whether it is a goal, a save by the goalkeeper, or a miss off target. Alternatively, click Random and the simulator will generate a realistic outcome weighted toward the statistical averages of real penalty shootouts.</p>
+      <p>The random outcome follows real-world penalty statistics: approximately 75% of penalties result in a goal, 15% are saved by the goalkeeper, and 10% miss the target entirely. These probabilities are based on data from decades of professional football penalties.</p>
+
+      <h3>Rules of a Penalty Shootout</h3>
+      <p>Each team takes five penalties in alternating order. If the scores are level after five rounds, the shootout enters sudden death. In sudden death, each team takes one penalty per round, and the first team to score while the other misses (or vice versa) wins. The simulator handles all of this automatically, including mathematically eliminating a team early if they cannot catch up.</p>
+
+      <h3>Famous UCL Penalty Shootouts</h3>
+      <p>The Champions League has produced some of the most dramatic penalty shootouts in football history. The 2005 final between Liverpool and AC Milan in Istanbul is widely regarded as the greatest, with Liverpool winning 3-2 on penalties after coming back from 3-0 down. Chelsea defeated Bayern Munich on penalties in the 2012 final at the Allianz Arena, and Manchester United beat Chelsea in the 2008 final in Moscow.</p>
+
+      <h3>Penalty Statistics</h3>
+      <p>Historically, the team that shoots first in a penalty shootout wins approximately 60% of the time. Right-footed players tend to aim for the left side of the goal, and goalkeepers dive to the right slightly more often. Penalty conversion rates in the Champions League average around 75-78%, slightly higher than domestic leagues due to the caliber of players involved.</p>
+
+      <h2>Tips for Simulating</h2>
+      <p>Try simulating famous historical shootouts by following the real results penalty by penalty. Or run multiple random simulations to see how often each team wins. Share your results with friends and settle those pub debates about which team would win.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var state = {
+      teamA: '', teamB: '',
+      scoreA: 0, scoreB: 0,
+      round: 1, turn: 'A', // A or B
+      pensA: [], pensB: [],
+      finished: false, suddenDeath: false
+    };
+
+    document.getElementById('presetMatch').addEventListener('change', function() {
+      if (this.value) {
+        var parts = this.value.split('|');
+        document.getElementById('teamA').value = parts[0];
+        document.getElementById('teamB').value = parts[1];
+      }
+    });
+
+    document.getElementById('startBtn').addEventListener('click', function() {
+      state.teamA = document.getElementById('teamA').value.trim() || 'Team A';
+      state.teamB = document.getElementById('teamB').value.trim() || 'Team B';
+      state.scoreA = 0; state.scoreB = 0;
+      state.round = 1; state.turn = 'A';
+      state.pensA = []; state.pensB = [];
+      state.finished = false; state.suddenDeath = false;
+
+      document.getElementById('nameA').textContent = state.teamA;
+      document.getElementById('nameB').textContent = state.teamB;
+      document.getElementById('scoreA').textContent = '0';
+      document.getElementById('scoreB').textContent = '0';
+      document.getElementById('setupArea').classList.add('sim-hidden');
+      document.getElementById('gameArea').classList.remove('sim-hidden');
+      document.getElementById('winnerBanner').classList.add('sim-hidden');
+      document.getElementById('actionRow').style.display = '';
+      updateUI();
+    });
+
+    function takePenalty(type) {
+      if (state.finished) return;
+      var outcome;
+      if (type === 'random') {
+        var r = Math.random();
+        if (r < 0.75) outcome = 'goal';
+        else if (r < 0.90) outcome = 'save';
+        else outcome = 'miss';
+      } else {
+        outcome = type;
+      }
+
+      if (state.turn === 'A') {
+        state.pensA.push(outcome);
+        if (outcome === 'goal') state.scoreA++;
+        state.turn = 'B';
+      } else {
+        state.pensB.push(outcome);
+        if (outcome === 'goal') state.scoreB++;
+        state.turn = 'A';
+        state.round++;
+      }
+
+      updateUI();
+      checkWinner();
+    }
+
+    function checkWinner() {
+      var rA = state.pensA.length;
+      var rB = state.pensB.length;
+
+      if (!state.suddenDeath) {
+        // Regular 5 rounds
+        // Both teams have taken same number so far
+        if (rA === rB) {
+          var remainA = 5 - rA;
+          var remainB = 5 - rB;
+          // Team A can't catch up
+          if (state.scoreA + remainA < state.scoreB) return declareWinner('B');
+          // Team B can't catch up
+          if (state.scoreB + remainB < state.scoreA) return declareWinner('A');
+        } else {
+          // A has taken one more than B
+          var remainB2 = 5 - rB;
+          if (state.scoreB + remainB2 < state.scoreA) return declareWinner('A');
+          var remainA2 = 5 - rA;
+          if (state.scoreA + remainA2 < state.scoreB) return declareWinner('B');
+        }
+
+        // After 5 rounds each
+        if (rA >= 5 && rB >= 5) {
+          if (state.scoreA !== state.scoreB) {
+            return declareWinner(state.scoreA > state.scoreB ? 'A' : 'B');
+          }
+          state.suddenDeath = true;
+          state.round = 6;
+        }
+      } else {
+        // Sudden death: both teams taken equal pens in this round
+        if (rA === rB && rA > 5) {
+          // After both shot in a SD round
+          var sdRoundA = state.pensA[rA - 1];
+          var sdRoundB = state.pensB[rB - 1];
+          if (sdRoundA === 'goal' && sdRoundB !== 'goal') return declareWinner('A');
+          if (sdRoundB === 'goal' && sdRoundA !== 'goal') return declareWinner('B');
+        }
+        // After A shoots in sudden death, check if B can still equalize
+        if (rA > rB && rA > 5) {
+          // A just shot, B hasn't yet in this SD round — no early call, wait for B
+        }
+      }
+    }
+
+    function declareWinner(team) {
+      state.finished = true;
+      var winner = team === 'A' ? state.teamA : state.teamB;
+      var banner = document.getElementById('winnerBanner');
+      banner.innerHTML = '<div class="winner-banner"><h2>' + winner + ' Wins!</h2><p>Final Score: ' + state.teamA + ' ' + state.scoreA + ' - ' + state.scoreB + ' ' + state.teamB + (state.suddenDeath ? ' (Sudden Death)' : '') + '</p></div>';
+      banner.classList.remove('sim-hidden');
+      document.getElementById('actionRow').style.display = 'none';
+      launchConfetti();
+    }
+
+    function updateUI() {
+      document.getElementById('scoreA').textContent = state.scoreA;
+      document.getElementById('scoreB').textContent = state.scoreB;
+
+      if (!state.finished) {
+        var teamName = state.turn === 'A' ? state.teamA : state.teamB;
+        var roundLabel = state.suddenDeath ? 'Sudden Death Round ' + (state.round - 5) : 'Round ' + state.round;
+        document.getElementById('currentInfo').textContent = roundLabel + ' \u2014 ' + teamName + ' to shoot';
+      }
+
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var maxRounds = Math.max(state.pensA.length, state.pensB.length, state.suddenDeath ? state.round - 5 + 5 : 5);
+      var html = '';
+      for (var i = 0; i < maxRounds; i++) {
+        var roundLabel = i < 5 ? 'Round ' + (i + 1) : 'SD ' + (i - 4);
+        var aResult = state.pensA[i];
+        var bResult = state.pensB[i];
+        html += '<div class="penalty-row">';
+        html += renderPenIcon(aResult);
+        html += '<span class="round-label">' + roundLabel + '</span>';
+        html += renderPenIcon(bResult);
+        html += '</div>';
+      }
+      document.getElementById('penHistory').innerHTML = html;
+    }
+
+    function renderPenIcon(result) {
+      if (!result) return '<span class="pen-result pen-pending">-</span>';
+      if (result === 'goal') return '<span class="pen-result pen-goal">\u2713</span>';
+      if (result === 'save') return '<span class="pen-result pen-save">\u25CF</span>';
+      return '<span class="pen-result pen-miss">\u2717</span>';
+    }
+
+    function resetGame() {
+      document.getElementById('setupArea').classList.remove('sim-hidden');
+      document.getElementById('gameArea').classList.add('sim-hidden');
+    }
+
+    function launchConfetti() {
+      var container = document.createElement('div');
+      container.className = 'confetti-container';
+      document.body.appendChild(container);
+      var cs = getComputedStyle(document.documentElement);
+      var colors = [
+        cs.getPropertyValue('--accent').trim(),
+        cs.getPropertyValue('--heading').trim(),
+        cs.getPropertyValue('--text').trim(),
+        cs.getPropertyValue('--border').trim(),
+        cs.getPropertyValue('--text-muted').trim(),
+        cs.getPropertyValue('--surface').trim()
+      ];
+      for (var i = 0; i < 80; i++) {
+        var piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.width = (Math.random() * 8 + 6) + 'px';
+        piece.style.height = (Math.random() * 8 + 6) + 'px';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+        piece.style.animationDelay = (Math.random() * 1.5) + 's';
+        piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        container.appendChild(piece);
+      }
+      setTimeout(function() { container.remove(); }, 5000);
+    }
+
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Football Tools', url: '/football/' },
+      { name: 'Penalty Shootout Simulator' }
+    ];
+
+    var FAQS = [
+      { q: 'How does the random penalty outcome work?', a: 'The random button generates outcomes based on real penalty statistics: 75% chance of a goal, 15% chance of a save, and 10% chance of a miss. These probabilities reflect actual professional football penalty conversion rates.' },
+      { q: 'What happens if the score is tied after 5 rounds?', a: 'The simulator enters sudden death mode, just like a real penalty shootout. Each team takes one penalty per round, and if one team scores while the other does not, the scoring team wins immediately.' },
+      { q: 'Can the shootout end before 5 rounds?', a: 'Yes. If one team builds an insurmountable lead and the other team cannot mathematically catch up even by scoring all remaining penalties, the simulator declares a winner early.' },
+      { q: 'Can I simulate real historical penalty shootouts?', a: 'Absolutely. Enter the real team names and then manually select goal, save, or miss for each penalty to recreate any historical shootout. Try recreating the 2005 Istanbul final or the 2012 Chelsea vs Bayern final.' },
+      { q: 'Is there a limit to sudden death rounds?', a: 'No. The simulator continues sudden death rounds indefinitely until one team wins, just like real football rules. The longest recorded shootout in professional football went to 48 penalties.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'football/ucl-all-time-stats', name: 'UCL All-Time Stats', description: 'Browse all-time Champions League records and stats.' },
+      { slug: 'football/ucl-bracket-predictor', name: 'UCL Bracket Predictor', description: 'Predict Champions League knockout bracket outcomes.' },
+      { slug: 'football/ucl-group-stage-simulator', name: 'UCL Group Stage Simulator', description: 'Simulate group stage outcomes.' },
+      { slug: 'football/player-comparison', name: 'Player Comparison', description: 'Compare football players head to head.' },
+      { slug: 'football/ucl-quiz', name: 'UCL Quiz', description: 'Test your Champions League knowledge.' },
+      { slug: 'football/ucl-watch-party-planner', name: 'UCL Watch Party Planner', description: 'Plan the perfect UCL match viewing party.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'football/penalty-shootout-simulator', title: 'Penalty Shootout Simulator', description: 'Simulate penalty shootouts between any two teams.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

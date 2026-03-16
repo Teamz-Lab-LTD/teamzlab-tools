@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Formation Builder — Create Custom Lineups Free | Teamz Lab Tools</title>
+  <meta name="description" content="Build custom football formations and lineups with our free interactive pitch builder. Drag players, choose from 4-3-3, 4-4-2, 3-5-2 and more. Download as PNG.">
+  <meta name="keywords" content="football formation maker, soccer lineup builder, football tactics board free, formation creator, lineup generator">
+  <meta property="og:title" content="Football Formation Builder — Create Custom Lineups Free | Teamz Lab Tools">
+  <meta property="og:description" content="Build and share custom football formations. Drag players on an interactive pitch. Free lineup builder.">
+  <meta property="og:url" content="https://tool.teamzlab.com/football/football-formation-builder/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Football Formation Builder | Teamz Lab Tools">
+  <meta name="twitter:description" content="Create custom football lineups and formations. Free interactive builder.">
+  <link rel="canonical" href="https://tool.teamzlab.com/football/football-formation-builder/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .formation-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .formation-controls label {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--text);
+    }
+    .formation-select {
+      padding: 0.5rem 1rem;
+      font-size: var(--text-md);
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+    }
+    .formation-select:focus {
+      border-color: var(--heading);
+    }
+    .pitch-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .pitch-canvas {
+      width: 100%;
+      border-radius: 8px;
+      cursor: default;
+      touch-action: none;
+    }
+    .action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .action-btn:hover {
+      border-color: var(--heading);
+      color: var(--heading);
+    }
+    .action-btn--primary {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .action-btn--primary:hover {
+      opacity: 0.85;
+      color: var(--bg);
+    }
+    .player-edit-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-edit-modal.open {
+      display: flex;
+    }
+    .player-edit-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 280px;
+      max-width: 90%;
+    }
+    .player-edit-box h3 {
+      font-size: var(--text-h5);
+      font-weight: 700;
+      color: var(--heading);
+      margin: 0 0 1rem 0;
+    }
+    .player-edit-box .tool-field {
+      margin-bottom: 0.75rem;
+    }
+    .player-edit-box input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font-size: var(--text-md);
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .player-edit-box input:focus {
+      border-color: var(--heading);
+    }
+    .player-edit-box .edit-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .instructions {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 0.75rem;
+    }
+    .copied-toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--heading);
+      color: var(--bg);
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      z-index: 300;
+      display: none;
+    }
+    .copied-toast.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Football Formation Builder</h1>
+      <p class="tool-description">Create custom football formations and lineups on an interactive pitch. Choose a preset formation, drag players into position, add names and shirt numbers, then download your lineup as a PNG image to share.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="formation-controls">
+        <label for="formation-select">Formation:</label>
+        <select id="formation-select" class="formation-select">
+          <option value="4-3-3">4-3-3</option>
+          <option value="4-4-2">4-4-2</option>
+          <option value="3-5-2">3-5-2</option>
+          <option value="4-2-3-1">4-2-3-1</option>
+          <option value="5-3-2">5-3-2</option>
+          <option value="3-4-3">3-4-3</option>
+          <option value="4-1-4-1">4-1-4-1</option>
+        </select>
+      </div>
+      <p class="instructions">Drag players to reposition. Click a player to edit name and number.</p>
+      <div class="pitch-wrapper">
+        <canvas id="pitch-canvas" class="pitch-canvas" width="500" height="700"></canvas>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn action-btn--primary" id="download-btn">Download PNG</button>
+        <button class="action-btn" id="reset-btn">Reset Formation</button>
+      </div>
+    </section>
+
+    <div class="player-edit-modal" id="edit-modal">
+      <div class="player-edit-box">
+        <h3>Edit Player</h3>
+        <div class="tool-field">
+          <label class="tool-label" for="player-name-input">Name</label>
+          <input type="text" id="player-name-input" maxlength="20" placeholder="e.g. Messi">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="player-number-input">Number</label>
+          <input type="number" id="player-number-input" min="1" max="99" placeholder="e.g. 10">
+        </div>
+        <div class="edit-actions">
+          <button class="action-btn action-btn--primary" id="save-player-btn">Save</button>
+          <button class="action-btn" id="cancel-edit-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="copied-toast" id="toast">Downloaded!</div>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Football Formation Builder Works</h2>
+      <p>This interactive tool lets you build and customize football formations on a realistic pitch layout. Start by selecting a preset formation from the dropdown menu. The 11 player positions will be placed automatically according to the selected formation pattern. You can then drag any player dot to fine-tune their position on the pitch.</p>
+      <p>Click on any player to open the edit panel where you can enter a player name and shirt number. This transforms your formation from a generic template into a personalized starting XI that you can share on social media or use in tactical discussions. The pitch design follows standard football field markings with proper proportions.</p>
+
+      <h3>Available Formations</h3>
+      <p>The builder includes seven of the most popular formations used in modern football. The 4-3-3 is favored by attacking teams like Barcelona and Manchester City. The 4-4-2 remains a classic balanced formation. The 3-5-2 provides width through wingbacks while maintaining a strong midfield. The 4-2-3-1 offers defensive stability with a double pivot while supporting the attack. The 5-3-2 is a defensive setup that can transition quickly. The 3-4-3 provides aggressive width, and the 4-1-4-1 anchors the midfield with a single pivot player.</p>
+
+      <h2>Download and Share</h2>
+      <p>Once you have built your formation and added player names, click "Download PNG" to save a high-quality image of your lineup. The downloaded image is perfect for sharing on Twitter, Instagram, Reddit, or WhatsApp. Use it to propose your ideal starting XI before a big match, debate tactical choices with friends, or create content for football blogs and social media accounts.</p>
+
+      <h2>Tactical Tips for Choosing a Formation</h2>
+      <p>Your formation should match your team's strengths. If you have fast wingers, a 4-3-3 or 3-4-3 can exploit wide areas. Strong central midfielders thrive in a 4-2-3-1 or 3-5-2. A solid defensive team might prefer a 5-3-2 or 4-1-4-1 to remain compact. Modern football often sees formations shift during a match; what starts as a 4-3-3 might become a 4-4-2 when defending and a 3-2-5 when attacking.</p>
+
+      <h2>Use Cases</h2>
+      <p>Football coaches use formation builders for training session planning and pre-match preparation. Fans use them to share their ideal lineups on matchday. Fantasy football players use them to visualize their team selections. Journalists and bloggers use them to illustrate tactical analysis. This tool serves all of these use cases with a clean, shareable output.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function () {
+      var canvas = document.getElementById('pitch-canvas');
+      var ctx = canvas.getContext('2d');
+      var W = 500, H = 700;
+      var PLAYER_RADIUS = 18;
+      var players = [];
+      var dragging = null;
+      var dragOffsetX = 0, dragOffsetY = 0;
+      var editIndex = -1;
+
+      var FORMATIONS = {
+        '4-3-3': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.15, y: 0.75 }, { x: 0.38, y: 0.78 }, { x: 0.62, y: 0.78 }, { x: 0.85, y: 0.75 },
+          { x: 0.25, y: 0.55 }, { x: 0.5, y: 0.58 }, { x: 0.75, y: 0.55 },
+          { x: 0.18, y: 0.3 }, { x: 0.5, y: 0.25 }, { x: 0.82, y: 0.3 }
+        ],
+        '4-4-2': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.15, y: 0.75 }, { x: 0.38, y: 0.78 }, { x: 0.62, y: 0.78 }, { x: 0.85, y: 0.75 },
+          { x: 0.15, y: 0.52 }, { x: 0.38, y: 0.55 }, { x: 0.62, y: 0.55 }, { x: 0.85, y: 0.52 },
+          { x: 0.35, y: 0.28 }, { x: 0.65, y: 0.28 }
+        ],
+        '3-5-2': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.25, y: 0.78 }, { x: 0.5, y: 0.8 }, { x: 0.75, y: 0.78 },
+          { x: 0.1, y: 0.55 }, { x: 0.32, y: 0.58 }, { x: 0.5, y: 0.52 }, { x: 0.68, y: 0.58 }, { x: 0.9, y: 0.55 },
+          { x: 0.35, y: 0.28 }, { x: 0.65, y: 0.28 }
+        ],
+        '4-2-3-1': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.15, y: 0.75 }, { x: 0.38, y: 0.78 }, { x: 0.62, y: 0.78 }, { x: 0.85, y: 0.75 },
+          { x: 0.35, y: 0.58 }, { x: 0.65, y: 0.58 },
+          { x: 0.18, y: 0.4 }, { x: 0.5, y: 0.38 }, { x: 0.82, y: 0.4 },
+          { x: 0.5, y: 0.2 }
+        ],
+        '5-3-2': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.1, y: 0.72 }, { x: 0.3, y: 0.78 }, { x: 0.5, y: 0.8 }, { x: 0.7, y: 0.78 }, { x: 0.9, y: 0.72 },
+          { x: 0.25, y: 0.55 }, { x: 0.5, y: 0.52 }, { x: 0.75, y: 0.55 },
+          { x: 0.35, y: 0.28 }, { x: 0.65, y: 0.28 }
+        ],
+        '3-4-3': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.25, y: 0.78 }, { x: 0.5, y: 0.8 }, { x: 0.75, y: 0.78 },
+          { x: 0.12, y: 0.55 }, { x: 0.38, y: 0.58 }, { x: 0.62, y: 0.58 }, { x: 0.88, y: 0.55 },
+          { x: 0.2, y: 0.3 }, { x: 0.5, y: 0.25 }, { x: 0.8, y: 0.3 }
+        ],
+        '4-1-4-1': [
+          { x: 0.5, y: 0.92 },
+          { x: 0.15, y: 0.75 }, { x: 0.38, y: 0.78 }, { x: 0.62, y: 0.78 }, { x: 0.85, y: 0.75 },
+          { x: 0.5, y: 0.62 },
+          { x: 0.15, y: 0.44 }, { x: 0.38, y: 0.46 }, { x: 0.62, y: 0.46 }, { x: 0.85, y: 0.44 },
+          { x: 0.5, y: 0.22 }
+        ]
+      };
+
+      function initPlayers(formation) {
+        var positions = FORMATIONS[formation];
+        players = positions.map(function (p, i) {
+          return {
+            x: p.x * W,
+            y: p.y * H,
+            name: '',
+            number: i === 0 ? 1 : ''
+          };
+        });
+      }
+
+      function drawPitch() {
+        /* Get computed styles for design token colors */
+        var style = getComputedStyle(document.documentElement);
+        var borderColor = style.getPropertyValue('--border').trim() || '#333';
+        var textColor = style.getPropertyValue('--heading').trim() || '#fff';
+        var accentColor = style.getPropertyValue('--accent').trim() || '#0f0';
+
+        /* Pitch background - using a deep green appropriate for a football pitch */
+        ctx.fillStyle = '#1a6b30';
+        ctx.fillRect(0, 0, W, H);
+
+        /* Field lines */
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 2;
+
+        /* Outer boundary */
+        ctx.strokeRect(20, 20, W - 40, H - 40);
+
+        /* Center line */
+        ctx.beginPath();
+        ctx.moveTo(20, H / 2);
+        ctx.lineTo(W - 20, H / 2);
+        ctx.stroke();
+
+        /* Center circle */
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 60, 0, Math.PI * 2);
+        ctx.stroke();
+
+        /* Center dot */
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        /* Top penalty box */
+        ctx.strokeRect(W / 2 - 100, 20, 200, 100);
+        /* Top goal box */
+        ctx.strokeRect(W / 2 - 50, 20, 100, 40);
+        /* Top penalty arc */
+        ctx.beginPath();
+        ctx.arc(W / 2, 120, 40, 0, Math.PI);
+        ctx.stroke();
+
+        /* Bottom penalty box */
+        ctx.strokeRect(W / 2 - 100, H - 120, 200, 100);
+        /* Bottom goal box */
+        ctx.strokeRect(W / 2 - 50, H - 60, 100, 40);
+        /* Bottom penalty arc */
+        ctx.beginPath();
+        ctx.arc(W / 2, H - 120, 40, Math.PI, Math.PI * 2);
+        ctx.stroke();
+
+        /* Corner arcs */
+        var corners = [[20, 20], [W - 20, 20], [20, H - 20], [W - 20, H - 20]];
+        var startAngles = [0, Math.PI * 0.5, Math.PI * 1.5, Math.PI];
+        for (var i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.arc(corners[i][0], corners[i][1], 10, startAngles[i], startAngles[i] + Math.PI * 0.5);
+          ctx.stroke();
+        }
+
+        /* Draw players */
+        for (var p = 0; p < players.length; p++) {
+          var pl = players[p];
+          /* Shadow */
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.beginPath();
+          ctx.arc(pl.x + 2, pl.y + 2, PLAYER_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Circle */
+          ctx.fillStyle = accentColor;
+          ctx.beginPath();
+          ctx.arc(pl.x, pl.y, PLAYER_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+
+          /* Number or index */
+          ctx.fillStyle = '#000';
+          ctx.font = 'bold 13px Poppins, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          var displayText = pl.number ? String(pl.number) : String(p + 1);
+          ctx.fillText(displayText, pl.x, pl.y);
+
+          /* Name below */
+          if (pl.name) {
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 11px Poppins, sans-serif';
+            ctx.fillText(pl.name, pl.x, pl.y + PLAYER_RADIUS + 12);
+          }
+        }
+      }
+
+      function getPlayerAt(x, y) {
+        for (var i = players.length - 1; i >= 0; i--) {
+          var dx = x - players[i].x;
+          var dy = y - players[i].y;
+          if (dx * dx + dy * dy <= PLAYER_RADIUS * PLAYER_RADIUS * 1.5) {
+            return i;
+          }
+        }
+        return -1;
+      }
+
+      function getCanvasXY(e) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = W / rect.width;
+        var scaleY = H / rect.height;
+        var clientX, clientY;
+        if (e.touches) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+        } else {
+          clientX = e.clientX;
+          clientY = e.clientY;
+        }
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      }
+
+      var clickStart = null;
+
+      canvas.addEventListener('mousedown', function (e) {
+        var pos = getCanvasXY(e);
+        var idx = getPlayerAt(pos.x, pos.y);
+        if (idx >= 0) {
+          dragging = idx;
+          dragOffsetX = pos.x - players[idx].x;
+          dragOffsetY = pos.y - players[idx].y;
+          clickStart = { x: pos.x, y: pos.y, time: Date.now() };
+        }
+      });
+
+      canvas.addEventListener('mousemove', function (e) {
+        if (dragging !== null) {
+          var pos = getCanvasXY(e);
+          players[dragging].x = Math.max(PLAYER_RADIUS, Math.min(W - PLAYER_RADIUS, pos.x - dragOffsetX));
+          players[dragging].y = Math.max(PLAYER_RADIUS, Math.min(H - PLAYER_RADIUS, pos.y - dragOffsetY));
+          drawPitch();
+        }
+      });
+
+      canvas.addEventListener('mouseup', function (e) {
+        if (dragging !== null && clickStart) {
+          var pos = getCanvasXY(e);
+          var dist = Math.sqrt(Math.pow(pos.x - clickStart.x, 2) + Math.pow(pos.y - clickStart.y, 2));
+          var elapsed = Date.now() - clickStart.time;
+          if (dist < 5 && elapsed < 300) {
+            openEditModal(dragging);
+          }
+        }
+        dragging = null;
+        clickStart = null;
+      });
+
+      /* Touch events */
+      canvas.addEventListener('touchstart', function (e) {
+        e.preventDefault();
+        var pos = getCanvasXY(e);
+        var idx = getPlayerAt(pos.x, pos.y);
+        if (idx >= 0) {
+          dragging = idx;
+          dragOffsetX = pos.x - players[idx].x;
+          dragOffsetY = pos.y - players[idx].y;
+          clickStart = { x: pos.x, y: pos.y, time: Date.now() };
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchmove', function (e) {
+        e.preventDefault();
+        if (dragging !== null) {
+          var pos = getCanvasXY(e);
+          players[dragging].x = Math.max(PLAYER_RADIUS, Math.min(W - PLAYER_RADIUS, pos.x - dragOffsetX));
+          players[dragging].y = Math.max(PLAYER_RADIUS, Math.min(H - PLAYER_RADIUS, pos.y - dragOffsetY));
+          drawPitch();
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', function (e) {
+        if (dragging !== null && clickStart) {
+          var elapsed = Date.now() - clickStart.time;
+          if (elapsed < 300) {
+            openEditModal(dragging);
+          }
+        }
+        dragging = null;
+        clickStart = null;
+      });
+
+      function openEditModal(idx) {
+        editIndex = idx;
+        document.getElementById('player-name-input').value = players[idx].name || '';
+        document.getElementById('player-number-input').value = players[idx].number || '';
+        document.getElementById('edit-modal').classList.add('open');
+        document.getElementById('player-name-input').focus();
+      }
+
+      document.getElementById('save-player-btn').addEventListener('click', function () {
+        if (editIndex >= 0) {
+          players[editIndex].name = document.getElementById('player-name-input').value.trim();
+          players[editIndex].number = document.getElementById('player-number-input').value.trim();
+          drawPitch();
+        }
+        document.getElementById('edit-modal').classList.remove('open');
+        editIndex = -1;
+      });
+
+      document.getElementById('cancel-edit-btn').addEventListener('click', function () {
+        document.getElementById('edit-modal').classList.remove('open');
+        editIndex = -1;
+      });
+
+      document.getElementById('edit-modal').addEventListener('click', function (e) {
+        if (e.target === this) {
+          this.classList.remove('open');
+          editIndex = -1;
+        }
+      });
+
+      document.getElementById('formation-select').addEventListener('change', function () {
+        initPlayers(this.value);
+        drawPitch();
+      });
+
+      document.getElementById('download-btn').addEventListener('click', function () {
+        var link = document.createElement('a');
+        link.download = 'my-football-formation.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast('Downloaded!');
+      });
+
+      document.getElementById('reset-btn').addEventListener('click', function () {
+        var sel = document.getElementById('formation-select').value;
+        initPlayers(sel);
+        drawPitch();
+      });
+
+      function showToast(msg) {
+        var toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(function () { toast.classList.remove('show'); }, 2000);
+      }
+
+      /* Init */
+      initPlayers('4-3-3');
+      drawPitch();
+    })();
+
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Football Tools', url: '/football/' },
+      { name: 'Football Formation Builder' }
+    ];
+
+    var FAQS = [
+      { q: 'How do I move players on the pitch?', a: 'Click and drag any player dot to reposition them on the pitch. On mobile, tap and drag to move players. Positions are updated in real-time as you drag.' },
+      { q: 'Can I add player names and numbers?', a: 'Yes. Click (or tap) on any player dot to open the edit panel. Enter the player\'s name and shirt number, then click Save. The name will appear below the player dot on the pitch.' },
+      { q: 'How do I download my formation?', a: 'Click the "Download PNG" button below the pitch. A high-quality PNG image of your formation will be saved to your device. You can then share it on social media or messaging apps.' },
+      { q: 'What formations are available?', a: 'The builder includes 7 formations: 4-3-3, 4-4-2, 3-5-2, 4-2-3-1, 5-3-2, 3-4-3, and 4-1-4-1. Select a formation from the dropdown to automatically position all 11 players.' },
+      { q: 'Can I customize player positions within a formation?', a: 'Absolutely. After selecting a preset formation, drag any player to a custom position. This lets you create hybrid formations or fine-tune positioning based on your tactical ideas.' },
+      { q: 'Is this tool free to use?', a: 'Yes, the Football Formation Builder is completely free. No sign-up required. Build unlimited formations, download images, and share with anyone.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'football/ucl-bracket-predictor', name: 'UCL Bracket Predictor', description: 'Predict the Champions League knockout bracket.' },
+      { slug: 'football/transfer-fee-calculator', name: 'Transfer Fee Calculator', description: 'Estimate a football player market value.' },
+      { slug: 'football/ucl-prize-money-calculator', name: 'UCL Prize Money Calculator', description: 'Calculate Champions League prize money.' },
+      { slug: 'football/ucl-countdown', name: 'UCL Match Countdown', description: 'Live countdown to the next UCL match.' },
+      { slug: 'evergreen/random-number-generator', name: 'Random Number Generator', description: 'Generate random numbers for squad numbers.' },
+      { slug: 'evergreen/tip-calculator', name: 'Tip Calculator', description: 'Calculate tips and split bills.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function () {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'football/football-formation-builder', title: 'Football Formation Builder', description: 'Create custom football formations and lineups on an interactive pitch. Download as PNG.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

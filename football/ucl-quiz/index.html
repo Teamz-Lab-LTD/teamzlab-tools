@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UCL Quiz — Test Your Champions League Knowledge | Teamz Lab Tools</title>
+  <meta name="description" content="Test your Champions League knowledge with 20 multiple-choice questions. Timer per question, instant scoring, and shareable results. Free UCL trivia quiz — play now.">
+  <meta name="keywords" content="champions league quiz, ucl trivia, football quiz questions, ucl knowledge test, champions league trivia">
+  <meta property="og:title" content="UCL Quiz — Test Your Champions League Knowledge | Teamz Lab Tools">
+  <meta property="og:description" content="20 challenging questions about UCL history, records, and legends. How much do you really know about the Champions League?">
+  <meta property="og:url" content="https://tool.teamzlab.com/football/ucl-quiz/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="UCL Quiz | Teamz Lab Tools">
+  <meta name="twitter:description" content="I scored X/20 on the UCL Quiz! Can you beat me? Test your Champions League knowledge.">
+  <link rel="canonical" href="https://tool.teamzlab.com/football/ucl-quiz/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .quiz-container { position: relative; }
+    .quiz-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .quiz-progress { font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; }
+    .quiz-timer { font-size: var(--text-h5); font-weight: 800; color: var(--heading); min-width: 50px; text-align: center; padding: 0.3rem 0.75rem; border: 2px solid var(--border); border-radius: 8px; }
+    .quiz-timer.warning { color: var(--accent); border-color: var(--accent); }
+    .quiz-progress-bar { width: 100%; height: 6px; background: var(--bg); border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; }
+    .quiz-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s ease; }
+    .quiz-question { font-size: var(--text-h4); font-weight: 700; color: var(--heading); margin-bottom: 1.5rem; line-height: 1.4; }
+    .quiz-options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .quiz-option { padding: 1rem 1.25rem; font-size: var(--text-lg); font-family: var(--font); font-weight: 500; color: var(--text); background: var(--bg); border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: border-color 0.2s, background 0.2s; text-align: left; }
+    .quiz-option:hover:not(.disabled) { border-color: var(--heading); }
+    .quiz-option.selected { border-color: var(--heading); background: var(--surface); }
+    .quiz-option.correct { border-color: var(--accent); background: var(--bg); }
+    .quiz-option.correct::after { content: ' \u2714'; color: var(--accent); }
+    .quiz-option.wrong { border-color: var(--text-muted); opacity: 0.6; }
+    .quiz-option.wrong.selected { opacity: 1; text-decoration: line-through; }
+    .quiz-option.disabled { pointer-events: none; }
+    .quiz-next { display: none; margin-top: 1.5rem; text-align: center; }
+    .quiz-next-btn { padding: 0.75rem 2.5rem; font-size: var(--text-md); font-family: var(--font); font-weight: 700; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; }
+    .quiz-next-btn:hover { opacity: 0.85; }
+
+    .quiz-start { text-align: center; padding: 2rem 0; }
+    .quiz-start-title { font-size: var(--text-h3); font-weight: 800; color: var(--heading); margin-bottom: 0.75rem; }
+    .quiz-start-desc { font-size: var(--text-lg); color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+    .quiz-start-btn { padding: 1rem 3rem; font-size: var(--text-lg); font-family: var(--font); font-weight: 700; background: var(--heading); color: var(--bg); border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.2s; }
+    .quiz-start-btn:hover { opacity: 0.85; }
+    .quiz-start-meta { display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; font-size: var(--text-md); color: var(--text-muted); }
+    .quiz-start-meta span { font-weight: 600; color: var(--heading); }
+
+    .quiz-result { text-align: center; padding: 1.5rem 0; animation: fadeIn 0.4s ease; }
+    .quiz-result-score { font-size: 4rem; font-weight: 800; color: var(--accent); line-height: 1; }
+    .quiz-result-max { font-size: var(--text-h4); color: var(--text-muted); font-weight: 600; }
+    .quiz-result-rating { font-size: var(--text-h3); font-weight: 800; color: var(--heading); margin: 1rem 0 0.5rem; }
+    .quiz-result-msg { font-size: var(--text-lg); color: var(--text-muted); margin-bottom: 1.5rem; }
+    .quiz-result-actions { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
+    .quiz-result-btn { padding: 0.6rem 1.5rem; font-size: var(--text-md); font-family: var(--font); font-weight: 600; border-radius: 8px; cursor: pointer; transition: opacity 0.2s, border-color 0.2s; }
+    .quiz-result-btn.primary { background: var(--heading); color: var(--bg); border: none; }
+    .quiz-result-btn.primary:hover { opacity: 0.85; }
+    .quiz-result-btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    .quiz-result-btn.secondary:hover { border-color: var(--heading); color: var(--heading); }
+
+    .quiz-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+    .quiz-stat { text-align: center; }
+    .quiz-stat-num { font-size: var(--text-h4); font-weight: 800; color: var(--heading); }
+    .quiz-stat-label { font-size: var(--text-sm); color: var(--text-muted); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>UCL Quiz — How Much Do You Know?</h1>
+      <p class="tool-description">Test your Champions League knowledge with 20 challenging trivia questions. You have 15 seconds per question. Score high enough and prove you are a true UCL legend. Share your result and challenge your friends.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="quiz-container" id="quiz-container">
+        <div class="quiz-start" id="quiz-start">
+          <div class="quiz-start-title">Champions League Trivia</div>
+          <div class="quiz-start-meta"><div>Questions: <span>20</span></div><div>Time: <span>15s each</span></div></div>
+          <div class="quiz-start-desc">From all-time records to historic finals, this quiz covers the full history of the UEFA Champions League. Think you know it all? Let's find out.</div>
+          <button class="quiz-start-btn" onclick="startQuiz()">Start Quiz</button>
+        </div>
+        <div id="quiz-play" style="display:none;"></div>
+        <div id="quiz-result" style="display:none;"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>About the UCL Quiz</h2>
+      <p>The UEFA Champions League is the most prestigious club football competition in the world. Since its inception as the European Cup in 1955, it has produced countless iconic moments, legendary players, and unforgettable matches. This quiz tests your knowledge across the entire history of the competition.</p>
+      <p>Questions cover a wide range of topics including record holders, historic finals, famous goals, team achievements, and tournament milestones. Whether you have been following the Champions League for decades or are a newer fan, you will find questions that challenge and educate you.</p>
+
+      <h3>How the Scoring Works</h3>
+      <p>You earn one point for each correct answer, giving a maximum score of 20. Your time per question is tracked but does not affect your score — however, unanswered questions when time runs out count as incorrect. At the end, you receive a rating based on your score: Legend (18-20), Expert (14-17), Fan (10-13), Casual (6-9), or Beginner (0-5).</p>
+
+      <h3>Why Football Quizzes Go Viral</h3>
+      <p>Football quizzes are among the most shared content on social media. Fans love to test their knowledge and challenge friends. The competitive element combined with shareable results creates a natural viral loop. Share your score on Twitter, WhatsApp, or any platform to challenge your football-loving friends.</p>
+
+      <h2>Champions League Records to Know</h2>
+      <p>Real Madrid holds the record for most UCL titles with 15. Cristiano Ronaldo is the all-time top scorer with 140 goals. The competition has been won by clubs from Spain, England, Italy, Germany, Netherlands, Portugal, Scotland, Romania, Serbia, and France. The final has been held at iconic venues across Europe, from Wembley to the Santiago Bernabeu.</p>
+
+      <h2>Test Yourself Regularly</h2>
+      <p>Football knowledge grows with every season. As new records are set and new champions crowned, come back to test yourself again. Bookmark this page and challenge yourself after each UCL campaign to see if your knowledge has improved.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var TOOL_CONFIG = { slug: 'football/ucl-quiz', title: 'UCL Quiz', description: 'Test your Champions League knowledge with 20 multiple-choice trivia questions. Timer, scoring, and shareable results.' };
+
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Football Tools', url: '/football/' },
+      { name: 'UCL Quiz' }
+    ];
+
+    var FAQS = [
+      { q: 'How many questions are in the UCL Quiz?', a: 'The quiz contains 20 multiple-choice questions covering UCL history, records, players, teams, and memorable moments. Questions are shuffled each time you play so it feels fresh.' },
+      { q: 'Is there a time limit per question?', a: 'Yes, each question has a 15-second timer. If time runs out before you answer, it counts as incorrect and the quiz moves to the next question automatically.' },
+      { q: 'How is my score rating determined?', a: 'Your rating is based on your score: 18-20 correct = Legend, 14-17 = Expert, 10-13 = Fan, 6-9 = Casual, 0-5 = Beginner. The rating adds a fun competitive element to the quiz.' },
+      { q: 'Can I retake the quiz?', a: 'Absolutely. Click "Play Again" after completing the quiz. Questions are shuffled each time, so the order will be different. Try to beat your previous score!' },
+      { q: 'Are the quiz answers accurate and up to date?', a: 'The questions and answers are based on official UCL records and statistics. We update them periodically to reflect the latest seasons and any new records set during the competition.' },
+      { q: 'Can I share my quiz result?', a: 'Yes! After finishing the quiz, click "Share Score" to copy a shareable message with your score to your clipboard. Paste it on Twitter, WhatsApp, or any social platform to challenge your friends.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'football/player-comparison', name: 'Player Comparison', description: 'Compare football players side by side with visual stat charts.' },
+      { slug: 'football/ucl-group-stage-simulator', name: 'UCL Group Stage Simulator', description: 'Simulate Champions League group stage results and standings.' },
+      { slug: 'football/match-day-cost-calculator', name: 'Match Day Cost Calculator', description: 'Calculate the total cost of attending a football match.' },
+      { slug: 'football/football-emoji-xi', name: 'Football Emoji XI Builder', description: 'Create your dream team lineup with emojis on a virtual pitch.' },
+      { slug: 'evergreen/random-number-generator', name: 'Random Number Generator', description: 'Generate random numbers for decisions and games.' },
+      { slug: 'evergreen/countdown-timer', name: 'Countdown Timer', description: 'Set a countdown timer for any occasion.' }
+    ];
+
+    var QUESTIONS = [
+      { q: "Who has won the most UCL/European Cup titles?", o: ["Real Madrid", "AC Milan", "Liverpool", "Bayern Munich"], a: 0 },
+      { q: "Which player has scored the most goals in UCL history?", o: ["Lionel Messi", "Cristiano Ronaldo", "Robert Lewandowski", "Raul"], a: 1 },
+      { q: "Where was the 2024 UCL Final held?", o: ["Istanbul", "London", "Paris", "Wembley"], a: 3 },
+      { q: "Which team won the first European Cup in 1956?", o: ["Benfica", "Real Madrid", "AC Milan", "Barcelona"], a: 1 },
+      { q: "Who scored the fastest UCL goal (recorded)?", o: ["Roy Makaay", "Alessandro Del Piero", "Usain Bolt", "Marco Simone"], a: 0 },
+      { q: "How many UCL titles has AC Milan won?", o: ["5", "6", "7", "8"], a: 2 },
+      { q: "Which club won the UCL treble in 1999?", o: ["Barcelona", "Bayern Munich", "Manchester United", "Real Madrid"], a: 2 },
+      { q: "Who was the top scorer in the 2022-23 UCL season?", o: ["Erling Haaland", "Kylian Mbappe", "Mohamed Salah", "Vinicius Jr"], a: 0 },
+      { q: "Which English club won the UCL in 2012?", o: ["Manchester City", "Liverpool", "Chelsea", "Tottenham"], a: 2 },
+      { q: "In which year did Liverpool come back from 3-0 down in the UCL Final?", o: ["2003", "2005", "2007", "2009"], a: 1 },
+      { q: "Who holds the record for most UCL appearances?", o: ["Cristiano Ronaldo", "Iker Casillas", "Xavi", "Lionel Messi"], a: 0 },
+      { q: "Which manager has won the most UCL titles?", o: ["Zinedine Zidane", "Bob Paisley", "Carlo Ancelotti", "Pep Guardiola"], a: 2 },
+      { q: "Ajax won three consecutive European Cups in which years?", o: ["1969-1971", "1971-1973", "1973-1975", "1975-1977"], a: 1 },
+      { q: "Which player scored a hat-trick in the 1999 UCL Final?", o: ["Teddy Sheringham", "No one scored a hat-trick", "David Beckham", "Ole Gunnar Solskjaer"], a: 1 },
+      { q: "Who won the UCL in 2023?", o: ["Real Madrid", "Inter Milan", "Manchester City", "Bayern Munich"], a: 2 },
+      { q: "Which country has produced the most UCL-winning clubs?", o: ["England", "Italy", "Germany", "Spain"], a: 3 },
+      { q: "What is the UCL anthem based on?", o: ["A Handel composition", "A Beethoven symphony", "A Mozart opera", "An original composition by Tony Britten"], a: 3 },
+      { q: "Who scored the winning goal in the 2022 UCL Final?", o: ["Karim Benzema", "Vinicius Jr", "Thibaut Courtois", "Luka Modric"], a: 1 },
+      { q: "How many teams participate in the UCL group stage (traditional format)?", o: ["24", "28", "32", "36"], a: 2 },
+      { q: "Which club reached the UCL Final in 2019 for the first time?", o: ["RB Leipzig", "Tottenham Hotspur", "Atalanta", "Villarreal"], a: 1 }
+    ];
+
+    var currentQ = 0, score = 0, timer = null, timeLeft = 15, answers = [], shuffled = [];
+
+    function shuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    function startQuiz() {
+      shuffled = shuffle(QUESTIONS);
+      currentQ = 0; score = 0; answers = [];
+      document.getElementById('quiz-start').style.display = 'none';
+      document.getElementById('quiz-result').style.display = 'none';
+      document.getElementById('quiz-play').style.display = 'block';
+      showQuestion();
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('calculate::ucl-quiz');
+    }
+
+    function showQuestion() {
+      var q = shuffled[currentQ];
+      var html = '<div class="quiz-header"><span class="quiz-progress">Question ' + (currentQ + 1) + ' of 20</span><span class="quiz-timer" id="quiz-timer">15</span></div>';
+      html += '<div class="quiz-progress-bar"><div class="quiz-progress-fill" style="width:' + ((currentQ / 20) * 100) + '%"></div></div>';
+      html += '<div class="quiz-question">' + esc(q.q) + '</div>';
+      html += '<div class="quiz-options">';
+      q.o.forEach(function(opt, i) {
+        html += '<button class="quiz-option" data-idx="' + i + '" onclick="selectAnswer(' + i + ')">' + esc(opt) + '</button>';
+      });
+      html += '</div>';
+      html += '<div class="quiz-next" id="quiz-next"><button class="quiz-next-btn" onclick="nextQuestion()">' + (currentQ < 19 ? 'Next Question' : 'See Results') + '</button></div>';
+      document.getElementById('quiz-play').innerHTML = html;
+      startTimer();
+    }
+
+    function startTimer() {
+      timeLeft = 15;
+      var el = document.getElementById('quiz-timer');
+      if (el) { el.textContent = timeLeft; el.classList.remove('warning'); }
+      clearInterval(timer);
+      timer = setInterval(function() {
+        timeLeft--;
+        var el = document.getElementById('quiz-timer');
+        if (el) {
+          el.textContent = timeLeft;
+          if (timeLeft <= 5) el.classList.add('warning');
+        }
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          timeUp();
+        }
+      }, 1000);
+    }
+
+    function timeUp() {
+      answers.push(-1);
+      var btns = document.querySelectorAll('.quiz-option');
+      btns.forEach(function(b) { b.classList.add('disabled'); });
+      var correct = shuffled[currentQ].a;
+      btns[correct].classList.add('correct');
+      document.getElementById('quiz-next').style.display = 'block';
+    }
+
+    function selectAnswer(idx) {
+      clearInterval(timer);
+      var correct = shuffled[currentQ].a;
+      answers.push(idx);
+      var btns = document.querySelectorAll('.quiz-option');
+      btns.forEach(function(b) { b.classList.add('disabled'); });
+      if (idx === correct) {
+        score++;
+        btns[idx].classList.add('correct');
+      } else {
+        btns[idx].classList.add('wrong', 'selected');
+        btns[correct].classList.add('correct');
+      }
+      document.getElementById('quiz-next').style.display = 'block';
+    }
+
+    function nextQuestion() {
+      currentQ++;
+      if (currentQ >= 20) { showResult(); return; }
+      showQuestion();
+    }
+
+    function showResult() {
+      clearInterval(timer);
+      document.getElementById('quiz-play').style.display = 'none';
+      var rating, msg;
+      if (score >= 18) { rating = 'Legend'; msg = 'Incredible! You know the Champions League inside out.'; }
+      else if (score >= 14) { rating = 'Expert'; msg = 'Impressive knowledge! You clearly follow the UCL closely.'; }
+      else if (score >= 10) { rating = 'Fan'; msg = 'Good effort! You know your way around Champions League history.'; }
+      else if (score >= 6) { rating = 'Casual'; msg = 'Not bad, but there is room to grow. Watch more UCL!'; }
+      else { rating = 'Beginner'; msg = 'Time to start watching the Champions League! There is so much to learn.'; }
+
+      var correctCount = score;
+      var wrongCount = 20 - score;
+      var timedOut = answers.filter(function(a) { return a === -1; }).length;
+
+      var html = '<div class="quiz-result">';
+      html += '<div class="quiz-result-score">' + score + '</div>';
+      html += '<div class="quiz-result-max">out of 20</div>';
+      html += '<div class="quiz-result-rating">' + esc(rating) + '</div>';
+      html += '<div class="quiz-result-msg">' + esc(msg) + '</div>';
+      html += '<div class="quiz-stats"><div class="quiz-stat"><div class="quiz-stat-num">' + correctCount + '</div><div class="quiz-stat-label">Correct</div></div><div class="quiz-stat"><div class="quiz-stat-num">' + wrongCount + '</div><div class="quiz-stat-label">Wrong</div></div><div class="quiz-stat"><div class="quiz-stat-num">' + timedOut + '</div><div class="quiz-stat-label">Timed Out</div></div></div>';
+      html += '<div class="quiz-result-actions"><button class="quiz-result-btn primary" onclick="startQuiz()">Play Again</button><button class="quiz-result-btn secondary" onclick="shareScore()">Share Score</button></div>';
+      html += '</div>';
+
+      document.getElementById('quiz-result').innerHTML = html;
+      document.getElementById('quiz-result').style.display = 'block';
+    }
+
+    function shareScore() {
+      var text = 'I scored ' + score + '/20 on the UCL Quiz! Can you beat me?\n\nTest your Champions League knowledge:\ntool.teamzlab.com/football/ucl-quiz/';
+      navigator.clipboard.writeText(text).then(function() {
+        var btns = document.querySelectorAll('.quiz-result-btn.secondary');
+        if (btns.length) { btns[0].textContent = 'Copied!'; setTimeout(function() { btns[0].textContent = 'Share Score'; }, 2000); }
+      });
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('copy::ucl-quiz');
+    }
+
+    function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

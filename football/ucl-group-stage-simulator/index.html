@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UCL Group Stage Simulator — Simulate Champions League Groups | Teamz Lab Tools</title>
+  <meta name="description" content="Simulate Champions League group stage results. Enter teams, set match scores, and see who qualifies. Auto-calculated standings with points, goal difference, and goals scored. Free UCL simulator.">
+  <meta name="keywords" content="UCL group stage simulator, champions league group simulator, simulate UCL groups, champions league standings calculator">
+  <meta property="og:title" content="UCL Group Stage Simulator — Simulate Champions League Groups | Teamz Lab Tools">
+  <meta property="og:description" content="Set up UCL groups, enter match results, and see who qualifies. Full standings with points, GD, and GS. Free simulator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/football/ucl-group-stage-simulator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="UCL Group Stage Simulator | Teamz Lab Tools">
+  <meta name="twitter:description" content="Simulate Champions League group results and see who qualifies. Free instant simulator.">
+  <link rel="canonical" href="https://tool.teamzlab.com/football/ucl-group-stage-simulator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .gs-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+    .gs-tab { padding: 0.6rem 1.5rem; font-size: var(--text-md); font-family: var(--font); font-weight: 600; color: var(--text-muted); background: none; border: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.2s, border-color 0.2s; }
+    .gs-tab:hover { color: var(--heading); }
+    .gs-tab.active { color: var(--heading); border-bottom-color: var(--accent); }
+
+    .gs-group { display: none; }
+    .gs-group.active { display: block; }
+
+    .gs-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .gs-team-input { padding: 0.6rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; box-sizing: border-box; transition: border-color 0.2s; }
+    .gs-team-input:focus { border-color: var(--heading); }
+
+    .gs-matches-title { font-size: var(--text-h5); font-weight: 700; color: var(--heading); margin-bottom: 1rem; }
+    .gs-match { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .gs-match-team { font-size: var(--text-md); color: var(--text); font-weight: 600; min-width: 80px; }
+    .gs-match-team.home { text-align: right; flex: 1; }
+    .gs-match-team.away { text-align: left; flex: 1; }
+    .gs-match-score { width: 44px; padding: 0.4rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; text-align: center; outline: none; box-sizing: border-box; }
+    .gs-match-score:focus { border-color: var(--heading); }
+    .gs-match-vs { font-size: var(--text-sm); color: var(--text-muted); font-weight: 700; }
+
+    .gs-actions { display: flex; justify-content: center; gap: 0.75rem; margin: 1.5rem 0; flex-wrap: wrap; }
+    .gs-btn { padding: 0.6rem 1.5rem; font-size: var(--text-md); font-family: var(--font); font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; }
+    .gs-btn-primary { background: var(--heading); color: var(--bg); }
+    .gs-btn-primary:hover { opacity: 0.85; }
+    .gs-btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .gs-btn-secondary:hover { border-color: var(--heading); color: var(--heading); }
+
+    .gs-table-wrap { overflow-x: auto; margin-top: 1.5rem; }
+    .gs-table { width: 100%; border-collapse: collapse; font-size: var(--text-md); }
+    .gs-table th { padding: 0.6rem 0.75rem; text-align: left; font-weight: 700; color: var(--heading); border-bottom: 2px solid var(--border); font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 0.05em; }
+    .gs-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .gs-table th:not(:first-child), .gs-table td:not(:first-child) { text-align: center; }
+    .gs-table tr.qualified td { color: var(--heading); font-weight: 600; }
+    .gs-table tr.qualified td:first-child { position: relative; }
+    .gs-table tr.qualified td:first-child::before { content: ''; position: absolute; left: 0; top: 25%; bottom: 25%; width: 3px; background: var(--accent); border-radius: 2px; }
+    .gs-qualify-legend { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; font-size: var(--text-sm); color: var(--text-muted); }
+    .gs-qualify-dot { width: 12px; height: 3px; background: var(--accent); border-radius: 2px; }
+
+    .gs-presets { margin-bottom: 1rem; }
+    .gs-presets-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.5rem; }
+    .gs-preset-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .gs-preset-btn { padding: 0.3rem 0.75rem; font-size: var(--text-sm); font-family: var(--font); font-weight: 500; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+    .gs-preset-btn:hover { border-color: var(--heading); color: var(--heading); }
+
+    @media (max-width: 600px) {
+      .gs-teams { grid-template-columns: 1fr; }
+      .gs-match-team { min-width: 60px; font-size: var(--text-sm); }
+      .gs-tab { padding: 0.5rem 1rem; font-size: var(--text-sm); }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>UCL Group Stage Simulator</h1>
+      <p class="tool-description">Simulate Champions League group stage results. Enter team names or pick from presets, set match scores, and see the auto-calculated standings. Find out who qualifies from each group. Supports 4 groups with random simulation.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="gs-tabs" id="gs-tabs"></div>
+      <div id="gs-groups"></div>
+      <div class="gs-actions">
+        <button class="gs-btn gs-btn-primary" onclick="calculateAll()">Calculate Standings</button>
+        <button class="gs-btn gs-btn-secondary" onclick="randomizeAll()">Randomize Results</button>
+        <button class="gs-btn gs-btn-secondary" onclick="resetAll()">Reset All</button>
+      </div>
+      <div id="gs-tables"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the UCL Group Stage Simulator Works</h2>
+      <p>This simulator lets you set up four Champions League groups (A through D), each containing four teams. You can enter custom team names or select from preset groups based on recent UCL seasons. For each group, there are six matches (each team plays every other team once in this simplified format). Enter the score for each match and click Calculate to see the full standings.</p>
+      <p>Standings are calculated using the standard UEFA point system: 3 points for a win, 1 point for a draw, and 0 for a loss. Teams are ranked by points first, then goal difference, then goals scored. The top two teams in each group qualify for the knockout rounds and are highlighted in the standings table.</p>
+
+      <h3>Using Presets and Random Simulation</h3>
+      <p>If you do not want to type team names, select from preset groups that mirror real UCL configurations. The Randomize button generates plausible random scores for all matches, which is great for quick simulations or "what if" scenarios. You can randomize as many times as you want and tweak individual results afterward.</p>
+
+      <h3>Understanding UCL Group Stage Rules</h3>
+      <p>In the real UCL group stage, each team plays six matches (home and away against each opponent). Our simulator simplifies this to one match per pair for faster and more fun simulations. The core principles remain the same: win to get 3 points, draw for 1, and losing gives nothing. Goal difference is the first tiebreaker after points.</p>
+
+      <h2>Historic UCL Group Stages</h2>
+      <p>Some of the most dramatic UCL moments happen in the group stage. The "Group of Death" is a recurring phenomenon where multiple elite clubs are drawn together, and not all can advance. Famous examples include the 2012-13 group with Real Madrid, Manchester City, Borussia Dortmund, and Ajax. Use this simulator to recreate historic groups or invent your own dream matchups.</p>
+
+      <h2>New UCL Format from 2024-25</h2>
+      <p>Starting from the 2024-25 season, UEFA introduced a new league phase format replacing the traditional group stage. 36 teams now play 8 matches each against different opponents. While this simulator uses the classic 4-team group format that fans love, it remains a great tool for understanding qualification scenarios and practicing football mathematics.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var TOOL_CONFIG = { slug: 'football/ucl-group-stage-simulator', title: 'UCL Group Stage Simulator', description: 'Simulate Champions League group stage results, set match scores, and see auto-calculated standings with qualification status.' };
+
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Football Tools', url: '/football/' },
+      { name: 'UCL Group Stage Simulator' }
+    ];
+
+    var FAQS = [
+      { q: 'How are standings calculated?', a: 'Teams earn 3 points for a win, 1 for a draw, and 0 for a loss. Rankings are determined by points first, then goal difference (goals scored minus goals conceded), then total goals scored. The top 2 teams in each group qualify.' },
+      { q: 'Can I use custom team names?', a: 'Yes, you can type any team name into the input fields. You can also use the preset buttons to quickly fill in teams from well-known UCL group configurations.' },
+      { q: 'What does the Randomize button do?', a: 'It generates random but realistic match scores (0-4 goals per team) for all matches in all groups. This is useful for quick simulations and exploring different scenarios.' },
+      { q: 'Why are there only 6 matches per group instead of 12?', a: 'We simplified the format to one match per team pair (instead of home and away) for a faster, more fun simulation experience. The same point system and tiebreakers apply.' },
+      { q: 'What happens if teams are tied on points and goal difference?', a: 'If teams are tied on both points and goal difference, they are further sorted by goals scored. In the real UCL, head-to-head records and other tiebreakers apply, but this simulator uses the simplified P > GD > GS method.' },
+      { q: 'Can I simulate more than 4 groups?', a: 'Currently the simulator supports 4 groups (A through D), which covers 16 teams. This is enough for exploring different scenarios and understanding how group stage qualification works.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'football/player-comparison', name: 'Player Comparison', description: 'Compare football players side by side with visual stat charts.' },
+      { slug: 'football/ucl-quiz', name: 'UCL Quiz', description: 'Test your Champions League knowledge with 20 trivia questions.' },
+      { slug: 'football/match-day-cost-calculator', name: 'Match Day Cost Calculator', description: 'Calculate the total cost of attending a football match.' },
+      { slug: 'football/football-emoji-xi', name: 'Football Emoji XI Builder', description: 'Create your dream team lineup with emojis.' },
+      { slug: 'evergreen/random-number-generator', name: 'Random Number Generator', description: 'Generate random numbers for decisions.' },
+      { slug: 'evergreen/percentage-increase-calculator', name: 'Percentage Increase Calculator', description: 'Calculate percentage increase between numbers.' }
+    ];
+
+    var PRESETS = {
+      'Classic 1': [['Real Madrid','Liverpool','Napoli','Ajax'],['Bayern Munich','Barcelona','Inter Milan','Plzen'],['Man City','Dortmund','Sevilla','Copenhagen'],['PSG','Juventus','Benfica','Maccabi Haifa']],
+      'Classic 2': [['Chelsea','AC Milan','Salzburg','Dinamo Zagreb'],['Atletico Madrid','Porto','Leverkusen','Club Brugge'],['Tottenham','Marseille','Sporting','Frankfurt'],['Man United','PSG','Leipzig','Galatasaray']],
+      'Dream': [['Real Madrid','Man City','Bayern Munich','PSG'],['Barcelona','Liverpool','Juventus','Ajax'],['Chelsea','Dortmund','AC Milan','Porto'],['Atletico Madrid','Inter Milan','Arsenal','Benfica']]
+    };
+
+    var GROUPS = ['A','B','C','D'];
+    var activeGroup = 0;
+    var groupData = {};
+
+    function init() {
+      GROUPS.forEach(function(g, i) {
+        groupData[g] = { teams: ['Team 1','Team 2','Team 3','Team 4'], matches: [] };
+      });
+      renderTabs();
+      renderAllGroups();
+      showGroup(0);
+    }
+
+    function renderTabs() {
+      var html = '';
+      GROUPS.forEach(function(g, i) {
+        html += '<button class="gs-tab' + (i === 0 ? ' active' : '') + '" data-idx="' + i + '" onclick="showGroup(' + i + ')">Group ' + g + '</button>';
+      });
+      document.getElementById('gs-tabs').innerHTML = html;
+    }
+
+    function showGroup(idx) {
+      activeGroup = idx;
+      document.querySelectorAll('.gs-tab').forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+      document.querySelectorAll('.gs-group').forEach(function(g, i) { g.classList.toggle('active', i === idx); });
+    }
+
+    function renderAllGroups() {
+      var container = document.getElementById('gs-groups');
+      var html = '';
+      GROUPS.forEach(function(g, gi) {
+        html += '<div class="gs-group' + (gi === 0 ? ' active' : '') + '" id="group-' + g + '">';
+        html += '<div class="gs-presets"><div class="gs-presets-label">Quick fill:</div><div class="gs-preset-btns">';
+        Object.keys(PRESETS).forEach(function(name) {
+          html += '<button class="gs-preset-btn" onclick="applyPreset(\'' + name + '\',' + gi + ')">' + esc(name) + '</button>';
+        });
+        html += '</div></div>';
+        html += '<div class="gs-teams">';
+        for (var t = 0; t < 4; t++) {
+          html += '<input class="gs-team-input" id="team-' + g + '-' + t + '" placeholder="Team ' + (t + 1) + '" value="Team ' + (t + 1) + '">';
+        }
+        html += '</div>';
+        html += '<div class="gs-matches-title">Match Results</div>';
+        var matchIdx = 0;
+        for (var a = 0; a < 4; a++) {
+          for (var b = a + 1; b < 4; b++) {
+            html += '<div class="gs-match">';
+            html += '<span class="gs-match-team home" id="ml-' + g + '-' + matchIdx + '-h">Team ' + (a + 1) + '</span>';
+            html += '<input class="gs-match-score" type="number" min="0" max="20" id="ms-' + g + '-' + matchIdx + '-h" placeholder="-">';
+            html += '<span class="gs-match-vs">vs</span>';
+            html += '<input class="gs-match-score" type="number" min="0" max="20" id="ms-' + g + '-' + matchIdx + '-a" placeholder="-">';
+            html += '<span class="gs-match-team away" id="ml-' + g + '-' + matchIdx + '-a">Team ' + (b + 1) + '</span>';
+            html += '</div>';
+            html += '<input type="hidden" id="mi-' + g + '-' + matchIdx + '-h" value="' + a + '">';
+            html += '<input type="hidden" id="mi-' + g + '-' + matchIdx + '-a" value="' + b + '">';
+            matchIdx++;
+          }
+        }
+        html += '</div>';
+      });
+      container.innerHTML = html;
+
+      // Team name sync
+      GROUPS.forEach(function(g) {
+        for (var t = 0; t < 4; t++) {
+          (function(grp, idx) {
+            document.getElementById('team-' + grp + '-' + idx).addEventListener('input', function() { syncTeamNames(grp); });
+          })(g, t);
+        }
+      });
+    }
+
+    function syncTeamNames(g) {
+      var names = [];
+      for (var t = 0; t < 4; t++) { names.push(document.getElementById('team-' + g + '-' + t).value || 'Team ' + (t + 1)); }
+      var matchIdx = 0;
+      for (var a = 0; a < 4; a++) {
+        for (var b = a + 1; b < 4; b++) {
+          document.getElementById('ml-' + g + '-' + matchIdx + '-h').textContent = names[a];
+          document.getElementById('ml-' + g + '-' + matchIdx + '-a').textContent = names[b];
+          matchIdx++;
+        }
+      }
+    }
+
+    function applyPreset(name, gi) {
+      var teams = PRESETS[name][gi];
+      var g = GROUPS[gi];
+      teams.forEach(function(t, i) { document.getElementById('team-' + g + '-' + i).value = t; });
+      syncTeamNames(g);
+    }
+
+    function calculateAll() {
+      var html = '';
+      GROUPS.forEach(function(g) {
+        var names = [];
+        for (var t = 0; t < 4; t++) { names.push(document.getElementById('team-' + g + '-' + t).value || 'Team ' + (t + 1)); }
+        var stats = names.map(function(n) { return { name: n, pts: 0, gf: 0, ga: 0, gd: 0, w: 0, d: 0, l: 0, p: 0 }; });
+
+        var matchIdx = 0;
+        for (var a = 0; a < 4; a++) {
+          for (var b = a + 1; b < 4; b++) {
+            var sh = parseInt(document.getElementById('ms-' + g + '-' + matchIdx + '-h').value);
+            var sa = parseInt(document.getElementById('ms-' + g + '-' + matchIdx + '-a').value);
+            if (!isNaN(sh) && !isNaN(sa)) {
+              stats[a].p++; stats[b].p++;
+              stats[a].gf += sh; stats[a].ga += sa;
+              stats[b].gf += sa; stats[b].ga += sh;
+              if (sh > sa) { stats[a].pts += 3; stats[a].w++; stats[b].l++; }
+              else if (sa > sh) { stats[b].pts += 3; stats[b].w++; stats[a].l++; }
+              else { stats[a].pts += 1; stats[b].pts += 1; stats[a].d++; stats[b].d++; }
+            }
+            matchIdx++;
+          }
+        }
+
+        stats.forEach(function(s) { s.gd = s.gf - s.ga; });
+        stats.sort(function(a, b) { return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf; });
+
+        html += '<div style="margin-bottom:1.5rem;">';
+        html += '<div style="font-size:var(--text-h5);font-weight:700;color:var(--heading);margin-bottom:0.75rem;">Group ' + g + ' Standings</div>';
+        html += '<div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead><tbody>';
+        stats.forEach(function(s, i) {
+          var cls = i < 2 ? ' class="qualified"' : '';
+          html += '<tr' + cls + '><td>' + esc(s.name) + '</td><td>' + s.p + '</td><td>' + s.w + '</td><td>' + s.d + '</td><td>' + s.l + '</td><td>' + s.gf + '</td><td>' + s.ga + '</td><td>' + (s.gd > 0 ? '+' : '') + s.gd + '</td><td><strong>' + s.pts + '</strong></td></tr>';
+        });
+        html += '</tbody></table></div>';
+        html += '<div class="gs-qualify-legend"><span class="gs-qualify-dot"></span> Qualifies for knockout round</div>';
+        html += '</div>';
+      });
+      document.getElementById('gs-tables').innerHTML = html;
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('calculate::ucl-group-simulator');
+    }
+
+    function randomizeAll() {
+      GROUPS.forEach(function(g) {
+        var matchIdx = 0;
+        for (var a = 0; a < 4; a++) {
+          for (var b = a + 1; b < 4; b++) {
+            document.getElementById('ms-' + g + '-' + matchIdx + '-h').value = Math.floor(Math.random() * 5);
+            document.getElementById('ms-' + g + '-' + matchIdx + '-a').value = Math.floor(Math.random() * 5);
+            matchIdx++;
+          }
+        }
+      });
+      calculateAll();
+    }
+
+    function resetAll() {
+      GROUPS.forEach(function(g) {
+        var matchIdx = 0;
+        for (var a = 0; a < 4; a++) {
+          for (var b = a + 1; b < 4; b++) {
+            document.getElementById('ms-' + g + '-' + matchIdx + '-h').value = '';
+            document.getElementById('ms-' + g + '-' + matchIdx + '-a').value = '';
+            matchIdx++;
+          }
+        }
+      });
+      document.getElementById('gs-tables').innerHTML = '';
+    }
+
+    function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      init();
+    });
+  </script>
+</body>
+</html>

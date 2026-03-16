@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Football Emoji XI Builder — Create Your Dream Team with Emojis | Teamz Lab Tools</title>
+  <meta name="description" content="Build your dream football XI using emojis. Pick a formation, assign players and emojis to positions on a virtual pitch. Share your Emoji XI as text or download as PNG. Free and fun.">
+  <meta name="keywords" content="football emoji lineup, emoji xi builder, emoji football team, football formation emoji, dream team emoji">
+  <meta property="og:title" content="Football Emoji XI Builder — Create Your Dream Team with Emojis | Teamz Lab Tools">
+  <meta property="og:description" content="Build your all-time Emoji XI on a virtual pitch. Pick formation, assign emojis and names. Share on Twitter!">
+  <meta property="og:url" content="https://tool.teamzlab.com/football/football-emoji-xi/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Football Emoji XI Builder | Teamz Lab Tools">
+  <meta name="twitter:description" content="Post your all-time Emoji XI! Build your dream team with emojis on a virtual pitch.">
+  <link rel="canonical" href="https://tool.teamzlab.com/football/football-emoji-xi/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .exi-formation { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .exi-formation-label { font-size: var(--text-md); font-weight: 600; color: var(--text); }
+    .exi-formation-select { padding: 0.5rem 1rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; cursor: pointer; }
+    .exi-formation-select:focus { border-color: var(--heading); }
+
+    .exi-pitch { position: relative; width: 100%; max-width: 500px; margin: 0 auto 1.5rem; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; border: 2px solid var(--border); }
+    .exi-pitch-bg { position: absolute; inset: 0; background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 50%, var(--bg) 100%); }
+    .exi-pitch-lines { position: absolute; inset: 0; pointer-events: none; }
+    .exi-pitch-lines::before { content: ''; position: absolute; top: 50%; left: 10%; right: 10%; height: 1px; background: var(--border); }
+    .exi-pitch-lines::after { content: ''; position: absolute; top: 50%; left: 50%; width: 80px; height: 80px; border: 1px solid var(--border); border-radius: 50%; transform: translate(-50%, -50%); }
+    .exi-pitch-box-top { position: absolute; top: 0; left: 25%; width: 50%; height: 15%; border: 1px solid var(--border); border-top: none; }
+    .exi-pitch-box-bottom { position: absolute; bottom: 0; left: 25%; width: 50%; height: 15%; border: 1px solid var(--border); border-bottom: none; }
+
+    .exi-player { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); cursor: pointer; z-index: 2; }
+    .exi-player-emoji { font-size: 2rem; line-height: 1; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--border); border-radius: 50%; transition: border-color 0.2s; }
+    .exi-player:hover .exi-player-emoji { border-color: var(--heading); }
+    .exi-player-name { font-size: 0.6rem; font-weight: 700; color: var(--heading); background: var(--surface); padding: 0.1rem 0.4rem; border-radius: 4px; margin-top: 2px; max-width: 80px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--border); }
+    .exi-player-pos { font-size: 0.5rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .exi-editor { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; z-index: 1000; width: 90%; max-width: 320px; box-shadow: 0 16px 48px rgba(0,0,0,0.3); }
+    .exi-editor.active { display: block; }
+    .exi-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+    .exi-overlay.active { display: block; }
+    .exi-editor-title { font-size: var(--text-h5); font-weight: 700; color: var(--heading); margin-bottom: 1rem; }
+    .exi-editor-field { margin-bottom: 1rem; }
+    .exi-editor-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); display: block; margin-bottom: 0.3rem; }
+    .exi-editor-field input { width: 100%; padding: 0.5rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; box-sizing: border-box; }
+    .exi-editor-field input:focus { border-color: var(--heading); }
+    .exi-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin-top: 0.5rem; max-height: 200px; overflow-y: auto; }
+    .exi-emoji-btn { font-size: 1.5rem; padding: 0.25rem; background: var(--bg); border: 1px solid transparent; border-radius: 6px; cursor: pointer; text-align: center; transition: border-color 0.15s; }
+    .exi-emoji-btn:hover { border-color: var(--heading); }
+    .exi-emoji-btn.selected { border-color: var(--accent); }
+    .exi-editor-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
+    .exi-editor-btn { padding: 0.5rem 1.25rem; font-size: var(--text-sm); font-family: var(--font); font-weight: 600; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; }
+    .exi-editor-save { background: var(--heading); color: var(--bg); border: none; }
+    .exi-editor-save:hover { opacity: 0.85; }
+    .exi-editor-cancel { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .exi-editor-cancel:hover { border-color: var(--heading); color: var(--heading); }
+
+    .exi-actions { display: flex; justify-content: center; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+    .exi-btn { padding: 0.6rem 1.5rem; font-size: var(--text-md); font-family: var(--font); font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; }
+    .exi-btn-primary { background: var(--heading); color: var(--bg); }
+    .exi-btn-primary:hover { opacity: 0.85; }
+    .exi-btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .exi-btn-secondary:hover { border-color: var(--heading); color: var(--heading); }
+
+    .exi-text-result { margin-top: 1.5rem; padding: 1rem; background: var(--bg); border-radius: 8px; font-family: monospace; font-size: var(--text-sm); color: var(--text); white-space: pre-wrap; line-height: 1.6; display: none; }
+
+    .exi-hint { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+
+    @media (max-width: 500px) {
+      .exi-player-emoji { font-size: 1.5rem; width: 36px; height: 36px; }
+      .exi-player-name { font-size: 0.5rem; max-width: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Football Emoji XI Builder</h1>
+      <p class="tool-description">Build your dream football lineup with emojis. Pick a formation, tap each position to assign a player name and emoji, then share your Emoji XI as text or download as a PNG image. Perfect for Twitter and WhatsApp.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="exi-formation">
+        <span class="exi-formation-label">Formation:</span>
+        <select class="exi-formation-select" id="exi-formation" onchange="changeFormation()">
+          <option value="4-3-3">4-3-3</option>
+          <option value="4-4-2">4-4-2</option>
+          <option value="3-5-2">3-5-2</option>
+          <option value="4-2-3-1">4-2-3-1</option>
+          <option value="3-4-3">3-4-3</option>
+          <option value="5-3-2">5-3-2</option>
+        </select>
+      </div>
+      <div class="exi-hint">Tap on any player position to edit name and emoji</div>
+      <div class="exi-pitch" id="exi-pitch">
+        <div class="exi-pitch-bg"></div>
+        <div class="exi-pitch-lines"></div>
+        <div class="exi-pitch-box-top"></div>
+        <div class="exi-pitch-box-bottom"></div>
+      </div>
+      <div class="exi-actions">
+        <button class="exi-btn exi-btn-primary" onclick="copyAsText()">Copy as Text</button>
+        <button class="exi-btn exi-btn-secondary" onclick="downloadPNG()">Download PNG</button>
+        <button class="exi-btn exi-btn-secondary" onclick="resetAll()">Reset</button>
+      </div>
+      <pre class="exi-text-result" id="exi-text-result"></pre>
+    </section>
+
+    <div class="exi-overlay" id="exi-overlay" onclick="closeEditor()"></div>
+    <div class="exi-editor" id="exi-editor">
+      <div class="exi-editor-title" id="exi-editor-title">Edit Player</div>
+      <div class="exi-editor-field">
+        <label>Player Name</label>
+        <input type="text" id="exi-editor-name" placeholder="e.g. Messi" maxlength="20">
+      </div>
+      <div class="exi-editor-field">
+        <label>Emoji (type or pick)</label>
+        <input type="text" id="exi-editor-emoji" placeholder="e.g. \uD83D\uDC10" maxlength="4" style="font-size:1.5rem;text-align:center;">
+        <div class="exi-emoji-grid" id="exi-emoji-grid"></div>
+      </div>
+      <div class="exi-editor-actions">
+        <button class="exi-editor-btn exi-editor-cancel" onclick="closeEditor()">Cancel</button>
+        <button class="exi-editor-btn exi-editor-save" onclick="savePlayer()">Save</button>
+      </div>
+    </div>
+
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Football Emoji XI Builder Works</h2>
+      <p>The Emoji XI Builder lets you create a visual football lineup using emojis and player names. Choose from popular formations like 4-3-3, 4-4-2, 3-5-2, 4-2-3-1, 3-4-3, or 5-3-2. Each position on the pitch is interactive — tap or click on a position to open the editor where you can type a player name and select or type an emoji to represent them.</p>
+      <p>Once you have filled in your dream team, you can copy the result as formatted text (perfect for Twitter posts) or download it as a PNG image. The text format includes formation details and all 11 players with their emojis and positions, making it easy to share and compare with friends.</p>
+
+      <h3>Why Emoji XIs Go Viral</h3>
+      <p>Football fans love debating dream teams, and the emoji format adds a creative twist that makes lineups more engaging and shareable. Posts like "Post your all-time Emoji XI" regularly go viral on Twitter and generate thousands of replies. The visual nature of emojis combined with player names creates instantly recognizable and debatable content.</p>
+
+      <h3>Formation Guide</h3>
+      <p>The 4-3-3 is the most popular formation, used by Barcelona and many modern teams. The 4-4-2 is a classic balanced formation. The 3-5-2 offers extra midfield control with wing-backs. The 4-2-3-1 is widely used in modern football with a double pivot and a number 10. The 3-4-3 is an attacking formation, while the 5-3-2 provides defensive solidity with three center-backs.</p>
+
+      <h2>Emoji Selection Tips</h2>
+      <p>Use animal emojis for nicknames (goat emoji for Messi/Ronaldo debates, bee for a busy midfielder). Country flags work great for international lineups. Sport emojis add context. Creative choices make your XI more fun — there are no wrong answers. The emoji picker includes the most popular choices, but you can also type any emoji directly into the input field.</p>
+
+      <h2>Share Your Emoji XI</h2>
+      <p>After building your team, hit Copy as Text and paste it directly on Twitter, WhatsApp, or any messaging platform. For a more visual share, use the Download PNG option to save an image of your pitch that you can upload as a photo. Challenge your friends to post their own Emoji XI and compare selections.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var TOOL_CONFIG = { slug: 'football/football-emoji-xi', title: 'Football Emoji XI Builder', description: 'Build your dream football lineup with emojis on a virtual pitch. Share as text or download as PNG.' };
+
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Football Tools', url: '/football/' },
+      { name: 'Football Emoji XI Builder' }
+    ];
+
+    var FAQS = [
+      { q: 'How do I assign an emoji to a player?', a: 'Tap or click on any player position on the pitch. A popup editor will appear where you can type a player name and either pick an emoji from the grid or type your own emoji directly into the input field.' },
+      { q: 'Can I use any emoji?', a: 'Yes! The emoji grid shows popular choices, but you can type any emoji directly into the emoji input field. Use your device\'s emoji keyboard for the full range of options.' },
+      { q: 'How do I share my Emoji XI?', a: 'Click "Copy as Text" to copy a formatted text version to your clipboard, perfect for Twitter and messaging apps. Use "Download PNG" to save an image of the pitch layout.' },
+      { q: 'What formations are available?', a: 'The builder supports 4-3-3, 4-4-2, 3-5-2, 4-2-3-1, 3-4-3, and 5-3-2 formations. Select your preferred formation from the dropdown and the pitch positions will update automatically.' },
+      { q: 'Can I change the formation after adding players?', a: 'Yes, changing the formation will rearrange positions on the pitch. Your player names and emojis are preserved when switching formations, though the position labels will update to match the new layout.' },
+      { q: 'What does the Download PNG feature do?', a: 'It renders your complete Emoji XI as a PNG image using HTML Canvas. The image includes the pitch background, all player positions with emojis and names, and the formation label. You can then share the image on any platform.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'football/player-comparison', name: 'Player Comparison', description: 'Compare football players side by side with visual stat charts.' },
+      { slug: 'football/ucl-quiz', name: 'UCL Quiz', description: 'Test your Champions League knowledge with 20 trivia questions.' },
+      { slug: 'football/match-day-cost-calculator', name: 'Match Day Cost Calculator', description: 'Calculate the total cost of attending a football match.' },
+      { slug: 'football/ucl-group-stage-simulator', name: 'UCL Group Stage Simulator', description: 'Simulate Champions League group stage results.' },
+      { slug: 'evergreen/random-number-generator', name: 'Random Number Generator', description: 'Generate random numbers for any purpose.' },
+      { slug: 'evergreen/countdown-timer', name: 'Countdown Timer', description: 'Set a countdown timer for any event.' }
+    ];
+
+    var EMOJIS = ['\uD83D\uDC10','\uD83E\uDD81','\uD83D\uDC1D','\uD83E\uDD85','\uD83D\uDC3A','\uD83D\uDC09','\uD83E\uDD8A','\uD83D\uDC2F','\uD83D\uDC0D','\uD83E\uDD8D','\uD83E\uDD8E','\uD83D\uDC22','\uD83D\uDE80','\u26BD','\uD83C\uDFC6','\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49','\uD83C\uDF1F','\u2B50','\uD83D\uDCA5','\uD83D\uDD25','\u26A1','\uD83C\uDDF7\uD83C\uDDE6','\uD83C\uDDE7\uD83C\uDDF7','\uD83C\uDDEB\uD83C\uDDF7','\uD83C\uDDE9\uD83C\uDDEA','\uD83C\uDDEA\uD83C\uDDF8','\uD83C\uDDEC\uD83C\uDDE7','\uD83C\uDDEE\uD83C\uDDF9','\uD83C\uDDF3\uD83C\uDDF1','\uD83C\uDDF5\uD83C\uDDF9','\uD83C\uDDE7\uD83C\uDDEA','\uD83C\uDDED\uD83C\uDDF7','\uD83C\uDDF5\uD83C\uDDF1','\uD83C\uDDFA\uD83C\uDDF8','\uD83C\uDDF2\uD83C\uDDFD','\uD83C\uDDEF\uD83C\uDDF5','\uD83C\uDDF0\uD83C\uDDF7','\uD83D\uDC51','\uD83C\uDFA9','\uD83E\uDDB8','\uD83E\uDDB9','\uD83D\uDCAA','\uD83C\uDFAF','\uD83D\uDCA8','\uD83C\uDF88'];
+
+    var FORMATIONS = {
+      '4-3-3': {
+        positions: [
+          { x: 50, y: 92, pos: 'GK' },
+          { x: 15, y: 75, pos: 'LB' }, { x: 38, y: 78, pos: 'CB' }, { x: 62, y: 78, pos: 'CB' }, { x: 85, y: 75, pos: 'RB' },
+          { x: 25, y: 52, pos: 'CM' }, { x: 50, y: 55, pos: 'CM' }, { x: 75, y: 52, pos: 'CM' },
+          { x: 15, y: 25, pos: 'LW' }, { x: 50, y: 22, pos: 'ST' }, { x: 85, y: 25, pos: 'RW' }
+        ]
+      },
+      '4-4-2': {
+        positions: [
+          { x: 50, y: 92, pos: 'GK' },
+          { x: 15, y: 75, pos: 'LB' }, { x: 38, y: 78, pos: 'CB' }, { x: 62, y: 78, pos: 'CB' }, { x: 85, y: 75, pos: 'RB' },
+          { x: 12, y: 50, pos: 'LM' }, { x: 38, y: 53, pos: 'CM' }, { x: 62, y: 53, pos: 'CM' }, { x: 88, y: 50, pos: 'RM' },
+          { x: 35, y: 22, pos: 'ST' }, { x: 65, y: 22, pos: 'ST' }
+        ]
+      },
+      '3-5-2': {
+        positions: [
+          { x: 50, y: 92, pos: 'GK' },
+          { x: 25, y: 78, pos: 'CB' }, { x: 50, y: 80, pos: 'CB' }, { x: 75, y: 78, pos: 'CB' },
+          { x: 10, y: 52, pos: 'LWB' }, { x: 35, y: 55, pos: 'CM' }, { x: 50, y: 50, pos: 'CM' }, { x: 65, y: 55, pos: 'CM' }, { x: 90, y: 52, pos: 'RWB' },
+          { x: 35, y: 22, pos: 'ST' }, { x: 65, y: 22, pos: 'ST' }
+        ]
+      },
+      '4-2-3-1': {
+        positions: [
+          { x: 50, y: 92, pos: 'GK' },
+          { x: 15, y: 75, pos: 'LB' }, { x: 38, y: 78, pos: 'CB' }, { x: 62, y: 78, pos: 'CB' }, { x: 85, y: 75, pos: 'RB' },
+          { x: 35, y: 58, pos: 'CDM' }, { x: 65, y: 58, pos: 'CDM' },
+          { x: 15, y: 38, pos: 'LW' }, { x: 50, y: 40, pos: 'CAM' }, { x: 85, y: 38, pos: 'RW' },
+          { x: 50, y: 18, pos: 'ST' }
+        ]
+      },
+      '3-4-3': {
+        positions: [
+          { x: 50, y: 92, pos: 'GK' },
+          { x: 25, y: 78, pos: 'CB' }, { x: 50, y: 80, pos: 'CB' }, { x: 75, y: 78, pos: 'CB' },
+          { x: 12, y: 52, pos: 'LWB' }, { x: 38, y: 55, pos: 'CM' }, { x: 62, y: 55, pos: 'CM' }, { x: 88, y: 52, pos: 'RWB' },
+          { x: 15, y: 25, pos: 'LW' }, { x: 50, y: 22, pos: 'ST' }, { x: 85, y: 25, pos: 'RW' }
+        ]
+      },
+      '5-3-2': {
+        positions: [
+          { x: 50, y: 92, pos: 'GK' },
+          { x: 10, y: 72, pos: 'LWB' }, { x: 30, y: 78, pos: 'CB' }, { x: 50, y: 80, pos: 'CB' }, { x: 70, y: 78, pos: 'CB' }, { x: 90, y: 72, pos: 'RWB' },
+          { x: 25, y: 52, pos: 'CM' }, { x: 50, y: 50, pos: 'CM' }, { x: 75, y: 52, pos: 'CM' },
+          { x: 35, y: 22, pos: 'ST' }, { x: 65, y: 22, pos: 'ST' }
+        ]
+      }
+    };
+
+    var players = [];
+    var editingIdx = -1;
+
+    function initPlayers() {
+      var formation = document.getElementById('exi-formation').value;
+      var posData = FORMATIONS[formation].positions;
+      if (players.length === 0) {
+        players = posData.map(function(p) { return { name: '', emoji: '\u26BD', pos: p.pos, x: p.x, y: p.y }; });
+      } else {
+        posData.forEach(function(p, i) {
+          if (i < players.length) {
+            players[i].pos = p.pos; players[i].x = p.x; players[i].y = p.y;
+          } else {
+            players.push({ name: '', emoji: '\u26BD', pos: p.pos, x: p.x, y: p.y });
+          }
+        });
+        players.length = posData.length;
+      }
+      renderPitch();
+    }
+
+    function renderPitch() {
+      var pitch = document.getElementById('exi-pitch');
+      var existing = pitch.querySelectorAll('.exi-player');
+      existing.forEach(function(e) { e.remove(); });
+
+      players.forEach(function(p, i) {
+        var el = document.createElement('div');
+        el.className = 'exi-player';
+        el.style.left = p.x + '%';
+        el.style.top = p.y + '%';
+        el.innerHTML = '<div class="exi-player-emoji">' + (p.emoji || '\u26BD') + '</div><div class="exi-player-name">' + esc(p.name || p.pos) + '</div><div class="exi-player-pos">' + esc(p.pos) + '</div>';
+        el.addEventListener('click', function() { openEditor(i); });
+        pitch.appendChild(el);
+      });
+    }
+
+    function changeFormation() { initPlayers(); }
+
+    function openEditor(idx) {
+      editingIdx = idx;
+      var p = players[idx];
+      document.getElementById('exi-editor-title').textContent = 'Edit ' + p.pos;
+      document.getElementById('exi-editor-name').value = p.name;
+      document.getElementById('exi-editor-emoji').value = p.emoji || '';
+      document.getElementById('exi-overlay').classList.add('active');
+      document.getElementById('exi-editor').classList.add('active');
+
+      var grid = document.getElementById('exi-emoji-grid');
+      grid.innerHTML = '';
+      EMOJIS.forEach(function(e) {
+        var btn = document.createElement('button');
+        btn.className = 'exi-emoji-btn' + (e === p.emoji ? ' selected' : '');
+        btn.textContent = e;
+        btn.addEventListener('click', function() {
+          document.getElementById('exi-editor-emoji').value = e;
+          grid.querySelectorAll('.exi-emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+        });
+        grid.appendChild(btn);
+      });
+      document.getElementById('exi-editor-name').focus();
+    }
+
+    function closeEditor() {
+      document.getElementById('exi-overlay').classList.remove('active');
+      document.getElementById('exi-editor').classList.remove('active');
+      editingIdx = -1;
+    }
+
+    function savePlayer() {
+      if (editingIdx < 0) return;
+      players[editingIdx].name = document.getElementById('exi-editor-name').value.trim();
+      players[editingIdx].emoji = document.getElementById('exi-editor-emoji').value.trim() || '\u26BD';
+      renderPitch();
+      closeEditor();
+    }
+
+    function copyAsText() {
+      var formation = document.getElementById('exi-formation').value;
+      var text = 'My Emoji XI (' + formation + ')\n\n';
+      players.forEach(function(p) {
+        text += p.emoji + ' ' + (p.name || p.pos) + ' (' + p.pos + ')\n';
+      });
+      text += '\nBuild yours: tool.teamzlab.com/football/football-emoji-xi/';
+
+      navigator.clipboard.writeText(text).then(function() {
+        var resultEl = document.getElementById('exi-text-result');
+        resultEl.textContent = text;
+        resultEl.style.display = 'block';
+      });
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('copy::emoji-xi');
+    }
+
+    function downloadPNG() {
+      var canvas = document.createElement('canvas');
+      var w = 600, h = 800;
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+
+      // Get computed styles for design token colors
+      var cs = getComputedStyle(document.documentElement);
+      var bgColor = cs.getPropertyValue('--bg').trim() || '#0e0e12';
+      var surfaceColor = cs.getPropertyValue('--surface').trim() || '#18181f';
+      var borderColor = cs.getPropertyValue('--border').trim() || '#2a2a35';
+      var headingColor = cs.getPropertyValue('--heading').trim() || '#ffffff';
+      var textMuted = cs.getPropertyValue('--text-muted').trim() || '#8b8b9e';
+
+      // Background gradient
+      var grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, bgColor);
+      grad.addColorStop(0.5, surfaceColor);
+      grad.addColorStop(1, bgColor);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Pitch lines
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(60, h / 2); ctx.lineTo(w - 60, h / 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(w / 2, h / 2, 50, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeRect(w * 0.25, 0, w * 0.5, h * 0.15);
+      ctx.strokeRect(w * 0.25, h * 0.85, w * 0.5, h * 0.15);
+
+      // Formation label
+      var formation = document.getElementById('exi-formation').value;
+      ctx.fillStyle = textMuted;
+      ctx.font = '600 14px Poppins, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Emoji XI  \u2022  ' + formation, w / 2, h - 15);
+
+      // Players
+      ctx.textAlign = 'center';
+      players.forEach(function(p) {
+        var px = (p.x / 100) * w;
+        var py = (p.y / 100) * h;
+
+        // Emoji
+        ctx.font = '28px serif';
+        ctx.fillText(p.emoji || '\u26BD', px, py + 4);
+
+        // Name
+        ctx.fillStyle = headingColor;
+        ctx.font = '700 11px Poppins, sans-serif';
+        ctx.fillText((p.name || p.pos).substring(0, 15), px, py + 26);
+
+        // Pos
+        ctx.fillStyle = textMuted;
+        ctx.font = '600 9px Poppins, sans-serif';
+        ctx.fillText(p.pos, px, py + 38);
+      });
+
+      // Watermark
+      ctx.fillStyle = textMuted;
+      ctx.font = '500 11px Poppins, sans-serif';
+      ctx.fillText('tool.teamzlab.com', w / 2, 20);
+
+      var link = document.createElement('a');
+      link.download = 'emoji-xi-' + formation + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      if (typeof TeamzAnalytics !== 'undefined') TeamzAnalytics.trackClick('download::emoji-xi');
+    }
+
+    function resetAll() {
+      players = [];
+      initPlayers();
+      document.getElementById('exi-text-result').style.display = 'none';
+    }
+
+    function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+
+    // Enter key saves in editor
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && document.getElementById('exi-editor').classList.contains('active')) { savePlayer(); }
+      if (e.key === 'Escape') { closeEditor(); }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      initPlayers();
+    });
+  </script>
+</body>
+</html>
