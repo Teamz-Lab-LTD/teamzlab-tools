@@ -1,7 +1,7 @@
 # CLAUDE.md — Rules for AI Assistants Working on Teamz Lab Tools
 
 ## Project Overview
-- Static site: 600+ browser-based tools at tool.teamzlab.com
+- Static site: 677+ browser-based tools at tool.teamzlab.com
 - Hosted on GitHub Pages, no backend
 - Design system uses CSS custom properties (tokens) — NEVER hardcode colors
 - Privacy-first: everything runs client-side
@@ -169,6 +169,25 @@ Every tool page MUST have:
 ./build-search-index.sh   # Rebuild search after adding/changing tools
 ./build-sitemap.sh        # Rebuild sitemap after adding tools
 ```
+
+## SEO Audit Docs (committed to repo — portable across devices)
+
+All SEO findings are stored in `/docs/seo-audit/` so they travel with the repo:
+
+```
+/docs/seo-audit/seo-audit-2026-03.md       — Full audit: score 72/100, all issues, roadmap
+/docs/seo-audit/hardcoded-colors-list.md    — 76 pages with hardcoded hex colors (batch fix list)
+/docs/seo-audit/google-seo-doc-references.md — Google Search Central URLs cited in audit
+```
+
+**When doing SEO work, read these files first.** They contain:
+- Every critical/high/medium/low issue with exact file paths
+- What's already passing (don't re-audit)
+- What needs Google Search Console access to verify
+- Implementation roadmap (24h / 7d / 30d / 90d)
+- The 76-page hardcoded color fix list organized by category
+
+**After fixing issues, update the audit doc** to reflect current state.
 
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
