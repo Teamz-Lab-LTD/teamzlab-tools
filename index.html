@@ -36,7 +36,7 @@
       <h1>Free Online Calculators &amp; Tools</h1>
       <p>Instant, no-login tools for work transitions, invoicing, and freelancing. Built by <a href="https://teamzlab.com" target="_blank" rel="noopener">Teamz Lab</a>.</p>
       <div style="max-width:500px;margin:1.5rem auto 0;">
-        <input type="text" id="tool-search" class="tool-input" placeholder="Search 294+ tools..." style="text-align:center;font-size:var(--text-lg);">
+        <input type="text" id="tool-search" class="tool-input" placeholder="Search 600+ tools..." style="text-align:center;font-size:var(--text-lg);">
       </div>
       <div id="search-results" style="max-width:600px;margin:1rem auto 0;display:none;"></div>
     </section>
@@ -427,30 +427,16 @@
 
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/search-index.js"></script>
   <script>
     TeamzTools.injectOrganizationSchema();
     TeamzTools.injectWebSiteSchema();
 
-    // Homepage search
+    // Homepage search — uses full search index (600+ tools)
     document.addEventListener('DOMContentLoaded', function () {
       var searchInput = document.getElementById('tool-search');
       var searchResults = document.getElementById('search-results');
       if (!searchInput || !searchResults) return;
-
-      // Build search index from all tool cards on the page
-      var allTools = [];
-      var cards = document.querySelectorAll('.tool-card');
-      cards.forEach(function (card) {
-        var h3 = card.querySelector('h3');
-        var p = card.querySelector('p');
-        if (h3) {
-          allTools.push({
-            title: h3.textContent,
-            desc: p ? p.textContent : '',
-            href: card.getAttribute('href') || ''
-          });
-        }
-      });
 
       searchInput.addEventListener('input', function () {
         var query = searchInput.value.toLowerCase().trim();
@@ -460,10 +446,17 @@
           return;
         }
 
-        var matches = allTools.filter(function (t) {
-          return t.title.toLowerCase().indexOf(query) !== -1 ||
-                 t.desc.toLowerCase().indexOf(query) !== -1;
-        }).slice(0, 10);
+        if (typeof TOOL_SEARCH_INDEX === 'undefined') {
+          searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">Loading search index...</p>';
+          searchResults.style.display = 'block';
+          return;
+        }
+
+        var words = query.split(/\s+/);
+        var matches = TOOL_SEARCH_INDEX.filter(function (t) {
+          var haystack = (t.t + ' ' + t.d).toLowerCase();
+          return words.every(function (w) { return haystack.indexOf(w) !== -1; });
+        }).slice(0, 12);
 
         if (matches.length === 0) {
           searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">No tools found for "' + query + '"</p>';
@@ -473,7 +466,7 @@
 
         var html = '<div class="tools-grid" style="grid-template-columns:1fr;">';
         matches.forEach(function (m) {
-          html += '<a href="' + m.href + '" class="tool-card" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + m.title + '</h3><p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);">' + m.desc.substring(0, 80) + '</p></div></a>';
+          html += '<a href="' + m.h + '" class="tool-card" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + m.t + '</h3><p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);">' + (m.d || '').substring(0, 100) + '</p></div></a>';
         });
         html += '</div>';
         searchResults.innerHTML = html;
