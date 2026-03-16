@@ -348,26 +348,27 @@ var TeamzTools = (function () {
     container.innerHTML = html;
   }
 
-  // --- Star Rating Widget ---
+  // --- Star Rating Widget (Firebase RTDB for cross-user aggregation) ---
+  var RTDB_URL = 'https://teamzlab-tools-default-rtdb.firebaseio.com/ratings';
+
   function _getToolSlug() {
     var path = window.location.pathname.replace(/^\/|\/$/g, '');
     return path || 'home';
   }
 
-  function _getRatingData(slug) {
-    try {
-      var data = JSON.parse(localStorage.getItem('tz_rating_' + slug));
-      return data && data.rating ? data : null;
-    } catch (e) { return null; }
+  function _safeKey(slug) {
+    // Firebase keys can't have . # $ [ ] /
+    return slug.replace(/\//g, '__');
   }
 
-  function _setRatingData(slug, rating) {
+  function _hasUserRated(slug) {
     try {
-      localStorage.setItem('tz_rating_' + slug, JSON.stringify({
-        rating: rating,
-        ts: Date.now()
-      }));
-    } catch (e) {}
+      return localStorage.getItem('tz_rated_' + slug) === '1';
+    } catch (e) { return false; }
+  }
+
+  function _markUserRated(slug) {
+    try { localStorage.setItem('tz_rated_' + slug, '1'); } catch (e) {}
   }
 
   function _sendRatingToGA(slug, rating) {
@@ -382,26 +383,58 @@ var TeamzTools = (function () {
     }
     if (window._fbAnalytics) {
       try {
-        window._fbAnalytics.logEvent('tool_rating', {
-          tool_slug: slug,
-          rating_value: rating
-        });
+        window._fbAnalytics.logEvent('tool_rating', { tool_slug: slug, rating_value: rating });
       } catch (e) {}
     }
   }
 
-  function _injectAggregateRating(rating) {
-    var slug = _getToolSlug();
-    // Find existing WebApplication schema and add aggregateRating
+  function _submitRatingToFirebase(slug, rating, callback) {
+    var key = _safeKey(slug);
+    // First read current totals
+    fetch(RTDB_URL + '/' + key + '.json')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var total = (data && data.total) ? data.total + rating : rating;
+        var count = (data && data.count) ? data.count + 1 : 1;
+        var avg = Math.round((total / count) * 10) / 10;
+        // Write back
+        return fetch(RTDB_URL + '/' + key + '.json', {
+          method: 'PUT',
+          body: JSON.stringify({ total: total, count: count, avg: avg })
+        }).then(function () {
+          if (callback) callback({ avg: avg, count: count });
+        });
+      })
+      .catch(function () {
+        // Firebase not available — degrade silently
+        if (callback) callback(null);
+      });
+  }
+
+  function _fetchRatingFromFirebase(slug, callback) {
+    var key = _safeKey(slug);
+    fetch(RTDB_URL + '/' + key + '.json')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.count && data.avg) {
+          callback({ avg: data.avg, count: data.count });
+        } else {
+          callback(null);
+        }
+      })
+      .catch(function () { callback(null); });
+  }
+
+  function _injectAggregateRating(avg, count) {
     var scripts = document.querySelectorAll('script[type="application/ld+json"]');
     for (var i = 0; i < scripts.length; i++) {
       try {
         var schema = JSON.parse(scripts[i].textContent);
-        if (schema['@type'] === 'WebApplication' && !schema.aggregateRating) {
+        if (schema['@type'] === 'WebApplication') {
           schema.aggregateRating = {
             '@type': 'AggregateRating',
-            'ratingValue': String(rating),
-            'ratingCount': '1',
+            'ratingValue': String(avg),
+            'ratingCount': String(count),
             'bestRating': '5',
             'worstRating': '1'
           };
@@ -412,13 +445,26 @@ var TeamzTools = (function () {
     }
   }
 
+  function _updateStarsUI(starsDiv, label, avg, count, userRated) {
+    var rounded = Math.round(avg);
+    var stars = starsDiv.querySelectorAll('.rating-star');
+    for (var j = 0; j < stars.length; j++) {
+      stars[j].classList.toggle('active', j < rounded);
+      if (userRated) stars[j].disabled = true;
+    }
+    if (userRated) {
+      label.textContent = 'Thanks! ' + avg + '/5 (' + count + ' rating' + (count > 1 ? 's' : '') + ')';
+    } else if (count > 0) {
+      label.textContent = avg + '/5 (' + count + ' rating' + (count > 1 ? 's' : '') + ') — Rate this tool';
+    }
+  }
+
   function renderRating() {
-    // Only render on tool pages (pages with tool-faqs or related-tools)
     var anchor = document.getElementById('tool-faqs') || document.getElementById('related-tools');
     if (!anchor) return;
 
     var slug = _getToolSlug();
-    var existing = _getRatingData(slug);
+    var userRated = _hasUserRated(slug);
 
     // Create container
     var wrapper = document.createElement('div');
@@ -427,60 +473,66 @@ var TeamzTools = (function () {
 
     var label = document.createElement('p');
     label.className = 'rating-label';
-    label.textContent = existing ? 'Thanks for rating!' : 'Rate this tool';
+    label.textContent = userRated ? 'Thanks for rating!' : 'Rate this tool';
 
     var starsDiv = document.createElement('div');
     starsDiv.className = 'rating-stars';
 
     for (var i = 1; i <= 5; i++) {
       var star = document.createElement('button');
-      star.className = 'rating-star' + (existing && i <= existing.rating ? ' active' : '');
+      star.className = 'rating-star';
       star.setAttribute('data-value', i);
       star.setAttribute('aria-label', 'Rate ' + i + ' star' + (i > 1 ? 's' : ''));
       star.innerHTML = '&#9733;';
-      if (existing) {
-        star.disabled = true;
-      }
+      if (userRated) star.disabled = true;
       starsDiv.appendChild(star);
     }
 
     wrapper.appendChild(label);
     wrapper.appendChild(starsDiv);
-
-    // Insert before the anchor
     anchor.parentNode.insertBefore(wrapper, anchor);
 
-    // If already rated, inject aggregateRating schema
-    if (existing) {
-      _injectAggregateRating(existing.rating);
-    }
+    // Fetch aggregate rating from Firebase and update UI + schema
+    _fetchRatingFromFirebase(slug, function (data) {
+      if (data) {
+        _updateStarsUI(starsDiv, label, data.avg, data.count, userRated);
+        _injectAggregateRating(data.avg, data.count);
+      }
+    });
 
-    // Click handler
-    if (!existing) {
+    // Click handler (only if not already rated)
+    if (!userRated) {
       starsDiv.addEventListener('click', function (e) {
         var btn = e.target.closest('.rating-star');
-        if (!btn) return;
+        if (!btn || _hasUserRated(slug)) return;
 
         var value = parseInt(btn.getAttribute('data-value'), 10);
-        _setRatingData(slug, value);
+        _markUserRated(slug);
         _sendRatingToGA(slug, value);
 
-        // Update UI
-        var stars = starsDiv.querySelectorAll('.rating-star');
-        for (var j = 0; j < stars.length; j++) {
-          stars[j].classList.toggle('active', j < value);
-          stars[j].disabled = true;
+        // Disable all stars immediately
+        var allStars = starsDiv.querySelectorAll('.rating-star');
+        for (var j = 0; j < allStars.length; j++) {
+          allStars[j].classList.toggle('active', j < value);
+          allStars[j].disabled = true;
         }
-        label.textContent = 'Thanks for rating!';
+        label.textContent = 'Saving...';
 
-        // Inject schema
-        _injectAggregateRating(value);
+        // Submit to Firebase and update
+        _submitRatingToFirebase(slug, value, function (data) {
+          if (data) {
+            _updateStarsUI(starsDiv, label, data.avg, data.count, true);
+            _injectAggregateRating(data.avg, data.count);
+          } else {
+            label.textContent = 'Thanks for rating!';
+          }
+        });
       });
 
       // Hover effect
       starsDiv.addEventListener('mouseover', function (e) {
         var btn = e.target.closest('.rating-star');
-        if (!btn) return;
+        if (!btn || _hasUserRated(slug)) return;
         var val = parseInt(btn.getAttribute('data-value'), 10);
         var stars = starsDiv.querySelectorAll('.rating-star');
         for (var j = 0; j < stars.length; j++) {
@@ -735,7 +787,8 @@ var TeamzAnalytics = (function () {
     storageBucket: "teamzlab-tools.firebasestorage.app",
     messagingSenderId: "969055848716",
     appId: "1:969055848716:web:b1283be103e3cf334d6129",
-    measurementId: "G-TDGVH91VS8"
+    measurementId: "G-TDGVH91VS8",
+    databaseURL: "https://teamzlab-tools-default-rtdb.firebaseio.com"
   };
   var GA_ID = 'G-TDGVH91VS8';
   var STORAGE_KEY = 'teamztools_analytics';
