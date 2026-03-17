@@ -156,10 +156,13 @@
           <label>টাস্ক সিলেক্ট করুন 😈</label>
           <div class="sc-tasks-grid" id="tasksGrid"></div>
         </div>
-        <div class="sc-field">
-          <label for="customMsg">কাস্টম মেসেজ (ঐচ্ছিক)</label>
-          <textarea id="customMsg" placeholder="যেমন: ছোট ভাই সালামি চাইতে চাইতে পাগল করে দিচ্ছে, এই গানটা গাইলে তবেই টাকা পাবে! 😂"></textarea>
-          <div class="sc-hint">খালি রাখলে ডিফল্ট মেসেজ ব্যবহার হবে</div>
+        <div class="sc-field" id="customMsgField">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <label for="customMsg" style="margin:0">মেসেজ</label>
+            <button type="button" class="quick-name" id="customToggle" onclick="toggleCustomMsg()" style="padding:4px 10px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text-muted);font-size:11px;cursor:pointer;font-family:inherit">নিজে লিখুন ✏️</button>
+          </div>
+          <textarea id="customMsg" placeholder="টাস্ক সিলেক্ট করলে ডিফল্ট মেসেজ দেখাবে" disabled style="opacity:0.6"></textarea>
+          <div class="sc-hint" id="msgHint">উপরে টাস্ক সিলেক্ট করুন — ডিফল্ট মেসেজ সেট হবে</div>
         </div>
         <button class="sc-btn" onclick="createChallenge()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -323,6 +326,33 @@
   ];
 
   var selectedTask = null;
+  var customMsgEnabled = false;
+
+  function toggleCustomMsg() {
+    var ta = document.getElementById('customMsg');
+    var btn = document.getElementById('customToggle');
+    customMsgEnabled = !customMsgEnabled;
+    if (customMsgEnabled) {
+      ta.disabled = false;
+      ta.style.opacity = '1';
+      ta.value = '';
+      ta.placeholder = 'আপনার নিজের মেসেজ লিখুন...';
+      ta.focus();
+      btn.textContent = 'ডিফল্ট ব্যবহার করুন ↩️';
+      document.getElementById('msgHint').textContent = 'আপনার নিজের মেসেজ লিখুন';
+    } else {
+      ta.disabled = true;
+      ta.style.opacity = '0.6';
+      if (selectedTask) {
+        ta.value = selectedTask.task;
+        document.getElementById('msgHint').textContent = 'ডিফল্ট মেসেজ সেট হয়েছে';
+      } else {
+        ta.value = '';
+        document.getElementById('msgHint').textContent = 'উপরে টাস্ক সিলেক্ট করুন';
+      }
+      btn.textContent = 'নিজে লিখুন ✏️';
+    }
+  }
 
   // Render task grid
   (function() {
@@ -336,6 +366,14 @@
         document.querySelectorAll('.sc-task-card').forEach(function(c){c.classList.remove('active')});
         card.classList.add('active');
         selectedTask = t;
+        // Fill textarea with default task message and lock it
+        var ta = document.getElementById('customMsg');
+        if (!customMsgEnabled) {
+          ta.value = t.task;
+          ta.disabled = true;
+          ta.style.opacity = '0.6';
+          document.getElementById('msgHint').textContent = 'ডিফল্ট মেসেজ সেট হয়েছে — চাইলে "নিজে লিখুন" চাপুন';
+        }
       };
       grid.appendChild(card);
     });
@@ -361,7 +399,7 @@
       r: receiver,
       a: amount,
       t: selectedTask.id,
-      m: msg || selectedTask.challenge
+      m: msg || selectedTask.task
     };
     // URL-safe base64: replace + with -, / with _, strip trailing =
     var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))))
