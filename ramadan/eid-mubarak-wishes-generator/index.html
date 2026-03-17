@@ -211,6 +211,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             Generate Wishes
           </button>
+          <button class="eid-btn-sm" id="btnShareLink" style="grid-column: 1 / -1; justify-content: center; padding: 10px 20px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Share Link</button>
         </div>
       </div>
 
@@ -318,8 +319,44 @@
     var bl = (navigator.language||'').substring(0,2).toLowerCase();
     if (['ar','ur','bn','hi','ms','tr','id'].indexOf(bl) !== -1) document.getElementById('language').value = bl;
 
-    // Auto-generate on load
-    generate();
+    // === SHARE LINK SUPPORT ===
+    var shared = TeamzTools.shareDecode();
+    if (TeamzTools.isSharedView() && (shared.name || shared.tone || shared.lang)) {
+      if (shared.name) document.getElementById('recipientName').value = shared.name;
+      if (shared.tone) {
+        document.querySelectorAll('.style-card').forEach(function(s) {
+          s.classList.remove('active');
+          if (s.getAttribute('data-style') === shared.tone) { s.classList.add('active'); selectedStyle = shared.tone; }
+        });
+      }
+      if (shared.lang && document.getElementById('language').querySelector('option[value="' + shared.lang + '"]')) {
+        document.getElementById('language').value = shared.lang;
+      }
+      if (shared.style) {
+        document.querySelectorAll('.chip').forEach(function(c) {
+          c.classList.remove('active');
+          if (c.getAttribute('data-eid') === shared.style) { c.classList.add('active'); selectedEid = shared.style; }
+        });
+      }
+      generate();
+      TeamzTools.showSharedBanner('Someone sent you an Eid Mubarak wish!');
+    } else {
+      // Auto-generate on load
+      generate();
+    }
+
+    document.getElementById('btnShareLink').addEventListener('click', function() {
+      TeamzTools.copyShareLink({
+        name: document.getElementById('recipientName').value,
+        tone: selectedStyle,
+        lang: document.getElementById('language').value,
+        style: selectedEid
+      }, function(msg) {
+        var b = document.getElementById('btnShareLink');
+        b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+        setTimeout(function() { b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Share Link'; }, 2000);
+      });
+    });
   });
 
   /* ===== STATE ===== */
