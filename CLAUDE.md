@@ -277,6 +277,13 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 
 **Read this doc before suggesting new tools or strategy changes.**
 
+### Rule 11: NEVER set percentage/em line-height on headings
+- `base.css` has a global reset: `h1,h2,h3,h4,h5,h6 { line-height:1.3; }` — DO NOT remove this
+- NEVER use `line-height: var(--lh)` (140%) or any percentage/em value on headings
+- **Why:** Percentage `line-height` on a parent (e.g. `line-height: 140%` on body at 18px = 25.2px) gets inherited as a COMPUTED pixel value. A child `h2` at 28px font-size would get only 25.2px line-height, causing multi-line headings to overlap
+- If you need a custom heading line-height, ALWAYS use a unitless value (e.g. `line-height: 1.2`)
+- The base reset ensures ALL headings get proper line-height automatically — no need to add it per-rule
+
 ### Rule 10: EVERY tool MUST be mobile-responsive
 - ALWAYS include `@media (max-width: 600px)` with these overrides:
   - All `h2` inside tool sections: `font-size: var(--text-lg)` (NOT default xl/2xl)
@@ -301,3 +308,4 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 7. Making Chrome-AI-only tools without fallbacks
 8. Adding max-height to result containers
 9. NOT making tools mobile-responsive (see Rule 10)
+10. Using percentage/em `line-height` on headings (causes overlapping text — see Rule 11)
