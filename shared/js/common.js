@@ -1144,6 +1144,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   TeamzAnalytics.init();
 
+  // AdSense: Load ad integration script
+  (function loadAdSense() {
+    var s = document.createElement('script');
+    s.src = '/shared/js/adsense.js';
+    s.async = true;
+    document.body.appendChild(s);
+  })();
+
   // PWA: Inject manifest, favicon, and apple-touch-icon into every page
   (function injectPWA() {
     var head = document.head;
