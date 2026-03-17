@@ -728,45 +728,87 @@ var TeamzTranslate = (function () {
 
   var AUTO_DETECT_KEY = 'teamztools_lang_autodetected';
 
+  // Country → Language mapping (for IP-based detection)
+  var COUNTRY_LANG = {
+    BD:'bn', IN:'hi', PK:'ur', SA:'ar', AE:'ar', EG:'ar', MA:'ar', QA:'ar',
+    KW:'ar', BH:'ar', OM:'ar', JO:'ar', IQ:'ar', LB:'ar', LY:'ar', SD:'ar',
+    YE:'ar', SY:'ar', TN:'ar', DZ:'ar', PS:'ar',
+    DE:'de', AT:'de', CH:'de',
+    FR:'fr', BE:'fr', SN:'fr', CI:'fr', CM:'fr', CD:'fr',
+    JP:'ja', KR:'ko', CN:'zh', TW:'zh', HK:'zh',
+    TH:'th', VN:'vi', ID:'id', MY:'ms', PH:'tl',
+    TR:'tr', RU:'ru', UA:'uk', PL:'pl', CZ:'cs', RO:'ro', HU:'hu', GR:'el',
+    SE:'sv', NO:'no', FI:'fi', DK:'da', NL:'nl',
+    PT:'pt', BR:'pt', ES:'es', MX:'es', AR:'es', CO:'es', PE:'es', CL:'es',
+    IT:'it', GH:'en', KE:'sw', TZ:'sw', NG:'ha', ET:'am', ZA:'af',
+    NP:'ne', LK:'si', MM:'my', KH:'km', LA:'lo',
+    GE:'ka', AM:'hy', AZ:'az', UZ:'uz', KZ:'kk',
+    IR:'fa', AF:'ps', IL:'he'
+  };
+
   function init() {
     var urlLang = new URLSearchParams(location.search).get('lang');
     var storedLang = localStorage.getItem(LANG_KEY);
 
-    // Auto-detect browser language on FIRST visit (no stored preference)
-    var detectedLang = null;
-    if (!urlLang && !storedLang) {
-      detectedLang = _detectBrowserLang();
-      if (detectedLang && detectedLang !== 'en') {
-        currentLang = detectedLang;
-        localStorage.setItem(LANG_KEY, detectedLang);
-        localStorage.setItem(AUTO_DETECT_KEY, '1');
-      } else {
-        currentLang = 'en';
-      }
-    } else {
+    // If user already has a preference, use it
+    if (urlLang || storedLang) {
       currentLang = _normalize(urlLang || storedLang || 'en');
+      _renderDropdown();
+      _bindEvents();
+      _updateDisplay();
+      if (currentLang !== 'en') _applyLang(currentLang);
+      return;
     }
 
+    // FIRST VISIT: No stored preference — auto-detect
+    currentLang = 'en';
     _renderDropdown();
     _bindEvents();
     _updateDisplay();
 
-    if (currentLang !== 'en') {
-      _applyLang(currentLang);
-      // Show auto-detect banner on first auto-detection
-      if (detectedLang && detectedLang !== 'en') {
-        _showAutoDetectBanner(detectedLang);
-      }
+    // Layer 1: Browser language (instant)
+    var browserLang = _detectBrowserLang();
+    if (browserLang && browserLang !== 'en') {
+      _applyDetected(browserLang);
+      return;
     }
+
+    // Layer 2: IP-based country detection (async, more accurate)
+    // Catches cases like browser=en but user is in Bangladesh
+    _detectByIP();
   }
 
   function _detectBrowserLang() {
     var browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
-    // Try exact match first (e.g. "bn-BD" → "bn")
     var short = browserLang.split('-')[0];
     if (LANGUAGES[short] && short !== 'en') return short;
-    // Try region-based mapping (e.g. "en-BD" → still English, don't override)
     return null;
+  }
+
+  function _detectByIP() {
+    // Use free Cloudflare trace (no API key needed, very fast)
+    fetch('https://www.cloudflare.com/cdn-cgi/trace')
+      .then(function(r) { return r.text(); })
+      .then(function(text) {
+        var match = text.match(/loc=([A-Z]{2})/);
+        if (!match) return;
+        var country = match[1];
+        var lang = COUNTRY_LANG[country];
+        if (lang && lang !== 'en' && LANGUAGES[lang]) {
+          _applyDetected(lang, country);
+        }
+      })
+      .catch(function() { /* silently fail — user stays in English */ });
+  }
+
+  function _applyDetected(lang, country) {
+    currentLang = lang;
+    localStorage.setItem(LANG_KEY, lang);
+    localStorage.setItem(AUTO_DETECT_KEY, '1');
+    if (country) localStorage.setItem('tz_detected_country', country);
+    _updateDisplay();
+    _applyLang(lang);
+    _showAutoDetectBanner(lang);
   }
 
   function _showAutoDetectBanner(lang) {

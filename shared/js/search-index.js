@@ -872,7 +872,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'US Tax &amp; Finance Tools',d:'Free US tax and finance calculators for 2026. Trump Account, child tax credit, tip deduction, senior deduction, 401(k) paycheck, and more. Private.',h:'/us/'},
   {t:'March Madness Pool Calculator',d:'Calculate your March Madness bracket pool payouts. Enter entry fee, participants, and scoring format. Free NCAA tournament pool payout calculator. Pri',h:'/us/march-madness-pool-calculator/'},
   {t:'Senior Tax Deduction Calculator 2026',d:'Calculate your 2026 senior tax deduction. Taxpayers 65+ can deduct up to $6,000 (single) or $12,000 (married). Free calculator with phase-out. Private',h:'/us/senior-tax-deduction-calculator/'},
-  {t:'US Tariff Calculator 2026',d:'Calculate US import tariff costs instantly. Enter product value, category, and origin country to see tariff rate, duty amount, and total landed cost. ',h:'/us/tariff-calculator/'},
+  {t:'US Tariff Calculator 2026',d:'Calculate US import tariff costs instantly. Enter product value, category, and origin country to see duty amount and total landed cost. Free.',h:'/us/tariff-calculator/'},
   {t:'Tip Tax Deduction Calculator 2026',d:'Calculate your 2026 tip income tax deduction under the new OBBB law. Deduct up to $25,000 in qualified tips. Free tip tax savings calculator. Private.',h:'/us/tip-tax-deduction-calculator/'},
   {t:'Trump Account Calculator (530A)',d:'Calculate how much your child\'s Trump Account (530A) could grow. Free calculator with $1,000 government seed and $5,000 annual limit. Private.',h:'/us/trump-account-calculator/'},
   {t:'Video & YouTube Tools',d:'Free video tools — YouTube thumbnail downloader, timestamp link maker, watch speed calculator, playlist duration, and SRT subtitle formatter.',h:'/video/'},
