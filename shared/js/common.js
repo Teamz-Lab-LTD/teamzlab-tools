@@ -635,20 +635,55 @@ var TeamzTools = (function () {
      */
     copyShareLink: function(data, toastFn) {
       var url = this.shareEncode(data);
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(function() {
-          if (toastFn) toastFn('Share link copied!');
+      var notify = toastFn || function() {};
+
+      // Try Web Share API first (best on mobile)
+      if (navigator.share) {
+        navigator.share({
+          title: 'Eid Salami — Teamz Lab Tools',
+          text: 'Check out this Eid Salami!',
+          url: url
+        }).then(function() {
+          notify('Shared!');
+        }).catch(function() {
+          // User cancelled or share failed — fallback to copy
+          fallbackCopy(url, notify);
         });
-      } else {
-        var ta = document.createElement('textarea');
-        ta.value = url;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        if (toastFn) toastFn('Share link copied!');
+        return url;
       }
+
+      fallbackCopy(url, notify);
       return url;
+
+      function fallbackCopy(u, cb) {
+        // Try clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(u).then(function() {
+            cb('Share link copied!');
+          }).catch(function() {
+            textareaCopy(u, cb);
+          });
+        } else {
+          textareaCopy(u, cb);
+        }
+      }
+
+      function textareaCopy(u, cb) {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = u;
+          ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          cb('Share link copied!');
+        } catch(e) {
+          // Last resort — show URL in prompt
+          window.prompt('Copy this link:', u);
+        }
+      }
     },
 
     /**
