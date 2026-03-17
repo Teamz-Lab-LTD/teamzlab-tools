@@ -1541,4 +1541,80 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
   })();
+
+  // ─── COPY IMAGE BUTTON — auto-inject on any page with canvas download ───
+  (function initCopyImageButtons() {
+    // Find all download buttons that download canvas images
+    // Convention: any button with id containing 'download' or 'Download' near a canvas
+    var canvases = document.querySelectorAll('canvas');
+    if (!canvases.length) return;
+    if (!navigator.clipboard || !navigator.clipboard.write) return;
+
+    // Also expose a global helper that tool scripts can call
+    window.TeamzCopyImage = function(canvasEl, toastFn) {
+      if (!canvasEl) return;
+      canvasEl.toBlob(function(blob) {
+        if (!blob) { if (toastFn) toastFn('Copy failed'); return; }
+        try {
+          var item = new ClipboardItem({ 'image/png': blob });
+          navigator.clipboard.write([item]).then(function() {
+            if (toastFn) toastFn('Image copied to clipboard!');
+          }).catch(function() {
+            if (toastFn) toastFn('Copy not supported — please download instead');
+          });
+        } catch(e) {
+          if (toastFn) toastFn('Copy not supported — please download instead');
+        }
+      }, 'image/png');
+    };
+
+    // Auto-inject: find .card-actions or button groups with download buttons
+    // and add a Copy Image button if one doesn't already exist
+    var downloadBtns = document.querySelectorAll('[id*="ownload"], [id*="btnDownload"], [id*="downloadPreview"]');
+    downloadBtns.forEach(function(dlBtn) {
+      // Skip if a copy button already exists nearby
+      var parent = dlBtn.parentElement;
+      if (!parent) return;
+      if (parent.querySelector('[id*="opyImg"], [id*="opy"], [id*="btnCopy"]')) return;
+      if (parent.querySelector('[id*="copyImg"], [id*="CopyImg"]')) return;
+
+      // Find the nearest canvas
+      var canvas = document.querySelector('canvas');
+      if (!canvas) return;
+
+      // Create copy button matching the style of nearby secondary buttons
+      var copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy Image';
+      copyBtn.id = 'teamz-copy-img-' + Math.random().toString(36).substr(2, 5);
+
+      // Match the class of the download button or sibling secondary button
+      var sibling = parent.querySelector('.btn-secondary, .tool-btn--secondary');
+      if (sibling) {
+        copyBtn.className = sibling.className;
+      } else {
+        copyBtn.className = dlBtn.className;
+      }
+
+      // Insert after download button
+      if (dlBtn.nextSibling) {
+        parent.insertBefore(copyBtn, dlBtn.nextSibling);
+      } else {
+        parent.appendChild(copyBtn);
+      }
+
+      copyBtn.addEventListener('click', function() {
+        var toastFn = window.showToast || function(msg) {
+          var t = document.getElementById('toast');
+          if (t) {
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 2200);
+          } else {
+            alert(msg);
+          }
+        };
+        window.TeamzCopyImage(canvas, toastFn);
+      });
+    });
+  })();
 });
