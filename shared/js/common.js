@@ -1386,9 +1386,159 @@ document.addEventListener('DOMContentLoaded', function () {
       apple.href = '/apple-touch-icon.png';
       head.appendChild(apple);
     }
+    // iOS PWA meta tags
+    if (!head.querySelector('meta[name="apple-mobile-web-app-capable"]')) {
+      var m1 = document.createElement('meta');
+      m1.name = 'apple-mobile-web-app-capable';
+      m1.content = 'yes';
+      head.appendChild(m1);
+      var m2 = document.createElement('meta');
+      m2.name = 'apple-mobile-web-app-status-bar-style';
+      m2.content = 'black-translucent';
+      head.appendChild(m2);
+      var m3 = document.createElement('meta');
+      m3.name = 'apple-mobile-web-app-title';
+      m3.content = 'Teamz Tools';
+      head.appendChild(m3);
+    }
     // Register service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(function () {});
+      navigator.serviceWorker.register('/sw.js').then(function (reg) {
+        // Tell SW to cache the current page for offline use
+        if (reg.active) {
+          reg.active.postMessage({ type: 'CACHE_PAGE', url: window.location.href });
+        }
+      }).catch(function () {});
+    }
+  })();
+
+  // ─── INSTALL AS APP BUTTON ───
+  (function initInstallButton() {
+    // Only show on tool pages
+    var path = window.location.pathname.replace(/^\/|\/$/g, '');
+    if (!path || path.split('/').length < 2) return;
+    var calc = document.querySelector('.tool-calculator');
+    if (!calc) return;
+
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    // Don't show if already installed
+    if (isStandalone) return;
+
+    var deferredPrompt = null;
+
+    // Listen for Chrome/Edge install prompt
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      showInstallButton();
+    });
+
+    // On iOS, always show (since there's no beforeinstallprompt)
+    if (isIOS) {
+      showInstallButton();
+    }
+
+    function showInstallButton() {
+      // Find the ad-slot after calculator to place the button near results
+      var adSlot = calc.nextElementSibling;
+      if (!adSlot) adSlot = calc.parentNode;
+
+      var btn = document.createElement('div');
+      btn.className = 'pwa-install-banner';
+      btn.innerHTML =
+        '<div class="pwa-install-banner__icon">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        '</div>' +
+        '<div class="pwa-install-banner__text">' +
+          '<strong>Use this tool offline</strong>' +
+          '<span>Install as an app — no download needed, works without internet</span>' +
+        '</div>' +
+        '<button class="pwa-install-banner__btn" id="pwa-install-btn">' +
+          (isIOS ? 'How to Install' : 'Install App') +
+        '</button>' +
+        '<button class="pwa-install-banner__close" id="pwa-install-close" aria-label="Close">&times;</button>';
+
+      // Insert after the ad slot (between calculator and content)
+      if (adSlot && adSlot.nextElementSibling) {
+        adSlot.parentNode.insertBefore(btn, adSlot.nextElementSibling);
+      } else {
+        calc.parentNode.insertBefore(btn, calc.nextElementSibling);
+      }
+
+      // Check if user dismissed before
+      try {
+        if (localStorage.getItem('tz_pwa_dismissed')) {
+          btn.style.display = 'none';
+          return;
+        }
+      } catch (e) {}
+
+      // Install button click
+      var installBtn = document.getElementById('pwa-install-btn');
+      if (installBtn) {
+        installBtn.addEventListener('click', function () {
+          if (isIOS) {
+            showIOSInstructions();
+          } else if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function (choiceResult) {
+              if (choiceResult.outcome === 'accepted') {
+                btn.style.display = 'none';
+                if (typeof TeamzAnalytics !== 'undefined') {
+                  TeamzAnalytics.trackClick('pwa-install::accepted');
+                }
+              }
+              deferredPrompt = null;
+            });
+          }
+        });
+      }
+
+      // Close button
+      var closeBtn = document.getElementById('pwa-install-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+          btn.style.display = 'none';
+          try { localStorage.setItem('tz_pwa_dismissed', '1'); } catch (e) {}
+        });
+      }
+    }
+
+    function showIOSInstructions() {
+      var overlay = document.createElement('div');
+      overlay.className = 'pwa-ios-modal';
+      overlay.innerHTML =
+        '<div class="pwa-ios-modal__content">' +
+          '<button class="pwa-ios-modal__close" aria-label="Close">&times;</button>' +
+          '<h3>Install on iPhone / iPad</h3>' +
+          '<div class="pwa-ios-steps">' +
+            '<div class="pwa-ios-step">' +
+              '<div class="pwa-ios-step__num">1</div>' +
+              '<div class="pwa-ios-step__text">Tap the <strong>Share</strong> button <span style="font-size:1.2em">&#x2191;</span> at the bottom of Safari</div>' +
+            '</div>' +
+            '<div class="pwa-ios-step">' +
+              '<div class="pwa-ios-step__num">2</div>' +
+              '<div class="pwa-ios-step__text">Scroll down and tap <strong>"Add to Home Screen"</strong></div>' +
+            '</div>' +
+            '<div class="pwa-ios-step">' +
+              '<div class="pwa-ios-step__num">3</div>' +
+              '<div class="pwa-ios-step__text">Tap <strong>"Add"</strong> — the app icon will appear on your home screen</div>' +
+            '</div>' +
+          '</div>' +
+          '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">The app works offline and your data stays on your device.</p>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay || e.target.classList.contains('pwa-ios-modal__close')) {
+          overlay.remove();
+        }
+      });
+      overlay.querySelector('.pwa-ios-modal__close').addEventListener('click', function () {
+        overlay.remove();
+      });
     }
   })();
 });
