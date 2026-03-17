@@ -726,102 +726,87 @@ var TeamzTranslate = (function () {
     he: 'עברית', fa: 'فارسی'
   };
 
-  var AUTO_DETECT_KEY = 'teamztools_lang_autodetected';
-
-  // Country → Language mapping (for IP-based detection)
-  var COUNTRY_LANG = {
-    BD:'bn', IN:'hi', PK:'ur', SA:'ar', AE:'ar', EG:'ar', MA:'ar', QA:'ar',
-    KW:'ar', BH:'ar', OM:'ar', JO:'ar', IQ:'ar', LB:'ar', LY:'ar', SD:'ar',
-    YE:'ar', SY:'ar', TN:'ar', DZ:'ar', PS:'ar',
-    DE:'de', AT:'de', CH:'de',
-    FR:'fr', BE:'fr', SN:'fr', CI:'fr', CM:'fr', CD:'fr',
-    JP:'ja', KR:'ko', CN:'zh', TW:'zh', HK:'zh',
-    TH:'th', VN:'vi', ID:'id', MY:'ms', PH:'tl',
-    TR:'tr', RU:'ru', UA:'uk', PL:'pl', CZ:'cs', RO:'ro', HU:'hu', GR:'el',
-    SE:'sv', NO:'no', FI:'fi', DK:'da', NL:'nl',
-    PT:'pt', BR:'pt', ES:'es', MX:'es', AR:'es', CO:'es', PE:'es', CL:'es',
-    IT:'it', GH:'en', KE:'sw', TZ:'sw', NG:'ha', ET:'am', ZA:'af',
-    NP:'ne', LK:'si', MM:'my', KH:'km', LA:'lo',
-    GE:'ka', AM:'hy', AZ:'az', UZ:'uz', KZ:'kk',
-    IR:'fa', AF:'ps', IL:'he'
+  // Country → local hub mapping (only countries that have dedicated hub pages)
+  var COUNTRY_HUB = {
+    BD:{hub:'/bd/',flag:'🇧🇩',name:'Bangladesh Tools',native:'বাংলাদেশ টুলস'},
+    IN:{hub:'/in/',flag:'🇮🇳',name:'India Tools',native:'भारत टूल्स'},
+    DE:{hub:'/de/',flag:'🇩🇪',name:'Deutsche Tools',native:'Deutsche Tools'},
+    FR:{hub:'/fr/',flag:'🇫🇷',name:'Outils français',native:'Outils français'},
+    JP:{hub:'/jp/',flag:'🇯🇵',name:'日本のツール',native:'日本のツール'},
+    AE:{hub:'/ae/',flag:'🇦🇪',name:'UAE Tools',native:'أدوات الإمارات'},
+    SA:{hub:'/sa/',flag:'🇸🇦',name:'Saudi Tools',native:'أدوات السعودية'},
+    EG:{hub:'/eg/',flag:'🇪🇬',name:'Egypt Tools',native:'أدوات مصر'},
+    GB:{hub:'/uk/',flag:'🇬🇧',name:'UK Tools',native:'UK Tools'},
+    AU:{hub:'/au/',flag:'🇦🇺',name:'Australia Tools',native:'Australia Tools'},
+    CA:{hub:'/ca/',flag:'🇨🇦',name:'Canada Tools',native:'Canada Tools'},
+    SE:{hub:'/se/',flag:'🇸🇪',name:'Svenska verktyg',native:'Svenska verktyg'},
+    NO:{hub:'/no/',flag:'🇳🇴',name:'Norske verktøy',native:'Norske verktøy'},
+    FI:{hub:'/fi/',flag:'🇫🇮',name:'Suomalaiset työkalut',native:'Suomalaiset työkalut'},
+    NL:{hub:'/nl/',flag:'🇳🇱',name:'Nederlandse tools',native:'Nederlandse tools'},
+    ID:{hub:'/id/',flag:'🇮🇩',name:'Alat Indonesia',native:'Alat Indonesia'},
+    MY:{hub:'/my/',flag:'🇲🇾',name:'Malaysian Tools',native:'Alat Malaysia'},
+    PH:{hub:'/ph/',flag:'🇵🇭',name:'Philippine Tools',native:'Philippine Tools'},
+    GH:{hub:'/gh/',flag:'🇬🇭',name:'Ghana Tools',native:'Ghana Tools'},
+    KE:{hub:'/ke/',flag:'🇰🇪',name:'Kenya Tools',native:'Kenya Tools'},
+    NG:{hub:'/ng/',flag:'🇳🇬',name:'Nigeria Tools',native:'Nigeria Tools'},
+    ZA:{hub:'/za/',flag:'🇿🇦',name:'South Africa Tools',native:'SA Tools'},
+    VN:{hub:'/vn/',flag:'🇻🇳',name:'Công cụ Việt Nam',native:'Công cụ Việt Nam'},
+    SG:{hub:'/sg/',flag:'🇸🇬',name:'Singapore Tools',native:'Singapore Tools'},
+    US:{hub:'/us/',flag:'🇺🇸',name:'US Tools',native:'US Tools'},
+    MA:{hub:'/ma/',flag:'🇲🇦',name:'Morocco Tools',native:'أدوات المغرب'}
   };
 
   function init() {
     var urlLang = new URLSearchParams(location.search).get('lang');
     var storedLang = localStorage.getItem(LANG_KEY);
+    currentLang = _normalize(urlLang || storedLang || 'en');
 
-    // If user already has a preference, use it
-    if (urlLang || storedLang) {
-      currentLang = _normalize(urlLang || storedLang || 'en');
-      _renderDropdown();
-      _bindEvents();
-      _updateDisplay();
-      if (currentLang !== 'en') _applyLang(currentLang);
-      return;
-    }
-
-    // FIRST VISIT: No stored preference — auto-detect
-    currentLang = 'en';
     _renderDropdown();
     _bindEvents();
     _updateDisplay();
 
-    // Layer 1: Browser language (instant)
-    var browserLang = _detectBrowserLang();
-    if (browserLang && browserLang !== 'en') {
-      _applyDetected(browserLang);
-      return;
+    if (currentLang !== 'en') {
+      _applyLang(currentLang);
     }
 
-    // Layer 2: IP-based country detection (async, more accurate)
-    // Catches cases like browser=en but user is in Bangladesh
-    _detectByIP();
+    // Smart country suggestion: suggest local hub if visitor is from a country with one
+    _suggestLocalHub();
   }
 
-  function _detectBrowserLang() {
-    var browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
-    var short = browserLang.split('-')[0];
-    if (LANGUAGES[short] && short !== 'en') return short;
-    return null;
-  }
+  function _suggestLocalHub() {
+    // Only on homepage or English pages, only once per session
+    if (sessionStorage.getItem('tz_hub_suggested')) return;
+    if (localStorage.getItem('tz_hub_dismissed')) return;
+    // Don't suggest if already on a country hub
+    var path = location.pathname;
+    for (var c in COUNTRY_HUB) {
+      if (path.indexOf(COUNTRY_HUB[c].hub) === 0) return;
+    }
 
-  function _detectByIP() {
-    // Use free Cloudflare trace (no API key needed, very fast)
     fetch('https://www.cloudflare.com/cdn-cgi/trace')
       .then(function(r) { return r.text(); })
       .then(function(text) {
         var match = text.match(/loc=([A-Z]{2})/);
         if (!match) return;
-        var country = match[1];
-        var lang = COUNTRY_LANG[country];
-        if (lang && lang !== 'en' && LANGUAGES[lang]) {
-          _applyDetected(lang, country);
-        }
+        var hub = COUNTRY_HUB[match[1]];
+        if (!hub) return;
+        sessionStorage.setItem('tz_hub_suggested', '1');
+        _showHubBanner(hub);
       })
-      .catch(function() { /* silently fail — user stays in English */ });
+      .catch(function() {});
   }
 
-  function _applyDetected(lang, country) {
-    currentLang = lang;
-    localStorage.setItem(LANG_KEY, lang);
-    localStorage.setItem(AUTO_DETECT_KEY, '1');
-    if (country) localStorage.setItem('tz_detected_country', country);
-    _updateDisplay();
-    _applyLang(lang);
-    _showAutoDetectBanner(lang);
-  }
-
-  function _showAutoDetectBanner(lang) {
-    // Don't show if user already dismissed
-    if (localStorage.getItem('tz_lang_banner_dismissed')) return;
-    var langName = LANGUAGES[lang] || lang;
+  function _showHubBanner(hub) {
     var banner = document.createElement('div');
     banner.className = 'lang-auto-banner';
     banner.innerHTML =
-      '<span>' + langName + ' — স্বয়ংক্রিয়ভাবে সনাক্ত হয়েছে / Auto-detected</span>' +
-      '<button class="lang-auto-banner__switch" onclick="TeamzTranslate.setLang(\'en\');this.parentNode.remove()">Switch to English</button>' +
-      '<button class="lang-auto-banner__close" onclick="this.parentNode.remove();try{localStorage.setItem(\'tz_lang_banner_dismissed\',\'1\')}catch(e){}" aria-label="Close">&times;</button>';
-    document.body.insertBefore(banner, document.body.firstChild);
+      '<span>' + hub.flag + ' ' + hub.native + ' available!</span>' +
+      '<a href="' + hub.hub + '" class="lang-auto-banner__switch" style="text-decoration:none">Visit ' + hub.name + '</a>' +
+      '<button class="lang-auto-banner__close" onclick="this.parentNode.remove();try{localStorage.setItem(\'tz_hub_dismissed\',\'1\')}catch(e){}" aria-label="Close">&times;</button>';
+    var header = document.getElementById('site-header');
+    if (header && header.nextSibling) {
+      header.parentNode.insertBefore(banner, header.nextSibling);
+    }
   }
 
   function _normalize(lang) {
