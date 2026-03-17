@@ -66,3 +66,8 @@ echo '</urlset>'
 
 count=$(grep -c '<url>' "$BASE/sitemap.xml")
 echo "Sitemap rebuilt: $count URLs in sitemap.xml"
+
+# Ping search engines (free, no API key needed)
+echo "Pinging search engines..."
+curl -s "https://www.google.com/ping?sitemap=https://tool.teamzlab.com/sitemap.xml" > /dev/null 2>&1 && echo "  Google: pinged" || echo "  Google: failed (ok, they'll crawl anyway)"
+curl -s "https://www.bing.com/indexnow?url=https://tool.teamzlab.com/sitemap.xml&key=teamzlab" > /dev/null 2>&1 && echo "  Bing: pinged" || echo "  Bing: failed (ok, they'll crawl anyway)"

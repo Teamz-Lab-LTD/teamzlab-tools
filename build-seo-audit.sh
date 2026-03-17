@@ -1,23 +1,30 @@
 #!/bin/bash
-# ─── SEO Keyword Audit — Teamz Lab Tools ───────────────────────────
-# Wrapper script for the SEO keyword engine.
-# Runs as part of build.sh or standalone.
+# ─── SEO & ASO Keyword Engine — Teamz Lab Tools ───────────────────
+# Wrapper script for the SEO + ASO keyword engine.
+# Works for websites AND mobile apps (App Store + Play Store).
 #
-# Usage:
-#   ./build-seo-audit.sh                          # Quick audit (issues only)
-#   ./build-seo-audit.sh --verbose                # Verbose audit (all tools)
-#   ./build-seo-audit.sh --report                 # Full detailed report
-#   ./build-seo-audit.sh --suggest "keyword"      # Get keyword suggestions
-#   ./build-seo-audit.sh --trends "keyword"       # Google Trends analysis
-#   ./build-seo-audit.sh --trends "kw1" "kw2"    # Compare two keywords
-#   ./build-seo-audit.sh --trends "kw" --geo GB  # Regional trends
-#   ./build-seo-audit.sh --validate-new "keyword" # Validate before building new tool
-#   ./build-seo-audit.sh --internal-links         # Check internal linking
-#   ./build-seo-audit.sh --batch-trends           # Trends for all hubs
-#   ./build-seo-audit.sh --freshness              # Content freshness check
-#   ./build-seo-audit.sh --viral                  # Virality & share readiness
-#   ./build-seo-audit.sh --cannibalize            # Find keyword cannibalization
-#   ./build-seo-audit.sh --fix-dry-run            # Preview auto-fixes
+# SEO (Web):
+#   ./build-seo-audit.sh                          # Quick audit
+#   ./build-seo-audit.sh --verbose                # Verbose audit
+#   ./build-seo-audit.sh --report                 # Full report
+#   ./build-seo-audit.sh --suggest "keyword"      # Web keyword suggestions
+#   ./build-seo-audit.sh --trends "keyword"       # Google Trends
+#   ./build-seo-audit.sh --trends "kw1" "kw2"    # Compare keywords
+#   ./build-seo-audit.sh --validate-new "keyword" # Validate new tool
+#   ./build-seo-audit.sh --internal-links         # Internal linking check
+#   ./build-seo-audit.sh --batch-trends           # Trends all hubs
+#   ./build-seo-audit.sh --freshness              # Content freshness
+#   ./build-seo-audit.sh --viral                  # Virality check
+#   ./build-seo-audit.sh --cannibalize            # Keyword conflicts
+#   ./build-seo-audit.sh --fix-dry-run            # Preview fixes
+#
+# ASO (Mobile Apps):
+#   ./build-seo-audit.sh --aso-suggest "keyword"                     # App Store + Play suggestions
+#   ./build-seo-audit.sh --aso-suggest "keyword" --store apple       # Apple only
+#   ./build-seo-audit.sh --aso-suggest "keyword" --country bd        # Bangladesh market
+#   ./build-seo-audit.sh --aso-audit --title "App" --subtitle "Tag"  # Audit app metadata
+#   ./build-seo-audit.sh --aso-validate "habit tracker"              # Validate app idea
+#   ./build-seo-audit.sh --aso-compare "Name A" "Name B"            # Compare app names
 # ────────────────────────────────────────────────────────────────────
 
 BASE="$(cd "$(dirname "$0")" && pwd)"
@@ -69,6 +76,22 @@ case "${1:-audit}" in
         ;;
     --fix)
         python3 "$SCRIPT" fix
+        ;;
+    --aso-suggest)
+        shift
+        python3 "$SCRIPT" aso-suggest "$@"
+        ;;
+    --aso-audit)
+        shift
+        python3 "$SCRIPT" aso-audit "$@"
+        ;;
+    --aso-validate)
+        shift
+        python3 "$SCRIPT" aso-validate "$@"
+        ;;
+    --aso-compare)
+        shift
+        python3 "$SCRIPT" aso-compare "$@"
         ;;
     --verbose|-v)
         python3 "$SCRIPT" audit --verbose

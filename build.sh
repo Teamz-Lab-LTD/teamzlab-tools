@@ -123,6 +123,61 @@ else
   echo "  SKIPPED: seo-keyword-engine.py or python3 not found"
 fi
 
+# 8. Technical SEO validation (viewport, hreflang, lang, OG, JSON-LD)
+echo ""
+echo "[8/8] Running technical SEO validation..."
+TECH_ISSUES=0
+
+if command -v python3 &>/dev/null; then
+  TECH_OUTPUT=$(python3 -c "
+import glob, re, os
+
+hub_lang = {'de':'de','fr':'fr','jp':'ja','ae':'ar','eg':'ar','sa':'ar','ma':'ar','id':'id','vn':'vi','no':'nb','fi':'fi','se':'sv','nl':'nl'}
+issues = {'viewport':0,'hreflang':0,'lang_attr':0,'og_image':0,'brand_title':0,'canonical':0}
+
+for f in sorted(glob.glob('*/*/index.html')):
+    hub = f.split('/')[0]
+    if hub in ('about','contact','privacy','terms','docs','shared','branding','og-images','.git','icons'):
+        continue
+    try:
+        with open(f,'r',errors='ignore') as fh:
+            content = fh.read()
+    except:
+        continue
+
+    if 'name=\"viewport\"' not in content:
+        issues['viewport'] += 1
+    if 'og:image' not in content:
+        issues['og_image'] += 1
+    if 'rel=\"canonical\"' not in content:
+        issues['canonical'] += 1
+
+    title_m = re.search(r'<title>(.*?)</title>', content)
+    if title_m and 'Teamz Lab' not in title_m.group(1):
+        issues['brand_title'] += 1
+
+    expected_lang = hub_lang.get(hub)
+    if expected_lang:
+        if f'hreflang=\"{expected_lang}\"' not in content:
+            issues['hreflang'] += 1
+        if f'lang=\"{expected_lang}\"' not in content[:500]:
+            issues['lang_attr'] += 1
+
+total = sum(issues.values())
+for k, v in issues.items():
+    if v > 0:
+        print(f'  {k}: {v} pages')
+if total == 0:
+    print('  All technical checks passing!')
+print(f'TOTAL:{total}')
+" 2>&1)
+  echo "$TECH_OUTPUT" | grep -v "^TOTAL:"
+  TECH_ISSUES=$(echo "$TECH_OUTPUT" | grep "^TOTAL:" | cut -d: -f2)
+  if [ -n "$TECH_ISSUES" ] && [ "$TECH_ISSUES" -gt 0 ] 2>/dev/null; then
+    ERRORS=$((ERRORS + TECH_ISSUES))
+  fi
+fi
+
 echo ""
 echo "============================================="
 total=$(grep -c '<url>' "$BASE/sitemap.xml")

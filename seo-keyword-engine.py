@@ -1,24 +1,36 @@
 #!/usr/bin/env python3
 """
-SEO Keyword Engine — Teamz Lab Tools
-=====================================
-Fully automated SEO keyword audit, research, and optimization.
-No paid tools. No manual effort. Runs on every build.
+SEO & ASO Keyword Engine — Teamz Lab Tools
+============================================
+Fully automated SEO + ASO keyword audit, research, and optimization.
+No paid tools. No manual effort. Works for websites AND mobile apps.
 
-Modes:
-  audit       — Audit ALL tools for keyword placement issues (default)
-  suggest     — Get free keyword suggestions for a tool (Google Autocomplete)
-  cannibalize — Find keyword cannibalization across tools
-  report      — Full SEO report with scores and fixes needed
-  fix         — Auto-fix keyword placement issues (use with --dry-run first)
+SEO Modes (Web):
+  audit          — Audit ALL tools for keyword placement issues
+  suggest        — Keyword suggestions (Google Autocomplete)
+  trends         — Google Trends analysis
+  validate-new   — Validate a new tool idea before building
+  cannibalize    — Find keyword cannibalization
+  report         — Full SEO report with scores
+  fix            — Auto-fix keyword placement issues
+  internal-links — Check internal linking
+  batch-trends   — Trends for all hubs
+  freshness      — Content freshness check
+  viral          — Virality & share readiness
+
+ASO Modes (Mobile Apps):
+  aso-suggest    — App Store + Play Store autocomplete suggestions
+  aso-audit      — Audit app metadata (title, subtitle, description, keywords)
+  aso-validate   — Validate a new app idea before building
+  aso-compare    — Compare two app name ideas
 
 Usage:
   python3 seo-keyword-engine.py audit
   python3 seo-keyword-engine.py suggest "fuel cost calculator"
-  python3 seo-keyword-engine.py cannibalize
-  python3 seo-keyword-engine.py report
-  python3 seo-keyword-engine.py fix --dry-run
-  python3 seo-keyword-engine.py fix
+  python3 seo-keyword-engine.py aso-suggest "sleep tracker" --store both
+  python3 seo-keyword-engine.py aso-audit --title "Sleep Tracker" --subtitle "Track your sleep" --keywords "sleep,tracker,alarm"
+  python3 seo-keyword-engine.py aso-validate "habit tracker app"
+  python3 seo-keyword-engine.py aso-compare "Sleep Tracker Pro" "Better Sleep App"
 """
 
 import os
@@ -1812,6 +1824,671 @@ def run_viral_check():
     print(f"\n{'='*60}\n")
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# ASO (APP STORE OPTIMIZATION) MODULE
+# Works for Apple App Store + Google Play Store
+# Free autocomplete APIs — no accounts or API keys needed
+# ═══════════════════════════════════════════════════════════════════════
+
+# ASO character limits
+ASO_LIMITS = {
+    'apple': {
+        'title': 30,
+        'subtitle': 30,
+        'keywords': 100,    # keyword field (comma-separated)
+        'promo_text': 170,
+        'description': 4000,
+    },
+    'play': {
+        'title': 30,
+        'short_desc': 80,
+        'description': 4000,
+    }
+}
+
+
+def fetch_appstore_autocomplete(query, country='us', limit=10):
+    """Fetch Apple App Store search suggestions (free, no API key)."""
+    try:
+        encoded = urllib.parse.quote(query)
+        url = f'https://search.itunes.apple.com/WebObjects/MZSearchHints.woa/wa/hints?media=software&term={encoded}&country={country}'
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+            'Accept': 'application/json',
+        })
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            hints = data.get('hints', [])
+            return [h.get('term', '') for h in hints if h.get('term')][:limit]
+    except Exception:
+        pass
+
+    # Fallback: use iTunes Search API to find apps with this keyword
+    try:
+        encoded = urllib.parse.quote(query)
+        url = f'https://itunes.apple.com/search?term={encoded}&country={country}&media=software&limit={limit}'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            results = data.get('results', [])
+            # Extract app names as keyword ideas
+            names = []
+            for app in results:
+                name = app.get('trackName', '')
+                if name and name.lower() != query.lower():
+                    names.append(name)
+            return names[:limit]
+    except Exception:
+        return []
+
+
+def fetch_playstore_autocomplete(query, lang='en', country='us', limit=10):
+    """Fetch Google Play Store search suggestions (free, no API key).
+    Uses Google Suggest with 'app' suffix to get app-relevant completions."""
+    try:
+        # Primary: Google suggest with app-context query
+        app_query = f"{query} app" if 'app' not in query.lower() else query
+        encoded = urllib.parse.quote(app_query)
+        url = f'https://suggestqueries.google.com/complete/search?client=firefox&q={encoded}&hl={lang}'
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7)',
+            'Accept': 'application/json',
+        })
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            suggestions = data[1] if len(data) > 1 else []
+            return [s for s in suggestions if s.lower() != query.lower()][:limit]
+    except Exception:
+        return []
+
+
+def fetch_itunes_top_apps(query, country='us', limit=5):
+    """Search iTunes for top apps matching a keyword — get competitor intel."""
+    try:
+        encoded = urllib.parse.quote(query)
+        url = f'https://itunes.apple.com/search?term={encoded}&country={country}&media=software&limit={limit}'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            results = []
+            for app in data.get('results', []):
+                results.append({
+                    'name': app.get('trackName', ''),
+                    'developer': app.get('artistName', ''),
+                    'price': app.get('formattedPrice', 'Free'),
+                    'rating': app.get('averageUserRating', 0),
+                    'reviews': app.get('userRatingCount', 0),
+                    'category': app.get('primaryGenreName', ''),
+                    'url': app.get('trackViewUrl', ''),
+                })
+            return results
+    except Exception:
+        return []
+
+
+def aso_keyword_score(keyword, appstore_results, playstore_results, competitors):
+    """Score a keyword for ASO viability (0-100)."""
+    score = 0
+
+    # Autocomplete presence (people search for this)
+    if appstore_results:
+        score += 20
+    if playstore_results:
+        score += 20
+
+    # Competition analysis
+    if competitors:
+        avg_rating = sum(c['rating'] for c in competitors if c['rating']) / max(len(competitors), 1)
+        avg_reviews = sum(c['reviews'] for c in competitors) / max(len(competitors), 1)
+
+        # Less competition = better opportunity
+        if avg_reviews < 100:
+            score += 20  # Low competition
+        elif avg_reviews < 1000:
+            score += 15
+        elif avg_reviews < 10000:
+            score += 10
+        else:
+            score += 5   # Heavy competition
+
+        # If average rating is low, there's room to do better
+        if avg_rating < 3.5:
+            score += 10
+        elif avg_rating < 4.0:
+            score += 5
+    else:
+        score += 15  # No competitors found = opportunity
+
+    # Keyword properties
+    words = keyword.split()
+    if len(words) >= 3:
+        score += 10  # Long-tail = less competition
+    elif len(words) == 2:
+        score += 5
+
+    return min(score, 100)
+
+
+def run_aso_suggest(query, store='both', country='us'):
+    """Get ASO keyword suggestions from App Store + Play Store autocomplete."""
+    print(f"\n{'='*60}")
+    print(f"  ASO KEYWORD SUGGESTIONS: \"{query}\"")
+    print(f"  Store: {store.upper()}  |  Country: {country.upper()}")
+    print(f"{'='*60}\n")
+
+    appstore_results = []
+    playstore_results = []
+
+    # Apple App Store
+    if store in ('both', 'apple', 'ios'):
+        print("  [1/4] Apple App Store Autocomplete...")
+        appstore_results = fetch_appstore_autocomplete(query, country=country)
+        if appstore_results:
+            print(f"    {len(appstore_results)} suggestions:")
+            for s in appstore_results:
+                tail = "  (long-tail)" if len(s.split()) >= 3 else ""
+                print(f"      -> {s}{tail}")
+        else:
+            print("    No autocomplete data (trying iTunes Search...)")
+            appstore_results = fetch_appstore_autocomplete(query, country=country)
+            if appstore_results:
+                for s in appstore_results[:5]:
+                    print(f"      -> {s}")
+
+    # Google Play Store
+    if store in ('both', 'play', 'android'):
+        print(f"\n  [2/4] Google Play Store Autocomplete...")
+        playstore_results = fetch_playstore_autocomplete(query, country=country)
+        if playstore_results:
+            print(f"    {len(playstore_results)} suggestions:")
+            for s in playstore_results:
+                tail = "  (long-tail)" if len(s.split()) >= 3 else ""
+                print(f"      -> {s}{tail}")
+        else:
+            print("    No autocomplete data returned")
+
+    # Google web autocomplete (bonus — captures broader intent)
+    print(f"\n  [3/4] Google Web Autocomplete (bonus)...")
+    web_results = fetch_google_autocomplete(f"{query} app")
+    if web_results:
+        for s in web_results[:5]:
+            print(f"      -> {s}")
+
+    # Competitor apps
+    print(f"\n  [4/4] Top competing apps...")
+    competitors = fetch_itunes_top_apps(query, country=country)
+    if competitors:
+        for app in competitors:
+            stars = f"{'★' * int(app['rating'])}{'☆' * (5 - int(app['rating']))}" if app['rating'] else "No rating"
+            print(f"    {app['name'][:40]:<40s}  {app['price']:<8s}  {stars}  ({app['reviews']:,} reviews)")
+    else:
+        print("    No competing apps found — wide open market!")
+
+    # Combined suggestions (deduplicated)
+    all_suggestions = set()
+    for s in appstore_results + playstore_results:
+        all_suggestions.add(s.lower().strip())
+
+    if all_suggestions:
+        print(f"\n  COMBINED UNIQUE KEYWORDS ({len(all_suggestions)}):")
+        for s in sorted(all_suggestions):
+            # Check character count for App Store keyword field
+            char_flag = " (fits in 100-char keyword field)" if len(s) <= 30 else ""
+            print(f"    -> {s}{char_flag}")
+
+    print(f"\n{'='*60}\n")
+    return appstore_results, playstore_results, competitors
+
+
+def run_aso_audit(title='', subtitle='', keywords='', short_desc='', description=''):
+    """
+    Audit app metadata against ASO best practices.
+    Works for BOTH Apple App Store and Google Play Store.
+    Pass your app's metadata and get a score + fix suggestions.
+    """
+    print(f"\n{'='*60}")
+    print(f"  ASO METADATA AUDIT")
+    print(f"{'='*60}\n")
+
+    issues = []
+    score = 100
+
+    # ─── APPLE APP STORE ───
+    print("  APPLE APP STORE:")
+
+    # Title (30 chars max)
+    if title:
+        tlen = len(title)
+        print(f"    Title: \"{title}\" ({tlen} chars)")
+        if tlen > 30:
+            issues.append(f'Apple title too long: {tlen}/30 chars')
+            score -= 15
+            print(f"      FAIL: Over 30 char limit by {tlen - 30}")
+        elif tlen < 15:
+            issues.append('Apple title too short — use more characters')
+            score -= 5
+            print(f"      WARN: Only {tlen} chars — use all 30 for SEO value")
+        else:
+            print(f"      OK")
+    else:
+        issues.append('No title provided')
+        score -= 20
+        print(f"    Title: MISSING")
+
+    # Subtitle (30 chars max)
+    if subtitle:
+        slen = len(subtitle)
+        print(f"    Subtitle: \"{subtitle}\" ({slen} chars)")
+        if slen > 30:
+            issues.append(f'Apple subtitle too long: {slen}/30 chars')
+            score -= 10
+            print(f"      FAIL: Over 30 char limit by {slen - 30}")
+        else:
+            print(f"      OK")
+
+        # Check if subtitle repeats title words
+        title_words = set(title.lower().split())
+        sub_words = set(subtitle.lower().split())
+        overlap = title_words & sub_words - {'the', 'a', 'an', 'for', 'and', 'or', 'to', 'in', 'of', 'with', '-', '&'}
+        if overlap:
+            issues.append(f'Subtitle repeats title words: {overlap} — use different keywords')
+            score -= 5
+            print(f"      WARN: Repeats title words: {overlap}")
+    else:
+        issues.append('No subtitle — you\'re losing 30 chars of keyword space')
+        score -= 10
+        print(f"    Subtitle: MISSING (losing 30 chars of keyword space!)")
+
+    # Keywords field (100 chars, comma-separated)
+    if keywords:
+        klen = len(keywords)
+        kw_list = [k.strip() for k in keywords.split(',') if k.strip()]
+        print(f"    Keywords: {klen} chars, {len(kw_list)} terms")
+        if klen > 100:
+            issues.append(f'Keywords field too long: {klen}/100 chars')
+            score -= 15
+            print(f"      FAIL: Over 100 char limit by {klen - 100}")
+        elif klen < 70:
+            issues.append(f'Keywords field underused: only {klen}/100 chars')
+            score -= 5
+            print(f"      WARN: Only using {klen}/100 chars — add more keywords")
+        else:
+            print(f"      OK")
+
+        # Check for wasted characters
+        if any(' ' in k.strip() for k in kw_list):
+            # Spaces between words within a keyword are fine, but spaces after commas waste chars
+            pass
+        if any(k.strip().lower() in title.lower() for k in kw_list):
+            issues.append('Keywords field repeats title words — Apple already indexes title')
+            score -= 5
+            print(f"      WARN: Don't repeat title words in keyword field")
+
+        # Check for plurals (Apple handles these automatically)
+        for k in kw_list:
+            if k.endswith('s') and k[:-1] in ','.join(kw_list):
+                issues.append(f'Remove plural "{k}" — Apple auto-matches singular/plural')
+                score -= 2
+                print(f"      WARN: Remove plural \"{k}\" — Apple handles this")
+    else:
+        issues.append('No keywords field — critical for Apple ASO!')
+        score -= 20
+        print(f"    Keywords: MISSING (this is critical!)")
+
+    # ─── GOOGLE PLAY STORE ───
+    print(f"\n  GOOGLE PLAY STORE:")
+
+    # Title (30 chars for Play too)
+    if title:
+        if len(title) > 30:
+            print(f"    Title: FAIL — {len(title)}/30 chars")
+        else:
+            print(f"    Title: OK — \"{title}\" ({len(title)}/30)")
+
+    # Short description (80 chars)
+    if short_desc:
+        sdlen = len(short_desc)
+        print(f"    Short desc: \"{short_desc}\" ({sdlen} chars)")
+        if sdlen > 80:
+            issues.append(f'Play short description too long: {sdlen}/80 chars')
+            score -= 10
+            print(f"      FAIL: Over 80 char limit by {sdlen - 80}")
+        elif sdlen < 40:
+            issues.append('Play short description too short — use more of the 80 chars')
+            score -= 5
+            print(f"      WARN: Only {sdlen}/80 chars — add more keywords")
+        else:
+            print(f"      OK")
+    else:
+        issues.append('No short description — critical for Google Play ASO!')
+        score -= 15
+        print(f"    Short desc: MISSING (critical for Play Store!)")
+
+    # Full description (4000 chars)
+    if description:
+        dlen = len(description)
+        print(f"    Description: {dlen} chars")
+        if dlen < 300:
+            issues.append('Play description too short — aim for 2500-4000 chars')
+            score -= 10
+            print(f"      WARN: Very short — aim for 2500-4000 chars")
+        elif dlen < 1000:
+            score -= 5
+            print(f"      OK but could be longer (aim for 2500+)")
+        else:
+            print(f"      OK")
+    else:
+        print(f"    Description: Not provided for audit")
+
+    # ─── GENERAL ASO TIPS ───
+    print(f"\n  GENERAL CHECKS:")
+
+    # Keywords in title
+    if title:
+        # Check if title is purely brand name (no keywords)
+        common_words = {'app', 'pro', 'lite', 'free', 'plus', 'premium', '-', ':', '—'}
+        title_meaningful = [w for w in title.lower().split() if w not in common_words and len(w) > 2]
+        if len(title_meaningful) < 2:
+            issues.append('Title is too brand-heavy — add a keyword')
+            score -= 10
+            print(f"    WARN: Title needs a keyword, not just brand name")
+        else:
+            print(f"    OK: Title contains keywords: {title_meaningful}")
+
+    # Action verb in subtitle
+    if subtitle:
+        action_verbs = ['track', 'find', 'calculate', 'check', 'scan', 'monitor', 'manage',
+                        'plan', 'create', 'convert', 'analyze', 'compare', 'build', 'test',
+                        'learn', 'record', 'measure', 'detect', 'generate', 'estimate']
+        has_verb = any(subtitle.lower().startswith(v) or f' {v}' in subtitle.lower() for v in action_verbs)
+        if has_verb:
+            print(f"    OK: Subtitle has action verb")
+        else:
+            issues.append('Subtitle should start with an action verb (Track, Find, Calculate...)')
+            score -= 3
+            print(f"    WARN: Add action verb to subtitle for better CTR")
+
+    # Score
+    score = max(score, 0)
+    print(f"\n{'='*60}")
+    print(f"  ASO SCORE: {score}/100")
+    grade = 'A+' if score >= 90 else 'A' if score >= 80 else 'B' if score >= 70 else 'C' if score >= 60 else 'D' if score >= 50 else 'F'
+    print(f"  GRADE: {grade}")
+
+    if issues:
+        print(f"\n  ISSUES ({len(issues)}):")
+        for i in issues:
+            print(f"    - {i}")
+
+    # Recommendations
+    print(f"\n  ASO TIPS:")
+    print(f"    1. Title = Brand + Top Keyword (e.g., \"Teamz Sleep Tracker\")")
+    print(f"    2. Subtitle = Action verb + benefit (e.g., \"Track & Improve Your Sleep\")")
+    print(f"    3. Apple keyword field: no spaces after commas, no plurals, no title repeats")
+    print(f"    4. Play short desc: front-load keywords, use all 80 chars")
+    print(f"    5. Update keywords monthly based on autocomplete trends")
+
+    print(f"\n{'='*60}\n")
+    return score, issues
+
+
+def run_aso_validate(keyword, country='us'):
+    """
+    Validate an app idea before building it.
+    Checks: App Store + Play Store demand, competition, Google Trends.
+    Returns GO / CAUTION / STOP.
+    """
+    print(f"\n{'='*60}")
+    print(f"  ASO APP IDEA VALIDATION: \"{keyword}\"")
+    print(f"  Market: {country.upper()}")
+    print(f"{'='*60}\n")
+
+    score = 0
+    issues = []
+
+    # 1. App Store autocomplete
+    print("  [1/5] Apple App Store demand...")
+    appstore = fetch_appstore_autocomplete(keyword, country=country)
+    if appstore:
+        score += 20
+        print(f"    {len(appstore)} autocomplete suggestions — people search for this!")
+        for s in appstore[:5]:
+            print(f"      -> {s}")
+    else:
+        print(f"    No autocomplete data — niche or new category")
+        score += 5
+
+    # 2. Play Store autocomplete
+    print(f"\n  [2/5] Google Play Store demand...")
+    playstore = fetch_playstore_autocomplete(keyword, country=country)
+    if playstore:
+        score += 20
+        print(f"    {len(playstore)} autocomplete suggestions!")
+        for s in playstore[:5]:
+            print(f"      -> {s}")
+    else:
+        print(f"    No autocomplete data")
+        score += 5
+
+    # 3. Google Trends (overall interest)
+    print(f"\n  [3/5] Google Trends interest...")
+    app_query = f"{keyword} app"
+    data = fetch_trends_interest(app_query)
+    interest = data.get('interest', [])
+    if interest:
+        values = [p['values'][0] for p in interest if p['values']]
+        avg = sum(values) / len(values) if values else 0
+        recent = values[-3:] if len(values) >= 3 else values
+        early = values[:3] if len(values) >= 3 else values
+        r_avg = sum(recent) / len(recent) if recent else 0
+        e_avg = sum(early) / len(early) if early else 0
+
+        if r_avg > e_avg * 1.15:
+            trend = "RISING"
+        elif r_avg < e_avg * 0.85:
+            trend = "FALLING"
+        else:
+            trend = "STABLE"
+
+        print(f"    \"{app_query}\": avg {avg:.0f}/100, trend: {trend}")
+        if avg >= 30:
+            score += 15
+        elif avg >= 10:
+            score += 10
+        else:
+            score += 5
+        if trend == "RISING":
+            score += 5
+            print(f"    BONUS: Rising trend!")
+        elif trend == "FALLING":
+            issues.append("Search interest is declining")
+    else:
+        print(f"    No Trends data for \"{app_query}\"")
+        score += 5
+
+    # 4. Competition analysis
+    print(f"\n  [4/5] Competition analysis...")
+    competitors = fetch_itunes_top_apps(keyword, country=country, limit=5)
+    if competitors:
+        print(f"    Top {len(competitors)} competing apps:")
+        total_reviews = 0
+        for app in competitors:
+            stars = f"{app['rating']:.1f}★" if app['rating'] else "N/A"
+            print(f"      {app['name'][:40]:<40s}  {app['price']:<8s}  {stars}  ({app['reviews']:,} reviews)")
+            total_reviews += app['reviews']
+
+        avg_reviews = total_reviews / len(competitors)
+        if avg_reviews < 500:
+            score += 15
+            print(f"\n    LOW competition (avg {avg_reviews:.0f} reviews) — good opportunity!")
+        elif avg_reviews < 5000:
+            score += 10
+            print(f"\n    MODERATE competition (avg {avg_reviews:.0f} reviews)")
+        elif avg_reviews < 50000:
+            score += 5
+            print(f"\n    HIGH competition (avg {avg_reviews:.0f} reviews)")
+            issues.append(f"High competition — avg {avg_reviews:.0f} reviews per competitor")
+        else:
+            score += 2
+            print(f"\n    VERY HIGH competition (avg {avg_reviews:.0f} reviews)")
+            issues.append(f"Very high competition — dominated by major apps")
+
+        # Check if there's a gap (low-rated competitors)
+        low_rated = [c for c in competitors if c['rating'] and c['rating'] < 3.5]
+        if low_rated:
+            score += 5
+            print(f"    GAP FOUND: {len(low_rated)} competitors rated below 3.5★ — room to do better!")
+    else:
+        score += 15
+        print(f"    No competing apps found — blue ocean!")
+
+    # 5. Monetization potential
+    print(f"\n  [5/5] Monetization potential...")
+    high_value_categories = ['finance', 'health', 'business', 'productivity', 'education']
+    kw_lower = keyword.lower()
+    is_high_value = any(cat in kw_lower for cat in high_value_categories)
+    if is_high_value:
+        score += 10
+        print(f"    HIGH value category — good ad/IAP potential")
+    elif competitors:
+        paid = [c for c in competitors if c['price'] != 'Free']
+        if paid:
+            score += 8
+            print(f"    {len(paid)} paid competitors — users willing to pay")
+        else:
+            score += 5
+            print(f"    All competitors are free — monetize with ads/IAP")
+    else:
+        score += 5
+        print(f"    Unknown monetization potential")
+
+    # Final recommendation
+    score = min(score, 100)
+    print(f"\n{'='*60}")
+    print(f"  VIABILITY SCORE: {score}/100")
+    if score >= 70:
+        print(f"  RECOMMENDATION:  GO — Build this app!")
+    elif score >= 45:
+        print(f"  RECOMMENDATION:  CAUTION — Build it, but differentiate")
+    else:
+        print(f"  RECOMMENDATION:  STOP — Low demand or too competitive")
+
+    if issues:
+        print(f"\n  Concerns:")
+        for i in issues:
+            print(f"    - {i}")
+
+    # Suggest metadata
+    print(f"\n  SUGGESTED METADATA:")
+    # Smart title (30 chars)
+    brand = "Teamz"
+    kw_title = keyword.title()
+    if len(f"{brand} {kw_title}") <= 30:
+        print(f"    Apple Title: \"{brand} {kw_title}\"")
+    elif len(kw_title) <= 30:
+        print(f"    Apple Title: \"{kw_title}\"")
+    else:
+        print(f"    Apple Title: \"{kw_title[:30]}\"")
+
+    # Subtitle suggestion
+    print(f"    Subtitle:    \"Track & {keyword.title().split()[0]} with Ease\"")
+
+    # Play short description
+    print(f"    Play Short:  \"Free {keyword.lower()} — no sign-up, works offline.\"")
+
+    # Long-tail keywords from autocomplete
+    all_kw = set()
+    for s in (appstore or []) + (playstore or []):
+        all_kw.add(s.lower())
+    if all_kw:
+        print(f"\n  KEYWORD IDEAS FOR APPLE KEYWORD FIELD:")
+        # Build a comma-separated list that fits in 100 chars
+        kw_field = []
+        char_count = 0
+        for k in sorted(all_kw):
+            # Remove the original query to save space
+            words = k.replace(keyword.lower(), '').strip()
+            if words and char_count + len(words) + 1 <= 100:
+                kw_field.append(words)
+                char_count += len(words) + 1
+        if kw_field:
+            field_str = ','.join(kw_field)
+            print(f"    Keywords ({len(field_str)} chars): {field_str}")
+
+    print(f"\n{'='*60}\n")
+    return score
+
+
+def run_aso_compare(name1, name2, country='us'):
+    """Compare two app name/keyword ideas side by side."""
+    print(f"\n{'='*60}")
+    print(f"  ASO COMPARISON")
+    print(f"  A: \"{name1}\"")
+    print(f"  B: \"{name2}\"")
+    print(f"{'='*60}\n")
+
+    results = {}
+    for label, name in [('A', name1), ('B', name2)]:
+        print(f"  --- {label}: \"{name}\" ---")
+
+        # Length check
+        fits_title = len(name) <= 30
+        print(f"    Length: {len(name)} chars {'(fits title)' if fits_title else '(TOO LONG for title)'}")
+
+        # App Store autocomplete
+        appstore = fetch_appstore_autocomplete(name, country=country)
+        print(f"    App Store suggestions: {len(appstore)}")
+
+        # Play Store autocomplete
+        playstore = fetch_playstore_autocomplete(name, country=country)
+        print(f"    Play Store suggestions: {len(playstore)}")
+
+        # Google autocomplete
+        web = fetch_google_autocomplete(name)
+        print(f"    Google suggestions: {len(web)}")
+
+        # Competitors
+        competitors = fetch_itunes_top_apps(name, country=country, limit=3)
+        if competitors:
+            avg_reviews = sum(c['reviews'] for c in competitors) / len(competitors)
+            print(f"    Competition: {len(competitors)} apps, avg {avg_reviews:.0f} reviews")
+        else:
+            avg_reviews = 0
+            print(f"    Competition: None found")
+
+        total_suggestions = len(appstore) + len(playstore) + len(web)
+        comp_score = 100 - min(avg_reviews / 1000, 50)  # Lower reviews = better
+
+        results[label] = {
+            'name': name,
+            'fits': fits_title,
+            'suggestions': total_suggestions,
+            'competition': avg_reviews,
+            'score': total_suggestions * 2 + comp_score + (10 if fits_title else 0)
+        }
+        print()
+        time.sleep(0.3)
+
+    # Winner
+    a, b = results['A'], results['B']
+    print(f"  COMPARISON:")
+    print(f"    {'Metric':<25s} {'A':>10s} {'B':>10s}")
+    print(f"    {'-'*25} {'-'*10} {'-'*10}")
+    print(f"    {'Fits 30-char title':<25s} {'Yes' if a['fits'] else 'No':>10s} {'Yes' if b['fits'] else 'No':>10s}")
+    print(f"    {'Total suggestions':<25s} {a['suggestions']:>10d} {b['suggestions']:>10d}")
+    print(f"    {'Avg competitor reviews':<25s} {a['competition']:>10,.0f} {b['competition']:>10,.0f}")
+    print(f"    {'Overall score':<25s} {a['score']:>10.0f} {b['score']:>10.0f}")
+
+    if a['score'] > b['score']:
+        print(f"\n  WINNER: A — \"{name1}\"")
+    elif b['score'] > a['score']:
+        print(f"\n  WINNER: B — \"{name2}\"")
+    else:
+        print(f"\n  TIE — Both are equally viable")
+
+    print(f"\n{'='*60}\n")
+
+
 # ─── MAIN ─────────────────────────────────────────────────────────────
 
 def main():
@@ -1889,6 +2566,63 @@ def main():
 
     elif command == 'viral':
         run_viral_check()
+
+    elif command == 'aso-suggest':
+        keywords = [a for a in sys.argv[2:] if not a.startswith('-')]
+        keywords = [k.strip('"\'') for k in keywords]
+        store = 'both'
+        country = 'us'
+        for i, a in enumerate(sys.argv):
+            if a == '--store' and i + 1 < len(sys.argv):
+                store = sys.argv[i+1].lower()
+            if a == '--country' and i + 1 < len(sys.argv):
+                country = sys.argv[i+1].lower()
+        if not keywords:
+            print("Usage: python3 seo-keyword-engine.py aso-suggest \"keyword\" [--store both|apple|play] [--country us]")
+            sys.exit(1)
+        run_aso_suggest(keywords[0], store=store, country=country)
+
+    elif command == 'aso-audit':
+        title = subtitle = keywords_field = short_desc = description = ''
+        for i, a in enumerate(sys.argv):
+            if a == '--title' and i + 1 < len(sys.argv):
+                title = sys.argv[i+1]
+            if a == '--subtitle' and i + 1 < len(sys.argv):
+                subtitle = sys.argv[i+1]
+            if a == '--keywords' and i + 1 < len(sys.argv):
+                keywords_field = sys.argv[i+1]
+            if a == '--short-desc' and i + 1 < len(sys.argv):
+                short_desc = sys.argv[i+1]
+            if a == '--description' and i + 1 < len(sys.argv):
+                description = sys.argv[i+1]
+        if not title:
+            print('Usage: python3 seo-keyword-engine.py aso-audit --title "App Name" --subtitle "Tagline" --keywords "kw1,kw2,kw3" --short-desc "Play Store short"')
+            sys.exit(1)
+        run_aso_audit(title=title, subtitle=subtitle, keywords=keywords_field, short_desc=short_desc, description=description)
+
+    elif command == 'aso-validate':
+        keywords = [a for a in sys.argv[2:] if not a.startswith('-')]
+        keywords = [k.strip('"\'') for k in keywords]
+        country = 'us'
+        for i, a in enumerate(sys.argv):
+            if a == '--country' and i + 1 < len(sys.argv):
+                country = sys.argv[i+1].lower()
+        if not keywords:
+            print('Usage: python3 seo-keyword-engine.py aso-validate "app idea keyword" [--country us]')
+            sys.exit(1)
+        run_aso_validate(keywords[0], country=country)
+
+    elif command == 'aso-compare':
+        keywords = [a for a in sys.argv[2:] if not a.startswith('-')]
+        keywords = [k.strip('"\'') for k in keywords]
+        country = 'us'
+        for i, a in enumerate(sys.argv):
+            if a == '--country' and i + 1 < len(sys.argv):
+                country = sys.argv[i+1].lower()
+        if len(keywords) < 2:
+            print('Usage: python3 seo-keyword-engine.py aso-compare "Name A" "Name B" [--country us]')
+            sys.exit(1)
+        run_aso_compare(keywords[0], keywords[1], country=country)
 
     elif command == 'fix':
         dry_run = '--dry-run' in sys.argv

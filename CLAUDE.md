@@ -145,19 +145,26 @@ After adding ANY new tool:
 
 ### Rule 7: Follow the existing page template
 Every tool page MUST have:
-- `<title>` with exact-match keyword + "| Teamz Lab Tools"
-- `<meta name="description">` with action verb + benefit + "free" + "private"
+- `<html lang="XX">` — use correct language code (en, de, fr, ja, ar, etc.)
+- `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
+- `<title>` with exact-match keyword + "— Teamz Lab Tools" (max 60 chars)
+- `<meta name="description">` starts with action verb + benefit + "free" + "private" (120-155 chars)
 - `<link rel="canonical">` with full URL
-- OG tags (og:title, og:description, og:url, og:type, og:site_name)
+- OG tags: og:title, og:description, og:url, og:type, og:site_name, og:image (hub-level from /og-images/)
+- `<meta property="og:image" content="https://tool.teamzlab.com/og-images/HUB.png">`
+- For non-English hubs (de/fr/jp/ae/eg/sa/id/vn/no/fi/se/nl/ma): add hreflang tags:
+  - `<link rel="alternate" hreflang="LANG" href="CANONICAL_URL">`
+  - `<link rel="alternate" hreflang="x-default" href="CANONICAL_URL">`
 - Breadcrumbs with schema
-- H1 with exact keyword
+- H1 with exact keyword (keyword must also appear in title, intro, and at least one H2)
 - Tool UI above the fold
 - Ad slot: `<div class="ad-slot">Ad Space</div>`
-- Tool content section (300-600 words)
+- Tool content section (300-600 words, keyword density 1-2%)
 - 3-7 FAQs with schema
 - 6+ related tools with internal links
 - WebApplication schema
 - Scripts: `theme.js`, `common.js`, then tool-specific JS
+- **The pre-commit hook validates ALL of the above — fix warnings before committing**
 
 ### Rule 8: Chrome AI tools MUST have fallbacks
 - Chrome AI (Summarizer, Writer, Rewriter, Prompt, Proofreader) only works in Chrome 138+
@@ -191,8 +198,51 @@ Every tool page MUST have:
 ## Build Scripts
 ```bash
 ./build-search-index.sh   # Rebuild search after adding/changing tools
-./build-sitemap.sh        # Rebuild sitemap after adding tools
+./build-sitemap.sh        # Rebuild sitemap (also pings Google/Bing)
+./build.sh                # Full build + 8-step validation
+./build-og-images.py      # Regenerate hub OG images (run after adding new hub)
 ```
+
+## SEO & ASO Keyword Engine
+```bash
+# SEO (Web tools)
+./build-seo-audit.sh                          # Quick keyword audit (826 tools)
+./build-seo-audit.sh --report                 # Full report with hub scores
+./build-seo-audit.sh --suggest "keyword"      # Google Autocomplete suggestions
+./build-seo-audit.sh --trends "keyword"       # Google Trends analysis
+./build-seo-audit.sh --trends "kw1" "kw2"    # Compare keywords (pick winner)
+./build-seo-audit.sh --validate-new "keyword" # GO/CAUTION/STOP before building
+./build-seo-audit.sh --internal-links         # Check cross-linking opportunities
+./build-seo-audit.sh --freshness              # Find stale/outdated content
+./build-seo-audit.sh --viral                  # Virality & share readiness score
+./build-seo-audit.sh --cannibalize            # Find keyword conflicts
+./build-seo-audit.sh --fix --dry-run          # Preview auto-fixes
+./build-seo-audit.sh --fix                    # Apply auto-fixes
+
+# ASO (Mobile apps — works for ANY app, not tied to this project)
+./build-seo-audit.sh --aso-suggest "keyword"                     # App Store + Play Store suggestions
+./build-seo-audit.sh --aso-audit --title "App" --subtitle "Tag"  # Audit app metadata
+./build-seo-audit.sh --aso-validate "app idea"                   # Validate before building
+./build-seo-audit.sh --aso-compare "Name A" "Name B"            # Compare app names
+```
+
+## Automated Safeguards (prevents ALL common mistakes)
+The pre-commit hook now validates **15 checks** on every staged tool page:
+1. H1 tag exists
+2. Meta description exists
+3. Title has brand ("Teamz Lab Tools")
+4. Canonical tag exists
+5. Viewport meta exists (mobile-friendly)
+6. OG image tag exists
+7. OG title + OG description exist
+8. common.js and theme.js loaded
+9. Correct `lang="XX"` on non-English pages
+10. hreflang tags on non-English pages
+11. No hardcoded hex colors
+12. Title length <= 60 chars
+13. Meta description <= 155 chars
+14. H1 keyword appears in title
+15. No white text on accent background
 
 ## SEO Audit Docs (committed to repo — portable across devices)
 
