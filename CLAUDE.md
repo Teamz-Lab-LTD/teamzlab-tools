@@ -107,8 +107,12 @@ python3 -m http.server 9090
 ### Rule 1: NEVER use hardcoded colors
 - ALWAYS use `var(--accent)`, `var(--text)`, `var(--surface)`, `var(--border)`, `var(--bg)`, `var(--heading)`, `var(--text-muted)`
 - NEVER use `#fff`, `#000`, `#fef3cd`, `#27ae60`, `#e74c3c`, `#6c63ff`, `#a855f7`, or ANY hex color
-- The accent color is NEON/BRIGHT — text on accent backgrounds MUST be `color: var(--bg)` or `color: #000` (dark text on bright background)
-- NEVER use `color: #fff` with `background: var(--accent)` — this makes text invisible on neon
+- The accent color is NEON/BRIGHT (#D9FE06) — it's the SAME in both dark and light mode
+- Text on accent backgrounds MUST be `color: var(--accent-text)` (always #12151A dark) — NEVER `var(--bg)`, `#fff`, or `white`
+- Icons/SVGs on accent backgrounds MUST use dark stroke/fill (`var(--accent-text)` or `#000`)
+- `var(--bg)` is NOT safe on accent — in light mode `--bg` is light gray, invisible on neon
+- NEVER use `color: #fff` with `background: var(--accent)` — invisible in BOTH modes
+- Always test in BOTH dark AND light mode before committing
 - Check: `grep -r '#[0-9a-fA-F]\{3,6\}' --include="*.html" [new-file]` — should return ZERO matches
 
 ### Rule 2: ALWAYS update hub pages and homepage after adding tools
