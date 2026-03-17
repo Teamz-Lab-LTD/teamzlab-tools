@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator with Tape — Teamz Lab Tools</title>
+  <meta name="description" content="Free online printing calculator with scrolling paper tape. Add, subtract, multiply, divide with receipt-style history. Print, copy, or download your tape.">
+  <meta property="og:title" content="Calculator with Tape — Teamz Lab Tools">
+  <meta property="og:description" content="Classic adding machine with scrolling paper tape. Every operation printed like a receipt. Print, copy, or download.">
+  <meta property="og:url" content="https://tool.teamzlab.com/math/calculator-with-tape/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Calculator with Tape — Teamz Lab Tools">
+  <meta name="twitter:description" content="Classic adding machine with scrolling paper tape. Print, copy, or download your calculation history.">
+  <link rel="canonical" href="https://tool.teamzlab.com/math/calculator-with-tape/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .calc-layout {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+    }
+    /* TAPE */
+    .tape-col {
+      flex: 1;
+      min-width: 0;
+    }
+    .tape-container {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .tape-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tape-header span {
+      font-weight: 600;
+      color: var(--heading);
+      font-size: 0.95rem;
+    }
+    .tape-header-actions {
+      display: flex;
+      gap: 0.4rem;
+    }
+    .tape-header-actions button {
+      padding: 0.3rem 0.65rem;
+      font-size: 0.78rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .tape-header-actions button:hover {
+      border-color: var(--accent);
+    }
+    .tape-scroll {
+      height: 420px;
+      overflow-y: auto;
+      padding: 0.75rem 1rem;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .tape-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+    .tape-line .tape-num {
+      color: var(--text);
+      text-align: right;
+      flex: 1;
+      margin-right: 0.75rem;
+    }
+    .tape-line .tape-op {
+      color: var(--accent);
+      width: 2rem;
+      text-align: center;
+      font-weight: 700;
+    }
+    .tape-line.tape-total {
+      border-top: 1px dashed var(--border);
+      margin-top: 2px;
+      padding-top: 4px;
+    }
+    .tape-line.tape-total .tape-num {
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .tape-line.tape-total .tape-op {
+      font-weight: 700;
+    }
+    .tape-line.tape-gt {
+      border-top: 2px solid var(--border);
+      margin-top: 4px;
+      padding-top: 6px;
+    }
+    .tape-line.tape-gt .tape-num {
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .tape-line.tape-note {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-style: italic;
+      justify-content: center;
+    }
+    /* CALCULATOR */
+    .keypad-col {
+      width: 320px;
+      flex-shrink: 0;
+    }
+    .calc-display {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+      text-align: right;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .calc-display .display-op {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      min-height: 1.2rem;
+    }
+    .calc-display .display-num {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--heading);
+      word-break: break-all;
+    }
+    .calc-display .display-mem {
+      font-size: 0.75rem;
+      color: var(--accent);
+      min-height: 1rem;
+    }
+    .calc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    .calc-grid button {
+      padding: 0.85rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+      font-family: 'Poppins', sans-serif;
+    }
+    .calc-grid button:hover {
+      background: var(--bg);
+    }
+    .calc-grid button:active {
+      transform: scale(0.95);
+    }
+    .calc-grid button.btn-op {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+    .calc-grid button.btn-op:hover {
+      opacity: 0.88;
+    }
+    .calc-grid button.btn-eq {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+      font-weight: 800;
+      font-size: 1.3rem;
+    }
+    .calc-grid button.btn-eq:hover {
+      opacity: 0.88;
+    }
+    .calc-grid button.btn-fn {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .calc-grid button.btn-clear {
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .tax-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      align-items: center;
+    }
+    .tax-row label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .tax-row input {
+      width: 60px;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      text-align: right;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .tax-row button {
+      flex: 1;
+      padding: 0.45rem 0;
+      font-size: 0.82rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .tax-row button:hover {
+      border-color: var(--accent);
+    }
+    @media (max-width: 700px) {
+      .calc-layout {
+        flex-direction: column-reverse;
+      }
+      .keypad-col {
+        width: 100%;
+      }
+      .tape-scroll {
+        height: 250px;
+      }
+    }
+    @media print {
+      body * { visibility: hidden; }
+      .tape-container, .tape-container * { visibility: visible; }
+      .tape-container {
+        position: absolute; left: 0; top: 0; width: 100%;
+        border: none; box-shadow: none;
+      }
+      .tape-header-actions { display: none; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Math Tools", "item": "https://tool.teamzlab.com/math/"}, {"@type": "ListItem", "position": 3, "name": "Calculator with Tape"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is a calculator with tape?", "acceptedAnswer": {"@type": "Answer", "text": "A calculator with tape (or printing calculator) records every number and operation on a scrolling paper-like strip, just like the physical adding machines used in accounting. You can review, print, copy, or download the tape."}}, {"@type": "Question", "name": "What is the Grand Total (GT) button?", "acceptedAnswer": {"@type": "Answer", "text": "The GT button sums every subtotal you have computed with the = button during your session. It is useful for adding up several separate calculations — for example, totaling invoices from different vendors."}}, {"@type": "Question", "name": "How do the memory buttons work?", "acceptedAnswer": {"@type": "Answer", "text": "M+ adds the displayed number to memory, M- subtracts it from memory, MR recalls the stored memory value to the display, and MC clears the memory to zero."}}, {"@type": "Question", "name": "Can I print just the tape?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Print button and the browser's print dialog opens showing only the tape contents, formatted like a receipt. The calculator keypad is hidden during printing."}}, {"@type": "Question", "name": "How does the tax button work?", "acceptedAnswer": {"@type": "Answer", "text": "Set your tax rate in the Tax Rate field, then press +Tax to add tax to the current display value, or -Tax to subtract tax. The tax amount and new total appear on the tape."}}, {"@type": "Question", "name": "Is my data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Everything runs in your browser. No data is sent to any server and nothing is stored."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Calculator with Tape", "description": "Free online printing calculator with scrolling paper tape, memory, grand total, and tax buttons.", "url": "https://tool.teamzlab.com/math/calculator-with-tape/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Calculator with Tape — Print &amp; Save Calculations</h1>
+      <p class="tool-description">A classic adding machine simulator with a scrolling paper tape. Every operation is recorded like a receipt — review your work, print it, copy it, or download it as a text file.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="calc-layout">
+        <!-- TAPE -->
+        <div class="tape-col">
+          <div class="tape-container">
+            <div class="tape-header">
+              <span>Paper Tape</span>
+              <div class="tape-header-actions">
+                <button type="button" id="printBtn">Print</button>
+                <button type="button" id="copyTapeBtn">Copy</button>
+                <button type="button" id="downloadBtn">Download</button>
+                <button type="button" id="clearTapeBtn">Clear Tape</button>
+              </div>
+            </div>
+            <div class="tape-scroll" id="tapeScroll"></div>
+          </div>
+        </div>
+        <!-- KEYPAD -->
+        <div class="keypad-col">
+          <div class="calc-display">
+            <div class="display-mem" id="memInd"></div>
+            <div class="display-op" id="dispOp">&nbsp;</div>
+            <div class="display-num" id="dispNum">0</div>
+          </div>
+          <div class="calc-grid">
+            <button type="button" class="btn-fn" data-action="mc">MC</button>
+            <button type="button" class="btn-fn" data-action="mr">MR</button>
+            <button type="button" class="btn-fn" data-action="m-">M−</button>
+            <button type="button" class="btn-fn" data-action="m+">M+</button>
+
+            <button type="button" class="btn-clear" data-action="ac">AC</button>
+            <button type="button" class="btn-clear" data-action="c">C</button>
+            <button type="button" data-action="sign">±</button>
+            <button type="button" class="btn-op" data-action="op" data-op="/">÷</button>
+
+            <button type="button" data-action="digit" data-val="7">7</button>
+            <button type="button" data-action="digit" data-val="8">8</button>
+            <button type="button" data-action="digit" data-val="9">9</button>
+            <button type="button" class="btn-op" data-action="op" data-op="*">×</button>
+
+            <button type="button" data-action="digit" data-val="4">4</button>
+            <button type="button" data-action="digit" data-val="5">5</button>
+            <button type="button" data-action="digit" data-val="6">6</button>
+            <button type="button" class="btn-op" data-action="op" data-op="-">−</button>
+
+            <button type="button" data-action="digit" data-val="1">1</button>
+            <button type="button" data-action="digit" data-val="2">2</button>
+            <button type="button" data-action="digit" data-val="3">3</button>
+            <button type="button" class="btn-op" data-action="op" data-op="+">+</button>
+
+            <button type="button" data-action="digit" data-val="0" style="grid-column: span 2;">0</button>
+            <button type="button" data-action="dot">.</button>
+            <button type="button" class="btn-eq" data-action="eq">=</button>
+
+            <button type="button" class="btn-fn" data-action="pct">%</button>
+            <button type="button" class="btn-fn" data-action="gt">GT</button>
+            <button type="button" class="btn-fn" data-action="bksp">⌫</button>
+            <button type="button" class="btn-fn" data-action="sqrt">√</button>
+          </div>
+          <div class="tax-row">
+            <label for="taxRate">Tax %</label>
+            <input type="number" id="taxRate" value="10" min="0" max="100" step="0.01">
+            <button type="button" id="taxPlusBtn">+Tax</button>
+            <button type="button" id="taxMinusBtn">−Tax</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is a Printing Calculator?</h2>
+      <p>A printing calculator — also called an adding machine or calculator with tape — is a calculator that records every number and operation on a paper roll. Accountants, bookkeepers, and auditors have used these machines for over a century because the tape provides a verifiable record of every keystroke. If a total looks wrong, you simply scan the tape to find the mistake.</p>
+
+      <h3>Why Accountants Love the Tape</h3>
+      <p>In double-entry bookkeeping, every journal entry must balance. The tape lets you add up debits on one run and credits on another, then compare the two totals. In reconciliation, you enter each bank statement item and check whether the running total matches the closing balance. The tape is your audit trail — it proves the math is right.</p>
+
+      <h3>Features of This Calculator</h3>
+      <p><strong>Paper tape:</strong> Every operation scrolls upward like a receipt roll. Numbers are right-aligned and the operation symbol (+, −, ×, ÷) appears on the right edge. <strong>Memory:</strong> M+ adds the displayed value to memory, M− subtracts it, MR recalls it, MC clears it. <strong>Grand total:</strong> The GT button sums every subtotal you have computed with = during the session — useful for totaling multiple invoices or expense categories. <strong>Tax:</strong> Set your local tax rate and press +Tax or −Tax to add or remove tax from the current value.</p>
+
+      <h3>Print, Copy, Download</h3>
+      <p>Click <strong>Print</strong> to open the browser print dialog with just the tape — the keypad is hidden. Click <strong>Copy</strong> to copy the tape as plain text, ready to paste into a spreadsheet or email. Click <strong>Download</strong> to save a <code>.txt</code> file of the tape to your computer.</p>
+
+      <h3>Use Cases</h3>
+      <p><strong>Bookkeeping:</strong> Enter daily transactions and verify the running balance. <strong>Invoicing:</strong> Total line items, add tax, and copy the tape into an email. <strong>Reconciliation:</strong> Match bank statement entries against your records. <strong>Auditing:</strong> Provide a clear calculation trail that a reviewer can verify line by line. <strong>Education:</strong> Learn how adding machines work without buying physical hardware.</p>
+
+      <h3>Privacy First</h3>
+      <p>Everything runs in your browser. No data is sent to any server, no account is required, and nothing is stored.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Math Tools',url:'/math/'},{name:'Calculator with Tape'}];
+    var FAQS = [
+      {q:'What is a calculator with tape?', a:'A calculator with tape (or printing calculator) records every number and operation on a scrolling paper-like strip, just like the physical adding machines used in accounting. You can review, print, copy, or download the tape.'},
+      {q:'What is the Grand Total (GT) button?', a:'The GT button sums every subtotal you have computed with the = button during your session. It is useful for adding up several separate calculations — for example, totaling invoices from different vendors.'},
+      {q:'How do the memory buttons work?', a:'M+ adds the displayed number to memory, M- subtracts it from memory, MR recalls the stored memory value to the display, and MC clears the memory to zero.'},
+      {q:'Can I print just the tape?', a:'Yes. Click the Print button and the browser\'s print dialog opens showing only the tape contents, formatted like a receipt. The calculator keypad is hidden during printing.'},
+      {q:'How does the tax button work?', a:'Set your tax rate in the Tax Rate field, then press +Tax to add tax to the current display value, or -Tax to subtract tax. The tax amount and new total appear on the tape.'},
+      {q:'Is my data private?', a:'Yes. Everything runs in your browser. No data is sent to any server and nothing is stored.'}
+    ];
+    var RELATED_TOOLS = [
+      {slug:'math/notepad-calculator', name:'Notepad Calculator', description:'Type math in a scratch pad and see results instantly.'},
+      {slug:'math/percentage-calculator', name:'Percentage Calculator', description:'Calculate percentages with step-by-step working.'},
+      {slug:'math/average-calculator', name:'Average Calculator', description:'Mean, median, mode, and range from any data set.'}
+    ];
+    var TOOL_CONFIG = {
+      slug:'math/calculator-with-tape',
+      title:'Calculator with Tape',
+      description:'Free online printing calculator with scrolling paper tape, memory, grand total, and tax buttons.'
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      // State
+      var display = '0';
+      var currentOp = null;
+      var accumulator = null;
+      var newEntry = true;
+      var memory = 0;
+      var grandTotal = 0;
+      var tapeLines = [];
+
+      var dispNum = document.getElementById('dispNum');
+      var dispOp = document.getElementById('dispOp');
+      var memInd = document.getElementById('memInd');
+      var tapeScroll = document.getElementById('tapeScroll');
+
+      function updateDisplay() {
+        dispNum.textContent = display;
+        dispOp.innerHTML = currentOp ? formatNum(accumulator) + ' ' + opSymbol(currentOp) : '&nbsp;';
+        memInd.textContent = memory !== 0 ? 'M = ' + formatNum(memory) : '';
+      }
+
+      function opSymbol(op) {
+        return {'+':'+', '-':'−', '*':'×', '/':'÷'}[op] || op;
+      }
+
+      function formatNum(n) {
+        if (n === null || n === undefined) return '';
+        var num = parseFloat(n);
+        if (isNaN(num)) return n;
+        // Show up to 10 decimal places, strip trailing zeros
+        var s = num.toFixed(10).replace(/\.?0+$/, '');
+        // Add thousand separators to integer part
+        var parts = s.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.join('.');
+      }
+
+      function getNum() {
+        return parseFloat(display.replace(/,/g, ''));
+      }
+
+      function setDisplay(n) {
+        display = String(n);
+        newEntry = true;
+        updateDisplay();
+      }
+
+      function addTapeLine(num, symbol, cls) {
+        var line = {num: formatNum(num), symbol: symbol || '', cls: cls || ''};
+        tapeLines.push(line);
+        renderTape();
+      }
+
+      function addTapeNote(text) {
+        tapeLines.push({note: text});
+        renderTape();
+      }
+
+      function renderTape() {
+        var html = '';
+        for (var i = 0; i < tapeLines.length; i++) {
+          var l = tapeLines[i];
+          if (l.note) {
+            html += '<div class="tape-line tape-note">' + l.note + '</div>';
+          } else {
+            var cls = 'tape-line' + (l.cls ? ' ' + l.cls : '');
+            html += '<div class="' + cls + '"><span class="tape-num">' + l.num + '</span><span class="tape-op">' + l.symbol + '</span></div>';
+          }
+        }
+        tapeScroll.innerHTML = html;
+        tapeScroll.scrollTop = tapeScroll.scrollHeight;
+      }
+
+      function doCalc(a, op, b) {
+        switch(op) {
+          case '+': return a + b;
+          case '-': return a - b;
+          case '*': return a * b;
+          case '/': return b !== 0 ? a / b : NaN;
+        }
+        return b;
+      }
+
+      // Button clicks
+      document.querySelector('.calc-grid').addEventListener('click', function(e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+        var action = btn.dataset.action;
+
+        switch(action) {
+          case 'digit':
+            if (newEntry) { display = ''; newEntry = false; }
+            if (display === '0') display = '';
+            display += btn.dataset.val;
+            updateDisplay();
+            break;
+
+          case 'dot':
+            if (newEntry) { display = '0'; newEntry = false; }
+            if (display.indexOf('.') === -1) display += '.';
+            updateDisplay();
+            break;
+
+          case 'sign':
+            if (display !== '0') {
+              display = display.charAt(0) === '-' ? display.substring(1) : '-' + display;
+              updateDisplay();
+            }
+            break;
+
+          case 'bksp':
+            if (!newEntry && display.length > 1) {
+              display = display.substring(0, display.length - 1);
+            } else {
+              display = '0';
+              newEntry = true;
+            }
+            updateDisplay();
+            break;
+
+          case 'op':
+            var op = btn.dataset.op;
+            var val = getNum();
+            addTapeLine(val, opSymbol(op));
+            if (accumulator !== null && currentOp && !newEntry) {
+              var result = doCalc(accumulator, currentOp, val);
+              accumulator = result;
+              setDisplay(result);
+            } else {
+              accumulator = val;
+            }
+            currentOp = op;
+            newEntry = true;
+            updateDisplay();
+            break;
+
+          case 'eq':
+            var val = getNum();
+            addTapeLine(val, opSymbol(currentOp) || '');
+            if (accumulator !== null && currentOp) {
+              var result = doCalc(accumulator, currentOp, val);
+              var rounded = Math.round(result * 1e10) / 1e10;
+              addTapeLine(rounded, '*', 'tape-total');
+              grandTotal += rounded;
+              accumulator = null;
+              currentOp = null;
+              setDisplay(rounded);
+            }
+            break;
+
+          case 'ac':
+            display = '0';
+            currentOp = null;
+            accumulator = null;
+            newEntry = true;
+            addTapeNote('— AC —');
+            updateDisplay();
+            break;
+
+          case 'c':
+            display = '0';
+            newEntry = true;
+            updateDisplay();
+            break;
+
+          case 'pct':
+            var val = getNum();
+            if (accumulator !== null && currentOp) {
+              // percentage of accumulator
+              var pctVal = accumulator * (val / 100);
+              addTapeLine(val + '%', '');
+              addTapeLine(pctVal, '%');
+              display = String(pctVal);
+              newEntry = true;
+              updateDisplay();
+            }
+            break;
+
+          case 'sqrt':
+            var val = getNum();
+            var sq = Math.sqrt(val);
+            addTapeLine(val, '√');
+            addTapeLine(Math.round(sq * 1e10) / 1e10, '');
+            setDisplay(Math.round(sq * 1e10) / 1e10);
+            break;
+
+          case 'gt':
+            addTapeLine(grandTotal, 'GT', 'tape-gt');
+            setDisplay(grandTotal);
+            break;
+
+          case 'm+':
+            memory += getNum();
+            addTapeNote('M+ ' + formatNum(getNum()));
+            updateDisplay();
+            break;
+
+          case 'm-':
+            memory -= getNum();
+            addTapeNote('M− ' + formatNum(getNum()));
+            updateDisplay();
+            break;
+
+          case 'mr':
+            setDisplay(memory);
+            addTapeNote('MR = ' + formatNum(memory));
+            break;
+
+          case 'mc':
+            memory = 0;
+            addTapeNote('MC');
+            updateDisplay();
+            break;
+        }
+      });
+
+      // Tax buttons
+      document.getElementById('taxPlusBtn').addEventListener('click', function() {
+        var rate = parseFloat(document.getElementById('taxRate').value) || 0;
+        var val = getNum();
+        var tax = Math.round(val * rate / 100 * 100) / 100;
+        var total = Math.round((val + tax) * 100) / 100;
+        addTapeLine(val, '');
+        addTapeNote('+Tax ' + rate + '%: ' + formatNum(tax));
+        addTapeLine(total, 'T+', 'tape-total');
+        setDisplay(total);
+      });
+
+      document.getElementById('taxMinusBtn').addEventListener('click', function() {
+        var rate = parseFloat(document.getElementById('taxRate').value) || 0;
+        var val = getNum();
+        var tax = Math.round(val * rate / 100 * 100) / 100;
+        var total = Math.round((val - tax) * 100) / 100;
+        addTapeLine(val, '');
+        addTapeNote('−Tax ' + rate + '%: ' + formatNum(tax));
+        addTapeLine(total, 'T−', 'tape-total');
+        setDisplay(total);
+      });
+
+      // Tape actions
+      function getTapeText() {
+        var lines = [];
+        for (var i = 0; i < tapeLines.length; i++) {
+          var l = tapeLines[i];
+          if (l.note) {
+            lines.push('  ' + l.note);
+          } else {
+            var padded = ('              ' + l.num).slice(-14);
+            lines.push(padded + '  ' + (l.symbol || ''));
+          }
+        }
+        return lines.join('\n');
+      }
+
+      document.getElementById('printBtn').addEventListener('click', function() {
+        window.print();
+      });
+
+      document.getElementById('copyTapeBtn').addEventListener('click', function() {
+        navigator.clipboard.writeText(getTapeText()).then(function() {
+          var btn = document.getElementById('copyTapeBtn');
+          btn.textContent = 'Copied!';
+          setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+        });
+      });
+
+      document.getElementById('downloadBtn').addEventListener('click', function() {
+        var blob = new Blob([getTapeText()], {type: 'text/plain'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'calculator-tape.txt';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      document.getElementById('clearTapeBtn').addEventListener('click', function() {
+        tapeLines = [];
+        grandTotal = 0;
+        renderTape();
+      });
+
+      // Keyboard support
+      document.addEventListener('keydown', function(e) {
+        var key = e.key;
+        if (key >= '0' && key <= '9') {
+          simulateClick('[data-action="digit"][data-val="' + key + '"]');
+          e.preventDefault();
+        } else if (key === '.') {
+          simulateClick('[data-action="dot"]');
+          e.preventDefault();
+        } else if (key === '+') {
+          simulateClick('[data-op="+"]');
+          e.preventDefault();
+        } else if (key === '-') {
+          simulateClick('[data-op="-"]');
+          e.preventDefault();
+        } else if (key === '*') {
+          simulateClick('[data-op="*"]');
+          e.preventDefault();
+        } else if (key === '/') {
+          simulateClick('[data-op="/"]');
+          e.preventDefault();
+        } else if (key === 'Enter' || key === '=') {
+          simulateClick('[data-action="eq"]');
+          e.preventDefault();
+        } else if (key === 'Escape') {
+          simulateClick('[data-action="ac"]');
+          e.preventDefault();
+        } else if (key === 'Backspace') {
+          simulateClick('[data-action="bksp"]');
+          e.preventDefault();
+        }
+      });
+
+      function simulateClick(selector) {
+        var btn = document.querySelector('.calc-grid ' + selector);
+        if (btn) btn.click();
+      }
+
+      updateDisplay();
+    });
+  </script>
+</body>
+</html>
