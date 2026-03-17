@@ -24,6 +24,10 @@
   // Don't run in localhost without override
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
 
+  // Don't run in in-app browsers (Messenger, Facebook, Instagram, etc.) — ads fail and show "Page can't be loaded"
+  var ua = navigator.userAgent || '';
+  if (/FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat/i.test(ua)) return;
+
   // --- Analytics helper: track ad events in Firebase + GA4 ---
   function trackAdEvent(eventName, params) {
     var fullParams = Object.assign({
