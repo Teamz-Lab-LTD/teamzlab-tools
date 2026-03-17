@@ -1129,6 +1129,22 @@ document.addEventListener('DOMContentLoaded', function () {
   // Rating widget renders after a short delay to ensure FAQs/related tools are rendered first
   setTimeout(function () { TeamzTools.renderRating(); }, 100);
 
+  // Offline indicator — show banner when offline, hide when back online
+  (function initOfflineIndicator() {
+    var banner = document.createElement('div');
+    banner.className = 'offline-banner';
+    banner.innerHTML = 'You are offline — this tool still works. Your data is saved locally.';
+    banner.style.display = 'none';
+    document.body.appendChild(banner);
+
+    function update() {
+      banner.style.display = navigator.onLine ? 'none' : 'block';
+    }
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    update();
+  })();
+
   // Floating CTA bar — always visible at bottom
   var cta = document.createElement('div');
   cta.className = 'floating-cta';
