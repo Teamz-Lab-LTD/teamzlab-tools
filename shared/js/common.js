@@ -588,7 +588,84 @@ var TeamzTools = (function () {
     renderFAQs: renderFAQs,
     renderRating: renderRating,
     SITE_NAME: SITE_NAME,
-    SITE_URL: SITE_URL
+    SITE_URL: SITE_URL,
+
+    // ─── VIRAL SHARE LINKS — encode/decode tool data in URL params ───
+    /**
+     * Encode data object into a shareable URL
+     * Usage: TeamzTools.shareEncode({ to: 'Nahid', from: 'Sazzad', amount: '500' })
+     * Returns: https://tool.teamzlab.com/ramadan/eid-salami-card-generator/?to=Nahid&from=Sazzad&amount=500
+     */
+    shareEncode: function(data) {
+      var params = new URLSearchParams();
+      Object.keys(data).forEach(function(key) {
+        if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+          params.set(key, data[key]);
+        }
+      });
+      return SITE_URL + window.location.pathname + '?' + params.toString();
+    },
+
+    /**
+     * Decode URL params into a data object
+     * Usage: var data = TeamzTools.shareDecode(); // { to: 'Nahid', from: 'Sazzad', amount: '500' }
+     */
+    shareDecode: function() {
+      var params = new URLSearchParams(window.location.search);
+      var data = {};
+      params.forEach(function(value, key) {
+        // Skip tracking params
+        if (key === 'fbclid' || key === 'utm_source' || key === 'utm_medium' || key === 'utm_campaign' || key === 'ref') return;
+        data[key] = decodeURIComponent(value);
+      });
+      return data;
+    },
+
+    /**
+     * Check if page was opened via a share link (has data params, not just tracking)
+     */
+    isSharedView: function() {
+      var data = this.shareDecode();
+      return Object.keys(data).length > 0;
+    },
+
+    /**
+     * Copy share URL to clipboard and show toast
+     * Usage: TeamzTools.copyShareLink({ to: 'Nahid', amount: '500' })
+     */
+    copyShareLink: function(data, toastFn) {
+      var url = this.shareEncode(data);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(function() {
+          if (toastFn) toastFn('Share link copied!');
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (toastFn) toastFn('Share link copied!');
+      }
+      return url;
+    },
+
+    /**
+     * Show a viral banner when viewing a shared card
+     * Usage: TeamzTools.showSharedBanner('Sazzad sent Nahid ৳500 Eid Salami!')
+     */
+    showSharedBanner: function(message) {
+      var banner = document.createElement('div');
+      banner.className = 'teamz-shared-banner';
+      banner.innerHTML =
+        '<div class="shared-banner__text">' + _escapeHtml(message) + '</div>' +
+        '<a href="' + window.location.pathname + '" class="shared-banner__cta">Create Your Own</a>';
+      var hero = document.querySelector('.tool-hero');
+      if (hero) {
+        hero.parentNode.insertBefore(banner, hero.nextSibling);
+      }
+    }
   };
 })();
 
