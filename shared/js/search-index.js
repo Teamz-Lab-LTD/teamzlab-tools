@@ -654,6 +654,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Eid Mubarak Wishes Generator',d:'Generate beautiful Eid Mubarak wishes and messages for family, friends, and colleagues. Personalized, multilingual, one-tap copy. Free and private.',h:'/ramadan/eid-mubarak-wishes-generator/'},
   {t:'Eid Salami Card Generator',d:'Create beautiful Eid Salami cards with custom names, amounts, and messages. Download as image or share on WhatsApp. Free and private.',h:'/ramadan/eid-salami-card-generator/'},
   {t:'Eid Salami Cheque Book Generator',d:'Generate fun printable Eid Salami cheques for kids and family. Create a cheque book with custom names and amounts. Download or print free.',h:'/ramadan/eid-salami-cheque-book/'},
+  {t:'Eid Salami QR Card Generator',d:'Create personalized Eid Salami cards with your photo, QR code, and mobile wallet number. Share on social media. Free and private.',h:'/ramadan/eid-salami-qr-card-generator/'},
   {t:'Eid Salami Tracker',d:'Track all your Eid Salami received and given. See totals, fun stats, badges, and share your Eid Salami Report. Free and private.',h:'/ramadan/eid-salami-tracker/'},
   {t:'Eidiya Budget Calculator',d:'Calculate total Eidiya spending for children, relatives, and spouse. Plan your Eid money gift budget with this free calculator for Muslim families.',h:'/ramadan/eidiya-budget-calculator/'},
   {t:'Fitrah, Fidya &amp; Kaffarah Calculator',d:'Calculate Sadaqatul Fitr, Fidya for missed fasts, and Kaffarah for deliberately broken fasts. Free Ramadan 2026 calculator for Muslim families.',h:'/ramadan/fitrah-fidya-kaffarah-calculator/'},
