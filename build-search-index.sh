@@ -42,7 +42,7 @@ sed -i '' "s|search-index.js?v=[0-9]*|search-index.js?v=$DATEVER|" "$BASE/index.
 # === Auto-update homepage card counts ===
 echo ""
 echo "=== Updating homepage card counts ==="
-for hub in ai evergreen dev text image tools freelance work diagnostic career student housing creator software compliance eu ramadan apple auto health kids music sports weather; do
+for hub in ai evergreen dev text image uidesign tools freelance work diagnostic career student housing creator software compliance eu ramadan apple auto health kids music sports weather; do
   actual=$(find "$BASE/$hub" -name "index.html" -not -path "$BASE/$hub/index.html" 2>/dev/null | wc -l | tr -d ' ')
   if [ "$actual" -gt 0 ]; then
     # Update the count in the homepage card for this hub
