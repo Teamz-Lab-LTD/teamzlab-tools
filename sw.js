@@ -10,7 +10,7 @@
  * - User sees offline indicator when network is unavailable
  */
 
-var CACHE_NAME = 'teamztools-v4';
+var CACHE_NAME = 'teamztools-202603170823';
 var PRECACHE_URLS = [
   '/',
   '/branding/css/teamz-branding.css',
