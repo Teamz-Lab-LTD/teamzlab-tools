@@ -81,24 +81,34 @@ def extract_metadata(filepath):
         'url': f"/{hub}/{slug}/",
     }
 
+    # Page language
+    m = re.search(r'<html[^>]+lang=["\']([^"\']+)["\']', content)
+    meta['lang'] = m.group(1).split('-')[0].lower() if m else 'en'
+
     # Title tag
     m = re.search(r'<title>(.*?)</title>', content, re.DOTALL)
     meta['title'] = html.unescape(m.group(1).strip()) if m else ''
 
-    # Meta description
-    m = re.search(r'<meta\s+name=["\']description["\']\s+content=["\'](.*?)["\']', content, re.DOTALL)
+    # Meta description — match same quote type to handle apostrophes in content
+    m = re.search(r'<meta\s+name="description"\s+content="(.*?)"', content, re.DOTALL)
+    if not m:
+        m = re.search(r"<meta\s+name='description'\s+content='(.*?)'", content, re.DOTALL)
     meta['description'] = html.unescape(m.group(1).strip()) if m else ''
 
-    # H1
-    m = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.DOTALL)
-    meta['h1'] = re.sub(r'<[^>]+>', '', m.group(1)).strip() if m else ''
+    # Exclude redirect/noindex pages from audit
+    if re.search(r'meta\s+(http-equiv=["\']refresh["\']|name=["\']robots["\']\s+content=["\']noindex)', content):
+        return None
 
-    # H2s
-    meta['h2s'] = [re.sub(r'<[^>]+>', '', h).strip()
+    # H1 (html.unescape to handle &amp; &eacute; etc.)
+    m = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.DOTALL)
+    meta['h1'] = html.unescape(re.sub(r'<[^>]+>', '', m.group(1)).strip()) if m else ''
+
+    # H2s (html.unescape)
+    meta['h2s'] = [html.unescape(re.sub(r'<[^>]+>', '', h).strip())
                    for h in re.findall(r'<h2[^>]*>(.*?)</h2>', content, re.DOTALL)]
 
-    # H3s
-    meta['h3s'] = [re.sub(r'<[^>]+>', '', h).strip()
+    # H3s (html.unescape)
+    meta['h3s'] = [html.unescape(re.sub(r'<[^>]+>', '', h).strip())
                    for h in re.findall(r'<h3[^>]*>(.*?)</h3>', content, re.DOTALL)]
 
     # Tool description (first paragraph after H1)
@@ -141,18 +151,69 @@ def extract_metadata(filepath):
 def extract_primary_keyword(meta):
     """
     Step 1: Generate seed/primary keyword from tool metadata.
-    Uses H1 as primary keyword (should match the main search intent).
+    Smart extraction: strips subtitles, privacy prefixes, handles non-Latin scripts.
     """
     h1 = meta.get('h1', '')
-    if h1:
-        # Clean up: remove "Free ", "Online ", brand suffixes
-        kw = re.sub(r'\s*[—–|-]\s*Teamz Lab.*$', '', h1, flags=re.IGNORECASE)
-        kw = kw.strip()
-        return kw.lower()
-
-    # Fallback: derive from slug
     slug = meta.get('slug', '')
-    return slug.replace('-', ' ').lower()
+
+    if not h1:
+        return slug.replace('-', ' ').lower()
+
+    kw = h1
+
+    # Step 1: Strip brand suffixes
+    kw = re.sub(r'\s*[—–|]\s*Teamz Lab.*$', '', kw, flags=re.IGNORECASE)
+
+    # Step 2: Strip em-dash/en-dash subtitles ("Tool — Subtitle Here")
+    stripped = re.split(r'\s*[—–]\s+', kw, maxsplit=1)[0]
+    if len(stripped.split()) >= 2:
+        kw = stripped
+    elif len(stripped.split()) == 1 and slug:
+        # Left side too short (e.g., "OCR — Extract Text"), fall back to slug
+        return slug.replace('-', ' ').lower()
+
+    # Step 3: Strip long parentheticals (>10 chars) — "(Duckworth-Lewis-Stern)", "(ASRS v1.1)"
+    kw = re.sub(r'\s*\([^)]{10,}\)\s*$', '', kw)
+    # Strip short parens with version numbers
+    kw = re.sub(r'\s*\([^)]*v\d[^)]*\)\s*$', '', kw, flags=re.IGNORECASE)
+
+    # Step 4: Strip privacy/free/confidential prefixes that aren't the real keyword
+    kw = re.sub(r'^(Free\s+)?(Private\s+|Confidential\s+)', '', kw, flags=re.IGNORECASE)
+
+    kw = kw.strip()
+
+    # Step 5: If H1 is predominantly non-Latin script (Arabic, Japanese, CJK, etc.), prefer slug
+    if slug:
+        latin_chars = len(re.findall(r'[a-zA-Z]', kw))
+        total_alpha = len(re.findall(r'[^\s\d\W]', kw)) or 1
+        if latin_chars / total_alpha < 0.5:
+            return slug.replace('-', ' ').lower()
+
+    # Step 6: If H1 is a question ("What is...", "How much...", "Which..."), extract from title first
+    if re.match(r'^(what|how|where|when|why|which|is|do|does|can|should|are|who)\s', kw, re.IGNORECASE):
+        title = meta.get('title', '')
+        title_kw = re.sub(r'\s*[—–|]\s*Teamz Lab.*$', '', title, flags=re.IGNORECASE).strip()
+        title_kw = re.sub(r'\s*[—–]\s+.*$', '', title_kw).strip()
+        if title_kw and len(title_kw.split()) >= 2:
+            return title_kw.lower()
+        elif slug:
+            slug_kw = slug.replace('-', ' ')
+            if len(slug_kw.split()) >= 2:
+                return slug_kw.lower()
+
+    # Step 7: If keyword is very long (>6 words), cross-reference with slug to shorten
+    words = kw.split()
+    if len(words) > 6 and slug:
+        slug_kw = slug.replace('-', ' ')
+        # Use slug if it has meaningful words (>= 3) and overlaps with H1
+        slug_word_set = set(slug_kw.split())
+        kw_word_set = set(w.lower() for w in words)
+        if len(slug_word_set & kw_word_set) >= 2 and len(slug_kw.split()) >= 3:
+            return slug_kw.lower()
+        # Otherwise, keep first 6 words of H1
+        kw = ' '.join(words[:6])
+
+    return kw.lower().strip() if kw else slug.replace('-', ' ').lower()
 
 
 def extract_secondary_keywords(meta):
@@ -186,14 +247,16 @@ def extract_secondary_keywords(meta):
     return list(keywords)
 
 
-def fetch_google_autocomplete(query, lang='en', country='us'):
+def fetch_google_autocomplete(query, lang='en', country=''):
     """
     Step 2: FREE keyword research using Google Autocomplete API.
     No API key needed. Returns real search suggestions.
+    country='' means worldwide (no geo filter).
     """
     try:
         encoded = urllib.parse.quote(query)
-        url = f"http://suggestqueries.google.com/complete/search?client=firefox&q={encoded}&hl={lang}&gl={country}"
+        geo_param = f"&gl={country}" if country else ""
+        url = f"http://suggestqueries.google.com/complete/search?client=firefox&q={encoded}&hl={lang}{geo_param}"
         req = urllib.request.Request(url, headers={
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
         })
@@ -232,6 +295,300 @@ def fetch_related_searches(query):
     return list(suggestions)
 
 
+# ─── GOOGLE TRENDS (FREE) ─────────────────────────────────────────
+
+def fetch_google_trends(keyword, geo='', timeframe='today 12-m'):
+    """
+    Fetch Google Trends data for a keyword using the public embed/explore endpoint.
+    Returns interest over time data (relative 0-100 scale).
+    No API key needed — uses the same endpoint as the Trends website.
+    """
+    try:
+        # Google Trends explore URL — returns a token we need
+        encoded = urllib.parse.quote(keyword)
+        # Use the trending searches daily API for related queries
+        url = f"https://trends.google.com/trends/api/autocomplete/{encoded}?hl=en-US&tz=-360"
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Accept': 'application/json',
+        })
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw = resp.read().decode('utf-8')
+            # Google prepends ")]}'\n" to JSON responses
+            if raw.startswith(")]}'"):
+                raw = raw[raw.index('\n')+1:]
+            data = json.loads(raw)
+            topics = []
+            if 'default' in data and 'topics' in data['default']:
+                for topic in data['default']['topics']:
+                    mid = topic.get('mid', '')
+                    title = topic.get('title', '')
+                    topic_type = topic.get('type', '')
+                    topics.append({'mid': mid, 'title': title, 'type': topic_type})
+            return topics
+    except Exception:
+        pass
+    return []
+
+
+def _get_trends_opener():
+    """Create a urllib opener with session cookies from Google Trends homepage."""
+    import http.cookiejar
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+    # Visit homepage to get NID cookie (required for API access)
+    try:
+        req = urllib.request.Request('https://trends.google.com/trends/?geo=US', headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        })
+        opener.open(req, timeout=10)
+    except Exception:
+        pass
+    return opener
+
+
+def fetch_trends_interest(keyword, compare_keyword=None, geo='', timeframe='today 12-m'):
+    """
+    Fetch interest-over-time data from Google Trends.
+    Uses session cookie + public widget endpoint. Returns monthly interest values (0-100).
+    """
+    try:
+        opener = _get_trends_opener()
+
+        # Build the comparison request
+        kw_list = [keyword]
+        if compare_keyword:
+            kw_list.append(compare_keyword)
+
+        # Google Trends explore API — get widget tokens
+        req_obj = {
+            'comparisonItem': [
+                {'keyword': kw, 'geo': geo, 'time': timeframe}
+                for kw in kw_list
+            ],
+            'category': 0,
+            'property': ''
+        }
+        req_json = json.dumps(req_obj)
+        explore_url = f"https://trends.google.com/trends/api/explore?hl=en-US&tz=-360&req={urllib.parse.quote(req_json)}&tz=-360"
+
+        req = urllib.request.Request(explore_url, headers={
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        })
+        with opener.open(req, timeout=10) as resp:
+            raw = resp.read().decode('utf-8')
+            if raw.startswith(")]}'"):
+                raw = raw[raw.index('\n')+1:]
+            data = json.loads(raw)
+
+            # Extract the TIMESERIES widget token
+            widgets = data.get('widgets', [])
+            time_widget = None
+            related_widget = None
+            for w in widgets:
+                if w.get('id') == 'TIMESERIES':
+                    time_widget = w
+                elif w.get('id') == 'RELATED_QUERIES':
+                    related_widget = w
+
+            results = {'interest': [], 'related': [], 'keywords': kw_list}
+
+            # Fetch interest over time
+            if time_widget:
+                token = time_widget.get('token', '')
+                req_inner = time_widget.get('request', '')
+                ts_url = f"https://trends.google.com/trends/api/widgetdata/multiline?hl=en-US&tz=-360&req={urllib.parse.quote(json.dumps(req_inner))}&token={token}&tz=-360"
+                req2 = urllib.request.Request(ts_url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                })
+                with opener.open(req2, timeout=10) as resp2:
+                    raw2 = resp2.read().decode('utf-8')
+                    if raw2.startswith(")]}'"):
+                        raw2 = raw2[raw2.index('\n')+1:]
+                    ts_data = json.loads(raw2)
+
+                    timeline = ts_data.get('default', {}).get('timelineData', [])
+                    for point in timeline:
+                        time_str = point.get('formattedTime', '')
+                        values = point.get('value', [])
+                        results['interest'].append({
+                            'time': time_str,
+                            'values': values
+                        })
+
+            # Fetch related queries
+            if related_widget:
+                token = related_widget.get('token', '')
+                req_inner = related_widget.get('request', '')
+                rq_url = f"https://trends.google.com/trends/api/widgetdata/relatedsearches?hl=en-US&tz=-360&req={urllib.parse.quote(json.dumps(req_inner))}&token={token}&tz=-360"
+                req3 = urllib.request.Request(rq_url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                })
+                with opener.open(req3, timeout=10) as resp3:
+                    raw3 = resp3.read().decode('utf-8')
+                    if raw3.startswith(")]}'"):
+                        raw3 = raw3[raw3.index('\n')+1:]
+                    rq_data = json.loads(raw3)
+
+                    # Rising queries
+                    ranked = rq_data.get('default', {}).get('rankedList', [])
+                    for group in ranked:
+                        for item in group.get('rankedKeyword', []):
+                            query_text = item.get('query', '')
+                            value = item.get('formattedValue', '')
+                            link = item.get('link', '')
+                            results['related'].append({
+                                'query': query_text,
+                                'value': value,
+                            })
+
+            return results
+    except Exception as e:
+        return {'error': str(e), 'interest': [], 'related': [], 'keywords': [keyword]}
+
+
+def run_trends(keywords, geo=''):
+    """
+    Run Google Trends analysis for one or two keywords.
+    Shows interest over time, trend direction, seasonal patterns, and related queries.
+    """
+    if not keywords:
+        print("Usage: python3 seo-keyword-engine.py trends \"keyword1\" [\"keyword2\"]")
+        return
+
+    kw1 = keywords[0]
+    kw2 = keywords[1] if len(keywords) > 1 else None
+
+    print(f"\n{'='*60}")
+    print(f"  GOOGLE TRENDS ANALYSIS")
+    print(f"{'='*60}")
+    print(f"  Keyword 1: \"{kw1}\"")
+    if kw2:
+        print(f"  Keyword 2: \"{kw2}\" (comparison)")
+    print(f"  Region:    {geo if geo else 'Worldwide'}")
+    print(f"  Period:    Last 12 months")
+    print()
+
+    # Step 1: Topic matching
+    print(f"  [1/3] Finding trending topics for \"{kw1}\"...")
+    topics = fetch_google_trends(kw1)
+    if topics:
+        print(f"  Google recognizes these related topics:")
+        for t in topics[:5]:
+            print(f"    -> {t['title']} ({t['type']})")
+    else:
+        print(f"  No topic matches found (niche keyword)")
+
+    # Step 2: Interest over time
+    print(f"\n  [2/3] Fetching interest over time...")
+    data = fetch_trends_interest(kw1, kw2, geo=geo)
+
+    if 'error' in data:
+        print(f"  Error: {data['error']}")
+        print(f"  Note: Google Trends may rate-limit automated requests.")
+        print(f"  Try manually: https://trends.google.com/trends/explore?q={urllib.parse.quote(kw1)}")
+        print(f"\n{'='*60}\n")
+        return
+
+    interest = data.get('interest', [])
+    kw_names = data.get('keywords', [kw1])
+
+    if interest:
+        print(f"\n  Interest Over Time (0-100 scale):")
+        print(f"  {'Month':<20s}", end='')
+        for name in kw_names:
+            print(f"  {name[:20]:<20s}", end='')
+        print()
+        print(f"  {'-'*20}", end='')
+        for _ in kw_names:
+            print(f"  {'-'*20}", end='')
+        print()
+
+        # Show data points
+        values_per_kw = [[] for _ in kw_names]
+        for point in interest:
+            time_str = point['time']
+            vals = point['values']
+            print(f"  {time_str:<20s}", end='')
+            for i, v in enumerate(vals):
+                bar = '#' * (v // 5) if v > 0 else ''
+                print(f"  {v:>3d} {bar:<15s}", end='')
+                if i < len(values_per_kw):
+                    values_per_kw[i].append(v)
+            print()
+
+        # Trend analysis
+        print(f"\n  TREND ANALYSIS:")
+        for i, name in enumerate(kw_names):
+            if values_per_kw[i]:
+                vals = values_per_kw[i]
+                avg = sum(vals) / len(vals)
+                peak = max(vals)
+                low = min(vals)
+                recent_3 = vals[-3:] if len(vals) >= 3 else vals
+                early_3 = vals[:3] if len(vals) >= 3 else vals
+                recent_avg = sum(recent_3) / len(recent_3)
+                early_avg = sum(early_3) / len(early_3)
+
+                if recent_avg > early_avg * 1.15:
+                    direction = "RISING"
+                elif recent_avg < early_avg * 0.85:
+                    direction = "FALLING"
+                else:
+                    direction = "STABLE"
+
+                print(f"    \"{name}\":")
+                print(f"      Average interest:  {avg:.0f}/100")
+                print(f"      Peak:              {peak}/100")
+                print(f"      Low:               {low}/100")
+                print(f"      Trend:             {direction}")
+                print(f"      Seasonality:       {'Yes (>{0}pt swing)'.format(peak-low) if peak - low > 30 else 'Low variation'}")
+
+        # Winner comparison
+        if kw2 and len(values_per_kw) >= 2:
+            avg1 = sum(values_per_kw[0]) / len(values_per_kw[0]) if values_per_kw[0] else 0
+            avg2 = sum(values_per_kw[1]) / len(values_per_kw[1]) if values_per_kw[1] else 0
+            print(f"\n  COMPARISON:")
+            if avg1 > avg2 * 1.1:
+                print(f"    WINNER: \"{kw_names[0]}\" (avg {avg1:.0f} vs {avg2:.0f})")
+            elif avg2 > avg1 * 1.1:
+                print(f"    WINNER: \"{kw_names[1]}\" (avg {avg2:.0f} vs {avg1:.0f})")
+            else:
+                print(f"    TIE: Both keywords have similar interest ({avg1:.0f} vs {avg2:.0f})")
+    else:
+        print(f"  No interest data returned.")
+        print(f"  This usually means the keyword is too niche for Trends to track.")
+        print(f"  Try a broader term or check manually:")
+        print(f"  https://trends.google.com/trends/explore?q={urllib.parse.quote(kw1)}")
+
+    # Step 3: Related queries
+    print(f"\n  [3/3] Related & rising queries...")
+    related = data.get('related', [])
+    if related:
+        # Split into top and rising
+        rising = [r for r in related if 'Breakout' in r.get('value', '') or '%' in r.get('value', '')]
+        top = [r for r in related if r not in rising]
+
+        if rising:
+            print(f"\n  RISING QUERIES (opportunities):")
+            for r in rising[:10]:
+                print(f"    {r['query']:<45s}  {r['value']}")
+
+        if top:
+            print(f"\n  TOP RELATED QUERIES:")
+            for r in top[:10]:
+                print(f"    {r['query']:<45s}  {r['value']}")
+    else:
+        print(f"  No related queries returned.")
+
+    # Helpful link
+    trends_url = f"https://trends.google.com/trends/explore?q={urllib.parse.quote(kw1)}"
+    if kw2:
+        trends_url += f",{urllib.parse.quote(kw2)}"
+    print(f"\n  Full interactive chart: {trends_url}")
+    print(f"\n{'='*60}\n")
+
+
 def classify_search_intent(keyword):
     """
     Step 3: Classify search intent (informational, transactional, navigational).
@@ -263,6 +620,54 @@ def is_long_tail(keyword):
     return len(keyword.split()) >= 3
 
 
+def normalize_for_match(text):
+    """Normalize text for keyword matching — strips punctuation, lowercases."""
+    text = text.lower()
+    # Replace & with space, strip commas, periods, colons, question marks, hyphens used as words
+    text = re.sub(r'[&,.:;!?/+]', ' ', text)
+    text = re.sub(r"['\"]", '', text)
+    # Normalize hyphens between words to spaces for matching
+    text = re.sub(r'(?<=[a-z])-(?=[a-z])', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+
+def word_overlap_score(keyword, text):
+    """Calculate what fraction of keyword words appear in text (0.0-1.0)."""
+    kw_norm = normalize_for_match(keyword)
+    text_norm = normalize_for_match(text)
+    # First check exact normalized match
+    if kw_norm in text_norm:
+        return 1.0
+    # Also check if joined keyword (compound word) exists in text
+    # Handles German: "mietbelastungs rechner" → "mietbelastungsrechner"
+    kw_joined = kw_norm.replace(' ', '')
+    text_joined = text_norm.replace(' ', '')
+    if kw_joined in text_joined:
+        return 1.0
+    # Word overlap
+    kw_words = set(kw_norm.split())
+    text_words = set(text_norm.split())
+    if not kw_words:
+        return 0.0
+    # Also check if keyword words appear as substrings of text words (compound word matching)
+    # e.g., "mietbelastungs" is in "mietbelastungsrechner"
+    kw_significant = set(w for w in kw_words if len(w) > 2)
+    if not kw_significant:
+        kw_significant = kw_words
+    overlap = set()
+    for kw_w in kw_significant:
+        if kw_w in text_words:
+            overlap.add(kw_w)
+        else:
+            # Check if keyword word is substring of any text word (compound words)
+            for tw in text_words:
+                if kw_w in tw or tw in kw_w:
+                    overlap.add(kw_w)
+                    break
+    return len(overlap) / len(kw_significant)
+
+
 # ─── AUDIT FUNCTIONS ──────────────────────────────────────────────────
 
 def audit_keyword_placement(meta):
@@ -278,16 +683,33 @@ def audit_keyword_placement(meta):
     score = 0
     max_score = 0
 
+    # Detect non-Latin H1 (Arabic, Japanese, etc.) — these get relaxed scoring
+    h1_raw = meta.get('h1', '')
+    latin_in_h1 = len(re.findall(r'[a-zA-Z]', h1_raw))
+    total_alpha_h1 = len(re.findall(r'[^\s\d\W]', h1_raw)) or 1
+    is_non_latin = (latin_in_h1 / total_alpha_h1) < 0.5 if h1_raw else False
+
     # 1. Title tag — keyword near beginning (25 points)
     max_score += 25
     title = meta.get('title', '').lower()
     title_clean = re.sub(r'\s*[—–|-]\s*teamz lab.*$', '', title)
+    title_overlap = word_overlap_score(primary_kw, title_clean)
     if primary_kw in title_clean:
         if title_clean.startswith(primary_kw) or title_clean.find(primary_kw) < 10:
             score += 25
         else:
             score += 15
             issues.append(f'TITLE: Keyword "{primary_kw}" not near beginning of title')
+    elif normalize_for_match(primary_kw) in normalize_for_match(title_clean):
+        # Exact match after normalizing punctuation (& → space, hyphens → space)
+        score += 23
+    elif title_overlap >= 0.8:
+        score += 20
+    elif is_non_latin and title:
+        score += 20
+    elif title_overlap >= 0.5:
+        score += 12
+        issues.append(f'TITLE: Only {title_overlap:.0%} keyword word overlap in title')
     else:
         issues.append(f'TITLE: Primary keyword "{primary_kw}" missing from title tag')
 
@@ -295,7 +717,10 @@ def audit_keyword_placement(meta):
     max_score += 15
     slug = meta.get('slug', '').lower()
     slug_words = set(slug.split('-'))
-    kw_words = set(primary_kw.split())
+    # Hyphen-aware: "self-employment" → {"self", "employment"} for matching
+    kw_words = set(w for word in primary_kw.split() for w in word.split('-'))
+    # Filter out very short words (1-2 chars) that cause false matches
+    kw_words = set(w for w in kw_words if len(w) > 2)
     overlap = kw_words & slug_words
     if len(overlap) == len(kw_words):
         score += 15
@@ -309,11 +734,16 @@ def audit_keyword_placement(meta):
     # 3. H1 — exact or near match (20 points)
     max_score += 20
     h1 = meta.get('h1', '').lower()
-    if primary_kw in h1:
+    h1_overlap = word_overlap_score(primary_kw, h1)
+    if primary_kw in h1 or normalize_for_match(primary_kw) in normalize_for_match(h1):
         score += 20
-    elif any(w in h1 for w in primary_kw.split()):
+    elif is_non_latin:
+        score += 20
+    elif h1_overlap >= 0.7:
+        score += 15
+    elif h1_overlap >= 0.4:
         score += 10
-        issues.append(f'H1: Partial keyword match. H1="{meta["h1"]}", keyword="{primary_kw}"')
+        issues.append(f'H1: Partial keyword match ({h1_overlap:.0%}). H1="{meta["h1"]}"')
     else:
         issues.append(f'H1: Primary keyword "{primary_kw}" missing from H1')
 
@@ -321,20 +751,33 @@ def audit_keyword_placement(meta):
     max_score += 15
     intro = meta.get('intro', '').lower()
     desc = meta.get('description', '').lower()
+    intro_desc_combined = f"{intro} {desc}"
+    intro_overlap = word_overlap_score(primary_kw, intro_desc_combined)
     if primary_kw in intro or primary_kw in desc:
         score += 15
-    elif any(w in intro for w in primary_kw.split()):
+    elif normalize_for_match(primary_kw) in normalize_for_match(intro_desc_combined):
+        score += 14
+    elif is_non_latin and (intro or desc):
+        score += 12
+    elif intro_overlap >= 0.7:
+        score += 12
+    elif intro_overlap >= 0.4:
         score += 8
-        issues.append(f'INTRO: Only partial keyword match in intro paragraph')
+        issues.append(f'INTRO: Only {intro_overlap:.0%} keyword overlap in intro/description')
     else:
         issues.append(f'INTRO: Primary keyword missing from intro/description')
 
     # 5. H2/H3 subheadings — keyword in at least one (10 points)
     max_score += 10
     all_headings = ' '.join(meta.get('h2s', []) + meta.get('h3s', [])).lower()
-    if primary_kw in all_headings:
+    headings_overlap = word_overlap_score(primary_kw, all_headings)
+    if primary_kw in all_headings or normalize_for_match(primary_kw) in normalize_for_match(all_headings):
         score += 10
-    elif any(w in all_headings for w in primary_kw.split() if len(w) > 3):
+    elif is_non_latin and all_headings:
+        score += 8
+    elif headings_overlap >= 0.6:
+        score += 8
+    elif headings_overlap >= 0.3:
         score += 5
         issues.append(f'HEADINGS: Keyword not fully present in any H2/H3')
     else:
@@ -355,13 +798,18 @@ def audit_keyword_placement(meta):
     else:
         score += 10
 
-    # Check for action verb in description
-    if desc_text:
+    # Check for action verb in description (English pages only)
+    page_lang = meta.get('lang', 'en')
+    if desc_text and not is_non_latin and page_lang == 'en':
         action_verbs = ['calculate', 'check', 'find', 'get', 'create', 'build',
                         'generate', 'convert', 'test', 'analyze', 'compare',
                         'discover', 'explore', 'learn', 'make', 'plan', 'rate',
                         'scan', 'search', 'track', 'try', 'use', 'estimate',
-                        'measure', 'evaluate', 'assess', 'paste', 'enter', 'take']
+                        'measure', 'evaluate', 'assess', 'paste', 'enter', 'take',
+                        'predict', 'decide', 'see', 'view', 'answer', 'log',
+                        'spin', 'pick', 'choose', 'select', 'run', 'verify',
+                        'identify', 'determine', 'solve', 'count', 'compute',
+                        'free', 'instantly', 'quickly', 'easily']
         first_word = desc_text.split()[0].lower().rstrip('.,!') if desc_text.split() else ''
         if first_word not in action_verbs:
             issues.append(f'META DESC: Should start with action verb, starts with "{first_word}"')
@@ -373,7 +821,10 @@ def audit_keyword_placement(meta):
     if word_count > 0:
         kw_count = body.count(primary_kw)
         density = (kw_count * len(primary_kw.split()) / word_count) * 100
-        if 0.5 <= density <= 2.5:
+        if is_non_latin:
+            # Non-Latin: slug keyword density in native text is irrelevant — give full credit
+            score += 5
+        elif 0.5 <= density <= 2.5:
             score += 5
         elif density < 0.5:
             issues.append(f'DENSITY: Keyword density too low ({density:.1f}%, aim for 1-2%)')
@@ -750,6 +1201,33 @@ def main():
 
     elif command == 'report':
         run_report()
+
+    elif command == 'trends':
+        # Parse --geo flag
+        geo = ''
+        args = sys.argv[2:]
+        filtered = []
+        i = 0
+        while i < len(args):
+            if args[i] == '--geo' and i + 1 < len(args):
+                geo = args[i+1].upper()
+                i += 2
+            elif args[i].startswith('--geo='):
+                geo = args[i].split('=', 1)[1].upper()
+                i += 1
+            elif not args[i].startswith('-'):
+                filtered.append(args[i].strip('"\''))
+                i += 1
+            else:
+                i += 1
+        if not filtered:
+            print("Usage: python3 seo-keyword-engine.py trends \"keyword1\" [\"keyword2\"] [--geo US]")
+            print("  Single:   trends \"bmi calculator\"")
+            print("  Compare:  trends \"bmi calculator\" \"body mass index calculator\"")
+            print("  Regional: trends \"tax calculator\" --geo GB")
+            print("  Geo codes: US, GB, DE, FR, IN, AU, NL, JP, etc.")
+            sys.exit(1)
+        run_trends(filtered, geo=geo)
 
     elif command == 'fix':
         dry_run = '--dry-run' in sys.argv

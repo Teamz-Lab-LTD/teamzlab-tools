@@ -8,6 +8,8 @@
 #   ./build-seo-audit.sh --verbose    # Verbose audit (all tools)
 #   ./build-seo-audit.sh --report     # Full detailed report
 #   ./build-seo-audit.sh --suggest "keyword"  # Get keyword suggestions
+#   ./build-seo-audit.sh --trends "keyword"   # Google Trends analysis
+#   ./build-seo-audit.sh --trends "kw1" "kw2" # Compare two keywords
 #   ./build-seo-audit.sh --cannibalize        # Find cannibalization
 #   ./build-seo-audit.sh --fix-dry-run        # Preview auto-fixes
 # ────────────────────────────────────────────────────────────────────
@@ -32,6 +34,11 @@ case "${1:-audit}" in
     --suggest)
         shift
         python3 "$SCRIPT" suggest "$@"
+        ;;
+    --trends)
+        shift
+        # Pass all remaining args (keywords + optional --geo XX)
+        python3 "$SCRIPT" trends "$@"
         ;;
     --cannibalize)
         python3 "$SCRIPT" cannibalize
