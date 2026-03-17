@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typing Accuracy Trainer — Zero Errors</title>
+  <meta name="description" content="Train typing accuracy with error-correction practice. Fix mistakes before proceeding. Tracks weak keys and creates custom exercises. Free and private.">
+  <meta property="og:title" content="Typing Accuracy Trainer — Zero Errors">
+  <meta property="og:description" content="Free typing accuracy trainer. Fix every error before moving forward. Tracks your weak keys and creates custom exercises.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/typing-accuracy-trainer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/typing-accuracy-trainer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .accuracy-meter{text-align:center;margin-bottom:1.5rem}
+    .acc-circle{width:120px;height:120px;border-radius:50%;border:6px solid var(--border);display:inline-flex;align-items:center;justify-content:center;flex-direction:column;position:relative;transition:border-color 0.3s}
+    .acc-circle.perfect{border-color:var(--accent)}
+    .acc-circle .acc-num{font-size:2rem;font-weight:800;color:var(--accent);line-height:1}
+    .acc-circle .acc-lbl{font-size:0.65rem;color:var(--text-muted);font-weight:600;text-transform:uppercase}
+    .typing-area{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;font-size:1.15rem;line-height:1.9;font-family:'Poppins',sans-serif;margin-bottom:1rem;min-height:80px;user-select:none}
+    .typing-area .char.correct{color:var(--accent)}
+    .typing-area .char.error{color:var(--danger,crimson);text-decoration:underline;background:color-mix(in srgb,var(--danger,crimson) 15%,transparent)}
+    .typing-area .char.current{background:var(--accent);color:var(--bg);border-radius:2px;padding:0 1px}
+    .typing-area .char.pending{color:var(--text-muted)}
+    .hidden-input{position:absolute;opacity:0;pointer-events:none}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.75rem;margin:1rem 0}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.75rem;text-align:center}
+    .stat-card .stat-value{font-size:1.5rem;font-weight:800;color:var(--accent)}
+    .stat-card .stat-label{font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;font-weight:600}
+    .mode-row{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+    .mode-btn{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:0.5rem 1.2rem;font-size:0.85rem;font-weight:600;cursor:pointer;color:var(--text);font-family:'Poppins',sans-serif;transition:all 0.2s}
+    .mode-btn:hover{border-color:var(--accent)}
+    .mode-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+    .controls-row{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin:1rem 0}
+    .btn-primary{background:var(--accent);color:var(--bg);border:none;padding:0.75rem 2rem;border-radius:999px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
+    .btn-primary:hover{opacity:0.9}
+    .btn-secondary{background:none;border:1px solid var(--border);color:var(--text);padding:0.6rem 1.5rem;border-radius:999px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif}
+    .result-card{background:var(--accent);color:var(--bg);border-radius:14px;padding:2rem;text-align:center;display:none;margin:1rem 0}
+    .result-card h3{margin:0 0 0.5rem;font-size:1.3rem}
+    .result-card .big{font-size:2.5rem;font-weight:800}
+    .result-card .sub{opacity:0.85;font-size:0.9rem;margin-top:0.5rem}
+    .weak-keys-section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin:1rem 0}
+    .weak-keys-section h4{margin:0 0 0.5rem;color:var(--heading);font-size:0.9rem}
+    .wk-grid{display:flex;flex-wrap:wrap;gap:0.5rem}
+    .wk-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;font-family:monospace;font-size:0.95rem;color:var(--text);display:flex;align-items:center;gap:0.4rem}
+    .wk-bar{height:4px;border-radius:2px;background:var(--accent);min-width:20px}
+    .error-flash{animation:flashError 0.3s}
+    @keyframes flashError{0%{background:color-mix(in srgb,var(--danger,crimson) 25%,transparent)}100%{background:transparent}}
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tool.teamzlab.com/tools/"}, {"@type": "ListItem", "position": 3, "name": "Typing Accuracy Trainer"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Why must I backspace to fix errors?", "acceptedAnswer": {"@type": "Answer", "text": "Forcing corrections builds accurate muscle memory. When you simply skip over errors, your brain does not register the mistake. Correcting each error immediately trains your fingers to find the right key."}}, {"@type": "Question", "name": "How are weak keys tracked?", "acceptedAnswer": {"@type": "Answer", "text": "Every time you make an error, the intended key is recorded in your browser localStorage. Over multiple sessions, this builds a profile of which keys cause you the most trouble. The data never leaves your device."}}, {"@type": "Question", "name": "What does the weak keys practice mode do?", "acceptedAnswer": {"@type": "Answer", "text": "It generates custom text that contains a high frequency of your personal problem characters. This targeted practice is more efficient than general typing practice for improving accuracy."}}, {"@type": "Question", "name": "How long should I practice accuracy training?", "acceptedAnswer": {"@type": "Answer", "text": "Start with 10 to 15 minute sessions. Accuracy training is mentally demanding because every error requires immediate correction. Short, focused sessions are more effective than long exhausting ones."}}, {"@type": "Question", "name": "Will my speed decrease while focusing on accuracy?", "acceptedAnswer": {"@type": "Answer", "text": "Initially, yes. Your speed may drop 10 to 20 WPM while building accuracy habits. Within 2 to 3 weeks, your speed returns to previous levels with much higher accuracy, resulting in faster productive output."}}, {"@type": "Question", "name": "Can I reset my weak keys data?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Clear Weak Keys button to reset all stored error data. This is useful if you want to start fresh or if your accuracy has improved significantly."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Typing Accuracy Trainer", "description": "Accuracy-focused typing trainer with personalized weak key exercises.", "url": "https://tool.teamzlab.com/tools/typing-accuracy-trainer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Typing Accuracy Trainer — Zero Errors</h1>
+      <p class="tool-description">Focus on accuracy over speed. You must correct every error with backspace before proceeding. Tracks your weak keys over time and generates personalized exercises targeting your problem areas.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="mode-row">
+        <button class="mode-btn active" data-mode="standard">Standard</button>
+        <button class="mode-btn" data-mode="weak">Practice Weak Keys</button>
+      </div>
+      <div class="accuracy-meter">
+        <div class="acc-circle perfect" id="acc-circle">
+          <div class="acc-num" id="acc-num">100%</div>
+          <div class="acc-lbl">Accuracy</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="s-wpm">0</div><div class="stat-label">WPM</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-err">0</div><div class="stat-label">Errors</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-streak">0</div><div class="stat-label">Streak</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-time">0s</div><div class="stat-label">Time</div></div>
+      </div>
+      <div class="typing-area" id="typing-area" tabindex="0">Click here to start...</div>
+      <input class="hidden-input" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <div class="controls-row">
+        <button class="btn-primary" id="btn-new">New Exercise</button>
+        <button class="btn-secondary" id="btn-clear">Clear Weak Keys</button>
+      </div>
+      <div class="result-card" id="result-card">
+        <h3>Exercise Complete!</h3>
+        <div class="big" id="r-wpm">0 WPM</div>
+        <div class="sub" id="r-detail"></div>
+      </div>
+      <div class="weak-keys-section" id="weak-section">
+        <h4>Your Weak Keys (Saved Across Sessions)</h4>
+        <div class="wk-grid" id="wk-grid"><p style="color:var(--text-muted);font-size:0.85rem;margin:0">No weak keys recorded yet. Start typing!</p></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why Accuracy Matters More Than Speed</h2>
+      <p>Many typists focus on raw speed while neglecting accuracy, but errors have a compounding cost. Each mistake requires detection, backspacing, and retyping, consuming 3 to 5 times the effort of typing correctly the first time. A typist at 70 WPM with 90 percent accuracy produces less usable text per minute than a typist at 55 WPM with 99 percent accuracy.</p>
+
+      <h3>The Backspace Rule</h3>
+      <p>This trainer enforces the backspace rule: when you make an error, the character turns red and you cannot proceed until you press backspace and type the correct key. This immediate feedback interrupts the habit of plowing through errors and teaches your fingers to self-correct. Over time, this builds the neural pathways for accurate keystrokes.</p>
+
+      <h3>Personalized Weak Key Practice</h3>
+      <p>The trainer tracks every error you make across sessions, storing the data in your browser localStorage. Over time, it identifies which specific keys cause the most problems. The weak key practice mode generates custom exercises that focus heavily on your personal problem characters, turning weaknesses into strengths through targeted repetition.</p>
+
+      <h3>Building Muscle Memory</h3>
+      <p>Accurate typing is fundamentally about muscle memory. Your fingers need to reach each key automatically without conscious thought. This requires consistent practice with correct form. By forcing accuracy first, this trainer ensures that the muscle memory you build is correct from the start, rather than having to unlearn bad habits later.</p>
+
+      <h3>Streak Tracking</h3>
+      <p>The streak counter shows your longest run of correct keystrokes without an error. Watching your streak grow provides motivation and a concrete measure of improvement. Professional typists maintain streaks of hundreds of characters. Aim to gradually increase your average streak length over multiple sessions.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  var BREADCRUMBS=[{name:'Home',url:'/'},{name:'Tools',url:'/tools/'},{name:'Typing Accuracy Trainer'}];
+  var FAQS=[
+    {q:'Why must I backspace to fix errors?',a:'Forcing corrections builds accurate muscle memory. When you simply skip over errors, your brain does not register the mistake. Correcting each error immediately trains your fingers to find the right key.'},
+    {q:'How are weak keys tracked?',a:'Every time you make an error, the intended key is recorded in your browser localStorage. Over multiple sessions, this builds a profile of which keys cause you the most trouble. The data never leaves your device.'},
+    {q:'What does the weak keys practice mode do?',a:'It generates custom text that contains a high frequency of your personal problem characters. This targeted practice is more efficient than general typing practice for improving accuracy.'},
+    {q:'How long should I practice accuracy training?',a:'Start with 10 to 15 minute sessions. Accuracy training is mentally demanding because every error requires immediate correction. Short, focused sessions are more effective than long exhausting ones.'},
+    {q:'Will my speed decrease while focusing on accuracy?',a:'Initially, yes. Your speed may drop 10 to 20 WPM while building accuracy habits. Within 2 to 3 weeks, your speed returns to previous levels with much higher accuracy, resulting in faster productive output.'},
+    {q:'Can I reset my weak keys data?',a:'Yes. Click the Clear Weak Keys button to reset all stored error data. This is useful if you want to start fresh or if your accuracy has improved significantly.'}
+  ];
+  var RELATED_TOOLS=[
+    {name:'Typing Speed Test',url:'/tools/typing-speed-test/'},
+    {name:'Touch Typing Tutor',url:'/tools/touch-typing-tutor/'},
+    {name:'Paragraph Typing Test',url:'/tools/paragraph-typing-test/'},
+    {name:'Code Typing Practice',url:'/tools/code-typing-practice/'},
+    {name:'Typing Race Game',url:'/tools/typing-race/'},
+    {name:'Number Typing Practice',url:'/tools/number-typing-practice/'}
+  ];
+  document.addEventListener('DOMContentLoaded',function(){
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    TeamzTools.injectWebAppSchema({slug:'tools/typing-accuracy-trainer',title:'Typing Accuracy Trainer',description:'Accuracy-focused typing trainer with personalized weak key exercises.'});
+    initAccuracyTrainer();
+  });
+
+  function initAccuracyTrainer(){
+    var texts=[
+      "The difference between the almost right word and the right word is the difference between the lightning bug and the lightning. Knowing this distinction makes all the effort worthwhile.",
+      "Practice does not make perfect. Only perfect practice makes perfect. When you build habits, make sure they are the right habits from the very beginning of your journey.",
+      "Simplicity is the ultimate sophistication. It takes a great deal of effort to make something simple, to truly understand the underlying challenges and come up with elegant solutions.",
+      "Quality means doing it right when nobody is looking. Attention to detail separates good from great. Every keystroke matters when accuracy is your primary goal and focus.",
+      "The secret of getting ahead is getting started. The secret of getting started is breaking your complex overwhelming tasks into small manageable tasks and then starting on the first one."
+    ];
+
+    var weakKeys=JSON.parse(localStorage.getItem('acc-weak-keys')||'{}');
+    var mode='standard';var text='';var pos=0;var errors=0;var totalTyped=0;var startTime=0;var running=false;var finished=false;
+    var streak=0;var bestStreak=0;var hasError=false;
+
+    function generateWeakText(){
+      var keys=Object.keys(weakKeys);
+      if(keys.length===0)return texts[Math.floor(Math.random()*texts.length)];
+      keys.sort(function(a,b){return weakKeys[b]-weakKeys[a];});
+      var topWeak=keys.slice(0,5);
+      var words=['the','and','that','with','this','from','they','have','been','will','your','when','what','more','make','like','just','over','such','take','than','them','very','some','could','after','other','also','into','back','then','these','only','many','first','which','where','their','about','would','there','being','those','still','every','never','under','might','while','three','place','think','point','right','great','small','large','found','world','going','known'];
+      var result=[];
+      for(var i=0;i<30;i++){
+        var word=words[Math.floor(Math.random()*words.length)];
+        var useWeak=Math.random()<0.4;
+        if(useWeak){
+          var wk=topWeak[Math.floor(Math.random()*topWeak.length)];
+          var pos2=Math.floor(Math.random()*word.length);
+          word=word.substring(0,pos2)+wk+word.substring(pos2+1);
+        }
+        result.push(word);
+      }
+      return result.join(' ')+'.';
+    }
+
+    function renderWeakKeys(){
+      var keys=Object.keys(weakKeys);
+      var el=document.getElementById('wk-grid');
+      if(keys.length===0){el.innerHTML='<p style="color:var(--text-muted);font-size:0.85rem;margin:0">No weak keys recorded yet. Start typing!</p>';return;}
+      keys.sort(function(a,b){return weakKeys[b]-weakKeys[a];});
+      var max=weakKeys[keys[0]];
+      el.innerHTML=keys.slice(0,12).map(function(k){
+        var w=Math.max(20,Math.round((weakKeys[k]/max)*60));
+        var display=k===' '?'Space':k;
+        return '<div class="wk-item"><code>'+display+'</code><div class="wk-bar" style="width:'+w+'px"></div><span style="font-size:0.7rem;color:var(--text-muted)">'+weakKeys[k]+'</span></div>';
+      }).join('');
+    }
+
+    document.querySelectorAll('.mode-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('.mode-btn').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        mode=btn.dataset.mode;
+        newExercise();
+      });
+    });
+
+    function newExercise(){
+      text=mode==='weak'?generateWeakText():texts[Math.floor(Math.random()*texts.length)];
+      pos=0;errors=0;totalTyped=0;startTime=0;running=false;finished=false;streak=0;bestStreak=0;hasError=false;
+      document.getElementById('result-card').style.display='none';
+      document.getElementById('s-wpm').textContent='0';
+      document.getElementById('s-err').textContent='0';
+      document.getElementById('s-streak').textContent='0';
+      document.getElementById('s-time').textContent='0s';
+      document.getElementById('acc-num').textContent='100%';
+      document.getElementById('acc-circle').classList.add('perfect');
+      renderText();
+      renderWeakKeys();
+    }
+
+    function renderText(){
+      var el=document.getElementById('typing-area');
+      var html='';
+      for(var i=0;i<text.length;i++){
+        var cls='pending';
+        if(i<pos)cls='correct';
+        if(i===pos)cls=hasError?'error':'current';
+        html+='<span class="char '+cls+'">'+text[i]+'</span>';
+      }
+      el.innerHTML=html;
+    }
+
+    document.getElementById('typing-area').addEventListener('click',function(){
+      document.getElementById('hidden-input').focus();
+    });
+
+    document.getElementById('hidden-input').addEventListener('keydown',function(e){
+      if(finished)return;
+      if(e.key==='Shift'||e.key==='Control'||e.key==='Alt'||e.key==='Meta'||e.key==='CapsLock'||e.key==='Tab'||e.key==='Escape')return;
+      e.preventDefault();
+      if(!running){running=true;startTime=Date.now();}
+
+      if(e.key==='Backspace'){
+        if(hasError){hasError=false;renderText();}
+        return;
+      }
+
+      if(hasError)return; // must backspace first
+
+      if(pos>=text.length)return;
+      totalTyped++;
+
+      if(e.key===text[pos]){
+        pos++;streak++;
+        if(streak>bestStreak)bestStreak=streak;
+      }else{
+        errors++;streak=0;hasError=true;
+        if(!weakKeys[text[pos]])weakKeys[text[pos]]=0;
+        weakKeys[text[pos]]++;
+        localStorage.setItem('acc-weak-keys',JSON.stringify(weakKeys));
+        document.getElementById('typing-area').classList.add('error-flash');
+        setTimeout(function(){document.getElementById('typing-area').classList.remove('error-flash');},300);
+      }
+
+      renderText();updateStats();
+      if(pos>=text.length)finishExercise();
+    });
+
+    function updateStats(){
+      if(!startTime)return;
+      var elapsed=(Date.now()-startTime)/60000;
+      var wpm=elapsed>0?Math.round((pos/5)/elapsed):0;
+      var acc=totalTyped>0?Math.round(((totalTyped-errors)/totalTyped)*100):100;
+      document.getElementById('s-wpm').textContent=wpm;
+      document.getElementById('s-err').textContent=errors;
+      document.getElementById('s-streak').textContent=bestStreak;
+      document.getElementById('s-time').textContent=Math.round((Date.now()-startTime)/1000)+'s';
+      document.getElementById('acc-num').textContent=acc+'%';
+      if(acc>=98)document.getElementById('acc-circle').classList.add('perfect');
+      else document.getElementById('acc-circle').classList.remove('perfect');
+    }
+
+    function finishExercise(){
+      finished=true;
+      var elapsed=(Date.now()-startTime)/60000;
+      var wpm=Math.round((pos/5)/elapsed);
+      var acc=totalTyped>0?Math.round(((totalTyped-errors)/totalTyped)*100):100;
+      document.getElementById('r-wpm').textContent=wpm+' WPM';
+      document.getElementById('r-detail').textContent='Accuracy: '+acc+'% | Errors: '+errors+' | Best Streak: '+bestStreak+' chars';
+      document.getElementById('result-card').style.display='block';
+      renderWeakKeys();
+    }
+
+    document.getElementById('btn-new').onclick=newExercise;
+    document.getElementById('btn-clear').onclick=function(){
+      if(confirm('Clear all weak key data?')){weakKeys={};localStorage.removeItem('acc-weak-keys');renderWeakKeys();}
+    };
+
+    newExercise();
+  }
+  </script>
+</body>
+</html>

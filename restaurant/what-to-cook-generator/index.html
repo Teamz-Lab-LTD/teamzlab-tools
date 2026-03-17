@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What Should I Cook? — Meal Decider</title>
+  <meta name="description" content="Spin the meal wheel for random dinner ideas. Filter by cuisine, time, difficulty, and dietary needs. Decide what to eat tonight. Free and private.">
+  <meta property="og:title" content="What Should I Cook? — Meal Decider">
+  <meta property="og:description" content="Spin the meal wheel for random dinner ideas filtered by cuisine, time, and diet. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/what-to-cook-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/what-to-cook-generator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .filter-section { margin-bottom: 1.5rem; }
+    .filter-section h3 { color: var(--heading); font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .filter-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .chip { padding: 0.4rem 0.9rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; user-select: none; }
+    .chip.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    .chip:hover { border-color: var(--accent); }
+    .wheel-container { position: relative; width: 300px; height: 300px; margin: 2rem auto; }
+    .wheel-canvas { width: 300px; height: 300px; border-radius: 50%; }
+    .wheel-pointer { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--accent); z-index: 2; }
+    .spin-btn { display: block; margin: 1rem auto; background: var(--accent); color: var(--bg); border: none; padding: 1rem 3rem; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; }
+    .spin-btn:hover { transform: scale(1.05); }
+    .spin-btn:active { transform: scale(0.95); }
+    .meal-result { display: none; background: var(--surface); border: 2px solid var(--accent); border-radius: 16px; padding: 2rem; text-align: center; margin-top: 1.5rem; animation: fadeIn 0.5s; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .meal-result h2 { color: var(--heading); margin: 0 0 0.5rem; font-size: 1.5rem; }
+    .meal-meta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 0.8rem 0; }
+    .meal-meta span { background: var(--bg); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; color: var(--text); border: 1px solid var(--border); }
+    .meal-tags { display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem; }
+    .meal-tag { background: var(--accent); color: var(--bg); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+    .action-btns { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; }
+    .action-btn { padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+    .btn-spin-again { background: var(--accent); color: var(--bg); border: none; }
+    .btn-save { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .favorites-section { margin-top: 2rem; display: none; }
+    .favorites-section h3 { color: var(--heading); margin-bottom: 1rem; }
+    .fav-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .fav-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.85rem; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+    .fav-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+    .no-match { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 1.1rem; }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "What Should I Cook?"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the meal generator work?", "acceptedAnswer": {"@type": "Answer", "text": "It randomly selects a meal from a database of 200+ ideas based on your filters (cuisine, meal type, time, dietary restrictions). Each spin gives you a new suggestion. Save favorites to localStorage for later."}}, {"@type": "Question", "name": "Can I filter by dietary restrictions?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, filter by vegetarian, vegan, gluten-free, low-carb, and dairy-free. The generator only suggests meals matching your selected filters."}}, {"@type": "Question", "name": "How many meal ideas are in the database?", "acceptedAnswer": {"@type": "Answer", "text": "The database includes over 200 meal ideas spanning 9 cuisines, 4 meal types, various cooking times, and multiple dietary categories."}}, {"@type": "Question", "name": "Can I save my favorite suggestions?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, click the Save Favorite button after spinning. Favorites are saved to your browser's localStorage and persist between visits. You can remove them anytime."}}, {"@type": "Question", "name": "Does this work on mobile?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, the wheel animation and all filters work on mobile browsers. The interface is fully responsive and touch-friendly."}}, {"@type": "Question", "name": "Can I use this for meal planning?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. Spin for each day of the week and save the results. Then create your shopping list based on the suggested meals for efficient grocery planning."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "What Should I Cook?", "description": "Random meal generator with cuisine, time, and dietary filters.", "url": "https://tool.teamzlab.com/restaurant/what-to-cook-generator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>What Should I Cook?</h1>
+      <p class="tool-description">Can't decide what to eat tonight? Spin the meal wheel for a random suggestion. Filter by cuisine, meal type, cooking time, and dietary preferences. Save your favorites for later.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="filter-section">
+        <h3>Cuisine</h3>
+        <div class="filter-chips" id="cuisineFilters">
+          <span class="chip active" data-v="any">Any</span>
+          <span class="chip" data-v="italian">Italian</span>
+          <span class="chip" data-v="mexican">Mexican</span>
+          <span class="chip" data-v="asian">Asian</span>
+          <span class="chip" data-v="indian">Indian</span>
+          <span class="chip" data-v="american">American</span>
+          <span class="chip" data-v="mediterranean">Mediterranean</span>
+          <span class="chip" data-v="middle-eastern">Middle Eastern</span>
+          <span class="chip" data-v="french">French</span>
+        </div>
+      </div>
+      <div class="filter-section">
+        <h3>Meal Type</h3>
+        <div class="filter-chips" id="mealFilters">
+          <span class="chip active" data-v="any">Any</span>
+          <span class="chip" data-v="breakfast">Breakfast</span>
+          <span class="chip" data-v="lunch">Lunch</span>
+          <span class="chip" data-v="dinner">Dinner</span>
+          <span class="chip" data-v="snack">Snack</span>
+        </div>
+      </div>
+      <div class="filter-section">
+        <h3>Time Available</h3>
+        <div class="filter-chips" id="timeFilters">
+          <span class="chip active" data-v="any">Any</span>
+          <span class="chip" data-v="15">Under 15 min</span>
+          <span class="chip" data-v="30">Under 30 min</span>
+          <span class="chip" data-v="60">Under 1 hour</span>
+          <span class="chip" data-v="120">1-2 hours</span>
+        </div>
+      </div>
+      <div class="filter-section">
+        <h3>Dietary</h3>
+        <div class="filter-chips" id="dietFilters">
+          <span class="chip active" data-v="any">Any</span>
+          <span class="chip" data-v="vegetarian">Vegetarian</span>
+          <span class="chip" data-v="vegan">Vegan</span>
+          <span class="chip" data-v="gluten-free">Gluten-Free</span>
+          <span class="chip" data-v="low-carb">Low-Carb</span>
+          <span class="chip" data-v="dairy-free">Dairy-Free</span>
+        </div>
+      </div>
+
+      <div class="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas class="wheel-canvas" id="wheelCanvas" width="300" height="300"></canvas>
+      </div>
+
+      <button class="spin-btn" id="spinBtn">Spin the Wheel!</button>
+
+      <div class="meal-result" id="mealResult">
+        <h2 id="mealName">Spaghetti Carbonara</h2>
+        <div class="meal-meta">
+          <span id="mealCuisine">Italian</span>
+          <span id="mealTime">30 min</span>
+          <span id="mealDifficulty">Easy</span>
+          <span id="mealType">Dinner</span>
+        </div>
+        <div class="meal-tags" id="mealDietTags"></div>
+        <div class="action-btns">
+          <button class="action-btn btn-spin-again" id="spinAgain">Spin Again</button>
+          <button class="action-btn btn-save" id="saveBtn">Save Favorite</button>
+        </div>
+      </div>
+
+      <div id="noMatch" class="no-match" style="display:none;">No meals match your filters. Try removing some filters.</div>
+
+      <div class="favorites-section" id="favSection">
+        <h3>Your Saved Favorites</h3>
+        <div class="fav-list" id="favList"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>End Decision Fatigue with Dinner</h2>
+      <p>Decision fatigue is real, and nowhere is it more apparent than the daily question of what to eat. Research from Cornell University suggests we make over 200 food-related decisions every day. By dinnertime, our decision-making capacity is depleted, leading us to default to takeout or the same three meals on rotation. This meal idea generator eliminates the mental burden by making the choice for you, filtered by your preferences and available time.</p>
+
+      <h3>Benefits of Trying New Cuisines</h3>
+      <p>Eating a variety of cuisines is not just about culinary adventure. Different food traditions emphasize different ingredients, cooking methods, and nutrient profiles. Mediterranean cuisine is rich in olive oil and vegetables. Asian cooking emphasizes fermented foods and fresh herbs. Indian cuisine uses spices with anti-inflammatory properties. By rotating through different cuisines, you naturally diversify your nutrient intake without thinking about it.</p>
+
+      <h3>Meal Planning Made Simple</h3>
+      <p>Use this generator to plan your entire week. Spin for Monday through Friday, save the results, and create your shopping list from the suggestions. Batch-prep ingredients that overlap between meals. For example, if Tuesday calls for stir-fry and Thursday calls for fried rice, prep extra rice on Tuesday. This approach saves time, reduces waste, and ensures variety throughout the week.</p>
+
+      <h3>Quick Meals for Busy Weeknights</h3>
+      <p>The under-30-minute filter shows meals that can be on the table fast. Stir-fries, pasta dishes, sheet pan dinners, and salads are all quick-cook categories. The key to fast weeknight cooking is having a well-stocked pantry with staples like pasta, rice, canned beans, coconut milk, soy sauce, and olive oil. With a good pantry, you can make most of these suggested meals without a special grocery trip.</p>
+
+      <h3>Getting Kids Involved</h3>
+      <p>Let kids spin the wheel and choose dinner. Research shows that children are more likely to eat meals they helped plan. The visual spinning animation makes it exciting and turns meal planning into a game rather than a chore. Set some filters first (maybe keep the time under an hour on school nights) and let them spin. Even picky eaters are more open to trying new foods when they feel ownership over the decision.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'What Should I Cook?'}];
+    var FAQS = [
+      {q:'How does the meal generator work?',a:'It randomly selects a meal from a database of 200+ ideas based on your filters (cuisine, meal type, time, dietary restrictions). Each spin gives you a new suggestion. Save favorites to localStorage for later.'},
+      {q:'Can I filter by dietary restrictions?',a:'Yes, filter by vegetarian, vegan, gluten-free, low-carb, and dairy-free. The generator only suggests meals matching your selected filters.'},
+      {q:'How many meal ideas are in the database?',a:'The database includes over 200 meal ideas spanning 9 cuisines, 4 meal types, various cooking times, and multiple dietary categories.'},
+      {q:'Can I save my favorite suggestions?',a:'Yes, click the Save Favorite button after spinning. Favorites are saved to your browser\'s localStorage and persist between visits. You can remove them anytime.'},
+      {q:'Does this work on mobile?',a:'Yes, the wheel animation and all filters work on mobile browsers. The interface is fully responsive and touch-friendly.'},
+      {q:'Can I use this for meal planning?',a:'Absolutely. Spin for each day of the week and save the results. Then create your shopping list based on the suggested meals for efficient grocery planning.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Recipe Scaler',url:'/restaurant/recipe-scaler/',desc:'Scale your chosen recipe for any serving size'},
+      {name:'Kitchen Timer',url:'/restaurant/kitchen-timer/',desc:'Time your cooking with multiple timers'},
+      {name:'Pantry Inventory',url:'/restaurant/pantry-inventory-tracker/',desc:'Check what you have before cooking'},
+      {name:'Cooking Unit Converter',url:'/restaurant/cooking-unit-converter/',desc:'Convert recipe measurements'},
+      {name:'Tip Calculator',url:'/restaurant/tip-calculator/',desc:'Calculate restaurant tips'},
+      {name:'Calorie Calculator',url:'/health/calorie-intake-calculator/',desc:'Track calories in your meals'}
+    ];
+
+    (function(){
+      var meals = [
+        {name:'Spaghetti Carbonara',cuisine:'italian',type:'dinner',time:30,diff:'Easy',diet:[]},
+        {name:'Margherita Pizza',cuisine:'italian',type:'dinner',time:45,diff:'Medium',diet:['vegetarian']},
+        {name:'Chicken Parmesan',cuisine:'italian',type:'dinner',time:45,diff:'Medium',diet:[]},
+        {name:'Risotto Mushroom',cuisine:'italian',type:'dinner',time:40,diff:'Medium',diet:['vegetarian']},
+        {name:'Lasagna Bolognese',cuisine:'italian',type:'dinner',time:90,diff:'Medium',diet:[]},
+        {name:'Penne Arrabbiata',cuisine:'italian',type:'dinner',time:20,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Caprese Salad',cuisine:'italian',type:'lunch',time:10,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Minestrone Soup',cuisine:'italian',type:'lunch',time:40,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Bruschetta',cuisine:'italian',type:'snack',time:15,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Gnocchi with Pesto',cuisine:'italian',type:'dinner',time:25,diff:'Easy',diet:['vegetarian']},
+        {name:'Chicken Tacos',cuisine:'mexican',type:'dinner',time:25,diff:'Easy',diet:[]},
+        {name:'Beef Burrito Bowl',cuisine:'mexican',type:'dinner',time:30,diff:'Easy',diet:['gluten-free']},
+        {name:'Guacamole & Chips',cuisine:'mexican',type:'snack',time:10,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Enchiladas Verdes',cuisine:'mexican',type:'dinner',time:45,diff:'Medium',diet:[]},
+        {name:'Black Bean Quesadillas',cuisine:'mexican',type:'lunch',time:15,diff:'Easy',diet:['vegetarian']},
+        {name:'Chilaquiles',cuisine:'mexican',type:'breakfast',time:20,diff:'Easy',diet:['vegetarian']},
+        {name:'Fish Tacos',cuisine:'mexican',type:'dinner',time:25,diff:'Easy',diet:[]},
+        {name:'Elote (Street Corn)',cuisine:'mexican',type:'snack',time:15,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Carnitas',cuisine:'mexican',type:'dinner',time:120,diff:'Medium',diet:['gluten-free','dairy-free']},
+        {name:'Pozole',cuisine:'mexican',type:'dinner',time:90,diff:'Medium',diet:['gluten-free','dairy-free']},
+        {name:'Chicken Stir-Fry',cuisine:'asian',type:'dinner',time:20,diff:'Easy',diet:['dairy-free']},
+        {name:'Pad Thai',cuisine:'asian',type:'dinner',time:30,diff:'Medium',diet:['dairy-free']},
+        {name:'Fried Rice',cuisine:'asian',type:'dinner',time:15,diff:'Easy',diet:['dairy-free']},
+        {name:'Ramen Noodle Soup',cuisine:'asian',type:'dinner',time:30,diff:'Medium',diet:['dairy-free']},
+        {name:'Spring Rolls (Fresh)',cuisine:'asian',type:'lunch',time:20,diff:'Easy',diet:['vegan','dairy-free','gluten-free']},
+        {name:'Teriyaki Salmon',cuisine:'asian',type:'dinner',time:25,diff:'Easy',diet:['dairy-free','gluten-free']},
+        {name:'Miso Soup',cuisine:'asian',type:'lunch',time:15,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Sushi Bowls',cuisine:'asian',type:'dinner',time:30,diff:'Medium',diet:['dairy-free','gluten-free']},
+        {name:'Kung Pao Chicken',cuisine:'asian',type:'dinner',time:25,diff:'Medium',diet:['dairy-free']},
+        {name:'Vegetable Dumplings',cuisine:'asian',type:'dinner',time:45,diff:'Hard',diet:['vegan','dairy-free']},
+        {name:'Tofu Stir-Fry',cuisine:'asian',type:'dinner',time:20,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Thai Green Curry',cuisine:'asian',type:'dinner',time:30,diff:'Medium',diet:['gluten-free','dairy-free']},
+        {name:'Chicken Tikka Masala',cuisine:'indian',type:'dinner',time:45,diff:'Medium',diet:['gluten-free']},
+        {name:'Dal (Lentil Curry)',cuisine:'indian',type:'dinner',time:35,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Palak Paneer',cuisine:'indian',type:'dinner',time:30,diff:'Medium',diet:['vegetarian','gluten-free']},
+        {name:'Butter Chicken',cuisine:'indian',type:'dinner',time:40,diff:'Medium',diet:['gluten-free']},
+        {name:'Chana Masala',cuisine:'indian',type:'dinner',time:30,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Samosas',cuisine:'indian',type:'snack',time:60,diff:'Hard',diet:['vegan','dairy-free']},
+        {name:'Aloo Gobi',cuisine:'indian',type:'dinner',time:30,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Biryani',cuisine:'indian',type:'dinner',time:60,diff:'Medium',diet:['gluten-free']},
+        {name:'Naan & Hummus',cuisine:'indian',type:'snack',time:10,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Classic Cheeseburger',cuisine:'american',type:'dinner',time:20,diff:'Easy',diet:[]},
+        {name:'Mac and Cheese',cuisine:'american',type:'dinner',time:25,diff:'Easy',diet:['vegetarian']},
+        {name:'BBQ Pulled Pork',cuisine:'american',type:'dinner',time:120,diff:'Medium',diet:['dairy-free']},
+        {name:'Grilled Chicken Sandwich',cuisine:'american',type:'lunch',time:20,diff:'Easy',diet:['dairy-free']},
+        {name:'Buffalo Wings',cuisine:'american',type:'dinner',time:45,diff:'Easy',diet:['gluten-free']},
+        {name:'Pancakes',cuisine:'american',type:'breakfast',time:15,diff:'Easy',diet:['vegetarian']},
+        {name:'BLT Sandwich',cuisine:'american',type:'lunch',time:10,diff:'Easy',diet:['dairy-free']},
+        {name:'Cobb Salad',cuisine:'american',type:'lunch',time:15,diff:'Easy',diet:['gluten-free']},
+        {name:'Meatloaf',cuisine:'american',type:'dinner',time:60,diff:'Easy',diet:['dairy-free']},
+        {name:'Clam Chowder',cuisine:'american',type:'dinner',time:45,diff:'Medium',diet:[]},
+        {name:'French Toast',cuisine:'american',type:'breakfast',time:15,diff:'Easy',diet:['vegetarian']},
+        {name:'Omelette',cuisine:'american',type:'breakfast',time:10,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Greek Salad',cuisine:'mediterranean',type:'lunch',time:10,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Falafel Wrap',cuisine:'mediterranean',type:'lunch',time:30,diff:'Medium',diet:['vegan','dairy-free']},
+        {name:'Grilled Fish with Lemon',cuisine:'mediterranean',type:'dinner',time:20,diff:'Easy',diet:['gluten-free','dairy-free']},
+        {name:'Shakshuka',cuisine:'mediterranean',type:'breakfast',time:25,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Hummus Plate',cuisine:'mediterranean',type:'snack',time:10,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Lamb Kofta',cuisine:'mediterranean',type:'dinner',time:30,diff:'Medium',diet:['gluten-free','dairy-free']},
+        {name:'Tabbouleh',cuisine:'mediterranean',type:'lunch',time:15,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Stuffed Peppers',cuisine:'mediterranean',type:'dinner',time:45,diff:'Medium',diet:['gluten-free']},
+        {name:'Grilled Halloumi Salad',cuisine:'mediterranean',type:'lunch',time:15,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Baba Ganoush',cuisine:'mediterranean',type:'snack',time:30,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Shawarma Chicken',cuisine:'middle-eastern',type:'dinner',time:40,diff:'Medium',diet:['dairy-free']},
+        {name:'Fattoush Salad',cuisine:'middle-eastern',type:'lunch',time:15,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Lamb Shawarma',cuisine:'middle-eastern',type:'dinner',time:60,diff:'Medium',diet:['dairy-free']},
+        {name:'Kibbeh',cuisine:'middle-eastern',type:'dinner',time:45,diff:'Hard',diet:['dairy-free']},
+        {name:'Manakish',cuisine:'middle-eastern',type:'breakfast',time:30,diff:'Medium',diet:['vegetarian']},
+        {name:'Labneh Dip',cuisine:'middle-eastern',type:'snack',time:5,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Croque Monsieur',cuisine:'french',type:'lunch',time:15,diff:'Easy',diet:[]},
+        {name:'Ratatouille',cuisine:'french',type:'dinner',time:45,diff:'Medium',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Quiche Lorraine',cuisine:'french',type:'lunch',time:50,diff:'Medium',diet:[]},
+        {name:'French Onion Soup',cuisine:'french',type:'dinner',time:60,diff:'Medium',diet:['vegetarian']},
+        {name:'Crepes (Sweet)',cuisine:'french',type:'breakfast',time:20,diff:'Easy',diet:['vegetarian']},
+        {name:'Coq au Vin',cuisine:'french',type:'dinner',time:90,diff:'Hard',diet:['dairy-free']},
+        {name:'Salade Nicoise',cuisine:'french',type:'lunch',time:15,diff:'Easy',diet:['dairy-free','gluten-free']},
+        {name:'Chicken Caesar Salad',cuisine:'american',type:'lunch',time:15,diff:'Easy',diet:[]},
+        {name:'Avocado Toast',cuisine:'american',type:'breakfast',time:5,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Smoothie Bowl',cuisine:'american',type:'breakfast',time:10,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Cauliflower Steak',cuisine:'american',type:'dinner',time:30,diff:'Easy',diet:['vegan','gluten-free','dairy-free','low-carb']},
+        {name:'Zucchini Noodles',cuisine:'italian',type:'dinner',time:15,diff:'Easy',diet:['vegan','gluten-free','dairy-free','low-carb']},
+        {name:'Egg Fried Rice',cuisine:'asian',type:'dinner',time:10,diff:'Easy',diet:['vegetarian','dairy-free']},
+        {name:'Overnight Oats',cuisine:'american',type:'breakfast',time:5,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Tomato Basil Soup',cuisine:'italian',type:'lunch',time:25,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Sheet Pan Chicken',cuisine:'american',type:'dinner',time:35,diff:'Easy',diet:['gluten-free','dairy-free']},
+        {name:'Veggie Buddha Bowl',cuisine:'asian',type:'lunch',time:20,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Tuna Poke Bowl',cuisine:'asian',type:'lunch',time:15,diff:'Easy',diet:['dairy-free','gluten-free']},
+        {name:'Lemon Garlic Shrimp',cuisine:'mediterranean',type:'dinner',time:15,diff:'Easy',diet:['gluten-free','dairy-free','low-carb']},
+        {name:'Chicken Lettuce Wraps',cuisine:'asian',type:'dinner',time:15,diff:'Easy',diet:['gluten-free','dairy-free','low-carb']},
+        {name:'Grilled Steak Salad',cuisine:'american',type:'dinner',time:20,diff:'Easy',diet:['gluten-free','dairy-free','low-carb']},
+        {name:'Vegetable Curry',cuisine:'indian',type:'dinner',time:30,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Mushroom Stroganoff',cuisine:'french',type:'dinner',time:25,diff:'Easy',diet:['vegetarian']},
+        {name:'Bean & Cheese Burrito',cuisine:'mexican',type:'lunch',time:10,diff:'Easy',diet:['vegetarian']},
+        {name:'Sweet Potato Tacos',cuisine:'mexican',type:'dinner',time:25,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Pesto Pasta',cuisine:'italian',type:'dinner',time:15,diff:'Easy',diet:['vegetarian']},
+        {name:'Banana Pancakes',cuisine:'american',type:'breakfast',time:10,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Greek Yogurt Parfait',cuisine:'mediterranean',type:'breakfast',time:5,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Turkey Meatballs',cuisine:'italian',type:'dinner',time:30,diff:'Easy',diet:['dairy-free']},
+        {name:'Coconut Curry Soup',cuisine:'asian',type:'dinner',time:25,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Salmon Teriyaki Bowl',cuisine:'asian',type:'dinner',time:20,diff:'Easy',diet:['dairy-free']},
+        {name:'Stuffed Bell Peppers',cuisine:'mexican',type:'dinner',time:45,diff:'Medium',diet:['gluten-free']},
+        {name:'Shakshuka',cuisine:'middle-eastern',type:'breakfast',time:25,diff:'Easy',diet:['vegetarian','gluten-free']},
+        {name:'Fajitas',cuisine:'mexican',type:'dinner',time:25,diff:'Easy',diet:['gluten-free','dairy-free']},
+        {name:'Egg Muffins',cuisine:'american',type:'breakfast',time:25,diff:'Easy',diet:['vegetarian','gluten-free','low-carb']},
+        {name:'Chicken Noodle Soup',cuisine:'american',type:'dinner',time:35,diff:'Easy',diet:['dairy-free']},
+        {name:'Shrimp Scampi',cuisine:'italian',type:'dinner',time:20,diff:'Easy',diet:[]},
+        {name:'Veggie Fried Rice',cuisine:'asian',type:'dinner',time:15,diff:'Easy',diet:['vegan','dairy-free']},
+        {name:'Caprese Panini',cuisine:'italian',type:'lunch',time:10,diff:'Easy',diet:['vegetarian']},
+        {name:'Chickpea Salad',cuisine:'mediterranean',type:'lunch',time:10,diff:'Easy',diet:['vegan','gluten-free','dairy-free']},
+        {name:'Beef Stew',cuisine:'american',type:'dinner',time:120,diff:'Medium',diet:['gluten-free','dairy-free']},
+        {name:'Tom Yum Soup',cuisine:'asian',type:'dinner',time:25,diff:'Medium',diet:['dairy-free','gluten-free']},
+        {name:'Chicken Quesadilla',cuisine:'mexican',type:'lunch',time:10,diff:'Easy',diet:[]},
+        {name:'Pho',cuisine:'asian',type:'dinner',time:60,diff:'Medium',diet:['dairy-free','gluten-free']},
+        {name:'Eggplant Parmesan',cuisine:'italian',type:'dinner',time:45,diff:'Medium',diet:['vegetarian']},
+        {name:'Baked Salmon',cuisine:'american',type:'dinner',time:20,diff:'Easy',diet:['gluten-free','dairy-free','low-carb']}
+      ];
+
+      var filters = {cuisine:'any',type:'any',time:'any',diet:'any'};
+      var favorites = JSON.parse(localStorage.getItem('mealFavs')||'[]');
+      var currentMeal = null;
+      var spinning = false;
+
+      function setupFilterGroup(containerId, filterKey){
+        document.getElementById(containerId).querySelectorAll('.chip').forEach(function(chip){
+          chip.addEventListener('click', function(){
+            document.getElementById(containerId).querySelectorAll('.chip').forEach(function(c){c.classList.remove('active');});
+            chip.classList.add('active');
+            filters[filterKey] = chip.dataset.v;
+          });
+        });
+      }
+      setupFilterGroup('cuisineFilters','cuisine');
+      setupFilterGroup('mealFilters','type');
+      setupFilterGroup('timeFilters','time');
+      setupFilterGroup('dietFilters','diet');
+
+      function getFiltered(){
+        return meals.filter(function(m){
+          if(filters.cuisine!=='any' && m.cuisine!==filters.cuisine) return false;
+          if(filters.type!=='any' && m.type!==filters.type) return false;
+          if(filters.time!=='any' && m.time > parseInt(filters.time)) return false;
+          if(filters.diet!=='any' && m.diet.indexOf(filters.diet)===-1) return false;
+          return true;
+        });
+      }
+
+      // Wheel drawing
+      var canvas = document.getElementById('wheelCanvas');
+      var ctx = canvas.getContext('2d');
+      var wheelColors = ['var(--accent)','var(--surface)','var(--border)','var(--bg)'];
+
+      function getColor(i){
+        var colors = [
+          getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--surface').trim(),
+          getComputedStyle(document.documentElement).getPropertyValue('--border').trim()
+        ];
+        return colors[i % colors.length] || 'gray';
+      }
+
+      function drawWheel(items, rotation){
+        ctx.clearRect(0,0,300,300);
+        var cx=150,cy=150,r=145;
+        var n = Math.min(items.length, 12);
+        if(n===0) return;
+        var arc = 2*Math.PI/n;
+        for(var i=0;i<n;i++){
+          ctx.beginPath();
+          ctx.moveTo(cx,cy);
+          ctx.arc(cx,cy,r,rotation+i*arc,rotation+(i+1)*arc);
+          ctx.fillStyle = getColor(i);
+          ctx.fill();
+          ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // Text
+          ctx.save();
+          ctx.translate(cx,cy);
+          ctx.rotate(rotation + i*arc + arc/2);
+          ctx.textAlign='right';
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim();
+          ctx.font = 'bold 10px Poppins, sans-serif';
+          var name = items[i].name;
+          if(name.length>18) name = name.substring(0,16)+'..';
+          ctx.fillText(name, r-10, 4);
+          ctx.restore();
+        }
+        // Center
+        ctx.beginPath();
+        ctx.arc(cx,cy,20,0,2*Math.PI);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim();
+        ctx.fill();
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      function spinWheel(){
+        if(spinning) return;
+        var filtered = getFiltered();
+        if(filtered.length===0){
+          document.getElementById('noMatch').style.display='block';
+          document.getElementById('mealResult').style.display='none';
+          return;
+        }
+        document.getElementById('noMatch').style.display='none';
+        spinning = true;
+
+        var n = Math.min(filtered.length, 12);
+        var chosenIdx = Math.floor(Math.random()*n);
+        var arc = 2*Math.PI/n;
+        var targetAngle = -(chosenIdx*arc + arc/2) + Math.PI/2;
+        var totalRotation = targetAngle + Math.PI*2*(4+Math.random()*3);
+        var startRotation = 0;
+        var duration = 3000;
+        var start = null;
+
+        function animate(ts){
+          if(!start) start=ts;
+          var elapsed = ts - start;
+          var progress = Math.min(elapsed/duration, 1);
+          var ease = 1 - Math.pow(1 - progress, 3);
+          var rot = startRotation + totalRotation * ease;
+          drawWheel(filtered, rot);
+          if(progress < 1){
+            requestAnimationFrame(animate);
+          } else {
+            spinning = false;
+            currentMeal = filtered[chosenIdx];
+            showResult(currentMeal);
+          }
+        }
+        requestAnimationFrame(animate);
+      }
+
+      function showResult(meal){
+        document.getElementById('mealName').textContent = meal.name;
+        document.getElementById('mealCuisine').textContent = meal.cuisine.charAt(0).toUpperCase()+meal.cuisine.slice(1);
+        document.getElementById('mealTime').textContent = meal.time >= 60 ? Math.floor(meal.time/60)+'h '+(meal.time%60?meal.time%60+'m':'') : meal.time+' min';
+        document.getElementById('mealDifficulty').textContent = meal.diff;
+        document.getElementById('mealType').textContent = meal.type.charAt(0).toUpperCase()+meal.type.slice(1);
+        var tags = document.getElementById('mealDietTags');
+        tags.innerHTML = meal.diet.map(function(d){return '<span class="meal-tag">'+d+'</span>';}).join('');
+        document.getElementById('mealResult').style.display='block';
+      }
+
+      document.getElementById('spinBtn').addEventListener('click', spinWheel);
+      document.getElementById('spinAgain').addEventListener('click', spinWheel);
+
+      document.getElementById('saveBtn').addEventListener('click', function(){
+        if(!currentMeal) return;
+        if(favorites.indexOf(currentMeal.name)===-1){
+          favorites.push(currentMeal.name);
+          localStorage.setItem('mealFavs', JSON.stringify(favorites));
+          renderFavs();
+        }
+      });
+
+      function renderFavs(){
+        var section = document.getElementById('favSection');
+        var list = document.getElementById('favList');
+        if(favorites.length===0){section.style.display='none'; return;}
+        section.style.display='block';
+        list.innerHTML = favorites.map(function(f,i){
+          return '<div class="fav-item"><span>'+f+'</span><button class="fav-remove" data-i="'+i+'">&times;</button></div>';
+        }).join('');
+        list.querySelectorAll('.fav-remove').forEach(function(btn){
+          btn.addEventListener('click',function(){
+            favorites.splice(parseInt(btn.dataset.i),1);
+            localStorage.setItem('mealFavs',JSON.stringify(favorites));
+            renderFavs();
+          });
+        });
+      }
+
+      // Initial draw
+      drawWheel(meals.slice(0,12), 0);
+      renderFavs();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/what-to-cook-generator',title:'What Should I Cook?',description:'Random meal generator with cuisine, time, and dietary filters.'});
+      }
+    });
+  </script>
+</body>
+</html>

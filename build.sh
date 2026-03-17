@@ -12,17 +12,17 @@ echo "============================================="
 echo ""
 
 # 1. Rebuild search index
-echo "[1/5] Rebuilding search index..."
+echo "[1/7] Rebuilding search index..."
 bash "$BASE/build-search-index.sh"
 
 # 2. Rebuild sitemap
 echo ""
-echo "[2/5] Rebuilding sitemap..."
+echo "[2/7] Rebuilding sitemap..."
 bash "$BASE/build-sitemap.sh"
 
 # 3. Update homepage card counts
 echo ""
-echo "[3/5] Checking homepage card counts..."
+echo "[3/7] Checking homepage card counts..."
 for hub in work diagnostic freelance creator student housing career software dev text image compliance eu ramadan tools ai apple auto evergreen health kids music sports weather; do
   actual=$(find "$BASE/$hub" -name "index.html" -not -path "$BASE/$hub/index.html" 2>/dev/null | wc -l | tr -d ' ')
   shown=$(grep "href=\"/$hub/\"" "$BASE/index.html" | grep -o '<p>[0-9]* ' | grep -o '[0-9]*')
@@ -37,7 +37,7 @@ fi
 
 # 4. Check for hardcoded colors in new/modified files
 echo ""
-echo "[4/5] Checking for hardcoded colors..."
+echo "[4/7] Checking for hardcoded colors..."
 changed_files=$(git diff --name-only HEAD~1 2>/dev/null | grep '\.html$')
 if [ -n "$changed_files" ]; then
   color_violations=0
@@ -59,7 +59,7 @@ fi
 
 # 5. Check for unlinked tools (tools with no hub reference)
 echo ""
-echo "[5/5] Checking for unlinked tools..."
+echo "[5/7] Checking for unlinked tools..."
 unlinked=0
 for tooldir in "$BASE"/tools/*/; do
   toolname=$(basename "$tooldir")
@@ -77,7 +77,7 @@ fi
 
 # 6. Check for duplicate tools (same slug name in different hubs)
 echo ""
-echo "[6/6] Checking for duplicate tools..."
+echo "[6/7] Checking for duplicate tools..."
 dupes=$(find "$BASE" -name "index.html" -path "*/*/index.html" \
   -not -path "*/about/*" -not -path "*/contact/*" -not -path "*/privacy/*" \
   -not -path "*/terms/*" -not -path "*/docs/*" -not -path "*/node_modules/*" \
@@ -102,6 +102,25 @@ similar=$(find "$BASE" -name "index.html" -path "*/*/index.html" \
 if [ -n "$similar" ]; then
   echo "  SIMILAR names (possible overlaps):"
   echo "$similar" | sed 's/^/    /'
+fi
+
+# 7. SEO Keyword Audit (automated keyword placement check)
+echo ""
+echo "[7/7] Running SEO keyword audit..."
+if [ -f "$BASE/seo-keyword-engine.py" ] && command -v python3 &>/dev/null; then
+  SEO_OUTPUT=$(python3 "$BASE/seo-keyword-engine.py" audit 2>&1)
+  # Extract just the summary lines
+  AVG_SCORE=$(echo "$SEO_OUTPUT" | grep "Average score" | awk '{print $3}')
+  CRITICAL_COUNT=$(echo "$SEO_OUTPUT" | grep "CRITICAL" | head -1 | grep -o '[0-9]* tools' | awk '{print $1}')
+  echo "  SEO average score: $AVG_SCORE"
+  if [ -n "$CRITICAL_COUNT" ] && [ "$CRITICAL_COUNT" -gt 0 ] 2>/dev/null; then
+    echo "  WARNING: $CRITICAL_COUNT tools scoring below 50 — run './build-seo-audit.sh --verbose' for details"
+  else
+    echo "  All tools passing SEO keyword checks!"
+  fi
+  echo "  Full report: ./build-seo-audit.sh --report"
+else
+  echo "  SKIPPED: seo-keyword-engine.py or python3 not found"
 fi
 
 echo ""

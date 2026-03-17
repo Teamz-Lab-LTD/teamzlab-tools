@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pantry Inventory Tracker — Food Waste</title>
+  <meta name="description" content="Track pantry, fridge, and freezer items with expiry alerts. Generate shopping lists and reduce food waste. Free, private, saves locally.">
+  <meta property="og:title" content="Pantry Inventory Tracker — Food Waste">
+  <meta property="og:description" content="Track kitchen inventory with expiry alerts. Reduce food waste and generate shopping lists.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/pantry-inventory-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/pantry-inventory-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .add-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 0.3rem; color: var(--text); font-size: 0.85rem; }
+    .form-group input, .form-group select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 0.9rem; box-sizing: border-box; }
+    .add-item-btn { background: var(--accent); color: var(--bg); border: none; padding: 0.7rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.8rem; }
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .control-btn { padding: 0.4rem 1rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .control-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .stat-card .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+    .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+    .item-list { margin-top: 1rem; }
+    .item-card { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.5rem; background: var(--surface); flex-wrap: wrap; gap: 0.5rem; }
+    .item-card.expiring { border-color: var(--accent); }
+    .item-card.expired { opacity: 0.6; border-style: dashed; }
+    .item-info { flex: 1; min-width: 200px; }
+    .item-info .item-name { font-weight: 600; color: var(--heading); }
+    .item-info .item-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .item-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+    .badge-pantry { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .badge-fridge { background: var(--accent); color: var(--bg); }
+    .badge-freezer { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .badge-expiring { background: var(--accent); color: var(--bg); }
+    .item-actions { display: flex; gap: 0.3rem; }
+    .item-actions button { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .item-actions button:hover { border-color: var(--accent); color: var(--accent); }
+    .shopping-list { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; display: none; }
+    .shopping-list h3 { color: var(--heading); margin-bottom: 0.5rem; }
+    .shopping-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); color: var(--text); font-size: 0.9rem; }
+    .shopping-item:last-child { border-bottom: none; }
+    .waste-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; display: none; }
+    .waste-section h3 { color: var(--heading); margin-bottom: 0.5rem; }
+    .waste-total { font-size: 1.3rem; font-weight: 700; color: var(--heading); }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "Pantry Inventory Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is my pantry data saved securely?", "acceptedAnswer": {"@type": "Answer", "text": "All data is saved in your browser's localStorage only. Nothing is sent to any server. Your inventory data is completely private and stays on your device."}}, {"@type": "Question", "name": "How much food does the average household waste?", "acceptedAnswer": {"@type": "Answer", "text": "The average American household wastes about $1,600 worth of food per year, roughly 30% of all food purchased. Using an inventory tracker can reduce this significantly."}}, {"@type": "Question", "name": "What does the expiry alert do?", "acceptedAnswer": {"@type": "Answer", "text": "Items expiring within 3 days are highlighted with a visual alert so you can prioritize using them. This helps prevent food from going bad unnoticed."}}, {"@type": "Question", "name": "Can I generate a shopping list?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, mark items as \"need to buy\" and the tracker builds a shopping list automatically. Check it before your next grocery trip to avoid buying duplicates."}}, {"@type": "Question", "name": "Does the waste tracker save historical data?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, the waste log accumulates over time and shows your total waste cost. This helps identify patterns and motivate better inventory management."}}, {"@type": "Question", "name": "What is the FIFO method?", "acceptedAnswer": {"@type": "Answer", "text": "FIFO (First In, First Out) means using the oldest items first. When restocking, place new items behind existing ones. This simple practice dramatically reduces food waste."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Pantry Inventory Tracker", "description": "Track pantry, fridge, and freezer items with expiry alerts.", "url": "https://tool.teamzlab.com/restaurant/pantry-inventory-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Pantry Inventory Tracker</h1>
+      <p class="tool-description">Track everything in your pantry, fridge, and freezer. Get expiry alerts, generate shopping lists, and log food waste to see how much money you are throwing away. All data saved locally in your browser.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="add-form">
+        <h3 style="color:var(--heading);margin:0 0 0.8rem;">Add Item</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="itemName">Item Name</label>
+            <input type="text" id="itemName" placeholder="e.g. Chicken breast">
+          </div>
+          <div class="form-group">
+            <label for="itemCategory">Category</label>
+            <select id="itemCategory">
+              <option value="produce">Produce</option><option value="dairy">Dairy</option><option value="meat">Meat/Seafood</option>
+              <option value="grains">Grains/Pasta</option><option value="canned">Canned/Jar</option><option value="frozen">Frozen</option>
+              <option value="condiment">Condiment/Sauce</option><option value="snack">Snack</option><option value="beverage">Beverage</option><option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="itemQty">Quantity</label>
+            <input type="text" id="itemQty" placeholder="e.g. 2 lbs, 1 bag">
+          </div>
+          <div class="form-group">
+            <label for="itemExpiry">Expiry Date</label>
+            <input type="date" id="itemExpiry">
+          </div>
+          <div class="form-group">
+            <label for="itemLocation">Location</label>
+            <select id="itemLocation">
+              <option value="pantry">Pantry</option><option value="fridge">Fridge</option><option value="freezer">Freezer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="itemCost">Cost ($) <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+            <input type="number" id="itemCost" min="0" step="0.01" placeholder="3.99">
+          </div>
+        </div>
+        <button class="add-item-btn" id="addItemBtn">Add to Inventory</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val" id="totalItems">0</div><div class="stat-label">Total Items</div></div>
+        <div class="stat-card"><div class="stat-val" id="expiringItems">0</div><div class="stat-label">Expiring Soon</div></div>
+        <div class="stat-card"><div class="stat-val" id="shoppingCount">0</div><div class="stat-label">Shopping List</div></div>
+        <div class="stat-card"><div class="stat-val" id="wasteTotal">$0</div><div class="stat-label">Waste Cost</div></div>
+      </div>
+
+      <div class="controls">
+        <button class="control-btn active" data-sort="expiry">Sort: Expiry</button>
+        <button class="control-btn" data-sort="name">Sort: Name</button>
+        <button class="control-btn" data-sort="location">Sort: Location</button>
+        <button class="control-btn" data-sort="category">Sort: Category</button>
+      </div>
+      <div class="controls">
+        <button class="control-btn active" data-loc="all">All</button>
+        <button class="control-btn" data-loc="pantry">Pantry</button>
+        <button class="control-btn" data-loc="fridge">Fridge</button>
+        <button class="control-btn" data-loc="freezer">Freezer</button>
+      </div>
+
+      <div class="item-list" id="itemList">
+        <div class="empty-state">Your inventory is empty. Add items above to get started.</div>
+      </div>
+
+      <div class="shopping-list" id="shoppingSection">
+        <h3>Shopping List</h3>
+        <div id="shoppingList"></div>
+      </div>
+
+      <div class="waste-section" id="wasteSection">
+        <h3>Food Waste Log</h3>
+        <div id="wasteLog"></div>
+        <div style="margin-top:0.5rem;">Total wasted: <span class="waste-total" id="wasteTotalDisplay">$0.00</span></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Track Your Pantry Inventory</h2>
+      <p>The average American household wastes approximately sixteen hundred dollars worth of food every year. That is over 30 percent of all food purchased going straight to the landfill. The primary reasons are forgotten items buried in the back of the fridge, duplicate purchases because you did not realize you already had something, and items expiring before you could use them. This tracker solves all three problems by giving you a clear view of everything you have and when it expires.</p>
+
+      <h3>The FIFO Method</h3>
+      <p>FIFO stands for First In, First Out, and it is the inventory management system used by every professional kitchen. When you buy new groceries, place them behind existing items of the same type. Always use the oldest items first. This simple practice dramatically reduces food waste. This tracker helps by sorting items by expiry date so you always know which items need to be used first.</p>
+
+      <h3>Expiry Date Alerts</h3>
+      <p>Items expiring within three days are highlighted so you can plan meals around them before they go bad. This is especially important for fresh produce, dairy, and meat which have the shortest shelf lives. When you see items nearing expiry, use them in soups, stir-fries, smoothies, or freeze them to extend their life. Bread, cooked grains, and most fruits can be frozen to prevent waste.</p>
+
+      <h3>Smart Shopping Lists</h3>
+      <p>Mark items as needed when you run out, and the tracker builds your shopping list automatically. This prevents both over-buying (purchasing items you already have) and under-buying (forgetting essentials). Check your inventory before every shopping trip. Studies show that making a list and checking existing inventory reduces food spending by 15 to 25 percent compared to shopping without a plan.</p>
+
+      <h3>Tracking Food Waste</h3>
+      <p>When you throw away food, log it in the waste tracker with its approximate cost. Seeing the dollar amount accumulate is a powerful motivator to change habits. Most people are shocked to discover how much money they waste on food. Over a month, those three dollars here and five dollars there add up to significant losses. The waste log helps you identify patterns like consistently buying too much produce or forgetting about leftovers.</p>
+
+      <h3>Storage Tips to Extend Shelf Life</h3>
+      <p>Store herbs like a bouquet of flowers in a glass of water in the fridge. Keep bananas separate from other fruits as they release ethylene gas that speeds ripening. Store tomatoes at room temperature, not in the fridge, for better flavor and texture. Keep potatoes and onions in a cool dark place but not together, as their gases cause each other to spoil faster. These small changes can extend produce life by days or even weeks.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Pantry Inventory Tracker'}];
+    var FAQS = [
+      {q:'Is my pantry data saved securely?',a:'All data is saved in your browser\'s localStorage only. Nothing is sent to any server. Your inventory data is completely private and stays on your device.'},
+      {q:'How much food does the average household waste?',a:'The average American household wastes about $1,600 worth of food per year, roughly 30% of all food purchased. Using an inventory tracker can reduce this significantly.'},
+      {q:'What does the expiry alert do?',a:'Items expiring within 3 days are highlighted with a visual alert so you can prioritize using them. This helps prevent food from going bad unnoticed.'},
+      {q:'Can I generate a shopping list?',a:'Yes, mark items as "need to buy" and the tracker builds a shopping list automatically. Check it before your next grocery trip to avoid buying duplicates.'},
+      {q:'Does the waste tracker save historical data?',a:'Yes, the waste log accumulates over time and shows your total waste cost. This helps identify patterns and motivate better inventory management.'},
+      {q:'What is the FIFO method?',a:'FIFO (First In, First Out) means using the oldest items first. When restocking, place new items behind existing ones. This simple practice dramatically reduces food waste.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'What Should I Cook?',url:'/restaurant/what-to-cook-generator/',desc:'Get meal ideas using expiring items'},
+      {name:'Recipe Scaler',url:'/restaurant/recipe-scaler/',desc:'Scale recipes to use up ingredients'},
+      {name:'Food Cost Calculator',url:'/restaurant/food-cost-calculator/',desc:'Calculate food costs per dish'},
+      {name:'Kitchen Timer',url:'/restaurant/kitchen-timer/',desc:'Time your cooking precisely'},
+      {name:'Cooking Unit Converter',url:'/restaurant/cooking-unit-converter/',desc:'Convert measurements for recipes'},
+      {name:'Calorie Calculator',url:'/health/calorie-intake-calculator/',desc:'Track calories in your meals'}
+    ];
+
+    (function(){
+      var items = JSON.parse(localStorage.getItem('pantryItems')||'[]');
+      var shopping = JSON.parse(localStorage.getItem('pantryShop')||'[]');
+      var waste = JSON.parse(localStorage.getItem('pantryWaste')||'[]');
+      var sortBy = 'expiry';
+      var filterLoc = 'all';
+
+      function save(){
+        localStorage.setItem('pantryItems',JSON.stringify(items));
+        localStorage.setItem('pantryShop',JSON.stringify(shopping));
+        localStorage.setItem('pantryWaste',JSON.stringify(waste));
+      }
+
+      function daysUntilExpiry(dateStr){
+        if(!dateStr) return 999;
+        var now = new Date(); now.setHours(0,0,0,0);
+        var exp = new Date(dateStr); exp.setHours(0,0,0,0);
+        return Math.ceil((exp - now) / 86400000);
+      }
+
+      function render(){
+        var filtered = items.filter(function(item){
+          return filterLoc === 'all' || item.location === filterLoc;
+        });
+
+        filtered.sort(function(a,b){
+          if(sortBy==='expiry') return daysUntilExpiry(a.expiry) - daysUntilExpiry(b.expiry);
+          if(sortBy==='name') return (a.name||'').localeCompare(b.name||'');
+          if(sortBy==='location') return (a.location||'').localeCompare(b.location||'');
+          if(sortBy==='category') return (a.category||'').localeCompare(b.category||'');
+          return 0;
+        });
+
+        var list = document.getElementById('itemList');
+        var expiring = 0;
+
+        if(filtered.length === 0){
+          list.innerHTML = '<div class="empty-state">' + (items.length === 0 ? 'Your inventory is empty. Add items above to get started.' : 'No items in this location.') + '</div>';
+        } else {
+          list.innerHTML = filtered.map(function(item, i){
+            var days = daysUntilExpiry(item.expiry);
+            var cls = '';
+            var badge = '';
+            if(days <= 0){ cls = ' expired'; badge = '<span class="item-badge badge-expiring">Expired</span>'; }
+            else if(days <= 3){ cls = ' expiring'; badge = '<span class="item-badge badge-expiring">'+days+' day'+(days>1?'s':'')+' left</span>'; expiring++; }
+
+            var locBadge = '<span class="item-badge badge-'+item.location+'">'+item.location+'</span>';
+
+            return '<div class="item-card'+cls+'" data-idx="'+i+'">' +
+              '<div class="item-info"><div class="item-name">'+item.name+' '+badge+'</div>' +
+              '<div class="item-meta">'+item.qty+' | '+item.category+' | '+locBadge+(item.expiry?' | Exp: '+item.expiry:'')+(item.cost?' | $'+parseFloat(item.cost).toFixed(2):'')+'</div></div>' +
+              '<div class="item-actions">' +
+              '<button class="shop-btn" title="Add to shopping list" data-name="'+item.name+'">Cart</button>' +
+              '<button class="waste-btn" title="Log as waste" data-name="'+item.name+'" data-cost="'+(item.cost||0)+'" data-real="'+items.indexOf(item)+'">Waste</button>' +
+              '<button class="del-btn" title="Remove" data-real="'+items.indexOf(item)+'">&times;</button>' +
+              '</div></div>';
+          }).join('');
+
+          list.querySelectorAll('.del-btn').forEach(function(btn){
+            btn.addEventListener('click',function(){ items.splice(parseInt(btn.dataset.real),1); save(); render(); });
+          });
+
+          list.querySelectorAll('.shop-btn').forEach(function(btn){
+            btn.addEventListener('click',function(){
+              if(shopping.indexOf(btn.dataset.name)===-1){ shopping.push(btn.dataset.name); save(); renderShopping(); }
+            });
+          });
+
+          list.querySelectorAll('.waste-btn').forEach(function(btn){
+            btn.addEventListener('click',function(){
+              waste.push({name:btn.dataset.name, cost:parseFloat(btn.dataset.cost)||0, date:new Date().toISOString().split('T')[0]});
+              items.splice(parseInt(btn.dataset.real),1);
+              save(); render(); renderWaste();
+            });
+          });
+        }
+
+        document.getElementById('totalItems').textContent = items.length;
+        document.getElementById('expiringItems').textContent = items.filter(function(i){var d=daysUntilExpiry(i.expiry);return d>0&&d<=3;}).length;
+        document.getElementById('shoppingCount').textContent = shopping.length;
+        var wasteSum = waste.reduce(function(s,w){return s+(w.cost||0);},0);
+        document.getElementById('wasteTotal').textContent = '$'+wasteSum.toFixed(0);
+        renderShopping();
+        renderWaste();
+      }
+
+      function renderShopping(){
+        var section = document.getElementById('shoppingSection');
+        var list = document.getElementById('shoppingList');
+        if(shopping.length===0){section.style.display='none';return;}
+        section.style.display='block';
+        list.innerHTML = shopping.map(function(s,i){
+          return '<div class="shopping-item"><span>'+s+'</span><button style="background:none;border:none;color:var(--text-muted);cursor:pointer;" data-si="'+i+'">&times;</button></div>';
+        }).join('');
+        list.querySelectorAll('button').forEach(function(btn){
+          btn.addEventListener('click',function(){ shopping.splice(parseInt(btn.dataset.si),1); save(); render(); });
+        });
+      }
+
+      function renderWaste(){
+        var section = document.getElementById('wasteSection');
+        if(waste.length===0){section.style.display='none';return;}
+        section.style.display='block';
+        var log = document.getElementById('wasteLog');
+        var recent = waste.slice(-10).reverse();
+        log.innerHTML = recent.map(function(w){
+          return '<div class="shopping-item"><span>'+w.name+(w.cost?' ($'+w.cost.toFixed(2)+')':'')+'</span><span style="color:var(--text-muted);font-size:0.8rem;">'+w.date+'</span></div>';
+        }).join('');
+        var total = waste.reduce(function(s,w){return s+(w.cost||0);},0);
+        document.getElementById('wasteTotalDisplay').textContent = '$'+total.toFixed(2);
+      }
+
+      document.getElementById('addItemBtn').addEventListener('click',function(){
+        var name = document.getElementById('itemName').value.trim();
+        if(!name){alert('Please enter an item name.');return;}
+        items.push({
+          name: name,
+          category: document.getElementById('itemCategory').value,
+          qty: document.getElementById('itemQty').value || '1',
+          expiry: document.getElementById('itemExpiry').value || '',
+          location: document.getElementById('itemLocation').value,
+          cost: document.getElementById('itemCost').value || 0
+        });
+        save();
+        render();
+        document.getElementById('itemName').value='';
+        document.getElementById('itemQty').value='';
+        document.getElementById('itemExpiry').value='';
+        document.getElementById('itemCost').value='';
+      });
+
+      document.querySelectorAll('.control-btn[data-sort]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          document.querySelectorAll('.control-btn[data-sort]').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active');
+          sortBy = btn.dataset.sort;
+          render();
+        });
+      });
+
+      document.querySelectorAll('.control-btn[data-loc]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          document.querySelectorAll('.control-btn[data-loc]').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active');
+          filterLoc = btn.dataset.loc;
+          render();
+        });
+      });
+
+      render();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/pantry-inventory-tracker',title:'Pantry Inventory Tracker',description:'Track pantry, fridge, and freezer items with expiry alerts.'});
+      }
+    });
+  </script>
+</body>
+</html>

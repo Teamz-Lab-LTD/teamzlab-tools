@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Typing Race — Speed Test Game Free</title>
+  <meta name="description" content="Race your car by typing fast in this free typing game. Track WPM, accuracy, and beat your personal best. Private and runs entirely in your browser.">
+  <meta property="og:title" content="Typing Race — Speed Test Game Free">
+  <meta property="og:description" content="Free typing race game. Type to move your car forward. Track WPM, accuracy, and personal bests privately in your browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/typing-race/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/typing-race/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .race-track{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem;position:relative;overflow:hidden}
+    .track-lane{height:50px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;position:relative;overflow:hidden}
+    .car{position:absolute;top:50%;transform:translateY(-50%);left:0;font-size:1.8rem;transition:left 0.3s ease-out;z-index:2}
+    .finish-line{position:absolute;right:10px;top:0;bottom:0;width:3px;background:var(--accent);opacity:0.5}
+    .track-label{position:absolute;top:4px;left:10px;font-size:0.65rem;color:var(--text-muted);font-weight:600}
+    .ghost-car{opacity:0.3}
+    .typing-sample{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;font-size:1.15rem;line-height:1.9;font-family:'Poppins',sans-serif;margin-bottom:1rem;min-height:80px;user-select:none}
+    .typing-sample .char.correct{color:var(--accent)}
+    .typing-sample .char.incorrect{color:var(--danger,crimson);text-decoration:underline}
+    .typing-sample .char.current{background:var(--accent);color:var(--bg);border-radius:2px;padding:0 1px}
+    .typing-sample .char.pending{color:var(--text-muted)}
+    .typing-input{width:100%;padding:1rem;font-size:1.1rem;border:2px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-family:'Poppins',sans-serif;outline:none;resize:none}
+    .typing-input:focus{border-color:var(--accent)}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.75rem;margin:1rem 0}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0.75rem;text-align:center}
+    .stat-card .stat-value{font-size:1.6rem;font-weight:800;color:var(--accent)}
+    .stat-card .stat-label{font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;font-weight:600}
+    .controls-row{display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;margin:1rem 0}
+    .btn-primary{background:var(--accent);color:var(--bg);border:none;padding:0.75rem 2rem;border-radius:999px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif}
+    .btn-primary:hover{opacity:0.9}
+    .btn-secondary{background:none;border:1px solid var(--border);color:var(--text);padding:0.6rem 1.5rem;border-radius:999px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif}
+    .btn-secondary.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+    .mode-row{display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem}
+    .result-card{background:var(--accent);color:var(--bg);border-radius:14px;padding:2rem;text-align:center;display:none;margin:1rem 0}
+    .result-card h3{margin:0 0 0.5rem;font-size:1.5rem}
+    .result-card .big{font-size:3rem;font-weight:800}
+    .result-card .sub{opacity:0.85;font-size:0.95rem;margin-top:0.5rem}
+    .leaderboard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin:1rem 0}
+    .leaderboard h4{margin:0 0 0.5rem;color:var(--heading);font-size:0.95rem}
+    .lb-row{display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);font-size:0.85rem;color:var(--text)}
+    .lb-row:last-child{border-bottom:none}
+    .lb-rank{font-weight:700;color:var(--accent);min-width:30px}
+    .countdown{font-size:3rem;font-weight:800;color:var(--accent);text-align:center;display:none;padding:2rem}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+    .countdown.active{display:block;animation:pulse 0.5s}
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tool.teamzlab.com/tools/"}, {"@type": "ListItem", "position": 3, "name": "Typing Race"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the racing mechanic work?", "acceptedAnswer": {"@type": "Answer", "text": "Your car moves forward proportionally to how much of the text you have correctly typed. The further you get through the passage, the closer your car gets to the finish line."}}, {"@type": "Question", "name": "What is the ghost car?", "acceptedAnswer": {"@type": "Answer", "text": "The ghost car represents your personal best time for the selected mode. It moves at the speed you achieved in your best race, letting you compete against yourself."}}, {"@type": "Question", "name": "How are scores saved?", "acceptedAnswer": {"@type": "Answer", "text": "Your top 5 scores for each time mode are saved in your browser localStorage. They persist across sessions but clearing browser data will reset them."}}, {"@type": "Question", "name": "What texts are used in the race?", "acceptedAnswer": {"@type": "Answer", "text": "The race uses a curated collection of famous quotes, literature excerpts, and interesting passages. Each race randomly selects a new passage to keep practice fresh."}}, {"@type": "Question", "name": "Is 60 WPM a good score?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. 60 WPM puts you above average. Most professional jobs require 45 to 65 WPM. Competitive typists aim for 100+ WPM. Regular practice can get most people to 60 WPM within weeks."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Typing Race", "description": "Free typing race game with WPM tracking and personal bests.", "url": "https://tool.teamzlab.com/tools/typing-race/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Typing Race — Speed Test Game Free</h1>
+      <p class="tool-description">Race your car to the finish line by typing fast and accurately. Choose 30s, 60s, or 120s modes. Beat your personal best and climb the leaderboard. All data stays in your browser.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="mode-row">
+        <button class="btn-secondary active" data-time="30">30s</button>
+        <button class="btn-secondary" data-time="60">60s</button>
+        <button class="btn-secondary" data-time="120">120s</button>
+      </div>
+      <div class="race-track" id="race-track">
+        <div class="track-lane" id="player-lane">
+          <span class="track-label">You</span>
+          <div class="car" id="player-car">&#128663;</div>
+          <div class="finish-line"></div>
+        </div>
+        <div class="track-lane" id="ghost-lane">
+          <span class="track-label">Best</span>
+          <div class="car ghost-car" id="ghost-car">&#128663;</div>
+          <div class="finish-line"></div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="s-wpm">0</div><div class="stat-label">WPM</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-acc">100%</div><div class="stat-label">Accuracy</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-cpm">0</div><div class="stat-label">CPM</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-time">0s</div><div class="stat-label">Time Left</div></div>
+      </div>
+      <div class="countdown" id="countdown"></div>
+      <div class="typing-sample" id="typing-sample"></div>
+      <textarea class="typing-input" id="typing-input" rows="2" placeholder="Type here to start the race..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      <div class="controls-row">
+        <button class="btn-primary" id="btn-restart">New Race</button>
+      </div>
+      <div class="result-card" id="result-card">
+        <h3>Race Finished!</h3>
+        <div class="big" id="r-wpm">0 WPM</div>
+        <div class="sub" id="r-detail"></div>
+      </div>
+      <div class="leaderboard" id="leaderboard">
+        <h4>Personal Best (This Mode)</h4>
+        <div id="lb-list"><p style="color:var(--text-muted);font-size:0.85rem;margin:0">No races yet. Start typing!</p></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why Play Typing Race Games?</h2>
+      <p>Typing race games transform the sometimes tedious practice of improving typing speed into an engaging, competitive experience. By gamifying the learning process, you stay motivated and practice longer. The visual feedback of your car moving forward creates a direct connection between your typing speed and progress, making improvement feel tangible and rewarding.</p>
+
+      <h3>World Typing Speed Records</h3>
+      <p>The world record for typing speed on a standard keyboard is held by Barbara Blackburn at 212 WPM using the Dvorak layout. On QWERTY, competitive typists regularly exceed 150 WPM. The average person types around 40 WPM, while professional typists typically reach 65 to 75 WPM. With regular practice, most people can double their typing speed within a few months.</p>
+
+      <h3>How to Improve Your Speed</h3>
+      <p>Focus on accuracy first, as correcting errors wastes more time than typing slightly slower. Learn proper touch typing technique with correct finger placement on the home row. Practice regularly for 15 to 20 minutes daily rather than occasional marathon sessions. Use all your fingers and avoid looking at the keyboard. The typing race format helps because it creates urgency without sacrificing the fun factor.</p>
+
+      <h3>Does Your Keyboard Matter?</h3>
+      <p>Mechanical keyboards with linear or tactile switches are preferred by fast typists because they provide consistent key travel and tactile feedback. However, any keyboard can achieve high speeds with practice. The most important factor is comfort and familiarity. Cherry MX Red and Brown switches are popular among speed typists. Some typists prefer low-profile keyboards for faster key travel.</p>
+
+      <h3>Benefits of Fast Typing</h3>
+      <p>Professionals who type at 80+ WPM save approximately 21 days of typing time per year compared to 40 WPM typists. Fast typing reduces the cognitive gap between thinking and writing, improving the quality of written communication. It also reduces strain by requiring fewer hours at the keyboard to produce the same volume of work.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  var BREADCRUMBS=[{name:'Home',url:'/'},{name:'Tools',url:'/tools/'},{name:'Typing Race'}];
+  var FAQS=[
+    {q:'How does the racing mechanic work?',a:'Your car moves forward proportionally to how much of the text you have correctly typed. The further you get through the passage, the closer your car gets to the finish line.'},
+    {q:'What is the ghost car?',a:'The ghost car represents your personal best time for the selected mode. It moves at the speed you achieved in your best race, letting you compete against yourself.'},
+    {q:'How are scores saved?',a:'Your top 5 scores for each time mode are saved in your browser localStorage. They persist across sessions but clearing browser data will reset them.'},
+    {q:'What texts are used in the race?',a:'The race uses a curated collection of famous quotes, literature excerpts, and interesting passages. Each race randomly selects a new passage to keep practice fresh.'},
+    {q:'Is 60 WPM a good score?',a:'Yes. 60 WPM puts you above average. Most professional jobs require 45 to 65 WPM. Competitive typists aim for 100+ WPM. Regular practice can get most people to 60 WPM within weeks.'}
+  ];
+  var RELATED_TOOLS=[
+    {name:'Typing Speed Test',url:'/tools/typing-speed-test/'},
+    {name:'Touch Typing Tutor',url:'/tools/touch-typing-tutor/'},
+    {name:'Paragraph Typing Test',url:'/tools/paragraph-typing-test/'},
+    {name:'Code Typing Practice',url:'/tools/code-typing-practice/'},
+    {name:'Typing Accuracy Trainer',url:'/tools/typing-accuracy-trainer/'},
+    {name:'Dictation Typing Practice',url:'/tools/dictation-typing-practice/'}
+  ];
+  document.addEventListener('DOMContentLoaded',function(){
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    TeamzTools.injectWebAppSchema({slug:'tools/typing-race',title:'Typing Race',description:'Free typing race game with WPM tracking and personal bests.'});
+    initRace();
+  });
+
+  function initRace(){
+    var passages=[
+      "The quick brown fox jumps over the lazy dog. This sentence uses every letter of the alphabet and has been a standard typing test since the late 1800s. Touch typists around the world know it by heart.",
+      "To be or not to be, that is the question. Whether it is nobler in the mind to suffer the slings and arrows of outrageous fortune, or to take arms against a sea of troubles and by opposing end them.",
+      "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness. We had everything before us, we had nothing before us, we were all going direct to Heaven.",
+      "In the beginning the Universe was created. This has made a lot of people very angry and been widely regarded as a bad move. The ships hung in the sky in much the same way that bricks do not.",
+      "Space is big. Really big. You just will not believe how vastly, hugely, mind-bogglingly big it is. I mean, you may think it is a long way down the road to the chemist, but that is just peanuts to space.",
+      "The only way to do great work is to love what you do. If you have not found it yet, keep looking. Do not settle. As with all matters of the heart, you will know when you find it.",
+      "Success is not final, failure is not fatal. It is the courage to continue that counts. We make a living by what we get, but we make a life by what we give. Never give in, never give up.",
+      "All that is gold does not glitter. Not all those who wander are lost. The old that is strong does not wither. Deep roots are not reached by the frost. From the ashes a fire shall be woken.",
+      "Two things are infinite, the universe and human stupidity, and I am not yet sure about the universe. Logic will get you from A to B. Imagination will take you everywhere in this world.",
+      "The greatest glory in living lies not in never falling, but in rising every time we fall. Life is what happens when you are busy making other plans. The purpose of life is a life of purpose."
+    ];
+
+    var timeMode=30;var text='';var pos=0;var errors=0;var totalTyped=0;var startTime=0;var timer=null;var timeLeft=0;var running=false;var finished=false;
+    var bestWpm=0;
+
+    function loadBests(){
+      var bests=JSON.parse(localStorage.getItem('race-bests')||'{}');
+      return bests[timeMode]||[];
+    }
+    function saveBest(wpm,acc){
+      var bests=JSON.parse(localStorage.getItem('race-bests')||'{}');
+      if(!bests[timeMode])bests[timeMode]=[];
+      bests[timeMode].push({wpm:wpm,acc:acc,date:new Date().toLocaleDateString()});
+      bests[timeMode].sort(function(a,b){return b.wpm-a.wpm;});
+      bests[timeMode]=bests[timeMode].slice(0,5);
+      localStorage.setItem('race-bests',JSON.stringify(bests));
+      return bests[timeMode];
+    }
+    function renderLeaderboard(){
+      var list=loadBests();
+      var el=document.getElementById('lb-list');
+      if(!list.length){el.innerHTML='<p style="color:var(--text-muted);font-size:0.85rem;margin:0">No races yet. Start typing!</p>';return;}
+      el.innerHTML=list.map(function(r,i){return '<div class="lb-row"><span class="lb-rank">#'+(i+1)+'</span><span>'+r.wpm+' WPM</span><span>'+r.acc+'%</span><span>'+r.date+'</span></div>';}).join('');
+      bestWpm=list[0].wpm;
+    }
+
+    document.querySelectorAll('[data-time]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('[data-time]').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        timeMode=parseInt(btn.dataset.time);
+        newRace();
+      });
+    });
+
+    function newRace(){
+      text=passages[Math.floor(Math.random()*passages.length)];
+      pos=0;errors=0;totalTyped=0;startTime=0;timeLeft=timeMode;running=false;finished=false;
+      if(timer)clearInterval(timer);
+      document.getElementById('result-card').style.display='none';
+      document.getElementById('typing-input').value='';
+      document.getElementById('typing-input').disabled=false;
+      document.getElementById('s-time').textContent=timeMode+'s';
+      document.getElementById('s-wpm').textContent='0';
+      document.getElementById('s-acc').textContent='100%';
+      document.getElementById('s-cpm').textContent='0';
+      document.getElementById('player-car').style.left='0%';
+      document.getElementById('ghost-car').style.left='0%';
+      renderText();
+      renderLeaderboard();
+    }
+
+    function renderText(){
+      var el=document.getElementById('typing-sample');
+      var html='';
+      for(var i=0;i<text.length;i++){
+        var cls='pending';
+        if(i<pos){
+          cls=text[i]===text[i]?'correct':'incorrect';
+        }
+        if(i===pos)cls='current';
+        html+='<span class="char '+cls+'">'+text[i]+'</span>';
+      }
+      el.innerHTML=html;
+    }
+
+    var input=document.getElementById('typing-input');
+    input.addEventListener('input',function(){
+      if(finished)return;
+      if(!running){
+        running=true;startTime=Date.now();
+        timer=setInterval(tick,1000);
+      }
+      var val=input.value;
+      var lastChar=val[val.length-1];
+      if(pos<text.length){
+        totalTyped++;
+        if(lastChar===text[pos]){
+          pos++;
+        }else{
+          errors++;
+          pos++;
+        }
+        input.value='';
+        renderText();updateStats();updateCar();
+        if(pos>=text.length){
+          text+='. '+passages[Math.floor(Math.random()*passages.length)];
+          renderText();
+        }
+      }
+    });
+
+    function tick(){
+      timeLeft--;
+      document.getElementById('s-time').textContent=timeLeft+'s';
+      updateGhost();
+      if(timeLeft<=0)endRace();
+    }
+
+    function updateStats(){
+      if(!startTime)return;
+      var elapsed=(Date.now()-startTime)/60000;
+      var wpm=elapsed>0?Math.round((pos/5)/elapsed):0;
+      var acc=totalTyped>0?Math.round(((totalTyped-errors)/totalTyped)*100):100;
+      var cpm=elapsed>0?Math.round(pos/elapsed):0;
+      document.getElementById('s-wpm').textContent=wpm;
+      document.getElementById('s-acc').textContent=acc+'%';
+      document.getElementById('s-cpm').textContent=cpm;
+    }
+
+    function updateCar(){
+      var progress=Math.min((pos/text.length)*85,85);
+      document.getElementById('player-car').style.left=progress+'%';
+    }
+
+    function updateGhost(){
+      if(!bestWpm||!timeMode)return;
+      var elapsed=(timeMode-timeLeft)/60;
+      var expectedChars=bestWpm*5*elapsed;
+      var gp=Math.min((expectedChars/text.length)*85,85);
+      document.getElementById('ghost-car').style.left=gp+'%';
+    }
+
+    function endRace(){
+      finished=true;
+      if(timer)clearInterval(timer);
+      document.getElementById('typing-input').disabled=true;
+      var elapsed=timeMode/60;
+      var wpm=Math.round((pos/5)/elapsed);
+      var acc=totalTyped>0?Math.round(((totalTyped-errors)/totalTyped)*100):100;
+      document.getElementById('r-wpm').textContent=wpm+' WPM';
+      document.getElementById('r-detail').textContent='Accuracy: '+acc+'% | Characters: '+pos+' | Errors: '+errors;
+      document.getElementById('result-card').style.display='block';
+      document.getElementById('player-car').style.left='88%';
+      saveBest(wpm,acc);
+      renderLeaderboard();
+    }
+
+    document.getElementById('btn-restart').onclick=newRace;
+    newRace();
+  }
+  </script>
+</body>
+</html>
