@@ -115,7 +115,7 @@ def extract_faqs(content):
     return {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": faqs}
 
 
-def extract_webapp(content):
+def extract_webapp(content, filepath=""):
     """Extract WebApplication schema from injectWebAppSchema({...}) or variable."""
     m = re.search(r"injectWebAppSchema\(\{(.*?)\}\)", content, re.DOTALL)
     if not m:
@@ -131,16 +131,53 @@ def extract_webapp(content):
 
     block = m.group(1)
 
+    # Try inline quoted strings first
     title_m = re.search(r"title\s*:\s*['\"](.+?)['\"]", block)
     desc_m = re.search(r"description\s*:\s*['\"](.+?)['\"]", block)
     slug_m = re.search(r"slug\s*:\s*['\"](.+?)['\"]", block)
 
-    if not title_m or not slug_m:
+    # If block uses variables (title: TITLE), resolve from var declarations
+    if not title_m:
+        var_m = re.search(r"title\s*:\s*(\w+)", block)
+        if var_m:
+            varname = var_m.group(1)
+            val_m = re.search(rf"var {varname}\s*=\s*['\"](.+?)['\"]", content)
+            if val_m:
+                title_m = val_m
+
+    if not desc_m:
+        var_m = re.search(r"description\s*:\s*(\w+)", block)
+        if var_m:
+            varname = var_m.group(1)
+            val_m = re.search(rf"var {varname}\s*=\s*['\"](.+?)['\"]", content)
+            if val_m:
+                desc_m = val_m
+
+    if not slug_m:
+        var_m = re.search(r"slug\s*:\s*(\w+)", block)
+        if var_m:
+            varname = var_m.group(1)
+            val_m = re.search(rf"var {varname}\s*=\s*['\"](.+?)['\"]", content)
+            if val_m:
+                slug_m = val_m
+
+    if not title_m:
         return None
 
     title = title_m.group(1).replace("\\'", "'")
     desc = desc_m.group(1).replace("\\'", "'") if desc_m else title
-    slug = slug_m.group(1)
+
+    # Resolve slug: use extracted slug or derive from filepath
+    if slug_m:
+        slug = slug_m.group(1)
+        # If slug doesn't include directory, derive from filepath
+        if "/" not in slug and filepath:
+            dir_path = os.path.dirname(filepath).replace("\\", "/")
+            slug = dir_path
+    elif filepath:
+        slug = os.path.dirname(filepath).replace("\\", "/")
+    else:
+        return None
 
     # Get lang from <html lang="xx">
     lang_m = re.search(r'<html[^>]*lang="([^"]+)"', content)
@@ -192,7 +229,7 @@ def process_file(filepath):
     if faq:
         schema_blocks.append(json.dumps(faq, ensure_ascii=False))
 
-    webapp = extract_webapp(content)
+    webapp = extract_webapp(content, filepath)
     if webapp:
         schema_blocks.append(json.dumps(webapp, ensure_ascii=False))
 
