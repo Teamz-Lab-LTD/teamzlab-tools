@@ -550,6 +550,7 @@
 
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Breadcrumbs
@@ -561,8 +562,8 @@
       ]);
     }
 
-    // === QR Code Generator (minimal, no external lib) ===
-    // Generates QR code on canvas using a compact implementation
+    // === QR Code Generator — using qrcode-generator CDN lib ===
+    // The CDN script (qrcode.min.js) provides the global `qrcode` function
     var QRCode = (function() {
       // Simple QR code generator - Level L, Version auto
       // Based on QR code specification
@@ -958,15 +959,15 @@
         ctx.textBaseline = 'alphabetic';
         return;
       }
+      // White background with rounded corners (draw first regardless)
+      ctx.fillStyle = bgColor || '#ffffff';
+      roundRect(ctx, x - 8, y - 8, size + 16, size + 16, 16);
+      ctx.fill();
+
       try {
         var qr = QRCode.generate(text);
         var moduleCount = qr.getModuleCount();
         var cellSize = size / moduleCount;
-
-        // White background with rounded corners
-        ctx.fillStyle = bgColor || '#ffffff';
-        roundRect(ctx, x - 8, y - 8, size + 16, size + 16, 16);
-        ctx.fill();
 
         for (var row = 0; row < moduleCount; row++) {
           for (var col = 0; col < moduleCount; col++) {
@@ -979,6 +980,17 @@
           }
         }
       } catch(e) {
+        console.warn('QR generation failed:', e);
+        // Fallback — draw a simple QR-like placeholder
+        ctx.fillStyle = color;
+        ctx.font = '600 16px Poppins, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x + size/2, y + size/2 - 10);
+        ctx.font = '500 12px Poppins, sans-serif';
+        ctx.fillText('(QR Code)', x + size/2, y + size/2 + 14);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
         // Fallback
         ctx.fillStyle = bgColor || '#ffffff';
         ctx.fillRect(x, y, size, size);
@@ -1031,6 +1043,12 @@
 
       // Clear
       ctx.clearRect(0, 0, W, H);
+      ctx.save(); // Save state so errors don't break future draws
+      try { _doRenderCard(W, H, theme, name, wallet, number, message); } catch(e) { console.error('Render error:', e); }
+      ctx.restore();
+    }
+
+    function _doRenderCard(W, H, theme, name, wallet, number, message) {
 
       // === Background ===
       // Soft gradient background

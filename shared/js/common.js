@@ -726,10 +726,26 @@ var TeamzTranslate = (function () {
     he: 'עברית', fa: 'فارسی'
   };
 
+  var AUTO_DETECT_KEY = 'teamztools_lang_autodetected';
+
   function init() {
     var urlLang = new URLSearchParams(location.search).get('lang');
     var storedLang = localStorage.getItem(LANG_KEY);
-    currentLang = _normalize(urlLang || storedLang || 'en');
+
+    // Auto-detect browser language on FIRST visit (no stored preference)
+    var detectedLang = null;
+    if (!urlLang && !storedLang) {
+      detectedLang = _detectBrowserLang();
+      if (detectedLang && detectedLang !== 'en') {
+        currentLang = detectedLang;
+        localStorage.setItem(LANG_KEY, detectedLang);
+        localStorage.setItem(AUTO_DETECT_KEY, '1');
+      } else {
+        currentLang = 'en';
+      }
+    } else {
+      currentLang = _normalize(urlLang || storedLang || 'en');
+    }
 
     _renderDropdown();
     _bindEvents();
@@ -737,7 +753,33 @@ var TeamzTranslate = (function () {
 
     if (currentLang !== 'en') {
       _applyLang(currentLang);
+      // Show auto-detect banner on first auto-detection
+      if (detectedLang && detectedLang !== 'en') {
+        _showAutoDetectBanner(detectedLang);
+      }
     }
+  }
+
+  function _detectBrowserLang() {
+    var browserLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    // Try exact match first (e.g. "bn-BD" → "bn")
+    var short = browserLang.split('-')[0];
+    if (LANGUAGES[short] && short !== 'en') return short;
+    // Try region-based mapping (e.g. "en-BD" → still English, don't override)
+    return null;
+  }
+
+  function _showAutoDetectBanner(lang) {
+    // Don't show if user already dismissed
+    if (localStorage.getItem('tz_lang_banner_dismissed')) return;
+    var langName = LANGUAGES[lang] || lang;
+    var banner = document.createElement('div');
+    banner.className = 'lang-auto-banner';
+    banner.innerHTML =
+      '<span>' + langName + ' — স্বয়ংক্রিয়ভাবে সনাক্ত হয়েছে / Auto-detected</span>' +
+      '<button class="lang-auto-banner__switch" onclick="TeamzTranslate.setLang(\'en\');this.parentNode.remove()">Switch to English</button>' +
+      '<button class="lang-auto-banner__close" onclick="this.parentNode.remove();try{localStorage.setItem(\'tz_lang_banner_dismissed\',\'1\')}catch(e){}" aria-label="Close">&times;</button>';
+    document.body.insertBefore(banner, document.body.firstChild);
   }
 
   function _normalize(lang) {
