@@ -1,7 +1,7 @@
 # CLAUDE.md — Rules for AI Assistants Working on Teamz Lab Tools
 
 ## Project Overview
-- Static site: 677+ browser-based tools at tool.teamzlab.com
+- Static site: 900+ browser-based tools at tool.teamzlab.com
 - Hosted on GitHub Pages, no backend
 - Design system uses CSS custom properties (tokens) — NEVER hardcode colors
 - Privacy-first: everything runs client-side
@@ -277,6 +277,20 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 
 **Read this doc before suggesting new tools or strategy changes.**
 
+### Rule 10: EVERY tool MUST be mobile-responsive
+- ALWAYS include `@media (max-width: 600px)` with these overrides:
+  - All `h2` inside tool sections: `font-size: var(--text-lg)` (NOT default xl/2xl)
+  - Form grids: `grid-template-columns: 1fr` (single column)
+  - Form padding: reduce to `18px`
+  - Action buttons: `flex-direction: column; width: 100%`
+  - Canvas/preview wrappers: `max-width: 100%; overflow-x: auto`
+  - Canvas elements: `max-width: 100%; height: auto`
+  - Fixed-width elements (cheques, cards): `width: 100%; max-width: [original]px`
+  - Style pickers: max 2-3 columns on mobile
+- Test mentally for 375px viewport before committing
+- Use `clamp()` for font sizes where possible: `clamp(18px, 4vw, 28px)`
+- NEVER use fixed `width: 700px` without a `max-width: 100%` fallback
+
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
 2. Using white text on neon accent background
@@ -286,3 +300,4 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 6. Using hardcoded hex colors instead of CSS variables
 7. Making Chrome-AI-only tools without fallbacks
 8. Adding max-height to result containers
+9. NOT making tools mobile-responsive (see Rule 10)
