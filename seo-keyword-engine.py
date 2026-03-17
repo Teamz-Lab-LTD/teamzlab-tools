@@ -1175,6 +1175,643 @@ def run_fix(dry_run=True):
     print(f"\n{'='*60}\n")
 
 
+# ─── FEATURE: AUTO-TRENDS FOR NEW TOOLS ──────────────────────────────
+
+def run_validate_new_tool(keyword, geo=''):
+    """
+    Before building a new tool, validate it has search demand.
+    Runs: Google Trends + Autocomplete + Cannibalization check.
+    Returns a GO/CAUTION/STOP recommendation.
+    """
+    print(f"\n{'='*60}")
+    print(f"  NEW TOOL VALIDATION: \"{keyword}\"")
+    print(f"{'='*60}\n")
+
+    issues = []
+    score = 0  # 0-100 viability score
+
+    # 1. Check Google Trends interest
+    print("  [1/4] Checking Google Trends demand...")
+    data = fetch_trends_interest(keyword, geo=geo)
+    interest = data.get('interest', [])
+    if interest:
+        values = [p['values'][0] for p in interest if p['values']]
+        avg_interest = sum(values) / len(values) if values else 0
+        peak = max(values) if values else 0
+        recent_3 = values[-3:] if len(values) >= 3 else values
+        early_3 = values[:3] if len(values) >= 3 else values
+        recent_avg = sum(recent_3) / len(recent_3) if recent_3 else 0
+        early_avg = sum(early_3) / len(early_3) if early_3 else 0
+
+        if recent_avg > early_avg * 1.15:
+            direction = "RISING"
+        elif recent_avg < early_avg * 0.85:
+            direction = "FALLING"
+        else:
+            direction = "STABLE"
+
+        print(f"    Average interest: {avg_interest:.0f}/100")
+        print(f"    Peak: {peak}/100")
+        print(f"    Trend: {direction}")
+
+        if avg_interest >= 50:
+            score += 35
+            print(f"    HIGH demand keyword")
+        elif avg_interest >= 20:
+            score += 25
+            print(f"    MODERATE demand keyword")
+        elif avg_interest >= 5:
+            score += 15
+            print(f"    LOW demand keyword")
+        else:
+            score += 5
+            issues.append("Very low search demand (avg interest < 5)")
+            print(f"    VERY LOW demand — niche keyword")
+
+        if direction == "RISING":
+            score += 10
+            print(f"    BONUS: Trend is rising!")
+        elif direction == "FALLING":
+            issues.append("Keyword interest is declining")
+    else:
+        print(f"    No Trends data (too niche for Google Trends)")
+        score += 10  # Give benefit of doubt for niche keywords
+        issues.append("No Google Trends data available")
+
+    # 2. Check autocomplete (real searches)
+    print(f"\n  [2/4] Checking Google Autocomplete...")
+    suggestions = fetch_google_autocomplete(keyword)
+    long_tails = [s for s in suggestions if is_long_tail(s)]
+    print(f"    {len(suggestions)} autocomplete suggestions found")
+    print(f"    {len(long_tails)} long-tail variations")
+    if suggestions:
+        score += 20
+        for s in suggestions[:5]:
+            print(f"      -> {s}")
+    else:
+        score += 5
+        issues.append("No autocomplete suggestions — very niche or new keyword")
+
+    # 3. Check for cannibalization with existing tools
+    print(f"\n  [3/4] Checking cannibalization with existing tools...")
+    tools = find_all_tools()
+    all_meta = [extract_metadata(fp) for fp in tools]
+    all_meta = [m for m in all_meta if m]
+
+    kw_lower = keyword.lower()
+    kw_words = set(kw_lower.split())
+    overlapping = []
+    for meta in all_meta:
+        existing_kw = extract_primary_keyword(meta)
+        if not existing_kw:
+            continue
+        existing_words = set(existing_kw.split())
+        overlap = kw_words & existing_words
+        if len(overlap) >= min(len(kw_words), len(existing_words)) * 0.6:
+            overlapping.append((meta['rel_path'], existing_kw, len(overlap)))
+
+    if overlapping:
+        print(f"    WARNING: {len(overlapping)} existing tools target similar keywords:")
+        for path, ekw, _ in sorted(overlapping, key=lambda x: -x[2])[:5]:
+            print(f"      -> {path}  (keyword: \"{ekw}\")")
+        if len(overlapping) >= 3:
+            score -= 10
+            issues.append(f"High cannibalization risk — {len(overlapping)} similar tools exist")
+        else:
+            score += 5
+    else:
+        score += 15
+        print(f"    No cannibalization found — unique keyword!")
+
+    # 4. Check search intent match
+    print(f"\n  [4/4] Analyzing search intent...")
+    intent = classify_search_intent(keyword)
+    print(f"    Intent: {intent}")
+    if intent == 'transactional':
+        score += 10
+        print(f"    Users want a TOOL — perfect for your site")
+    elif intent == 'informational':
+        score += 5
+        print(f"    Users want INFO — consider adding educational content")
+    else:
+        score += 3
+
+    # Rising queries (opportunities)
+    related = data.get('related', [])
+    rising = [r for r in related if 'Breakout' in r.get('value', '') or '%' in r.get('value', '')]
+    if rising:
+        score += 10
+        print(f"\n  RISING RELATED QUERIES (trend-jack these!):")
+        for r in rising[:5]:
+            print(f"    -> {r['query']}  ({r['value']})")
+
+    # Final recommendation
+    score = min(score, 100)
+    print(f"\n{'='*60}")
+    print(f"  VIABILITY SCORE: {score}/100")
+    if score >= 70:
+        print(f"  RECOMMENDATION:  GO — Build this tool!")
+    elif score >= 45:
+        print(f"  RECOMMENDATION:  CAUTION — Build it, but differentiate")
+    else:
+        print(f"  RECOMMENDATION:  STOP — Low demand or high competition")
+
+    if issues:
+        print(f"\n  Concerns:")
+        for i in issues:
+            print(f"    - {i}")
+
+    print(f"\n  Suggested title: \"{keyword.title()} — Teamz Lab Tools\"")
+    slug = keyword.lower().replace(' ', '-').replace('&', 'and')
+    slug = re.sub(r'[^a-z0-9-]', '', slug)
+    print(f"  Suggested slug:  /{slug}/")
+    if long_tails:
+        print(f"\n  Long-tail keywords to include in content:")
+        for lt in long_tails[:8]:
+            print(f"    -> {lt}")
+
+    print(f"\n{'='*60}\n")
+
+
+# ─── FEATURE: INTERNAL LINKING CHECKER ───────────────────────────────
+
+def run_internal_links():
+    """
+    Check internal linking between related tools.
+    Finds tools that should link to each other but don't.
+    """
+    print(f"\n{'='*60}")
+    print(f"  INTERNAL LINKING CHECKER")
+    print(f"{'='*60}\n")
+
+    tools = find_all_tools()
+    all_meta = []
+    for fp in tools:
+        meta = extract_metadata(fp)
+        if meta:
+            all_meta.append(meta)
+
+    print(f"  Scanning {len(all_meta)} tools for internal links...\n")
+
+    # Check 1: Related tools section exists
+    missing_related = []
+    has_related = 0
+    for meta in all_meta:
+        filepath = meta['filepath']
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+            if 'id="related-tools"' in content or 'related-tools' in content:
+                has_related += 1
+            else:
+                missing_related.append(meta['rel_path'])
+        except Exception:
+            pass
+
+    print(f"  [1/3] Related tools section:")
+    print(f"    Have related section: {has_related} tools")
+    print(f"    Missing related section: {len(missing_related)} tools")
+    if missing_related:
+        print(f"    Examples missing related tools:")
+        for p in missing_related[:10]:
+            print(f"      -> {p}")
+
+    # Check 2: Hub pages link to their tools
+    print(f"\n  [2/3] Hub-to-tool linking:")
+    hub_issues = 0
+    hubs_checked = set()
+    for meta in all_meta:
+        hub = meta['hub']
+        if hub in hubs_checked:
+            continue
+        hubs_checked.add(hub)
+        hub_index = os.path.join(BASE_DIR, hub, 'index.html')
+        if not os.path.exists(hub_index):
+            print(f"    MISSING: /{hub}/index.html — no hub page!")
+            hub_issues += 1
+            continue
+
+        try:
+            with open(hub_index, 'r', encoding='utf-8', errors='ignore') as f:
+                hub_content = f.read()
+        except Exception:
+            continue
+
+        hub_tools = [m for m in all_meta if m['hub'] == hub]
+        unlinked = []
+        for tool_meta in hub_tools:
+            slug = tool_meta['slug']
+            if slug and slug not in hub_content and f"/{hub}/{slug}" not in hub_content:
+                unlinked.append(slug)
+
+        if unlinked:
+            print(f"    /{hub}/ — {len(unlinked)} tools NOT linked from hub page:")
+            for u in unlinked[:5]:
+                print(f"      -> /{hub}/{u}/")
+            if len(unlinked) > 5:
+                print(f"      ... and {len(unlinked) - 5} more")
+            hub_issues += len(unlinked)
+
+    if hub_issues == 0:
+        print(f"    All hub pages link to their tools!")
+
+    # Check 3: Cross-hub linking opportunities (tools in same domain)
+    print(f"\n  [3/3] Cross-linking opportunities:")
+    # Group tools by keyword similarity
+    keyword_groups = defaultdict(list)
+    for meta in all_meta:
+        kw = extract_primary_keyword(meta)
+        if kw:
+            for word in kw.split():
+                if len(word) > 4:  # Only meaningful words
+                    keyword_groups[word].append(meta)
+
+    opportunities = 0
+    seen_pairs = set()
+    for word, tools_list in sorted(keyword_groups.items(), key=lambda x: -len(x[1])):
+        if len(tools_list) < 2 or len(tools_list) > 6:
+            continue
+        # Check if these tools link to each other
+        for i, t1 in enumerate(tools_list):
+            for t2 in tools_list[i+1:]:
+                if t1['hub'] == t2['hub']:
+                    continue  # Same hub, already linked via hub page
+                pair = tuple(sorted([t1['rel_path'], t2['rel_path']]))
+                if pair in seen_pairs:
+                    continue
+                seen_pairs.add(pair)
+
+                # Check if t1 links to t2 or vice versa
+                try:
+                    with open(t1['filepath'], 'r', encoding='utf-8', errors='ignore') as f:
+                        c1 = f.read()
+                    with open(t2['filepath'], 'r', encoding='utf-8', errors='ignore') as f:
+                        c2 = f.read()
+                except Exception:
+                    continue
+
+                t1_links_t2 = t2['slug'] in c1 or t2['url'] in c1
+                t2_links_t1 = t1['slug'] in c2 or t1['url'] in c2
+
+                if not t1_links_t2 and not t2_links_t1 and opportunities < 20:
+                    print(f"    {t1['rel_path']}  <->  {t2['rel_path']}")
+                    opportunities += 1
+
+    if opportunities == 0:
+        print(f"    No obvious cross-linking gaps found!")
+    else:
+        print(f"\n    Total: {opportunities}+ cross-linking opportunities")
+
+    print(f"\n{'='*60}\n")
+
+
+# ─── FEATURE: BATCH TRENDS FOR ALL HUBS ─────────────────────────────
+
+def run_batch_trends():
+    """
+    Run Google Trends on the top keyword from each hub.
+    Shows which categories are rising/falling/stable.
+    """
+    print(f"\n{'='*60}")
+    print(f"  BATCH TRENDS — ALL HUBS")
+    print(f"{'='*60}\n")
+
+    tools = find_all_tools()
+    # Group by hub, pick the most representative keyword
+    hub_keywords = defaultdict(list)
+    for fp in tools:
+        meta = extract_metadata(fp)
+        if not meta:
+            continue
+        kw = extract_primary_keyword(meta)
+        if kw:
+            hub_keywords[meta['hub']].append(kw)
+
+    # Hub to geo mapping
+    hub_geo = {
+        'uk': 'GB', 'au': 'AU', 'de': 'DE', 'fr': 'FR', 'nl': 'NL',
+        'in': 'IN', 'jp': 'JP', 'ng': 'NG', 'za': 'ZA', 'ph': 'PH',
+        'ke': 'KE', 'sa': 'SA', 'ae': 'AE', 'eg': 'EG', 'ma': 'MA',
+        'sg': 'SG', 'id': 'ID', 'vn': 'VN', 'se': 'SE', 'fi': 'FI',
+        'no': 'NO', 'ca': 'CA', 'us': 'US', 'eu': '', 'gh': 'GH',
+    }
+
+    print(f"  Checking {len(hub_keywords)} hubs...\n")
+    print(f"  {'Hub':<20s} {'Top Keyword':<35s} {'Interest':>8s} {'Trend':>10s} {'Geo':>5s}")
+    print(f"  {'-'*20} {'-'*35} {'-'*8} {'-'*10} {'-'*5}")
+
+    results = []
+    for hub in sorted(hub_keywords.keys()):
+        keywords = hub_keywords[hub]
+        # Pick the shortest keyword (usually the most generic/popular)
+        top_kw = min(keywords, key=lambda k: len(k))
+
+        geo = hub_geo.get(hub, '')
+
+        try:
+            data = fetch_trends_interest(top_kw, geo=geo)
+            interest = data.get('interest', [])
+            if interest:
+                values = [p['values'][0] for p in interest if p['values']]
+                avg = sum(values) / len(values) if values else 0
+                recent = values[-3:] if len(values) >= 3 else values
+                early = values[:3] if len(values) >= 3 else values
+                r_avg = sum(recent) / len(recent) if recent else 0
+                e_avg = sum(early) / len(early) if early else 0
+                if r_avg > e_avg * 1.15:
+                    trend = "RISING"
+                elif r_avg < e_avg * 0.85:
+                    trend = "FALLING"
+                else:
+                    trend = "STABLE"
+                print(f"  {hub:<20s} {top_kw[:35]:<35s} {avg:>6.0f}/100 {trend:>10s} {geo:>5s}")
+                results.append((hub, top_kw, avg, trend))
+            else:
+                print(f"  {hub:<20s} {top_kw[:35]:<35s} {'N/A':>8s} {'N/A':>10s} {geo:>5s}")
+                results.append((hub, top_kw, 0, 'N/A'))
+        except Exception as e:
+            print(f"  {hub:<20s} {top_kw[:35]:<35s} {'ERROR':>8s} {'':>10s} {geo:>5s}")
+            results.append((hub, top_kw, 0, 'ERROR'))
+
+        time.sleep(0.5)  # Be polite to Google
+
+    # Summary
+    rising = [r for r in results if r[3] == 'RISING']
+    falling = [r for r in results if r[3] == 'FALLING']
+    high_demand = [r for r in results if r[2] >= 50]
+
+    print(f"\n  SUMMARY:")
+    if rising:
+        print(f"  RISING hubs (build more tools here):")
+        for hub, kw, avg, _ in rising:
+            print(f"    -> /{hub}/  ({kw}, avg {avg:.0f})")
+    if falling:
+        print(f"  FALLING hubs (update or pivot):")
+        for hub, kw, avg, _ in falling:
+            print(f"    -> /{hub}/  ({kw}, avg {avg:.0f})")
+    if high_demand:
+        print(f"  HIGH DEMAND hubs (avg interest >= 50):")
+        for hub, kw, avg, _ in sorted(high_demand, key=lambda x: -x[2])[:10]:
+            print(f"    -> /{hub}/  ({kw}, avg {avg:.0f})")
+
+    print(f"\n{'='*60}\n")
+
+
+# ─── FEATURE: CONTENT FRESHNESS TRACKER ──────────────────────────────
+
+def run_freshness():
+    """
+    Check all tools for stale content — outdated years, old data references,
+    tools that haven't been updated recently.
+    """
+    import subprocess
+
+    print(f"\n{'='*60}")
+    print(f"  CONTENT FRESHNESS TRACKER")
+    print(f"{'='*60}\n")
+
+    current_year = time.strftime('%Y')
+    prev_year = str(int(current_year) - 1)
+    two_years_ago = str(int(current_year) - 2)
+
+    tools = find_all_tools()
+    stale_tools = []
+    outdated_year = []
+    no_update_6mo = []
+    no_update_1yr = []
+
+    print(f"  Scanning {len(tools)} tools for freshness...\n")
+
+    for filepath in tools:
+        rel = os.path.relpath(filepath, BASE_DIR)
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+        except Exception:
+            continue
+
+        # Check for outdated year references in titles and descriptions
+        title_match = re.search(r'<title>(.*?)</title>', content)
+        title = title_match.group(1) if title_match else ''
+
+        # Check if title has previous year
+        if prev_year in title or two_years_ago in title:
+            outdated_year.append((rel, f'Title contains "{prev_year}" or "{two_years_ago}"'))
+
+        # Check if content references old year rates/data
+        desc_match = re.search(r'name="description"\s+content="(.*?)"', content)
+        desc = desc_match.group(1) if desc_match else ''
+        if prev_year in desc:
+            outdated_year.append((rel, f'Description references {prev_year}'))
+
+        # Check git last modified date
+        try:
+            result = subprocess.run(
+                ['git', '-C', BASE_DIR, 'log', '-1', '--format=%as', '--', filepath],
+                capture_output=True, text=True, timeout=5
+            )
+            last_mod = result.stdout.strip()
+            if last_mod:
+                from datetime import datetime, timedelta
+                mod_date = datetime.strptime(last_mod, '%Y-%m-%d')
+                now = datetime.now()
+                days_since = (now - mod_date).days
+
+                if days_since > 365:
+                    no_update_1yr.append((rel, last_mod, days_since))
+                elif days_since > 180:
+                    no_update_6mo.append((rel, last_mod, days_since))
+        except Exception:
+            pass
+
+    # Report
+    print(f"  [1/3] Outdated year references:")
+    if outdated_year:
+        print(f"    {len(outdated_year)} tools with old year references:")
+        for path, issue in outdated_year[:15]:
+            print(f"      -> {path}: {issue}")
+        if len(outdated_year) > 15:
+            print(f"      ... and {len(outdated_year) - 15} more")
+    else:
+        print(f"    All tools reference current year!")
+
+    print(f"\n  [2/3] Not updated in 6+ months:")
+    if no_update_6mo:
+        print(f"    {len(no_update_6mo)} tools (6-12 months old):")
+        for path, date, days in sorted(no_update_6mo, key=lambda x: -x[2])[:10]:
+            print(f"      -> {path}  (last: {date}, {days} days ago)")
+    else:
+        print(f"    All tools updated within 6 months!")
+
+    print(f"\n  [3/3] Not updated in 1+ year:")
+    if no_update_1yr:
+        print(f"    {len(no_update_1yr)} tools (12+ months old):")
+        for path, date, days in sorted(no_update_1yr, key=lambda x: -x[2])[:15]:
+            print(f"      -> {path}  (last: {date}, {days} days ago)")
+        if len(no_update_1yr) > 15:
+            print(f"      ... and {len(no_update_1yr) - 15} more")
+    else:
+        print(f"    All tools updated within 1 year!")
+
+    # Summary
+    total_stale = len(outdated_year) + len(no_update_1yr)
+    print(f"\n  FRESHNESS SUMMARY:")
+    print(f"    Total tools:           {len(tools)}")
+    print(f"    Outdated years:        {len(outdated_year)}")
+    print(f"    Not updated 6+ months: {len(no_update_6mo)}")
+    print(f"    Not updated 1+ year:   {len(no_update_1yr)}")
+    if total_stale == 0:
+        print(f"    STATUS: ALL FRESH")
+    elif total_stale < 10:
+        print(f"    STATUS: MOSTLY FRESH — {total_stale} tools need attention")
+    else:
+        print(f"    STATUS: NEEDS REFRESH — {total_stale} tools are stale")
+
+    print(f"\n{'='*60}\n")
+
+
+# ─── FEATURE: VIRALITY CHECKER ───────────────────────────────────────
+
+def run_viral_check():
+    """
+    Check all tools for viral-readiness:
+    - Share buttons / OG tags
+    - Mobile-friendliness indicators
+    - Page speed indicators (file size)
+    - Engagement features (results to share, download, etc.)
+    """
+    print(f"\n{'='*60}")
+    print(f"  VIRALITY & SHARE-READINESS CHECK")
+    print(f"{'='*60}\n")
+
+    tools = find_all_tools()
+    all_meta = []
+    issues_summary = Counter()
+
+    missing_og_image = []
+    missing_og_desc = []
+    no_share_features = []
+    large_files = []
+    missing_brand = []
+    no_teamzlab_title = []
+
+    for filepath in tools:
+        meta = extract_metadata(filepath)
+        if not meta:
+            continue
+        all_meta.append(meta)
+        rel = meta['rel_path']
+
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+            file_size = os.path.getsize(filepath)
+        except Exception:
+            continue
+
+        # 1. OG tags (critical for social sharing)
+        if 'og:image' not in content or 'og-default.png' in content:
+            missing_og_image.append(rel)
+            issues_summary['No custom OG image'] += 1
+
+        if 'og:description' not in content:
+            missing_og_desc.append(rel)
+            issues_summary['Missing OG description'] += 1
+
+        # 2. Share/download features
+        has_share = any(x in content.lower() for x in [
+            'share', 'copy to clipboard', 'download', 'export',
+            'navigator.share', 'clipboard', 'copytoclipboard',
+            'whatsapp', 'twitter.com/intent', 'facebook.com/sharer'
+        ])
+        if not has_share:
+            no_share_features.append(rel)
+            issues_summary['No share/copy/download feature'] += 1
+
+        # 3. Brand consistency
+        if 'Teamz Lab Tools' not in content and 'teamzlab' not in content.lower():
+            missing_brand.append(rel)
+
+        title = meta.get('title', '')
+        if 'Teamz Lab' not in title and 'teamzlab' not in title.lower():
+            no_teamzlab_title.append(rel)
+            issues_summary['No brand in title'] += 1
+
+        # 4. File size (affects load speed)
+        if file_size > 100000:  # 100KB
+            large_files.append((rel, file_size))
+            issues_summary['Large HTML (>100KB)'] += 1
+
+    # Report
+    print(f"  Tools checked: {len(all_meta)}\n")
+
+    print(f"  [1/5] OG Image (social sharing preview):")
+    custom_og = len(all_meta) - len(missing_og_image)
+    print(f"    Custom OG image: {custom_og} tools")
+    print(f"    Using default/missing: {len(missing_og_image)} tools")
+    if missing_og_image:
+        print(f"    (All {len(missing_og_image)} use og-default.png — consider tool-specific images for top tools)")
+
+    print(f"\n  [2/5] Share & Download Features:")
+    has_share_count = len(all_meta) - len(no_share_features)
+    print(f"    Have share/copy/download: {has_share_count} tools")
+    print(f"    No share features: {len(no_share_features)} tools")
+    if no_share_features:
+        print(f"    Examples missing share features:")
+        for p in no_share_features[:8]:
+            print(f"      -> {p}")
+
+    print(f"\n  [3/5] Brand Consistency:")
+    print(f"    Title has brand: {len(all_meta) - len(no_teamzlab_title)} tools")
+    print(f"    Title missing brand: {len(no_teamzlab_title)} tools")
+    if no_teamzlab_title:
+        for p in no_teamzlab_title[:5]:
+            print(f"      -> {p}")
+
+    print(f"\n  [4/5] Page Size (affects load speed & SEO):")
+    if large_files:
+        print(f"    {len(large_files)} tools over 100KB:")
+        for path, size in sorted(large_files, key=lambda x: -x[1])[:10]:
+            print(f"      -> {path}  ({size // 1024}KB)")
+    else:
+        print(f"    All tools under 100KB — good!")
+
+    # 5. Virality score
+    print(f"\n  [5/5] VIRALITY SCORECARD:")
+    total = len(all_meta)
+    og_score = ((total - len(missing_og_image)) / total) * 100 if total else 0
+    share_score = ((total - len(no_share_features)) / total) * 100 if total else 0
+    brand_score = ((total - len(no_teamzlab_title)) / total) * 100 if total else 0
+
+    print(f"    OG images:        {og_score:.0f}% have custom images")
+    print(f"    Share features:   {share_score:.0f}% have share/copy/download")
+    print(f"    Brand in title:   {brand_score:.0f}%")
+
+    viral_score = (og_score + share_score + brand_score) / 3
+    print(f"\n    VIRAL READINESS:  {viral_score:.0f}/100")
+
+    if viral_score >= 80:
+        print(f"    STATUS: GOOD — Most tools are share-ready")
+    elif viral_score >= 50:
+        print(f"    STATUS: NEEDS WORK — Many tools lack share features")
+    else:
+        print(f"    STATUS: LOW — Tools need share buttons, OG images, and branding")
+
+    # Actionable recommendations
+    print(f"\n  TOP ACTIONS TO INCREASE VIRALITY:")
+    if len(no_share_features) > 50:
+        print(f"    1. Add 'Copy Result' or 'Share' button to {len(no_share_features)} tools")
+    if len(missing_og_image) > 100:
+        print(f"    2. Create custom OG images for top-traffic tools")
+    if len(no_teamzlab_title) > 5:
+        print(f"    3. Add '— Teamz Lab Tools' to {len(no_teamzlab_title)} tool titles")
+    print(f"    4. Add Web Share API (navigator.share) for mobile sharing")
+    print(f"    5. Add 'Share on WhatsApp/Twitter' buttons to result sections")
+    print(f"    6. Add embed codes for tools (let bloggers embed your calculators)")
+
+    print(f"\n{'='*60}\n")
+
+
 # ─── MAIN ─────────────────────────────────────────────────────────────
 
 def main():
@@ -1228,6 +1865,30 @@ def main():
             print("  Geo codes: US, GB, DE, FR, IN, AU, NL, JP, etc.")
             sys.exit(1)
         run_trends(filtered, geo=geo)
+
+    elif command == 'validate-new':
+        keywords = [a for a in sys.argv[2:] if not a.startswith('-')]
+        keywords = [k.strip('"\'') for k in keywords]
+        geo = ''
+        for i, a in enumerate(sys.argv):
+            if a == '--geo' and i + 1 < len(sys.argv):
+                geo = sys.argv[i+1].upper()
+        if not keywords:
+            print("Usage: python3 seo-keyword-engine.py validate-new \"keyword\" [--geo US]")
+            sys.exit(1)
+        run_validate_new_tool(keywords[0], geo=geo)
+
+    elif command == 'internal-links':
+        run_internal_links()
+
+    elif command == 'batch-trends':
+        run_batch_trends()
+
+    elif command == 'freshness':
+        run_freshness()
+
+    elif command == 'viral':
+        run_viral_check()
 
     elif command == 'fix':
         dry_run = '--dry-run' in sys.argv
