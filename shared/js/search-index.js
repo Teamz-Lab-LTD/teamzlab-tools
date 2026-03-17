@@ -315,6 +315,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Tax Residency Day Counter',d:'Count the number of days spent in a country during a tax year to determine tax residency under the 183-day rule. Enter entries and exits for accuracy.',h:'/evergreen/tax-residency-day-counter/'},
   {t:'Time Calculator',d:'Add or subtract hours, minutes, and seconds. Calculate time duration between two times. Free online time calculator — instant results, no login requ',h:'/evergreen/time-calculator/'},
   {t:'Tip Calculator',d:'Calculate tip amount, total bill, and split between people. Supports custom tip percentages and multiple people. Free tip calculator — instant resul',h:'/evergreen/tip-calculator/'},
+  {t:'Travel Cost Calculator — Solo & Group Trips',d:'Plan your trip budget for solo or group travel. Track flights, hotels, food, and activities. Free private calculator with save and export.',h:'/evergreen/travel-cost-calculator/'},
   {t:'Visa Stay Counter',d:'Count days spent in a country for visa compliance. Track 90/180, 183-day, and custom stay limits. Avoid overstaying your visa. Free visa day counter.',h:'/evergreen/visa-stay-counter/'},
   {t:'Asumistuki Tarkistin',d:'Tarkista, voitko saada yleistä asumistukea. Laske arvio tuen määrästä tulojen ja asumismenojen perusteella ilmaisella laskurilla.',h:'/fi/asumistuki-tarkistin/'},
   {t:'Freelancer Hinnoittelu Laskuri',d:'Laske freelancerina minimihinnoittelusi kulut, voittotavoite ja verot huomioiden. Ilmainen tuntihinta- ja päivähintlaskuri.',h:'/fi/freelancer-hinnoittelu-laskuri/'},
