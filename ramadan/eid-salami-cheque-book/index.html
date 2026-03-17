@@ -17,7 +17,7 @@
   <link rel="canonical" href="https://tool.teamzlab.com/ramadan/eid-salami-cheque-book/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/branding/css/teamz-branding.css">
   <link rel="stylesheet" href="/shared/css/tools.css">
     <style>
@@ -1135,6 +1135,12 @@
 
       // ===== Download as PNG =====
       function downloadChequeAsPNG(data) {
+        // Wait for fonts to load before rendering canvas
+        var fontPromise = document.fonts ? document.fonts.ready : Promise.resolve();
+        fontPromise.then(function() { renderChequeCanvas(data); });
+      }
+
+      function renderChequeCanvas(data) {
         var tempDiv = document.createElement('div');
         tempDiv.style.position = 'fixed';
         tempDiv.style.left = '-9999px';
@@ -1152,6 +1158,15 @@
         canvas.height = h * scale;
         var ctx = canvas.getContext('2d');
         ctx.scale(scale, scale);
+
+        // Font helper: use Bengali font for Bangla text, Poppins otherwise
+        var bnFont = "'Noto Sans Bengali', 'Poppins', sans-serif";
+        var enFont = "'Poppins', sans-serif";
+        function hasBangla(str) { return /[\u0980-\u09FF]/.test(str); }
+        function pickFont(weight, size, text) {
+          var f = (text && hasBangla(text)) ? bnFont : enFont;
+          return weight + ' ' + size + 'px ' + f;
+        }
 
         // Draw background
         if (data.style === 'kids') {
@@ -1227,7 +1242,7 @@
         ctx.fillStyle = lightColor;
         ctx.fillText('PAY TO THE ORDER OF', 24, 98);
 
-        ctx.font = '700 18px Poppins, sans-serif';
+        ctx.font = pickFont('700', 18, data.payTo);
         ctx.fillStyle = textColor;
         ctx.fillText(data.payTo || '________', 24, 120);
         ctx.strokeStyle = 'rgba(0,0,0,0.1)';
@@ -1266,7 +1281,7 @@
           ctx.font = '400 10px Poppins, sans-serif';
           ctx.fillStyle = lightColor;
           ctx.fillText('MEMO:', 24, 178);
-          ctx.font = '400 11px Poppins, sans-serif';
+          ctx.font = pickFont('400', 11, data.memo);
           ctx.fillStyle = 'rgba(30,30,20,0.7)';
           ctx.fillText(data.memo, 70, 178);
         }
@@ -1291,7 +1306,7 @@
 
         // Signature area
         ctx.textAlign = 'right';
-        ctx.font = '600 13px Poppins, sans-serif';
+        ctx.font = pickFont('600', 13, data.from);
         ctx.fillStyle = textColor;
         ctx.fillText(data.from || '________', w - 24, h - 50);
         ctx.strokeStyle = 'rgba(0,0,0,0.2)';
