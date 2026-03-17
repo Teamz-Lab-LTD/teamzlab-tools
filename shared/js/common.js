@@ -1414,10 +1414,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ─── INSTALL AS APP BUTTON ───
   (function initInstallButton() {
-    // Only show on tool pages
+    // Only show on tool pages (path must have at least 2 segments like /hub/tool/)
     var path = window.location.pathname.replace(/^\/|\/$/g, '');
     if (!path || path.split('/').length < 2) return;
-    var calc = document.querySelector('.tool-calculator');
+    // Find any main tool container — calculator, generator, hero, or content section
+    var calc = document.querySelector('.tool-calculator') || document.querySelector('.tool-hero') || document.querySelector('.tool-content');
     if (!calc) return;
 
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1441,10 +1442,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function showInstallButton() {
-      // Find the ad-slot after calculator to place the button near results
-      var adSlot = calc.nextElementSibling;
-      if (!adSlot) adSlot = calc.parentNode;
-
       var btn = document.createElement('div');
       btn.className = 'pwa-install-banner';
       btn.innerHTML =
@@ -1460,11 +1457,14 @@ document.addEventListener('DOMContentLoaded', function () {
         '</button>' +
         '<button class="pwa-install-banner__close" id="pwa-install-close" aria-label="Close">&times;</button>';
 
-      // Insert after the ad slot (between calculator and content)
+      // Insert after the first ad-slot, or after the tool container
+      var adSlot = document.querySelector('.ad-slot');
       if (adSlot && adSlot.nextElementSibling) {
         adSlot.parentNode.insertBefore(btn, adSlot.nextElementSibling);
-      } else {
+      } else if (calc.nextElementSibling) {
         calc.parentNode.insertBefore(btn, calc.nextElementSibling);
+      } else {
+        calc.parentNode.appendChild(btn);
       }
 
       // Check if user dismissed before
