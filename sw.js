@@ -3,7 +3,7 @@
  * Enables PWA install, offline caching, and fast repeat visits.
  */
 
-var CACHE_NAME = 'teamztools-v2';
+var CACHE_NAME = 'teamztools-v3';
 var PRECACHE_URLS = [
   '/',
   '/branding/css/teamz-branding.css',
@@ -52,6 +52,9 @@ self.addEventListener('fetch', function (event) {
 
   // Skip external requests
   if (url.origin !== self.location.origin) return;
+
+  // Skip sitemap, robots, ads.txt — these must always serve fresh
+  if (url.pathname.match(/\.(xml|txt)$/) || url.pathname === '/robots.txt' || url.pathname === '/ads.txt' || url.pathname === '/sitemap.xml') return;
 
   // HTML pages: network first, fallback to cache
   if (event.request.headers.get('accept') && event.request.headers.get('accept').indexOf('text/html') !== -1) {
