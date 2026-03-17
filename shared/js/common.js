@@ -1146,12 +1146,16 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
   // Floating CTA bar — always visible at bottom
+  // Skip in in-app browsers (Messenger, Facebook, Instagram) — they can't handle external links
+  var ua = navigator.userAgent || '';
+  var isInAppBrowser = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line|Twitter|Snapchat/i.test(ua);
+
   var cta = document.createElement('div');
   cta.className = 'floating-cta';
   // Check if user previously closed the CTA
   var ctaDismissed = false;
   try { ctaDismissed = sessionStorage.getItem('tz_cta_closed') === '1'; } catch(e) {}
-  if (ctaDismissed) { cta.style.display = 'none'; }
+  if (ctaDismissed || isInAppBrowser) { cta.style.display = 'none'; }
 
   cta.innerHTML =
     '<button class="floating-cta__close" id="floating-cta-close" aria-label="Close" title="Close">&times;</button>' +
