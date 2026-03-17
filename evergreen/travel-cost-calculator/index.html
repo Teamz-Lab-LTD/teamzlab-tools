@@ -10,7 +10,7 @@
   <meta property="og:url" content="https://tool.teamzlab.com/evergreen/travel-cost-calculator/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Teamz Lab Tools">
-  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Travel Cost Calculator — Teamz Lab Tools">
   <meta name="twitter:description" content="Plan your trip budget for solo or group travel. Track flights, hotels, food, and activities. Free private calculator with save and export.">
@@ -64,11 +64,23 @@
     .tc-pp-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
     .tc-pp-check label { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
 
-    .btn-del-row {
+    .btn-del-row, .btn-note-row {
       background: none; border: none; cursor: pointer; font-size: 1.2rem;
       color: var(--text-muted); padding: 0.3rem 0.5rem; line-height: 1; margin-bottom: 0.35rem;
     }
-    .btn-del-row:hover { color: var(--heading); }
+    .btn-del-row:hover, .btn-note-row:hover { color: var(--heading); }
+    .btn-note-row { font-size: 0.9rem; }
+    .btn-note-row.has-note { color: var(--heading); }
+    .tc-note-row {
+      width: 100%; margin-top: 0.25rem; margin-bottom: 0.5rem;
+    }
+    .tc-note-row input {
+      width: 100%; padding: 0.4rem 0.6rem; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 0.8rem; background: var(--surface);
+      color: var(--heading); font-family: inherit; box-sizing: border-box;
+      font-style: italic;
+    }
+    .tc-note-row input::placeholder { font-style: italic; color: var(--text-muted); opacity: 0.6; }
 
     .btn-add-row {
       background: var(--accent); color: var(--accent-text); border: none;
@@ -413,8 +425,14 @@
               ' oninput="TC.updateField(\'' + catId + '\',' + i + ',\'' + f.id + '\',this.value)"></div>';
           }
         });
+        var noteVal = row._note || '';
+        var hasNote = noteVal.length > 0;
+        html += '<button class="btn-note-row' + (hasNote ? ' has-note' : '') + '" onclick="TC.toggleNote(\'' + catId + '\',' + i + ')" title="Add note">&#9998;</button>';
         html += '<button class="btn-del-row" onclick="TC.removeRow(\'' + catId + '\',' + i + ')" title="Remove">&times;</button>';
         html += '</div>';
+        if (hasNote || row._noteOpen) {
+          html += '<div class="tc-note-row"><input type="text" value="' + (noteVal || '').replace(/"/g, '&quot;') + '" placeholder="Add a note..." oninput="TC.updateField(\'' + catId + '\',' + i + ',\'_note\',this.value)"></div>';
+        }
       });
       html += '<button class="btn-add-row" onclick="TC.addRow(\'' + catId + '\')">+ Add</button>';
       body.innerHTML = html;
@@ -697,6 +715,16 @@
         state.expenses[catId][idx][fieldId] = value;
         recalc();
         autoSave();
+      },
+      toggleNote: function(catId, idx) {
+        if (!state.expenses[catId] || !state.expenses[catId][idx]) return;
+        var row = state.expenses[catId][idx];
+        row._noteOpen = !row._noteOpen;
+        renderRows(catId);
+        if (row._noteOpen) {
+          var noteInput = document.querySelector('#body_' + catId + ' .tc-note-row:nth-of-type(' + (idx + 1) + ') input');
+          if (noteInput) noteInput.focus();
+        }
       },
       toggleSection: function(catId) {
         var body = document.getElementById('body_' + catId);
