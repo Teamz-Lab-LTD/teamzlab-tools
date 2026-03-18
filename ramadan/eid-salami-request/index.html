@@ -589,11 +589,18 @@
     });
 
     document.getElementById('btnShareLink').addEventListener('click', function() {
-      TeamzTools.copyShareLink({
+      // Use template ID if a template is selected (keeps URL short & clean)
+      // Otherwise use custom message text
+      var shareData = {
         name: nameInput.value,
-        wallet: walletInput.value,
-        msg: msgInput.value
-      }, showToast);
+        wallet: walletInput.value
+      };
+      if (currentTemplateId && allTemplates[currentTemplateId] === msgInput.value.trim()) {
+        shareData.tid = currentTemplateId; // Short ID like "bn1", "en5"
+      } else {
+        shareData.msg = msgInput.value; // Custom text
+      }
+      TeamzTools.copyShareLink(shareData, showToast);
     });
 
     document.getElementById('btnCopyImg').addEventListener('click', function() {
@@ -618,10 +625,19 @@
 
     // === SHARE LINK SUPPORT ===
     var shared = TeamzTools.shareDecode();
-    if (TeamzTools.isSharedView() && (shared.name || shared.msg)) {
+    if (TeamzTools.isSharedView() && (shared.name || shared.msg || shared.tid)) {
       if (shared.name) nameInput.value = shared.name;
       if (shared.wallet) walletInput.value = shared.wallet;
-      if (shared.msg) msgInput.value = shared.msg;
+      // Resolve template ID to full text (keeps URL short)
+      if (shared.tid && allTemplates[shared.tid]) {
+        msgInput.value = allTemplates[shared.tid];
+        currentTemplateId = shared.tid;
+        // Highlight the matching chip
+        var matchChip = document.querySelector('[data-tid="' + shared.tid + '"]');
+        if (matchChip) matchChip.classList.add('active');
+      } else if (shared.msg) {
+        msgInput.value = shared.msg;
+      }
       var doRender = function() {
         render();
         TeamzTools.showSharedBanner(
