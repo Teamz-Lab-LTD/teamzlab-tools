@@ -638,10 +638,18 @@ var TeamzTools = (function () {
     shareDecode: function() {
       var params = new URLSearchParams(window.location.search);
       var data = {};
+      // Keys that are enum/ID values — strip any trailing text from share API pollution
+      var enumKeys = ['style', 'bank', 'currency', 'theme', 'mode', 'type', 'format'];
       params.forEach(function(value, key) {
         // Skip tracking params
         if (key === 'fbclid' || key === 'utm_source' || key === 'utm_medium' || key === 'utm_campaign' || key === 'ref') return;
-        data[key] = decodeURIComponent(value);
+        var decoded = decodeURIComponent(value);
+        // Some messaging apps (WhatsApp, Messenger) append share text to the last URL param
+        // e.g. "sonar-bank Check out this Eid Salami!" — strip trailing junk from enum keys
+        if (enumKeys.indexOf(key) !== -1 && decoded.indexOf(' ') !== -1) {
+          decoded = decoded.split(/\s/)[0];
+        }
+        data[key] = decoded;
       });
       return data;
     },
