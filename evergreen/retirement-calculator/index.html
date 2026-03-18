@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retirement Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Plan your retirement savings. Enter age, income, savings, and see when you can retire. Includes 401(k), Social Security, and investment growth. Free.">
+  <meta property="og:title" content="Retirement Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Plan your retirement savings with age, income, and investment growth projections. Free calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/retirement-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Retirement Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Plan your retirement savings with age, income, and investment growth projections. Free calculator.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/retirement-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .retirement-verdict {
+      text-align: center;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 20px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+    }
+    .retirement-verdict.on-track {
+      border-color: var(--heading);
+    }
+    .retirement-verdict .verdict-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+    .retirement-verdict .verdict-label {
+      font-family: var(--ff);
+      font-weight: 700;
+      font-size: var(--text-xl);
+      color: var(--heading);
+      margin-bottom: 8px;
+    }
+    .retirement-verdict .verdict-detail {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .retirement-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .retirement-stat {
+      text-align: center;
+      padding: 20px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    .retirement-stat .stat-value {
+      font-family: var(--ff);
+      font-weight: 800;
+      font-size: var(--text-xl);
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .retirement-stat .stat-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .projection-chart {
+      margin-top: 24px;
+    }
+    .projection-chart h3 {
+      font-family: var(--ff);
+      font-weight: 700;
+      font-size: var(--text-lg);
+      color: var(--heading);
+      margin-bottom: 16px;
+    }
+    .chart-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .chart-bar-row .chart-label {
+      min-width: 48px;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .chart-bar-row .chart-bar-wrap {
+      flex: 1;
+      background: var(--surface);
+      border-radius: var(--radius-sm);
+      height: 22px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .chart-bar-row .chart-bar {
+      height: 100%;
+      background: var(--heading);
+      border-radius: var(--radius-sm);
+      transition: width 0.4s ease;
+    }
+    .chart-bar-row .chart-bar.retirement-year {
+      background: var(--accent);
+    }
+    .chart-bar-row .chart-amount {
+      min-width: 90px;
+      font-size: var(--text-xs);
+      color: var(--text);
+      flex-shrink: 0;
+    }
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: var(--text-sm);
+    }
+    .breakdown-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      color: var(--heading);
+      font-weight: 600;
+    }
+    .breakdown-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .income-breakdown {
+      margin-top: 20px;
+    }
+    .income-breakdown h3 {
+      font-family: var(--ff);
+      font-weight: 700;
+      font-size: var(--text-lg);
+      color: var(--heading);
+      margin-bottom: 12px;
+    }
+    @media (max-width: 600px) {
+      .retirement-stats {
+        grid-template-columns: 1fr;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .chart-bar-row .chart-amount {
+        min-width: 70px;
+        font-size: 11px;
+      }
+      .breakdown-table {
+        font-size: 12px;
+      }
+      .breakdown-table th, .breakdown-table td {
+        padding: 6px 8px;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "Retirement Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much money do I need to retire?", "acceptedAnswer": {"@type": "Answer", "text": "A common rule of thumb is 25 times your desired annual retirement spending. If you want $60,000 per year in retirement, aim for $1.5 million in savings. This is based on the 4% safe withdrawal rate, which historically sustains a portfolio for 30+ years."}}, {"@type": "Question", "name": "What is the 4% rule?", "acceptedAnswer": {"@type": "Answer", "text": "The 4% rule states you can withdraw 4% of your retirement savings in year one, then adjust for inflation each year after. With a balanced portfolio, this approach has historically lasted 30 years or more. It was developed by financial planner William Bengen in 1994."}}, {"@type": "Question", "name": "Should I include Social Security in my retirement plan?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, but do not rely on it as your only income source. The average Social Security benefit is about $1,800 per month in 2026. It is designed to replace roughly 40% of pre-retirement income for average earners. Use it as a supplement to your personal savings."}}, {"@type": "Question", "name": "What is a good rate of return to assume?", "acceptedAnswer": {"@type": "Answer", "text": "A 7% annual return is commonly used for long-term retirement planning. This reflects the historical average of the S&P 500 after adjusting for inflation. If you want to be conservative, use 5-6%. Aggressive investors might assume 8-10%, but this carries more risk."}}, {"@type": "Question", "name": "When should I start saving for retirement?", "acceptedAnswer": {"@type": "Answer", "text": "As early as possible. Starting at 25 instead of 35 can nearly double your retirement savings due to compound interest. Even $100 per month starting at age 25 can grow to over $260,000 by age 65 at 7% returns. The earlier you start, the less you need to save each month."}}, {"@type": "Question", "name": "How does the retirement calculator work?", "acceptedAnswer": {"@type": "Answer", "text": "This calculator projects your savings growth year by year using compound interest. It factors in your current savings, monthly contributions, expected investment returns, salary increases, and Social Security income. It then applies the 4% withdrawal rule to estimate your monthly retirement income and how long your money will last."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Retirement Calculator", "description": "Plan your retirement savings with age, income, and investment growth projections.", "url": "https://tool.teamzlab.com/evergreen/retirement-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Retirement Calculator</h1>
+      <p class="tool-description">Plan your retirement with confidence. Enter your current age, income, savings, and contribution details to see when you can retire, how much you will have, and whether you are on track for a comfortable retirement.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="tool-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="current-age">Current Age</label>
+            <input type="number" id="current-age" placeholder="e.g. 30" min="18" max="80" value="30">
+          </div>
+          <div class="form-group">
+            <label for="retirement-age">Retirement Age</label>
+            <input type="number" id="retirement-age" placeholder="e.g. 65" min="30" max="90" value="65">
+          </div>
+          <div class="form-group">
+            <label for="annual-income">Annual Income ($)</label>
+            <input type="number" id="annual-income" placeholder="e.g. 75000" min="0" step="1000" value="75000">
+          </div>
+          <div class="form-group">
+            <label for="current-savings">Current Savings ($)</label>
+            <input type="number" id="current-savings" placeholder="e.g. 50000" min="0" step="1000" value="50000">
+          </div>
+          <div class="form-group">
+            <label for="monthly-contribution">Monthly Contribution ($)</label>
+            <input type="number" id="monthly-contribution" placeholder="e.g. 500" min="0" step="50" value="500">
+          </div>
+          <div class="form-group">
+            <label for="return-rate">Expected Return Rate (%)</label>
+            <input type="number" id="return-rate" placeholder="e.g. 7" min="0" max="20" step="0.1" value="7">
+          </div>
+          <div class="form-group">
+            <label for="salary-increase">Annual Salary Increase (%)</label>
+            <input type="number" id="salary-increase" placeholder="e.g. 3" min="0" max="15" step="0.1" value="3">
+          </div>
+          <div class="form-group">
+            <label for="social-security">Social Security ($/month)</label>
+            <input type="number" id="social-security" placeholder="e.g. 1800" min="0" step="100" value="1800">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="calculate-btn">Calculate Retirement</button>
+          <button class="btn-secondary" id="reset-btn">Reset</button>
+        </div>
+      </div>
+      <div id="result-area" class="tool-result" style="display:none;"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Understanding the 4% Rule for Retirement</h2>
+      <p>The 4% rule is one of the most widely used guidelines in retirement planning. It suggests that retirees can withdraw 4% of their total savings in the first year of retirement, then adjust that amount for inflation each subsequent year, and their money should last at least 30 years. For example, if you retire with $1,000,000, you could withdraw $40,000 in your first year. This rule was developed from historical market data showing that a diversified portfolio of stocks and bonds survived nearly every 30-year period in modern history at this withdrawal rate. While not a guarantee, it provides a practical starting point for estimating how much you need to save. A common target is to accumulate 25 times your desired annual retirement income, which is the inverse of the 4% withdrawal rate.</p>
+
+      <h2>How 401(k) Plans Accelerate Retirement Savings</h2>
+      <p>A 401(k) is one of the most powerful retirement savings vehicles available to American workers. Contributions are made pre-tax, which lowers your taxable income today while your money grows tax-deferred until withdrawal. In 2026, the contribution limit is $23,500 per year, with an additional $7,500 catch-up contribution for workers aged 50 and older. Many employers offer matching contributions, typically between 3% and 6% of your salary. This match is essentially free money and provides an immediate 50% to 100% return on your contribution. If your employer matches 50% of contributions up to 6% of your salary, and you earn $75,000, contributing 6% ($4,500 per year) would earn you an additional $2,250 from your employer. Over a 35-year career with 7% average returns, that employer match alone could grow to over $300,000. Always contribute at least enough to capture the full employer match before investing elsewhere.</p>
+
+      <h2>Why Starting Early Matters More Than Saving More</h2>
+      <p>Time is the single most powerful factor in building retirement wealth, thanks to compound interest. A person who starts investing $300 per month at age 25 and stops at 35 (10 years of contributions totaling $36,000) will have more money at 65 than someone who starts investing $300 per month at 35 and continues until 65 (30 years of contributions totaling $108,000), assuming both earn 8% annually. The early starter accumulates roughly $530,000 while the late starter reaches about $450,000, despite contributing three times less. This is because the early investor's money had an extra decade of compounding. Every year you delay costs you significantly. If you are in your 20s or 30s, even small monthly contributions of $100 to $200 can grow into substantial retirement savings. The best time to start was yesterday. The second best time is today. Use this retirement calculator to see exactly how your starting age affects your final retirement balance and monthly income.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Retirement Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'How much money do I need to retire?', a: 'A common rule of thumb is 25 times your desired annual retirement spending. If you want $60,000 per year in retirement, aim for $1.5 million in savings. This is based on the 4% safe withdrawal rate, which historically sustains a portfolio for 30+ years.' },
+      { q: 'What is the 4% rule?', a: 'The 4% rule states you can withdraw 4% of your retirement savings in year one, then adjust for inflation each year after. With a balanced portfolio, this approach has historically lasted 30 years or more. It was developed by financial planner William Bengen in 1994.' },
+      { q: 'Should I include Social Security in my retirement plan?', a: 'Yes, but do not rely on it as your only income source. The average Social Security benefit is about $1,800 per month in 2026. It is designed to replace roughly 40% of pre-retirement income for average earners. Use it as a supplement to your personal savings.' },
+      { q: 'What is a good rate of return to assume?', a: 'A 7% annual return is commonly used for long-term retirement planning. This reflects the historical average of the S&P 500 after adjusting for inflation. If you want to be conservative, use 5-6%. Aggressive investors might assume 8-10%, but this carries more risk.' },
+      { q: 'When should I start saving for retirement?', a: 'As early as possible. Starting at 25 instead of 35 can nearly double your retirement savings due to compound interest. Even $100 per month starting at age 25 can grow to over $260,000 by age 65 at 7% returns. The earlier you start, the less you need to save each month.' },
+      { q: 'How does the retirement calculator work?', a: 'This calculator projects your savings growth year by year using compound interest. It factors in your current savings, monthly contributions, expected investment returns, salary increases, and Social Security income. It then applies the 4% withdrawal rule to estimate your monthly retirement income and how long your money will last.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'See how your money grows with compound interest over time.' },
+      { slug: 'evergreen/investment-return-calculator', name: 'Investment Return Calculator', description: 'Calculate investment gains and annualized returns.' },
+      { slug: 'us/401k-paycheck-calculator', name: '401(k) Paycheck Calculator', description: 'See how 401(k) contributions affect your take-home pay.' },
+      { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal Calculator', description: 'Calculate how much to save monthly to reach your goal.' }
+    ];
+
+    var TOOL_CONFIG = {
+      slug: 'evergreen/retirement-calculator',
+      title: 'Retirement Calculator',
+      description: 'Plan your retirement savings with age, income, and investment growth projections.'
+    };
+
+    function formatCurrency(n) {
+      if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+      return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
+
+    function calculate() {
+      var currentAge = parseInt(document.getElementById('current-age').value);
+      var retireAge = parseInt(document.getElementById('retirement-age').value);
+      var income = parseFloat(document.getElementById('annual-income').value) || 0;
+      var savings = parseFloat(document.getElementById('current-savings').value) || 0;
+      var monthly = parseFloat(document.getElementById('monthly-contribution').value) || 0;
+      var rate = parseFloat(document.getElementById('return-rate').value) || 0;
+      var salaryIncrease = parseFloat(document.getElementById('salary-increase').value) || 0;
+      var socialSecurity = parseFloat(document.getElementById('social-security').value) || 0;
+
+      if (!currentAge || currentAge < 18 || currentAge > 80) {
+        window.showToast('Please enter a valid current age (18-80).', 'error');
+        return;
+      }
+      if (!retireAge || retireAge <= currentAge) {
+        window.showToast('Retirement age must be greater than current age.', 'error');
+        return;
+      }
+
+      var yearsToRetire = retireAge - currentAge;
+      var annualRate = rate / 100;
+      var monthlyRate = annualRate / 12;
+      var salaryRate = salaryIncrease / 100;
+
+      // Year-by-year projection
+      var balance = savings;
+      var currentMonthly = monthly;
+      var currentIncome = income;
+      var yearData = [];
+      var totalContributed = savings;
+
+      for (var y = 1; y <= yearsToRetire; y++) {
+        for (var m = 0; m < 12; m++) {
+          balance = balance * (1 + monthlyRate) + currentMonthly;
+        }
+        totalContributed += currentMonthly * 12;
+        yearData.push({
+          age: currentAge + y,
+          year: y,
+          balance: balance,
+          income: currentIncome
+        });
+        // Annual salary increase affects contributions proportionally
+        if (salaryRate > 0) {
+          currentIncome *= (1 + salaryRate);
+          currentMonthly *= (1 + salaryRate);
+        }
+      }
+
+      var totalAtRetirement = balance;
+      var totalInterest = totalAtRetirement - totalContributed;
+
+      // 4% rule: annual withdrawal
+      var annualWithdrawal = totalAtRetirement * 0.04;
+      var monthlyFromSavings = annualWithdrawal / 12;
+      var combinedMonthly = monthlyFromSavings + socialSecurity;
+
+      // Years money will last (assuming 4% withdrawal, 3% inflation, portfolio still earning)
+      var drawdownBalance = totalAtRetirement;
+      var drawdownRate = 0.03; // conservative return during retirement
+      var inflationRate = 0.025;
+      var annualSpend = annualWithdrawal;
+      var yearsLast = 0;
+      while (drawdownBalance > 0 && yearsLast < 60) {
+        drawdownBalance = drawdownBalance * (1 + drawdownRate) - annualSpend;
+        annualSpend *= (1 + inflationRate);
+        yearsLast++;
+      }
+
+      // Pre-retirement income for gap analysis
+      var preRetireMonthlyIncome = currentIncome / 12;
+      var replacementRate = (combinedMonthly / preRetireMonthlyIncome) * 100;
+
+      // Verdict
+      var onTrack = replacementRate >= 70;
+      var verdictLabel = onTrack ? 'On Track' : 'Need to Save More';
+      var verdictIcon = onTrack ? '&#10003;' : '&#9888;';
+      var verdictDetail = '';
+      if (onTrack) {
+        verdictDetail = 'Your projected retirement income replaces ' + replacementRate.toFixed(0) + '% of your pre-retirement income. Financial planners recommend 70-80%. You are on a solid path.';
+      } else {
+        var targetMonthly = preRetireMonthlyIncome * 0.75;
+        var gap = targetMonthly - combinedMonthly;
+        var additionalSavingsNeeded = gap * 12 / 0.04;
+        var additionalMonthly = additionalSavingsNeeded / (yearsToRetire * 12);
+        verdictDetail = 'Your projected income replaces only ' + replacementRate.toFixed(0) + '% of pre-retirement income (target: 75%). Consider increasing monthly contributions by ' + formatCurrency(Math.max(0, additionalMonthly)) + ' to close the gap.';
+      }
+
+      // Build results HTML
+      var html = '';
+      html += '<div class="retirement-verdict ' + (onTrack ? 'on-track' : '') + '">';
+      html += '<div class="verdict-icon">' + verdictIcon + '</div>';
+      html += '<div class="verdict-label">' + verdictLabel + '</div>';
+      html += '<div class="verdict-detail">' + verdictDetail + '</div>';
+      html += '</div>';
+
+      html += '<div class="retirement-stats">';
+      html += '<div class="retirement-stat"><div class="stat-value">' + formatCurrency(totalAtRetirement) + '</div><div class="stat-label">Total at Retirement</div></div>';
+      html += '<div class="retirement-stat"><div class="stat-value">' + formatCurrency(monthlyFromSavings) + '</div><div class="stat-label">Monthly from Savings</div></div>';
+      html += '<div class="retirement-stat"><div class="stat-value">' + formatCurrency(combinedMonthly) + '</div><div class="stat-label">Combined Monthly Income</div></div>';
+      html += '<div class="retirement-stat"><div class="stat-value">' + formatCurrency(socialSecurity) + '</div><div class="stat-label">Social Security / Mo</div></div>';
+      html += '<div class="retirement-stat"><div class="stat-value">' + yearsLast + ' yrs</div><div class="stat-label">Money Lasts</div></div>';
+      html += '<div class="retirement-stat"><div class="stat-value">' + formatCurrency(totalInterest) + '</div><div class="stat-label">Interest Earned</div></div>';
+      html += '</div>';
+
+      // Income breakdown table
+      html += '<div class="income-breakdown">';
+      html += '<h3>Monthly Retirement Income Breakdown</h3>';
+      html += '<table class="breakdown-table">';
+      html += '<tr><th>Source</th><th>Monthly</th><th>Annual</th></tr>';
+      html += '<tr><td>Savings (4% rule)</td><td>' + formatCurrency(monthlyFromSavings) + '</td><td>' + formatCurrency(annualWithdrawal) + '</td></tr>';
+      html += '<tr><td>Social Security</td><td>' + formatCurrency(socialSecurity) + '</td><td>' + formatCurrency(socialSecurity * 12) + '</td></tr>';
+      html += '<tr><td><strong>Total</strong></td><td><strong>' + formatCurrency(combinedMonthly) + '</strong></td><td><strong>' + formatCurrency(combinedMonthly * 12) + '</strong></td></tr>';
+      html += '</table>';
+      html += '</div>';
+
+      // Year-by-year chart (show every few years to keep it readable)
+      var maxBalance = totalAtRetirement;
+      var step = yearsToRetire <= 15 ? 1 : yearsToRetire <= 30 ? 2 : 5;
+      html += '<div class="projection-chart">';
+      html += '<h3>Savings Growth Projection</h3>';
+
+      // Starting point
+      html += '<div class="chart-bar-row">';
+      html += '<span class="chart-label">Age ' + currentAge + '</span>';
+      html += '<div class="chart-bar-wrap"><div class="chart-bar" style="width:' + Math.max(1, (savings / maxBalance) * 100) + '%"></div></div>';
+      html += '<span class="chart-amount">' + formatCurrency(savings) + '</span>';
+      html += '</div>';
+
+      for (var i = 0; i < yearData.length; i++) {
+        if ((i + 1) % step !== 0 && i !== yearData.length - 1) continue;
+        var d = yearData[i];
+        var pct = Math.max(1, (d.balance / maxBalance) * 100);
+        var isRetirement = i === yearData.length - 1;
+        html += '<div class="chart-bar-row">';
+        html += '<span class="chart-label">Age ' + d.age + '</span>';
+        html += '<div class="chart-bar-wrap"><div class="chart-bar' + (isRetirement ? ' retirement-year' : '') + '" style="width:' + pct + '%"></div></div>';
+        html += '<span class="chart-amount">' + formatCurrency(d.balance) + '</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+
+      var resultArea = document.getElementById('result-area');
+      resultArea.innerHTML = html;
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.showToast('Retirement projection calculated!', 'success');
+    }
+
+    function resetForm() {
+      document.getElementById('current-age').value = '30';
+      document.getElementById('retirement-age').value = '65';
+      document.getElementById('annual-income').value = '75000';
+      document.getElementById('current-savings').value = '50000';
+      document.getElementById('monthly-contribution').value = '500';
+      document.getElementById('return-rate').value = '7';
+      document.getElementById('salary-increase').value = '3';
+      document.getElementById('social-security').value = '1800';
+      document.getElementById('result-area').style.display = 'none';
+      window.showToast('Form reset.', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      document.getElementById('calculate-btn').addEventListener('click', calculate);
+      document.getElementById('reset-btn').addEventListener('click', resetForm);
+    });
+  </script>
+</body>
+</html>
