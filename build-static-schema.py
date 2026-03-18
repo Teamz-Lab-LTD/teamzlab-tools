@@ -198,8 +198,55 @@ def extract_webapp(content, filepath=""):
     }
 
 
+twitter_fixed = 0
+
+def fix_twitter_tags(content):
+    """Auto-inject missing twitter:title and twitter:description from OG tags."""
+    global twitter_fixed
+    changed = False
+
+    if 'twitter:card' not in content:
+        return content  # No twitter card at all — skip (likely not a tool page)
+
+    # Fix missing twitter:title
+    if 'twitter:title' not in content:
+        og_title = re.search(r'property="og:title"\s+content="([^"]*)"', content)
+        if og_title:
+            insert = f'  <meta name="twitter:title" content="{og_title.group(1)}">\n'
+            content = content.replace(
+                '<meta name="twitter:card" content="summary">',
+                '<meta name="twitter:card" content="summary">\n' + insert.rstrip(),
+            )
+            changed = True
+
+    # Fix missing twitter:description
+    if 'twitter:description' not in content:
+        og_desc = re.search(r'property="og:description"\s+content="([^"]*)"', content)
+        if og_desc:
+            desc = og_desc.group(1)[:200]  # Twitter allows 200 chars
+            insert = f'  <meta name="twitter:description" content="{desc}">'
+            # Insert after twitter:title if it exists, otherwise after twitter:card
+            if 'twitter:title' in content:
+                content = re.sub(
+                    r'(<meta name="twitter:title"[^>]*>)',
+                    r'\1\n' + insert,
+                    content,
+                    count=1,
+                )
+            else:
+                content = content.replace(
+                    '<meta name="twitter:card" content="summary">',
+                    '<meta name="twitter:card" content="summary">\n' + insert,
+                )
+            changed = True
+
+    if changed:
+        twitter_fixed += 1
+    return content
+
+
 def process_file(filepath):
-    """Process a single HTML file: extract schemas, inject static JSON-LD."""
+    """Process a single HTML file: extract schemas, inject static JSON-LD, fix twitter tags."""
     global count, skip
 
     with open(filepath, "r", encoding="utf-8") as f:
@@ -208,6 +255,9 @@ def process_file(filepath):
     # Skip redirect pages
     if 'http-equiv="refresh"' in content:
         return
+
+    # Auto-fix missing twitter tags
+    content = fix_twitter_tags(content)
 
     # Remove old static schema blocks
     if MARKER in content:
@@ -272,6 +322,8 @@ def main():
         process_file(filepath)
 
     print(f"  Static schema: {count} pages updated, {skip} skipped")
+    if twitter_fixed:
+        print(f"  Twitter tags: {twitter_fixed} pages auto-fixed")
     if errors:
         print(f"  Errors: {len(errors)} files")
         for e in errors:
