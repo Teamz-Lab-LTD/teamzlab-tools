@@ -59,6 +59,15 @@ Example output to user:
 
 3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, search placeholder, llms.txt, or twitter tags. The pre-commit hook does it all automatically.
 
+3b. **Google Search Console API** is connected:
+   - Run `./build-search-console.sh` to pull live data (queries, pages, indexing, devices, countries)
+   - Run `./build-search-console.sh --status` for indexing status only
+   - Account: `teamz.lab.contact@gmail.com` | Site: `https://tool.teamzlab.com/`
+   - Token: `~/.config/teamzlab/search-console-token.json` (auto-refreshes)
+   - If token expired: `python3 build-search-console-auth.py` (opens browser to re-auth)
+   - Setup guide: `docs/search-console-setup.md`
+   - **When user asks "what's my status" or "how's the site doing"**: run this script first, then analyze and make recommendations
+
 4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
 
 5. **BEFORE building ANY new tool**, follow the **Research-First Workflow**:
@@ -294,6 +303,28 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 **Influences:** Marc Lou (ship fast, monetize day 1) + Adam Lyttle (portfolio model, trend-jacking, ASO/SEO niche targeting, $800K from 50 simple apps)
 
 **Read this doc before suggesting new tools or strategy changes.**
+
+### Rule 14: EVERY new tool MUST pass this checklist (no exceptions)
+Before committing ANY new tool (whether built by AI or by user), verify ALL:
+1. **3 JSON-LD schemas**: BreadcrumbList, FAQPage, WebApplication
+2. **5+ FAQs**: via `TeamzTools.renderFAQs()` + `injectFAQSchema()`
+3. **6 related tools**: via `TeamzTools.renderRelatedTools()` — use `{ slug, name, description }` format
+4. **Breadcrumbs**: via `TeamzTools.renderBreadcrumbs()` + `injectBreadcrumbSchema()`
+5. **3+ H2 sections** in `.tool-content` (required for mid-content ad slot)
+6. **300-600 words** of SEO content
+7. **Zero hardcoded hex colors** in CSS — only CSS variables
+8. **Ad slot div** between calculator and content
+9. **Meta description** 120-155 chars, starts with action verb
+10. **Title** max 60 chars with keyword + "Teamz Lab Tools"
+11. **Mobile responsive** `@media (max-width: 600px)`
+- **ALWAYS audit user-added tools too** — don't assume they follow the template
+- Run `./build.sh` + `python3 build-static-schema.py` after adding any tool
+
+### Rule 15: AdSense content structure for maximum revenue
+- Every tool page MUST have **3+ H2 sections** in `.tool-content` for the mid-content ad slot
+- The `adsense.js` script places an ad between the 2nd and 3rd H2 — this is the highest-RPM position
+- Tools with <3 H2s only get 3 ads instead of 4, losing ~15-25% potential revenue
+- Pattern: "How X Works" → "X for [Use Case]" → "Tips for X" → "X vs Y"
 
 ### Rule 11: NEVER set percentage/em line-height on headings
 - `base.css` has a global reset: `h1,h2,h3,h4,h5,h6 { line-height:1.3; }` — DO NOT remove this
