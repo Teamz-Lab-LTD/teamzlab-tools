@@ -1197,32 +1197,56 @@ var TeamzAnalytics = (function () {
       var fbAnalytics = document.createElement('script');
       fbAnalytics.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js';
       fbAnalytics.onload = function () {
-        try {
-          var app = firebase.initializeApp(FIREBASE_CONFIG);
-          var analytics = firebase.analytics(app);
-          window._fbAnalytics = analytics;
-          _firebaseReady = true;
-
-          // Log initial page view with rich data
-          analytics.logEvent('page_view', _getPageContext());
-
-          // Track tool category view
-          var ctx = _getPageContext();
-          if (ctx.tool_category && ctx.tool_category !== 'home') {
-            analytics.logEvent('tool_category_view', {
-              category: ctx.tool_category,
-              tool_slug: ctx.tool_slug,
-              country: ctx.country,
-              language: document.documentElement.lang || 'en'
-            });
-          }
-        } catch (e) {
-          console.warn('Firebase init error:', e);
-        }
+        // Load App Check (reCAPTCHA v3 — invisible to users)
+        var fbAppCheck = document.createElement('script');
+        fbAppCheck.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js';
+        fbAppCheck.onload = function () {
+          _initFirebaseApp();
+        };
+        fbAppCheck.onerror = function () {
+          // App Check failed to load — init without it
+          _initFirebaseApp();
+        };
+        document.head.appendChild(fbAppCheck);
       };
       document.head.appendChild(fbAnalytics);
     };
     document.head.appendChild(fbApp);
+
+    function _initFirebaseApp() {
+      try {
+        var app = firebase.initializeApp(FIREBASE_CONFIG);
+
+        // Activate App Check with reCAPTCHA v3 (invisible, no user interaction)
+        if (firebase.appCheck) {
+          try {
+            firebase.appCheck().activate('6LdTN48sAAAAABRarboqZwlBDY-YTPjD9A4MzRWn', true);
+          } catch (e) {
+            console.warn('App Check activation error:', e);
+          }
+        }
+
+        var analytics = firebase.analytics(app);
+        window._fbAnalytics = analytics;
+        _firebaseReady = true;
+
+        // Log initial page view with rich data
+        analytics.logEvent('page_view', _getPageContext());
+
+        // Track tool category view
+        var ctx = _getPageContext();
+        if (ctx.tool_category && ctx.tool_category !== 'home') {
+          analytics.logEvent('tool_category_view', {
+            category: ctx.tool_category,
+            tool_slug: ctx.tool_slug,
+            country: ctx.country,
+            language: document.documentElement.lang || 'en'
+          });
+        }
+      } catch (e) {
+        console.warn('Firebase init error:', e);
+      }
+    }
 
     // Also load gtag for GA4 (works alongside Firebase)
     var gtagScript = document.createElement('script');
