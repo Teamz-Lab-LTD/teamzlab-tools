@@ -8,6 +8,31 @@ var TeamzTools = (function () {
   var SITE_URL = 'https://tool.teamzlab.com';
   var TEAMZ_URL = 'https://teamzlab.com';
 
+  // ===== Global Toast Notification =====
+  var _toastStyle = null;
+  function _showToast(msg) {
+    if (!_toastStyle) {
+      _toastStyle = document.createElement('style');
+      _toastStyle.textContent = '.teamz-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--heading);color:var(--bg);padding:0.65rem 1.5rem;border-radius:8px;font-size:0.9rem;font-weight:600;font-family:"Poppins",sans-serif;z-index:99999;opacity:0;transition:all 0.3s ease;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.2)}.teamz-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}';
+      document.head.appendChild(_toastStyle);
+    }
+    var existing = document.querySelector('.teamz-toast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'teamz-toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.classList.add('show'); });
+    });
+    setTimeout(function() {
+      toast.classList.remove('show');
+      setTimeout(function() { toast.remove(); }, 300);
+    }, 2500);
+  }
+  // Expose globally so tool pages can use it too
+  window.showToast = _showToast;
+
   function _escapeHtml(text) {
     if (text === null || text === undefined) return '';
     var div = document.createElement('div');
@@ -27,7 +52,7 @@ var TeamzTools = (function () {
       '<nav class="header-nav" aria-label="Main navigation">' +
         '<a href="/" class="nav-link">Home</a>' +
         '<a href="/about/" class="nav-link">About</a>' +
-        '<a href="/contact/" class="nav-link">Contact</a>' +
+        '<a href="https://teamzlab.com/contact" target="_blank" rel="noopener" class="nav-link">Contact</a>' +
         '<div class="lang-selector notranslate" translate="no">' +
           '<button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no">' +
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
@@ -172,7 +197,7 @@ var TeamzTools = (function () {
         '<div class="footer-col">' +
           '<h4>Company</h4>' +
           '<a href="/about/">About</a>' +
-          '<a href="/contact/">Contact</a>' +
+          '<a href="https://teamzlab.com/contact" target="_blank" rel="noopener">Contact</a>' +
           '<a href="/privacy/">Privacy Policy</a>' +
           '<a href="/terms/">Terms of Service</a>' +
           '<a href="' + TEAMZ_URL + '" target="_blank" rel="noopener">Teamz Lab</a>' +
@@ -1381,7 +1406,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Only show on tool pages (not homepage, about, etc.)
     var path = window.location.pathname.replace(/^\/|\/$/g, '');
     if (!path || path.split('/').length < 2) return;
-    var calc = document.querySelector('.tool-calculator');
+    var calc = document.querySelector('.tool-calculator') || document.querySelector('.tool-hero') || document.querySelector('.tool-content');
     if (!calc) return;
 
     var pageTitle = document.title.replace(' — Teamz Lab Tools', '').replace(' | Teamz Lab Tools', '');
@@ -1447,10 +1472,13 @@ document.addEventListener('DOMContentLoaded', function () {
         navigator.clipboard.writeText(pageUrl).then(function () {
           copyBtn.classList.add('share-btn--copied');
           copyBtn.title = 'Copied!';
+          _showToast('Link copied to clipboard!');
           setTimeout(function () {
             copyBtn.classList.remove('share-btn--copied');
             copyBtn.title = 'Copy link';
           }, 2000);
+        }).catch(function() {
+          _showToast('Copy failed — try manually.');
         });
       });
     }
@@ -1505,7 +1533,10 @@ document.addEventListener('DOMContentLoaded', function () {
           navigator.clipboard.writeText(textarea.value).then(function () {
             var btn = modal.querySelector('.embed-modal__copy');
             btn.textContent = 'Copied!';
+            _showToast('Embed code copied!');
             setTimeout(function () { btn.textContent = 'Copy Embed Code'; }, 2000);
+          }).catch(function() {
+            _showToast('Copy failed — select and copy manually.');
           });
         });
 
