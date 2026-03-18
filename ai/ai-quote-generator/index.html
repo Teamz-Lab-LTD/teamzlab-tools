@@ -381,6 +381,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
   document.addEventListener("DOMContentLoaded",function(){
     TeamzTools.renderBreadcrumbs([{name:"Home",url:"/"},{name:"AI Tools",url:"/ai/"},{name:"AI Quote Generator"}]);
@@ -734,9 +735,6 @@
     var filteredQuotes=QUOTES.slice();
     var currentIndex=0;
     var searchTerm='';
-    var chromeAIAvailable=false;
-    var transformersPipeline=null;
-    var loadingModel=false;
     var uploadedBgImage=null;
 
     // Categories
@@ -808,22 +806,17 @@
     bindEvents();
 
     /* =========================================
-       AI DETECTION
+       AI DETECTION (via shared ai-engine.js)
        ========================================= */
     async function detectAI(){
-      try{
-        if(window.ai&&window.ai.languageModel){
-          var caps=await window.ai.languageModel.capabilities();
-          if(caps&&caps.available!=='no'){
-            chromeAIAvailable=true;
-            document.getElementById('ai-notice').style.display='block';
-            document.getElementById('ai-badge').textContent='AI-Powered (Chrome AI) — Runs On Your Device';
-            return;
-          }
-        }
-      }catch(e){}
-      document.getElementById('ai-fallback').style.display='block';
-      document.getElementById('ai-badge').textContent='AI-Powered (Transformers.js) — Runs On Your Device';
+      await TeamzAI.init();
+      if(TeamzAI.chromeAI.prompt){
+        document.getElementById('ai-notice').style.display='block';
+        document.getElementById('ai-badge').textContent='AI-Powered (Chrome AI) — Runs On Your Device';
+      }else{
+        document.getElementById('ai-fallback').style.display='block';
+        document.getElementById('ai-badge').textContent='AI-Powered (Transformers.js) — Runs On Your Device';
+      }
     }
 
     /* =========================================
@@ -1133,104 +1126,82 @@
     }
 
     /* =========================================
-       AI GENERATION
+       AI GENERATION (via shared ai-engine.js)
        ========================================= */
     async function generateAIQuote(){
       var category=document.getElementById('ai-category').value;
       var topic=document.getElementById('ai-topic').value.trim();
       var statusEl=document.getElementById('ai-status');
+      var progressEl=document.getElementById('ai-progress');
+      var progressBar=document.getElementById('ai-progress-bar');
       var btn=document.getElementById('btn-ai-generate');
       btn.disabled=true;
       btn.textContent='Generating...';
 
-      var prompt='Write a single original '+category+' quote'+(topic?' about '+topic:'')+'. Return ONLY the quote text, no attribution, no quotation marks.';
+      var chromePrompt='Write a single original '+category+' quote'+(topic?' about '+topic:'')+'. Return ONLY the quote text, no attribution, no quotation marks.';
 
-      // Tier 2: Chrome AI
-      if(chromeAIAvailable){
-        try{
-          statusEl.textContent='Using Chrome AI (Gemini Nano)...';
-          var session=await window.ai.languageModel.create({
-            systemPrompt:'You are a quote writer. Generate a single profound, original quote. Return ONLY the quote text, nothing else. No quotation marks.'
-          });
-          var result=await session.prompt(prompt);
-          result=result.replace(/^["'\u201C\u201D]+|["'\u201C\u201D]+$/g,'').trim();
-          document.getElementById('card-quote-text').textContent=result;
-          document.getElementById('card-author').textContent='\u2014 AI Generated';
-          statusEl.textContent='Generated with Chrome AI';
-          btn.disabled=false;btn.textContent='AI Generate';
-          session.destroy();
-          return;
-        }catch(e){
-          statusEl.textContent='Chrome AI failed, falling back to Transformers.js...';
+      var transformersPrompt='Write a complete, profound, and inspiring '+category+' quote';
+      if(topic) transformersPrompt+=' about '+topic;
+      transformersPrompt+='. The quote should be a full sentence with deep meaning, like something a famous author would say. Only output the quote text, nothing else.';
+
+      // Curated fallback function
+      function curatedFallback(){
+        var pool=QUOTES.filter(function(q){return q.category===category;});
+        if(topic){
+          var topicLower=topic.toLowerCase();
+          var matched=pool.filter(function(q){return q.text.toLowerCase().includes(topicLower);});
+          if(matched.length>0) pool=matched;
         }
+        var pick=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];
+        return pick.text+'\n\u2014 '+pick.author;
       }
 
-      // Tier 3: Transformers.js (upgraded model + quality filter)
       try{
-        if(!transformersPipeline&&!loadingModel){
-          loadingModel=true;
-          statusEl.textContent='Downloading AI model (first time only)...';
-          var progressEl=document.getElementById('ai-progress');
-          var progressBar=document.getElementById('ai-progress-bar');
-          progressEl.style.display='block';
-
-          var mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3');
-          mod.env.allowLocalModels=false;
-          transformersPipeline=await mod.pipeline('text2text-generation','Xenova/flan-t5-base',{
-            progress_callback:function(p){
-              if(p.status==='progress'&&p.total){
-                var pct=Math.round((p.loaded/p.total)*100);
-                progressBar.style.width=pct+'%';
-                statusEl.textContent='Downloading AI model... '+pct+'%';
-              }
-            }
-          });
-          progressEl.style.display='none';
-          loadingModel=false;
-          statusEl.textContent='AI Ready \u2014 Works offline now';
-        }else if(loadingModel){
-          statusEl.textContent='Model still loading, please wait...';
-          btn.disabled=false;btn.textContent='AI Generate';
-          return;
-        }
-
-        if(transformersPipeline){
-          statusEl.textContent='Generating with local AI...';
-          // Better prompt engineering for quote generation
-          var aiPrompt='Write a complete, profound, and inspiring '+category+' quote';
-          if(topic) aiPrompt+=' about '+topic;
-          aiPrompt+='. The quote should be a full sentence with deep meaning, like something a famous author would say. Only output the quote text, nothing else.';
-          var result=await transformersPipeline(aiPrompt, {max_new_tokens:150, num_beams:4, early_stopping:true, temperature:0.8});
-          var text=(result[0].generated_text||'').replace(/^["'\u201C\u201D]+|["'\u201C\u201D]+$/g,'').trim();
-          // Quality filter: must be >20 chars, have a space, and look like a sentence
-          var isGoodQuote=text.length>20&&text.includes(' ')&&text.split(' ').length>4;
-          if(text&&isGoodQuote){
-            document.getElementById('card-quote-text').textContent=text;
-            document.getElementById('card-author').textContent='\u2014 AI Generated';
-            statusEl.textContent='Generated with Transformers.js (local AI)';
-          }else{
-            // Fallback: pick a smart curated quote matching the topic/category
-            statusEl.textContent='AI output was low quality \u2014 showing best curated match instead.';
-            var pool=QUOTES.filter(function(q){return q.category===category;});
-            if(topic){
-              var topicLower=topic.toLowerCase();
-              var matched=pool.filter(function(q){return q.text.toLowerCase().includes(topicLower);});
-              if(matched.length>0) pool=matched;
-            }
-            var pick=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];
-            document.getElementById('card-quote-text').textContent=pick.text;
-            document.getElementById('card-author').textContent='\u2014 '+pick.author;
+        var result=await TeamzAI.generate({
+          chromePrompt:chromePrompt,
+          chromeSystemPrompt:'You are a quote writer. Generate a single profound, original quote. Return ONLY the quote text, nothing else. No quotation marks.',
+          transformersTask:'text2text-generation',
+          transformersModel:'Xenova/flan-t5-base',
+          transformersPrompt:transformersPrompt,
+          transformersOptions:{max_new_tokens:150,num_beams:4,early_stopping:true,temperature:0.8},
+          fallback:curatedFallback,
+          onProgress:function(pct){
+            progressEl.style.display='block';
+            progressBar.style.width=pct+'%';
+          },
+          onStatus:function(msg){
+            statusEl.textContent=msg;
+          },
+          qualityCheck:function(text){
+            var clean=text.replace(/^["'\u201C\u201D]+|["'\u201C\u201D]+$/g,'').trim();
+            return clean.length>20&&clean.includes(' ')&&clean.split(' ').length>4;
           }
+        });
+
+        progressEl.style.display='none';
+
+        if(result.source==='fallback'){
+          // Fallback returns "text\n— author"
+          var parts=result.text.split('\n');
+          document.getElementById('card-quote-text').textContent=parts[0];
+          document.getElementById('card-author').textContent=parts[1]||'';
+          statusEl.textContent='Showing best curated match.';
+        }else{
+          var cleanText=result.text.replace(/^["'\u201C\u201D]+|["'\u201C\u201D]+$/g,'').trim();
+          document.getElementById('card-quote-text').textContent=cleanText;
+          document.getElementById('card-author').textContent='\u2014 AI Generated';
+          statusEl.textContent='Generated with '+(result.source==='chrome-ai'?'Chrome AI':'Transformers.js (local AI)');
         }
       }catch(e){
+        console.error('AI generation error:',e);
         statusEl.textContent='AI unavailable. Showing curated quote instead.';
-        console.error('Transformers.js error:',e);
-        // Final fallback to curated DB
         var pool=QUOTES.filter(function(q){return q.category===category;});
         var pick=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];
         document.getElementById('card-quote-text').textContent=pick.text;
         document.getElementById('card-author').textContent='\u2014 '+pick.author;
       }
+
+      progressEl.style.display='none';
       btn.disabled=false;btn.textContent='AI Generate';
     }
 
