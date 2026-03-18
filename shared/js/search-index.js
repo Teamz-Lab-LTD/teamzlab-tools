@@ -147,7 +147,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'ETH Validator Profitability Calculator',d:'Calculate if running an Ethereum validator is profitable. Compare solo vs pool staking, estimate rewards, costs, and break-even price.',h:'/crypto/validator-profitability-calculator/'},
   {t:'Wei / Gwei / ETH Converter',d:'Convert between Wei, Gwei, and ETH instantly. Free Ethereum unit converter with USD value — runs privately in your browser.',h:'/crypto/wei-gwei-eth-converter/'},
   {t:'Basiselterngeld vs ElterngeldPlus Planer',d:'Vergleichen Sie Basiselterngeld und ElterngeldPlus direkt: Monatsbetrag, Bezugsdauer und Gesamtsumme. Kostenlose Berechnung.',h:'/de/basiselterngeld-vs-elterngeldplus-planer/'},
-  {t:'Brutto-Netto-Rechner 2026',d:'Berechnen Sie Ihr Nettoeinkommen aus dem Bruttogehalt. Steuerklasse, Kirchensteuer, Sozialabgaben und Freibetr&#228;ge ber&#252;cksichtigt. Kostenlos ',h:'/de/brutto-netto-rechner/'},
+  {t:'Brutto-Netto-Rechner 2026',d:'Berechnen Sie Ihr Nettoeinkommen aus dem Bruttogehalt. Steuerklasse, Kirchensteuer und Sozialabgaben. Kostenlos und privat.',h:'/de/brutto-netto-rechner/'},
   {t:'Einkommensteuer-Rechner 2026',d:'Berechnen Sie Ihre Einkommensteuer für 2026. Zu versteuerndes Einkommen, Steuersatz, Solidaritätszuschlag und Kirchensteuer. Kostenlos und privat.',h:'/de/einkommensteuer-rechner/'},
   {t:'Elterngeld Monatsplaner',d:'Planen Sie Ihr Elterngeld: Basiselterngeld vs. ElterngeldPlus vergleichen, Teilzeit einrechnen und monatliches Budget berechnen.',h:'/de/elterngeld-monatsplaner/'},
   {t:'Familienbudget nach Geburt Rechner',d:'Planen Sie Ihr Familienbudget nach der Geburt: Einkommen, Elterngeld, Kindergeld und Baby-Kosten berechnen. Kostenlos und sofort.',h:'/de/familienbudget-nach-geburt-rechner/'},
