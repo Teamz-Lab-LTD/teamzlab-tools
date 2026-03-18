@@ -26,6 +26,13 @@
   <style>
     .request-gen { max-width: 800px; margin: 0 auto; }
 
+    /* View mode: card first. Edit mode: card after form */
+    .request-gen.view-mode .card-preview-wrap { order: -1; }
+    .request-gen.edit-mode .card-preview-wrap { order: 2; }
+    .request-gen.edit-mode .request-form { order: 1; }
+    .request-gen.edit-mode .card-actions { order: 3; }
+    .request-gen { display: flex; flex-direction: column; }
+
     .request-form {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -72,6 +79,48 @@
     }
 
     .r-field .hint { font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* Theme picker */
+    .theme-picker-label {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .theme-picker {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .theme-opt {
+      cursor: pointer;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      padding: 10px 6px;
+      text-align: center;
+      transition: border-color 0.2s, transform 0.15s;
+      background: var(--bg);
+    }
+
+    .theme-opt:hover { transform: translateY(-2px); }
+    .theme-opt.active { border-color: var(--heading); }
+
+    .theme-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      margin: 0 auto 5px;
+    }
+
+    .theme-opt .theme-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--heading);
+    }
 
     /* Template chips */
     .template-section { margin-top: 16px; }
@@ -169,6 +218,7 @@
       .card-actions button { width: 100%; }
       .request-form { padding: 18px; }
       .tool-content h2 { font-size: var(--text-lg); }
+      .theme-picker { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
@@ -182,21 +232,8 @@
       <p class="tool-description">Create hilarious Eid Salami request cards in Bangla and English. Pick a funny template or write your own, then share to collect maximum Salami from family and friends!</p>
     </section>
 
-    <div class="request-gen">
-      <!-- Canvas Preview FIRST (shown above form, especially in share view) -->
-      <div class="card-preview-wrap" id="previewWrap">
-        <canvas id="cardCanvas" width="1080" height="1080"></canvas>
-      </div>
-
-      <!-- Actions -->
-      <div class="card-actions">
-        <button class="btn-primary" id="btnDownload">Download Card</button>
-        <button class="btn-secondary" id="btnShareWA">WhatsApp</button>
-        <button class="btn-secondary" id="btnShareLink">Share Link</button>
-        <button class="btn-secondary" id="btnCopyImg">Copy Image</button>
-      </div>
-
-      <!-- Form below preview -->
+    <div class="request-gen edit-mode" id="requestGen">
+      <!-- Form -->
       <div class="request-form">
         <div class="request-form-grid">
           <div class="r-field">
@@ -214,6 +251,31 @@
           </div>
         </div>
 
+        <!-- Theme Picker -->
+        <label class="theme-picker-label">Card Theme</label>
+        <div class="theme-picker" id="themePicker">
+          <div class="theme-opt active" data-theme="party">
+            <div class="theme-dot" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb);"></div>
+            <span class="theme-label">Party</span>
+          </div>
+          <div class="theme-opt" data-theme="royal">
+            <div class="theme-dot" style="background: linear-gradient(135deg, #1a0a2e, #d4af37);"></div>
+            <span class="theme-label">Royal</span>
+          </div>
+          <div class="theme-opt" data-theme="pink">
+            <div class="theme-dot" style="background: linear-gradient(135deg, #e91e8c, #f8bbd0);"></div>
+            <span class="theme-label">Pink</span>
+          </div>
+          <div class="theme-opt" data-theme="green">
+            <div class="theme-dot" style="background: linear-gradient(135deg, #0d3320, #6ee7b7);"></div>
+            <span class="theme-label">Eid Green</span>
+          </div>
+          <div class="theme-opt" data-theme="neon">
+            <div class="theme-dot" style="background: linear-gradient(135deg, #0f0c29, #00f5d4, #f72585);"></div>
+            <span class="theme-label">Neon</span>
+          </div>
+        </div>
+
         <!-- Funny Templates -->
         <div class="template-section">
           <h3>Bangla Templates (click to use)</h3>
@@ -222,6 +284,19 @@
           <h3>English Templates</h3>
           <div class="template-chips" id="englishTemplates"></div>
         </div>
+      </div>
+
+      <!-- Canvas Preview -->
+      <div class="card-preview-wrap" id="previewWrap">
+        <canvas id="cardCanvas" width="1080" height="1080"></canvas>
+      </div>
+
+      <!-- Actions -->
+      <div class="card-actions">
+        <button class="btn-primary" id="btnDownload">Download Card</button>
+        <button class="btn-secondary" id="btnShareWA">WhatsApp</button>
+        <button class="btn-secondary" id="btnShareLink">Share Link</button>
+        <button class="btn-secondary" id="btnCopyImg">Copy Image</button>
       </div>
     </div>
 
@@ -296,10 +371,77 @@
     var canvas = document.getElementById('cardCanvas');
     var ctx = canvas.getContext('2d');
     var W = 1080, H = 1080;
+    var requestGen = document.getElementById('requestGen');
 
     var nameInput = document.getElementById('yourName');
     var walletInput = document.getElementById('walletNumber');
     var msgInput = document.getElementById('requestMsg');
+
+    var currentTheme = 'party';
+
+    // === CARD THEMES ===
+    var themes = {
+      party: {
+        bg1: '#ff6b6b', bg2: '#feca57', bg3: '#48dbfb',
+        titleColor: '#ffffff', subtitleColor: '#fff176',
+        msgColor: '#ffffff', nameColor: '#fff9c4',
+        walletBg: 'rgba(255,255,255,0.2)', walletBorder: 'rgba(255,255,255,0.4)', walletText: '#ffffff',
+        taglineColor: 'rgba(255,255,255,0.8)', decoColor: 'rgba(255,255,255,0.3)',
+        bottomBg: 'rgba(0,0,0,0.1)', bottomText: 'rgba(255,255,255,0.6)',
+        emojiAlpha: 0.2, borderColor: 'rgba(255,255,255,0.3)',
+        confetti: true
+      },
+      royal: {
+        bg1: '#1a0a2e', bg2: '#2d1b4e', bg3: '#1a0a2e',
+        titleColor: '#d4af37', subtitleColor: '#a78bfa',
+        msgColor: '#f5e6c8', nameColor: '#d4af37',
+        walletBg: 'rgba(212,175,55,0.12)', walletBorder: 'rgba(212,175,55,0.35)', walletText: '#d4af37',
+        taglineColor: 'rgba(167,139,250,0.7)', decoColor: 'rgba(212,175,55,0.4)',
+        bottomBg: 'rgba(212,175,55,0.08)', bottomText: 'rgba(212,175,55,0.5)',
+        emojiAlpha: 0.12, borderColor: 'rgba(212,175,55,0.4)',
+        confetti: false
+      },
+      pink: {
+        bg1: '#e91e8c', bg2: '#f48fb1', bg3: '#fce4ec',
+        titleColor: '#ffffff', subtitleColor: '#fff176',
+        msgColor: '#ffffff', nameColor: '#fff9c4',
+        walletBg: 'rgba(255,255,255,0.2)', walletBorder: 'rgba(255,255,255,0.4)', walletText: '#ffffff',
+        taglineColor: 'rgba(255,255,255,0.8)', decoColor: 'rgba(255,255,255,0.35)',
+        bottomBg: 'rgba(0,0,0,0.08)', bottomText: 'rgba(255,255,255,0.6)',
+        emojiAlpha: 0.18, borderColor: 'rgba(255,255,255,0.3)',
+        confetti: true
+      },
+      green: {
+        bg1: '#064e3b', bg2: '#059669', bg3: '#6ee7b7',
+        titleColor: '#ffd700', subtitleColor: '#a7f3d0',
+        msgColor: '#ffffff', nameColor: '#ffd700',
+        walletBg: 'rgba(255,215,0,0.12)', walletBorder: 'rgba(255,215,0,0.35)', walletText: '#ffd700',
+        taglineColor: 'rgba(167,243,208,0.8)', decoColor: 'rgba(255,215,0,0.3)',
+        bottomBg: 'rgba(0,0,0,0.1)', bottomText: 'rgba(167,243,208,0.6)',
+        emojiAlpha: 0.15, borderColor: 'rgba(255,215,0,0.3)',
+        confetti: false
+      },
+      neon: {
+        bg1: '#0f0c29', bg2: '#302b63', bg3: '#24243e',
+        titleColor: '#00f5d4', subtitleColor: '#f72585',
+        msgColor: '#e0e7ff', nameColor: '#00f5d4',
+        walletBg: 'rgba(0,245,212,0.1)', walletBorder: 'rgba(0,245,212,0.3)', walletText: '#00f5d4',
+        taglineColor: 'rgba(247,37,133,0.7)', decoColor: 'rgba(0,245,212,0.3)',
+        bottomBg: 'rgba(0,245,212,0.05)', bottomText: 'rgba(0,245,212,0.5)',
+        emojiAlpha: 0.15, borderColor: 'rgba(0,245,212,0.3)',
+        confetti: true
+      }
+    };
+
+    // === Theme picker ===
+    document.getElementById('themePicker').addEventListener('click', function(e) {
+      var opt = e.target.closest('.theme-opt');
+      if (!opt) return;
+      document.querySelectorAll('.theme-opt').forEach(function(o) { o.classList.remove('active'); });
+      opt.classList.add('active');
+      currentTheme = opt.dataset.theme;
+      render();
+    });
 
     // === FUNNY TEMPLATES — stored with short IDs for URL sharing ===
     var allTemplates = {
@@ -377,142 +519,142 @@
     }
 
     function drawCard(name, wallet, msg) {
-      // === Background: warm gradient ===
-      var bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, '#1a0a2e');
-      bg.addColorStop(0.5, '#2d1b4e');
-      bg.addColorStop(1, '#1a0a2e');
+      var t = themes[currentTheme] || themes.party;
+
+      // === Background gradient ===
+      var bg = ctx.createLinearGradient(0, 0, W * 0.5, H);
+      bg.addColorStop(0, t.bg1);
+      bg.addColorStop(0.5, t.bg2);
+      bg.addColorStop(1, t.bg3);
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
 
-      // Accent glow circles
-      drawGlow(ctx, W * 0.2, H * 0.15, 300, 'rgba(212,175,55,0.08)');
-      drawGlow(ctx, W * 0.8, H * 0.85, 250, 'rgba(212,175,55,0.06)');
-      drawGlow(ctx, W * 0.5, H * 0.5, 400, 'rgba(167,139,250,0.05)');
+      // Glow circles
+      drawGlow(ctx, W * 0.2, H * 0.2, 350, t.bg2 + '30');
+      drawGlow(ctx, W * 0.8, H * 0.8, 300, t.bg1 + '30');
 
-      // Diamond pattern
-      ctx.fillStyle = 'rgba(212,175,55,0.03)';
-      for (var dx = 0; dx < W; dx += 50) {
-        for (var dy = 0; dy < H; dy += 50) {
+      // Confetti / decorations
+      if (t.confetti) {
+        ctx.globalAlpha = 0.12;
+        var confettiColors = [t.titleColor, t.subtitleColor, t.nameColor, '#fff'];
+        for (var ci = 0; ci < 40; ci++) {
+          var cx = (ci * 137 + 50) % W;
+          var cy = (ci * 97 + 30) % H;
+          var cs = 4 + (ci % 5) * 2;
+          ctx.fillStyle = confettiColors[ci % confettiColors.length];
           ctx.save();
-          ctx.translate(dx + 25, dy + 25);
-          ctx.rotate(Math.PI / 4);
-          ctx.fillRect(-6, -6, 12, 12);
+          ctx.translate(cx, cy);
+          ctx.rotate((ci * 0.7));
+          ctx.fillRect(-cs / 2, -2, cs, 4);
           ctx.restore();
         }
+        ctx.globalAlpha = 1;
       }
 
-      // Gold double border
-      ctx.strokeStyle = 'rgba(212,175,55,0.4)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(20, 20, W - 40, H - 40);
-      ctx.strokeStyle = 'rgba(212,175,55,0.2)';
-      ctx.strokeRect(28, 28, W - 56, H - 56);
+      // Border
+      ctx.strokeStyle = t.borderColor;
+      ctx.lineWidth = 3;
+      roundRect(ctx, 24, 24, W - 48, H - 48, 24);
+      ctx.stroke();
 
       // Stars
-      drawStar6(ctx, 80, 80, 16, 'rgba(212,175,55,0.5)');
-      drawStar6(ctx, W - 80, 80, 12, 'rgba(212,175,55,0.4)');
-      drawStar6(ctx, 80, H - 80, 12, 'rgba(212,175,55,0.4)');
-      drawStar6(ctx, W - 80, H - 80, 16, 'rgba(212,175,55,0.5)');
-      drawStar6(ctx, W / 2, 60, 10, 'rgba(212,175,55,0.3)');
+      drawStar6(ctx, 80, 80, 18, t.decoColor);
+      drawStar6(ctx, W - 80, 80, 14, t.decoColor);
+      drawStar6(ctx, 80, H - 100, 14, t.decoColor);
+      drawStar6(ctx, W - 80, H - 100, 18, t.decoColor);
+      drawStar6(ctx, W / 2 - 120, 75, 8, t.decoColor);
+      drawStar6(ctx, W / 2 + 120, 75, 10, t.decoColor);
 
-      // === Top: Crescent + "Eid Salami Request" ===
       ctx.textAlign = 'center';
 
-      // Crescent moon
-      ctx.font = '80px serif';
-      ctx.fillStyle = 'rgba(212,175,55,0.6)';
-      ctx.fillText('☪', W / 2, 140);
+      // === Crescent + Stars top ===
+      ctx.font = '72px serif';
+      ctx.fillStyle = t.titleColor;
+      ctx.globalAlpha = 0.7;
+      ctx.fillText('☪', W / 2, 130);
+      ctx.globalAlpha = 1;
 
-      // Title
-      ctx.font = '900 48px Poppins, sans-serif';
-      ctx.fillStyle = '#d4af37';
+      // === Title ===
+      ctx.font = '900 56px Poppins, sans-serif';
+      ctx.fillStyle = t.titleColor;
       ctx.fillText('EID SALAMI', W / 2, 220);
 
-      ctx.font = '700 36px Poppins, sans-serif';
-      ctx.fillStyle = '#a78bfa';
-      ctx.fillText('REQUEST', W / 2, 268);
+      ctx.font = '800 42px Poppins, sans-serif';
+      ctx.fillStyle = t.subtitleColor;
+      ctx.fillText('REQUEST', W / 2, 275);
 
-      // Decorative line
-      ctx.strokeStyle = 'rgba(212,175,55,0.4)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([6, 4]);
+      // Emoji line
+      ctx.font = '56px serif';
+      ctx.fillText('🤲 💸 🤑', W / 2, 360);
+
+      // Decorative divider
+      ctx.strokeStyle = t.borderColor;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 5]);
       ctx.beginPath();
-      ctx.moveTo(W * 0.25, 290);
-      ctx.lineTo(W * 0.75, 290);
+      ctx.moveTo(W * 0.2, 390);
+      ctx.lineTo(W * 0.8, 390);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // === Funny emoji line ===
-      ctx.font = '48px serif';
-      ctx.fillText('🤲💸🤑', W / 2, 360);
+      // === Request Message ===
+      ctx.font = '700 38px "Noto Sans Bengali", Poppins, sans-serif';
+      ctx.fillStyle = t.msgColor;
+      wrapTextCenter(ctx, msg, W / 2, 460, W - 140, 52);
 
-      // === Request Message (main content) ===
-      ctx.font = '700 36px "Noto Sans Bengali", Poppins, sans-serif';
-      ctx.fillStyle = '#f5e6c8';
-      wrapTextCenter(ctx, msg, W / 2, 430, W - 120, 48);
+      // === From name ===
+      ctx.font = '700 32px "Noto Sans Bengali", Poppins, sans-serif';
+      ctx.fillStyle = t.nameColor;
+      ctx.fillText('— ' + name + ' —', W / 2, 710);
 
-      // === "From" name ===
-      ctx.font = '600 28px "Noto Sans Bengali", Poppins, sans-serif';
-      ctx.fillStyle = '#d4af37';
-      ctx.fillText('— ' + name, W / 2, 700);
-
-      // === Wallet number (if provided) ===
+      // === Wallet ===
       if (wallet) {
-        var walletText = 'bKash / Nagad:  ' + wallet;
-        var walletTextW = ctx.measureText(walletText).width || 300;
-        var boxW = Math.max(walletTextW + 60, 340);
-        var boxX = W / 2 - boxW / 2;
+        ctx.font = '700 24px Poppins, sans-serif';
+        var walletLabel = 'bKash / Nagad: ' + wallet;
+        var tw = ctx.measureText(walletLabel).width;
+        var bw = Math.max(tw + 50, 360);
+        var bx = W / 2 - bw / 2;
 
-        // Wallet badge background
-        ctx.fillStyle = 'rgba(212,175,55,0.12)';
-        roundRect(ctx, boxX, 725, boxW, 56, 14);
+        ctx.fillStyle = t.walletBg;
+        roundRect(ctx, bx, 740, bw, 54, 14);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(212,175,55,0.35)';
+        ctx.strokeStyle = t.walletBorder;
         ctx.lineWidth = 1.5;
-        roundRect(ctx, boxX, 725, boxW, 56, 14);
+        roundRect(ctx, bx, 740, bw, 54, 14);
         ctx.stroke();
 
-        // Icon
-        ctx.font = '22px serif';
-        ctx.fillStyle = '#d4af37';
-        ctx.fillText('📱', boxX + 22, 760);
-
-        // Text
-        ctx.font = '700 22px Poppins, sans-serif';
-        ctx.fillStyle = '#d4af37';
-        ctx.fillText(walletText, W / 2 + 10, 760);
+        ctx.fillStyle = t.walletText;
+        ctx.font = '700 24px Poppins, sans-serif';
+        ctx.fillText(walletLabel, W / 2, 774);
       }
 
-      // === Bottom tagline ===
-      var bottomY = wallet ? 830 : 780;
-      ctx.font = '600 22px "Noto Sans Bengali", Poppins, sans-serif';
-      ctx.fillStyle = 'rgba(167,139,250,0.7)';
-      ctx.fillText('সালামি দিন, দোয়া নিন!', W / 2, bottomY);
+      // === Tagline ===
+      var tagY = wallet ? 840 : 790;
+      ctx.font = '600 24px "Noto Sans Bengali", Poppins, sans-serif';
+      ctx.fillStyle = t.taglineColor;
+      ctx.fillText('সালামি দিন, দোয়া নিন!', W / 2, tagY);
 
-      // === Animated-looking decorations ===
-      // Money emoji rain
-      ctx.font = '32px serif';
-      ctx.globalAlpha = 0.15;
-      var emojis = ['💵', '💰', '💸', '🤑', '💲'];
-      var positions = [[100,450],[950,380],[150,600],[900,550],[200,800],[850,750],[500,850],[300,350],[700,480]];
+      // === Money emoji decorations ===
+      ctx.font = '36px serif';
+      ctx.globalAlpha = t.emojiAlpha;
+      var emojis = ['💵', '💰', '💸', '🤑', '💲', '🎁', '🎉', '🎊'];
+      var positions = [[90,460],[960,400],[130,620],[920,570],[180,810],[860,760],[520,870],[350,380],[700,500],[80,300],[980,280]];
       positions.forEach(function(pos, i) {
         ctx.fillText(emojis[i % emojis.length], pos[0], pos[1]);
       });
       ctx.globalAlpha = 1;
 
       // === Bottom banner ===
-      ctx.fillStyle = 'rgba(212,175,55,0.08)';
-      ctx.fillRect(0, H - 80, W, 80);
+      ctx.fillStyle = t.bottomBg;
+      ctx.fillRect(0, H - 70, W, 70);
 
       ctx.font = '600 18px Poppins, sans-serif';
-      ctx.fillStyle = 'rgba(212,175,55,0.5)';
-      ctx.fillText('Create yours: tool.teamzlab.com', W / 2, H - 35);
+      ctx.fillStyle = t.bottomText;
+      ctx.fillText('Create yours: tool.teamzlab.com', W / 2, H - 30);
 
-      // Eid Mubarak small text
-      ctx.font = '400 14px Poppins, sans-serif';
+      ctx.font = '400 13px Poppins, sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillText('Eid Mubarak 2026', W / 2, H - 15);
+      ctx.fillText('Eid Mubarak 2026', W / 2, H - 10);
     }
 
     function drawGlow(ctx, x, y, r, color) {
@@ -595,10 +737,11 @@
         name: nameInput.value,
         wallet: walletInput.value
       };
+      shareData.theme = currentTheme;
       if (currentTemplateId && allTemplates[currentTemplateId] === msgInput.value.trim()) {
-        shareData.tid = currentTemplateId; // Short ID like "bn1", "en5"
+        shareData.tid = currentTemplateId;
       } else {
-        shareData.msg = msgInput.value; // Custom text
+        shareData.msg = msgInput.value;
       }
       TeamzTools.copyShareLink(shareData, showToast);
     });
@@ -626,13 +769,23 @@
     // === SHARE LINK SUPPORT ===
     var shared = TeamzTools.shareDecode();
     if (TeamzTools.isSharedView() && (shared.name || shared.msg || shared.tid)) {
+      // Switch to VIEW mode — card on top
+      requestGen.classList.remove('edit-mode');
+      requestGen.classList.add('view-mode');
+
       if (shared.name) nameInput.value = shared.name;
       if (shared.wallet) walletInput.value = shared.wallet;
-      // Resolve template ID to full text (keeps URL short)
+      // Set theme
+      if (shared.theme && themes[shared.theme]) {
+        currentTheme = shared.theme;
+        document.querySelectorAll('.theme-opt').forEach(function(o) {
+          o.classList.toggle('active', o.dataset.theme === shared.theme);
+        });
+      }
+      // Resolve template ID to full text
       if (shared.tid && allTemplates[shared.tid]) {
         msgInput.value = allTemplates[shared.tid];
         currentTemplateId = shared.tid;
-        // Highlight the matching chip
         var matchChip = document.querySelector('[data-tid="' + shared.tid + '"]');
         if (matchChip) matchChip.classList.add('active');
       } else if (shared.msg) {
@@ -641,7 +794,7 @@
       var doRender = function() {
         render();
         TeamzTools.showSharedBanner(
-          (shared.name || 'Someone') + ' is requesting Eid Salami! 🤲'
+          (shared.name || 'Someone') + ' is requesting Eid Salami!'
         );
       };
       if (document.fonts && document.fonts.ready) {
