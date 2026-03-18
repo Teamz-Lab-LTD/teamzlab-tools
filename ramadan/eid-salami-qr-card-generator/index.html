@@ -1042,26 +1042,42 @@
 
         ctx.restore();
       } else {
-        // Placeholder silhouette
-        ctx.fillStyle = theme.accent;
-        ctx.globalAlpha = 0.08;
-        ctx.beginPath();
-        ctx.arc(W * 0.75, H * 0.35, 120, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(W * 0.75, H * 0.75, 140, 200, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
+        // No photo — draw decorative Islamic pattern on right side
+        ctx.save();
+        var patX = W * 0.55;
 
-        // Text hint
-        ctx.fillStyle = theme.textDark;
-        ctx.globalAlpha = 0.3;
-        ctx.font = '500 18px Poppins, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Upload your photo', W * 0.75, H * 0.5);
-        ctx.fillText('to see it here', W * 0.75, H * 0.5 + 28);
-        ctx.textAlign = 'left';
+        // Large crescent moon
+        ctx.fillStyle = theme.accent;
+        ctx.globalAlpha = 0.12;
+        ctx.beginPath();
+        ctx.arc(W * 0.78, H * 0.3, 140, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = theme.bg1;
+        ctx.beginPath();
+        ctx.arc(W * 0.73, H * 0.26, 130, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Decorative stars
+        ctx.fillStyle = theme.starColor;
+        ctx.globalAlpha = 0.2;
+        var pts = [[W*0.65,H*0.15,8],[W*0.85,H*0.18,6],[W*0.9,H*0.4,5],[W*0.6,H*0.45,4],[W*0.88,H*0.6,7],[W*0.7,H*0.7,5],[W*0.92,H*0.8,4]];
+        pts.forEach(function(p) {
+          ctx.beginPath(); ctx.arc(p[0],p[1],p[2],0,Math.PI*2); ctx.fill();
+        });
+
+        // Mosque silhouette at bottom right
+        ctx.fillStyle = theme.accent;
+        ctx.globalAlpha = 0.06;
+        // Central dome
+        ctx.beginPath(); ctx.arc(W*0.78, H-100, 80, Math.PI, 0); ctx.lineTo(W*0.78+80, H); ctx.lineTo(W*0.78-80, H); ctx.fill();
+        // Minarets
+        ctx.fillRect(W*0.65, H-160, 14, 160);
+        ctx.beginPath(); ctx.arc(W*0.65+7, H-160, 10, Math.PI, 0); ctx.fill();
+        ctx.fillRect(W*0.88, H-160, 14, 160);
+        ctx.beginPath(); ctx.arc(W*0.88+7, H-160, 10, Math.PI, 0); ctx.fill();
+
         ctx.globalAlpha = 1;
+        ctx.restore();
       }
     }
 
@@ -1129,13 +1145,40 @@
           opt.classList.toggle('active', opt.dataset.style === shared.style);
         });
       }
-      // Render after fonts load (Bengali text needs Noto Sans Bengali)
-      var doSharedRender = function() {
-        renderCard();
-        TeamzTools.showSharedBanner(
-          (shared.name || 'Someone') + ' is accepting Eid Salami via ' + (shared.wallet || 'mobile wallet') + '!'
-        );
-      };
+      // === VIEW MODE: Hide form, show card prominently ===
+      var formEl = document.querySelector('.qr-form');
+      if (formEl) formEl.style.display = 'none';
+      var styleLabel = document.querySelector('.style-picker-label');
+      if (styleLabel) styleLabel.style.display = 'none';
+      var styleEl = document.getElementById('stylePicker');
+      if (styleEl) styleEl.style.display = 'none';
+
+      // Add festive view header
+      var canvasWrap = document.getElementById('previewWrap');
+      if (canvasWrap) {
+        var viewHeader = document.createElement('div');
+        viewHeader.style.cssText = 'text-align:center;margin-bottom:16px;';
+        var wb = walletBranding[shared.wallet] || walletBranding['Other'];
+        viewHeader.innerHTML =
+          '<div style="font-size:36px;margin-bottom:4px">🌙</div>' +
+          '<h2 style="font-size:24px;color:var(--heading);margin:0 0 6px">ঈদ মুবারক!</h2>' +
+          '<p style="font-size:14px;color:var(--text);margin:0"><strong>' + (shared.name || 'কেউ একজন') + '</strong> ' + (shared.wallet || '') + ' এ সালামি নিচ্ছেন</p>';
+        canvasWrap.parentNode.insertBefore(viewHeader, canvasWrap);
+      }
+
+      // Add "Create Your Own" CTA
+      var actionsEl = document.querySelector('.card-actions');
+      if (actionsEl) {
+        var cta = document.createElement('div');
+        cta.style.cssText = 'text-align:center;margin-top:20px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;';
+        cta.innerHTML =
+          '<p style="font-size:14px;color:var(--text);margin:0 0 10px">নিজেরটাও বানান! 😎</p>' +
+          '<a href="' + window.location.pathname + '" style="display:inline-block;padding:10px 20px;border-radius:10px;background:var(--heading);color:var(--bg);font-weight:600;font-size:14px;text-decoration:none">নিজের QR কার্ড তৈরি করুন</a>';
+        actionsEl.parentNode.insertBefore(cta, actionsEl.nextSibling);
+      }
+
+      // Render after fonts load
+      var doSharedRender = function() { renderCard(); };
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(doSharedRender);
       } else {
