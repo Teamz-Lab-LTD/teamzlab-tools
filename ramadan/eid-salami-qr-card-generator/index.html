@@ -907,21 +907,14 @@
       if (userPhoto) {
         // === LEFT-ALIGNED LAYOUT (with photo on right) ===
 
-        // Wallet badge top-left
-        ctx.fillStyle = theme.accent;
-        roundRect(ctx, 40, 30, wallet.length * 18 + 40, 42, 8);
-        ctx.fill();
-        ctx.fillStyle = theme.textLight;
-        ctx.font = '700 20px Poppins, sans-serif';
+        // === Top-left: branding (replaces old bKash badge + slogan) ===
         ctx.textAlign = 'left';
-        ctx.fillText(wallet, 60, 58);
-        ctx.fillStyle = theme.textDark;
-        ctx.globalAlpha = 0.5;
-        ctx.font = '400 14px "Noto Sans Bengali", sans-serif';
-        ctx.fillText(wb.slogan, wallet.length * 18 + 100, 58);
-        ctx.globalAlpha = 1;
+        ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.5; ctx.font = '400 14px Poppins, sans-serif';
+        ctx.fillText('tool.teamzlab.com', 50, 45); ctx.globalAlpha = 1;
+        ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.4; ctx.font = '700 13px Poppins, sans-serif';
+        ctx.fillText('DESIGNED BY TEAMZ LAB TOOLS', 50, 68); ctx.globalAlpha = 1;
 
-        // Greeting left
+        // === Greeting left ===
         var greetLines = wb.greeting.split('\n');
         ctx.fillStyle = theme.textDark;
         ctx.font = '700 52px "Noto Sans Bengali", sans-serif';
@@ -929,83 +922,87 @@
         if (greetLines[1]) ctx.fillText(greetLines[1], 50, 225);
         ctx.font = '800 58px "Noto Sans Bengali", sans-serif';
         ctx.fillStyle = theme.accent;
-        ctx.fillText(wb.cta, 50, 300);
+        ctx.fillText(wb.cta, 50, 305);
         ctx.font = '900 80px "Noto Sans Bengali", sans-serif';
         var walletGrad = ctx.createLinearGradient(50, 320, 400, 420);
         walletGrad.addColorStop(0, theme.gradStart); walletGrad.addColorStop(1, theme.gradEnd);
         ctx.fillStyle = walletGrad;
-        ctx.fillText(wb.suffix, 50, 410);
+        ctx.fillText(wb.suffix, 50, 415);
 
-        // QR left
-        drawQR(ctx, 65, 460, 200, number, theme.qrColor, '#ffffff');
+        // === QR left ===
+        drawQR(ctx, 65, 465, 200, number, theme.qrColor, '#ffffff');
         ctx.fillStyle = theme.accent;
         ctx.font = '700 22px "Noto Sans Bengali", sans-serif';
-        ctx.fillText(wb.scanText, 50, 710);
+        ctx.fillText(wb.scanText, 50, 715);
         ctx.fillStyle = theme.textDark;
         ctx.font = '600 20px "Noto Sans Bengali", sans-serif';
-        ctx.fillText('আর পাঠিয়ে দিন সালামি', 50, 742);
+        ctx.fillText('আর পাঠিয়ে দিন সালামি', 50, 747);
 
-        // Number left
-        ctx.fillStyle = theme.accent;
-        roundRect(ctx, 50, 792, 80, 36, 6); ctx.fill();
-        ctx.fillStyle = theme.textLight;
-        ctx.font = '700 16px Poppins, sans-serif';
-        ctx.fillText(wallet, 65, 815);
+        // === Name just above number ===
         ctx.fillStyle = theme.textDark;
-        ctx.font = '800 32px Poppins, sans-serif';
-        ctx.fillText(number, 145, 820);
+        ctx.font = '700 28px Poppins, sans-serif';
+        ctx.fillText(name, 50, 830);
 
-        if (message) { ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.6; ctx.font = '500 16px "Noto Sans Bengali", Poppins, sans-serif'; ctx.fillText(message, 50, 860); ctx.globalAlpha = 1; }
-        ctx.fillStyle = theme.textDark; ctx.font = '700 24px Poppins, sans-serif'; ctx.fillText(name, 50, H - 72);
-        ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.5; ctx.font = '400 13px Poppins, sans-serif'; ctx.fillText('tool.teamzlab.com/ramadan/eid-salami-qr-card-generator', 50, H - 50); ctx.globalAlpha = 1;
-        ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.4; ctx.font = '700 14px Poppins, sans-serif'; ctx.fillText('DESIGNED BY TEAMZ LAB TOOLS', 50, H - 28);
-        ctx.textAlign = 'right'; ctx.font = '700 16px Poppins, sans-serif'; ctx.fillText('Ramadan | tool.teamzlab.com/ramadan', W - 40, H - 28); ctx.globalAlpha = 1; ctx.textAlign = 'left';
-        // Draw the person's photo on the right side of the card
-        var photoW = W * 0.48;
-        var photoH = H;
-        var photoX = W - photoW;
-        var photoY = 0;
+        // === Number (clean, no badge box) ===
+        ctx.fillStyle = theme.textDark;
+        ctx.font = '800 36px Poppins, sans-serif';
+        ctx.fillText(number, 50, 878);
 
-        // Calculate crop to fill area maintaining aspect ratio
+        if (message) { ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.6; ctx.font = '500 16px "Noto Sans Bengali", Poppins, sans-serif'; ctx.fillText(message, 50, 920); ctx.globalAlpha = 1; }
+        // Draw the person's photo on the right side with angled divider
+        var angleOffset = 100; // How much the diagonal slants
+        // The actual draw area is wider than photoW because of the angle
+        var drawX = W * 0.30;                 // start from bottom-left point of clip
+        var drawW = W - drawX;               // full width from left edge to right
+        var drawH = H;
+
+        // Calculate crop to FILL the draw area (cover, not contain)
         var imgRatio = userPhoto.width / userPhoto.height;
-        var targetRatio = photoW / photoH;
+        var targetRatio = drawW / drawH;
         var sx, sy, sw, sh;
 
         if (imgRatio > targetRatio) {
-          // Image is wider - crop sides
+          // Image is wider - crop sides, keep full height
           sh = userPhoto.height;
           sw = sh * targetRatio;
           sx = (userPhoto.width - sw) / 2;
           sy = 0;
         } else {
-          // Image is taller - crop top/bottom
+          // Image is taller - crop bottom, keep full width
           sw = userPhoto.width;
           sh = sw / targetRatio;
           sx = 0;
           sy = 0; // Crop from top to show face
         }
 
-        // Create clipping path for smooth edge
+        // Create angled clipping path for diagonal divider
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(photoX + 60, photoY);
-        ctx.lineTo(W, photoY);
-        ctx.lineTo(W, H);
-        ctx.lineTo(photoX, H);
+        ctx.moveTo(W * 0.55 + angleOffset, 0);   // top of diagonal
+        ctx.lineTo(W, 0);                          // top-right corner
+        ctx.lineTo(W, H);                          // bottom-right corner
+        ctx.lineTo(W * 0.30, H);                   // bottom extends far left
         ctx.closePath();
         ctx.clip();
 
-        ctx.drawImage(userPhoto, sx, sy, sw, sh, photoX, photoY, photoW, photoH);
+        // Fill entire clipped area with a solid color first (safety net for any gaps)
+        ctx.fillStyle = theme.accent;
+        ctx.fillRect(drawX, 0, drawW, drawH);
 
-        // Gradient overlay on left edge for smooth blend
-        var fadeGrad = ctx.createLinearGradient(photoX, 0, photoX + 120, 0);
+        // Draw photo on top — fills the full clipped area
+        ctx.drawImage(userPhoto, sx, sy, sw, sh, drawX, 0, drawW, drawH);
+
+        // Soft gradient blend on the diagonal edge only
+        var fadeGrad = ctx.createLinearGradient(drawX, 0, drawX + 140, 0);
         fadeGrad.addColorStop(0, theme.bg1);
-        fadeGrad.addColorStop(0.7, theme.bg1.replace(')', ', 0.3)').replace('rgb', 'rgba'));
+        fadeGrad.addColorStop(0.4, theme.bg1.replace(')', ', 0.12)').replace('rgb', 'rgba'));
         fadeGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = fadeGrad;
-        ctx.fillRect(photoX, 0, 120, H);
+        ctx.fillRect(drawX, 0, 140, H);
 
         ctx.restore();
+
+        // No separate footer needed — name is above number, branding is top-right
       } else {
         // No photo — redraw content CENTERED with decorative elements
 
