@@ -1212,7 +1212,7 @@
         fontPromise.then(function() { renderChequeCanvas(data); });
       }
 
-      function renderChequeCanvas(data) {
+      function renderChequeCanvas(data, onCanvas) {
         var tempDiv = document.createElement('div');
         tempDiv.style.position = 'fixed';
         tempDiv.style.left = '-9999px';
@@ -1392,18 +1392,22 @@
         ctx.fillStyle = lightColor;
         ctx.fillText('AUTHORIZED SIGNATURE', w - 24, h - 26);
 
-        // Download
-        var link = document.createElement('a');
-        link.download = 'eid-salami-cheque-' + (data.payTo || 'cheque').replace(/\s+/g, '-').toLowerCase() + '.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-
         document.body.removeChild(tempDiv);
+
+        // If callback provided, pass canvas; otherwise download
+        if (typeof onCanvas === 'function') {
+          onCanvas(canvas);
+        } else {
+          var link = document.createElement('a');
+          link.download = 'eid-salami-cheque-' + (data.payTo || 'cheque').replace(/\s+/g, '-').toLowerCase() + '.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+        }
       }
 
       // Download preview
-      document.getElementById('downloadPreview').addEventListener('click', function () {
-        var data = {
+      function getPreviewData() {
+        return {
           payTo: payToEl.value.trim() || 'Recipient',
           amount: parseInt(amountEl.value) || 0,
           currency: currencyEl.value,
@@ -1411,9 +1415,36 @@
           date: chequeDateEl.value,
           memo: memoEl.value.trim(),
           chequeNum: getChequeNumber(chequeCounter),
-          style: currentStyle
+          style: currentStyle,
+          bank: currentBank
         };
-        downloadChequeAsPNG(data);
+      }
+
+      document.getElementById('downloadPreview').addEventListener('click', function () {
+        downloadChequeAsPNG(getPreviewData());
+      });
+
+      // Copy Image to clipboard
+      document.getElementById('copyPreviewImg').addEventListener('click', function () {
+        var data = getPreviewData();
+        var fontPromise = document.fonts ? document.fonts.ready : Promise.resolve();
+        fontPromise.then(function() {
+          renderChequeCanvas(data, function(canvas) {
+            canvas.toBlob(function(blob) {
+              if (navigator.clipboard && navigator.clipboard.write) {
+                navigator.clipboard.write([
+                  new ClipboardItem({ 'image/png': blob })
+                ]).then(function() {
+                  if (window.showToast) window.showToast('Image copied to clipboard!');
+                }).catch(function() {
+                  if (window.showToast) window.showToast('Copy failed — try downloading instead.');
+                });
+              } else {
+                if (window.showToast) window.showToast('Copy not supported — use Download instead.');
+              }
+            }, 'image/png');
+          });
+        });
       });
 
       // Print cheque book
@@ -1447,6 +1478,10 @@
           document.querySelectorAll('.style-chip').forEach(function(chip) {
             chip.classList.toggle('active', chip.getAttribute('data-style') === shared.style);
           });
+        }
+        if (shared.bank && bankData[shared.bank]) {
+          currentBank = shared.bank;
+          bankNameEl.value = shared.bank;
         }
         renderPreview();
 
@@ -1489,7 +1524,7 @@
           memo: memoEl.value,
           style: currentStyle,
           bank: currentBank
-        }, function(msg) { alert(msg); });
+        }, function(msg) { if (window.showToast) window.showToast(msg); });
       });
 
       // Initial render
