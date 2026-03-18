@@ -343,14 +343,14 @@
 
     <section class="tool-content">
       <h2>How the AI Quote Generator Works</h2>
-      <p>The AI Quote Generator uses a powerful 3-tier system to deliver quotes instantly. When you tap AI Generate, the tool first checks if your browser supports Chrome's built-in Prompt API (available in Chrome 138 and later). This API runs Gemini Nano directly on your device, generating original, context-aware quotes without sending any data to a server. If Chrome AI is not available, the tool seamlessly falls back to Transformers.js, which downloads a compact AI model (flan-t5-small) to your browser. After the initial download, this model works offline and generates quotes locally. The third tier is the curated database of over 500 hand-picked quotes from famous authors, philosophers, entrepreneurs, and thought leaders. This database is always available, works offline, and delivers results instantly.</p>
+      <p>The AI Quote Generator uses a powerful 3-tier system to deliver quotes instantly. When you tap AI Generate, the tool first checks if your browser supports Chrome's built-in Prompt API (available in Chrome 138 and later). This API runs Gemini Nano directly on your device, generating original, context-aware quotes without sending any data to a server. If Chrome AI is not available, the tool seamlessly falls back to Transformers.js, which downloads a compact AI model (flan-t5-base) to your browser. After the initial download, this model works offline and generates quotes locally. The third tier is the curated database of over 500 hand-picked quotes from famous authors, philosophers, entrepreneurs, and thought leaders. This database is always available, works offline, and delivers results instantly.</p>
 
       <div class="formula-box">
         <h3>3-Tier AI Fallback System</h3>
         <ol>
           <li><strong>Tier 1 — Curated Database:</strong> 500+ real quotes organized by 10 categories. Always available, works offline, instant results.</li>
           <li><strong>Tier 2 — Chrome Prompt API:</strong> Generates original quotes using Gemini Nano on-device. Chrome 138+ required. Zero data leaves your browser.</li>
-          <li><strong>Tier 3 — Transformers.js:</strong> Downloads flan-t5-small model (~80MB) to your browser. Works in all modern browsers. Runs offline after first load.</li>
+          <li><strong>Tier 3 — Transformers.js:</strong> Downloads flan-t5-base model (~80MB) to your browser. Works in all modern browsers. Runs offline after first load.</li>
         </ol>
       </div>
 
@@ -366,7 +366,7 @@
     <section class="tool-content tool-faq-section">
       <h2>Frequently Asked Questions</h2>
       <div class="tool-faq">
-        <details><summary>How does the AI generate quotes?</summary><p>The tool uses a 3-tier AI system. First, it tries Chrome's built-in Prompt API (Chrome 138+) which runs Gemini Nano on your device. If unavailable, it falls back to Transformers.js (flan-t5-small) which downloads a small AI model to your browser. Both methods generate original quotes entirely on your device. You can also browse 500+ curated quotes from famous authors.</p></details>
+        <details><summary>How does the AI generate quotes?</summary><p>The tool uses a 3-tier AI system. First, it tries Chrome's built-in Prompt API (Chrome 138+) which runs Gemini Nano on your device. If unavailable, it falls back to Transformers.js (flan-t5-base) which downloads a small AI model to your browser. Both methods generate original quotes entirely on your device. You can also browse 500+ curated quotes from famous authors.</p></details>
         <details><summary>What categories of quotes are available?</summary><p>There are 10 categories: Motivational, Love, Success, Life, Funny, Wisdom, Inspirational, Hustle, Self-Care, and Friendship. Each category contains 30-50 carefully curated quotes from famous authors, thinkers, and modern thought leaders.</p></details>
         <details><summary>Can I write and design my own quotes?</summary><p>Yes. Use the Write Your Own mode to type any quote and author name. You can also click directly on the quote card to edit text inline. Full customization options include fonts, colors, backgrounds, alignment, and more.</p></details>
         <details><summary>How do I download quotes as images?</summary><p>Click Download PNG to save the quote card as a high-resolution image (1080px+). You can also use Download Wallpaper for phone-sized images (1080x1920), Copy Image to clipboard, or Share via the Web Share API.</p></details>
@@ -1165,7 +1165,7 @@
         }
       }
 
-      // Tier 3: Transformers.js
+      // Tier 3: Transformers.js (upgraded model + quality filter)
       try{
         if(!transformersPipeline&&!loadingModel){
           loadingModel=true;
@@ -1176,11 +1176,12 @@
 
           var mod=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3');
           mod.env.allowLocalModels=false;
-          transformersPipeline=await mod.pipeline('text2text-generation','Xenova/flan-t5-small',{
+          transformersPipeline=await mod.pipeline('text2text-generation','Xenova/flan-t5-base',{
             progress_callback:function(p){
               if(p.status==='progress'&&p.total){
                 var pct=Math.round((p.loaded/p.total)*100);
                 progressBar.style.width=pct+'%';
+                statusEl.textContent='Downloading AI model... '+pct+'%';
               }
             }
           });
@@ -1195,20 +1196,40 @@
 
         if(transformersPipeline){
           statusEl.textContent='Generating with local AI...';
-          var result=await transformersPipeline('Generate a '+category+' quote'+(topic?' about '+topic:'')+'.', {max_new_tokens:100});
-          var text=result[0].generated_text||'';
-          text=text.replace(/^["'\u201C\u201D]+|["'\u201C\u201D]+$/g,'').trim();
-          if(text){
+          // Better prompt engineering for quote generation
+          var aiPrompt='Write a complete, profound, and inspiring '+category+' quote';
+          if(topic) aiPrompt+=' about '+topic;
+          aiPrompt+='. The quote should be a full sentence with deep meaning, like something a famous author would say. Only output the quote text, nothing else.';
+          var result=await transformersPipeline(aiPrompt, {max_new_tokens:150, num_beams:4, early_stopping:true, temperature:0.8});
+          var text=(result[0].generated_text||'').replace(/^["'\u201C\u201D]+|["'\u201C\u201D]+$/g,'').trim();
+          // Quality filter: must be >20 chars, have a space, and look like a sentence
+          var isGoodQuote=text.length>20&&text.includes(' ')&&text.split(' ').length>4;
+          if(text&&isGoodQuote){
             document.getElementById('card-quote-text').textContent=text;
             document.getElementById('card-author').textContent='\u2014 AI Generated';
             statusEl.textContent='Generated with Transformers.js (local AI)';
           }else{
-            statusEl.textContent='AI returned empty result. Try a different topic.';
+            // Fallback: pick a smart curated quote matching the topic/category
+            statusEl.textContent='AI output was low quality \u2014 showing best curated match instead.';
+            var pool=QUOTES.filter(function(q){return q.category===category;});
+            if(topic){
+              var topicLower=topic.toLowerCase();
+              var matched=pool.filter(function(q){return q.text.toLowerCase().includes(topicLower);});
+              if(matched.length>0) pool=matched;
+            }
+            var pick=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];
+            document.getElementById('card-quote-text').textContent=pick.text;
+            document.getElementById('card-author').textContent='\u2014 '+pick.author;
           }
         }
       }catch(e){
-        statusEl.textContent='AI unavailable. Browse curated quotes instead.';
+        statusEl.textContent='AI unavailable. Showing curated quote instead.';
         console.error('Transformers.js error:',e);
+        // Final fallback to curated DB
+        var pool=QUOTES.filter(function(q){return q.category===category;});
+        var pick=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];
+        document.getElementById('card-quote-text').textContent=pick.text;
+        document.getElementById('card-author').textContent='\u2014 '+pick.author;
       }
       btn.disabled=false;btn.textContent='AI Generate';
     }
