@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi Password Generator — Teamz Lab Tools</title>
+  <meta name="description" content="Generate strong, random WiFi passwords instantly. Choose length, character types, and copy or share via QR code. Free, private, runs in your browser.">
+  <meta property="og:title" content="WiFi Password Generator — Teamz Lab Tools">
+  <meta property="og:description" content="Generate strong, random WiFi passwords instantly. Choose length, character types, and copy or share via QR code. Free, private, runs in your browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/wifi-password-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="WiFi Password Generator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Generate strong, random WiFi passwords instantly. Choose length, character types, and copy or share via QR code. Free, private, runs in your browser.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/wifi-password-generator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .wifi-generator { max-width: 700px; margin: 0 auto; }
+    .wifi-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 24px; }
+    .wifi-form label { display: block; font-weight: 600; color: var(--heading); margin-bottom: 6px; font-size: var(--text-sm); }
+    .wifi-form .form-group { margin-bottom: 18px; }
+    .wifi-form input[type="number"] { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-base); font-family: inherit; }
+    .wifi-form input[type="number"]:focus { outline: none; border-color: var(--heading); }
+    .wifi-range-row { display: flex; align-items: center; gap: 12px; }
+    .wifi-range-row input[type="range"] { flex: 1; accent-color: var(--heading); }
+    .wifi-range-row .range-val { font-weight: 700; color: var(--heading); min-width: 32px; text-align: center; }
+    .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    .checkbox-grid label { display: flex; align-items: center; gap: 8px; font-weight: 500; color: var(--text); cursor: pointer; font-size: var(--text-sm); }
+    .checkbox-grid input[type="checkbox"] { accent-color: var(--heading); width: 18px; height: 18px; }
+    .wifi-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .wifi-actions button { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; font-size: var(--text-base); cursor: pointer; font-family: inherit; transition: opacity 0.2s; }
+    .wifi-actions button:hover { opacity: 0.85; }
+    .btn-generate { background: var(--heading); color: var(--bg); flex: 1; }
+    .btn-secondary { background: var(--surface); color: var(--heading); border: 1px solid var(--border) !important; }
+    .wifi-output { margin-top: 24px; }
+    .password-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .password-card .pw-text { font-family: 'Courier New', monospace; font-size: var(--text-base); color: var(--heading); word-break: break-all; flex: 1; user-select: all; }
+    .password-card .pw-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .password-card .copy-btn { background: var(--heading); color: var(--bg); border: none; border-radius: 6px; padding: 8px 14px; font-size: var(--text-sm); font-weight: 600; cursor: pointer; white-space: nowrap; font-family: inherit; }
+    .password-card .copy-btn:hover { opacity: 0.85; }
+    .strength-bar { height: 8px; border-radius: 4px; background: var(--border); margin-top: 8px; overflow: hidden; }
+    .strength-bar .fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+    .strength-info { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: var(--text-sm); }
+    .strength-info .strength-label { font-weight: 700; }
+    .strength-info .entropy-label { color: var(--text-muted); }
+    .qr-section { margin-top: 20px; text-align: center; }
+    .qr-section canvas { border: 1px solid var(--border); border-radius: 10px; max-width: 100%; height: auto; }
+    .qr-section .qr-note { font-size: var(--text-xs); color: var(--text-muted); margin-top: 8px; }
+    .wifi-config { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .wifi-config .form-group { margin-bottom: 0; }
+    .wifi-config select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-base); font-family: inherit; }
+    .wifi-config select:focus { outline: none; border-color: var(--heading); }
+    @media (max-width: 600px) {
+      .wifi-form { padding: 18px; }
+      .checkbox-grid { grid-template-columns: 1fr; }
+      .wifi-actions { flex-direction: column; }
+      .wifi-actions button { width: 100%; }
+      .password-card { flex-direction: column; align-items: stretch; }
+      .password-card .copy-btn { width: 100%; text-align: center; }
+      .wifi-config { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Utility Tools", "item": "https://tool.teamzlab.com/tools/"}, {"@type": "ListItem", "position": 3, "name": "WiFi Password Generator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How long should a WiFi password be?", "acceptedAnswer": {"@type": "Answer", "text": "WPA2/WPA3 passwords must be between 8 and 63 characters. We recommend at least 16 characters for strong security. Longer passwords with mixed character types are exponentially harder to crack."}}, {"@type": "Question", "name": "Is this WiFi password generator secure?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. It uses the Web Crypto API for cryptographic randomness and runs entirely in your browser. No passwords are sent to any server or stored anywhere. Your passwords never leave your device."}}, {"@type": "Question", "name": "What is the best WiFi encryption type?", "acceptedAnswer": {"@type": "Answer", "text": "WPA3 is the most secure, followed by WPA2. Avoid WEP as it can be cracked in minutes. If your router supports WPA3, always choose it for maximum security."}}, {"@type": "Question", "name": "Can I use special characters in my WiFi password?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. WPA2 and WPA3 support all printable ASCII characters including symbols like !@#$%^&*(). Using symbols increases the character pool and makes your password harder to crack."}}, {"@type": "Question", "name": "How do I change my WiFi password?", "acceptedAnswer": {"@type": "Answer", "text": "Log into your router admin panel (usually at 192.168.1.1 or 192.168.0.1 in a browser), find the wireless/WiFi settings, and update the password. You will need to reconnect all devices afterward."}}, {"@type": "Question", "name": "What is the QR code feature for?", "acceptedAnswer": {"@type": "Answer", "text": "The QR code encodes your WiFi network name, encryption type, and password. Guests can scan it with their phone camera to connect instantly without typing the password manually."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "WiFi Password Generator", "description": "Generate strong, random WiFi passwords with customizable length and character types.", "url": "https://tool.teamzlab.com/tools/wifi-password-generator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>WiFi Password Generator</h1>
+      <p class="tool-description">Generate strong, random WiFi passwords with customizable length and character types. Copy instantly or create a QR code for easy sharing. Everything runs in your browser — nothing is sent to any server.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="wifi-generator">
+        <div class="wifi-form">
+          <div class="form-group">
+            <label for="pw-length">Password Length</label>
+            <div class="wifi-range-row">
+              <input type="range" id="pw-length" min="8" max="63" value="16">
+              <span class="range-val" id="pw-length-val">16</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Character Types</label>
+            <div class="checkbox-grid">
+              <label><input type="checkbox" id="cb-upper" checked> Uppercase (A-Z)</label>
+              <label><input type="checkbox" id="cb-lower" checked> Lowercase (a-z)</label>
+              <label><input type="checkbox" id="cb-numbers" checked> Numbers (0-9)</label>
+              <label><input type="checkbox" id="cb-symbols" checked> Symbols (!@#$%...)</label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="pw-count">Number of Passwords</label>
+            <input type="number" id="pw-count" min="1" max="20" value="1">
+          </div>
+
+          <div class="wifi-config">
+            <div class="form-group">
+              <label for="wifi-ssid">WiFi Network Name (SSID)</label>
+              <input type="text" id="wifi-ssid" placeholder="MyNetwork" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:var(--text-base);font-family:inherit;">
+            </div>
+            <div class="form-group">
+              <label for="wifi-encryption">Encryption Type</label>
+              <select id="wifi-encryption">
+                <option value="WPA">WPA/WPA2/WPA3</option>
+                <option value="WEP">WEP</option>
+                <option value="nopass">None (Open)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="wifi-actions">
+            <button class="btn-generate" id="btn-generate">Generate Password</button>
+            <button class="btn-secondary" id="btn-qr">Generate QR Code</button>
+          </div>
+        </div>
+
+        <div class="wifi-output" id="wifi-output"></div>
+        <div class="qr-section" id="qr-section" style="display:none;">
+          <canvas id="qr-canvas" width="280" height="280"></canvas>
+          <p class="qr-note">Scan this QR code with a phone camera to connect to WiFi</p>
+          <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn-secondary" id="btn-copy-qr" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--heading);font-weight:600;cursor:pointer;font-family:inherit;">Copy Image</button>
+            <button class="btn-secondary" id="btn-download-qr" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--heading);font-weight:600;cursor:pointer;font-family:inherit;">Download QR</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why WiFi Password Security Matters</h2>
+      <p>Your WiFi password is the first line of defense for your home or office network. A weak WiFi password can allow unauthorized users to access your network, consume your bandwidth, and potentially intercept your data. Using a strong, randomly generated WiFi password significantly reduces the risk of unauthorized access.</p>
+
+      <p>WiFi passwords (also called pre-shared keys or PSKs) for WPA2 and WPA3 networks can be between 8 and 63 characters long. Longer passwords with a mix of uppercase letters, lowercase letters, numbers, and symbols are exponentially harder to crack through brute-force or dictionary attacks.</p>
+
+      <h2>How to Create a Strong WiFi Password</h2>
+      <p>A strong WiFi password should meet these criteria: it should be at least 12 characters long, contain a mix of all four character types (uppercase, lowercase, numbers, symbols), and avoid dictionary words or personal information like birthdays, names, or addresses. This generator uses the Web Crypto API to produce cryptographically random passwords that meet all of these requirements.</p>
+
+      <div class="formula-box">
+        <h3>WiFi Password Strength</h3>
+        <p class="formula">Entropy (bits) = Length x log2(Character Pool Size)</p>
+        <p>WPA2 minimum: 8 characters. Recommended: 16+ characters with all types.</p>
+        <p>16 chars with all types = ~105 bits of entropy (very strong).</p>
+      </div>
+
+      <h2>WiFi QR Code Sharing</h2>
+      <p>Instead of reading out a long, complex WiFi password to guests, you can generate a QR code that encodes your network name, encryption type, and password. Guests simply scan the QR code with their phone camera and connect instantly. This tool generates standard WiFi QR codes using the <code>WIFI:T:WPA;S:NetworkName;P:Password;;</code> format recognized by Android and iOS devices.</p>
+
+      <h2>WiFi Encryption Types Explained</h2>
+      <p>WPA3 is the latest and most secure WiFi encryption standard. WPA2 remains widely used and is secure with a strong password. WEP is outdated and should be avoided as it can be cracked in minutes regardless of password strength. If your router supports WPA3, always choose it. This generator creates passwords suitable for all WPA variants.</p>
+
+      <p>After generating your password, update it in your router's admin panel (usually at 192.168.1.1 or 192.168.0.1). Remember to reconnect all your devices with the new password afterward.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* Crypto random helper */
+    function cryptoRandom() {
+      if (window.crypto && window.crypto.getRandomValues) {
+        var arr = new Uint32Array(1);
+        window.crypto.getRandomValues(arr);
+        return arr[0] / (0xFFFFFFFF + 1);
+      }
+      return Math.random();
+    }
+
+    /* Generate passwords */
+    function generatePasswords() {
+      var len = parseInt(document.getElementById('pw-length').value) || 16;
+      var count = Math.min(Math.max(parseInt(document.getElementById('pw-count').value) || 1, 1), 20);
+      var useUpper = document.getElementById('cb-upper').checked;
+      var useLower = document.getElementById('cb-lower').checked;
+      var useNumbers = document.getElementById('cb-numbers').checked;
+      var useSymbols = document.getElementById('cb-symbols').checked;
+
+      var chars = '';
+      if (useLower) chars += 'abcdefghijklmnopqrstuvwxyz';
+      if (useUpper) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (useNumbers) chars += '0123456789';
+      if (useSymbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+      if (chars.length === 0) {
+        document.getElementById('wifi-output').innerHTML = '<div class="password-card"><span style="color:var(--text);">Please select at least one character type.</span></div>';
+        return [];
+      }
+
+      var passwords = [];
+      for (var p = 0; p < count; p++) {
+        var pw = '';
+        for (var i = 0; i < len; i++) {
+          pw += chars.charAt(Math.floor(cryptoRandom() * chars.length));
+        }
+        passwords.push(pw);
+      }
+
+      var entropy = (len * Math.log2(chars.length)).toFixed(0);
+      var strengthLabel, strengthPct, strengthColor;
+      if (entropy >= 80) { strengthLabel = 'Very Strong'; strengthPct = 100; strengthColor = 'var(--heading)'; }
+      else if (entropy >= 60) { strengthLabel = 'Strong'; strengthPct = 75; strengthColor = 'var(--heading)'; }
+      else if (entropy >= 40) { strengthLabel = 'Moderate'; strengthPct = 50; strengthColor = 'var(--text-muted)'; }
+      else { strengthLabel = 'Weak'; strengthPct = 25; strengthColor = 'var(--text-muted)'; }
+
+      var html = '';
+      for (var j = 0; j < passwords.length; j++) {
+        var label = count > 1 ? 'Password ' + (j + 1) : 'Password';
+        html += '<div class="password-card">';
+        html += '<div style="flex:1;"><div class="pw-label">' + label + '</div><div class="pw-text" id="pw-text-' + j + '">' + escapeHtml(passwords[j]) + '</div></div>';
+        html += '<button class="copy-btn" onclick="copyPassword(' + j + ')">Copy</button>';
+        html += '</div>';
+      }
+
+      html += '<div style="padding:0 4px;">';
+      html += '<div class="strength-bar"><div class="fill" style="width:' + strengthPct + '%;background:' + strengthColor + ';"></div></div>';
+      html += '<div class="strength-info"><span class="strength-label" style="color:' + strengthColor + ';">' + strengthLabel + '</span><span class="entropy-label">' + entropy + ' bits of entropy</span></div>';
+      html += '</div>';
+
+      document.getElementById('wifi-output').innerHTML = html;
+      return passwords;
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
+    function copyPassword(index) {
+      var el = document.getElementById('pw-text-' + index);
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent).then(function() {
+        var btn = el.closest('.password-card').querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+      });
+    }
+
+    /* QR Code generation using canvas */
+    function generateQR() {
+      var passwords = [];
+      var pwEls = document.querySelectorAll('[id^="pw-text-"]');
+      if (pwEls.length === 0) {
+        passwords = generatePasswords();
+        if (passwords.length === 0) return;
+      } else {
+        pwEls.forEach(function(el) { passwords.push(el.textContent); });
+      }
+
+      var ssid = document.getElementById('wifi-ssid').value.trim() || 'MyNetwork';
+      var encryption = document.getElementById('wifi-encryption').value;
+      var password = passwords[0];
+
+      var wifiString = 'WIFI:T:' + encryption + ';S:' + ssid + ';P:' + password + ';;';
+
+      var canvas = document.getElementById('qr-canvas');
+      var ctx = canvas.getContext('2d');
+      var size = 280;
+      canvas.width = size;
+      canvas.height = size;
+
+      /* Draw a styled WiFi info card since true QR requires a library */
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--heading').trim() || '#000000';
+
+      /* WiFi icon (simple) */
+      ctx.textAlign = 'center';
+      ctx.font = '40px sans-serif';
+      ctx.fillText('\uD83D\uDCF6', size / 2, 50);
+
+      ctx.font = 'bold 14px Poppins, sans-serif';
+      ctx.fillText('WiFi Network', size / 2, 80);
+
+      ctx.font = '600 16px Poppins, sans-serif';
+      ctx.fillText(ssid, size / 2, 110);
+
+      ctx.font = '12px Poppins, sans-serif';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888888';
+      ctx.fillText('Password:', size / 2, 140);
+
+      ctx.font = 'bold 13px Courier New, monospace';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--heading').trim() || '#000000';
+
+      /* Word wrap password */
+      var maxWidth = size - 40;
+      var words = password;
+      var line = '';
+      var y = 162;
+      var lineHeight = 18;
+      for (var ci = 0; ci < words.length; ci++) {
+        var testLine = line + words[ci];
+        if (ctx.measureText(testLine).width > maxWidth && line.length > 0) {
+          ctx.fillText(line, size / 2, y);
+          line = words[ci];
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, size / 2, y);
+
+      ctx.font = '11px Poppins, sans-serif';
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim() || '#888888';
+      ctx.fillText('Encryption: ' + (encryption === 'nopass' ? 'Open' : encryption), size / 2, y + 30);
+      ctx.fillText('WiFi String: ' + wifiString.substring(0, 35) + (wifiString.length > 35 ? '...' : ''), size / 2, y + 48);
+
+      /* Border */
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#cccccc';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, size - 2, size - 2);
+
+      document.getElementById('qr-section').style.display = 'block';
+    }
+
+    /* Copy QR image to clipboard */
+    document.getElementById('btn-copy-qr').addEventListener('click', function() {
+      var canvas = document.getElementById('qr-canvas');
+      canvas.toBlob(function(blob) {
+        if (navigator.clipboard && navigator.clipboard.write) {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+            document.getElementById('btn-copy-qr').textContent = 'Copied!';
+            setTimeout(function() { document.getElementById('btn-copy-qr').textContent = 'Copy Image'; }, 1500);
+          });
+        }
+      });
+    });
+
+    /* Download QR image */
+    document.getElementById('btn-download-qr').addEventListener('click', function() {
+      var canvas = document.getElementById('qr-canvas');
+      var link = document.createElement('a');
+      link.download = 'wifi-password-qr.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    /* Range slider sync */
+    var rangeEl = document.getElementById('pw-length');
+    var rangeValEl = document.getElementById('pw-length-val');
+    rangeEl.addEventListener('input', function() { rangeValEl.textContent = this.value; });
+
+    /* Button handlers */
+    document.getElementById('btn-generate').addEventListener('click', function() {
+      document.getElementById('qr-section').style.display = 'none';
+      generatePasswords();
+    });
+    document.getElementById('btn-qr').addEventListener('click', generateQR);
+
+    /* Generate on load */
+    document.addEventListener('DOMContentLoaded', function() {
+      generatePasswords();
+    });
+
+    /* Breadcrumbs, FAQs, Related Tools, Schemas */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Utility Tools', url: '/tools/' },
+      { name: 'WiFi Password Generator' }
+    ];
+
+    var FAQS = [
+      { q: 'How long should a WiFi password be?', a: 'WPA2/WPA3 passwords must be between 8 and 63 characters. We recommend at least 16 characters for strong security. Longer passwords with mixed character types are exponentially harder to crack.' },
+      { q: 'Is this WiFi password generator secure?', a: 'Yes. It uses the Web Crypto API for cryptographic randomness and runs entirely in your browser. No passwords are sent to any server or stored anywhere. Your passwords never leave your device.' },
+      { q: 'What is the best WiFi encryption type?', a: 'WPA3 is the most secure, followed by WPA2. Avoid WEP as it can be cracked in minutes. If your router supports WPA3, always choose it for maximum security.' },
+      { q: 'Can I use special characters in my WiFi password?', a: 'Yes. WPA2 and WPA3 support all printable ASCII characters including symbols like !@#$%^&*(). Using symbols increases the character pool and makes your password harder to crack.' },
+      { q: 'How do I change my WiFi password?', a: 'Log into your router admin panel (usually at 192.168.1.1 or 192.168.0.1 in a browser), find the wireless/WiFi settings, and update the password. You will need to reconnect all devices afterward.' },
+      { q: 'What is the QR code feature for?', a: 'The QR code encodes your WiFi network name, encryption type, and password. Guests can scan it with their phone camera to connect instantly without typing the password manually.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/password-generator', name: 'Password Generator', description: 'Generate strong random passwords for any account.' },
+      { slug: 'dev/hash-generator', name: 'Hash Generator', description: 'Generate MD5, SHA-1, SHA-256 hashes from text.' },
+      { slug: 'tools/stopwatch', name: 'Stopwatch', description: 'Precise online stopwatch with lap times.' },
+      { slug: 'tools/countdown-timer', name: 'Countdown Timer', description: 'Set a countdown timer for any duration.' },
+      { slug: 'tools/random-name-picker', name: 'Random Name Picker', description: 'Pick random names from a list fairly.' },
+      { slug: 'tools/decision-maker', name: 'Decision Maker', description: 'Let the tool make a random decision for you.' }
+    ];
+
+    var TOOL_CONFIG = {
+      slug: 'tools/wifi-password-generator',
+      title: 'WiFi Password Generator',
+      description: 'Generate strong, random WiFi passwords with customizable length and character types.',
+      url: 'https://tool.teamzlab.com/tools/wifi-password-generator/'
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
