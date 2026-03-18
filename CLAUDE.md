@@ -238,7 +238,7 @@ Every tool page MUST have:
 ```
 
 ## Automated Safeguards (prevents ALL common mistakes)
-The pre-commit hook now validates **15 checks** on every staged tool page:
+The pre-commit hook now validates **22 checks** on every staged tool page:
 1. H1 tag exists
 2. Meta description exists
 3. Title has brand ("Teamz Lab Tools")
@@ -254,6 +254,13 @@ The pre-commit hook now validates **15 checks** on every staged tool page:
 13. Meta description <= 155 chars
 14. H1 keyword appears in title
 15. No white text on accent background
+16. FAQs exist (renderFAQs + injectFAQSchema)
+17. WebApplication schema exists (injectWebAppSchema)
+18. Related tools exist (renderRelatedTools)
+19. Content >= 150 words
+20. At least 2 H2 tags in content
+21. JS logic exists (addEventListener or functions)
+22. No central CSS class redefinitions (share-btn, tool-result, etc.)
 
 ## SEO Audit Docs (committed to repo — portable across devices)
 
@@ -378,6 +385,74 @@ python3 build-static-schema.py
 - Verify these tags exist: twitter:title, twitter:description, og:image
 - Verify these JS calls exist: injectFAQSchema, injectWebAppSchema, renderFAQs, renderRelatedTools
 
+### Rule 14: NEVER use alert() — ALWAYS use window.showToast()
+- `window.showToast(msg)` is defined globally in `common.js`
+- Use it for ALL user feedback: copy success, share link, image copied, errors
+- NEVER use `alert()` or `confirm()` for success/info messages
+- For share link callbacks: `function(msg) { if (window.showToast) window.showToast(msg); }`
+
+### Rule 15: Every image tool MUST have a Copy Image button
+- Any tool that generates/downloads an image MUST include "Copy Image" button
+- Wire up the event listener (don't just add the HTML button!)
+- Use `canvas.toBlob()` → `navigator.clipboard.write([new ClipboardItem(...)])` → `window.showToast()`
+- If using a canvas render function, accept an optional callback for copy vs download
+
+### Rule 16: NEVER redefine central CSS classes in inline styles
+- These classes are defined in `/shared/css/tools.css` and used globally:
+  - `.share-btn` — social share bar (36x36 circular buttons)
+  - `.btn-primary` / `.btn-secondary` — button design system (fully defined centrally)
+  - `.tool-result` — result display formatting
+  - `.tool-output` — utility output wrapper
+  - `.ad-slot` — advertisement container
+  - `.offline-banner`, `.floating-cta` — notification bars
+- If you need custom button/element styling, use a tool-specific prefix:
+  - `bracket-share-btn`, `quiz-share-btn`, `game-btn`, `generator-copy-btn`
+- **Why:** CSS collision causes buttons to render as tiny circles, results to lose styling
+
+### Rule 17: ALWAYS wire up the FULL data chain end-to-end
+When adding a new feature/field to any tool, it MUST be added to ALL of these:
+1. **Form** — input element in HTML
+2. **Preview** — renderPreview() data object
+3. **Storage** — chequeBook/saved data object
+4. **HTML render** — buildHTML() function
+5. **Canvas render** — renderCanvas() function
+6. **Share link** — copyShareLink() params
+7. **Share decode** — shareDecode() handler + form population
+8. **Download** — getPreviewData() / downloadAsPNG() data
+
+Missing any step = broken feature. Trace the data flow before marking done.
+
+### Rule 18: Fix issues centrally, not per-file
+- If a bug appears in multiple tools, fix it in `shared/css/tools.css` or `shared/js/common.js`
+- If a pattern keeps being missed, add it to the pre-commit hook
+- NEVER patch the same issue in 50 individual files — fix the system
+- Examples: ad-slot spacing, share bar CSS, button design, in-app browser detection
+
+### Rule 19: Tool completeness checklist (enforced by pre-commit)
+Every tool MUST have ALL of these before committing:
+1. `TeamzTools.renderFAQs(faqs)` + `TeamzTools.injectFAQSchema(faqs)` — 5+ FAQs
+2. `TeamzTools.injectWebAppSchema({slug, title, description})` — WebApplication schema
+3. `TeamzTools.renderRelatedTools([...])` — 3-6 related tools with internal links
+4. `<section class="tool-content">` — 300-600 words, keyword density 1-2%
+5. At least 3 H2 headings inside tool-content (for mid-content ad slots)
+6. `addEventListener` or JS functions (real tool logic, not just HTML)
+7. `TeamzTools.renderBreadcrumbs()` + `injectBreadcrumbSchema()`
+8. `@media (max-width: 600px)` responsive rules
+
+### Rule 20: Share link URL params — handle messaging app pollution
+- When platforms (WhatsApp, Messenger) share URLs, they append text to the last URL param
+- `shareDecode()` in common.js strips trailing text from enum keys (style, bank, currency, etc.)
+- When adding new enum-type URL params, add them to the `enumKeys` array in `shareDecode()`
+- Always validate decoded enum values against known options before using them
+
+## QA & Monitoring
+```bash
+./build-qa-check.sh               # Automated QA: checks all tools for missing FAQs, schemas, content, JS logic
+./build.sh                         # Full build + 8-step validation
+./build-seo-audit.sh --report      # SEO keyword audit with hub scores
+python3 build-static-schema.py     # Rebuild all JSON-LD schemas
+```
+
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
 2. Using white text on neon accent background
@@ -388,6 +463,12 @@ python3 build-static-schema.py
 7. Making Chrome-AI-only tools without fallbacks
 8. Adding max-height to result containers
 9. NOT making tools mobile-responsive (see Rule 10)
-10. Using percentage/em `line-height` on headings (causes overlapping text — see Rule 11)
-11. Building AI tools WITHOUT using shared `/shared/js/ai-engine.js` (see Rule 12)
-12. Skipping SEO validation scripts and doing manual checks instead (see Rule 13)
+10. Using percentage/em `line-height` on headings (see Rule 11)
+11. Building AI tools WITHOUT shared `/shared/js/ai-engine.js` (see Rule 12)
+12. Skipping SEO validation scripts (see Rule 13)
+13. Using alert() instead of window.showToast() (see Rule 14)
+14. Adding image download without Copy Image button (see Rule 15)
+15. Redefining central CSS classes in inline styles (see Rule 16)
+16. Half-implementing features — missing data in share/canvas/download chain (see Rule 17)
+17. Patching same bug in 50 files instead of fixing centrally (see Rule 18)
+18. Committing tools without FAQs, schemas, content, or related tools (see Rule 19)

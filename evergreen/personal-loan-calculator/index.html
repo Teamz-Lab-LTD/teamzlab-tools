@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Loan Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate personal loan payments, total interest, and amortization schedule instantly. Compare rates and plan repayment. Free, private, no signup required.">
+  <meta property="og:title" content="Personal Loan Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate personal loan payments, total interest, and amortization schedule instantly. Compare rates and plan repayment. Free, private, no signup required.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/personal-loan-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Personal Loan Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate personal loan payments, total interest, and amortization schedule instantly. Compare rates and plan repayment. Free, private, no signup required.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/personal-loan-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .loan-results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .loan-result-card {
+      text-align: center;
+      padding: 20px 12px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .loan-result-card .result-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .loan-result-card .result-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .loan-result-card.highlight {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .loan-result-card.highlight .result-label,
+    .loan-result-card.highlight .result-value {
+      color: var(--accent-text);
+    }
+    .chart-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .pie-chart-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    .pie-chart-wrap canvas {
+      width: 200px;
+      height: 200px;
+    }
+    .chart-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: var(--text-base);
+      color: var(--text);
+    }
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .amortization-wrap {
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+    .amortization-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .amortization-wrap th {
+      background: var(--surface);
+      color: var(--heading);
+      padding: 10px 12px;
+      text-align: right;
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+    .amortization-wrap th:first-child {
+      text-align: center;
+    }
+    .amortization-wrap td {
+      padding: 8px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .amortization-wrap td:first-child {
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .amortization-wrap tbody tr:hover {
+      background: var(--surface);
+    }
+    .amortization-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--heading);
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      font-size: var(--text-sm);
+    }
+    .amortization-toggle:hover {
+      border-color: var(--heading);
+    }
+    .loan-summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+    .loan-summary-row:last-child {
+      border-bottom: none;
+    }
+    .loan-summary-row .label {
+      color: var(--text-muted);
+    }
+    .loan-summary-row .value {
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .copy-results-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: var(--text-sm);
+      margin-top: 16px;
+    }
+    .copy-results-btn:hover {
+      opacity: 0.9;
+    }
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .formula-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 16px 0;
+    }
+    .formula-box h3 {
+      margin: 0 0 8px;
+      color: var(--heading);
+      font-size: var(--text-base);
+    }
+    .formula-box .formula {
+      font-family: 'Courier New', monospace;
+      font-size: var(--text-base);
+      color: var(--heading);
+      font-weight: 600;
+      margin: 8px 0;
+    }
+    .formula-box p:last-child {
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      margin: 8px 0 0;
+    }
+    @media (max-width: 600px) {
+      .loan-results-grid {
+        grid-template-columns: 1fr;
+      }
+      .chart-container {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .btn-group {
+        flex-direction: column;
+      }
+      .btn-group button {
+        width: 100%;
+      }
+      .amortization-wrap {
+        max-width: 100%;
+        overflow-x: auto;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "Personal Loan Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How is a personal loan EMI calculated?", "acceptedAnswer": {"@type": "Answer", "text": "EMI is calculated using the standard amortization formula: EMI = P x [r(1+r)^n] / [(1+r)^n - 1], where P is the principal, r is the monthly interest rate, and n is the total number of payments."}}, {"@type": "Question", "name": "What credit score do I need for a personal loan?", "acceptedAnswer": {"@type": "Answer", "text": "Most lenders require a minimum credit score of 580-620 for approval. Scores above 720 typically qualify for the lowest interest rates, often under 10% APR."}}, {"@type": "Question", "name": "Is a personal loan better than credit card debt?", "acceptedAnswer": {"@type": "Answer", "text": "Usually yes. Personal loans have fixed rates (6-36% APR) and a set payoff date, while credit cards charge 15-30% APR with minimum payments that can stretch repayment over decades."}}, {"@type": "Question", "name": "Can I pay off a personal loan early?", "acceptedAnswer": {"@type": "Answer", "text": "Most personal loans allow early payoff. Some lenders charge a prepayment penalty (typically 1-5% of the remaining balance), so check your loan terms before paying ahead of schedule."}}, {"@type": "Question", "name": "What is the difference between APR and interest rate?", "acceptedAnswer": {"@type": "Answer", "text": "APR includes the base interest rate plus origination fees and other borrowing costs, expressed annually. It gives a more accurate picture of total loan cost than the interest rate alone."}}, {"@type": "Question", "name": "How long should my personal loan term be?", "acceptedAnswer": {"@type": "Answer", "text": "Shorter terms (2-3 years) mean higher monthly payments but less total interest. Longer terms (5-7 years) reduce monthly payments but increase total cost. Choose the shortest term you can comfortably afford."}}, {"@type": "Question", "name": "Does this calculator store my financial data?", "acceptedAnswer": {"@type": "Answer", "text": "No. All calculations run entirely in your browser. No data is sent to any server, stored, or shared. Your financial information stays completely private."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Personal Loan Calculator", "description": "Calculate personal loan payments, total interest, and amortization schedule instantly.", "url": "https://tool.teamzlab.com/evergreen/personal-loan-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Personal Loan Calculator</h1>
+      <p class="tool-description">Calculate your monthly personal loan payment, total interest cost, and full amortization schedule. See exactly how much you'll pay over the life of the loan. Free, instant, and 100% private.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <form id="loan-form" class="tool-form" onsubmit="return false;">
+        <div class="form-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+          <div class="form-group">
+            <label for="loan-amount">Loan Amount ($)</label>
+            <input type="number" id="loan-amount" placeholder="e.g. 15000" min="1" step="100" required>
+          </div>
+          <div class="form-group">
+            <label for="interest-rate">Interest Rate (APR %)</label>
+            <input type="number" id="interest-rate" placeholder="e.g. 8.5" min="0.01" max="50" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label for="loan-term">Loan Term</label>
+            <input type="number" id="loan-term" placeholder="e.g. 5" min="1" max="360" step="1" required>
+          </div>
+          <div class="form-group">
+            <label for="term-unit">Term Unit</label>
+            <select id="term-unit">
+              <option value="years">Years</option>
+              <option value="months">Months</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label for="start-date">Start Date (optional)</label>
+            <input type="date" id="start-date">
+          </div>
+        </div>
+        <button type="button" id="calc-btn" class="tool-btn" onclick="calculateLoan()">Calculate Payment</button>
+      </form>
+      <div id="loan-results" style="display:none;margin-top:24px;">
+        <div id="results-summary" class="loan-results-grid"></div>
+        <div id="chart-area" class="chart-container">
+          <div class="pie-chart-wrap"><canvas id="pie-chart" width="200" height="200"></canvas></div>
+          <div id="chart-legend" class="chart-legend"></div>
+        </div>
+        <div id="extra-summary"></div>
+        <div class="btn-group">
+          <button class="copy-results-btn" onclick="copyResults()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Results</button>
+          <button class="amortization-toggle" onclick="toggleAmortization()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg> <span id="amort-toggle-text">Show Amortization Schedule</span></button>
+        </div>
+        <div id="amortization-section" class="amortization-wrap" style="display:none;"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Personal Loan Calculator Works</h2>
+      <p>This calculator uses the standard amortization formula to determine your fixed monthly payment (EMI) based on three inputs: the loan amount, annual interest rate, and repayment term. The formula ensures each payment covers both interest charges and principal repayment, with the split shifting gradually over time.</p>
+      <div class="formula-box">
+        <h3>EMI Formula</h3>
+        <p class="formula">EMI = P &times; [r(1+r)<sup>n</sup>] / [(1+r)<sup>n</sup> &minus; 1]</p>
+        <p>Where: P = loan principal, r = monthly interest rate (APR &divide; 12 &divide; 100), n = total number of monthly payments</p>
+      </div>
+      <p>In the early months, a larger portion of your payment goes toward interest. As the outstanding balance decreases, more of each payment reduces the principal. The amortization schedule shows this breakdown month by month.</p>
+
+      <h2>Personal Loan vs Other Loan Types</h2>
+      <p>Personal loans are unsecured, meaning no collateral is required. This makes approval faster but typically results in higher interest rates compared to secured loans. Here is how they compare:</p>
+      <ul>
+        <li><strong>Personal loans:</strong> 2-7 year terms, 6-36% APR, unsecured, fixed payments</li>
+        <li><strong>Auto loans:</strong> 3-7 years, 4-10% APR, secured by the vehicle</li>
+        <li><strong>Mortgage:</strong> 15-30 years, 3-8% APR, secured by property</li>
+        <li><strong>Credit cards:</strong> Revolving, 15-30% APR, minimum payments only</li>
+      </ul>
+      <p>Personal loans work best for debt consolidation, home improvements, medical expenses, or major purchases where you want a fixed payment schedule and defined payoff date.</p>
+
+      <h2>How to Get the Best Personal Loan Rate</h2>
+      <p>Your interest rate depends heavily on your credit score, income, and debt-to-income ratio. To secure the lowest rate: check and improve your credit score before applying, compare offers from at least three lenders, consider credit unions which often offer lower rates, and choose the shortest term you can comfortably afford. Pre-qualification with a soft credit check lets you compare rates without impacting your score.</p>
+
+      <h2>Understanding APR and Interest Rates</h2>
+      <p>The APR (Annual Percentage Rate) includes the base interest rate plus origination fees and other costs, expressed as a yearly rate. A loan advertised at 8% interest with a 3% origination fee has a higher effective APR. Always compare APR, not just interest rates, when shopping for loans. This calculator uses APR for accurate total cost projections.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var loanData = null;
+
+    function calculateLoan() {
+      var P = parseFloat(document.getElementById('loan-amount').value);
+      var apr = parseFloat(document.getElementById('interest-rate').value);
+      var term = parseFloat(document.getElementById('loan-term').value);
+      var unit = document.getElementById('term-unit').value;
+      var startDateVal = document.getElementById('start-date').value;
+
+      if (!P || P <= 0 || !apr || apr <= 0 || !term || term <= 0) {
+        alert('Please fill in all required fields with valid values.');
+        return;
+      }
+
+      var n = unit === 'years' ? Math.round(term * 12) : Math.round(term);
+      var r = (apr / 100) / 12;
+      var pow = Math.pow(1 + r, n);
+      var M = P * (r * pow) / (pow - 1);
+      var totalPaid = M * n;
+      var totalInterest = totalPaid - P;
+
+      loanData = { P: P, apr: apr, r: r, n: n, M: M, totalPaid: totalPaid, totalInterest: totalInterest, term: term, unit: unit, startDate: startDateVal };
+
+      var resultsEl = document.getElementById('loan-results');
+      resultsEl.style.display = 'block';
+
+      document.getElementById('results-summary').innerHTML =
+        '<div class="loan-result-card highlight"><div class="result-label">Monthly Payment</div><div class="result-value">$' + M.toFixed(2) + '</div></div>' +
+        '<div class="loan-result-card"><div class="result-label">Total Interest</div><div class="result-value">$' + totalInterest.toLocaleString(undefined, { maximumFractionDigits: 0 }) + '</div></div>' +
+        '<div class="loan-result-card"><div class="result-label">Total Payment</div><div class="result-value">$' + totalPaid.toLocaleString(undefined, { maximumFractionDigits: 0 }) + '</div></div>';
+
+      var extraRows = [
+        { label: 'Loan Amount', value: '$' + P.toLocaleString() },
+        { label: 'Interest Rate', value: apr + '% APR' },
+        { label: 'Loan Term', value: (unit === 'years' ? term + ' years' : term + ' months') + ' (' + n + ' payments)' },
+        { label: 'Interest as % of Principal', value: ((totalInterest / P) * 100).toFixed(1) + '%' }
+      ];
+      if (startDateVal) {
+        var sd = new Date(startDateVal + 'T00:00:00');
+        var ed = new Date(sd);
+        ed.setMonth(ed.getMonth() + n);
+        extraRows.push({ label: 'Payoff Date', value: ed.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) });
+      }
+      document.getElementById('extra-summary').innerHTML = extraRows.map(function (row) {
+        return '<div class="loan-summary-row"><span class="label">' + row.label + '</span><span class="value">' + row.value + '</span></div>';
+      }).join('');
+
+      drawPieChart(P, totalInterest);
+      buildAmortizationTable();
+      document.getElementById('amortization-section').style.display = 'none';
+      document.getElementById('amort-toggle-text').textContent = 'Show Amortization Schedule';
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function drawPieChart(principal, interest) {
+      var canvas = document.getElementById('pie-chart');
+      var ctx = canvas.getContext('2d');
+      var total = principal + interest;
+      var pRatio = principal / total;
+      var cx = 100, cy = 100, radius = 90;
+
+      ctx.clearRect(0, 0, 200, 200);
+
+      var styles = getComputedStyle(document.documentElement);
+      var accentColor = styles.getPropertyValue('--accent').trim() || '#D9FE06';
+      var headingColor = styles.getPropertyValue('--heading').trim() || '#ffffff';
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * pRatio));
+      ctx.closePath();
+      ctx.fillStyle = accentColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, -Math.PI / 2 + (2 * Math.PI * pRatio), -Math.PI / 2 + 2 * Math.PI);
+      ctx.closePath();
+      ctx.fillStyle = headingColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 45, 0, 2 * Math.PI);
+      var bgColor = styles.getPropertyValue('--bg').trim() || '#12151A';
+      ctx.fillStyle = bgColor;
+      ctx.fill();
+
+      document.getElementById('chart-legend').innerHTML =
+        '<div class="legend-item"><span class="legend-swatch" style="background:' + accentColor + ';"></span> Principal: $' + principal.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' (' + (pRatio * 100).toFixed(1) + '%)</div>' +
+        '<div class="legend-item"><span class="legend-swatch" style="background:' + headingColor + ';border:1px solid var(--border);"></span> Interest: $' + interest.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' (' + ((1 - pRatio) * 100).toFixed(1) + '%)</div>';
+    }
+
+    function buildAmortizationTable() {
+      if (!loanData) return;
+      var balance = loanData.P;
+      var rows = '';
+      var startDate = loanData.startDate ? new Date(loanData.startDate + 'T00:00:00') : null;
+
+      for (var i = 1; i <= loanData.n; i++) {
+        var intPayment = balance * loanData.r;
+        var princPayment = loanData.M - intPayment;
+        balance -= princPayment;
+        if (balance < 0) balance = 0;
+
+        var dateStr = '';
+        if (startDate) {
+          var d = new Date(startDate);
+          d.setMonth(d.getMonth() + i);
+          dateStr = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        }
+
+        rows += '<tr>' +
+          '<td>' + i + '</td>' +
+          (startDate ? '<td>' + dateStr + '</td>' : '') +
+          '<td>$' + loanData.M.toFixed(2) + '</td>' +
+          '<td>$' + princPayment.toFixed(2) + '</td>' +
+          '<td>$' + intPayment.toFixed(2) + '</td>' +
+          '<td>$' + balance.toFixed(2) + '</td>' +
+          '</tr>';
+      }
+
+      document.getElementById('amortization-section').innerHTML =
+        '<table><thead><tr><th>#</th>' +
+        (startDate ? '<th>Date</th>' : '') +
+        '<th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+
+    function toggleAmortization() {
+      var el = document.getElementById('amortization-section');
+      var btn = document.getElementById('amort-toggle-text');
+      if (el.style.display === 'none') {
+        el.style.display = 'block';
+        btn.textContent = 'Hide Amortization Schedule';
+      } else {
+        el.style.display = 'none';
+        btn.textContent = 'Show Amortization Schedule';
+      }
+    }
+
+    function copyResults() {
+      if (!loanData) return;
+      var text = 'Personal Loan Calculator Results\n' +
+        '================================\n' +
+        'Loan Amount: $' + loanData.P.toLocaleString() + '\n' +
+        'Interest Rate: ' + loanData.apr + '% APR\n' +
+        'Loan Term: ' + (loanData.unit === 'years' ? loanData.term + ' years' : loanData.term + ' months') + ' (' + loanData.n + ' payments)\n' +
+        '--------------------------------\n' +
+        'Monthly Payment: $' + loanData.M.toFixed(2) + '\n' +
+        'Total Interest: $' + loanData.totalInterest.toLocaleString(undefined, { maximumFractionDigits: 0 }) + '\n' +
+        'Total Payment: $' + loanData.totalPaid.toLocaleString(undefined, { maximumFractionDigits: 0 }) + '\n' +
+        'Interest as % of Principal: ' + ((loanData.totalInterest / loanData.P) * 100).toFixed(1) + '%\n' +
+        '================================\n' +
+        'Generated at tool.teamzlab.com';
+
+      navigator.clipboard.writeText(text).then(function () {
+        var btn = document.querySelector('.copy-results-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function () {
+          btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Results';
+        }, 2000);
+      });
+    }
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Personal Loan Calculator' }];
+    var FAQS = [
+      { q: 'How is a personal loan EMI calculated?', a: 'EMI is calculated using the standard amortization formula: EMI = P x [r(1+r)^n] / [(1+r)^n - 1], where P is the principal, r is the monthly interest rate, and n is the total number of payments.' },
+      { q: 'What credit score do I need for a personal loan?', a: 'Most lenders require a minimum credit score of 580-620 for approval. Scores above 720 typically qualify for the lowest interest rates, often under 10% APR.' },
+      { q: 'Is a personal loan better than credit card debt?', a: 'Usually yes. Personal loans have fixed rates (6-36% APR) and a set payoff date, while credit cards charge 15-30% APR with minimum payments that can stretch repayment over decades.' },
+      { q: 'Can I pay off a personal loan early?', a: 'Most personal loans allow early payoff. Some lenders charge a prepayment penalty (typically 1-5% of the remaining balance), so check your loan terms before paying ahead of schedule.' },
+      { q: 'What is the difference between APR and interest rate?', a: 'APR includes the base interest rate plus origination fees and other borrowing costs, expressed annually. It gives a more accurate picture of total loan cost than the interest rate alone.' },
+      { q: 'How long should my personal loan term be?', a: 'Shorter terms (2-3 years) mean higher monthly payments but less total interest. Longer terms (5-7 years) reduce monthly payments but increase total cost. Choose the shortest term you can comfortably afford.' },
+      { q: 'Does this calculator store my financial data?', a: 'No. All calculations run entirely in your browser. No data is sent to any server, stored, or shared. Your financial information stays completely private.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/loan-payment-calculator', name: 'Loan Payment Calculator', description: 'Calculate payments for any loan type.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'See how compound interest grows over time.' },
+      { slug: 'evergreen/credit-card-payoff-calculator', name: 'Credit Card Payoff Calculator', description: 'Plan your credit card debt payoff.' },
+      { slug: 'evergreen/credit-score-simulator', name: 'Credit Score Simulator', description: 'See how actions affect your credit score.' },
+      { slug: 'evergreen/debt-payoff-calculator', name: 'Debt Payoff Calculator', description: 'Create a debt-free plan with payoff dates.' },
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Calculate mortgage payments and amortization.' }
+    ];
+    var TOOL_CONFIG = {
+      slug: 'evergreen/personal-loan-calculator',
+      title: 'Personal Loan Calculator',
+      description: 'Calculate personal loan payments, total interest, and amortization schedule instantly.'
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      var today = new Date().toISOString().split('T')[0];
+      document.getElementById('start-date').value = today;
+    });
+  </script>
+</body>
+</html>
