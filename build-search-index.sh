@@ -58,3 +58,38 @@ echo "  Homepage: updated all card counts + search shows ${total_tools}+ tools"
 
 echo ""
 echo "=== Done ==="
+
+# Rebuild llms.txt (AI search engine index)
+python3 -c "
+import glob, re
+
+tools = {}
+for f in sorted(glob.glob('*/*/index.html')):
+    parts = f.split('/')
+    if len(parts) != 3: continue
+    hub = parts[0]
+    if hub in ('about','contact','privacy','terms','docs','shared','branding','og-images','icons','__pycache__','.git'): continue
+    with open(f) as fh:
+        content = fh.read()
+    if 'http-equiv=\"refresh\"' in content: continue
+    title_m = re.search(r'<title>(.*?)</title>', content)
+    desc_m = re.search(r'name=\"description\" content=\"([^\"]*)\"', content)
+    if not title_m: continue
+    title = title_m.group(1).replace(' — Teamz Lab Tools','').replace(' | Teamz Lab Tools','').strip()
+    desc = desc_m.group(1)[:100] if desc_m else ''
+    slug = f.replace('/index.html','')
+    if hub not in tools: tools[hub] = []
+    tools[hub].append((title, slug, desc))
+
+total = sum(len(v) for v in tools.values())
+lines = ['# Teamz Lab Tools','',f'> {total}+ free online tools and calculators. Everything runs client-side in the browser — no data is sent to any server. No login required.','','## About',
+'- Website: https://tool.teamzlab.com','- Built by: Teamz Lab (https://teamzlab.com)',f'- Tools: {total}+ browser-based calculators, generators, and utilities',
+'- Privacy: 100% client-side — zero data collection','- Cost: Free, no signup','','## Tools','']
+for hub in sorted(tools):
+    for title, slug, desc in sorted(tools[hub], key=lambda x: x[0]):
+        lines.append(f'- [{title}](https://tool.teamzlab.com/{slug}/): {desc}')
+lines.append('')
+with open('llms.txt','w') as f:
+    f.write('\n'.join(lines))
+print(f'  llms.txt: {total} tools indexed for AI search')
+" 2>/dev/null
