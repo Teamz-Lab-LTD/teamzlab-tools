@@ -1353,10 +1353,65 @@ document.addEventListener('DOMContentLoaded', function () {
     update();
   })();
 
-  // Floating CTA bar — always visible at bottom
-  // Skip in in-app browsers (Messenger, Facebook, Instagram) — they can't handle external links
+  // In-app browser detection — show "Open in Browser" banner
   var ua = navigator.userAgent || '';
-  var isInAppBrowser = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line|Twitter|Snapchat/i.test(ua);
+  var isInAppBrowser = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat|MicroMessenger|WeChat|TikTok|BytedanceWebview/i.test(ua);
+
+  if (isInAppBrowser) {
+    (function initInAppBanner() {
+      var dismissed = false;
+      try { dismissed = sessionStorage.getItem('tz_inapp_closed') === '1'; } catch(e) {}
+      if (dismissed) return;
+
+      var pageUrl = window.location.href;
+      var appName = 'this app';
+      if (/FBAN|FBAV|FB_IAB/i.test(ua)) appName = 'Facebook';
+      else if (/Messenger/i.test(ua)) appName = 'Messenger';
+      else if (/Instagram/i.test(ua)) appName = 'Instagram';
+      else if (/TikTok|BytedanceWebview/i.test(ua)) appName = 'TikTok';
+      else if (/Line\//i.test(ua)) appName = 'LINE';
+      else if (/Twitter/i.test(ua)) appName = 'Twitter';
+      else if (/Snapchat/i.test(ua)) appName = 'Snapchat';
+      else if (/MicroMessenger|WeChat/i.test(ua)) appName = 'WeChat';
+
+      var bar = document.createElement('div');
+      bar.className = 'inapp-browser-banner';
+      bar.innerHTML =
+        '<div class="inapp-browser-banner__content">' +
+          '<span>You\'re in ' + appName + '\'s browser. Photo upload &amp; some features may not work.</span>' +
+          '<div class="inapp-browser-banner__actions">' +
+            '<button class="inapp-browser-banner__btn" id="inapp-open-btn">Open in Browser</button>' +
+            '<button class="inapp-browser-banner__close" id="inapp-close-btn">&times;</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(bar);
+
+      document.getElementById('inapp-open-btn').addEventListener('click', function() {
+        // Try intent-based open for Android
+        var isAndroid = /android/i.test(ua);
+        var isIOS = /iphone|ipad|ipod/i.test(ua);
+        if (isAndroid) {
+          window.location.href = 'intent://' + pageUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+        } else if (isIOS) {
+          // iOS Safari open — copy URL for user
+          navigator.clipboard.writeText(pageUrl).then(function() {
+            alert('Link copied! Open Safari and paste the URL to use all features.');
+          }).catch(function() {
+            prompt('Copy this link and open in Safari:', pageUrl);
+          });
+        } else {
+          window.open(pageUrl, '_system');
+        }
+      });
+
+      document.getElementById('inapp-close-btn').addEventListener('click', function() {
+        bar.style.display = 'none';
+        try { sessionStorage.setItem('tz_inapp_closed', '1'); } catch(e) {}
+      });
+    })();
+  }
+
+  // Floating CTA bar — always visible at bottom
 
   var cta = document.createElement('div');
   cta.className = 'floating-cta';
