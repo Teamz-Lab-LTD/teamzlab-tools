@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credit Score Simulator — Teamz Lab Tools</title>
+  <meta name="description" content="Simulate how actions affect your credit score. See the impact of paying off debt, opening cards, or missing payments. Free, private credit score estimator.">
+  <meta property="og:title" content="Credit Score Simulator — Teamz Lab Tools">
+  <meta property="og:description" content="Simulate how actions affect your credit score. See the impact of paying off debt, opening cards, or missing payments. Free, private credit score estimator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/credit-score-simulator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Credit Score Simulator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Simulate how actions affect your credit score. See the impact of paying off debt, opening cards, or missing payments. Free, private credit score estimator.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/credit-score-simulator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .score-gauge{text-align:center;margin:24px 0}
+    .gauge-svg{width:280px;height:160px}
+    .gauge-label{font-size:var(--text-sm);color:var(--text-muted);margin-top:8px}
+    .score-value{font-size:clamp(36px,6vw,56px);font-weight:800;color:var(--heading);line-height:1.2}
+    .score-rating{font-size:var(--text-lg);font-weight:600;margin-top:4px}
+    .score-change{font-size:var(--text-base);color:var(--text-muted);margin-top:4px}
+    .factor-group{margin-bottom:20px}
+    .factor-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:600;color:var(--heading);font-size:var(--text-sm)}
+    .factor-weight{color:var(--text-muted);font-weight:400}
+    .factor-hint{font-size:var(--text-xs);color:var(--text-muted);margin-top:2px}
+    .factor-slider{width:100%;accent-color:var(--heading);cursor:pointer}
+    .factor-value{min-width:48px;text-align:right;font-weight:600;color:var(--heading)}
+    .whatif-section{margin-top:32px}
+    .whatif-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+    .whatif-card h3{margin:0 0 12px;font-size:var(--text-base);font-weight:600;color:var(--heading);line-height:1.3}
+    .whatif-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .whatif-input{flex:1;min-width:120px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:var(--text-sm);font-family:inherit}
+    .whatif-result{margin-top:12px;padding:12px;border-radius:8px;background:var(--bg);font-size:var(--text-sm);color:var(--text);display:none}
+    .whatif-result .impact{font-weight:700;color:var(--heading)}
+    .tips-section{margin-top:24px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+    .tips-section h3{margin:0 0 12px;font-size:var(--text-base);font-weight:600;color:var(--heading);line-height:1.3}
+    .tip-item{padding:8px 0;font-size:var(--text-sm);color:var(--text);border-bottom:1px solid var(--border)}
+    .tip-item:last-child{border-bottom:none}
+    .score-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:12px 0}
+    .score-bar span{flex:1}
+    .tool-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .tool-form-left,.tool-form-right{display:flex;flex-direction:column}
+    .current-score-input{margin-bottom:24px}
+    .current-score-input label{display:block;font-weight:600;color:var(--heading);margin-bottom:6px;font-size:var(--text-sm)}
+    .current-score-input input{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:var(--text-lg);font-family:inherit;font-weight:700}
+    .simulate-btn-wrap{margin-top:20px;display:flex;gap:12px}
+    @media(max-width:600px){
+      .tool-form-grid{grid-template-columns:1fr}
+      .gauge-svg{width:220px;height:130px}
+      .whatif-row{flex-direction:column}
+      .whatif-input{min-width:100%}
+      .simulate-btn-wrap{flex-direction:column}
+      .simulate-btn-wrap button{width:100%}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "Credit Score Simulator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is a good credit score?", "acceptedAnswer": {"@type": "Answer", "text": "A FICO score of 670 or above is generally considered good. Scores of 740 and above are very good, while 800 and above are excellent. Most lenders offer the best interest rates to borrowers with scores above 740."}}, {"@type": "Question", "name": "How accurate is this credit score simulator?", "acceptedAnswer": {"@type": "Answer", "text": "This simulator uses a simplified model based on publicly documented FICO factor weightings. It shows directional impact — the real FICO algorithm is proprietary, so actual score changes may differ. Use it to understand which factors matter most."}}, {"@type": "Question", "name": "How long does it take to improve a credit score?", "acceptedAnswer": {"@type": "Answer", "text": "Small improvements like reducing utilization can show up within 30 days. Recovering from a missed payment takes 6 to 12 months of on-time payments. Major negative marks like collections or bankruptcy can affect your score for 7 to 10 years."}}, {"@type": "Question", "name": "Does checking my own credit score lower it?", "acceptedAnswer": {"@type": "Answer", "text": "No. Checking your own score is a soft inquiry and has no impact. Only hard inquiries from lenders when you apply for credit can temporarily lower your score, typically by 5 to 10 points for a few months."}}, {"@type": "Question", "name": "What hurts your credit score the most?", "acceptedAnswer": {"@type": "Answer", "text": "Missing payments has the biggest negative impact since payment history is 35% of your score. A single 30-day late payment can drop your score by 60 to 110 points. Maxing out credit cards (high utilization) is the second biggest factor at 30%."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Credit Score Simulator", "description": "Simulate how financial actions affect your credit score.", "url": "https://tool.teamzlab.com/evergreen/credit-score-simulator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Credit Score Simulator</h1>
+      <p class="tool-description">See how your financial decisions affect your credit score. Adjust the five FICO factors, run what-if scenarios, and get personalized tips to improve your score. Everything runs privately in your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="current-score-input">
+        <label for="currentScore">Your Current Credit Score (300–850)</label>
+        <input type="number" id="currentScore" min="300" max="850" value="700" placeholder="e.g. 700">
+      </div>
+
+      <div class="tool-form-grid">
+        <div class="tool-form-left">
+          <div class="factor-group">
+            <div class="factor-label">
+              <span>Payment History <span class="factor-weight">(35%)</span></span>
+              <span class="factor-value" id="paymentVal">90%</span>
+            </div>
+            <input type="range" class="factor-slider" id="paymentHistory" min="0" max="100" value="90">
+            <div class="factor-hint">Percentage of on-time payments</div>
+          </div>
+
+          <div class="factor-group">
+            <div class="factor-label">
+              <span>Credit Utilization <span class="factor-weight">(30%)</span></span>
+              <span class="factor-value" id="utilizationVal">30%</span>
+            </div>
+            <input type="range" class="factor-slider" id="utilization" min="0" max="100" value="30">
+            <div class="factor-hint">Balance as % of credit limit (lower is better)</div>
+          </div>
+
+          <div class="factor-group">
+            <div class="factor-label">
+              <span>Credit History Length <span class="factor-weight">(15%)</span></span>
+              <span class="factor-value" id="historyVal">5 yrs</span>
+            </div>
+            <input type="range" class="factor-slider" id="historyLength" min="0" max="30" value="5">
+            <div class="factor-hint">Average age of credit accounts in years</div>
+          </div>
+
+          <div class="factor-group">
+            <div class="factor-label">
+              <span>Credit Mix <span class="factor-weight">(10%)</span></span>
+              <span class="factor-value" id="mixVal">2</span>
+            </div>
+            <input type="range" class="factor-slider" id="creditMix" min="1" max="5" value="2">
+            <div class="factor-hint">Types of accounts (1 = one type, 5 = diverse mix)</div>
+          </div>
+
+          <div class="factor-group">
+            <div class="factor-label">
+              <span>New Credit Inquiries <span class="factor-weight">(10%)</span></span>
+              <span class="factor-value" id="inquiriesVal">1</span>
+            </div>
+            <input type="range" class="factor-slider" id="newCredit" min="0" max="10" value="1">
+            <div class="factor-hint">Hard inquiries in last 12 months (fewer is better)</div>
+          </div>
+
+          <div class="simulate-btn-wrap">
+            <button class="btn-primary" onclick="simulateScore()">Simulate Score</button>
+            <button class="btn-secondary" onclick="resetFactors()">Reset</button>
+          </div>
+        </div>
+
+        <div class="tool-form-right">
+          <div class="score-gauge" id="scoreGauge">
+            <svg class="gauge-svg" viewBox="0 0 280 160">
+              <path d="M30,140 A110,110 0 0,1 250,140" fill="none" stroke="var(--border)" stroke-width="18" stroke-linecap="round"/>
+              <path id="gaugeArc" d="M30,140 A110,110 0 0,1 250,140" fill="none" stroke="var(--heading)" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 999"/>
+              <text x="140" y="100" text-anchor="middle" class="score-value" fill="var(--heading)" style="font-size:48px;font-weight:800" id="gaugeText">700</text>
+              <text x="140" y="125" text-anchor="middle" fill="var(--text-muted)" style="font-size:13px" id="gaugeRating">Good</text>
+              <text x="30" y="155" text-anchor="middle" fill="var(--text-muted)" style="font-size:11px">300</text>
+              <text x="250" y="155" text-anchor="middle" fill="var(--text-muted)" style="font-size:11px">850</text>
+            </svg>
+            <div class="score-change" id="scoreChange"></div>
+            <div class="score-bar">
+              <span style="background:var(--heading);opacity:0.3"></span>
+              <span style="background:var(--heading);opacity:0.45"></span>
+              <span style="background:var(--heading);opacity:0.6"></span>
+              <span style="background:var(--heading);opacity:0.8"></span>
+              <span style="background:var(--heading);opacity:1"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--text-muted)">
+              <span>Poor</span><span>Fair</span><span>Good</span><span>Very Good</span><span>Excellent</span>
+            </div>
+          </div>
+
+          <div class="whatif-section">
+            <h2 style="font-size:var(--text-lg);margin-bottom:16px;color:var(--heading);line-height:1.3">What-If Scenarios</h2>
+
+            <div class="whatif-card">
+              <h3>What if I pay off debt?</h3>
+              <div class="whatif-row">
+                <input type="number" class="whatif-input" id="payoffAmount" placeholder="Amount to pay off ($)" min="0">
+                <input type="number" class="whatif-input" id="currentLimit" placeholder="Total credit limit ($)" min="1">
+                <button class="btn-primary" onclick="whatifPayoff()">Check</button>
+              </div>
+              <div class="whatif-result" id="payoffResult"></div>
+            </div>
+
+            <div class="whatif-card">
+              <h3>What if I open a new card?</h3>
+              <div class="whatif-row">
+                <input type="number" class="whatif-input" id="newCardLimit" placeholder="New card limit ($)" min="0">
+                <button class="btn-primary" onclick="whatifNewCard()">Check</button>
+              </div>
+              <div class="whatif-result" id="newCardResult"></div>
+            </div>
+
+            <div class="whatif-card">
+              <h3>What if I miss a payment?</h3>
+              <div class="whatif-row">
+                <button class="btn-primary" onclick="whatifMissPayment()">Simulate Missed Payment</button>
+              </div>
+              <div class="whatif-result" id="missResult"></div>
+            </div>
+          </div>
+
+          <div class="tips-section" id="tipsSection" style="display:none">
+            <h3>Tips to Improve Your Score</h3>
+            <div id="tipsList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How FICO Credit Scores Work</h2>
+      <p>Your FICO credit score is a three-digit number ranging from 300 to 850 that lenders use to evaluate your creditworthiness. It is calculated from five weighted factors drawn from your credit reports at the three major bureaus: Equifax, Experian, and TransUnion. Understanding these factors is the first step toward managing and improving your score.</p>
+      <p>Payment history carries the most weight at 35% of your score. It tracks whether you pay bills on time across credit cards, mortgages, auto loans, and other accounts. Even a single 30-day late payment can drop your score by 60 to 110 points, and the impact lasts up to seven years on your report. Consistently paying on time is the most powerful way to maintain a strong score.</p>
+      <p>Credit utilization accounts for 30% and measures how much of your available revolving credit you are using. If your credit cards have a combined limit of $10,000 and your balances total $3,000, your utilization is 30%. Experts recommend keeping utilization below 30%, and below 10% is ideal for the highest scores. Paying down balances or requesting credit limit increases both reduce utilization.</p>
+
+      <h2>Understanding Score Ranges and Their Impact</h2>
+      <p>Credit scores are divided into five categories. Scores below 580 are considered Poor and typically result in loan denials or very high interest rates. The Fair range (580 to 669) qualifies you for some products but at above-average rates. Good scores (670 to 739) give you access to most financial products at competitive rates. Very Good (740 to 799) earns you better-than-average terms, while Excellent scores (800 to 850) unlock the lowest rates and best credit card rewards programs available.</p>
+      <p>The remaining three factors — credit history length (15%), credit mix (10%), and new credit inquiries (10%) — are smaller but still meaningful. A longer credit history demonstrates reliability. Having a mix of revolving accounts (credit cards) and installment loans (mortgage, auto) shows you can manage different types of debt. Each hard inquiry from applying for credit temporarily lowers your score by a few points, so spacing out applications is wise.</p>
+
+      <h2>Improving Your Credit Score Over Time</h2>
+      <p>Improving your credit score is a gradual process, but small actions compound. Start by setting up autopay to guarantee on-time payments. Next, focus on reducing credit utilization by paying more than the minimum or making bi-monthly payments. Avoid closing old accounts since they contribute positively to your average account age. Only apply for new credit when necessary to limit hard inquiries. Regularly reviewing your credit reports for errors through AnnualCreditReport.com is also essential — disputed inaccuracies that get removed can provide an instant score boost.</p>
+      <p>This simulator uses a simplified FICO-like model to estimate how changes to each factor would shift your score. While actual FICO scoring is proprietary and more nuanced, the directional impact shown here is based on publicly documented FICO factor weightings. Use it to understand which areas offer the most room for improvement in your credit profile.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Credit Score Simulator' }
+    ];
+    var FAQS = [
+      { q: 'What is a good credit score?', a: 'A FICO score of 670 or above is generally considered good. Scores of 740 and above are very good, while 800 and above are excellent. Most lenders offer the best interest rates to borrowers with scores above 740.' },
+      { q: 'How accurate is this credit score simulator?', a: 'This simulator uses a simplified model based on publicly documented FICO factor weightings. It shows directional impact — the real FICO algorithm is proprietary, so actual score changes may differ. Use it to understand which factors matter most.' },
+      { q: 'How long does it take to improve a credit score?', a: 'Small improvements like reducing utilization can show up within 30 days. Recovering from a missed payment takes 6 to 12 months of on-time payments. Major negative marks like collections or bankruptcy can affect your score for 7 to 10 years.' },
+      { q: 'Does checking my own credit score lower it?', a: 'No. Checking your own score is a soft inquiry and has no impact. Only hard inquiries from lenders when you apply for credit can temporarily lower your score, typically by 5 to 10 points for a few months.' },
+      { q: 'What hurts your credit score the most?', a: 'Missing payments has the biggest negative impact since payment history is 35% of your score. A single 30-day late payment can drop your score by 60 to 110 points. Maxing out credit cards (high utilization) is the second biggest factor at 30%.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/credit-card-payoff-calculator', name: 'Credit Card Payoff Calculator', description: 'Calculate time to pay off credit card debt.' },
+      { slug: 'evergreen/debt-payoff-calculator', name: 'Debt Payoff Calculator', description: 'Plan your debt-free timeline.' },
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Calculate monthly mortgage payments.' },
+      { slug: 'evergreen/loan-payment-calculator', name: 'Loan Payment Calculator', description: 'Calculate loan payments and interest.' },
+      { slug: 'evergreen/debt-to-income-ratio-calculator', name: 'Debt-to-Income Ratio', description: 'Check your DTI ratio for lenders.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest', description: 'See how savings grow over time.' }
+    ];
+
+    var TOOL_CONFIG = {
+      slug: 'evergreen/credit-score-simulator',
+      title: 'Credit Score Simulator',
+      description: 'Simulate how financial actions affect your credit score.'
+    };
+
+    var currentSimScore = 700;
+
+    function getScoreRating(score) {
+      if (score >= 800) return 'Excellent';
+      if (score >= 740) return 'Very Good';
+      if (score >= 670) return 'Good';
+      if (score >= 580) return 'Fair';
+      return 'Poor';
+    }
+
+    function calculateScore() {
+      var base = parseInt(document.getElementById('currentScore').value) || 700;
+      base = Math.max(300, Math.min(850, base));
+
+      var payment = parseInt(document.getElementById('paymentHistory').value);
+      var util = parseInt(document.getElementById('utilization').value);
+      var history = parseInt(document.getElementById('historyLength').value);
+      var mix = parseInt(document.getElementById('creditMix').value);
+      var inquiries = parseInt(document.getElementById('newCredit').value);
+
+      // Payment history factor (35%): 100% on-time = +0, below drops
+      var paymentFactor = ((payment - 90) / 10) * 0.35;
+
+      // Utilization (30%): 0-10% ideal, 30% neutral, above penalized
+      var utilFactor;
+      if (util <= 10) utilFactor = 0.30 * ((10 - util) / 10);
+      else if (util <= 30) utilFactor = 0.30 * ((30 - util) / 20) * -0.3;
+      else utilFactor = -0.30 * ((util - 30) / 70);
+
+      // History length (15%): 7+ years ideal
+      var histFactor;
+      if (history >= 7) histFactor = 0.15 * Math.min((history - 7) / 15, 1);
+      else histFactor = -0.15 * ((7 - history) / 7) * 0.5;
+
+      // Credit mix (10%): 3+ types ideal
+      var mixFactor;
+      if (mix >= 3) mixFactor = 0.10 * ((mix - 2) / 3);
+      else mixFactor = -0.10 * ((3 - mix) / 3) * 0.3;
+
+      // New credit (10%): 0-1 inquiries ideal
+      var inqFactor;
+      if (inquiries <= 1) inqFactor = 0.10 * ((1 - inquiries) / 1) * 0.3;
+      else inqFactor = -0.10 * ((inquiries - 1) / 9);
+
+      var totalFactor = paymentFactor + utilFactor + histFactor + mixFactor + inqFactor;
+      var newScore = Math.round(base + totalFactor * 550);
+      newScore = Math.max(300, Math.min(850, newScore));
+
+      return newScore;
+    }
+
+    function updateGauge(score, prevScore) {
+      var pct = (score - 300) / 550;
+      var totalArc = 345;
+      var dash = pct * totalArc;
+
+      document.getElementById('gaugeArc').setAttribute('stroke-dasharray', dash + ' ' + totalArc);
+      document.getElementById('gaugeText').textContent = score;
+      document.getElementById('gaugeRating').textContent = getScoreRating(score);
+
+      var changeEl = document.getElementById('scoreChange');
+      if (prevScore !== null && prevScore !== score) {
+        var diff = score - prevScore;
+        changeEl.textContent = (diff > 0 ? '+' : '') + diff + ' points from ' + prevScore;
+      } else {
+        changeEl.textContent = '';
+      }
+
+      currentSimScore = score;
+    }
+
+    function simulateScore() {
+      var prevScore = currentSimScore;
+      var newScore = calculateScore();
+      updateGauge(newScore, prevScore);
+      showTips();
+      window.showToast && window.showToast('Score simulated: ' + newScore);
+    }
+
+    function resetFactors() {
+      document.getElementById('currentScore').value = 700;
+      document.getElementById('paymentHistory').value = 90;
+      document.getElementById('utilization').value = 30;
+      document.getElementById('historyLength').value = 5;
+      document.getElementById('creditMix').value = 2;
+      document.getElementById('newCredit').value = 1;
+      updateSliderLabels();
+      updateGauge(700, null);
+      document.getElementById('tipsSection').style.display = 'none';
+      document.getElementById('payoffResult').style.display = 'none';
+      document.getElementById('newCardResult').style.display = 'none';
+      document.getElementById('missResult').style.display = 'none';
+      window.showToast && window.showToast('Reset to defaults');
+    }
+
+    function updateSliderLabels() {
+      document.getElementById('paymentVal').textContent = document.getElementById('paymentHistory').value + '%';
+      document.getElementById('utilizationVal').textContent = document.getElementById('utilization').value + '%';
+      document.getElementById('historyVal').textContent = document.getElementById('historyLength').value + ' yrs';
+      document.getElementById('mixVal').textContent = document.getElementById('creditMix').value;
+      document.getElementById('inquiriesVal').textContent = document.getElementById('newCredit').value;
+    }
+
+    function showTips() {
+      var tips = [];
+      var payment = parseInt(document.getElementById('paymentHistory').value);
+      var util = parseInt(document.getElementById('utilization').value);
+      var history = parseInt(document.getElementById('historyLength').value);
+      var mix = parseInt(document.getElementById('creditMix').value);
+      var inquiries = parseInt(document.getElementById('newCredit').value);
+
+      var factors = [
+        { name: 'Payment History', score: payment >= 95 ? 5 : payment >= 80 ? 3 : 1, weight: 35 },
+        { name: 'Credit Utilization', score: util <= 10 ? 5 : util <= 30 ? 3 : 1, weight: 30 },
+        { name: 'Credit History', score: history >= 7 ? 5 : history >= 3 ? 3 : 1, weight: 15 },
+        { name: 'Credit Mix', score: mix >= 3 ? 5 : mix >= 2 ? 3 : 1, weight: 10 },
+        { name: 'New Credit', score: inquiries <= 1 ? 5 : inquiries <= 3 ? 3 : 1, weight: 10 }
+      ];
+
+      factors.sort(function(a, b) { return (a.score * a.weight) - (b.score * b.weight); });
+
+      var weakest = factors[0];
+
+      if (weakest.name === 'Payment History' && payment < 95) {
+        tips.push('Set up autopay on all accounts to ensure 100% on-time payments — this is the single biggest factor (35%).');
+        tips.push('If you have late payments, contact the creditor to request a goodwill adjustment after establishing on-time payments.');
+      }
+      if (weakest.name === 'Credit Utilization' || util > 30) {
+        tips.push('Pay down credit card balances to get utilization below 30%. Below 10% is ideal for top scores.');
+        tips.push('Consider making multiple payments per month to keep reported balances low.');
+        tips.push('Request a credit limit increase (without a hard pull) to lower your utilization ratio.');
+      }
+      if (weakest.name === 'Credit History' || history < 5) {
+        tips.push('Keep old accounts open even if unused — they boost your average account age.');
+        tips.push('Avoid closing your oldest credit card as it shortens your credit history.');
+      }
+      if (weakest.name === 'Credit Mix' || mix < 3) {
+        tips.push('Consider diversifying with different account types (credit card, installment loan, mortgage) if it makes financial sense.');
+        tips.push('A credit-builder loan can add an installment account to your mix.');
+      }
+      if (weakest.name === 'New Credit' || inquiries > 2) {
+        tips.push('Limit new credit applications — each hard inquiry can reduce your score by 5-10 points.');
+        tips.push('If rate shopping for a mortgage or auto loan, do it within a 14-day window so multiple inquiries count as one.');
+      }
+
+      if (tips.length === 0) {
+        tips.push('Your credit profile looks strong across all factors. Keep up the good habits!');
+      }
+
+      var html = '';
+      for (var i = 0; i < tips.length; i++) {
+        html += '<div class="tip-item">' + tips[i] + '</div>';
+      }
+      document.getElementById('tipsList').innerHTML = html;
+      document.getElementById('tipsSection').style.display = 'block';
+    }
+
+    function whatifPayoff() {
+      var amount = parseFloat(document.getElementById('payoffAmount').value);
+      var limit = parseFloat(document.getElementById('currentLimit').value);
+      if (!amount || !limit || limit <= 0) {
+        window.showToast && window.showToast('Enter both pay-off amount and credit limit');
+        return;
+      }
+      var currentUtil = parseInt(document.getElementById('utilization').value);
+      var currentBalance = (currentUtil / 100) * limit;
+      var newBalance = Math.max(0, currentBalance - amount);
+      var newUtil = Math.round((newBalance / limit) * 100);
+
+      var oldSlider = document.getElementById('utilization').value;
+      document.getElementById('utilization').value = newUtil;
+      updateSliderLabels();
+      var newScore = calculateScore();
+      document.getElementById('utilization').value = oldSlider;
+      updateSliderLabels();
+
+      var diff = newScore - currentSimScore;
+      var el = document.getElementById('payoffResult');
+      el.innerHTML = 'Paying off <span class="impact">$' + amount.toLocaleString() + '</span> reduces utilization from <span class="impact">' + currentUtil + '%</span> to <span class="impact">' + newUtil + '%</span>. Estimated score change: <span class="impact">' + (diff >= 0 ? '+' : '') + diff + ' points</span> (new score ~' + newScore + ').';
+      el.style.display = 'block';
+    }
+
+    function whatifNewCard() {
+      var newLimit = parseFloat(document.getElementById('newCardLimit').value);
+      if (!newLimit || newLimit <= 0) {
+        window.showToast && window.showToast('Enter the new card credit limit');
+        return;
+      }
+      var currentUtil = parseInt(document.getElementById('utilization').value);
+      var currentInq = parseInt(document.getElementById('newCredit').value);
+      var currentHistory = parseInt(document.getElementById('historyLength').value);
+
+      // More total credit = lower utilization, but +1 inquiry and shorter avg age
+      var oldLimit = 10000; // assume baseline
+      var currentBalance = (currentUtil / 100) * oldLimit;
+      var newTotalLimit = oldLimit + newLimit;
+      var newUtil = Math.round((currentBalance / newTotalLimit) * 100);
+
+      // Temporarily adjust sliders to calculate
+      var savedUtil = document.getElementById('utilization').value;
+      var savedInq = document.getElementById('newCredit').value;
+      var savedHist = document.getElementById('historyLength').value;
+
+      document.getElementById('utilization').value = newUtil;
+      document.getElementById('newCredit').value = Math.min(10, currentInq + 1);
+      document.getElementById('historyLength').value = Math.max(0, currentHistory - 1);
+      var newScore = calculateScore();
+
+      document.getElementById('utilization').value = savedUtil;
+      document.getElementById('newCredit').value = savedInq;
+      document.getElementById('historyLength').value = savedHist;
+
+      var diff = newScore - currentSimScore;
+      var el = document.getElementById('newCardResult');
+      el.innerHTML = 'Opening a card with <span class="impact">$' + newLimit.toLocaleString() + '</span> limit lowers utilization to <span class="impact">' + newUtil + '%</span> but adds a hard inquiry and reduces average age. Net estimated change: <span class="impact">' + (diff >= 0 ? '+' : '') + diff + ' points</span> (new score ~' + newScore + ').';
+      el.style.display = 'block';
+    }
+
+    function whatifMissPayment() {
+      var currentPayment = parseInt(document.getElementById('paymentHistory').value);
+      var newPayment = Math.max(0, currentPayment - 15);
+
+      var savedPay = document.getElementById('paymentHistory').value;
+      document.getElementById('paymentHistory').value = newPayment;
+      var newScore = calculateScore();
+      document.getElementById('paymentHistory').value = savedPay;
+
+      var diff = newScore - currentSimScore;
+      var el = document.getElementById('missResult');
+      el.innerHTML = 'Missing a payment drops your on-time rate from <span class="impact">' + currentPayment + '%</span> to <span class="impact">' + newPayment + '%</span>. Estimated score change: <span class="impact">' + (diff >= 0 ? '+' : '') + diff + ' points</span> (new score ~' + newScore + '). Late payments stay on your report for up to 7 years.';
+      el.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      // Slider live updates
+      var sliders = document.querySelectorAll('.factor-slider');
+      for (var i = 0; i < sliders.length; i++) {
+        sliders[i].addEventListener('input', updateSliderLabels);
+      }
+
+      updateSliderLabels();
+      updateGauge(700, null);
+    });
+  </script>
+</body>
+</html>
