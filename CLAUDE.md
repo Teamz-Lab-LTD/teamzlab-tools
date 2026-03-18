@@ -342,6 +342,32 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 - `Xenova/flan-t5-base` — text2text-generation (quote generator)
 - `Xenova/distilbart-cnn-6-6` — summarization (article summarizer)
 
+### Rule 13: ALWAYS run SEO validation scripts after building ANY tool
+- **NEVER skip the built-in scripts.** They exist to catch SEO issues automatically.
+- **NEVER substitute with manual grep checks** — the scripts are more thorough.
+- After building any new tool, run this checklist IN ORDER before declaring done:
+
+```bash
+# 1. Full build + validation (8 checks: search, sitemap, counts, colors, unlinked, dupes, SEO, technical)
+./build.sh
+
+# 2. Rebuild all JSON-LD schemas (BreadcrumbList, FAQPage, WebApplication)
+python3 build-static-schema.py
+
+# 3. Full SEO keyword audit
+./build-seo-audit.sh --report
+
+# 4. Check auto-fixable issues
+./build-seo-audit.sh --fix --dry-run
+
+# 5. Review ALL pre-commit warnings — fix them, don't ignore them
+```
+
+- Fix ALL warnings before telling user the tool is ready
+- Verify these schemas exist: FAQPage, WebApplication, BreadcrumbList
+- Verify these tags exist: twitter:title, twitter:description, og:image
+- Verify these JS calls exist: injectFAQSchema, injectWebAppSchema, renderFAQs, renderRelatedTools
+
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
 2. Using white text on neon accent background
@@ -354,3 +380,4 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 9. NOT making tools mobile-responsive (see Rule 10)
 10. Using percentage/em `line-height` on headings (causes overlapping text — see Rule 11)
 11. Building AI tools WITHOUT using shared `/shared/js/ai-engine.js` (see Rule 12)
+12. Skipping SEO validation scripts and doing manual checks instead (see Rule 13)
