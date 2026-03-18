@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fake Tweet Generator — Teamz Lab Tools</title>
+  <meta name="description" content="Create realistic fake tweet screenshots for memes and social media. Customize name, handle, text, likes, retweets, and verified badge. Free tool.">
+  <meta property="og:title" content="Fake Tweet Generator — Teamz Lab Tools">
+  <meta property="og:description" content="Create realistic fake tweet screenshots for memes and social media. Customize name, handle, text, likes, retweets, and verified badge. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/fake-tweet-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Fake Tweet Generator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Create realistic fake tweet screenshots for memes and social media. Customize everything. Free, private, no sign-up.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/fake-tweet-generator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ftg-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .ftg-full { grid-column: 1 / -1; }
+    .ftg-field label { display: block; font-weight: 600; font-size: 0.85rem; color: var(--heading); margin-bottom: 0.35rem; }
+    .ftg-field input, .ftg-field textarea, .ftg-field select { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: var(--font, 'Poppins', sans-serif); font-size: 0.9rem; box-sizing: border-box; }
+    .ftg-field textarea { resize: vertical; min-height: 80px; }
+    .ftg-char-count { text-align: right; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .ftg-char-count.over { color: var(--heading); font-weight: 700; }
+    .ftg-toggle-row { display: flex; align-items: center; gap: 0.75rem; }
+    .ftg-toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .ftg-toggle input { opacity: 0; width: 0; height: 0; }
+    .ftg-toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 999px; cursor: pointer; transition: background 0.2s; }
+    .ftg-toggle-slider::before { content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; background: var(--bg); border-radius: 50%; transition: transform 0.2s; }
+    .ftg-toggle input:checked + .ftg-toggle-slider { background: var(--heading); }
+    .ftg-toggle input:checked + .ftg-toggle-slider::before { transform: translateX(20px); }
+    .ftg-toggle-label { font-size: 0.85rem; font-weight: 600; color: var(--heading); }
+    .ftg-photo-upload { display: flex; align-items: center; gap: 0.75rem; }
+    .ftg-photo-preview { width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); object-fit: cover; flex-shrink: 0; }
+
+    /* Tweet preview wrapper */
+    .ftg-preview-wrap { margin: 1.5rem 0; }
+    .ftg-preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .ftg-preview-header h3 { margin: 0; color: var(--heading); font-size: 1rem; }
+    .ftg-mode-btns { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .ftg-mode-btn { padding: 0.4rem 0.75rem; border: none; background: var(--surface); color: var(--text); font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: var(--font, 'Poppins', sans-serif); }
+    .ftg-mode-btn.active { background: var(--heading); color: var(--bg); }
+
+    /* The tweet card itself — uses its own inline colors for realism */
+    .ftg-tweet { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; border-radius: 16px; padding: 16px; max-width: 550px; margin: 0 auto; border: 1px solid; line-height: 1.4; }
+    .ftg-tweet--light { background: #FFFFFF; color: #0F1419; border-color: #EFF3F4; }
+    .ftg-tweet--dark { background: #15202B; color: #E7E9EA; border-color: #38444D; }
+    .ftg-tweet-top { display: flex; gap: 12px; }
+    .ftg-tweet-avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+    .ftg-tweet-avatar--placeholder { display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 700; }
+    .ftg-tweet--light .ftg-tweet-avatar--placeholder { background: #1D9BF0; color: #FFFFFF; }
+    .ftg-tweet--dark .ftg-tweet-avatar--placeholder { background: #1D9BF0; color: #FFFFFF; }
+    .ftg-tweet-user { flex: 1; min-width: 0; }
+    .ftg-tweet-name-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .ftg-tweet-name { font-weight: 700; font-size: 15px; }
+    .ftg-tweet--light .ftg-tweet-name { color: #0F1419; }
+    .ftg-tweet--dark .ftg-tweet-name { color: #E7E9EA; }
+    .ftg-tweet-verified { width: 20px; height: 20px; flex-shrink: 0; }
+    .ftg-tweet-handle { font-size: 15px; }
+    .ftg-tweet--light .ftg-tweet-handle { color: #536471; }
+    .ftg-tweet--dark .ftg-tweet-handle { color: #8B98A5; }
+    .ftg-tweet-more { margin-left: auto; }
+    .ftg-tweet--light .ftg-tweet-more svg { fill: #536471; }
+    .ftg-tweet--dark .ftg-tweet-more svg { fill: #8B98A5; }
+    .ftg-tweet-text { font-size: 15px; line-height: 1.5; margin: 12px 0; word-wrap: break-word; white-space: pre-wrap; }
+    .ftg-tweet-time { font-size: 15px; margin: 12px 0; }
+    .ftg-tweet--light .ftg-tweet-time { color: #536471; }
+    .ftg-tweet--dark .ftg-tweet-time { color: #8B98A5; }
+    .ftg-tweet-divider { border: none; margin: 12px 0; }
+    .ftg-tweet--light .ftg-tweet-divider { border-top: 1px solid #EFF3F4; }
+    .ftg-tweet--dark .ftg-tweet-divider { border-top: 1px solid #38444D; }
+    .ftg-tweet-stats { display: flex; gap: 20px; margin: 0 0 4px; font-size: 14px; flex-wrap: wrap; }
+    .ftg-tweet-stat-val { font-weight: 700; }
+    .ftg-tweet--light .ftg-tweet-stat-val { color: #0F1419; }
+    .ftg-tweet--dark .ftg-tweet-stat-val { color: #E7E9EA; }
+    .ftg-tweet-stat-label { font-weight: 400; }
+    .ftg-tweet--light .ftg-tweet-stat-label { color: #536471; }
+    .ftg-tweet--dark .ftg-tweet-stat-label { color: #8B98A5; }
+    .ftg-tweet-actions { display: flex; justify-content: space-around; padding-top: 4px; }
+    .ftg-tweet-action { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .ftg-tweet-action svg { width: 20px; height: 20px; }
+    .ftg-tweet--light .ftg-tweet-action { color: #536471; }
+    .ftg-tweet--dark .ftg-tweet-action { color: #8B98A5; }
+    .ftg-tweet--light .ftg-tweet-action svg { fill: #536471; }
+    .ftg-tweet--dark .ftg-tweet-action svg { fill: #8B98A5; }
+
+    /* Actions */
+    .ftg-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin: 1.5rem 0; }
+    .ftg-disclaimer { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin: 1rem 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+
+    @media (max-width: 600px) {
+      .ftg-form { grid-template-columns: 1fr; }
+      .ftg-tweet { max-width: 100%; padding: 12px; }
+      .ftg-actions { flex-direction: column; }
+      .ftg-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tool.teamzlab.com/tools/"}, {"@type": "ListItem", "position": 3, "name": "Fake Tweet Generator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is this fake tweet generator free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. This tool is completely free with no sign-up, no watermark, and no limits. You can generate as many fake tweet images as you want."}}, {"@type": "Question", "name": "Does the tool upload my data to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. Everything runs in your browser using HTML and Canvas. Your tweet text, profile photo, and all inputs stay on your device and are never sent to any server."}}, {"@type": "Question", "name": "Can I use this for commercial purposes?", "acceptedAnswer": {"@type": "Answer", "text": "You can use the generated images for mockups, presentations, and marketing materials. However, do not use them to impersonate real people or spread misinformation. Always label fake tweets appropriately."}}, {"@type": "Question", "name": "Does it work on mobile phones?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The tool is fully responsive and works on smartphones and tablets. You can create, preview, download, and share fake tweets directly from your phone."}}, {"@type": "Question", "name": "Can I add my own profile picture?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the profile photo upload field to select an image from your device. The image is cropped into a circle in the preview. If you do not upload a photo, a colored placeholder with the first initial is shown."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Fake Tweet Generator", "description": "Create realistic fake tweet screenshots for memes and social media. Customize name, handle, text, likes, retweets, and verified badge. Free tool.", "url": "https://tool.teamzlab.com/tools/fake-tweet-generator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Fake Tweet Generator</h1>
+      <p class="tool-description">Create realistic fake tweet screenshots for memes, satire, and social media content. Customize every detail — name, handle, verified badge, tweet text, engagement stats, and more. Download as PNG or copy to clipboard. Everything runs in your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="ftg-form">
+        <div class="ftg-field">
+          <label for="ftg-name">Display Name</label>
+          <input type="text" id="ftg-name" value="Elon Musk" maxlength="50">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-handle">@Handle</label>
+          <input type="text" id="ftg-handle" value="elonmusk" maxlength="30">
+        </div>
+        <div class="ftg-field ftg-full">
+          <label>Profile Photo (optional)</label>
+          <div class="ftg-photo-upload">
+            <img id="ftg-photo-preview" class="ftg-photo-preview" alt="Profile preview">
+            <input type="file" id="ftg-photo-input" accept="image/*">
+          </div>
+        </div>
+        <div class="ftg-field ftg-full">
+          <div class="ftg-toggle-row">
+            <label class="ftg-toggle">
+              <input type="checkbox" id="ftg-verified" checked>
+              <span class="ftg-toggle-slider"></span>
+            </label>
+            <span class="ftg-toggle-label">Verified Badge (Blue Checkmark)</span>
+          </div>
+        </div>
+        <div class="ftg-field ftg-full">
+          <label for="ftg-text">Tweet Text</label>
+          <textarea id="ftg-text" maxlength="280" rows="3">I just mass-purchased a social media platform. What's the worst that could happen?</textarea>
+          <div class="ftg-char-count"><span id="ftg-char-num">0</span>/280</div>
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-date">Date</label>
+          <input type="date" id="ftg-date">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-time">Time</label>
+          <input type="time" id="ftg-time" value="14:30">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-replies">Replies</label>
+          <input type="number" id="ftg-replies" value="1234" min="0">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-retweets">Retweets</label>
+          <input type="number" id="ftg-retweets" value="45600" min="0">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-likes">Likes</label>
+          <input type="number" id="ftg-likes" value="234500" min="0">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-views">Views</label>
+          <input type="number" id="ftg-views" value="12500000" min="0">
+        </div>
+        <div class="ftg-field">
+          <label for="ftg-platform">Platform Branding</label>
+          <select id="ftg-platform">
+            <option value="x">X (formerly Twitter)</option>
+            <option value="twitter">Twitter (classic)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Preview controls -->
+      <div class="ftg-preview-wrap">
+        <div class="ftg-preview-header">
+          <h3>Tweet Preview</h3>
+          <div class="ftg-mode-btns">
+            <button type="button" class="ftg-mode-btn" data-mode="light">Light</button>
+            <button type="button" class="ftg-mode-btn active" data-mode="dark">Dark</button>
+          </div>
+        </div>
+        <div id="ftg-tweet-container"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ftg-actions">
+        <button type="button" class="btn-primary" id="ftg-download">Download PNG</button>
+        <button type="button" class="btn-secondary" id="ftg-copy-img">Copy Image</button>
+        <button type="button" class="btn-secondary" id="ftg-share">Share</button>
+      </div>
+
+      <div class="ftg-disclaimer">For entertainment and educational purposes only. Do not use to impersonate, defame, or mislead. Misuse may violate laws and platform terms of service.</div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Fake Tweet Generator Works</h2>
+      <p>This fake tweet generator lets you create realistic-looking tweet screenshots without posting anything on X or Twitter. You fill in the display name, handle, tweet text, and engagement numbers, and the tool renders a pixel-perfect preview that matches the actual X/Twitter interface. The preview updates in real time as you type, so you can fine-tune every detail before downloading.</p>
+      <p>The generated image is a standard PNG file that you can share on social media, use in presentations, embed in blog posts, or send to friends as a meme. The tool supports both the classic Twitter branding and the newer X branding, so you can choose whichever style fits your content. You can also toggle between light and dark mode for the tweet preview to match the aesthetic you want.</p>
+      <p>Everything runs entirely in your browser. No data is sent to any server. Your tweet text, profile photo, and all other inputs stay on your device. The image is generated using the HTML5 Canvas API, which means it works offline once the page is loaded.</p>
+
+      <h2>Why People Use Fake Tweet Generators</h2>
+      <p>Fake tweet generators are widely used for creating meme content, satire, social media marketing mockups, and educational materials. Content creators use them to draft tweet concepts before posting, test how their messaging looks in context, or create humorous fictional tweets for entertainment. Teachers and journalists use fake tweet tools to create examples for media literacy lessons, showing students how easy it is to fabricate social media screenshots and why they should verify information before sharing.</p>
+      <p>Marketers and designers use fake tweet generators to create mockups for client presentations, social media strategy decks, and brand campaigns. Instead of posting a real tweet and screenshotting it, they can generate a polished preview with exact engagement numbers and verified badge styling. This is especially useful for planning viral campaigns or demonstrating how a brand voice would appear on the platform.</p>
+
+      <h2>Responsible Use and Disclaimer</h2>
+      <p>While this tool is free and fun to use, it comes with responsibility. Creating fake tweets that impersonate real people with the intent to deceive, defame, or mislead is unethical and may violate laws in your jurisdiction. Many countries have laws against impersonation, fraud, and defamation that apply to fabricated social media content. Always use fake tweet generators for clearly labeled satire, memes, educational content, or internal mockups. Never present a fake tweet as real to deceive others.</p>
+      <p>The verified badge feature is included for realism in mockups and memes, but using it to impersonate public figures or brands in a misleading way is a misuse of this tool. If you share a generated image publicly, consider adding a watermark or caption that clearly labels it as a parody or mockup. This protects both you and the people depicted in the fake tweet.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    /* --- Breadcrumbs --- */
+    var breadcrumbs = [{name:'Home',url:'/'},{name:'Tools',url:'/tools/'},{name:'Fake Tweet Generator'}];
+    TeamzTools.renderBreadcrumbs(breadcrumbs);
+    TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+    /* --- FAQs --- */
+    var faqs = [
+      {q:'Is this fake tweet generator free?', a:'Yes. This tool is completely free with no sign-up, no watermark, and no limits. You can generate as many fake tweet images as you want.'},
+      {q:'Does the tool upload my data to a server?', a:'No. Everything runs in your browser using HTML and Canvas. Your tweet text, profile photo, and all inputs stay on your device and are never sent to any server.'},
+      {q:'Can I use this for commercial purposes?', a:'You can use the generated images for mockups, presentations, and marketing materials. However, do not use them to impersonate real people or spread misinformation. Always label fake tweets appropriately.'},
+      {q:'Does it work on mobile phones?', a:'Yes. The tool is fully responsive and works on smartphones and tablets. You can create, preview, download, and share fake tweets directly from your phone.'},
+      {q:'Can I add my own profile picture?', a:'Yes. Click the profile photo upload field to select an image from your device. The image is cropped into a circle in the preview. If you do not upload a photo, a colored placeholder with the first initial is shown.'}
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    /* --- Related tools --- */
+    TeamzTools.renderRelatedTools([
+      {slug:'design/instagram-post-maker', name:'Instagram Post Maker', description:'Design Instagram posts with templates, filters, and text overlays.'},
+      {slug:'design/youtube-thumbnail-maker', name:'YouTube Thumbnail Maker', description:'Create eye-catching YouTube thumbnails with text and graphics.'},
+      {slug:'tools/decision-maker', name:'Decision Maker', description:'Spin the wheel or flip a coin to make decisions instantly.'},
+      {slug:'tools/signature-maker', name:'Signature Maker', description:'Draw or type your digital signature and download as transparent PNG.'},
+      {slug:'tools/event-badge-generator', name:'Event Badge Generator', description:'Create printable event badges with names, titles, and QR codes.'},
+      {slug:'tools/social-link-card-generator', name:'Social Link Card Generator', description:'Build a link-in-bio card with all your social profiles in one page.'}
+    ]);
+
+    /* --- WebApp Schema --- */
+    TeamzTools.injectWebAppSchema({
+      slug:'tools/fake-tweet-generator',
+      title:'Fake Tweet Generator',
+      description:'Create realistic fake tweet screenshots for memes and social media. Customize name, handle, text, likes, retweets, and verified badge. Free tool.'
+    });
+
+    /* --- State --- */
+    var previewMode = 'dark';
+    var profilePhotoData = null;
+
+    /* --- Set default date to today --- */
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    document.getElementById('ftg-date').value = today.getFullYear() + '-' + mm + '-' + dd;
+
+    /* --- Character counter --- */
+    var textArea = document.getElementById('ftg-text');
+    var charNum = document.getElementById('ftg-char-num');
+    function updateCharCount() {
+      var len = textArea.value.length;
+      charNum.textContent = len;
+      charNum.parentElement.classList.toggle('over', len >= 280);
+    }
+    textArea.addEventListener('input', updateCharCount);
+    updateCharCount();
+
+    /* --- Profile photo upload --- */
+    var photoInput = document.getElementById('ftg-photo-input');
+    var photoPreview = document.getElementById('ftg-photo-preview');
+    photoInput.addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        profilePhotoData = e.target.result;
+        photoPreview.src = profilePhotoData;
+        renderTweet();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    /* --- Preview mode toggle --- */
+    var modeBtns = document.querySelectorAll('.ftg-mode-btn');
+    modeBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        modeBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        previewMode = btn.getAttribute('data-mode');
+        renderTweet();
+      });
+    });
+
+    /* --- Format numbers --- */
+    function fmtNum(n) {
+      n = parseInt(n, 10) || 0;
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+      return String(n);
+    }
+
+    /* --- Format date/time --- */
+    function fmtDateTime() {
+      var dateVal = document.getElementById('ftg-date').value;
+      var timeVal = document.getElementById('ftg-time').value;
+      if (!dateVal) return 'Mar 19, 2026 · 2:30 PM';
+      var d = new Date(dateVal + 'T' + (timeVal || '12:00'));
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var h = d.getHours();
+      var ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      var min = String(d.getMinutes()).padStart(2, '0');
+      return h + ':' + min + ' ' + ampm + ' · ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    /* --- Escape HTML --- */
+    function esc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    /* --- Verified badge SVG --- */
+    var verifiedSVG = '<svg class="ftg-tweet-verified" viewBox="0 0 22 22" fill="none"><path d="M20.396 11c0-.252-.076-.504-.22-.72l-1.876-2.78.276-3.344a1.17 1.17 0 0 0-.98-1.236l-3.3-.58L12.6 0.7a1.17 1.17 0 0 0-1.572-.376L8.4 1.74 5.772.324A1.17 1.17 0 0 0 4.2.7L2.504 2.34l-3.3.58a1.17 1.17 0 0 0-.98 1.236l.276 3.344L-3.376 10.28a1.17 1.17 0 0 0 0 1.44l1.876 2.78-.276 3.344a1.17 1.17 0 0 0 .98 1.236l3.3.58L4.2 21.3a1.17 1.17 0 0 0 1.572.376L8.4 20.26l2.628 1.416a1.17 1.17 0 0 0 1.572-.376l1.696-1.64 3.3-.58a1.17 1.17 0 0 0 .98-1.236l-.276-3.344 1.876-2.78c.144-.216.22-.468.22-.72z" transform="translate(3 3) scale(0.75)" fill="#1D9BF0"/><path d="M9.585 14.585l-4.585-4.585 1.415-1.415 3.17 3.17 6.17-6.17 1.415 1.415-7.585 7.585z" transform="translate(0 0)" fill="#FFFFFF"/></svg>';
+
+    /* --- X / Twitter logo SVGs --- */
+    var xLogoLight = '<svg viewBox="0 0 24 24" width="24" height="24" fill="#0F1419"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
+    var xLogoDark = '<svg viewBox="0 0 24 24" width="24" height="24" fill="#E7E9EA"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
+    var twitterLogoLight = '<svg viewBox="0 0 24 24" width="24" height="24" fill="#1D9BF0"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z"/></svg>';
+    var twitterLogoDark = twitterLogoLight;
+
+    /* --- Action icon SVGs (reply, retweet, like, share, views) --- */
+    var replyIcon = '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z" fill="currentColor"/></svg>';
+    var retweetIcon = '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z" fill="currentColor"/></svg>';
+    var likeIcon = '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.56-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z" fill="currentColor"/></svg>';
+    var shareIcon = '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2.59l5.7 5.7-1.41 1.41L13 6.41V16h-2V6.41l-3.3 3.3-1.41-1.41L12 2.59zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z" fill="currentColor"/></svg>';
+    var viewsIcon = '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M8.75 21V3h2v18h-2zM18.75 21V8.5h2V21h-2zM13.75 21v-8h2v8h-2zM3.75 21v-4h2v4h-2z" fill="currentColor"/></svg>';
+
+    /* --- Render tweet --- */
+    function renderTweet() {
+      var name = document.getElementById('ftg-name').value || 'Display Name';
+      var handle = document.getElementById('ftg-handle').value || 'handle';
+      handle = handle.replace(/^@/, '');
+      var isVerified = document.getElementById('ftg-verified').checked;
+      var text = document.getElementById('ftg-text').value || '';
+      var replies = parseInt(document.getElementById('ftg-replies').value, 10) || 0;
+      var retweets = parseInt(document.getElementById('ftg-retweets').value, 10) || 0;
+      var likes = parseInt(document.getElementById('ftg-likes').value, 10) || 0;
+      var views = parseInt(document.getElementById('ftg-views').value, 10) || 0;
+      var platform = document.getElementById('ftg-platform').value;
+      var isDark = previewMode === 'dark';
+      var modeClass = isDark ? 'ftg-tweet--dark' : 'ftg-tweet--light';
+
+      var avatarHtml;
+      if (profilePhotoData) {
+        avatarHtml = '<img class="ftg-tweet-avatar" src="' + profilePhotoData + '" alt="Profile">';
+      } else {
+        var initial = name.charAt(0).toUpperCase();
+        avatarHtml = '<div class="ftg-tweet-avatar ftg-tweet-avatar--placeholder" style="width:48px;height:48px;border-radius:50%;">' + esc(initial) + '</div>';
+      }
+
+      var platformLogo = '';
+      if (platform === 'x') {
+        platformLogo = isDark ? xLogoDark : xLogoLight;
+      } else {
+        platformLogo = isDark ? twitterLogoDark : twitterLogoLight;
+      }
+
+      var html = '';
+      html += '<div class="ftg-tweet ' + modeClass + '" id="ftg-tweet-card">';
+      html += '<div class="ftg-tweet-top">';
+      html += avatarHtml;
+      html += '<div class="ftg-tweet-user">';
+      html += '<div class="ftg-tweet-name-row">';
+      html += '<span class="ftg-tweet-name">' + esc(name) + '</span>';
+      if (isVerified) html += verifiedSVG;
+      html += '</div>';
+      html += '<div class="ftg-tweet-handle">@' + esc(handle) + '</div>';
+      html += '</div>';
+      html += '<div class="ftg-tweet-more" style="margin-left:auto;">' + platformLogo + '</div>';
+      html += '</div>';
+      html += '<div class="ftg-tweet-text">' + esc(text) + '</div>';
+      html += '<div class="ftg-tweet-time">' + fmtDateTime() + '</div>';
+      html += '<hr class="ftg-tweet-divider">';
+      html += '<div class="ftg-tweet-stats">';
+      if (retweets > 0) html += '<span><span class="ftg-tweet-stat-val">' + fmtNum(retweets) + '</span> <span class="ftg-tweet-stat-label">Reposts</span></span>';
+      if (likes > 0) html += '<span><span class="ftg-tweet-stat-val">' + fmtNum(likes) + '</span> <span class="ftg-tweet-stat-label">Likes</span></span>';
+      if (views > 0) html += '<span><span class="ftg-tweet-stat-val">' + fmtNum(views) + '</span> <span class="ftg-tweet-stat-label">Views</span></span>';
+      html += '</div>';
+      html += '<hr class="ftg-tweet-divider">';
+      html += '<div class="ftg-tweet-actions">';
+      html += '<span class="ftg-tweet-action">' + replyIcon + ' ' + fmtNum(replies) + '</span>';
+      html += '<span class="ftg-tweet-action">' + retweetIcon + ' ' + fmtNum(retweets) + '</span>';
+      html += '<span class="ftg-tweet-action">' + likeIcon + ' ' + fmtNum(likes) + '</span>';
+      html += '<span class="ftg-tweet-action">' + viewsIcon + ' ' + fmtNum(views) + '</span>';
+      html += '<span class="ftg-tweet-action">' + shareIcon + '</span>';
+      html += '</div>';
+      html += '</div>';
+
+      document.getElementById('ftg-tweet-container').innerHTML = html;
+    }
+
+    /* --- Live preview on any input change --- */
+    var inputs = document.querySelectorAll('.ftg-form input, .ftg-form textarea, .ftg-form select');
+    inputs.forEach(function(el) {
+      el.addEventListener('input', renderTweet);
+      el.addEventListener('change', renderTweet);
+    });
+    renderTweet();
+
+    /* --- Capture tweet card to canvas --- */
+    function captureTweet(callback) {
+      var card = document.getElementById('ftg-tweet-card');
+      if (!card) return;
+      html2canvas(card, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true,
+        logging: false
+      }).then(function(canvas) {
+        callback(canvas);
+      }).catch(function() {
+        if (window.showToast) window.showToast('Failed to capture tweet image.');
+      });
+    }
+
+    /* --- Download PNG --- */
+    document.getElementById('ftg-download').addEventListener('click', function() {
+      captureTweet(function(canvas) {
+        canvas.toBlob(function(blob) {
+          if (!blob) return;
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'fake-tweet.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+          if (window.showToast) window.showToast('Tweet image downloaded!');
+        }, 'image/png');
+      });
+    });
+
+    /* --- Copy Image --- */
+    document.getElementById('ftg-copy-img').addEventListener('click', function() {
+      captureTweet(function(canvas) {
+        canvas.toBlob(function(blob) {
+          if (!blob) return;
+          if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+            navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
+              if (window.showToast) window.showToast('Tweet image copied to clipboard!');
+            }).catch(function() {
+              if (window.showToast) window.showToast('Copy failed. Try downloading instead.');
+            });
+          } else {
+            if (window.showToast) window.showToast('Clipboard API not supported. Try downloading instead.');
+          }
+        }, 'image/png');
+      });
+    });
+
+    /* --- Share --- */
+    document.getElementById('ftg-share').addEventListener('click', function() {
+      if (navigator.share) {
+        captureTweet(function(canvas) {
+          canvas.toBlob(function(blob) {
+            if (!blob) return;
+            var file = new File([blob], 'fake-tweet.png', {type: 'image/png'});
+            navigator.share({
+              title: 'Fake Tweet',
+              files: [file]
+            }).catch(function() {});
+          }, 'image/png');
+        });
+      } else {
+        if (window.showToast) window.showToast('Share not supported on this browser. Download and share manually.');
+      }
+    });
+  });
+  </script>
+</body>
+</html>
