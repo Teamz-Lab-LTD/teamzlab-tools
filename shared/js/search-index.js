@@ -472,6 +472,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Habit Streak Calculator',d:'Track your habit streaks with this free visual calendar tracker. See current streak, longest streak, and completion rate. Data saved locally, 100% pri',h:'/health/habit-streak-calculator/'},
   {t:'Resting Heart Rate Checker',d:'Check if your resting heart rate is normal for your age, gender, and fitness level. Get your category, normal range, and tips to improve. Free tool.',h:'/health/heart-rate-checker/'},
   {t:'Health & Wellness Tools',d:'Free health tools — water intake, calorie calculator, BMI, blood pressure checker, sleep calculator, macro calculator, and more.',h:'/health/'},
+  {t:'Free IQ Test',d:'Take a free IQ test with 30 questions covering logic, patterns, math, memory, and spatial reasoning. Get your IQ score instantly. 100% private, no sig',h:'/health/iq-test/'},
   {t:'Love Language Quiz — Find Your Love Language',d:'Discover your love language with this free 20-question quiz. Learn how you give and receive love. Private, instant results based on 5 love languages.',h:'/health/love-language-quiz/'},
   {t:'Macro Calculator',d:'Calculate your daily macronutrient targets for protein, carbs, and fat. Choose balanced, low carb, keto, or high protein with per-meal breakdown. Free',h:'/health/macro-calculator/'},
   {t:'Medication Reminder Planner',d:'Plan your medication schedule with precise dose times based on frequency and meals. Get a daily timetable, dose count, and printable schedule. Free.',h:'/health/medication-reminder-planner/'},
