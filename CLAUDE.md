@@ -187,6 +187,7 @@ Every tool page MUST have:
 /shared/js/common.js           — header, footer, schema, breadcrumbs
 /shared/js/tool-engine.js      — calculator-type tools
 /shared/js/utility-engine.js   — text/dev/generator tools
+/shared/js/ai-engine.js        — central AI manager (Chrome AI + Transformers.js + caching)
 /shared/js/search-index.js     — search data (auto-generated)
 /branding/css/teamz-branding.css — design tokens, brand styles
 /branding/js/theme.js          — dark/light theme toggle
@@ -298,6 +299,49 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 - Use `clamp()` for font sizes where possible: `clamp(18px, 4vw, 28px)`
 - NEVER use fixed `width: 700px` without a `max-width: 100%` fallback
 
+### Rule 12: ALWAYS use shared AI engine for AI-powered tools
+- ANY tool that uses AI (Chrome AI, Transformers.js, or both) MUST use `/shared/js/ai-engine.js`
+- Add `<script src="/shared/js/ai-engine.js"></script>` BEFORE the tool's inline script
+- Use `TeamzAI.generate()` for the 3-tier fallback (Chrome AI → Transformers.js → curated fallback)
+- Use `TeamzAI.chromeAI.prompt` / `.summarizer` / `.writer` / `.rewriter` to check availability
+- Use `TeamzAI.getPipeline(task, model, options)` to get cached Transformers.js pipelines
+- **Why:** Models are cached in IndexedDB + memory. If user already downloaded a model in Tool A, Tool B reuses it instantly — no re-download
+- NEVER import Transformers.js directly in a tool — always go through `TeamzAI`
+- NEVER do inline Chrome AI detection — always use `TeamzAI.chromeAI`
+
+**Quick usage pattern for new AI tools:**
+```html
+<script src="/shared/js/ai-engine.js"></script>
+<script>
+  // Wait for AI engine to initialize
+  document.addEventListener('DOMContentLoaded', async function() {
+    await TeamzAI.init();
+
+    // Check what's available
+    if (TeamzAI.chromeAI.prompt) { /* Chrome AI ready */ }
+
+    // Generate with 3-tier fallback
+    var result = await TeamzAI.generate({
+      chromePrompt: 'Write a motivational quote about success',
+      chromeSystemPrompt: 'You are a quote writer.',
+      transformersTask: 'text2text-generation',
+      transformersModel: 'Xenova/flan-t5-base',
+      transformersPrompt: 'Write a motivational quote about success.',
+      transformersOptions: { max_new_tokens: 150, num_beams: 4 },
+      fallback: function() { return 'Fallback text here'; },
+      onProgress: function(pct) { /* update progress bar */ },
+      onStatus: function(msg) { /* show status message */ },
+      qualityCheck: function(text) { return text.length > 20; }
+    });
+    // result = { text: '...', source: 'chrome-ai' | 'transformers' | 'fallback' }
+  });
+</script>
+```
+
+**Available Transformers.js models already used in this project:**
+- `Xenova/flan-t5-base` — text2text-generation (quote generator)
+- `Xenova/distilbart-cnn-6-6` — summarization (article summarizer)
+
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
 2. Using white text on neon accent background
@@ -309,3 +353,4 @@ The full growth strategy lives in `/docs/research/022-growth-playbook.md`. It co
 8. Adding max-height to result containers
 9. NOT making tools mobile-responsive (see Rule 10)
 10. Using percentage/em `line-height` on headings (causes overlapping text — see Rule 11)
+11. Building AI tools WITHOUT using shared `/shared/js/ai-engine.js` (see Rule 12)
