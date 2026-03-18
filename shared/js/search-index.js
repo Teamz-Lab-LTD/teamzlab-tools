@@ -455,6 +455,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Breathing Exercise Timer',d:'Practice guided breathing exercises to calm anxiety instantly. Box breathing, 4-7-8, and deep calm techniques with visual timer. Free and private.',h:'/health/breathing-exercise/'},
   {t:'Burnout Test — Are You Burned Out?',d:'Take this free burnout test to check exhaustion, cynicism, and inefficacy levels. 15 questions, instant results, 100% private. No data leaves your bro',h:'/health/burnout-test/'},
   {t:'Daily Calorie Intake Calculator',d:'Calculate your daily calorie needs using the Mifflin-St Jeor equation. Get BMR, TDEE, target calories for weight goals, and macro breakdown. Free.',h:'/health/calorie-intake-calculator/'},
+  {t:'Childhood Trauma Test',d:'Take the free childhood trauma test based on the ACE framework. Assess impact across 7 categories with visual results. 100% private, no sign-up needed',h:'/health/childhood-trauma-test/'},
   {t:'Color Blind Test',d:'Take a free Ishihara-style color blind test online. Detect protanopia, deuteranopia, and tritanopia with 12 canvas-generated plates. Private and insta',h:'/health/color-blind-test/'},
   {t:'Contrast Sensitivity Test',d:'Test your contrast sensitivity with 10 levels of decreasing contrast. Free online vision screening for contrast perception. Private and instant.',h:'/health/contrast-sensitivity-test/'},
   {t:'Deep Work Calculator',d:'Calculate your available deep work hours free. Input meetings and tasks, get an optimized focus schedule. Private, no sign-up needed.',h:'/health/deep-work-calculator/'},
