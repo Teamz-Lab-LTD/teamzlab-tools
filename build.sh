@@ -35,6 +35,28 @@ if [ $ERRORS -eq 0 ]; then
   echo "  All card counts correct!"
 fi
 
+# 3b. Validate hub page card structure (must use <div class="card"> wrapper)
+echo ""
+echo "[3b] Checking hub page card structure..."
+hub_card_issues=0
+for hub_file in "$BASE"/*/index.html; do
+  hub_name=$(basename "$(dirname "$hub_file")")
+  # Skip non-hub directories
+  case "$hub_name" in about|contact|privacy|terms|docs|shared|branding|og-images|icons|__pycache__) continue ;; esac
+  # Only check files that have tools-grid (hub pages)
+  if grep -q 'tools-grid' "$hub_file" 2>/dev/null; then
+    # Check if any tool-card links are missing <div class="card"> wrapper
+    if grep -q 'class="tool-card"' "$hub_file" && ! grep -q '<div class="card">' "$hub_file" 2>/dev/null; then
+      echo "  BROKEN: /$hub_name/index.html — tool-card links missing <div class=\"card\"> wrapper"
+      hub_card_issues=$((hub_card_issues + 1))
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+done
+if [ $hub_card_issues -eq 0 ]; then
+  echo "  All hub pages have correct card structure!"
+fi
+
 # 4. Check for hardcoded colors in new/modified files
 echo ""
 echo "[4/7] Checking for hardcoded colors..."
