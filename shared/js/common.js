@@ -1504,7 +1504,9 @@ document.addEventListener('DOMContentLoaded', function () {
         var existing = document.getElementById('teamz-embed-modal');
         if (existing) { existing.remove(); return; }
 
-        var embedCode = '<iframe src="' + pageUrl + '" width="100%" height="600" style="border:1px solid #e0e0e0;border-radius:8px;" loading="lazy" title="' + _escapeHtml(pageTitle) + '"></iframe>';
+        var linkCode = '<a href="' + pageUrl + '" target="_blank" rel="noopener" style="display:inline-block;padding:8px 16px;background:#12151A;color:#D9FE06;border-radius:6px;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:600;">Try ' + _escapeHtml(pageTitle) + ' &#x2192;</a>';
+        var badgeCode = '<a href="' + pageUrl + '" target="_blank" rel="noopener" title="' + _escapeHtml(pageTitle) + ' — Free Online Tool"><img src="https://tool.teamzlab.com/icons/icon-32x32.png" alt="Teamz Lab Tools" width="20" height="20" style="vertical-align:middle;margin-right:4px">' + _escapeHtml(pageTitle) + '</a>';
+        var markdownCode = '[' + _escapeHtml(pageTitle) + '](' + pageUrl + ')';
 
         var modal = document.createElement('div');
         modal.id = 'teamz-embed-modal';
@@ -1512,15 +1514,26 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.innerHTML =
           '<div class="embed-modal__content">' +
             '<div class="embed-modal__header">' +
-              '<h3>Embed This Tool</h3>' +
+              '<h3>Link to This Tool</h3>' +
               '<button class="embed-modal__close" aria-label="Close">&times;</button>' +
             '</div>' +
-            '<p>Copy the code below to embed this tool on your website or blog:</p>' +
-            '<textarea class="embed-modal__code" readonly rows="3">' + _escapeHtml(embedCode) + '</textarea>' +
+            '<p>Add a link to this tool on your website or blog:</p>' +
+            '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.25rem 0 0.75rem">Button style</p>' +
+            '<textarea class="embed-modal__code" readonly rows="2" id="embed-link-code">' + _escapeHtml(linkCode) + '</textarea>' +
             '<div class="embed-modal__actions">' +
-              '<button class="embed-modal__copy">Copy Embed Code</button>' +
+              '<button class="embed-modal__copy" data-target="embed-link-code">Copy Button Code</button>' +
             '</div>' +
-            '<p class="embed-modal__note">Free to use. Attribution appreciated but not required.</p>' +
+            '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem">Text link with icon</p>' +
+            '<textarea class="embed-modal__code" readonly rows="2" id="embed-badge-code">' + _escapeHtml(badgeCode) + '</textarea>' +
+            '<div class="embed-modal__actions">' +
+              '<button class="embed-modal__copy" data-target="embed-badge-code">Copy Link Code</button>' +
+            '</div>' +
+            '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem">Markdown</p>' +
+            '<textarea class="embed-modal__code" readonly rows="1" id="embed-md-code">' + _escapeHtml(markdownCode) + '</textarea>' +
+            '<div class="embed-modal__actions">' +
+              '<button class="embed-modal__copy" data-target="embed-md-code">Copy Markdown</button>' +
+            '</div>' +
+            '<p class="embed-modal__note">Free to use. Each link helps us keep these tools free!</p>' +
           '</div>';
         document.body.appendChild(modal);
 
@@ -1528,17 +1541,21 @@ document.addEventListener('DOMContentLoaded', function () {
         modal.querySelector('.embed-modal__close').addEventListener('click', function () { modal.remove(); });
         modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
 
-        // Copy
-        modal.querySelector('.embed-modal__copy').addEventListener('click', function () {
-          var textarea = modal.querySelector('.embed-modal__code');
-          textarea.select();
-          navigator.clipboard.writeText(textarea.value).then(function () {
-            var btn = modal.querySelector('.embed-modal__copy');
-            btn.textContent = 'Copied!';
-            window.showToast('Embed code copied!');
-            setTimeout(function () { btn.textContent = 'Copy Embed Code'; }, 2000);
-          }).catch(function() {
-            window.showToast('Copy failed — select and copy manually.');
+        // Copy buttons (multiple)
+        modal.querySelectorAll('.embed-modal__copy').forEach(function(btn) {
+          btn.addEventListener('click', function () {
+            var targetId = btn.getAttribute('data-target');
+            var textarea = document.getElementById(targetId);
+            if (!textarea) return;
+            textarea.select();
+            var originalText = btn.textContent;
+            navigator.clipboard.writeText(textarea.value).then(function () {
+              btn.textContent = 'Copied!';
+              window.showToast('Code copied to clipboard!');
+              setTimeout(function () { btn.textContent = originalText; }, 2000);
+            }).catch(function() {
+              window.showToast('Copy failed — select and copy manually.');
+            });
           });
         });
 
