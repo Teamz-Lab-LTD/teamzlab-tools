@@ -42,6 +42,13 @@ Example output to user:
    - **Warns if title >60 chars** (will show in pre-commit output)
    - **Warns if meta description >155 chars** (decoded length)
    - **Warns if og:image is missing**
+   - **Warns if FAQs are missing** (renderFAQs + injectFAQSchema)
+   - **Warns if WebApp schema is missing** (injectWebAppSchema)
+   - **Warns if related tools are missing** (renderRelatedTools)
+   - **Warns if content <150 words** (need 300+ for AdSense RPM)
+   - **Warns if <2 H2 tags in content** (need 2+ for mid-content ads)
+   - **Warns if no JS logic** (addEventListener/functions)
+   - **Warns if central CSS classes redefined** (share-btn, tool-result, etc.)
    - Rebuilds static JSON-LD schema in all pages (`build-static-schema.py`)
 
 2. **Build scripts** — run manually or via hook:
