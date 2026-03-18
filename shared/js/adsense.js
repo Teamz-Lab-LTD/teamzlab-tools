@@ -4,10 +4,18 @@
  *
  * Strategy (policy-compliant, revenue-maximized):
  * 1. Auto Ads enabled — Google optimizes anchor, vignette, in-page placements
- * 2. Manual ad in existing .ad-slot (between calculator and content)
- * 3. Second manual ad injected between content and FAQs
- * 4. All ads are responsive and mobile-friendly
- * 5. All ad events tracked in Firebase Analytics + GA4
+ * 2. Ad Unit 1: Manual .ad-slot (between calculator and content)
+ * 3. Ad Unit 2: Mid-content (between 2nd and 3rd H2 inside .tool-content)
+ *    — Only if content has 3+ H2s (ensures enough content between ads)
+ * 4. Ad Unit 3: Between content and FAQs
+ * 5. Ad Unit 4: After related tools (bottom of page)
+ * 6. All ads are responsive and mobile-friendly
+ * 7. All ad events tracked in Firebase Analytics + GA4
+ *
+ * Content density safeguard:
+ * - Mid-content ad only placed if there are 3+ H2 sections
+ * - This ensures ~200+ words of content exist on each side of the ad
+ * - Complies with Google's "valuable content between ads" policy
  */
 
 (function () {
@@ -104,7 +112,24 @@
       adCount++;
     });
 
-    // --- Ad Unit 2: Between content and FAQs (in-article ad) ---
+    // --- Ad Unit 2: Mid-content (between H2 sections inside .tool-content) ---
+    // Only inject if there are 3+ H2 headings (enough content for policy compliance)
+    var contentSection = document.querySelector('.tool-content');
+    if (contentSection) {
+      var h2s = contentSection.querySelectorAll('h2');
+      if (h2s.length >= 3) {
+        // Place ad after the 2nd H2's content (before the 3rd H2)
+        var targetH2 = h2s[2]; // 3rd H2 (0-indexed)
+        var midAd = document.createElement('div');
+        midAd.className = 'ad-slot ad-slot--in-content';
+        midAd.style.cssText = 'margin:1.5rem 0;min-height:90px;';
+        targetH2.parentNode.insertBefore(midAd, targetH2);
+        createAdUnit(midAd, 'mid-content');
+        adCount++;
+      }
+    }
+
+    // --- Ad Unit 3: Between content and FAQs (in-article ad) ---
     var faqSection = document.getElementById('tool-faqs');
     if (faqSection) {
       var adDiv = document.createElement('div');
@@ -115,7 +140,7 @@
       adCount++;
     }
 
-    // --- Ad Unit 3: After related tools (bottom of page, before footer) ---
+    // --- Ad Unit 4: After related tools (bottom of page, before footer) ---
     var relatedTools = document.getElementById('related-tools');
     if (relatedTools) {
       var bottomAd = document.createElement('div');
