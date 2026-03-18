@@ -910,7 +910,7 @@
         // === Top-left: branding (replaces old bKash badge + slogan) ===
         ctx.textAlign = 'left';
         ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.5; ctx.font = '400 14px Poppins, sans-serif';
-        ctx.fillText('tool.teamzlab.com', 50, 45); ctx.globalAlpha = 1;
+        ctx.fillText('tool.teamzlab.com/ramadan/eid-salami-qr-card-generator', 50, 45); ctx.globalAlpha = 1;
         ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.4; ctx.font = '700 13px Poppins, sans-serif';
         ctx.fillText('DESIGNED BY TEAMZ LAB TOOLS', 50, 68); ctx.globalAlpha = 1;
 
@@ -950,55 +950,44 @@
 
         if (message) { ctx.fillStyle = theme.textDark; ctx.globalAlpha = 0.6; ctx.font = '500 16px "Noto Sans Bengali", Poppins, sans-serif'; ctx.fillText(message, 50, 920); ctx.globalAlpha = 1; }
         // Draw the person's photo on the right side with angled divider
-        var angleOffset = 100; // How much the diagonal slants
-        // The actual draw area is wider than photoW because of the angle
-        var drawX = W * 0.30;                 // start from bottom-left point of clip
-        var drawW = W - drawX;               // full width from left edge to right
+        // Clip path points
+        var clipTopX = W * 0.52 + 30;   // ~592 — top of diagonal (~80 degree, near vertical)
+        var clipBotX = W * 0.48;         // ~518 — bottom of diagonal (only ~74px difference = near 90°)
+
+        // Photo draw area must cover entire clip (from leftmost point to W, 0 to H)
+        var drawX = clipBotX;
+        var drawW = W - drawX;
         var drawH = H;
 
-        // Calculate crop to FILL the draw area (cover, not contain)
+        // Calculate crop to FILL the draw area (cover mode)
         var imgRatio = userPhoto.width / userPhoto.height;
         var targetRatio = drawW / drawH;
         var sx, sy, sw, sh;
 
         if (imgRatio > targetRatio) {
-          // Image is wider - crop sides, keep full height
           sh = userPhoto.height;
           sw = sh * targetRatio;
           sx = (userPhoto.width - sw) / 2;
           sy = 0;
         } else {
-          // Image is taller - crop bottom, keep full width
           sw = userPhoto.width;
           sh = sw / targetRatio;
           sx = 0;
-          sy = 0; // Crop from top to show face
+          sy = 0;
         }
 
-        // Create angled clipping path for diagonal divider
+        // Diagonal clip
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(W * 0.55 + angleOffset, 0);   // top of diagonal
-        ctx.lineTo(W, 0);                          // top-right corner
-        ctx.lineTo(W, H);                          // bottom-right corner
-        ctx.lineTo(W * 0.30, H);                   // bottom extends far left
+        ctx.moveTo(clipTopX, 0);
+        ctx.lineTo(W, 0);
+        ctx.lineTo(W, H);
+        ctx.lineTo(clipBotX, H);
         ctx.closePath();
         ctx.clip();
 
-        // Fill entire clipped area with a solid color first (safety net for any gaps)
-        ctx.fillStyle = theme.accent;
-        ctx.fillRect(drawX, 0, drawW, drawH);
-
-        // Draw photo on top — fills the full clipped area
+        // Draw photo filling entire clipped area — clean, no gradient overlay
         ctx.drawImage(userPhoto, sx, sy, sw, sh, drawX, 0, drawW, drawH);
-
-        // Soft gradient blend on the diagonal edge only
-        var fadeGrad = ctx.createLinearGradient(drawX, 0, drawX + 140, 0);
-        fadeGrad.addColorStop(0, theme.bg1);
-        fadeGrad.addColorStop(0.4, theme.bg1.replace(')', ', 0.12)').replace('rgb', 'rgba'));
-        fadeGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = fadeGrad;
-        ctx.fillRect(drawX, 0, 140, H);
 
         ctx.restore();
 
