@@ -600,6 +600,146 @@ var TeamzTools = (function () {
     }
   }
 
+  // --- Quick Feedback Widget (shows after star rating or standalone) ---
+  var FEEDBACK_URL = 'https://teamzlab-tools-default-rtdb.firebaseio.com/feedback';
+
+  function renderFeedback() {
+    if (document.getElementById('tool-feedback')) return;
+
+    var ratingEl = document.getElementById('tool-rating');
+    var relTools = document.getElementById('related-tools');
+    var anchor = ratingEl || relTools;
+    if (!anchor) return;
+
+    var slug = _getToolSlug();
+    var key = _safeKey(slug);
+    var hasFeedback = false;
+    try { hasFeedback = localStorage.getItem('tz_fb_' + slug) === '1'; } catch(e) {}
+
+    var widget = document.createElement('div');
+    widget.id = 'tool-feedback';
+    widget.className = 'tool-feedback';
+
+    if (hasFeedback) {
+      widget.innerHTML = '<p class="feedback-thanks">Thanks for your feedback!</p>';
+    } else {
+      widget.innerHTML =
+        '<p class="feedback-question">Was this tool useful?</p>' +
+        '<div class="feedback-reactions">' +
+          '<button class="feedback-btn" data-reaction="love" title="Love it!">&#10084;&#65039; Love it</button>' +
+          '<button class="feedback-btn" data-reaction="useful" title="Useful">&#128077; Useful</button>' +
+          '<button class="feedback-btn" data-reaction="ok" title="It\'s OK">&#128528; OK</button>' +
+          '<button class="feedback-btn" data-reaction="needs-work" title="Needs work">&#128679; Needs work</button>' +
+        '</div>' +
+        '<div class="feedback-followup" id="feedback-followup" style="display:none;">' +
+          '<p class="feedback-followup-q" id="feedback-followup-q"></p>' +
+          '<div class="feedback-tags" id="feedback-tags"></div>' +
+        '</div>';
+    }
+
+    if (anchor.nextSibling) {
+      anchor.parentNode.insertBefore(widget, anchor.nextSibling);
+    } else {
+      anchor.parentNode.appendChild(widget);
+    }
+
+    if (hasFeedback) return;
+
+    // Reaction tags based on sentiment
+    var positiveTags = ['Use daily', 'Better than alternatives', 'Fast & simple', 'Great results', 'Privacy-first'];
+    var negativeTags = ['Confusing UI', 'Wrong results', 'Missing features', 'Too slow', 'Not what I expected'];
+
+    widget.querySelectorAll('.feedback-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var reaction = btn.getAttribute('data-reaction');
+        var isPositive = (reaction === 'love' || reaction === 'useful');
+
+        // Highlight selected button
+        widget.querySelectorAll('.feedback-btn').forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+
+        // Show follow-up tags
+        var followup = document.getElementById('feedback-followup');
+        var followupQ = document.getElementById('feedback-followup-q');
+        var tagsDiv = document.getElementById('feedback-tags');
+
+        followupQ.textContent = isPositive ? 'What did you like most?' : 'What could be better?';
+        var tags = isPositive ? positiveTags : negativeTags;
+        tagsDiv.innerHTML = '';
+        tags.forEach(function(tag) {
+          var tagBtn = document.createElement('button');
+          tagBtn.className = 'feedback-tag';
+          tagBtn.textContent = tag;
+          tagBtn.addEventListener('click', function() {
+            tagBtn.classList.toggle('selected');
+          });
+          tagsDiv.appendChild(tagBtn);
+        });
+
+        // Add submit button
+        var submitBtn = document.createElement('button');
+        submitBtn.className = 'btn-primary feedback-submit';
+        submitBtn.textContent = 'Submit Feedback';
+        submitBtn.addEventListener('click', function() {
+          var selectedTags = [];
+          tagsDiv.querySelectorAll('.feedback-tag.selected').forEach(function(t) {
+            selectedTags.push(t.textContent);
+          });
+
+          // Save to Firebase
+          var feedbackData = {
+            reaction: reaction,
+            tags: selectedTags.join(','),
+            timestamp: Date.now(),
+            path: window.location.pathname
+          };
+          fetch(FEEDBACK_URL + '/' + key + '.json')
+            .then(function(r) { return r.json(); })
+            .then(function(existing) {
+              var reactions = (existing && existing.reactions) || {};
+              reactions[reaction] = (reactions[reaction] || 0) + 1;
+              var tagCounts = (existing && existing.tagCounts) || {};
+              selectedTags.forEach(function(t) { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+              var totalFeedback = (existing && existing.total) || 0;
+              return fetch(FEEDBACK_URL + '/' + key + '.json', {
+                method: 'PUT',
+                body: JSON.stringify({
+                  reactions: reactions,
+                  tagCounts: tagCounts,
+                  total: totalFeedback + 1,
+                  lastUpdated: Date.now()
+                })
+              });
+            })
+            .catch(function() {});
+
+          // Track in GA
+          if (typeof window.gtag === 'function') {
+            window.gtag('event', 'tool_feedback', {
+              event_category: 'engagement',
+              event_label: slug,
+              reaction: reaction,
+              tags: selectedTags.join(',')
+            });
+          }
+
+          // Mark as submitted
+          try { localStorage.setItem('tz_fb_' + slug, '1'); } catch(e) {}
+
+          // Show thanks
+          widget.innerHTML = '<p class="feedback-thanks">Thanks for your feedback! We\'ll use it to make this tool better.</p>';
+          if (window.showToast) window.showToast('Feedback submitted!');
+        });
+
+        // Remove existing submit button if any
+        var existingSubmit = tagsDiv.parentNode.querySelector('.feedback-submit');
+        if (existingSubmit) existingSubmit.remove();
+        tagsDiv.parentNode.appendChild(submitBtn);
+        followup.style.display = '';
+      });
+    });
+  }
+
   return {
     renderHeader: renderHeader,
     renderFooter: renderFooter,
@@ -612,6 +752,7 @@ var TeamzTools = (function () {
     renderRelatedTools: renderRelatedTools,
     renderFAQs: renderFAQs,
     renderRating: renderRating,
+    renderFeedback: renderFeedback,
     SITE_NAME: SITE_NAME,
     SITE_URL: SITE_URL,
 
@@ -1343,7 +1484,7 @@ document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderFooter();
   TeamzTranslate.init();
   // Rating widget renders after a short delay to ensure FAQs/related tools are rendered first
-  setTimeout(function () { TeamzTools.renderRating(); }, 100);
+  setTimeout(function () { TeamzTools.renderRating(); TeamzTools.renderFeedback(); }, 100);
 
   // Offline indicator — show banner when offline, hide when back online
   (function initOfflineIndicator() {
