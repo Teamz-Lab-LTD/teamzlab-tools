@@ -124,58 +124,104 @@
     var ins = container.querySelector('.adsbygoogle');
     if (!ins) return;
 
-    // --- Track ad impression (scrolled into view, 50%+ visible) ---
-    if (window.IntersectionObserver) {
-      var impressionObserved = false;
-      var impressionObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting && !impressionObserved) {
-            impressionObserved = true;
-            adSlotStats[placement].impressed = true;
-            trackAdEvent('ad_impression', {
-              placement: placement,
-              viewport_percent: Math.round(entry.intersectionRatio * 100)
-            });
-            impressionObserver.disconnect();
-
-            // --- Track viewability (visible for 1+ second = Active View) ---
-            setTimeout(function () {
-              if (impressionObserved) {
-                adSlotStats[placement].viewable = true;
-                trackAdEvent('ad_viewability', {
-                  placement: placement,
-                  viewable_seconds: 1,
-                  status: 'active_view'
-                });
-              }
-            }, 1000);
-          }
-        });
-      }, { threshold: 0.5 });
-      impressionObserver.observe(ins);
-    }
-
-    // --- Track ad filled vs unfilled (check data-ad-status after delay) ---
-    setTimeout(function () {
+    // --- REAL ad display verification (multi-check) ---
+    // Google sets data-ad-status and injects an iframe when ad actually renders.
+    // We poll for these signals to confirm the ad is TRULY showing, not just pushed.
+    var displayChecked = false;
+    function checkAdDisplay() {
+      if (displayChecked) return;
       var status = ins.getAttribute('data-ad-status');
-      var isFilled = ins.offsetHeight > 0 && status !== 'unfilled';
+      var iframe = ins.querySelector('iframe');
+      var hasHeight = ins.offsetHeight > 1;
+      var iframeHasHeight = iframe && iframe.offsetHeight > 1;
 
-      if (isFilled) {
+      // --- Ad is CONFIRMED showing ---
+      if (status === 'filled' || (iframe && iframeHasHeight && hasHeight)) {
+        displayChecked = true;
         adSlotStats[placement].filled = true;
-        trackAdEvent('ad_filled', {
+        trackAdEvent('ad_display_success', {
           placement: placement,
           ad_height: ins.offsetHeight,
-          ad_width: ins.offsetWidth
+          ad_width: ins.offsetWidth,
+          has_iframe: !!iframe,
+          iframe_height: iframe ? iframe.offsetHeight : 0,
+          data_ad_status: status || 'none',
+          load_time_ms: Date.now() - pageStartTime
         });
-      } else {
-        adSlotStats[placement].unfilled = true;
-        trackAdEvent('ad_unfilled', {
-          placement: placement,
-          ad_status: status || 'no_status',
-          reason: status === 'unfilled' ? 'no_demand' : 'load_failed'
-        });
+
+        // Now track impression only when FILLED ad enters viewport
+        if (window.IntersectionObserver) {
+          var impressionObserved = false;
+          var impressionObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting && !impressionObserved) {
+                impressionObserved = true;
+                adSlotStats[placement].impressed = true;
+                trackAdEvent('ad_impression', {
+                  placement: placement,
+                  viewport_percent: Math.round(entry.intersectionRatio * 100),
+                  confirmed_showing: true
+                });
+                impressionObserver.disconnect();
+
+                // Track viewability (visible for 1+ second = Active View)
+                setTimeout(function () {
+                  adSlotStats[placement].viewable = true;
+                  trackAdEvent('ad_viewability', {
+                    placement: placement,
+                    viewable_seconds: 1,
+                    status: 'active_view'
+                  });
+                }, 1000);
+              }
+            });
+          }, { threshold: 0.5 });
+          impressionObserver.observe(ins);
+        }
+        return;
       }
-    }, 4000);
+
+      // --- Ad CONFIRMED not showing ---
+      if (status === 'unfilled') {
+        displayChecked = true;
+        adSlotStats[placement].unfilled = true;
+        trackAdEvent('ad_display_failure', {
+          placement: placement,
+          reason: 'unfilled_by_google',
+          data_ad_status: status,
+          has_iframe: !!iframe,
+          ins_height: ins.offsetHeight
+        });
+        return;
+      }
+
+      // Not resolved yet — status still pending
+    }
+
+    // Poll multiple times: Google can take 1-8 seconds to fill
+    // Check at 2s, 4s, 6s, 8s — covers slow networks and lazy-loaded ads
+    [2000, 4000, 6000, 8000].forEach(function (delay) {
+      setTimeout(function () {
+        if (!displayChecked) {
+          checkAdDisplay();
+          // If still not resolved at 8s, mark as failed
+          if (!displayChecked && delay === 8000) {
+            displayChecked = true;
+            adSlotStats[placement].unfilled = true;
+            var finalStatus = ins.getAttribute('data-ad-status');
+            var finalIframe = ins.querySelector('iframe');
+            trackAdEvent('ad_display_failure', {
+              placement: placement,
+              reason: finalStatus === 'unfilled' ? 'no_demand' : (finalIframe ? 'iframe_no_content' : 'no_response'),
+              data_ad_status: finalStatus || 'none',
+              has_iframe: !!finalIframe,
+              ins_height: ins.offsetHeight,
+              timeout: true
+            });
+          }
+        }
+      }, delay);
+    });
   }
 
   // 4. Track ad clicks via window blur detection
@@ -278,11 +324,13 @@
     // Setup click tracking after ads have time to load their iframes
     setTimeout(setupClickTracking, 5000);
 
-    // Collapse unfilled ad slots after Google has had time to fill them
+    // Collapse unfilled ad slots + generate page summary
+    // Wait 10s — after all display checks (2s/4s/6s/8s) have completed
     setTimeout(function () {
       var filledCount = 0;
       var unfilledCount = 0;
       var blockedCount = 0;
+      var showingAds = [];
 
       document.querySelectorAll('.ad-slot').forEach(function (slot) {
         var ins = slot.querySelector('ins.adsbygoogle');
@@ -292,29 +340,30 @@
           return;
         }
         var status = ins.getAttribute('data-ad-status');
-        if (status === 'unfilled' || ins.offsetHeight === 0) {
+        var iframe = ins.querySelector('iframe');
+        var isActuallyShowing = (status === 'filled') || (iframe && iframe.offsetHeight > 1 && ins.offsetHeight > 1);
+
+        if (isActuallyShowing) {
+          filledCount++;
+          showingAds.push(slot.className.replace('ad-slot', '').trim() || 'primary');
+        } else {
           slot.style.cssText = 'min-height:0;margin:0;padding:0;height:0;overflow:hidden;border:none;opacity:0;';
           unfilledCount++;
-          trackAdEvent('ad_slot_collapsed', {
-            placement: slot.className,
-            reason: status || 'zero_height'
-          });
-        } else {
-          filledCount++;
         }
       });
 
-      // Page-level ad revenue summary
+      // Page-level ad revenue summary — the REAL picture
       trackAdEvent('ad_revenue_page', {
         total_slots: adCount,
-        filled: filledCount,
-        unfilled: unfilledCount,
+        actually_showing: filledCount,
+        not_showing: unfilledCount,
         blocked: blockedCount,
-        fill_rate: adCount > 0 ? Math.round((filledCount / adCount) * 100) : 0,
+        fill_rate_percent: adCount > 0 ? Math.round((filledCount / adCount) * 100) : 0,
+        showing_positions: showingAds.join(', '),
         time_on_page: Math.round((Date.now() - pageStartTime) / 1000),
         device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
       });
-    }, 6000);
+    }, 10000);
 
     // Re-check click tracking when new iframes appear (Google may lazy-load)
     setTimeout(setupClickTracking, 10000);
