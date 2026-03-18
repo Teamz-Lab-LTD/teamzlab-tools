@@ -50,7 +50,7 @@ Example output to user:
    - `./build.sh` — full validation (search + sitemap + counts + lint + unlinked check)
    - `./build-validate-freshness.sh` — checks for stale/outdated data (run annually or when rates change)
 
-3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, or search placeholder. The pre-commit hook does it automatically.
+3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, search placeholder, llms.txt, or twitter tags. The pre-commit hook does it all automatically.
 
 4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
 
@@ -192,6 +192,8 @@ Every tool page MUST have:
 /branding/css/teamz-branding.css — design tokens, brand styles
 /branding/js/theme.js          — dark/light theme toggle
 /sitemap.xml                   — auto-generated
+/llms.txt                      — AI search engine index (auto-generated, 873+ tools)
+/robots.txt                    — allows all crawlers, references sitemap + llms.txt
 /manifest.json                 — PWA manifest
 /sw.js                         — service worker
 ```
