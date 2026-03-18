@@ -51,7 +51,7 @@ var TeamzTools = (function () {
       '</a>' +
       '<nav class="header-nav" aria-label="Main navigation">' +
         '<a href="/" class="nav-link">Home</a>' +
-        '<a href="/about/" class="nav-link">About</a>' +
+        '<a href="https://apps.teamzlab.com/" target="_blank" rel="noopener" class="nav-link">About</a>' +
         '<a href="https://teamzlab.com/contact" target="_blank" rel="noopener" class="nav-link">Contact</a>' +
         '<div class="lang-selector notranslate" translate="no">' +
           '<button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no">' +
@@ -196,7 +196,7 @@ var TeamzTools = (function () {
         '</div>' +
         '<div class="footer-col">' +
           '<h4>Company</h4>' +
-          '<a href="/about/">About</a>' +
+          '<a href="https://apps.teamzlab.com/" target="_blank" rel="noopener">About</a>' +
           '<a href="https://teamzlab.com/contact" target="_blank" rel="noopener">Contact</a>' +
           '<a href="/privacy/">Privacy Policy</a>' +
           '<a href="/terms/">Terms of Service</a>' +
