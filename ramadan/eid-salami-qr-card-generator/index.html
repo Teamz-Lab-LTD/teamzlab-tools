@@ -835,8 +835,23 @@
 
       // Clear
       ctx.clearRect(0, 0, W, H);
-      ctx.save(); // Save state so errors don't break future draws
-      try { _doRenderCard(W, H, theme, name, wallet, number, message); } catch(e) { console.error('Render error:', e); }
+      ctx.save();
+      try {
+        _doRenderCard(W, H, theme, name, wallet, number, message);
+      } catch(e) {
+        console.error('Render error:', e);
+        // Draw error message on canvas so it's visible
+        ctx.restore();
+        ctx.fillStyle = '#fce4ec';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#880e4f';
+        ctx.font = '600 24px Poppins, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Card rendering... Please wait', W/2, H/2);
+        ctx.font = '400 16px Poppins, sans-serif';
+        ctx.fillText(e.message || 'Unknown error', W/2, H/2 + 40);
+        return;
+      }
       ctx.restore();
     }
 
@@ -1177,20 +1192,29 @@
         actionsEl.parentNode.insertBefore(cta, actionsEl.nextSibling);
       }
 
-      // Render after fonts load — multiple attempts to ensure canvas is visible
+      // Render and convert canvas to img for reliable display
       var doSharedRender = function() {
         renderCard();
-        // Force re-render after short delays to catch late font loading
-        setTimeout(renderCard, 500);
-        setTimeout(renderCard, 1500);
+        // Convert canvas to img tag — 100% reliable display
+        setTimeout(function() {
+          renderCard(); // re-render with fonts loaded
+          try {
+            var dataURL = canvas.toDataURL('image/png');
+            var img = document.createElement('img');
+            img.src = dataURL;
+            img.style.cssText = 'width:100%;display:block;border-radius:16px;';
+            img.alt = 'Eid Salami QR Card';
+            var wrap = document.getElementById('previewWrap');
+            canvas.style.display = 'none';
+            wrap.appendChild(img);
+          } catch(e) { console.error('Canvas to img failed:', e); }
+        }, 1500);
       };
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(doSharedRender);
       } else {
-        setTimeout(doSharedRender, 800);
+        setTimeout(doSharedRender, 1000);
       }
-      // Also render immediately in case fonts are already cached
-      setTimeout(renderCard, 100);
     }
 
     document.getElementById('btnShareLink').addEventListener('click', function() {
