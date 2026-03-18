@@ -941,10 +941,35 @@
         return str.replace(/\s+/g, ' ').trim();
       }
 
+      // ===== Bangla Number to Words =====
+      var bnOnes = ['', 'এক', 'দুই', 'তিন', 'চার', 'পাঁচ', 'ছয়', 'সাত', 'আট', 'নয়',
+        'দশ', 'এগারো', 'বারো', 'তেরো', 'চৌদ্দ', 'পনেরো', 'ষোলো', 'সতেরো', 'আঠারো', 'উনিশ',
+        'বিশ', 'একুশ', 'বাইশ', 'তেইশ', 'চব্বিশ', 'পঁচিশ', 'ছাব্বিশ', 'সাতাশ', 'আঠাশ', 'উনত্রিশ',
+        'ত্রিশ', 'একত্রিশ', 'বত্রিশ', 'তেত্রিশ', 'চৌত্রিশ', 'পঁয়ত্রিশ', 'ছত্রিশ', 'সাতত্রিশ', 'আটত্রিশ', 'উনচল্লিশ',
+        'চল্লিশ', 'একচল্লিশ', 'বিয়াল্লিশ', 'তেতাল্লিশ', 'চুয়াল্লিশ', 'পঁয়তাল্লিশ', 'ছেচল্লিশ', 'সাতচল্লিশ', 'আটচল্লিশ', 'উনপঞ্চাশ',
+        'পঞ্চাশ', 'একান্ন', 'বায়ান্ন', 'তিপান্ন', 'চুয়ান্ন', 'পঞ্চান্ন', 'ছাপান্ন', 'সাতান্ন', 'আটান্ন', 'উনষাট',
+        'ষাট', 'একষট্টি', 'বাষট্টি', 'তেষট্টি', 'চৌষট্টি', 'পঁয়ষট্টি', 'ছেষট্টি', 'সাতষট্টি', 'আটষট্টি', 'উনসত্তর',
+        'সত্তর', 'একাত্তর', 'বাহাত্তর', 'তিয়াত্তর', 'চুয়াত্তর', 'পঁচাত্তর', 'ছিয়াত্তর', 'সাতাত্তর', 'আটাত্তর', 'উনআশি',
+        'আশি', 'একাশি', 'বিরাশি', 'তিরাশি', 'চুরাশি', 'পঁচাশি', 'ছিয়াশি', 'সাতাশি', 'আটাশি', 'উননব্বই',
+        'নব্বই', 'একানব্বই', 'বিরানব্বই', 'তিরানব্বই', 'চুরানব্বই', 'পঁচানব্বই', 'ছিয়ানব্বই', 'সাতানব্বই', 'আটানব্বই', 'নিরানব্বই'];
+
+      function numberToBanglaWords(num) {
+        if (!num || isNaN(num) || num < 0) return '';
+        num = Math.floor(num);
+        if (num === 0) return '';
+        if (num >= 10000000) return numberToBanglaWords(Math.floor(num / 10000000)) + ' কোটি ' + numberToBanglaWords(num % 10000000);
+        if (num >= 100000) return numberToBanglaWords(Math.floor(num / 100000)) + ' লক্ষ ' + numberToBanglaWords(num % 100000);
+        if (num >= 1000) return numberToBanglaWords(Math.floor(num / 1000)) + ' হাজার ' + numberToBanglaWords(num % 1000);
+        if (num >= 100) return bnOnes[Math.floor(num / 100)] + 'শত ' + numberToBanglaWords(num % 100);
+        return bnOnes[num] || '';
+      }
+
       var currencyNames = {
         BDT: 'Taka', USD: 'Dollars', SAR: 'Riyals', AED: 'Dirhams',
         PKR: 'Rupees', INR: 'Rupees', GBP: 'Pounds', EUR: 'Euros', MYR: 'Ringgit'
       };
+
+      var currencyNamesBn = { BDT: 'টাকা' };
 
       var currencySymbols = {
         BDT: '৳', USD: '$', SAR: '﷼', AED: 'د.إ',
@@ -1028,9 +1053,15 @@
       payToEl.addEventListener('input', renderPreview);
       amountEl.addEventListener('input', function () {
         var val = parseInt(amountEl.value);
+        var cur = currencyEl.value;
         if (val > 0) {
-          var words = cleanWords(numberToWords(val));
-          amountWordsEl.textContent = words + ' ' + currencyNames[currencyEl.value] + ' Only';
+          if (cur === 'BDT') {
+            var bnWords = cleanWords(numberToBanglaWords(val));
+            amountWordsEl.textContent = bnWords + ' ' + currencyNamesBn.BDT + ' মাত্র';
+          } else {
+            var words = cleanWords(numberToWords(val));
+            amountWordsEl.textContent = words + ' ' + currencyNames[cur] + ' Only';
+          }
         } else {
           amountWordsEl.textContent = '';
         }
@@ -1064,7 +1095,16 @@
         var currency = data.currency || 'BDT';
         var symbol = currencySymbols[currency] || '';
         var amount = data.amount || 0;
-        var words = amount > 0 ? cleanWords(numberToWords(amount)) + ' ' + currencyNames[currency] + ' Only' : 'Amount in Words';
+        var words;
+        if (amount > 0) {
+          if (currency === 'BDT') {
+            words = cleanWords(numberToBanglaWords(amount)) + ' ' + currencyNamesBn.BDT + ' মাত্র';
+          } else {
+            words = cleanWords(numberToWords(amount)) + ' ' + currencyNames[currency] + ' Only';
+          }
+        } else {
+          words = currency === 'BDT' ? 'অঙ্কে টাকার পরিমাণ' : 'Amount in Words';
+        }
         var payTo = data.payTo || 'Recipient Name';
         var from = data.from || 'Your Name';
         var date = formatDate(data.date);
@@ -1346,7 +1386,16 @@
         ctx.stroke();
 
         // Amount in words
-        var amountWords = data.amount > 0 ? cleanWords(numberToWords(data.amount)) + ' ' + currencyNames[data.currency] + ' Only' : '________';
+        var amountWords;
+        if (data.amount > 0) {
+          if (data.currency === 'BDT') {
+            amountWords = cleanWords(numberToBanglaWords(data.amount)) + ' ' + currencyNamesBn.BDT + ' মাত্র';
+          } else {
+            amountWords = cleanWords(numberToWords(data.amount)) + ' ' + currencyNames[data.currency] + ' Only';
+          }
+        } else {
+          amountWords = '________';
+        }
         ctx.font = 'italic 12px Poppins, sans-serif';
         ctx.fillStyle = textColor;
         ctx.fillText(amountWords, 24, 148);
