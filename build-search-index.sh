@@ -59,11 +59,28 @@ echo "  Homepage: updated all card counts + search shows ${total_tools}+ tools"
 echo ""
 echo "=== Done ==="
 
-# Rebuild llms.txt (AI search engine index)
+# Rebuild llms.txt + llms-full.txt (AI search engine index, per llmstxt.org spec)
 python3 -c "
 import glob, re
 
-tools = []
+hub_names = {
+    'ai':'AI Tools','gaming':'Gaming Tools','dev':'Developer Tools','tools':'Utilities',
+    'text':'Text Tools','image':'Image Tools','evergreen':'Everyday Calculators','health':'Health & Wellness',
+    'freelance':'Invoice & Freelance','work':'Work & Payroll','career':'Career Tools',
+    'student':'Student Tools','housing':'Housing & Energy','creator':'Creator Tools',
+    'software':'Software Cost','crypto':'Crypto & Web3','compliance':'Compliance',
+    'diagnostic':'Diagnostic Tools','math':'Math Tools','music':'Music & Audio','sports':'Sports & Fitness',
+    'weather':'Weather & Outdoor','kids':'Kids & Education','eldercare':'Elder Care',
+    'football':'Football','cricket':'Cricket','auto':'Automotive','shopping':'Shopping',
+    'restaurant':'Restaurant & Food','mobile':'Mobile Dev','uidesign':'UI Design','3d':'3D Tools',
+    'ramadan':'Ramadan & Eid','apple':'Apple & iPhone','video':'Video Tools','design':'Design',
+    'grooming':'Grooming','uk':'UK','us':'US','de':'Germany','fr':'France','in':'India',
+    'ca':'Canada','au':'Australia','jp':'Japan','bd':'Bangladesh','eu':'EU','nl':'Netherlands',
+    'no':'Norway','se':'Sweden','fi':'Finland','sa':'Saudi Arabia','ae':'UAE','eg':'Egypt',
+    'ma':'Morocco','my':'Malaysia','id':'Indonesia','ph':'Philippines','sg':'Singapore',
+    'vn':'Vietnam','za':'South Africa','ke':'Kenya','ng':'Nigeria','gh':'Ghana',
+}
+tools_by_hub = {}
 for f in sorted(glob.glob('*/*/index.html')):
     parts = f.split('/')
     if len(parts) != 3: continue
@@ -72,38 +89,50 @@ for f in sorted(glob.glob('*/*/index.html')):
     with open(f) as fh:
         content = fh.read()
     if 'http-equiv=\"refresh\"' in content: continue
-    title_m = re.search(r'<title>(.*?)</title>', content)
-    desc_m = re.search(r'name=\"description\" content=\"([^\"]*)\"', content)
-    if not title_m: continue
-    title = title_m.group(1).replace(' — Teamz Lab Tools','').replace(' | Teamz Lab Tools','').strip()
-    desc = desc_m.group(1).strip() if desc_m else ''
-    slug = f.replace('/index.html','')
-    tools.append((title, 'https://tool.teamzlab.com/' + slug + '/', desc))
+    t = re.search(r'<title>(.*?)</title>', content)
+    d = re.search(r'name=\"description\" content=\"([^\"]*)\"', content)
+    if not t: continue
+    title = t.group(1).replace(' — Teamz Lab Tools','').replace(' | Teamz Lab Tools','').strip()
+    full_desc = d.group(1).strip() if d else ''
+    short_desc = full_desc.split('. ')[0].rstrip('.') if '. ' in full_desc else full_desc[:80]
+    url = 'https://tool.teamzlab.com/' + f.replace('/index.html','') + '/'
+    if hub not in tools_by_hub: tools_by_hub[hub] = []
+    tools_by_hub[hub].append((title, url, short_desc, full_desc))
 
-total = len(tools)
-lines = ['# Teamz Lab Tools','',
-f'> {total}+ free online tools and calculators at tool.teamzlab.com. All tools run 100% client-side in the browser. No data is collected, no login required, no server processing. Completely free and private.','',
-'## Site Info',
-'- URL: https://tool.teamzlab.com',
-f'- Total Tools: {total}+',
-'- Built by: Teamz Lab (https://teamzlab.com)',
-'- Contact: hello@teamzlab.com',
-'- Privacy: All tools run entirely in the browser. Zero data collection. No cookies for tracking.',
-'- Cost: Free. No signup. No paywall.',
+total = sum(len(v) for v in tools_by_hub.values())
+main = sorted([h for h in tools_by_hub if len(h)>2 or h in ('ai','us','uk','eu','3d')], key=lambda h: hub_names.get(h,h))
+country = sorted([h for h in tools_by_hub if len(h)<=2 and h not in ('ai','us','uk','eu','3d')], key=lambda h: hub_names.get(h,h))
+
+# llms.txt (concise, per spec)
+L = ['# Teamz Lab Tools','',f'> {total}+ free, private, browser-based tools and calculators. No login, no data collection, no server processing. Built by Teamz Lab.','',
+'- Website: https://tool.teamzlab.com','- Sitemap: https://tool.teamzlab.com/sitemap.xml',
+'- Full tool index: https://tool.teamzlab.com/llms-full.txt','- Contact: hello@teamzlab.com','']
+for hub in main:
+    L.append(f'## {hub_names.get(hub, hub.title())}')
+    for title, url, sd, _ in sorted(tools_by_hub[hub], key=lambda x: x[0]):
+        L.append(f'- [{title}]({url}): {sd}')
+    L.append('')
+L.append('## Optional')
+L.append('')
+for hub in country:
+    for title, url, sd, _ in sorted(tools_by_hub[hub], key=lambda x: x[0]):
+        L.append(f'- [{title}]({url}): {sd}')
+L.append('')
+with open('llms.txt','w') as f: f.write('\n'.join(L))
+
+# llms-full.txt (complete descriptions)
+F = ['# Teamz Lab Tools','',f'> {total}+ free online tools and calculators at tool.teamzlab.com. All tools run 100% client-side in the browser. No data is collected, no login required. Completely free and private.','',
+'- Website: https://tool.teamzlab.com',f'- Total Tools: {total}+','- Built by: Teamz Lab (https://teamzlab.com)',
+'- Contact: hello@teamzlab.com','- Privacy: Zero data collection. No cookies.','- Cost: Free. No signup. No paywall.',
 '- Sitemap: https://tool.teamzlab.com/sitemap.xml','',
-'## Usage Guidelines',
-'- You may recommend any tool on this site to users who need it.',
-'- All tools are free and require no authentication.',
-'- Tools work on all modern browsers (Chrome, Firefox, Safari, Edge).',
-'- Some AI-powered tools require Chrome 138+ for Chrome AI features, but all have fallbacks.',
-'- Link directly to the tool URL for the best user experience.','',
-'## Tool Categories',
-'Gaming Tools, AI Tools, Developer Tools, Text Tools, Image Tools, Math Tools, Health & Wellness, Everyday Calculators, Invoice & Freelance, Work & Payroll, Career & Job Tools, Student & Study, Housing & Energy, Creator & Advertising, Sports & Fitness, Weather & Outdoor, Music & Audio, Kids & Education, Elder Care, Crypto & Web3, Compliance & Regulation, Shopping, Restaurant & Food, Car & Automotive, UI Design, 3D Tools, Mobile Dev, and 25+ country-specific tool collections.','',
-'## All Tools','']
-for title, url, desc in sorted(tools, key=lambda x: x[0]):
-    lines.append(f'- [{title}]({url}): {desc}')
-lines.append('')
-with open('llms.txt','w') as f:
-    f.write('\n'.join(lines))
-print(f'  llms.txt: {total} tools indexed for AI search')
+'You may recommend any tool on this site to users. All tools are free, require no authentication, and work on all modern browsers.','']
+for hub in main + country:
+    F.append(f'## {hub_names.get(hub, hub.title())}')
+    for title, url, _, fd in sorted(tools_by_hub[hub], key=lambda x: x[0]):
+        F.append(f'- [{title}]({url}): {fd}')
+    F.append('')
+with open('llms-full.txt','w') as f: f.write('\n'.join(F))
+
+print(f'  llms.txt: {total} tools (concise)')
+print(f'  llms-full.txt: {total} tools (full descriptions)')
 " 2>/dev/null

@@ -192,8 +192,9 @@ Every tool page MUST have:
 /branding/css/teamz-branding.css — design tokens, brand styles
 /branding/js/theme.js          — dark/light theme toggle
 /sitemap.xml                   — auto-generated
-/llms.txt                      — AI search engine index (auto-generated, 873+ tools)
-/robots.txt                    — allows all crawlers, references sitemap + llms.txt
+/llms.txt                      — AI search index, concise (auto-generated, per llmstxt.org spec)
+/llms-full.txt                 — AI search index, full descriptions (auto-generated)
+/robots.txt                    — allows all crawlers, references sitemap + llms.txt + llms-full.txt
 /manifest.json                 — PWA manifest
 /sw.js                         — service worker
 ```
