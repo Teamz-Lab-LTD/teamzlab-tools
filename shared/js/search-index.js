@@ -172,6 +172,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Twitter/X Header Maker',d:'Free Twitter/X header maker — create professional 1500x500 profile banners. Choose colors, gradients, or upload backgrounds. Download as PNG. No log',h:'/design/twitter-header-maker/'},
   {t:'YouTube Thumbnail Maker',d:'Free YouTube thumbnail maker — create eye-catching 1280x720 thumbnails online. Add bold text, outlines, and overlays. Download as PNG or JPG. No log',h:'/design/youtube-thumbnail-maker/'},
   {t:'API Tester Online',d:'Test API endpoints online for free — send GET, POST, PUT, DELETE requests with custom headers and JSON body. No signup, no install, 100% private too',h:'/dev/api-request-tester/'},
+  {t:'n8n vs Zapier vs Make Pricing Calculator',d:'Compare n8n, Zapier, and Make pricing side by side. Enter your workflow steps and monthly runs to see exact costs on each platform. Free, private tool',h:'/dev/automation-pricing-calculator/'},
   {t:'Base64 Encode/Decode',d:'Free online Base64 encoder and decoder. Convert text to Base64 encoding or decode Base64 strings back to plain text with full Unicode support.',h:'/dev/base64-encode-decode/'},
   {t:'CSS Box Shadow Generator',d:'Free CSS box-shadow generator with live preview. Adjust offset, blur, spread, color, and inset to create the perfect shadow and copy the CSS code.',h:'/dev/box-shadow-generator/'},
   {t:'Chmod Calculator',d:'Calculate Linux file permissions instantly — convert between octal (755) and symbolic (rwxr-xr-x) notation with a visual permission grid. Free, priv',h:'/dev/chmod-calculator/'},

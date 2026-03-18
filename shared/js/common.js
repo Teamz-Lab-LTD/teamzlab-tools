@@ -1621,7 +1621,13 @@ document.addEventListener('DOMContentLoaded', function () {
       apple.href = '/apple-touch-icon.png';
       head.appendChild(apple);
     }
-    // iOS PWA meta tags
+    // PWA meta tags (mobile-web-app-capable is the standard; apple- is legacy iOS)
+    if (!head.querySelector('meta[name="mobile-web-app-capable"]')) {
+      var mw = document.createElement('meta');
+      mw.name = 'mobile-web-app-capable';
+      mw.content = 'yes';
+      head.appendChild(mw);
+    }
     if (!head.querySelector('meta[name="apple-mobile-web-app-capable"]')) {
       var m1 = document.createElement('meta');
       m1.name = 'apple-mobile-web-app-capable';
