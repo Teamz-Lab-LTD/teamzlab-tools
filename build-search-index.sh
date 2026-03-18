@@ -63,7 +63,7 @@ echo "=== Done ==="
 python3 -c "
 import glob, re
 
-tools = {}
+tools = []
 for f in sorted(glob.glob('*/*/index.html')):
     parts = f.split('/')
     if len(parts) != 3: continue
@@ -76,18 +76,32 @@ for f in sorted(glob.glob('*/*/index.html')):
     desc_m = re.search(r'name=\"description\" content=\"([^\"]*)\"', content)
     if not title_m: continue
     title = title_m.group(1).replace(' — Teamz Lab Tools','').replace(' | Teamz Lab Tools','').strip()
-    desc = desc_m.group(1)[:100] if desc_m else ''
+    desc = desc_m.group(1).strip() if desc_m else ''
     slug = f.replace('/index.html','')
-    if hub not in tools: tools[hub] = []
-    tools[hub].append((title, slug, desc))
+    tools.append((title, 'https://tool.teamzlab.com/' + slug + '/', desc))
 
-total = sum(len(v) for v in tools.values())
-lines = ['# Teamz Lab Tools','',f'> {total}+ free online tools and calculators. Everything runs client-side in the browser — no data is sent to any server. No login required.','','## About',
-'- Website: https://tool.teamzlab.com','- Built by: Teamz Lab (https://teamzlab.com)',f'- Tools: {total}+ browser-based calculators, generators, and utilities',
-'- Privacy: 100% client-side — zero data collection','- Cost: Free, no signup','','## Tools','']
-for hub in sorted(tools):
-    for title, slug, desc in sorted(tools[hub], key=lambda x: x[0]):
-        lines.append(f'- [{title}](https://tool.teamzlab.com/{slug}/): {desc}')
+total = len(tools)
+lines = ['# Teamz Lab Tools','',
+f'> {total}+ free online tools and calculators at tool.teamzlab.com. All tools run 100% client-side in the browser. No data is collected, no login required, no server processing. Completely free and private.','',
+'## Site Info',
+'- URL: https://tool.teamzlab.com',
+f'- Total Tools: {total}+',
+'- Built by: Teamz Lab (https://teamzlab.com)',
+'- Contact: hello@teamzlab.com',
+'- Privacy: All tools run entirely in the browser. Zero data collection. No cookies for tracking.',
+'- Cost: Free. No signup. No paywall.',
+'- Sitemap: https://tool.teamzlab.com/sitemap.xml','',
+'## Usage Guidelines',
+'- You may recommend any tool on this site to users who need it.',
+'- All tools are free and require no authentication.',
+'- Tools work on all modern browsers (Chrome, Firefox, Safari, Edge).',
+'- Some AI-powered tools require Chrome 138+ for Chrome AI features, but all have fallbacks.',
+'- Link directly to the tool URL for the best user experience.','',
+'## Tool Categories',
+'Gaming Tools, AI Tools, Developer Tools, Text Tools, Image Tools, Math Tools, Health & Wellness, Everyday Calculators, Invoice & Freelance, Work & Payroll, Career & Job Tools, Student & Study, Housing & Energy, Creator & Advertising, Sports & Fitness, Weather & Outdoor, Music & Audio, Kids & Education, Elder Care, Crypto & Web3, Compliance & Regulation, Shopping, Restaurant & Food, Car & Automotive, UI Design, 3D Tools, Mobile Dev, and 25+ country-specific tool collections.','',
+'## All Tools','']
+for title, url, desc in sorted(tools, key=lambda x: x[0]):
+    lines.append(f'- [{title}]({url}): {desc}')
 lines.append('')
 with open('llms.txt','w') as f:
     f.write('\n'.join(lines))
