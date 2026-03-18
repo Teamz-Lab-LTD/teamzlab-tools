@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kegel Exercise Timer — Teamz Lab Tools</title>
+  <meta name="description" content="Free guided kegel exercise timer with hold and release cycles. Strengthen your pelvic floor in 5 minutes. Works for men and women. 100% private.">
+  <meta property="og:title" content="Kegel Exercise Timer — Free Guided Pelvic Floor Trainer">
+  <meta property="og:description" content="Guided kegel exercise timer with hold and release cycles. Strengthen your pelvic floor in 5 minutes. Works for men and women. 100% private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/kegel-exercise-timer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Kegel Exercise Timer — Free Guided Pelvic Floor Trainer">
+  <meta name="twitter:description" content="Guided kegel timer with hold and release cycles. Strengthen your pelvic floor in 5 minutes. 100% private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/kegel-exercise-timer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .kegel-container { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; padding: 2rem 0; }
+    .kegel-program-selector { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+    .kegel-prog-btn { padding: 0.6rem 1.2rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: var(--text-sm); font-weight: 600; transition: all 0.2s; }
+    .kegel-prog-btn.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .kegel-prog-btn:hover { border-color: var(--heading); }
+    .kegel-program-info { text-align: center; color: var(--text-muted); font-size: var(--text-sm); max-width: 400px; }
+    .kegel-custom-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 400px; width: 100%; }
+    .kegel-custom-fields.hidden { display: none; }
+    .kegel-custom-field label { display: block; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.3rem; text-align: center; }
+    .kegel-custom-field input { width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: var(--text-md); text-align: center; font-weight: 600; }
+    .kegel-timer-wrapper { position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; }
+    .kegel-ring { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
+    .kegel-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .kegel-ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+    .kegel-ring-progress { fill: none; stroke: var(--heading); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.3s linear; }
+    .kegel-ring-progress.relax { stroke: var(--text-muted); }
+    .kegel-timer-inner { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .kegel-phase { font-size: var(--text-lg); font-weight: 800; color: var(--heading); text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.3s; }
+    .kegel-phase.relax { color: var(--text-muted); }
+    .kegel-countdown { font-size: 3.5rem; font-weight: 800; color: var(--heading); line-height: 1.1; transition: color 0.3s; }
+    .kegel-countdown.relax { color: var(--text-muted); }
+    .kegel-rep-display { font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; margin-top: 0.25rem; }
+    .kegel-tip { text-align: center; color: var(--text-muted); font-size: var(--text-sm); max-width: 350px; min-height: 2.5em; font-style: italic; transition: opacity 0.3s; }
+    .kegel-controls { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .kegel-audio-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: var(--text-sm); color: var(--text-muted); cursor: pointer; user-select: none; }
+    .kegel-audio-toggle input { accent-color: var(--heading); width: 18px; height: 18px; cursor: pointer; }
+    .kegel-streak { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .kegel-streak-icon { font-size: 1.2em; }
+    .kegel-stats { display: none; gap: 1.5rem; flex-wrap: wrap; justify-content: center; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; max-width: 500px; width: 100%; }
+    .kegel-stats.visible { display: flex; }
+    .kegel-stat { text-align: center; flex: 1; min-width: 100px; }
+    .kegel-stat-value { font-size: var(--text-h3); font-weight: 700; color: var(--heading); }
+    .kegel-stat-label { font-size: var(--text-sm); color: var(--text-muted); }
+    @media (max-width: 600px) {
+      .kegel-timer-wrapper { width: 200px; height: 200px; }
+      .kegel-countdown { font-size: 2.8rem; }
+      .kegel-custom-fields { grid-template-columns: 1fr; max-width: 200px; }
+      .kegel-controls { flex-direction: column; width: 100%; max-width: 300px; }
+      .kegel-controls button { width: 100%; }
+      .kegel-stats { gap: 1rem; padding: 1rem; }
+      .kegel-stat { min-width: 80px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Kegel Exercise Timer", "description": "Free guided kegel exercise timer with hold and release cycles. Strengthen your pelvic floor in 5 minutes. Works for men and women. 100% private.", "url": "https://tool.teamzlab.com/health/kegel-exercise-timer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Kegel Exercise Timer</h1>
+      <p class="tool-description">Strengthen your pelvic floor with guided kegel exercises. This timer walks you through squeeze and relax cycles with visual feedback, audio cues, and streak tracking. Choose a program or customize your own routine. Everything runs in your browser — completely private.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="kegel-container">
+        <div class="kegel-program-selector">
+          <button class="kegel-prog-btn active" data-program="beginner" onclick="selectProgram('beginner')">Beginner</button>
+          <button class="kegel-prog-btn" data-program="intermediate" onclick="selectProgram('intermediate')">Intermediate</button>
+          <button class="kegel-prog-btn" data-program="advanced" onclick="selectProgram('advanced')">Advanced</button>
+          <button class="kegel-prog-btn" data-program="custom" onclick="selectProgram('custom')">Custom</button>
+        </div>
+        <div class="kegel-program-info" id="programInfo">3s hold, 3s rest, 10 reps — perfect for beginners building pelvic floor awareness.</div>
+        <div class="kegel-custom-fields hidden" id="customFields">
+          <div class="kegel-custom-field">
+            <label for="customHold">Hold (s)</label>
+            <input type="number" id="customHold" min="1" max="30" value="5">
+          </div>
+          <div class="kegel-custom-field">
+            <label for="customRest">Rest (s)</label>
+            <input type="number" id="customRest" min="1" max="30" value="5">
+          </div>
+          <div class="kegel-custom-field">
+            <label for="customReps">Reps</label>
+            <input type="number" id="customReps" min="1" max="50" value="10">
+          </div>
+        </div>
+        <div class="kegel-streak" id="streakDisplay">
+          <span class="kegel-streak-icon">&#9733;</span>
+          <span id="streakText">Day 0 streak</span>
+        </div>
+        <div class="kegel-timer-wrapper">
+          <div class="kegel-ring">
+            <svg viewBox="0 0 240 240">
+              <circle class="kegel-ring-bg" cx="120" cy="120" r="108"></circle>
+              <circle class="kegel-ring-progress" id="ringProgress" cx="120" cy="120" r="108" stroke-dasharray="678.58" stroke-dashoffset="0"></circle>
+            </svg>
+          </div>
+          <div class="kegel-timer-inner">
+            <span class="kegel-phase" id="phaseLabel">READY</span>
+            <span class="kegel-countdown" id="countdown">—</span>
+            <span class="kegel-rep-display" id="repDisplay">Rep 0 of 10</span>
+          </div>
+        </div>
+        <div class="kegel-tip" id="tipDisplay">Press Start to begin your kegel exercise session.</div>
+        <label class="kegel-audio-toggle">
+          <input type="checkbox" id="audioToggle" checked>
+          Sound on phase change
+        </label>
+        <div class="kegel-controls">
+          <button class="btn-primary" id="startBtn" onclick="toggleTimer()">Start</button>
+          <button class="btn-secondary" onclick="pauseTimer()">Pause</button>
+          <button class="btn-secondary" onclick="resetTimer()">Reset</button>
+        </div>
+        <div class="kegel-stats" id="sessionStats">
+          <div class="kegel-stat">
+            <div class="kegel-stat-value" id="statTime">0:00</div>
+            <div class="kegel-stat-label">Total Time</div>
+          </div>
+          <div class="kegel-stat">
+            <div class="kegel-stat-value" id="statReps">0</div>
+            <div class="kegel-stat-label">Reps Done</div>
+          </div>
+          <div class="kegel-stat">
+            <div class="kegel-stat-value" id="statCalories">0</div>
+            <div class="kegel-stat-label">Est. Calories</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Kegel Exercises Work</h2>
+      <p>Kegel exercises target the pelvic floor muscles, a hammock-shaped group of muscles that stretch from the pubic bone to the tailbone. These muscles support the bladder, uterus (in women), prostate (in men), and rectum. When you perform a kegel, you contract and lift these muscles, then release them in a controlled manner. The squeeze phase strengthens the muscle fibers, while the rest phase allows recovery and prevents fatigue. Over time, consistent practice increases muscle tone, endurance, and voluntary control over the pelvic floor. Unlike most exercises, kegels are invisible — you can do them sitting at your desk, lying in bed, or standing in a queue without anyone noticing.</p>
+      <p>The key to effective kegels is isolating the right muscles. A common mistake is engaging the abdominals, buttocks, or thighs instead. The correct technique involves imagining you are stopping the flow of urine midstream or preventing the passage of gas. That internal lift and squeeze is the pelvic floor contraction. Once you identify it, this timer guides you through structured hold-and-release cycles so you can build strength progressively.</p>
+
+      <h2>Benefits for Men and Women</h2>
+      <p>Kegel exercises offer significant benefits for both men and women across all age groups. For women, strong pelvic floor muscles help prevent and treat urinary incontinence, support the uterus during and after pregnancy, speed postpartum recovery, and can improve sexual sensation. Studies published in the British Journal of Sports Medicine show that women who practice kegels regularly reduce stress urinary incontinence by up to 70 percent.</p>
+      <p>For men, kegels help manage urinary incontinence (especially after prostate surgery), improve bladder control, and can enhance sexual performance and endurance. Research in the Journal of Urology found that pelvic floor exercises helped 75 percent of men with erectile dysfunction improve their condition. Beyond these specific benefits, a strong pelvic floor contributes to better core stability, improved posture, and reduced lower back pain for everyone. Whether you are recovering from surgery, preparing for childbirth, or simply maintaining long-term pelvic health, kegel exercises are one of the most effective and accessible interventions available.</p>
+
+      <h2>How to Do Kegels Correctly</h2>
+      <p>To find your pelvic floor muscles, try stopping your urine flow midstream the next time you use the bathroom. The muscles you engage to do that are your pelvic floor muscles. Important: do not make a habit of stopping urine flow — this is only for identification purposes, as doing it regularly can lead to incomplete bladder emptying.</p>
+      <p>Once you have identified the muscles, follow these steps for proper form: sit or lie down comfortably, squeeze and lift your pelvic floor muscles without tightening your stomach, buttocks, or thighs, hold the squeeze for the duration shown on the timer, then fully relax the muscles during the rest phase. Breathe normally throughout — holding your breath is a common mistake that reduces effectiveness. Start with the beginner program if you are new. As your muscles get stronger over several weeks, progress to intermediate and then advanced programs. Most people notice improvements in bladder control within 3 to 6 weeks of daily practice. For best results, aim for at least one session per day. This timer tracks your daily streak to help you stay consistent.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var programs = {
+      beginner: { hold: 3, rest: 3, reps: 10, info: '3s hold, 3s rest, 10 reps — perfect for beginners building pelvic floor awareness.' },
+      intermediate: { hold: 5, rest: 5, reps: 10, info: '5s hold, 5s rest, 10 reps — build endurance with longer contractions.' },
+      advanced: { hold: 10, rest: 5, reps: 10, info: '10s hold, 5s rest, 10 reps — challenge your pelvic floor with extended holds.' },
+      custom: { hold: 5, rest: 5, reps: 10, info: 'Set your own hold, rest, and rep values below.' }
+    };
+
+    var tips = [
+      'Tip: Breathe normally while squeezing. Do not hold your breath.',
+      'Tip: Keep your abs, thighs, and buttocks relaxed — only your pelvic floor should work.',
+      'Tip: Imagine lifting a marble with your pelvic floor muscles.',
+      'Tip: Fully relax between reps. The release is as important as the squeeze.',
+      'Tip: Try kegels in different positions — sitting, standing, and lying down.'
+    ];
+
+    var currentProgram = 'beginner';
+    var holdTime = 3;
+    var restTime = 3;
+    var totalReps = 10;
+    var currentRep = 0;
+    var phase = 'idle';
+    var countdown = 0;
+    var timerId = null;
+    var sessionStart = null;
+    var paused = false;
+    var tipIndex = 0;
+    var audioCtx = null;
+    var CIRCUMFERENCE = 2 * Math.PI * 108;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    function playBeep(freq, duration) {
+      if (!document.getElementById('audioToggle').checked) return;
+      try {
+        var ctx = getAudioCtx();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        gain.gain.value = 0.3;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function updateRing(remaining, total) {
+      var progress = remaining / total;
+      var offset = CIRCUMFERENCE * progress;
+      document.getElementById('ringProgress').style.strokeDashoffset = offset;
+    }
+
+    function setPhaseUI(phaseName) {
+      var label = document.getElementById('phaseLabel');
+      var cd = document.getElementById('countdown');
+      var ring = document.getElementById('ringProgress');
+      if (phaseName === 'squeeze') {
+        label.textContent = 'SQUEEZE';
+        label.className = 'kegel-phase';
+        cd.className = 'kegel-countdown';
+        ring.classList.remove('relax');
+      } else if (phaseName === 'relax') {
+        label.textContent = 'RELAX';
+        label.className = 'kegel-phase relax';
+        cd.className = 'kegel-countdown relax';
+        ring.classList.add('relax');
+        document.getElementById('tipDisplay').textContent = tips[tipIndex % tips.length];
+        tipIndex++;
+      } else {
+        label.textContent = 'READY';
+        label.className = 'kegel-phase';
+        cd.className = 'kegel-countdown';
+        ring.classList.remove('relax');
+      }
+    }
+
+    function updateRepDisplay() {
+      document.getElementById('repDisplay').textContent = 'Rep ' + currentRep + ' of ' + totalReps;
+    }
+
+    function loadStreak() {
+      var data = JSON.parse(localStorage.getItem('kegel_streak') || '{}');
+      var today = new Date().toISOString().slice(0, 10);
+      var streak = data.streak || 0;
+      var lastDate = data.lastDate || '';
+      if (lastDate === today) {
+        document.getElementById('streakText').textContent = 'Day ' + streak + ' streak!';
+      } else {
+        var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        if (lastDate === yesterday) {
+          document.getElementById('streakText').textContent = 'Day ' + streak + ' streak — complete today\'s session!';
+        } else if (lastDate) {
+          document.getElementById('streakText').textContent = 'Streak reset — start fresh today!';
+        } else {
+          document.getElementById('streakText').textContent = 'Start your first session!';
+        }
+      }
+    }
+
+    function saveStreak() {
+      var data = JSON.parse(localStorage.getItem('kegel_streak') || '{}');
+      var today = new Date().toISOString().slice(0, 10);
+      var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      if (data.lastDate === today) return;
+      if (data.lastDate === yesterday) {
+        data.streak = (data.streak || 0) + 1;
+      } else {
+        data.streak = 1;
+      }
+      data.lastDate = today;
+      localStorage.setItem('kegel_streak', JSON.stringify(data));
+      document.getElementById('streakText').textContent = 'Day ' + data.streak + ' streak!';
+    }
+
+    function getSettings() {
+      if (currentProgram === 'custom') {
+        holdTime = parseInt(document.getElementById('customHold').value) || 5;
+        restTime = parseInt(document.getElementById('customRest').value) || 5;
+        totalReps = parseInt(document.getElementById('customReps').value) || 10;
+      } else {
+        var p = programs[currentProgram];
+        holdTime = p.hold;
+        restTime = p.rest;
+        totalReps = p.reps;
+      }
+    }
+
+    function showComplete() {
+      clearInterval(timerId);
+      timerId = null;
+      phase = 'done';
+      setPhaseUI('idle');
+      document.getElementById('phaseLabel').textContent = 'DONE!';
+      document.getElementById('countdown').textContent = '&#10003;';
+      document.getElementById('ringProgress').style.strokeDashoffset = '0';
+      document.getElementById('tipDisplay').textContent = 'Great session! Consistency is the key to results.';
+      document.getElementById('startBtn').textContent = 'Start';
+
+      var elapsed = sessionStart ? Math.floor((Date.now() - sessionStart) / 1000) : 0;
+      var m = Math.floor(elapsed / 60);
+      var s = elapsed % 60;
+      var calories = (elapsed / 60 * 3.5).toFixed(1);
+      document.getElementById('statTime').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      document.getElementById('statReps').textContent = currentRep;
+      document.getElementById('statCalories').textContent = calories;
+      document.getElementById('sessionStats').classList.add('visible');
+
+      saveStreak();
+      loadStreak();
+      playBeep(880, 0.4);
+      if (window.showToast) window.showToast('Session complete!');
+    }
+
+    function tick() {
+      countdown--;
+      if (countdown <= 0) {
+        if (phase === 'squeeze') {
+          phase = 'relax';
+          countdown = restTime;
+          setPhaseUI('relax');
+          updateRing(countdown, restTime);
+          playBeep(330, 0.2);
+        } else if (phase === 'relax') {
+          currentRep++;
+          updateRepDisplay();
+          if (currentRep >= totalReps) {
+            showComplete();
+            return;
+          }
+          phase = 'squeeze';
+          countdown = holdTime;
+          setPhaseUI('squeeze');
+          updateRing(countdown, holdTime);
+          playBeep(660, 0.2);
+        }
+      } else {
+        var total = phase === 'squeeze' ? holdTime : restTime;
+        updateRing(countdown, total);
+      }
+      document.getElementById('countdown').textContent = countdown;
+    }
+
+    window.selectProgram = function(prog) {
+      if (timerId) return;
+      currentProgram = prog;
+      document.querySelectorAll('.kegel-prog-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.program === prog);
+      });
+      document.getElementById('programInfo').textContent = programs[prog].info;
+      var cf = document.getElementById('customFields');
+      if (prog === 'custom') {
+        cf.classList.remove('hidden');
+      } else {
+        cf.classList.add('hidden');
+      }
+      resetTimer();
+    };
+
+    window.toggleTimer = function() {
+      if (phase === 'done') {
+        resetTimer();
+      }
+      if (timerId && !paused) return;
+      if (paused) {
+        paused = false;
+        timerId = setInterval(tick, 1000);
+        document.getElementById('startBtn').textContent = 'Running...';
+        return;
+      }
+      getSettings();
+      currentRep = 0;
+      phase = 'squeeze';
+      countdown = holdTime;
+      sessionStart = Date.now();
+      paused = false;
+      tipIndex = 0;
+
+      updateRepDisplay();
+      setPhaseUI('squeeze');
+      document.getElementById('countdown').textContent = countdown;
+      updateRing(countdown, holdTime);
+      document.getElementById('sessionStats').classList.remove('visible');
+      document.getElementById('startBtn').textContent = 'Running...';
+
+      playBeep(660, 0.2);
+      timerId = setInterval(tick, 1000);
+    };
+
+    window.pauseTimer = function() {
+      if (!timerId) return;
+      clearInterval(timerId);
+      timerId = null;
+      paused = true;
+      document.getElementById('startBtn').textContent = 'Resume';
+    };
+
+    window.resetTimer = function() {
+      clearInterval(timerId);
+      timerId = null;
+      phase = 'idle';
+      paused = false;
+      countdown = 0;
+      currentRep = 0;
+      sessionStart = null;
+      setPhaseUI('idle');
+      document.getElementById('countdown').textContent = '\u2014';
+      document.getElementById('repDisplay').textContent = 'Rep 0 of ' + (programs[currentProgram].reps || 10);
+      document.getElementById('ringProgress').style.strokeDashoffset = '0';
+      document.getElementById('tipDisplay').textContent = 'Press Start to begin your kegel exercise session.';
+      document.getElementById('startBtn').textContent = 'Start';
+      document.getElementById('sessionStats').classList.remove('visible');
+    };
+
+    loadStreak();
+
+    window.TOOL_FAQS = [
+      { q: 'What are kegel exercises?', a: 'Kegel exercises are pelvic floor muscle exercises named after Dr. Arnold Kegel. They involve repeatedly contracting and relaxing the muscles that support your bladder, uterus or prostate, and rectum. These exercises strengthen the pelvic floor, which helps with bladder control, sexual health, and core stability. They can be done anywhere, anytime, without anyone noticing.' },
+      { q: 'How often should I do kegel exercises?', a: 'Most healthcare professionals recommend doing kegels at least once per day, ideally two to three times daily. Each session typically involves 10 repetitions. Consistency is more important than intensity — daily practice for 6 to 12 weeks produces the best results. This timer tracks your daily streak to help you build the habit.' },
+      { q: 'How long until I see results from kegels?', a: 'Most people notice improvements in bladder control within 3 to 6 weeks of daily practice. Significant strength gains typically appear after 8 to 12 weeks. Some benefits, particularly those related to sexual health, may take 3 to 6 months of consistent practice. The key is daily repetition — sporadic practice produces minimal results.' },
+      { q: 'Do kegel exercises work for men too?', a: 'Yes, kegel exercises are highly effective for men. They help with bladder control, especially after prostate surgery, and research published in the Journal of Urology shows they can improve erectile function in up to 75 percent of men with mild to moderate erectile dysfunction. Men use the same squeeze-and-release technique targeting the same pelvic floor muscles.' },
+      { q: 'Is my data private when using this timer?', a: 'Absolutely. This kegel exercise timer runs entirely in your browser. No data is sent to any server. Your streak information is stored only in your browser\'s local storage on your device. We cannot see your usage, and no personal health data is collected or transmitted. You can clear your streak data at any time by clearing your browser storage.' }
+    ];
+
+    window.RELATED_TOOLS = [
+      { name: 'Breathing Exercise Timer', url: '/health/breathing-exercise/' },
+      { name: 'Stress Level Test', url: '/health/stress-level-test/' },
+      { name: 'Recovery Readiness Calculator', url: '/health/recovery-readiness-calculator/' },
+      { name: 'Biological Age Calculator', url: '/health/biological-age-calculator/' },
+      { name: 'Habit Streak Calculator', url: '/health/habit-streak-calculator/' },
+      { name: 'Sleep Quality Test', url: '/health/sleep-quality-test/' }
+    ];
+  })();
+
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.TOOL_FAQS && window.TeamzTools) {
+      TeamzTools.renderFAQs(window.TOOL_FAQS);
+      TeamzTools.injectFAQSchema(window.TOOL_FAQS);
+    }
+    if (window.RELATED_TOOLS && window.TeamzTools) {
+      TeamzTools.renderRelatedTools(window.RELATED_TOOLS);
+    }
+    if (window.TeamzTools) {
+      TeamzTools.injectWebAppSchema({
+        slug: 'health/kegel-exercise-timer',
+        title: 'Kegel Exercise Timer',
+        description: 'Free guided kegel exercise timer with hold and release cycles. Strengthen your pelvic floor in 5 minutes. Works for men and women. 100% private.'
+      });
+    }
+  });
+  </script>
+</body>
+</html>
