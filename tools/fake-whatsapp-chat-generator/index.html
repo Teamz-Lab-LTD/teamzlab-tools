@@ -170,33 +170,37 @@
     ];
     var profilePhoto = null;
 
-    /* ---------- WhatsApp Color Schemes ---------- */
+    /* ---------- WhatsApp Color Schemes (2025/2026 updated design) ---------- */
     var waColors = {
       light: {
-        headerBg: '#075E54',
-        headerText: '#FFFFFF',
-        headerSub: '#FFFFFFCC',
+        headerBg: '#FFFFFF',
+        headerText: '#111B21',
+        headerSub: '#25D366',
         chatBg: '#ECE5DD',
-        myBubble: '#DCF8C6',
-        myBubbleTail: '#DCF8C6',
+        myBubble: '#D9FDD3',
+        myBubbleTail: '#D9FDD3',
         theirBubble: '#FFFFFF',
         theirBubbleTail: '#FFFFFF',
-        bubbleText: '#111111',
+        bubbleText: '#111B21',
         timeText: '#667781',
-        inputBarBg: '#F0F0F0',
-        inputFieldBg: '#FFFFFF',
-        inputPlaceholder: '#999999',
+        inputBarBg: '#FFFFFF',
+        inputFieldBg: '#F0F2F5',
+        inputPlaceholder: '#667781',
         iconColor: '#54656F',
-        headerIcon: '#FFFFFF',
+        headerIcon: '#54656F',
         checkColor: '#667781',
         checkBlue: '#53BDEB',
-        dateBadgeBg: '#E1F3FB',
-        dateBadgeText: '#1D6F8E'
+        dateBadgeBg: '#E2F7CB',
+        dateBadgeText: '#1D6F8E',
+        headerBorder: '#E9EDEF',
+        micBg: '#00A884',
+        micIcon: '#FFFFFF',
+        onlineColor: '#25D366'
       },
       dark: {
         headerBg: '#1F2C34',
         headerText: '#E9EDEF',
-        headerSub: '#8696A0',
+        headerSub: '#25D366',
         chatBg: '#0B141A',
         myBubble: '#005C4B',
         myBubbleTail: '#005C4B',
@@ -212,7 +216,11 @@
         checkColor: '#8696A0',
         checkBlue: '#53BDEB',
         dateBadgeBg: '#182229',
-        dateBadgeText: '#8696A0'
+        dateBadgeText: '#8696A0',
+        headerBorder: '#2A3942',
+        micBg: '#00A884',
+        micIcon: '#111B21',
+        onlineColor: '#25D366'
       }
     };
 
@@ -282,7 +290,7 @@
       return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    /* ---------- Canvas Drawing ---------- */
+    /* ---------- Canvas Drawing (matches real WhatsApp 2025/2026 mobile) ---------- */
     function drawChat() {
       var theme = document.getElementById('wa-theme').value;
       var c = waColors[theme];
@@ -292,77 +300,91 @@
       var statusText = statusSel === 'online' ? 'online' : statusSel === 'typing' ? 'typing...' : 'last seen today at ' + lastSeenTime;
 
       var W = 375;
-      var headerH = 60;
-      var inputBarH = 52;
-      var bubblePad = 10;
-      var bubbleMaxW = 250;
-      var bubbleGap = 4;
-      var bubbleFont = '14px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
-      var timeFont = '11px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
-      var headerFont = '600 16px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
-      var subFont = '13px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
+      var headerH = 64;
+      var inputBarH = 56;
+      var bubbleMaxW = 270;
+      var bubbleGap = 3;
+      var sameGap = 2; /* gap between consecutive same-sender messages */
+      var bubbleFont = '15px "Segoe UI", -apple-system, Helvetica, Arial, sans-serif';
+      var timeFont = '11px "Segoe UI", -apple-system, Helvetica, Arial, sans-serif';
+      var headerFont = '600 17px "Segoe UI", -apple-system, Helvetica, Arial, sans-serif';
+      var subFont = '13px "Segoe UI", -apple-system, Helvetica, Arial, sans-serif';
 
-      /* Measure text heights for each message to compute total canvas height */
       var canvas = document.getElementById('wa-canvas');
       var ctx = canvas.getContext('2d');
 
-      /* Pre-measure */
+      /* Pre-measure bubble heights */
       ctx.font = bubbleFont;
-      var lineH = 20;
+      var lineH = 21;
       var msgHeights = [];
-      var totalMsgH = 12; /* top padding */
-      messages.forEach(function(msg) {
-        var lines = wrapText(ctx, msg.text, bubbleMaxW - 70);
-        var bH = lines.length * lineH + 28; /* text + time row + padding */
-        msgHeights.push({ lines: lines, height: bH });
-        totalMsgH += bH + bubbleGap;
+      var totalMsgH = 10;
+      messages.forEach(function(msg, idx) {
+        var lines = wrapText(ctx, msg.text, bubbleMaxW - 80);
+        var bH = lines.length * lineH + 10;
+        /* Check if time fits on last line */
+        ctx.font = timeFont;
+        var timeStr = msg.time;
+        var timeW = ctx.measureText(timeStr).width + (msg.sender === 'me' ? 30 : 8);
+        ctx.font = bubbleFont;
+        var lastLineW = lines.length > 0 ? ctx.measureText(lines[lines.length - 1]).width : 0;
+        var needsExtraRow = (lastLineW + timeW + 16) > (bubbleMaxW - 16);
+        if (needsExtraRow) bH += 16;
+        bH += 6;
+        msgHeights.push({ lines: lines, height: bH, needsExtraRow: needsExtraRow });
+        var prevSame = idx > 0 && messages[idx - 1].sender === msg.sender;
+        totalMsgH += bH + (prevSame ? sameGap : bubbleGap + 4);
       });
-      totalMsgH += 12; /* bottom padding */
+      totalMsgH += 16;
 
       var H = headerH + totalMsgH + inputBarH;
-      if (H < 400) H = 400;
+      if (H < 500) H = 500;
       canvas.width = W * 2;
       canvas.height = H * 2;
       canvas.style.width = W + 'px';
       canvas.style.height = H + 'px';
       ctx.scale(2, 2);
 
-      /* ---------- Background ---------- */
+      /* ========== BACKGROUND ========== */
       ctx.fillStyle = c.chatBg;
       ctx.fillRect(0, 0, W, H);
 
-      /* Subtle wallpaper pattern */
-      ctx.globalAlpha = theme === 'light' ? 0.04 : 0.03;
-      ctx.fillStyle = theme === 'light' ? '#000000' : '#FFFFFF';
-      for (var px = 0; px < W; px += 20) {
-        for (var py = headerH; py < H - inputBarH; py += 20) {
-          if ((px + py) % 40 === 0) {
-            ctx.fillRect(px + 4, py + 4, 3, 3);
-          }
+      /* WhatsApp doodle wallpaper pattern */
+      ctx.globalAlpha = theme === 'light' ? 0.06 : 0.04;
+      ctx.fillStyle = theme === 'light' ? '#8696A0' : '#FFFFFF';
+      var doodleIcons = ['\u260E','\u2709','\u266B','\u2602','\u263A','\u2601','\u2605','\u2764','\u270E','\u2708'];
+      ctx.font = '10px sans-serif';
+      for (var dx = 5; dx < W; dx += 35) {
+        for (var dy = headerH + 10; dy < H - inputBarH; dy += 35) {
+          var dIdx = ((dx * 7 + dy * 13) % doodleIcons.length);
+          ctx.fillText(doodleIcons[dIdx], dx, dy);
         }
       }
       ctx.globalAlpha = 1;
 
-      /* ---------- Header ---------- */
+      /* ========== HEADER (2025 style: white bg, dark text) ========== */
       ctx.fillStyle = c.headerBg;
       ctx.fillRect(0, 0, W, headerH);
+      /* Header bottom border */
+      ctx.fillStyle = c.headerBorder;
+      ctx.fillRect(0, headerH - 1, W, 1);
 
-      /* Back arrow */
+      /* Back arrow ← */
       ctx.strokeStyle = c.headerIcon;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.beginPath();
-      ctx.moveTo(20, 30);
-      ctx.lineTo(12, 30);
-      ctx.lineTo(18, 24);
-      ctx.moveTo(12, 30);
-      ctx.lineTo(18, 36);
+      ctx.moveTo(24, 32);
+      ctx.lineTo(14, 32);
+      ctx.moveTo(20, 26);
+      ctx.lineTo(14, 32);
+      ctx.lineTo(20, 38);
       ctx.stroke();
 
-      /* Profile circle */
-      var avatarX = 40;
-      var avatarY = 30;
-      var avatarR = 18;
+      /* Profile photo circle */
+      var avatarX = 48;
+      var avatarY = 32;
+      var avatarR = 19;
       if (profilePhoto) {
         ctx.save();
         ctx.beginPath();
@@ -371,14 +393,13 @@
         ctx.drawImage(profilePhoto, avatarX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
         ctx.restore();
       } else {
-        ctx.fillStyle = theme === 'light' ? '#CCD6D0' : '#6B7B8D';
+        ctx.fillStyle = theme === 'light' ? '#DFE5E7' : '#6B7B8D';
         ctx.beginPath();
         ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2);
         ctx.fill();
-        /* Default person icon */
         ctx.fillStyle = theme === 'light' ? '#FFFFFF' : '#3B4F5C';
         ctx.beginPath();
-        ctx.arc(avatarX, avatarY - 3, 7, 0, Math.PI * 2);
+        ctx.arc(avatarX, avatarY - 4, 7, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
         ctx.ellipse(avatarX, avatarY + 14, 12, 9, 0, Math.PI, 0, true);
@@ -389,56 +410,64 @@
       ctx.fillStyle = c.headerText;
       ctx.font = headerFont;
       ctx.textBaseline = 'middle';
-      ctx.fillText(contactName, 66, 24);
+      ctx.fillText(contactName, 76, 25);
 
-      /* Status */
-      ctx.fillStyle = c.headerSub;
+      /* Online status (green for "online") */
+      ctx.fillStyle = statusSel === 'online' ? c.onlineColor : c.headerSub;
       ctx.font = subFont;
-      ctx.fillText(statusText, 66, 42);
+      ctx.fillText(statusText, 76, 43);
 
-      /* Header icons: video call, voice call, menu */
+      /* Header right icons */
       ctx.strokeStyle = c.headerIcon;
-      ctx.lineWidth = 1.5;
-      /* Video icon */
-      var vx = W - 100;
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      /* Video call icon */
+      var vx = W - 110;
       ctx.beginPath();
-      ctx.roundRect(vx, 23, 16, 12, 2);
+      ctx.roundRect(vx, 25, 18, 13, 2);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(vx + 16, 26);
-      ctx.lineTo(vx + 22, 23);
-      ctx.lineTo(vx + 22, 35);
-      ctx.lineTo(vx + 16, 32);
+      ctx.moveTo(vx + 18, 28);
+      ctx.lineTo(vx + 25, 24);
+      ctx.lineTo(vx + 25, 39);
+      ctx.lineTo(vx + 18, 35);
       ctx.stroke();
 
-      /* Phone icon */
-      var phx = W - 60;
+      /* Phone call icon */
+      ctx.lineWidth = 1.8;
+      var phx = W - 68;
       ctx.beginPath();
-      ctx.moveTo(phx, 34);
-      ctx.quadraticCurveTo(phx + 3, 22, phx + 8, 22);
-      ctx.quadraticCurveTo(phx + 12, 22, phx + 12, 26);
-      ctx.quadraticCurveTo(phx + 12, 28, phx + 10, 30);
-      ctx.quadraticCurveTo(phx + 10, 34, phx + 14, 38);
-      ctx.quadraticCurveTo(phx + 16, 36, phx + 18, 36);
-      ctx.quadraticCurveTo(phx + 22, 36, phx + 22, 38);
-      ctx.quadraticCurveTo(phx + 22, 44, phx + 10, 38);
+      ctx.moveTo(phx, 37);
+      ctx.quadraticCurveTo(phx + 2, 25, phx + 7, 24);
+      ctx.quadraticCurveTo(phx + 11, 23, phx + 12, 27);
+      ctx.quadraticCurveTo(phx + 12, 30, phx + 10, 31);
+      ctx.quadraticCurveTo(phx + 9, 35, phx + 13, 38);
+      ctx.quadraticCurveTo(phx + 15, 37, phx + 17, 36);
+      ctx.quadraticCurveTo(phx + 21, 35, phx + 21, 38);
+      ctx.quadraticCurveTo(phx + 22, 42, phx + 12, 40);
       ctx.stroke();
 
-      /* Menu dots */
-      var mx = W - 22;
+      /* Three dots menu */
       ctx.fillStyle = c.headerIcon;
+      var mx = W - 24;
       for (var di = 0; di < 3; di++) {
         ctx.beginPath();
-        ctx.arc(mx, 24 + di * 7, 2, 0, Math.PI * 2);
+        ctx.arc(mx, 25 + di * 8, 2, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      /* ---------- Chat Bubbles ---------- */
-      var curY = headerH + 12;
+      /* ========== CHAT BUBBLES ========== */
+      var curY = headerH + 8;
       messages.forEach(function(msg, idx) {
         var info = msgHeights[idx];
         var isMe = msg.sender === 'me';
-        var bW = bubbleMaxW;
+        var prevSame = idx > 0 && messages[idx - 1].sender === msg.sender;
+        var nextSame = idx < messages.length - 1 && messages[idx + 1].sender === msg.sender;
+
+        if (!prevSame) curY += 4;
+
         /* Measure actual width needed */
         ctx.font = bubbleFont;
         var maxLineW = 0;
@@ -446,155 +475,187 @@
           var lw = ctx.measureText(line).width;
           if (lw > maxLineW) maxLineW = lw;
         });
-        /* Add space for time + checks */
         ctx.font = timeFont;
         var timeStr = msg.time;
-        var timeW = ctx.measureText(timeStr).width + (isMe ? 24 : 4);
-        var lastLineW = ctx.measureText(info.lines[info.lines.length - 1]).width;
-        var needsExtraRow = (lastLineW + timeW + 12) > (maxLineW + 20);
+        var timeW = ctx.measureText(timeStr).width + (isMe ? 28 : 6);
 
-        bW = Math.min(bubbleMaxW, Math.max(maxLineW + 20, timeW + 20));
-        if (bW < 80) bW = 80;
+        var bW = Math.min(bubbleMaxW, Math.max(maxLineW + 24, timeW + 24));
+        if (bW < 70) bW = 70;
+        var bH = info.height;
 
-        var bH = info.lines.length * lineH + 8;
-        if (needsExtraRow) bH += 16;
-        bH += 8; /* bottom padding for time */
+        var bX = isMe ? W - bW - 14 : 14;
+        var tailW = 8;
 
-        var bX = isMe ? W - bW - 12 : 12;
-        var tailSize = 6;
+        /* Bubble border-radius: larger on non-tail side */
+        var rTL = isMe ? 8 : (prevSame ? 8 : 0);
+        var rTR = isMe ? (prevSame ? 8 : 0) : 8;
+        var rBL = isMe ? 8 : (nextSame ? 8 : 8);
+        var rBR = isMe ? (nextSame ? 8 : 8) : 8;
 
         /* Bubble shadow */
-        ctx.fillStyle = 'rgba(0,0,0,0.04)';
-        roundRect(ctx, bX + 1, curY + 1, bW, bH, 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        roundRect(ctx, bX + 1, curY + 1, bW, bH, 7);
         ctx.fill();
 
-        /* Bubble */
+        /* Bubble fill */
         ctx.fillStyle = isMe ? c.myBubble : c.theirBubble;
-        roundRect(ctx, bX, curY, bW, bH, 8);
+        roundRect(ctx, bX, curY, bW, bH, 7);
         ctx.fill();
 
-        /* Tail */
-        ctx.fillStyle = isMe ? c.myBubbleTail : c.theirBubbleTail;
-        ctx.beginPath();
-        if (isMe) {
-          ctx.moveTo(bX + bW, curY + 2);
-          ctx.lineTo(bX + bW + tailSize, curY);
-          ctx.lineTo(bX + bW, curY + tailSize + 4);
-        } else {
-          ctx.moveTo(bX, curY + 2);
-          ctx.lineTo(bX - tailSize, curY);
-          ctx.lineTo(bX, curY + tailSize + 4);
+        /* Tail (only on first message of a group) */
+        if (!prevSame) {
+          ctx.fillStyle = isMe ? c.myBubbleTail : c.theirBubbleTail;
+          ctx.beginPath();
+          if (isMe) {
+            ctx.moveTo(bX + bW - 1, curY);
+            ctx.lineTo(bX + bW + tailW, curY);
+            ctx.lineTo(bX + bW - 1, curY + 12);
+          } else {
+            ctx.moveTo(bX + 1, curY);
+            ctx.lineTo(bX - tailW, curY);
+            ctx.lineTo(bX + 1, curY + 12);
+          }
+          ctx.closePath();
+          ctx.fill();
         }
-        ctx.closePath();
-        ctx.fill();
 
-        /* Text */
+        /* Message text */
         ctx.fillStyle = c.bubbleText;
         ctx.font = bubbleFont;
         ctx.textBaseline = 'top';
-        var textX = bX + 8;
+        var textX = bX + 10;
         var textY = curY + 6;
         info.lines.forEach(function(line) {
           ctx.fillText(line, textX, textY);
           textY += lineH;
         });
 
-        /* Time and checks */
+        /* Time + check marks (bottom right of bubble) */
         ctx.font = timeFont;
         ctx.fillStyle = c.timeText;
-        var timeY = curY + bH - 16;
-        var timeX = bX + bW - ctx.measureText(timeStr).width - 8;
-        if (isMe) timeX -= 18;
+        var timeY = curY + bH - 15;
+        var timeX = bX + bW - ctx.measureText(timeStr).width - 10;
+        if (isMe) timeX -= 20;
         ctx.fillText(timeStr, timeX, timeY);
 
-        /* Check marks for sent messages */
         if (isMe) {
-          var ckX = bX + bW - 20;
-          var ckY = timeY + 1;
-          ctx.font = '11px -apple-system, sans-serif';
+          var ckX = bX + bW - 22;
+          var ckY = timeY;
+          ctx.font = '12px "Segoe UI", sans-serif';
           if (msg.status === 'sent') {
             ctx.fillStyle = c.checkColor;
             ctx.fillText('\u2713', ckX, ckY);
           } else if (msg.status === 'delivered') {
             ctx.fillStyle = c.checkColor;
-            ctx.fillText('\u2713\u2713', ckX - 4, ckY);
+            ctx.fillText('\u2713', ckX - 3, ckY);
+            ctx.fillText('\u2713', ckX + 3, ckY);
           } else if (msg.status === 'read') {
             ctx.fillStyle = c.checkBlue;
-            ctx.fillText('\u2713\u2713', ckX - 4, ckY);
+            ctx.fillText('\u2713', ckX - 3, ckY);
+            ctx.fillText('\u2713', ckX + 3, ckY);
           }
         }
 
-        curY += bH + bubbleGap;
+        curY += bH + (nextSame ? sameGap : bubbleGap);
       });
 
-      /* ---------- Input Bar ---------- */
+      /* ========== INPUT BAR (matches real WhatsApp) ========== */
       var ibY = H - inputBarH;
       ctx.fillStyle = c.inputBarBg;
       ctx.fillRect(0, ibY, W, inputBarH);
+      /* Top border */
+      ctx.fillStyle = c.headerBorder;
+      ctx.fillRect(0, ibY, W, 0.5);
 
-      /* Emoji icon */
+      /* Emoji smiley icon (outlined) */
       ctx.strokeStyle = c.iconColor;
       ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(22, ibY + 26, 12, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(18, ibY + 24, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(26, ibY + 24, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(22, ibY + 28, 5, 0, Math.PI);
-      ctx.stroke();
-
-      /* Input field */
-      ctx.fillStyle = c.inputFieldBg;
-      roundRect(ctx, 42, ibY + 8, W - 42 - 50, 36, 18);
-      ctx.fill();
-
-      /* Placeholder text */
-      ctx.fillStyle = c.inputPlaceholder;
-      ctx.font = '15px -apple-system, "Segoe UI", sans-serif';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Type a message', 56, ibY + 26);
-
-      /* Attachment icon (paperclip) */
-      ctx.strokeStyle = c.iconColor;
-      ctx.lineWidth = 1.5;
-      var ax = W - 90;
-      ctx.beginPath();
-      ctx.moveTo(ax, ibY + 32);
-      ctx.lineTo(ax, ibY + 22);
-      ctx.arc(ax + 3, ibY + 22, 3, Math.PI, 0);
-      ctx.lineTo(ax + 6, ibY + 30);
-      ctx.arc(ax + 3, ibY + 30, 3, 0, Math.PI);
-      ctx.stroke();
-
-      /* Camera icon */
-      ctx.strokeStyle = c.iconColor;
-      var cx2 = W - 70;
-      ctx.beginPath();
-      ctx.roundRect(cx2 - 4, ibY + 21, 16, 12, 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(cx2 + 4, ibY + 27, 3, 0, Math.PI * 2);
-      ctx.stroke();
-
-      /* Mic icon */
       ctx.fillStyle = c.iconColor;
-      var micX = W - 25;
+      var emoX = 28;
+      var emoY = ibY + 28;
       ctx.beginPath();
-      ctx.roundRect(micX - 3, ibY + 16, 6, 12, 3);
+      ctx.arc(emoX, emoY, 12, 0, Math.PI * 2);
+      ctx.stroke();
+      /* Eyes */
+      ctx.beginPath();
+      ctx.arc(emoX - 4, emoY - 3, 1.5, 0, Math.PI * 2);
       ctx.fill();
+      ctx.beginPath();
+      ctx.arc(emoX + 4, emoY - 3, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+      /* Smile */
+      ctx.beginPath();
+      ctx.arc(emoX, emoY + 1, 6, 0.15, Math.PI - 0.15);
+      ctx.stroke();
+
+      /* Input field rounded rectangle */
+      var fieldX = 48;
+      var fieldW = W - 48 - 56;
+      ctx.fillStyle = c.inputFieldBg;
+      roundRect(ctx, fieldX, ibY + 10, fieldW, 36, 20);
+      ctx.fill();
+
+      /* "Message" placeholder */
+      ctx.fillStyle = c.inputPlaceholder;
+      ctx.font = '16px "Segoe UI", -apple-system, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Message', fieldX + 14, ibY + 28);
+
+      /* Attachment (paperclip) icon inside field */
+      ctx.strokeStyle = c.iconColor;
+      ctx.lineWidth = 1.8;
+      var atX = fieldX + fieldW - 60;
+      ctx.save();
+      ctx.translate(atX, ibY + 20);
+      ctx.rotate(-0.5);
+      ctx.beginPath();
+      ctx.moveTo(0, 14);
+      ctx.lineTo(0, 4);
+      ctx.arc(4, 4, 4, Math.PI, 0);
+      ctx.lineTo(8, 12);
+      ctx.arc(4, 12, 4, 0, Math.PI);
+      ctx.stroke();
+      ctx.restore();
+
+      /* Camera icon inside field */
       ctx.strokeStyle = c.iconColor;
       ctx.lineWidth = 1.5;
+      var camX = fieldX + fieldW - 28;
+      var camY = ibY + 20;
       ctx.beginPath();
-      ctx.arc(micX, ibY + 28, 7, Math.PI, 0);
+      ctx.roundRect(camX - 2, camY + 3, 16, 11, 2);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(micX, ibY + 35);
-      ctx.lineTo(micX, ibY + 38);
+      ctx.arc(camX + 6, camY + 8.5, 3, 0, Math.PI * 2);
+      ctx.stroke();
+      /* Camera lens bump */
+      ctx.beginPath();
+      ctx.moveTo(camX + 3, camY + 3);
+      ctx.lineTo(camX + 5, camY);
+      ctx.lineTo(camX + 9, camY);
+      ctx.lineTo(camX + 11, camY + 3);
+      ctx.stroke();
+
+      /* Green microphone circle button */
+      var micCX = W - 28;
+      var micCY = ibY + 28;
+      ctx.fillStyle = c.micBg;
+      ctx.beginPath();
+      ctx.arc(micCX, micCY, 22, 0, Math.PI * 2);
+      ctx.fill();
+      /* Mic icon (white) */
+      ctx.fillStyle = c.micIcon;
+      ctx.beginPath();
+      ctx.roundRect(micCX - 3, micCY - 9, 6, 12, 3);
+      ctx.fill();
+      ctx.strokeStyle = c.micIcon;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.arc(micCX, micCY + 3, 7, Math.PI, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(micCX, micCY + 10);
+      ctx.lineTo(micCX, micCY + 14);
       ctx.stroke();
     }
 
