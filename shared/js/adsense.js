@@ -134,7 +134,7 @@
     if (faqSection) {
       var adDiv = document.createElement('div');
       adDiv.className = 'ad-slot ad-slot--mid';
-      adDiv.style.cssText = 'margin:2rem 0;min-height:90px;';
+      adDiv.style.cssText = 'margin:2rem 0;';
       faqSection.parentNode.insertBefore(adDiv, faqSection);
       createAdUnit(adDiv, 'before-faqs');
       adCount++;
@@ -145,7 +145,7 @@
     if (relatedTools) {
       var bottomAd = document.createElement('div');
       bottomAd.className = 'ad-slot ad-slot--bottom';
-      bottomAd.style.cssText = 'margin:2rem 0;min-height:90px;';
+      bottomAd.style.cssText = 'margin:2rem 0;';
       relatedTools.parentNode.insertBefore(bottomAd, relatedTools.nextSibling);
       createAdUnit(bottomAd, 'after-related');
       adCount++;
@@ -156,6 +156,24 @@
       ad_count: adCount,
       auto_ads: true
     });
+
+    // Collapse unfilled ad slots after Google has had time to fill them
+    // Google sets data-ad-status="unfilled" on slots it doesn't fill
+    setTimeout(function () {
+      document.querySelectorAll('.ad-slot').forEach(function (slot) {
+        var ins = slot.querySelector('ins.adsbygoogle');
+        if (!ins) {
+          // No ad injected at all — collapse
+          slot.style.cssText = 'min-height:0;margin:0;padding:0;height:0;overflow:hidden;border:none;opacity:0;';
+          return;
+        }
+        var status = ins.getAttribute('data-ad-status');
+        if (status === 'unfilled') {
+          slot.style.cssText = 'min-height:0;margin:0;padding:0;height:0;overflow:hidden;border:none;opacity:0;';
+          trackAdEvent('ad_slot_collapsed', { placement: slot.className });
+        }
+      });
+    }, 5000); // Wait 5s for Google to fill or mark unfilled
   }
 
   // Run after a delay to ensure tool-engine and common.js have rendered content
