@@ -106,8 +106,11 @@
     // --- Ad Unit 1: Existing .ad-slot (between calculator and content) ---
     var adSlots = document.querySelectorAll('.ad-slot');
     adSlots.forEach(function (slot, i) {
+      // Make slot visible and ready for ad (hidden by default in CSS)
       slot.style.opacity = '1';
-      slot.style.border = 'none';
+      slot.style.height = 'auto';
+      slot.style.minHeight = '90px';
+      slot.textContent = ''; // Remove "Ad Space" placeholder text
       createAdUnit(slot, 'after-calculator' + (i > 0 ? '-' + i : ''));
       adCount++;
     });
