@@ -1027,9 +1027,11 @@ var TeamzAnalytics = (function () {
   var STORAGE_KEY = 'teamztools_analytics';
   var _firebaseReady = false;
   var _isDevMode = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
+  // Skip analytics for site owner — run this once in browser console: localStorage.setItem('teamz_owner','1')
+  var _isOwner = (localStorage.getItem('teamz_owner') === '1');
 
   function init() {
-    if (!_isDevMode) {
+    if (!_isDevMode && !_isOwner) {
       _loadFirebase();
       _trackEngagement();
     }
