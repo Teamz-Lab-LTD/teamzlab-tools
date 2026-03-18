@@ -1474,13 +1474,13 @@ document.addEventListener('DOMContentLoaded', function () {
         navigator.clipboard.writeText(pageUrl).then(function () {
           copyBtn.classList.add('share-btn--copied');
           copyBtn.title = 'Copied!';
-          _showToast('Link copied to clipboard!');
+          window.showToast('Link copied to clipboard!');
           setTimeout(function () {
             copyBtn.classList.remove('share-btn--copied');
             copyBtn.title = 'Copy link';
           }, 2000);
         }).catch(function() {
-          _showToast('Copy failed — try manually.');
+          window.showToast('Copy failed — try manually.');
         });
       });
     }
@@ -1535,10 +1535,10 @@ document.addEventListener('DOMContentLoaded', function () {
           navigator.clipboard.writeText(textarea.value).then(function () {
             var btn = modal.querySelector('.embed-modal__copy');
             btn.textContent = 'Copied!';
-            _showToast('Embed code copied!');
+            window.showToast('Embed code copied!');
             setTimeout(function () { btn.textContent = 'Copy Embed Code'; }, 2000);
           }).catch(function() {
-            _showToast('Copy failed — select and copy manually.');
+            window.showToast('Copy failed — select and copy manually.');
           });
         });
 
