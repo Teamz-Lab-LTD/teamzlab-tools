@@ -883,6 +883,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'AI Zero-Shot Text Classifier',d:'Classify any text into custom categories using AI. Free, private, browser-only. No training data needed — zero-shot classification. Works offline.',h:'/tools/ai-zero-shot-classifier/'},
   {t:'Anagram Solver',d:'Find all possible words from scrambled letters. Solve anagrams for word games, Scrabble, Words With Friends. Free online anagram solver, works instant',h:'/tools/anagram-solver/'},
   {t:'Baby Name Generator',d:'Generate unique baby names by gender, origin, and style. Browse popular, classic, modern, and unique names with meanings. Free baby name finder tool.',h:'/tools/baby-name-generator/'},
+  {t:'Birthday Gift Cheque Generator',d:'Create a fun birthday gift cheque for your friend or loved one. Customize name, amount, message, and bank style. Download or share on WhatsApp. Free.',h:'/tools/birthday-gift-cheque/'},
   {t:'Body Pose Estimator',d:'Detect body poses in images using AI running in your browser. Free, private, no upload required. Visualize skeleton landmarks for fitness and yoga.',h:'/tools/body-pose-estimator/'},
   {t:'Code Typing Practice — Dev Speed Test',d:'Practice typing code in JavaScript, Python, HTML, CSS, Java, and C++. Track WPM and special character accuracy. Free and private in your browser.',h:'/tools/code-typing-practice/'},
   {t:'Color Personality Test',d:'Discover what your color preferences reveal about your personality. Pick colors in 8 questions and get your personality profile. Free, shareable quiz.',h:'/tools/color-personality-test/'},
