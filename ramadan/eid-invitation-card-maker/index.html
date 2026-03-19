@@ -349,6 +349,16 @@
             <label for="customMsg">Custom Message (optional)</label>
             <textarea id="customMsg" placeholder="You are cordially invited to celebrate Eid with us..." maxlength="150"></textarea>
           </div>
+
+          <div class="invite-field full-width">
+            <label>Your Photo (optional)</label>
+            <div id="photoDropzone" style="border: 2px dashed var(--border); border-radius: 10px; padding: 1rem; text-align: center; cursor: pointer; background: var(--surface); transition: border-color 0.2s;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted); margin-bottom: 0.25rem;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <span style="display: block; font-size: 0.85rem; color: var(--text-muted);">Tap to upload photo</span>
+            </div>
+            <button type="button" id="btnChangePhoto" class="btn-secondary" style="display:none; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.3rem 0.8rem;">Change Photo</button>
+            <input type="file" id="photoInput" accept="image/*" style="display:none;">
+          </div>
         </div>
 
         <!-- Style Picker -->
@@ -496,6 +506,37 @@
     var msgInput = document.getElementById('customMsg');
     var canvas = document.getElementById('cardCanvas');
     var ctx = canvas.getContext('2d');
+    var userPhoto = null;
+    var photoDropzone = document.getElementById('photoDropzone');
+    var photoInput = document.getElementById('photoInput');
+    var btnChangePhoto = document.getElementById('btnChangePhoto');
+
+    // === Photo Upload ===
+    photoDropzone.addEventListener('click', function() { photoInput.click(); });
+    btnChangePhoto.addEventListener('click', function(e) { e.stopPropagation(); photoInput.click(); });
+    photoInput.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+          userPhoto = img;
+          var existingImg = photoDropzone.querySelector('img');
+          if (existingImg) existingImg.remove();
+          var previewImg = document.createElement('img');
+          previewImg.src = ev.target.result;
+          previewImg.style.cssText = 'max-width:100%;max-height:120px;border-radius:8px;object-fit:cover;';
+          photoDropzone.appendChild(previewImg);
+          photoDropzone.querySelector('svg').style.display = 'none';
+          photoDropzone.querySelector('span').style.display = 'none';
+          btnChangePhoto.style.display = 'inline-block';
+          renderCard();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
     var previewWrap = document.getElementById('cardPreviewWrap');
 
     var currentStyle = 'gold';
@@ -746,49 +787,75 @@
       ctx.fillStyle = s.title;
       ctx.fillText(data.eventType, W / 2, 460);
 
+      // Photo circle (if uploaded)
+      if (userPhoto) {
+        var photoR = 55;
+        var photoCX = W / 2;
+        var photoCY = 520;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(photoCX, photoCY, photoR, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        // Cover crop
+        var aspect = userPhoto.width / userPhoto.height;
+        var sw, sh, sx, sy;
+        if (aspect > 1) { sh = userPhoto.height; sw = sh; sx = (userPhoto.width - sw) / 2; sy = 0; }
+        else { sw = userPhoto.width; sh = sw; sx = 0; sy = (userPhoto.height - sh) / 2; }
+        ctx.drawImage(userPhoto, sx, sy, sw, sh, photoCX - photoR, photoCY - photoR, photoR * 2, photoR * 2);
+        ctx.restore();
+        // Circle border
+        ctx.strokeStyle = s.borderColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(photoCX, photoCY, photoR + 2, 0, Math.PI * 2); ctx.stroke();
+      }
+
       // "Hosted by"
+      var hostLabelY = userPhoto ? 595 : 510;
       ctx.font = '500 22px Poppins, sans-serif';
       ctx.fillStyle = s.muted;
-      ctx.fillText('Hosted by', W / 2, 510);
+      ctx.fillText('Hosted by', W / 2, hostLabelY);
 
       // Host name
       ctx.font = '700 36px Poppins, sans-serif';
       ctx.fillStyle = s.text;
-      ctx.fillText(data.host, W / 2, 555);
+      ctx.fillText(data.host, W / 2, hostLabelY + 45);
 
       // Decorative line
+      var lineY = userPhoto ? hostLabelY + 65 : 580;
       ctx.strokeStyle = s.borderColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(W / 2 - 80, 580);
-      ctx.lineTo(W / 2 + 80, 580);
+      ctx.moveTo(W / 2 - 80, lineY);
+      ctx.lineTo(W / 2 + 80, lineY);
       ctx.stroke();
 
       // Date icon + text
+      var dateY = lineY + 50;
       ctx.font = '600 24px Poppins, sans-serif';
       ctx.fillStyle = s.text;
-      ctx.fillText(data.dateStr, W / 2, 630);
+      ctx.fillText(data.dateStr, W / 2, dateY);
 
       // Time
       ctx.font = '600 28px Poppins, sans-serif';
       ctx.fillStyle = s.title;
-      ctx.fillText(data.timeStr, W / 2, 670);
+      ctx.fillText(data.timeStr, W / 2, dateY + 40);
 
       // Venue label
       ctx.font = '500 18px Poppins, sans-serif';
       ctx.fillStyle = s.muted;
-      ctx.fillText('Venue', W / 2, 720);
+      ctx.fillText('Venue', W / 2, dateY + 90);
 
       // Venue address (wrap if needed)
       ctx.font = '600 22px Poppins, sans-serif';
       ctx.fillStyle = s.text;
-      wrapText(ctx, data.venue, W / 2, 752, W - 200, 28);
+      wrapText(ctx, data.venue, W / 2, dateY + 122, W - 200, 28);
 
       // Custom message
       if (data.msg) {
         ctx.font = 'italic 20px Poppins, sans-serif';
         ctx.fillStyle = s.muted;
-        var msgY = 830;
+        var msgY = dateY + 200;
         wrapText(ctx, '"' + data.msg + '"', W / 2, msgY, W - 200, 26);
       }
 
