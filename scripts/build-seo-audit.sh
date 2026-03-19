@@ -27,8 +27,9 @@
 #   ./build-seo-audit.sh --aso-compare "Name A" "Name B"            # Compare app names
 # ────────────────────────────────────────────────────────────────────
 
-BASE="$(cd "$(dirname "$0")" && pwd)"
-SCRIPT="$BASE/seo-keyword-engine.py"
+SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+BASE="$(dirname "$SCRIPTS")"
+SCRIPT="$SCRIPTS/seo-keyword-engine.py"
 
 if [ ! -f "$SCRIPT" ]; then
     echo "ERROR: seo-keyword-engine.py not found at $SCRIPT"

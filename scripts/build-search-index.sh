@@ -3,7 +3,8 @@
 # Run after ANY change: ./build-search-index.sh
 # Also runs automatically via pre-commit hook
 
-BASE="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+BASE="$(dirname "$SCRIPTS")"
 OUTPUT="$BASE/shared/js/search-index.js"
 
 echo "=== Rebuilding search index ==="

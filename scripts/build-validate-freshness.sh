@@ -3,7 +3,8 @@
 # Run: ./build-validate-freshness.sh
 # Run annually or when tax years change
 
-BASE="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+BASE="$(dirname "$SCRIPTS")"
 CURRENT_YEAR=$(date +%Y)
 NEXT_YEAR=$((CURRENT_YEAR + 1))
 PREV_YEAR=$((CURRENT_YEAR - 1))

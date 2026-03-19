@@ -1,1 +1,0 @@
-scripts/qa-test.py

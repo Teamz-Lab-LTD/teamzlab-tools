@@ -3,7 +3,8 @@
 # Usage: ./build.sh
 # This prevents all common mistakes by auto-fixing everything
 
-BASE="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+BASE="$(dirname "$SCRIPTS")"
 ERRORS=0
 
 echo "============================================="
@@ -13,12 +14,12 @@ echo ""
 
 # 1. Rebuild search index
 echo "[1/7] Rebuilding search index..."
-bash "$BASE/build-search-index.sh"
+bash "$SCRIPTS/build-search-index.sh"
 
 # 2. Rebuild sitemap
 echo ""
 echo "[2/7] Rebuilding sitemap..."
-bash "$BASE/build-sitemap.sh"
+bash "$SCRIPTS/build-sitemap.sh"
 
 # 3. Update homepage card counts
 echo ""
@@ -129,8 +130,8 @@ fi
 # 7. SEO Keyword Audit (automated keyword placement check)
 echo ""
 echo "[7/7] Running SEO keyword audit..."
-if [ -f "$BASE/seo-keyword-engine.py" ] && command -v python3 &>/dev/null; then
-  SEO_OUTPUT=$(python3 "$BASE/seo-keyword-engine.py" audit 2>&1)
+if [ -f "$SCRIPTS/seo-keyword-engine.py" ] && command -v python3 &>/dev/null; then
+  SEO_OUTPUT=$(python3 "$SCRIPTS/seo-keyword-engine.py" audit 2>&1)
   # Extract just the summary lines
   AVG_SCORE=$(echo "$SEO_OUTPUT" | grep "Average score" | awk '{print $3}')
   CRITICAL_COUNT=$(echo "$SEO_OUTPUT" | grep "CRITICAL" | head -1 | grep -o '[0-9]* tools' | awk '{print $1}')
