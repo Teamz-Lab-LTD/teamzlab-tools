@@ -85,16 +85,30 @@ Example output to user:
    - Can we build it client-side? (Must be yes)
    - Is there a monetizable audience? (Finance > jokes)
 
-   **c) Check for duplicates:**
+   **c) Check for duplicates (MANDATORY — search BROADLY, not just exact slug):**
    ```bash
-   find . -path "*/<proposed-slug>/index.html" 2>/dev/null
-   grep -ri "<proposed tool name>" --include="*.html" -l | head -5
+   # Search for CONCEPT, not just exact slug name
+   # Example: for "meme generator", search *meme* — catches "meme-maker" too
+   find . -path "*keyword1*" -name "index.html" 2>/dev/null
+   find . -path "*keyword2*" -name "index.html" 2>/dev/null
+   grep -rl "related concept keyword" --include="*.html" -l | head -10
    ```
+   **NEVER launch build agents before running these checks.**
    If a similar tool exists, ENHANCE it instead of creating a duplicate.
+
    Known duplicates to be aware of:
    - sleep-calculator exists in `/health/` AND `/evergreen/`
    - YouTube thumbnail tools exist in `/tools/`, `/video/`, `/design/`
    - Resume/ATS tools exist in `/career/resume-ats-scorer/` AND `/career/ats-resume-checker/`
+   - Meme tools: `/image/meme-maker/` (don't create meme-generator)
+   - WiFi QR: `/diagnostic/wifi-qr-code-generator/` (don't create in /tools/)
+   - Tip calculator: `/restaurant/tip-calculator/` (don't create in /evergreen/ or /tools/)
+   - Face shape: `/grooming/face-shape-detector/` AND `/tools/face-shape-detector/`
+
+   **Also check concept overlap:**
+   - "eid-greeting-message-generator" = same as "eid-mubarak-wishes-generator"
+   - "eid-preparation-checklist" = overlaps "eid-countdown" + "eid-shopping-list"
+   - Before building, ask: "Does an existing tool already solve this problem?"
 
    **Full playbook:** See `/docs/research/022-growth-playbook.md` for monetization strategy, seasonal calendar, virality checklist, and revenue targets.
 
@@ -519,6 +533,27 @@ Every tool MUST have ALL of these before committing:
 - When adding new enum-type URL params, add them to the `enumKeys` array in `shareDecode()`
 - Always validate decoded enum values against known options before using them
 
+### Rule 21: NEVER repeat these tool-building mistakes
+These mistakes were made and must NEVER happen again:
+
+**Before building:**
+1. **Search broadly for duplicates** — `find . -path "*meme*"` not `"*meme-generator*"`. A tool called "meme-maker" IS a duplicate of "meme-generator"
+2. **Check concept overlap** — "eid-preparation-checklist" overlaps with "eid-countdown" + "eid-shopping-list". Ask: "Does an existing tool already do this?"
+3. **NEVER launch build agents without running duplicate check first** — the 30 seconds of checking saves hours of cleanup
+
+**After building:**
+4. **Run `git status`** — check for untracked files that will be 404 on live site
+5. **Clean up hub links** — if you delete a tool, ALSO remove its link from hub pages
+
+**When consolidating duplicates:**
+6. **Compare features BEFORE deleting** — `grep -o 'function [a-zA-Z]*' file.html | sort` on both versions. If deleted version has unique features, MERGE them first
+7. **Never make up external URLs** — no fake YouTube IDs, no guessed image URLs. Use search links instead
+
+**Pre-commit hook catches:**
+- Same-slug tools in different hubs (duplicate detection)
+- Untracked tool files (404 prevention)
+- Broken internal links (link validation)
+
 ## QA & Monitoring
 ```bash
 ./build-qa-check.sh               # Automated QA: checks all tools for missing FAQs, schemas, content, JS logic
@@ -546,3 +581,8 @@ python3 build-static-schema.py     # Rebuild all JSON-LD schemas
 16. Half-implementing features — missing data in share/canvas/download chain (see Rule 17)
 17. Patching same bug in 50 files instead of fixing centrally (see Rule 18)
 18. Committing tools without FAQs, schemas, content, or related tools (see Rule 19)
+19. Creating duplicate tools without broad search first — "meme-maker" IS "meme-generator" (see Rule 21)
+20. Deleting duplicate tools without comparing/merging unique features first (see Rule 21)
+21. Making up YouTube video IDs or image URLs — use search links instead (see Rule 21)
+22. Leaving untracked files that will be 404 on live site — always run git status (see Rule 21)
+23. Deleting tools but leaving broken links in hub pages (see Rule 21)
