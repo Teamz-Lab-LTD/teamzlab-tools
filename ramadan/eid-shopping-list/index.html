@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eid Shopping List Planner — Teamz Lab Tools</title>
+  <meta name="description" content="Plan your complete Eid shopping list with budget tracking for clothes, food, gifts, and decorations. Free, private, works offline in your browser.">
+  <meta property="og:title" content="Eid Shopping List Planner — Teamz Lab Tools">
+  <meta property="og:description" content="Plan your complete Eid shopping list with budget tracking for clothes, food, gifts, and decorations. Free, private, works offline in your browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/ramadan/eid-shopping-list/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/ramadan.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Eid Shopping List Planner — Teamz Lab Tools">
+  <meta name="twitter:description" content="Plan your complete Eid shopping list with budget tracking for clothes, food, gifts, and decorations. Free, private, works offline in your browser.">
+  <link rel="canonical" href="https://tool.teamzlab.com/ramadan/eid-shopping-list/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .shopping-app { max-width: 800px; margin: 0 auto; }
+    .budget-bar {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 20px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; margin-bottom: 24px;
+    }
+    .budget-bar label { font-weight: 600; color: var(--heading); white-space: nowrap; }
+    .budget-bar input {
+      flex: 1; min-width: 140px; padding: 10px 14px; border: 1px solid var(--border);
+      border-radius: 8px; background: var(--bg); color: var(--text);
+      font-size: var(--text-base); font-family: inherit;
+    }
+    .budget-summary {
+      display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    .budget-chip {
+      padding: 6px 14px; border-radius: 20px; font-weight: 600;
+      font-size: var(--text-sm);
+    }
+    .budget-chip--spent { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .budget-chip--remaining { background: var(--heading); color: var(--bg); }
+    .budget-chip--over { background: var(--surface); color: var(--heading); border: 2px solid var(--heading); }
+
+    .category-block {
+      margin-bottom: 20px; border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; background: var(--surface);
+    }
+    .category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px; cursor: pointer; user-select: none;
+      background: var(--surface); transition: background 0.2s;
+    }
+    .category-header:hover { opacity: 0.85; }
+    .category-header h3 {
+      margin: 0; font-size: var(--text-base); color: var(--heading);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .category-header h3 span.cat-icon { font-size: 1.3em; }
+    .category-total {
+      font-weight: 700; color: var(--heading); font-size: var(--text-sm);
+      white-space: nowrap;
+    }
+    .category-body { padding: 0 18px 14px; }
+    .category-body.collapsed { display: none; }
+
+    .item-row {
+      display: grid; grid-template-columns: 28px 1fr 70px 110px 36px;
+      gap: 8px; align-items: center; padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-row input[type="checkbox"] {
+      width: 20px; height: 20px; accent-color: var(--heading); cursor: pointer;
+    }
+    .item-row input[type="text"],
+    .item-row input[type="number"] {
+      padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg); color: var(--text); font-family: inherit;
+      font-size: var(--text-sm);
+    }
+    .item-row input[type="number"] { text-align: right; }
+    .item-row .item-name { font-size: var(--text-sm); }
+    .item-row.bought .item-name { text-decoration: line-through; opacity: 0.5; }
+    .item-remove {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 18px; cursor: pointer; padding: 4px; line-height: 1;
+    }
+    .item-remove:hover { color: var(--heading); }
+
+    .add-item-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: none; border: 1px dashed var(--border); border-radius: 8px;
+      padding: 8px 14px; color: var(--text-muted); cursor: pointer;
+      font-size: var(--text-sm); font-family: inherit; margin-top: 8px;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .add-item-btn:hover { border-color: var(--heading); color: var(--heading); }
+
+    .item-labels {
+      display: grid; grid-template-columns: 28px 1fr 70px 110px 36px;
+      gap: 8px; padding: 0 0 4px; font-size: var(--text-xs);
+      color: var(--text-muted); font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .grand-total-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px; background: var(--heading); color: var(--bg);
+      border-radius: 12px; margin: 24px 0; font-size: var(--text-lg); font-weight: 700;
+    }
+
+    .action-buttons {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px;
+    }
+    .action-buttons button {
+      flex: 1; min-width: 140px; padding: 12px 20px;
+      border: 1px solid var(--border); border-radius: 10px;
+      background: var(--surface); color: var(--heading);
+      font-weight: 600; font-family: inherit; font-size: var(--text-sm);
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .action-buttons button:hover { opacity: 0.8; }
+
+    .copy-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--heading); color: var(--bg); padding: 10px 24px;
+      border-radius: 8px; font-weight: 600; font-size: var(--text-sm);
+      opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+    }
+    .copy-toast.show { opacity: 1; }
+
+    @media (max-width: 600px) {
+      .item-row { grid-template-columns: 24px 1fr 60px 90px 30px; gap: 4px; }
+      .item-labels { grid-template-columns: 24px 1fr 60px 90px 30px; gap: 4px; }
+      .budget-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+      .budget-summary { justify-content: center; }
+      .grand-total-bar { font-size: var(--text-base); padding: 14px 16px; }
+      .action-buttons { flex-direction: column; }
+      .action-buttons button { width: 100%; }
+      .category-header h3 { font-size: var(--text-sm); }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+
+    @media (max-width: 400px) {
+      .item-row { grid-template-columns: 22px 1fr 50px 80px 28px; gap: 3px; }
+      .item-labels { grid-template-columns: 22px 1fr 50px 80px 28px; gap: 3px; }
+      .item-row input[type="text"],
+      .item-row input[type="number"] { padding: 6px; font-size: 12px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Ramadan & Eid Tools", "item": "https://tool.teamzlab.com/ramadan/"}, {"@type": "ListItem", "position": 3, "name": "Eid Shopping List"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What should I include in my Eid shopping list?", "acceptedAnswer": {"@type": "Answer", "text": "A complete Eid shopping list typically includes new clothes for family members, food and groceries for Eid meals, gifts and salami envelopes for relatives, home decorations, beauty and mehndi supplies, and sweets and desserts. The exact items depend on your family size, traditions, and budget."}}, {"@type": "Question", "name": "How much does an average family spend on Eid in Bangladesh?", "acceptedAnswer": {"@type": "Answer", "text": "Eid spending varies widely based on family size and location. A middle-income family in Dhaka typically spends between 20,000 to 80,000 BDT on Eid shopping including clothes, food, gifts, and decorations. Rural families may spend less. The key is to set a budget you can afford and stick to it using a planner like this one."}}, {"@type": "Question", "name": "When is the best time to start Eid shopping in Bangladesh?", "acceptedAnswer": {"@type": "Answer", "text": "The best time to start is during the first two weeks of Ramadan. Clothing stores have better stock and shorter queues, tailors can deliver on time, and prices are generally lower than the last-minute rush. Buy perishable food items one to two days before Eid for freshness."}}, {"@type": "Question", "name": "How can I save money on Eid clothes?", "acceptedAnswer": {"@type": "Answer", "text": "Compare prices across multiple shops and online platforms before buying. Visit wholesale markets for fabric and get it tailored instead of buying readymade at premium prices. Shop early in Ramadan to avoid peak pricing. Consider mixing one new outfit with existing clothes rather than buying entirely new wardrobes for everyone."}}, {"@type": "Question", "name": "Is my shopping list data saved or shared?", "acceptedAnswer": {"@type": "Answer", "text": "No. This tool runs entirely in your browser. Your shopping list, budget, and all item details stay on your device and are never sent to any server. Your data is completely private. You can copy or print your list for offline use."}}, {"@type": "Question", "name": "Can I customize the categories and items?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each category comes with common items pre-filled, but you can add new items using the Add Item button at the bottom of each category. You can also remove any item you do not need by clicking the remove button next to it. The categories themselves cover all major Eid shopping needs."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Eid Shopping List Planner", "description": "Plan your complete Eid shopping list with budget tracking for clothes, food, gifts, and decorations. Free, private, works offline in your browser.", "url": "https://tool.teamzlab.com/ramadan/eid-shopping-list/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Eid Shopping List Planner</h1>
+      <p class="tool-description">Organize your complete Eid shopping list across clothes, food, gifts, decorations, and sweets. Track quantities, prices, and your budget — all in your browser, completely private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="shopping-app" id="shoppingApp">
+        <div class="budget-bar">
+          <label for="totalBudget">Total Budget (&#2547;)</label>
+          <input type="number" id="totalBudget" placeholder="e.g. 50000" min="0">
+          <div class="budget-summary" id="budgetSummary">
+            <span class="budget-chip budget-chip--spent" id="chipSpent">Spent: &#2547;0</span>
+            <span class="budget-chip budget-chip--remaining" id="chipRemaining">Remaining: &#2547;0</span>
+          </div>
+        </div>
+
+        <div id="categoriesContainer"></div>
+
+        <div class="grand-total-bar">
+          <span>Grand Total</span>
+          <span id="grandTotal">&#2547;0</span>
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" onclick="printList()">&#128424; Print List</button>
+          <button type="button" onclick="copyList()">&#128203; Copy List</button>
+          <button type="button" onclick="resetAll()">&#8635; Reset All</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Eid Shopping List Planner Works</h2>
+      <p>Eid is one of the most anticipated celebrations in Bangladesh, and shopping for it involves multiple categories — from new clothes for the entire family to special foods, gifts, and home decorations. This Eid Shopping List Planner helps you organize everything in one place so nothing gets forgotten and your spending stays under control.</p>
+      <p>Start by setting your total budget in Bangladeshi Taka at the top. The planner comes with six pre-built categories commonly needed for Eid in Bangladesh: Clothes, Food and Groceries, Gifts and Salami, Home Decoration, Beauty and Mehndi, and Sweets and Desserts. Each category includes common items already filled in, but you can add or remove items freely. Enter the quantity and estimated price for each item, and the tool calculates running totals per category and a grand total automatically. Check off items as you buy them to track your progress.</p>
+
+      <h2>Eid Shopping Checklist for Bangladesh</h2>
+      <p>A complete Eid shopping list in Bangladesh typically covers several essential areas. For clothing, families buy new outfits for everyone — salwar kameez, sarees, panjabi, and children's dresses are the most popular choices. Tailoring orders should be placed at least two to three weeks before Eid to avoid the last-minute rush at local tailors.</p>
+      <p>Food and groceries form the largest portion of Eid spending for many households. Items like beef, chicken, spices, rice, cooking oil, vermicelli (shemai), and milk are staples. For gifts and salami (Eid monetary gifts), families prepare cash envelopes for younger relatives and sometimes buy boxed sweets or dry fruits for neighbors and colleagues. Home decorations, fairy lights, and fresh flowers add to the festive atmosphere, while mehndi supplies and beauty products are essential for many women preparing for Eid day.</p>
+
+      <h2>Tips to Save Money on Eid Shopping</h2>
+      <p>Planning ahead is the best way to save on Eid shopping. Start buying non-perishable items like clothes, decorations, and dry goods two to three weeks before Eid when shops have better stock and less crowding. Compare prices across New Market, Bashundhara City, and online platforms like Daraz and Evaly for the best deals. Buy spices and groceries in bulk from wholesale markets like Kawran Bazar to save significantly compared to neighborhood shops.</p>
+      <p>Set a firm budget and use this planner to track every taka. Avoid impulse purchases by sticking to your list. Consider homemade sweets and desserts instead of expensive bakery items — roshogolla, sandesh, and shemai made at home cost a fraction of store-bought versions and taste even better. For salami, decide on fixed amounts per person in advance rather than giving spontaneously, which often leads to overspending.</p>
+
+      <h2>When to Start Eid Shopping</h2>
+      <p>In Bangladesh, the ideal time to start Eid shopping is during the first two weeks of Ramadan. Clothing stores and tailors are less crowded, prices have not yet peaked, and you have time to exchange items if needed. Perishable food items like meat, milk, and vegetables should be purchased one to two days before Eid for freshness. Non-perishable groceries and pantry staples can be bought a week early. Decorations and gifts can be arranged any time during Ramadan, but popular items sell out fast, so early shopping is always better.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <div class="copy-toast" id="copyToast">List copied to clipboard!</div>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var breadcrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'Ramadan & Eid Tools', url: '/ramadan/' },
+        { name: 'Eid Shopping List' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+      TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+      var faqs = [
+        {
+          q: 'What should I include in my Eid shopping list?',
+          a: 'A complete Eid shopping list typically includes new clothes for family members, food and groceries for Eid meals, gifts and salami envelopes for relatives, home decorations, beauty and mehndi supplies, and sweets and desserts. The exact items depend on your family size, traditions, and budget.'
+        },
+        {
+          q: 'How much does an average family spend on Eid in Bangladesh?',
+          a: 'Eid spending varies widely based on family size and location. A middle-income family in Dhaka typically spends between 20,000 to 80,000 BDT on Eid shopping including clothes, food, gifts, and decorations. Rural families may spend less. The key is to set a budget you can afford and stick to it using a planner like this one.'
+        },
+        {
+          q: 'When is the best time to start Eid shopping in Bangladesh?',
+          a: 'The best time to start is during the first two weeks of Ramadan. Clothing stores have better stock and shorter queues, tailors can deliver on time, and prices are generally lower than the last-minute rush. Buy perishable food items one to two days before Eid for freshness.'
+        },
+        {
+          q: 'How can I save money on Eid clothes?',
+          a: 'Compare prices across multiple shops and online platforms before buying. Visit wholesale markets for fabric and get it tailored instead of buying readymade at premium prices. Shop early in Ramadan to avoid peak pricing. Consider mixing one new outfit with existing clothes rather than buying entirely new wardrobes for everyone.'
+        },
+        {
+          q: 'Is my shopping list data saved or shared?',
+          a: 'No. This tool runs entirely in your browser. Your shopping list, budget, and all item details stay on your device and are never sent to any server. Your data is completely private. You can copy or print your list for offline use.'
+        },
+        {
+          q: 'Can I customize the categories and items?',
+          a: 'Yes. Each category comes with common items pre-filled, but you can add new items using the Add Item button at the bottom of each category. You can also remove any item you do not need by clicking the remove button next to it. The categories themselves cover all major Eid shopping needs.'
+        }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      TeamzTools.renderRelatedTools([
+        { slug: 'ramadan/eid-budget-planner', name: 'Eid Budget Planner', description: 'Plan your total Eid expenses across gifts, food, clothes, charity, and hosting.' },
+        { slug: 'ramadan/eidiya-budget-calculator', name: 'Eidiya Budget Calculator', description: 'Calculate total Eidiya spending for children, relatives, and family members.' },
+        { slug: 'ramadan/iftar-grocery-planner', name: 'Iftar Grocery Planner', description: 'Calculate grocery quantities and costs for iftar gatherings of any size.' },
+        { slug: 'ramadan/eid-salami-cheque-book', name: 'Eid Salami Cheque Book', description: 'Generate fun printable salami cheques for Eid gifts.' },
+        { slug: 'ramadan/fitrah-fidya-kaffarah-calculator', name: 'Fitrah Fidya Kaffarah Calculator', description: 'Calculate your Fitrah, Fidya, and Kaffarah amounts for Ramadan.' },
+        { slug: 'ramadan/missed-fast-tracker', name: 'Missed Fast Tracker', description: 'Track and manage missed fasts with makeup schedules and reminders.' }
+      ]);
+
+      TeamzTools.injectWebAppSchema({
+        title: 'Eid Shopping List Planner',
+        description: 'Plan your complete Eid shopping list with budget tracking for clothes, food, gifts, and decorations. Free, private, works offline in your browser.',
+        slug: 'ramadan/eid-shopping-list'
+      });
+
+      initShoppingApp();
+    });
+
+    var categories = [
+      {
+        id: 'clothes',
+        name: 'Clothes & Outfits',
+        icon: '\uD83D\uDC55',
+        items: [
+          { name: 'Panjabi (Self)', qty: 1, price: 1500 },
+          { name: 'Salwar Kameez (Wife)', qty: 1, price: 2000 },
+          { name: 'Saree (Mother)', qty: 1, price: 2500 },
+          { name: 'Children\'s Dress', qty: 2, price: 800 },
+          { name: 'Shoes / Sandals', qty: 2, price: 600 },
+          { name: 'Tailoring Cost', qty: 1, price: 500 }
+        ]
+      },
+      {
+        id: 'food',
+        name: 'Food & Groceries',
+        icon: '\uD83C\uDF5A',
+        items: [
+          { name: 'Beef / Mutton (kg)', qty: 3, price: 850 },
+          { name: 'Chicken (kg)', qty: 2, price: 220 },
+          { name: 'Rice (kg)', qty: 10, price: 70 },
+          { name: 'Cooking Oil (ltr)', qty: 2, price: 200 },
+          { name: 'Spices (assorted)', qty: 1, price: 500 },
+          { name: 'Vermicelli / Shemai', qty: 2, price: 120 },
+          { name: 'Milk (ltr)', qty: 5, price: 100 },
+          { name: 'Fruits (assorted)', qty: 1, price: 800 }
+        ]
+      },
+      {
+        id: 'gifts',
+        name: 'Gifts & Salami',
+        icon: '\uD83C\uDF81',
+        items: [
+          { name: 'Salami Envelopes', qty: 10, price: 500 },
+          { name: 'Gift Box (relatives)', qty: 3, price: 400 },
+          { name: 'Dry Fruits Pack', qty: 2, price: 600 },
+          { name: 'Children\'s Toys', qty: 2, price: 350 }
+        ]
+      },
+      {
+        id: 'decoration',
+        name: 'Home Decoration',
+        icon: '\u2728',
+        items: [
+          { name: 'Fairy Lights', qty: 2, price: 250 },
+          { name: 'Fresh Flowers', qty: 1, price: 300 },
+          { name: 'Table Runner / Cloth', qty: 1, price: 400 },
+          { name: 'Eid Banner / Bunting', qty: 1, price: 150 }
+        ]
+      },
+      {
+        id: 'beauty',
+        name: 'Beauty & Mehndi',
+        icon: '\uD83D\uDC85',
+        items: [
+          { name: 'Mehndi Cone', qty: 3, price: 80 },
+          { name: 'Facial / Skincare', qty: 1, price: 500 },
+          { name: 'Hair Styling', qty: 1, price: 300 },
+          { name: 'Perfume / Attar', qty: 1, price: 400 }
+        ]
+      },
+      {
+        id: 'sweets',
+        name: 'Sweets & Desserts',
+        icon: '\uD83C\uDF70',
+        items: [
+          { name: 'Roshogolla (box)', qty: 2, price: 350 },
+          { name: 'Sandesh (box)', qty: 1, price: 300 },
+          { name: 'Shemai Ingredients', qty: 1, price: 250 },
+          { name: 'Bakery Items', qty: 1, price: 500 },
+          { name: 'Jilapi / Chomchom', qty: 1, price: 250 }
+        ]
+      }
+    ];
+
+    var appState = [];
+    var collapsedState = {};
+
+    function initShoppingApp() {
+      appState = categories.map(function (cat) {
+        return {
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon,
+          items: cat.items.map(function (item) {
+            return { name: item.name, qty: item.qty, price: item.price, bought: false };
+          })
+        };
+      });
+      renderAll();
+    }
+
+    function renderAll() {
+      var container = document.getElementById('categoriesContainer');
+      container.innerHTML = '';
+      appState.forEach(function (cat, catIdx) {
+        var block = document.createElement('div');
+        block.className = 'category-block';
+
+        var catTotal = getCategoryTotal(cat);
+        var isCollapsed = collapsedState[cat.id] || false;
+
+        var header = document.createElement('div');
+        header.className = 'category-header';
+        header.innerHTML = '<h3><span class="cat-icon">' + cat.icon + '</span> ' + cat.name + '</h3>' +
+          '<span class="category-total">\u09F3' + formatNum(catTotal) + '</span>';
+        header.onclick = function () {
+          collapsedState[cat.id] = !collapsedState[cat.id];
+          renderAll();
+        };
+        block.appendChild(header);
+
+        var body = document.createElement('div');
+        body.className = 'category-body' + (isCollapsed ? ' collapsed' : '');
+
+        var labels = document.createElement('div');
+        labels.className = 'item-labels';
+        labels.innerHTML = '<span></span><span>Item</span><span>Qty</span><span>Price (\u09F3)</span><span></span>';
+        body.appendChild(labels);
+
+        cat.items.forEach(function (item, itemIdx) {
+          var row = document.createElement('div');
+          row.className = 'item-row' + (item.bought ? ' bought' : '');
+
+          row.innerHTML =
+            '<input type="checkbox" ' + (item.bought ? 'checked' : '') + ' title="Mark as bought">' +
+            '<input type="text" class="item-name" value="' + escapeAttr(item.name) + '" placeholder="Item name">' +
+            '<input type="number" value="' + item.qty + '" min="0" placeholder="Qty">' +
+            '<input type="number" value="' + item.price + '" min="0" placeholder="Price">' +
+            '<button type="button" class="item-remove" title="Remove item">&times;</button>';
+
+          var inputs = row.querySelectorAll('input');
+          (function (ci, ii) {
+            inputs[0].addEventListener('change', function () {
+              appState[ci].items[ii].bought = this.checked;
+              renderAll();
+            });
+            inputs[1].addEventListener('input', function () {
+              appState[ci].items[ii].name = this.value;
+            });
+            inputs[2].addEventListener('input', function () {
+              appState[ci].items[ii].qty = parseFloat(this.value) || 0;
+              updateTotals();
+            });
+            inputs[3].addEventListener('input', function () {
+              appState[ci].items[ii].price = parseFloat(this.value) || 0;
+              updateTotals();
+            });
+          })(catIdx, itemIdx);
+
+          row.querySelector('.item-remove').addEventListener('click', (function (ci, ii) {
+            return function () {
+              appState[ci].items.splice(ii, 1);
+              renderAll();
+            };
+          })(catIdx, itemIdx));
+
+          body.appendChild(row);
+        });
+
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'add-item-btn';
+        addBtn.textContent = '+ Add Item';
+        addBtn.addEventListener('click', (function (ci) {
+          return function () {
+            appState[ci].items.push({ name: '', qty: 1, price: 0, bought: false });
+            collapsedState[appState[ci].id] = false;
+            renderAll();
+          };
+        })(catIdx));
+        body.appendChild(addBtn);
+
+        block.appendChild(body);
+        container.appendChild(block);
+      });
+
+      updateTotals();
+    }
+
+    function getCategoryTotal(cat) {
+      var total = 0;
+      cat.items.forEach(function (item) {
+        total += (item.qty || 0) * (item.price || 0);
+      });
+      return total;
+    }
+
+    function getGrandTotal() {
+      var total = 0;
+      appState.forEach(function (cat) {
+        total += getCategoryTotal(cat);
+      });
+      return total;
+    }
+
+    function updateTotals() {
+      var grand = getGrandTotal();
+      document.getElementById('grandTotal').textContent = '\u09F3' + formatNum(grand);
+
+      document.querySelectorAll('.category-total').forEach(function (el, idx) {
+        if (appState[idx]) {
+          el.textContent = '\u09F3' + formatNum(getCategoryTotal(appState[idx]));
+        }
+      });
+
+      var budgetInput = document.getElementById('totalBudget');
+      var budget = parseFloat(budgetInput.value) || 0;
+      var chipSpent = document.getElementById('chipSpent');
+      var chipRemaining = document.getElementById('chipRemaining');
+
+      chipSpent.textContent = 'Spent: \u09F3' + formatNum(grand);
+
+      if (budget > 0) {
+        var remaining = budget - grand;
+        if (remaining >= 0) {
+          chipRemaining.textContent = 'Remaining: \u09F3' + formatNum(remaining);
+          chipRemaining.className = 'budget-chip budget-chip--remaining';
+        } else {
+          chipRemaining.textContent = 'Over budget: \u09F3' + formatNum(Math.abs(remaining));
+          chipRemaining.className = 'budget-chip budget-chip--over';
+        }
+      } else {
+        chipRemaining.textContent = 'Set a budget above';
+        chipRemaining.className = 'budget-chip budget-chip--remaining';
+      }
+    }
+
+    document.getElementById('totalBudget').addEventListener('input', updateTotals);
+
+    function formatNum(n) {
+      return n.toLocaleString('en-BD');
+    }
+
+    function escapeAttr(str) {
+      return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function buildTextList() {
+      var lines = ['=== Eid Shopping List ===\n'];
+      var budget = parseFloat(document.getElementById('totalBudget').value) || 0;
+      if (budget > 0) {
+        lines.push('Budget: \u09F3' + formatNum(budget));
+      }
+      appState.forEach(function (cat) {
+        var catTotal = getCategoryTotal(cat);
+        lines.push('\n' + cat.icon + ' ' + cat.name + ' (\u09F3' + formatNum(catTotal) + ')');
+        lines.push('---');
+        cat.items.forEach(function (item) {
+          var status = item.bought ? '[x]' : '[ ]';
+          var lineTotal = (item.qty || 0) * (item.price || 0);
+          lines.push(status + ' ' + item.name + ' | Qty: ' + item.qty + ' | \u09F3' + formatNum(item.price) + ' each | \u09F3' + formatNum(lineTotal));
+        });
+      });
+      lines.push('\n---\nGrand Total: \u09F3' + formatNum(getGrandTotal()));
+      if (budget > 0) {
+        var rem = budget - getGrandTotal();
+        lines.push(rem >= 0 ? 'Remaining: \u09F3' + formatNum(rem) : 'Over budget by: \u09F3' + formatNum(Math.abs(rem)));
+      }
+      return lines.join('\n');
+    }
+
+    function copyList() {
+      var text = buildTextList();
+      navigator.clipboard.writeText(text).then(function () {
+        showToast('List copied to clipboard!');
+      }).catch(function () {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('List copied to clipboard!');
+      });
+    }
+
+    function printList() {
+      var text = buildTextList();
+      var win = window.open('', '_blank');
+      win.document.write('<pre style="font-family:monospace;font-size:14px;padding:24px;white-space:pre-wrap;">' + text.replace(/</g, '&lt;') + '</pre>');
+      win.document.close();
+      win.print();
+    }
+
+    function resetAll() {
+      if (confirm('Reset all items and quantities to defaults?')) {
+        collapsedState = {};
+        initShoppingApp();
+      }
+    }
+
+    function showToast(msg) {
+      var toast = document.getElementById('copyToast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 2000);
+    }
+  </script>
+</body>
+</html>
