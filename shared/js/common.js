@@ -807,15 +807,18 @@ var TeamzTools = (function () {
      * Copy share URL to clipboard and show toast
      * Usage: TeamzTools.copyShareLink({ to: 'Nahid', amount: '500' })
      */
-    copyShareLink: function(data, toastFn) {
+    copyShareLink: function(data, toastFn, shareOpts) {
       var url = this.shareEncode(data);
       var notify = toastFn || function() {};
+      var opts = shareOpts || {};
+      var pageTitle = opts.title || document.querySelector('h1') && document.querySelector('h1').textContent || 'Teamz Lab Tools';
+      var shareText = opts.text || pageTitle;
 
       // Try Web Share API first (best on mobile)
       if (navigator.share) {
         navigator.share({
-          title: 'Eid Salami — Teamz Lab Tools',
-          text: 'Check out this Eid Salami!',
+          title: pageTitle + ' — Teamz Lab Tools',
+          text: shareText,
           url: url
         }).then(function() {
           notify('Shared!');
