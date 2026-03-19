@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mac and Cheese Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate mac and cheese ingredients for any number of servings. Scale recipes with cheese blend options and get cooking instructions. Free and private.">
+  <meta property="og:title" content="Mac and Cheese Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate mac and cheese ingredients for any servings. Choose cheese blends and get full cooking instructions.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/mac-and-cheese-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Mac and Cheese Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate mac and cheese ingredients for any servings. Choose cheese blends and get full cooking instructions.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/mac-and-cheese-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .mac-input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .mac-input-group { display: flex; flex-direction: column; }
+    .mac-input-group label { font-weight: 600; margin-bottom: 0.4rem; color: var(--text); font-size: 0.9rem; }
+    .mac-input-group input, .mac-input-group select { padding: 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; }
+    .blend-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .blend-card { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 1rem; cursor: pointer; text-align: center; transition: all 0.2s; }
+    .blend-card.active { border-color: var(--heading); background: var(--heading); color: var(--bg); }
+    .blend-card .blend-name { font-weight: 700; margin-bottom: 0.3rem; }
+    .blend-card .blend-desc { font-size: 0.8rem; opacity: 0.8; }
+    .mac-results { display: none; margin-top: 1.5rem; }
+    .ingredient-list { list-style: none; padding: 0; margin: 0 0 1.5rem 0; }
+    .ingredient-list li { display: flex; justify-content: space-between; padding: 0.7rem 0; border-bottom: 1px solid var(--border); color: var(--text); }
+    .ingredient-list li .ing-name { font-weight: 500; }
+    .ingredient-list li .ing-amount { font-weight: 700; color: var(--heading); }
+    .mac-section-title { color: var(--heading); font-size: 1.1rem; font-weight: 700; margin: 1.5rem 0 0.8rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); }
+    .cooking-steps { list-style: none; padding: 0; margin: 0; counter-reset: step; }
+    .cooking-steps li { padding: 0.8rem 0 0.8rem 2.5rem; border-bottom: 1px solid var(--border); color: var(--text); position: relative; counter-increment: step; }
+    .cooking-steps li::before { content: counter(step); position: absolute; left: 0; top: 0.8rem; width: 1.8rem; height: 1.8rem; background: var(--heading); color: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .nutrition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; }
+    .nutrition-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .nutrition-card .nut-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.2rem; }
+    .nutrition-card .nut-value { font-size: 1.4rem; font-weight: 700; color: var(--heading); }
+    .mac-copy-btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.5rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 1rem; transition: opacity 0.2s; }
+    .mac-copy-btn:hover { opacity: 0.85; }
+    @media (max-width: 600px) {
+      .mac-input-row { grid-template-columns: 1fr; }
+      .blend-cards { grid-template-columns: 1fr; }
+      .nutrition-grid { grid-template-columns: repeat(2, 1fr); }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Mac and Cheese Recipe Calculator</h1>
+      <p class="tool-description">Scale the perfect mac and cheese recipe for any number of servings. Choose your cheese blend, get precise ingredient amounts, cooking instructions, and nutritional info.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="mac-input-row">
+        <div class="mac-input-group">
+          <label for="macServings">Number of Servings</label>
+          <input type="number" id="macServings" min="1" max="50" value="4" placeholder="e.g. 4">
+        </div>
+        <div class="mac-input-group">
+          <label for="macPastaType">Pasta Shape</label>
+          <select id="macPastaType">
+            <option value="elbow">Elbow Macaroni</option>
+            <option value="shells">Shell Pasta</option>
+            <option value="penne">Penne</option>
+            <option value="cavatappi">Cavatappi</option>
+            <option value="rotini">Rotini</option>
+          </select>
+        </div>
+      </div>
+      <label style="font-weight:600;color:var(--text);font-size:0.9rem;display:block;margin-bottom:0.6rem;">Cheese Blend</label>
+      <div class="blend-cards">
+        <div class="blend-card active" data-blend="classic">
+          <div class="blend-name">Classic</div>
+          <div class="blend-desc">Sharp Cheddar</div>
+        </div>
+        <div class="blend-card" data-blend="gourmet">
+          <div class="blend-name">Gourmet</div>
+          <div class="blend-desc">Gruyere + Gouda</div>
+        </div>
+        <div class="blend-card" data-blend="spicy">
+          <div class="blend-name">Spicy</div>
+          <div class="blend-desc">Pepper Jack + Cheddar</div>
+        </div>
+      </div>
+
+      <div id="macResults" class="mac-results">
+        <div class="mac-section-title">Ingredients</div>
+        <ul class="ingredient-list" id="ingredientList"></ul>
+
+        <div class="mac-section-title">Cooking Instructions</div>
+        <ol class="cooking-steps" id="cookingSteps"></ol>
+
+        <div class="mac-section-title">Nutrition Per Serving</div>
+        <div class="nutrition-grid" id="nutritionGrid"></div>
+
+        <button class="mac-copy-btn" id="copyRecipeBtn" type="button">Copy Recipe</button>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Mac and Cheese Calculator Works</h2>
+      <p>This calculator scales a tried-and-true mac and cheese recipe based on the number of servings you need. The base recipe serves four people and uses standard proportions that deliver a creamy, cheesy result every time. Simply enter your desired servings and the calculator adjusts every ingredient proportionally. Whether you are cooking for one or feeding a crowd of twenty, the ratios stay perfect. Choose from three cheese blends to match your taste preference, from classic sharp cheddar to a sophisticated gruyere and gouda combination.</p>
+
+      <h2>Choosing the Right Cheese Blend</h2>
+      <p>The cheese you choose transforms the entire dish. The classic blend uses sharp cheddar for that familiar, nostalgic mac and cheese flavor everyone loves. It melts smoothly and delivers a bold, tangy cheese pull. The gourmet blend combines gruyere and gouda for a more nuanced, nutty, and slightly sweet profile that elevates the dish for dinner parties. The spicy blend mixes pepper jack with cheddar for a kick of heat that pairs wonderfully with a side of barbecue or grilled meats. Each blend has been calibrated for ideal melting and flavor balance.</p>
+
+      <h2>Tips for Perfect Mac and Cheese</h2>
+      <p>The secret to great mac and cheese starts with the roux. Cook the butter and flour together for at least two minutes to eliminate the raw flour taste. Add milk slowly while whisking constantly to prevent lumps. Take the sauce off heat before adding cheese to prevent it from becoming grainy. Always slightly undercook the pasta since it will continue cooking in the oven. For a crispy top, mix panko breadcrumbs with melted butter and broil for two to three minutes at the end. Let the finished dish rest for five to ten minutes before serving so the sauce sets and portions cleanly.</p>
+
+      <h2>Mac and Cheese for Special Diets</h2>
+      <p>Making mac and cheese for dietary restrictions is easier than you think. For gluten-free, use rice or chickpea pasta and substitute the flour with cornstarch or a gluten-free flour blend. For lactose intolerance, use lactose-free milk and aged cheeses like parmesan which are naturally very low in lactose. For a lighter version, substitute half the cheese with nutritional yeast, use low-fat milk, and skip the breadcrumb topping. For vegan mac and cheese, use cashew cream, nutritional yeast, and vegan cheese shreds, though that is a different recipe entirely.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Mac and Cheese Calculator'}];
+    var FAQS = [
+      {q:'How much pasta do I need per person for mac and cheese?',a:'A standard serving of mac and cheese uses about 2 ounces (56 grams) of dry pasta per person. For heartier appetites or a main dish, use 3 ounces per person. This calculator uses 2 ounces as the base.'},
+      {q:'What is the best cheese for mac and cheese?',a:'Sharp cheddar is the most popular choice for its bold flavor and smooth melt. For a more complex flavor, combine gruyere with gouda or fontina. Always use freshly shredded cheese — pre-shredded contains anti-caking agents that prevent smooth melting.'},
+      {q:'Can I make mac and cheese ahead of time?',a:'Yes. Assemble the mac and cheese, cover tightly, and refrigerate for up to 24 hours. Add an extra splash of milk before baking since the pasta absorbs moisture overnight. Bake at 350F for 30 to 40 minutes until bubbly.'},
+      {q:'Why is my mac and cheese grainy?',a:'Grainy mac and cheese happens when cheese is added to a sauce that is too hot. Remove the pot from heat before stirring in cheese. Also avoid pre-shredded cheese which contains cellulose that can cause graininess. Use freshly grated cheese for the smoothest texture.'},
+      {q:'How do I make mac and cheese crispy on top?',a:'Mix panko breadcrumbs with melted butter and sprinkle over the top before baking. For extra crunch, add grated parmesan to the breadcrumb mixture. Broil for the last 2 to 3 minutes for a golden, crispy crust.'},
+      {q:'Can I freeze mac and cheese?',a:'Yes. Mac and cheese freezes well for up to 3 months. Portion into freezer-safe containers, cool completely, then freeze. Reheat in the oven at 350F for 20 to 30 minutes. Add a splash of milk to restore creaminess.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Recipe Scaler',url:'/restaurant/recipe-scaler/',desc:'Scale any recipe up or down instantly'},
+      {name:'Cooking Unit Converter',url:'/restaurant/cooking-unit-converter/',desc:'Convert cups, grams, tablespoons and more'},
+      {name:'Cheese Pairing Guide',url:'/restaurant/cheese-pairing-guide/',desc:'Find perfect wine and cheese pairings'},
+      {name:'Cheese Substitute Finder',url:'/restaurant/cheese-substitute-finder/',desc:'Find dairy and vegan cheese alternatives'},
+      {name:'Food Cost Calculator',url:'/restaurant/food-cost-calculator/',desc:'Calculate food cost percentage and pricing'},
+      {name:'Baking Substitution Guide',url:'/restaurant/baking-substitution-guide/',desc:'Find 50+ ingredient swaps for baking'}
+    ];
+
+    (function(){
+      var BASE = {
+        classic: {
+          label: 'Classic (Sharp Cheddar)',
+          cheeses: [{name:'Sharp Cheddar',oz:8}],
+          ingredients: [
+            {name:'Elbow Macaroni (dry)',amount:8,unit:'oz',perServing:2},
+            {name:'Sharp Cheddar (shredded)',amount:8,unit:'oz',perServing:2},
+            {name:'Butter',amount:2,unit:'tbsp',perServing:0.5},
+            {name:'All-Purpose Flour',amount:2,unit:'tbsp',perServing:0.5},
+            {name:'Whole Milk',amount:2,unit:'cups',perServing:0.5},
+            {name:'Salt',amount:0.5,unit:'tsp',perServing:0.125},
+            {name:'Black Pepper',amount:0.25,unit:'tsp',perServing:0.0625},
+            {name:'Dry Mustard Powder',amount:0.5,unit:'tsp',perServing:0.125},
+            {name:'Panko Breadcrumbs',amount:0.5,unit:'cup',perServing:0.125},
+            {name:'Butter (for topping)',amount:1,unit:'tbsp',perServing:0.25}
+          ],
+          nutrition: {calories:480,protein:22,fat:24,carbs:42,fiber:2,sodium:620}
+        },
+        gourmet: {
+          label: 'Gourmet (Gruyere + Gouda)',
+          cheeses: [{name:'Gruyere',oz:5},{name:'Gouda',oz:3}],
+          ingredients: [
+            {name:'Elbow Macaroni (dry)',amount:8,unit:'oz',perServing:2},
+            {name:'Gruyere (shredded)',amount:5,unit:'oz',perServing:1.25},
+            {name:'Gouda (shredded)',amount:3,unit:'oz',perServing:0.75},
+            {name:'Butter',amount:2.5,unit:'tbsp',perServing:0.625},
+            {name:'All-Purpose Flour',amount:2,unit:'tbsp',perServing:0.5},
+            {name:'Whole Milk',amount:2,unit:'cups',perServing:0.5},
+            {name:'Heavy Cream',amount:0.25,unit:'cup',perServing:0.0625},
+            {name:'Salt',amount:0.5,unit:'tsp',perServing:0.125},
+            {name:'White Pepper',amount:0.25,unit:'tsp',perServing:0.0625},
+            {name:'Nutmeg',amount:0.125,unit:'tsp',perServing:0.03125},
+            {name:'Panko Breadcrumbs',amount:0.5,unit:'cup',perServing:0.125},
+            {name:'Butter (for topping)',amount:1,unit:'tbsp',perServing:0.25}
+          ],
+          nutrition: {calories:530,protein:24,fat:28,carbs:42,fiber:2,sodium:580}
+        },
+        spicy: {
+          label: 'Spicy (Pepper Jack + Cheddar)',
+          cheeses: [{name:'Pepper Jack',oz:5},{name:'Sharp Cheddar',oz:3}],
+          ingredients: [
+            {name:'Elbow Macaroni (dry)',amount:8,unit:'oz',perServing:2},
+            {name:'Pepper Jack (shredded)',amount:5,unit:'oz',perServing:1.25},
+            {name:'Sharp Cheddar (shredded)',amount:3,unit:'oz',perServing:0.75},
+            {name:'Butter',amount:2,unit:'tbsp',perServing:0.5},
+            {name:'All-Purpose Flour',amount:2,unit:'tbsp',perServing:0.5},
+            {name:'Whole Milk',amount:2,unit:'cups',perServing:0.5},
+            {name:'Salt',amount:0.5,unit:'tsp',perServing:0.125},
+            {name:'Black Pepper',amount:0.25,unit:'tsp',perServing:0.0625},
+            {name:'Cayenne Pepper',amount:0.125,unit:'tsp',perServing:0.03125},
+            {name:'Smoked Paprika',amount:0.25,unit:'tsp',perServing:0.0625},
+            {name:'Panko Breadcrumbs',amount:0.5,unit:'cup',perServing:0.125},
+            {name:'Butter (for topping)',amount:1,unit:'tbsp',perServing:0.25}
+          ],
+          nutrition: {calories:500,protein:23,fat:26,carbs:42,fiber:2,sodium:650}
+        }
+      };
+
+      var pastaNames = {elbow:'Elbow Macaroni',shells:'Shell Pasta',penne:'Penne',cavatappi:'Cavatappi',rotini:'Rotini'};
+      var servingsInput = document.getElementById('macServings');
+      var pastaType = document.getElementById('macPastaType');
+      var results = document.getElementById('macResults');
+      var currentBlend = 'classic';
+
+      document.querySelectorAll('.blend-card').forEach(function(card){
+        card.addEventListener('click', function(){
+          document.querySelectorAll('.blend-card').forEach(function(c){c.classList.remove('active');});
+          card.classList.add('active');
+          currentBlend = card.dataset.blend;
+          calculate();
+        });
+      });
+
+      servingsInput.addEventListener('input', calculate);
+      pastaType.addEventListener('change', calculate);
+
+      function formatAmount(val, unit){
+        if(val===0) return '0 '+unit;
+        if(unit==='tsp' && val>=3) return (val/3).toFixed(val%3===0?0:1)+' tbsp';
+        if(unit==='tbsp' && val>=16) return (val/16).toFixed(1)+' cup'+(val>=32?'s':'');
+        if(val>=1) return parseFloat(val.toFixed(2))+' '+unit;
+        var fractions = [[0.125,'1/8'],[0.25,'1/4'],[0.333,'1/3'],[0.5,'1/2'],[0.667,'2/3'],[0.75,'3/4']];
+        for(var i=0;i<fractions.length;i++){
+          if(Math.abs(val-fractions[i][0])<0.02) return fractions[i][1]+' '+unit;
+        }
+        return parseFloat(val.toFixed(2))+' '+unit;
+      }
+
+      function calculate(){
+        var servings = parseInt(servingsInput.value)||4;
+        if(servings<1) servings=1;
+        if(servings>50) servings=50;
+        var blend = BASE[currentBlend];
+        var ratio = servings/4;
+        var pasta = pastaNames[pastaType.value]||'Elbow Macaroni';
+
+        var list = document.getElementById('ingredientList');
+        list.innerHTML='';
+        blend.ingredients.forEach(function(ing){
+          var scaled = ing.amount * ratio;
+          var name = ing.name;
+          if(name.indexOf('Macaroni')!==-1 || name.indexOf('Macaroni')!==-1){
+            name = name.replace('Elbow Macaroni',pasta);
+          }
+          var li = document.createElement('li');
+          li.innerHTML='<span class="ing-name">'+name+'</span><span class="ing-amount">'+formatAmount(scaled,ing.unit)+'</span>';
+          list.appendChild(li);
+        });
+
+        var steps = document.getElementById('cookingSteps');
+        var waterQt = Math.max(4, Math.ceil(ratio*4));
+        steps.innerHTML = [
+          'Bring '+waterQt+' quarts of salted water to a rolling boil. Cook '+formatAmount(blend.ingredients[0].amount*ratio,blend.ingredients[0].unit)+' of '+pasta+' until al dente (1 minute less than package directions). Drain and set aside.',
+          'In a large saucepan over medium heat, melt '+formatAmount((blend.ingredients.find(function(i){return i.name==='Butter';}).amount)*ratio,'tbsp')+' of butter. Whisk in the flour and cook for 2 minutes, stirring constantly, until golden and bubbly.',
+          'Slowly pour in the milk while whisking continuously. Cook for 3 to 4 minutes until the sauce thickens and coats the back of a spoon.',
+          'Remove from heat. Add the shredded cheese in three batches, stirring until each batch is fully melted before adding the next. Season with salt, pepper, and spices.',
+          'Fold the cooked pasta into the cheese sauce until evenly coated. Pour into a greased '+(servings<=6?'9x9':'9x13')+' inch baking dish.',
+          'Mix panko breadcrumbs with melted butter and sprinkle evenly over the top. Bake at 375F (190C) for 20 to 25 minutes until bubbly. Broil for 2 minutes for a golden crust.',
+          'Let rest for 5 minutes before serving. Enjoy '+servings+' delicious servings of '+blend.label.split('(')[0].trim().toLowerCase()+' mac and cheese!'
+        ].map(function(s){return '<li>'+s+'</li>';}).join('');
+
+        var nut = blend.nutrition;
+        var grid = document.getElementById('nutritionGrid');
+        grid.innerHTML = [
+          {label:'Calories',value:nut.calories},
+          {label:'Protein',value:nut.protein+'g'},
+          {label:'Fat',value:nut.fat+'g'},
+          {label:'Carbs',value:nut.carbs+'g'},
+          {label:'Fiber',value:nut.fiber+'g'},
+          {label:'Sodium',value:nut.sodium+'mg'}
+        ].map(function(n){return '<div class="nutrition-card"><div class="nut-label">'+n.label+'</div><div class="nut-value">'+n.value+'</div></div>';}).join('');
+
+        results.style.display='block';
+      }
+
+      document.getElementById('copyRecipeBtn').addEventListener('click', function(){
+        var servings = parseInt(servingsInput.value)||4;
+        var blend = BASE[currentBlend];
+        var ratio = servings/4;
+        var pasta = pastaNames[pastaType.value]||'Elbow Macaroni';
+        var text = 'MAC AND CHEESE RECIPE — '+blend.label+' ('+servings+' servings)\n\n';
+        text += 'INGREDIENTS:\n';
+        blend.ingredients.forEach(function(ing){
+          var name = ing.name.replace('Elbow Macaroni',pasta);
+          text += '- '+formatAmount(ing.amount*ratio,ing.unit)+' '+name+'\n';
+        });
+        text += '\nINSTRUCTIONS:\n';
+        var stepsList = document.querySelectorAll('#cookingSteps li');
+        stepsList.forEach(function(li,i){ text += (i+1)+'. '+li.textContent+'\n'; });
+        text += '\nNUTRITION PER SERVING:\n';
+        text += 'Calories: '+blend.nutrition.calories+' | Protein: '+blend.nutrition.protein+'g | Fat: '+blend.nutrition.fat+'g | Carbs: '+blend.nutrition.carbs+'g\n';
+        text += '\nGenerated at tool.teamzlab.com/restaurant/mac-and-cheese-calculator/';
+        navigator.clipboard.writeText(text).then(function(){
+          if(window.showToast) window.showToast('Recipe copied to clipboard!');
+        });
+      });
+
+      calculate();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/mac-and-cheese-calculator',title:'Mac and Cheese Calculator',description:'Calculate mac and cheese ingredients for any number of servings with cheese blend options.'});
+      }
+    });
+  </script>
+</body>
+</html>
