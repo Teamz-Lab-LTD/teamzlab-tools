@@ -827,6 +827,8 @@ var TOOL_SEARCH_INDEX = [
   {t:'Zakat Calculator',d:'Calculate your Zakat obligation instantly with nisab check, asset breakdown, and 2.5% rate. Free, private Islamic charity calculator for all Muslims.',h:'/ramadan/zakat-calculator/'},
   {t:'Baking Substitution Guide',d:'Find 50+ baking substitutions for eggs, butter, milk, flour, and sugar. Vegan, dairy-free, gluten-free swaps with ratios and notes. Free and private.',h:'/restaurant/baking-substitution-guide/'},
   {t:'Cheese Board Planner',d:'Plan the perfect cheese board for any gathering. Calculate cheese quantities, get variety suggestions, and generate a shopping list. Free and private.',h:'/restaurant/cheese-board-planner/'},
+  {t:'Cheese Calorie Calculator',d:'Calculate calories, protein, fat, and calcium in 30+ cheese types. Compare cheeses side by side and sort by nutrition. Free and private.',h:'/restaurant/cheese-calorie-calculator/'},
+  {t:'Cheese &amp; Wine Pairing Guide',d:'Find perfect cheese and wine pairings instantly. Match 20+ cheeses with wines, beers, fruits, crackers, and meats. Free and private.',h:'/restaurant/cheese-pairing-guide/'},
   {t:'Cheese Yield Calculator',d:'Calculate expected cheese yield from milk volume by type and style. Estimate whey byproduct, cost per kg, and compare yields across cheese varieties. ',h:'/restaurant/cheese-yield-calculator/'},
   {t:'Cooking Unit Converter',d:'Convert cups to grams, tablespoons to ml, and all cooking measurements. Ingredient-specific density for accurate baking. Free and private.',h:'/restaurant/cooking-unit-converter/'},
   {t:'Food Cost Calculator',d:'Calculate food cost percentage, ideal menu pricing, and profit margins per dish. Free restaurant cost calculator. Private.',h:'/restaurant/food-cost-calculator/'},
