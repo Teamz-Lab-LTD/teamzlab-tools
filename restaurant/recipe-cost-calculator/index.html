@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Cost Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate the total cost of any recipe. Add ingredients with prices, set servings, and see cost per serving. Compare homemade vs restaurant. Free.">
+  <meta property="og:title" content="Recipe Cost Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate the total cost of any recipe. Add ingredients with prices, set servings, and see cost per serving.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/recipe-cost-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Recipe Cost Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate the total cost of any recipe. Add ingredients with prices, set servings, and see cost per serving.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/recipe-cost-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .recipe-header { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .input-group { margin-bottom: 1rem; }
+    .input-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--text); font-size: 0.9rem; }
+    .input-group input, .input-group select { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+    .ing-table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+    .ing-table th { text-align: left; padding: 0.5rem 0.4rem; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; border-bottom: 1px solid var(--border); }
+    .ing-table td { padding: 0.4rem; vertical-align: middle; }
+    .ing-table input, .ing-table select { width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 0.85rem; box-sizing: border-box; }
+    .ing-table input[type="number"] { text-align: right; }
+    .ing-table .col-name { min-width: 110px; }
+    .ing-table .col-qty { width: 70px; }
+    .ing-table .col-unit { width: 80px; }
+    .ing-table .col-pkg-price { width: 85px; }
+    .ing-table .col-pkg-size { width: 75px; }
+    .ing-table .col-cost { width: 70px; text-align: right; padding-right: 0.6rem; color: var(--heading); font-weight: 600; font-size: 0.85rem; }
+    .ing-remove-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 0.2rem 0.5rem; line-height: 1; }
+    .ing-remove-btn:hover { color: var(--heading); }
+    .recipe-add-btn { background: var(--surface); border: 2px dashed var(--border); color: var(--text); padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; width: 100%; margin-top: 0.5rem; }
+    .recipe-add-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .recipe-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+    .result-card .label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .result-card .value { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+    .result-card .sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .breakdown-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .breakdown-table th, .breakdown-table td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid var(--border); color: var(--text); font-size: 0.9rem; }
+    .breakdown-table th { color: var(--heading); font-weight: 600; background: var(--surface); }
+    .breakdown-table td:last-child, .breakdown-table th:last-child { text-align: right; }
+    .pie-chart-wrap { display: flex; align-items: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .pie-chart { width: 180px; height: 180px; border-radius: 50%; position: relative; flex-shrink: 0; }
+    .pie-legend { list-style: none; padding: 0; margin: 0; }
+    .pie-legend li { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text); }
+    .pie-legend .swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .vs-section { margin-top: 1.5rem; padding: 1.2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .vs-section h3 { margin: 0 0 1rem; color: var(--heading); }
+    .vs-row { display: flex; gap: 1rem; align-items: end; flex-wrap: wrap; }
+    .vs-bar-wrap { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.8rem; }
+    .vs-bar { height: 28px; border-radius: 6px; display: flex; align-items: center; padding: 0 0.8rem; font-size: 0.85rem; font-weight: 600; min-width: 40px; transition: width 0.4s ease; }
+    .vs-bar-home { background: var(--accent); color: var(--accent-text); }
+    .vs-bar-rest { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+    .vs-label { font-size: 0.85rem; color: var(--text-muted); width: 90px; flex-shrink: 0; }
+    .savings-text { margin-top: 0.8rem; font-size: 1rem; font-weight: 600; color: var(--heading); }
+    .saved-recipes { margin-top: 1.5rem; }
+    .saved-list { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+    .saved-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); }
+    .saved-list li:last-child { border-bottom: none; }
+    .saved-list .saved-name { font-weight: 600; color: var(--heading); cursor: pointer; }
+    .saved-list .saved-name:hover { text-decoration: underline; }
+    .saved-list .saved-meta { font-size: 0.85rem; color: var(--text-muted); }
+    .saved-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; }
+    .saved-del:hover { color: var(--heading); }
+    @media print {
+      .site-header, .site-footer, .recipe-actions, .recipe-add-btn, .ing-remove-btn, .ad-slot, .vs-section, .saved-recipes, #tool-faqs, #related-tools, .tool-content { display: none !important; }
+      .tool-calculator { border: none !important; box-shadow: none !important; }
+    }
+    @media (max-width: 600px) {
+      .recipe-header { grid-template-columns: 1fr; }
+      .ing-table { font-size: 0.8rem; }
+      .ing-table th, .ing-table td { padding: 0.3rem 0.2rem; }
+      .ing-table input, .ing-table select { padding: 0.4rem; font-size: 0.8rem; }
+      .result-grid { grid-template-columns: 1fr 1fr; }
+      .recipe-actions { flex-direction: column; }
+      .recipe-actions .btn-primary, .recipe-actions .btn-secondary { width: 100%; }
+      .pie-chart-wrap { flex-direction: column; align-items: flex-start; }
+      .pie-chart { width: 150px; height: 150px; }
+      .vs-row { flex-direction: column; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .ing-table .col-name { min-width: 80px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "Recipe Cost Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the recipe cost calculator work?", "acceptedAnswer": {"@type": "Answer", "text": "Enter each ingredient with the package price and package size, then specify how much your recipe uses. The calculator divides the package price by package size and multiplies by your quantity to find the exact cost of each ingredient used."}}, {"@type": "Question", "name": "What is a good cost per serving for homemade meals?", "acceptedAnswer": {"@type": "Answer", "text": "Most homemade meals cost between one and five dollars per serving. Budget meals can go as low as fifty cents per serving, while dishes with premium ingredients like steak or seafood may reach eight to twelve dollars per serving."}}, {"@type": "Question", "name": "How much cheaper is cooking at home vs eating out?", "acceptedAnswer": {"@type": "Answer", "text": "Cooking at home is typically sixty to eighty percent cheaper than restaurant dining. A homemade dinner averaging three dollars per serving saves over twelve dollars compared to a fifteen dollar restaurant plate."}}, {"@type": "Question", "name": "Should I include seasoning and oil costs in recipe costing?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, including small costs like oil, salt, pepper, and spices makes your calculation more accurate. While each recipe uses only a small fraction of the bottle, these costs add up over time."}}, {"@type": "Question", "name": "How can I lower the cost of my recipes?", "acceptedAnswer": {"@type": "Answer", "text": "Buy in bulk, use seasonal produce, substitute expensive proteins with affordable alternatives, plan meals to reduce waste, compare unit prices across stores, and freeze leftovers to prevent spoilage."}}, {"@type": "Question", "name": "Can I save and compare multiple recipes?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, this calculator lets you save recipes to your browser storage. You can load any saved recipe later to review costs, adjust servings, or compare ingredient expenses across different dishes."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Recipe Cost Calculator", "description": "Calculate the total cost of any recipe with ingredient breakdown and cost per serving.", "url": "https://tool.teamzlab.com/restaurant/recipe-cost-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Recipe Cost Calculator</h1>
+      <p class="tool-description">Find out exactly how much any recipe costs to make. Add ingredients with package prices, set your servings, and instantly see the cost per serving and total recipe cost.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="recipe-header">
+        <div class="input-group">
+          <label for="recipeName">Recipe Name</label>
+          <input type="text" id="recipeName" placeholder="e.g. Chicken Tikka Masala">
+        </div>
+        <div class="input-group">
+          <label for="servings">Number of Servings</label>
+          <input type="number" id="servings" min="1" max="100" value="4">
+        </div>
+      </div>
+
+      <h3 style="color:var(--heading);margin-bottom:0.5rem;">Ingredients</h3>
+      <div style="overflow-x:auto;">
+        <table class="ing-table">
+          <thead>
+            <tr>
+              <th class="col-name">Ingredient</th>
+              <th class="col-qty">Qty Used</th>
+              <th class="col-unit">Unit</th>
+              <th class="col-pkg-price">Pkg Price</th>
+              <th class="col-pkg-size">Pkg Size</th>
+              <th class="col-cost">Cost</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ingredientBody"></tbody>
+        </table>
+      </div>
+      <button class="recipe-add-btn" id="addIngredient">+ Add Ingredient</button>
+
+      <div class="recipe-actions">
+        <button class="btn-primary" id="calculateBtn">Calculate Cost</button>
+        <button class="btn-secondary" id="saveBtn">Save Recipe</button>
+        <button class="btn-secondary" id="printBtn">Print Recipe</button>
+        <button class="btn-secondary" id="shareBtn">Share Result</button>
+        <button class="btn-secondary tool-clear-btn" id="clearBtn">Clear All</button>
+      </div>
+
+      <div id="results" style="display:none;">
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="label">Total Recipe Cost</div>
+            <div class="value" id="resTotalCost">$0.00</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Cost Per Serving</div>
+            <div class="value" id="resPerServing">$0.00</div>
+            <div class="sub" id="resServingNote"></div>
+          </div>
+          <div class="result-card">
+            <div class="label">Most Expensive</div>
+            <div class="value" id="resMostExpensive">—</div>
+            <div class="sub" id="resMostExpensiveCost"></div>
+          </div>
+          <div class="result-card">
+            <div class="label">Ingredients</div>
+            <div class="value" id="resIngCount">0</div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:1.5rem;color:var(--heading);">Ingredient Cost Breakdown</h3>
+        <table class="breakdown-table">
+          <thead><tr><th>Ingredient</th><th>Qty Used</th><th>Cost</th></tr></thead>
+          <tbody id="breakdownBody"></tbody>
+        </table>
+
+        <h3 style="margin-top:1.5rem;color:var(--heading);">Cost Distribution</h3>
+        <div class="pie-chart-wrap">
+          <div class="pie-chart" id="pieChart"></div>
+          <ul class="pie-legend" id="pieLegend"></ul>
+        </div>
+
+        <div class="vs-section">
+          <h3>Homemade vs Restaurant</h3>
+          <div class="vs-row">
+            <div class="input-group" style="flex:1;min-width:200px;margin-bottom:0;">
+              <label for="restaurantPrice">Restaurant price for this dish ($)</label>
+              <input type="number" id="restaurantPrice" min="0" step="0.01" placeholder="e.g. 18.99">
+            </div>
+            <button class="btn-secondary" id="compareBtn" style="height:42px;">Compare</button>
+          </div>
+          <div id="vsResult" style="display:none;">
+            <div class="vs-bar-wrap">
+              <span class="vs-label">Homemade</span>
+              <div class="vs-bar vs-bar-home" id="vsBarHome"></div>
+            </div>
+            <div class="vs-bar-wrap">
+              <span class="vs-label">Restaurant</span>
+              <div class="vs-bar vs-bar-rest" id="vsBarRest"></div>
+            </div>
+            <div class="savings-text" id="savingsText"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="saved-recipes" id="savedSection" style="display:none;">
+        <h3 style="color:var(--heading);margin-bottom:0.3rem;">Saved Recipes</h3>
+        <ul class="saved-list" id="savedList"></ul>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Recipe Costing Works</h2>
+      <p>Recipe costing breaks down every ingredient in a dish to determine its true cost. For each ingredient, you enter the price of the package you bought and how much of that package the recipe uses. The calculator divides the package price by the package size, then multiplies by the quantity your recipe needs. This gives you the exact cost of each ingredient used, not the cost of the whole package. Adding up all ingredient costs gives you the total recipe cost. Dividing by the number of servings reveals the real cost per plate. This method is used by professional chefs, caterers, food bloggers, and home cooks who want to budget their meals accurately.</p>
+
+      <h2>Homemade vs Restaurant: Is Cooking at Home Worth It?</h2>
+      <p>One of the biggest questions home cooks face is whether making a meal from scratch actually saves money compared to ordering the same dish at a restaurant. The answer is almost always yes, and the savings are usually dramatic. A homemade pasta dish might cost two to three dollars per serving, while the same dish at a restaurant could cost fifteen to twenty dollars. That is an eighty percent or greater saving. Even accounting for time spent cooking, the economics strongly favor homemade meals for most dishes. However, some dishes with expensive specialty ingredients or complex preparation may not save as much. This calculator lets you enter the restaurant price for comparison so you can see the exact dollar savings and percentage difference. Over a month of cooking at home, families typically save three hundred to five hundred dollars compared to eating out.</p>
+
+      <h2>Tips for Reducing Recipe Costs</h2>
+      <p>There are several proven strategies to lower the cost of your recipes without sacrificing quality. First, buy ingredients in bulk when possible since larger packages almost always have a lower cost per unit. Second, substitute expensive ingredients with affordable alternatives such as using chicken thighs instead of breasts or dried beans instead of canned. Third, shop seasonally because produce in season costs significantly less and tastes better. Fourth, plan your meals for the week and use overlapping ingredients across multiple recipes to minimize waste. Fifth, compare unit prices at different stores since the same item can vary by thirty percent or more between retailers. Sixth, grow herbs at home instead of buying expensive fresh herb packages that often go to waste. Finally, freeze leftover ingredients and portions to extend shelf life and reduce food waste. These strategies can cut your monthly grocery spending by twenty to forty percent while keeping meals nutritious and satisfying.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Recipe Cost Calculator'}];
+    var FAQS = [
+      {q:'How does the recipe cost calculator work?',a:'Enter each ingredient with the package price and package size, then specify how much your recipe uses. The calculator divides the package price by package size and multiplies by your quantity to find the exact cost of each ingredient used.'},
+      {q:'What is a good cost per serving for homemade meals?',a:'Most homemade meals cost between one and five dollars per serving. Budget meals can go as low as fifty cents per serving, while dishes with premium ingredients like steak or seafood may reach eight to twelve dollars per serving.'},
+      {q:'How much cheaper is cooking at home vs eating out?',a:'Cooking at home is typically sixty to eighty percent cheaper than restaurant dining. A homemade dinner averaging three dollars per serving saves over twelve dollars compared to a fifteen dollar restaurant plate.'},
+      {q:'Should I include seasoning and oil costs in recipe costing?',a:'Yes, including small costs like oil, salt, pepper, and spices makes your calculation more accurate. While each recipe uses only a small fraction of the bottle, these costs add up over time.'},
+      {q:'How can I lower the cost of my recipes?',a:'Buy in bulk, use seasonal produce, substitute expensive proteins with affordable alternatives, plan meals to reduce waste, compare unit prices across stores, and freeze leftovers to prevent spoilage.'},
+      {q:'Can I save and compare multiple recipes?',a:'Yes, this calculator lets you save recipes to your browser storage. You can load any saved recipe later to review costs, adjust servings, or compare ingredient expenses across different dishes.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Recipe Scaler',url:'/restaurant/recipe-scaler/',desc:'Scale any recipe up or down proportionally'},
+      {name:'Food Cost Calculator',url:'/restaurant/food-cost-calculator/',desc:'Calculate food cost percentage and profit margins'},
+      {name:'Cooking Unit Converter',url:'/restaurant/cooking-unit-converter/',desc:'Convert cups, grams, tablespoons, and more'},
+      {name:'Tip Calculator',url:'/restaurant/tip-calculator/',desc:'Calculate tips and split bills instantly'},
+      {name:'Pantry Inventory',url:'/restaurant/pantry-inventory-tracker/',desc:'Track pantry items and expiry dates'},
+      {name:'Calorie Calculator',url:'/health/calorie-intake-calculator/',desc:'Calculate daily calorie and macro requirements'}
+    ];
+
+    var PIE_COLORS = [
+      'var(--accent)','var(--heading)','var(--text-muted)','var(--border)',
+      'var(--surface)','var(--text)'
+    ];
+    /* Use actual computed colors for conic-gradient since var() doesn't work there */
+    var PIE_HEX;
+    function getPieHex() {
+      if (PIE_HEX) return PIE_HEX;
+      var el = document.createElement('div');
+      document.body.appendChild(el);
+      PIE_HEX = PIE_COLORS.map(function(c) {
+        el.style.color = c.replace('var(','').replace(')','');
+        el.style.setProperty('color', c);
+        return getComputedStyle(el).color;
+      });
+      document.body.removeChild(el);
+      return PIE_HEX;
+    }
+
+    var UNITS = ['g','kg','oz','lb','ml','L','cup','tbsp','tsp','piece'];
+    var ingredientCounter = 0;
+
+    function createIngredientRow(data) {
+      ingredientCounter++;
+      var id = ingredientCounter;
+      var tr = document.createElement('tr');
+      tr.dataset.id = id;
+      var unitOpts = UNITS.map(function(u){
+        var sel = (data && data.unit === u) ? ' selected' : '';
+        return '<option value="'+u+'"'+sel+'>'+u+'</option>';
+      }).join('');
+      tr.innerHTML =
+        '<td class="col-name"><input type="text" id="ingName'+id+'" placeholder="e.g. Chicken" value="'+(data?data.name:'')+'"></td>' +
+        '<td class="col-qty"><input type="number" id="ingQty'+id+'" min="0" step="0.01" placeholder="500" value="'+(data?data.qty:'')+'"></td>' +
+        '<td class="col-unit"><select id="ingUnit'+id+'">'+unitOpts+'</select></td>' +
+        '<td class="col-pkg-price"><input type="number" id="ingPkgPrice'+id+'" min="0" step="0.01" placeholder="5.99" value="'+(data?data.pkgPrice:'')+'"></td>' +
+        '<td class="col-pkg-size"><input type="number" id="ingPkgSize'+id+'" min="0.01" step="0.01" placeholder="1000" value="'+(data?data.pkgSize:'')+'"></td>' +
+        '<td class="col-cost" id="ingCost'+id+'">—</td>' +
+        '<td><button class="ing-remove-btn" title="Remove">&times;</button></td>';
+      tr.querySelector('.ing-remove-btn').addEventListener('click', function(){
+        var tbody = document.getElementById('ingredientBody');
+        if(tbody.children.length > 1) tr.remove();
+      });
+      /* live cost update */
+      tr.querySelectorAll('input[type="number"]').forEach(function(inp){
+        inp.addEventListener('input', function(){ updateRowCost(tr, id); });
+      });
+      return tr;
+    }
+
+    function updateRowCost(tr, id) {
+      var qty = parseFloat(tr.querySelector('#ingQty'+id).value) || 0;
+      var pkgPrice = parseFloat(tr.querySelector('#ingPkgPrice'+id).value) || 0;
+      var pkgSize = parseFloat(tr.querySelector('#ingPkgSize'+id).value) || 0;
+      var costEl = tr.querySelector('#ingCost'+id);
+      if(qty > 0 && pkgPrice > 0 && pkgSize > 0){
+        var cost = (pkgPrice / pkgSize) * qty;
+        costEl.textContent = '$' + cost.toFixed(2);
+      } else {
+        costEl.textContent = '—';
+      }
+    }
+
+    function getIngredients() {
+      var rows = document.getElementById('ingredientBody').querySelectorAll('tr');
+      var list = [];
+      rows.forEach(function(tr){
+        var id = tr.dataset.id;
+        var name = tr.querySelector('#ingName'+id).value.trim();
+        var qty = parseFloat(tr.querySelector('#ingQty'+id).value) || 0;
+        var unit = tr.querySelector('#ingUnit'+id).value;
+        var pkgPrice = parseFloat(tr.querySelector('#ingPkgPrice'+id).value) || 0;
+        var pkgSize = parseFloat(tr.querySelector('#ingPkgSize'+id).value) || 0;
+        var cost = (qty > 0 && pkgPrice > 0 && pkgSize > 0) ? (pkgPrice / pkgSize) * qty : 0;
+        list.push({name:name||'Unnamed',qty:qty,unit:unit,pkgPrice:pkgPrice,pkgSize:pkgSize,cost:cost});
+      });
+      return list;
+    }
+
+    function calculate() {
+      var ingredients = getIngredients();
+      var valid = ingredients.filter(function(i){ return i.cost > 0; });
+      if(valid.length === 0){
+        if(window.showToast) window.showToast('Add at least one ingredient with quantity, package price, and package size.');
+        return;
+      }
+      var totalCost = 0;
+      var mostExpensive = {name:'—',cost:0};
+      valid.forEach(function(i){
+        totalCost += i.cost;
+        if(i.cost > mostExpensive.cost) mostExpensive = i;
+      });
+      var servings = parseInt(document.getElementById('servings').value) || 1;
+      var perServing = totalCost / servings;
+
+      document.getElementById('resTotalCost').textContent = '$' + totalCost.toFixed(2);
+      document.getElementById('resPerServing').textContent = '$' + perServing.toFixed(2);
+      document.getElementById('resServingNote').textContent = servings + ' serving' + (servings>1?'s':'');
+      document.getElementById('resMostExpensive').textContent = mostExpensive.name;
+      document.getElementById('resMostExpensiveCost').textContent = '$' + mostExpensive.cost.toFixed(2);
+      document.getElementById('resIngCount').textContent = valid.length;
+
+      /* breakdown table */
+      var tbody = document.getElementById('breakdownBody');
+      tbody.innerHTML = '';
+      valid.sort(function(a,b){ return b.cost - a.cost; });
+      valid.forEach(function(i){
+        var tr = document.createElement('tr');
+        var pct = ((i.cost / totalCost) * 100).toFixed(1);
+        tr.innerHTML = '<td>'+i.name+'</td><td>'+i.qty+' '+i.unit+'</td><td>$'+i.cost.toFixed(2)+' ('+pct+'%)</td>';
+        tbody.appendChild(tr);
+      });
+      /* total row */
+      var totalRow = document.createElement('tr');
+      totalRow.innerHTML = '<td colspan="2" style="font-weight:700;color:var(--heading);">Total</td><td style="font-weight:700;color:var(--heading);">$'+totalCost.toFixed(2)+'</td>';
+      tbody.appendChild(totalRow);
+
+      /* pie chart */
+      renderPie(valid, totalCost);
+
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+
+    function renderPie(items, total) {
+      PIE_HEX = null; /* re-resolve for theme changes */
+      var colors = getPieHex();
+      var segments = [];
+      var cumulative = 0;
+      /* show top 5, group rest as "Other" */
+      var top = items.slice(0, 5);
+      var otherCost = 0;
+      if(items.length > 5){
+        for(var i=5;i<items.length;i++) otherCost += items[i].cost;
+      }
+      top.forEach(function(item, idx){
+        var pct = (item.cost / total) * 100;
+        segments.push({name:item.name, pct:pct, color:colors[idx % colors.length]});
+      });
+      if(otherCost > 0){
+        segments.push({name:'Other', pct:(otherCost/total)*100, color:colors[5 % colors.length]});
+      }
+
+      /* build conic-gradient */
+      var gradParts = [];
+      cumulative = 0;
+      segments.forEach(function(s){
+        gradParts.push(s.color + ' ' + cumulative + '% ' + (cumulative + s.pct) + '%');
+        cumulative += s.pct;
+      });
+      document.getElementById('pieChart').style.background = 'conic-gradient(' + gradParts.join(', ') + ')';
+
+      /* legend */
+      var legend = document.getElementById('pieLegend');
+      legend.innerHTML = '';
+      segments.forEach(function(s, idx){
+        var li = document.createElement('li');
+        li.innerHTML = '<span class="swatch" style="background:'+s.color+';"></span> '+s.name+' ('+s.pct.toFixed(1)+'%)';
+        legend.appendChild(li);
+      });
+    }
+
+    function compareRestaurant() {
+      var rPrice = parseFloat(document.getElementById('restaurantPrice').value) || 0;
+      if(rPrice <= 0){
+        if(window.showToast) window.showToast('Enter the restaurant price to compare.');
+        return;
+      }
+      var totalText = document.getElementById('resTotalCost').textContent;
+      var total = parseFloat(totalText.replace('$','')) || 0;
+      if(total <= 0){
+        if(window.showToast) window.showToast('Calculate your recipe cost first.');
+        return;
+      }
+      var servings = parseInt(document.getElementById('servings').value) || 1;
+      var homePerServing = total / servings;
+      var maxVal = Math.max(homePerServing, rPrice);
+      var homeW = Math.round((homePerServing / maxVal) * 250);
+      var restW = Math.round((rPrice / maxVal) * 250);
+
+      document.getElementById('vsBarHome').style.width = homeW + 'px';
+      document.getElementById('vsBarHome').textContent = '$' + homePerServing.toFixed(2);
+      document.getElementById('vsBarRest').style.width = restW + 'px';
+      document.getElementById('vsBarRest').textContent = '$' + rPrice.toFixed(2);
+
+      var savings = rPrice - homePerServing;
+      var savingsPct = ((savings / rPrice) * 100).toFixed(0);
+      var text = savings > 0
+        ? 'You save $' + savings.toFixed(2) + ' per serving (' + savingsPct + '% cheaper at home!)'
+        : 'Restaurant is $' + Math.abs(savings).toFixed(2) + ' cheaper per serving for this dish.';
+      document.getElementById('savingsText').textContent = text;
+      document.getElementById('vsResult').style.display = 'block';
+    }
+
+    /* Save / Load recipes */
+    var STORAGE_KEY = 'teamz_recipe_cost_saved';
+    function getSavedRecipes() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e){ return []; }
+    }
+    function saveRecipe() {
+      var name = document.getElementById('recipeName').value.trim();
+      if(!name){ if(window.showToast) window.showToast('Enter a recipe name before saving.'); return; }
+      var servings = parseInt(document.getElementById('servings').value) || 1;
+      var ingredients = [];
+      document.getElementById('ingredientBody').querySelectorAll('tr').forEach(function(tr){
+        var id = tr.dataset.id;
+        ingredients.push({
+          name: tr.querySelector('#ingName'+id).value,
+          qty: tr.querySelector('#ingQty'+id).value,
+          unit: tr.querySelector('#ingUnit'+id).value,
+          pkgPrice: tr.querySelector('#ingPkgPrice'+id).value,
+          pkgSize: tr.querySelector('#ingPkgSize'+id).value
+        });
+      });
+      var recipes = getSavedRecipes();
+      var existing = recipes.findIndex(function(r){ return r.name === name; });
+      var entry = {name:name, servings:servings, ingredients:ingredients, date:new Date().toISOString()};
+      if(existing >= 0) recipes[existing] = entry;
+      else recipes.push(entry);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+      renderSavedRecipes();
+      if(window.showToast) window.showToast('Recipe "'+name+'" saved!');
+    }
+
+    function loadRecipe(recipe) {
+      document.getElementById('recipeName').value = recipe.name;
+      document.getElementById('servings').value = recipe.servings;
+      var tbody = document.getElementById('ingredientBody');
+      tbody.innerHTML = '';
+      ingredientCounter = 0;
+      recipe.ingredients.forEach(function(ing){
+        tbody.appendChild(createIngredientRow(ing));
+      });
+      /* trigger cost updates */
+      tbody.querySelectorAll('tr').forEach(function(tr){
+        updateRowCost(tr, tr.dataset.id);
+      });
+      if(window.showToast) window.showToast('Loaded "'+recipe.name+'"');
+    }
+
+    function deleteSavedRecipe(name) {
+      var recipes = getSavedRecipes().filter(function(r){ return r.name !== name; });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+      renderSavedRecipes();
+      if(window.showToast) window.showToast('Deleted "'+name+'"');
+    }
+
+    function renderSavedRecipes() {
+      var recipes = getSavedRecipes();
+      var section = document.getElementById('savedSection');
+      var list = document.getElementById('savedList');
+      if(recipes.length === 0){ section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      list.innerHTML = '';
+      recipes.forEach(function(r){
+        var li = document.createElement('li');
+        var totalCost = 0;
+        r.ingredients.forEach(function(i){
+          var q = parseFloat(i.qty)||0, pp = parseFloat(i.pkgPrice)||0, ps = parseFloat(i.pkgSize)||0;
+          if(q>0&&pp>0&&ps>0) totalCost += (pp/ps)*q;
+        });
+        li.innerHTML = '<div><span class="saved-name">'+r.name+'</span><br><span class="saved-meta">'+r.ingredients.length+' ingredients &middot; $'+totalCost.toFixed(2)+' total</span></div><button class="saved-del" title="Delete">&times;</button>';
+        li.querySelector('.saved-name').addEventListener('click', function(){ loadRecipe(r); });
+        li.querySelector('.saved-del').addEventListener('click', function(){ deleteSavedRecipe(r.name); });
+        list.appendChild(li);
+      });
+    }
+
+    function shareResult() {
+      var name = document.getElementById('recipeName').value.trim() || 'My recipe';
+      var totalText = document.getElementById('resTotalCost').textContent;
+      var perText = document.getElementById('resPerServing').textContent;
+      var total = parseFloat(totalText.replace('$','')) || 0;
+      if(total <= 0){
+        if(window.showToast) window.showToast('Calculate your recipe cost first, then share.');
+        return;
+      }
+      var text = 'My ' + name + ' costs only ' + perText + ' per serving! (Total: ' + totalText + ') — calculated at tool.teamzlab.com/restaurant/recipe-cost-calculator/';
+      if(navigator.share){
+        navigator.share({title:'Recipe Cost Calculator',text:text,url:'https://tool.teamzlab.com/restaurant/recipe-cost-calculator/'}).catch(function(){});
+      } else if(navigator.clipboard){
+        navigator.clipboard.writeText(text).then(function(){
+          if(window.showToast) window.showToast('Result copied to clipboard!');
+        });
+      }
+    }
+
+    function clearAll() {
+      document.getElementById('recipeName').value = '';
+      document.getElementById('servings').value = '4';
+      document.getElementById('restaurantPrice').value = '';
+      var tbody = document.getElementById('ingredientBody');
+      tbody.innerHTML = '';
+      ingredientCounter = 0;
+      tbody.appendChild(createIngredientRow());
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('vsResult').style.display = 'none';
+      if(window.showToast) window.showToast('Cleared!');
+    }
+
+    /* Init */
+    (function(){
+      var tbody = document.getElementById('ingredientBody');
+      tbody.appendChild(createIngredientRow());
+      tbody.appendChild(createIngredientRow());
+      tbody.appendChild(createIngredientRow());
+
+      document.getElementById('addIngredient').addEventListener('click', function(){ tbody.appendChild(createIngredientRow()); });
+      document.getElementById('calculateBtn').addEventListener('click', calculate);
+      document.getElementById('compareBtn').addEventListener('click', compareRestaurant);
+      document.getElementById('saveBtn').addEventListener('click', saveRecipe);
+      document.getElementById('shareBtn').addEventListener('click', shareResult);
+      document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+      document.getElementById('clearBtn').addEventListener('click', clearAll);
+
+      renderSavedRecipes();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools !== 'undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/recipe-cost-calculator',title:'Recipe Cost Calculator',description:'Calculate the total cost of any recipe with ingredient breakdown and cost per serving.'});
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal Prep Cost Planner — Teamz Lab Tools</title>
+  <meta name="description" content="Plan your weekly meals and calculate total grocery cost. Compare meal prep vs eating out. Budget-friendly meal planning made easy. Free tool.">
+  <meta property="og:title" content="Meal Prep Cost Planner — Teamz Lab Tools">
+  <meta property="og:description" content="Plan your weekly meals and calculate total grocery cost. Compare meal prep vs eating out savings.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/meal-prep-cost-planner/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Meal Prep Cost Planner">
+  <meta name="twitter:description" content="Plan your weekly meals and calculate total grocery cost. Compare meal prep vs eating out savings.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/meal-prep-cost-planner/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .meal-grid { display: grid; grid-template-columns: 100px repeat(4, 1fr); gap: 2px; margin-bottom: 1.5rem; }
+    .meal-grid-header { background: var(--surface); color: var(--heading); font-weight: 600; padding: 0.6rem 0.4rem; text-align: center; font-size: 0.8rem; border-radius: 6px; }
+    .meal-day-label { background: var(--surface); color: var(--heading); font-weight: 600; padding: 0.6rem 0.4rem; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; border-radius: 6px; }
+    .meal-slot { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem; cursor: pointer; min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: border-color 0.2s; }
+    .meal-slot:hover { border-color: var(--heading); }
+    .meal-slot .meal-name { font-size: 0.75rem; color: var(--text); font-weight: 500; word-break: break-word; }
+    .meal-slot .meal-cost { font-size: 0.8rem; color: var(--heading); font-weight: 700; margin-top: 0.2rem; }
+    .meal-slot .meal-empty { font-size: 0.75rem; color: var(--text-muted); }
+    .meal-slot .remove-meal { font-size: 0.65rem; color: var(--text-muted); cursor: pointer; margin-top: 0.2rem; }
+    .meal-slot .remove-meal:hover { color: var(--heading); }
+
+    .presets-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .preset-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+    .preset-btn:hover { border-color: var(--heading); color: var(--heading); }
+
+    .meal-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .meal-modal-overlay.active { display: flex; }
+    .meal-modal { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; width: 90%; max-width: 360px; }
+    .meal-modal h3 { color: var(--heading); margin-bottom: 1rem; font-size: 1rem; }
+    .meal-modal label { display: block; font-weight: 600; margin-bottom: 0.3rem; color: var(--text); font-size: 0.85rem; }
+    .meal-modal input { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.95rem; box-sizing: border-box; margin-bottom: 0.8rem; }
+    .meal-modal-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    .meal-modal-actions button { flex: 1; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .summary-card .label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .summary-card .value { font-size: 1.4rem; font-weight: 700; color: var(--heading); }
+
+    .comparison-section { margin-top: 1.5rem; }
+    .comparison-section h3 { color: var(--heading); margin-bottom: 0.8rem; }
+    .comparison-row { display: flex; gap: 1rem; align-items: end; flex-wrap: wrap; margin-bottom: 1rem; }
+    .comparison-row .input-group { flex: 1; min-width: 180px; }
+    .comparison-row .input-group label { display: block; font-weight: 600; margin-bottom: 0.3rem; color: var(--text); font-size: 0.85rem; }
+    .comparison-row .input-group input { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.95rem; box-sizing: border-box; }
+    .savings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; }
+    .savings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem; text-align: center; }
+    .savings-card .label { font-size: 0.75rem; color: var(--text-muted); }
+    .savings-card .value { font-size: 1.2rem; font-weight: 700; color: var(--heading); }
+
+    .grocery-list { margin-top: 1rem; }
+    .grocery-list ul { list-style: none; padding: 0; }
+    .grocery-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--border); color: var(--text); display: flex; justify-content: space-between; font-size: 0.9rem; }
+    .grocery-list li .item-cost { color: var(--heading); font-weight: 600; }
+
+    .actions-bar { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+    @media (max-width: 600px) {
+      .meal-grid { grid-template-columns: 60px repeat(4, 1fr); gap: 1px; }
+      .meal-grid-header { font-size: 0.65rem; padding: 0.4rem 0.2rem; }
+      .meal-day-label { font-size: 0.7rem; padding: 0.4rem 0.2rem; }
+      .meal-slot { min-height: 48px; padding: 0.3rem; }
+      .meal-slot .meal-name { font-size: 0.65rem; }
+      .meal-slot .meal-cost { font-size: 0.7rem; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .savings-grid { grid-template-columns: repeat(2, 1fr); }
+      .comparison-row { flex-direction: column; }
+      .actions-bar { flex-direction: column; }
+      .actions-bar button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "Meal Prep Cost Planner"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much does meal prepping save per month?", "acceptedAnswer": {"@type": "Answer", "text": "On average, meal prepping saves 200 to 400 dollars per month compared to eating out. The exact savings depend on your restaurant spending habits and the meals you choose to prep at home."}}, {"@type": "Question", "name": "What is the cheapest meal to prep in bulk?", "acceptedAnswer": {"@type": "Answer", "text": "Rice and beans, oatmeal, pasta with marinara, egg fried rice, and lentil soup are among the cheapest meals to prep. These cost between 1 and 3 dollars per serving when made in bulk."}}, {"@type": "Question", "name": "How many meals should I prep per week?", "acceptedAnswer": {"@type": "Answer", "text": "Most people prep 12 to 21 meals per week covering lunch and dinner for weekdays, or all three meals for the full week. Start with 5 to 7 meals and scale up as you get comfortable."}}, {"@type": "Question", "name": "How long do meal-prepped foods last?", "acceptedAnswer": {"@type": "Answer", "text": "Most prepped meals last 3 to 5 days in the refrigerator. Soups, stews, and grain-based dishes can be frozen for up to 3 months. Always store in airtight containers and reheat to 165 degrees Fahrenheit."}}, {"@type": "Question", "name": "Is meal prepping actually cheaper than eating out?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The average restaurant meal costs 12 to 15 dollars while a home-prepped meal costs 3 to 5 dollars. Even accounting for time and containers, meal prepping saves 50 to 70 percent on food costs."}}, {"@type": "Question", "name": "What containers should I use for meal prep?", "acceptedAnswer": {"@type": "Answer", "text": "Glass containers with snap-lock lids are the best for meal prep. They are microwave-safe, dishwasher-safe, and do not stain. A set of 10 containers typically costs 20 to 30 dollars and lasts years."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Meal Prep Cost Planner", "description": "Plan weekly meals and calculate total grocery cost with savings comparison.", "url": "https://tool.teamzlab.com/restaurant/meal-prep-cost-planner/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Meal Prep Cost Planner</h1>
+      <p class="tool-description">Plan your weekly meals, calculate total grocery costs, and see how much you save compared to eating out. Budget-friendly meal planning made simple and private.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <h3 style="color:var(--heading);margin-bottom:0.5rem;">Quick-Fill Presets</h3>
+      <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:0.5rem;">Click a preset, then click a meal slot to fill it.</p>
+      <div class="presets-bar" id="presetsBar">
+        <button class="preset-btn" data-name="Oatmeal" data-cost="3">$3 Oatmeal</button>
+        <button class="preset-btn" data-name="Sandwich" data-cost="5">$5 Sandwich</button>
+        <button class="preset-btn" data-name="Rice Bowl" data-cost="4">$4 Rice Bowl</button>
+        <button class="preset-btn" data-name="Pasta" data-cost="8">$8 Pasta</button>
+        <button class="preset-btn" data-name="Eggs" data-cost="2">$2 Eggs</button>
+        <button class="preset-btn" data-name="Salad" data-cost="4">$4 Salad</button>
+        <button class="preset-btn" data-name="Chicken & Rice" data-cost="6">$6 Chicken & Rice</button>
+        <button class="preset-btn" data-name="Soup" data-cost="3">$3 Soup</button>
+      </div>
+
+      <h3 style="color:var(--heading);margin-bottom:0.8rem;">Weekly Meal Grid</h3>
+      <div class="meal-grid" id="mealGrid"></div>
+
+      <h3 style="color:var(--heading);margin-bottom:0.5rem;">Weekly Summary</h3>
+      <div class="summary-grid" id="summaryGrid">
+        <div class="summary-card"><div class="label">Total Weekly Cost</div><div class="value" id="totalWeekly">$0.00</div></div>
+        <div class="summary-card"><div class="label">Cost Per Day</div><div class="value" id="costPerDay">$0.00</div></div>
+        <div class="summary-card"><div class="label">Cost Per Meal</div><div class="value" id="costPerMeal">$0.00</div></div>
+        <div class="summary-card"><div class="label">Monthly Projection</div><div class="value" id="monthlyProjection">$0.00</div></div>
+      </div>
+
+      <div class="comparison-section">
+        <h3>Meal Prep vs Eating Out</h3>
+        <div class="comparison-row">
+          <div class="input-group">
+            <label for="avgRestaurantCost">Avg. Restaurant Meal Cost ($)</label>
+            <input type="number" id="avgRestaurantCost" min="0" step="0.5" value="15" placeholder="15">
+          </div>
+          <div class="input-group">
+            <label for="mealsPerWeek">Meals Eating Out Per Week</label>
+            <input type="number" id="mealsPerWeek" min="0" max="28" value="21" placeholder="21">
+          </div>
+        </div>
+        <div class="savings-grid" id="savingsGrid">
+          <div class="savings-card"><div class="label">Weekly Eating Out</div><div class="value" id="weeklyEatOut">$0</div></div>
+          <div class="savings-card"><div class="label">Weekly Savings</div><div class="value" id="weeklySavings">$0</div></div>
+          <div class="savings-card"><div class="label">Monthly Savings</div><div class="value" id="monthlySavings">$0</div></div>
+          <div class="savings-card"><div class="label">Yearly Savings</div><div class="value" id="yearlySavings">$0</div></div>
+        </div>
+      </div>
+
+      <div class="comparison-section">
+        <h3>Grocery List</h3>
+        <div class="grocery-list" id="groceryList">
+          <p style="color:var(--text-muted);font-size:0.85rem;">Add meals to your plan to generate a grocery list.</p>
+        </div>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn-primary" id="copyPlanBtn">Copy Meal Plan</button>
+        <button class="btn-secondary" id="copyGroceryBtn">Copy Grocery List</button>
+        <button class="btn-secondary" id="clearPlanBtn">Clear All</button>
+      </div>
+    </section>
+
+    <div class="meal-modal-overlay" id="mealModal">
+      <div class="meal-modal">
+        <h3 id="modalTitle">Add Meal</h3>
+        <label for="modalMealName">Meal Name</label>
+        <input type="text" id="modalMealName" placeholder="e.g. Grilled Chicken Salad">
+        <label for="modalMealCost">Estimated Cost ($)</label>
+        <input type="number" id="modalMealCost" min="0" step="0.5" placeholder="e.g. 5.00">
+        <div class="meal-modal-actions">
+          <button class="btn-secondary" id="modalCancelBtn">Cancel</button>
+          <button class="btn-primary" id="modalSaveBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Meal Prep Saves You Money</h2>
+      <p>Meal prepping is one of the most effective ways to cut food expenses without sacrificing nutrition or taste. When you plan meals in advance, you buy only what you need, reducing impulse purchases and food waste. Studies show the average American spends over twelve dollars per restaurant meal, while a home-cooked equivalent costs three to five dollars. Over a month, switching from eating out to meal prepping can save two hundred to four hundred dollars per person. This planner helps you visualize exactly where your money goes and how much you keep by cooking at home.</p>
+      <p>Beyond cost savings, meal prepping gives you complete control over portions, ingredients, and nutritional balance. You can batch-cook proteins on Sunday, portion grains into containers, and pre-chop vegetables so weeknight dinners take under fifteen minutes. The upfront time investment of two to three hours per week pays off in both savings and healthier eating habits throughout the week.</p>
+
+      <h2>Budget Meal Prep Ideas Under Five Dollars</h2>
+      <p>Building a cost-effective meal plan starts with affordable staple ingredients. Rice, oats, beans, lentils, eggs, frozen vegetables, and chicken thighs form the backbone of budget meal prep. A breakfast of oatmeal with banana costs under two dollars. Lunch options like rice bowls with beans and salsa or egg fried rice come in at three to four dollars per serving. Dinner favorites like pasta with marinara, chicken stir-fry, or bean soup stay well under five dollars per portion.</p>
+      <p>Shopping strategies matter too. Buy in bulk when staples go on sale, choose store brands over name brands, shop seasonal produce, and use your freezer to extend the life of proteins and bread. Planning around weekly grocery flyers can cut your bill by an additional fifteen to twenty percent. This planner tracks every meal cost so you can identify which days or meals are driving your spending higher than necessary.</p>
+
+      <h2>Meal Prep vs Eating Out: The Real Numbers</h2>
+      <p>The savings from meal prepping compound dramatically over time. If you eat out three meals a day at an average of twelve dollars each, that is two hundred fifty-two dollars per week or over thirteen thousand dollars per year. Meal prepping the same twenty-one meals at an average of four dollars each costs eighty-four dollars per week, saving you over eight thousand seven hundred dollars annually. Even replacing just half your restaurant meals with prepped ones saves over four thousand dollars per year.</p>
+      <p>Use this planner to model your specific situation. Enter your actual restaurant costs and see personalized weekly, monthly, and yearly savings projections. The grocery list generator consolidates your planned meals into a single shopping list so you can hit the store once and stick to your budget. Save your plan to come back each week and refine it as you discover which meals offer the best value and taste for your household.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Meal Prep Cost Planner'}];
+    var FAQS = [
+      {q:'How much does meal prepping save per month?',a:'On average, meal prepping saves 200 to 400 dollars per month compared to eating out. The exact savings depend on your restaurant spending habits and the meals you choose to prep at home.'},
+      {q:'What is the cheapest meal to prep in bulk?',a:'Rice and beans, oatmeal, pasta with marinara, egg fried rice, and lentil soup are among the cheapest meals to prep. These cost between 1 and 3 dollars per serving when made in bulk.'},
+      {q:'How many meals should I prep per week?',a:'Most people prep 12 to 21 meals per week covering lunch and dinner for weekdays, or all three meals for the full week. Start with 5 to 7 meals and scale up as you get comfortable.'},
+      {q:'How long do meal-prepped foods last?',a:'Most prepped meals last 3 to 5 days in the refrigerator. Soups, stews, and grain-based dishes can be frozen for up to 3 months. Always store in airtight containers and reheat to 165 degrees Fahrenheit.'},
+      {q:'Is meal prepping actually cheaper than eating out?',a:'Yes. The average restaurant meal costs 12 to 15 dollars while a home-prepped meal costs 3 to 5 dollars. Even accounting for time and containers, meal prepping saves 50 to 70 percent on food costs.'},
+      {q:'What containers should I use for meal prep?',a:'Glass containers with snap-lock lids are the best for meal prep. They are microwave-safe, dishwasher-safe, and do not stain. A set of 10 containers typically costs 20 to 30 dollars and lasts years.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Food Cost Calculator',url:'/restaurant/food-cost-calculator/',desc:'Calculate food cost percentage and profit margins per dish'},
+      {name:'Pantry Inventory Tracker',url:'/restaurant/pantry-inventory-tracker/',desc:'Track pantry items and expiry dates to reduce waste'},
+      {name:'Recipe Scaler',url:'/restaurant/recipe-scaler/',desc:'Scale any recipe up or down proportionally'},
+      {name:'Grocery Budget Planner',url:'/shopping/grocery-budget-planner/',desc:'Plan grocery budgets and track spending by category'},
+      {name:'Grocery List Calculator',url:'/shopping/grocery-list-calculator/',desc:'Calculate total grocery costs before shopping'},
+      {name:'Calorie Calculator',url:'/health/calorie-intake-calculator/',desc:'Calculate daily calorie and macro requirements'}
+    ];
+
+    (function(){
+      var DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      var MEALS = ['Breakfast','Lunch','Dinner','Snack'];
+      var mealPlan = {};
+      var selectedPreset = null;
+      var activeSlot = null;
+
+      function getKey(day, meal){ return day + '-' + meal; }
+
+      function loadPlan(){
+        try {
+          var saved = localStorage.getItem('mealPrepPlan');
+          if(saved) mealPlan = JSON.parse(saved);
+        } catch(e){}
+      }
+
+      function savePlan(){
+        try { localStorage.setItem('mealPrepPlan', JSON.stringify(mealPlan)); } catch(e){}
+      }
+
+      function buildGrid(){
+        var grid = document.getElementById('mealGrid');
+        grid.innerHTML = '';
+        grid.appendChild(makeDiv('meal-grid-header',''));
+        MEALS.forEach(function(m){ grid.appendChild(makeDiv('meal-grid-header', m)); });
+        DAYS.forEach(function(d){
+          grid.appendChild(makeDiv('meal-day-label', d));
+          MEALS.forEach(function(m){
+            var key = getKey(d, m);
+            var slot = document.createElement('div');
+            slot.className = 'meal-slot';
+            slot.dataset.key = key;
+            var data = mealPlan[key];
+            if(data){
+              slot.innerHTML = '<span class="meal-name">' + escHtml(data.name) + '</span><span class="meal-cost">$' + data.cost.toFixed(2) + '</span><span class="remove-meal" title="Remove">x</span>';
+              slot.querySelector('.remove-meal').addEventListener('click', function(e){
+                e.stopPropagation();
+                delete mealPlan[key];
+                savePlan();
+                buildGrid();
+                updateSummary();
+              });
+            } else {
+              slot.innerHTML = '<span class="meal-empty">+</span>';
+            }
+            slot.addEventListener('click', function(){ handleSlotClick(key, d, m); });
+            grid.appendChild(slot);
+          });
+        });
+      }
+
+      function makeDiv(cls, text){
+        var d = document.createElement('div');
+        d.className = cls;
+        d.textContent = text;
+        return d;
+      }
+
+      function escHtml(s){ var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+      function handleSlotClick(key, day, meal){
+        if(selectedPreset){
+          mealPlan[key] = { name: selectedPreset.name, cost: selectedPreset.cost };
+          savePlan();
+          buildGrid();
+          updateSummary();
+          return;
+        }
+        activeSlot = key;
+        document.getElementById('modalTitle').textContent = day + ' ' + meal;
+        var existing = mealPlan[key];
+        document.getElementById('modalMealName').value = existing ? existing.name : '';
+        document.getElementById('modalMealCost').value = existing ? existing.cost : '';
+        document.getElementById('mealModal').classList.add('active');
+        document.getElementById('modalMealName').focus();
+      }
+
+      document.getElementById('modalSaveBtn').addEventListener('click', function(){
+        var name = document.getElementById('modalMealName').value.trim();
+        var cost = parseFloat(document.getElementById('modalMealCost').value) || 0;
+        if(!name){ if(window.showToast) window.showToast('Please enter a meal name.'); return; }
+        mealPlan[activeSlot] = { name: name, cost: cost };
+        savePlan();
+        buildGrid();
+        updateSummary();
+        closeModal();
+      });
+
+      document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+      document.getElementById('mealModal').addEventListener('click', function(e){
+        if(e.target === this) closeModal();
+      });
+
+      function closeModal(){
+        document.getElementById('mealModal').classList.remove('active');
+        activeSlot = null;
+      }
+
+      var presetBtns = document.querySelectorAll('.preset-btn');
+      presetBtns.forEach(function(btn){
+        btn.addEventListener('click', function(){
+          if(selectedPreset && selectedPreset.name === btn.dataset.name){
+            selectedPreset = null;
+            presetBtns.forEach(function(b){ b.style.borderColor = 'var(--border)'; b.style.background = 'var(--surface)'; });
+          } else {
+            selectedPreset = { name: btn.dataset.name, cost: parseFloat(btn.dataset.cost) };
+            presetBtns.forEach(function(b){ b.style.borderColor = 'var(--border)'; b.style.background = 'var(--surface)'; });
+            btn.style.borderColor = 'var(--heading)';
+            btn.style.background = 'var(--bg)';
+          }
+        });
+      });
+
+      function updateSummary(){
+        var total = 0;
+        var count = 0;
+        var keys = Object.keys(mealPlan);
+        keys.forEach(function(k){
+          total += mealPlan[k].cost;
+          count++;
+        });
+        var perDay = count > 0 ? total / 7 : 0;
+        var perMeal = count > 0 ? total / count : 0;
+        var monthly = total * 4.33;
+
+        document.getElementById('totalWeekly').textContent = '$' + total.toFixed(2);
+        document.getElementById('costPerDay').textContent = '$' + perDay.toFixed(2);
+        document.getElementById('costPerMeal').textContent = '$' + perMeal.toFixed(2);
+        document.getElementById('monthlyProjection').textContent = '$' + monthly.toFixed(0);
+
+        updateComparison(total, count);
+        updateGroceryList();
+      }
+
+      function updateComparison(total, mealCount){
+        var avgCost = parseFloat(document.getElementById('avgRestaurantCost').value) || 0;
+        var mealsOut = parseInt(document.getElementById('mealsPerWeek').value) || 0;
+        var weeklyEat = avgCost * mealsOut;
+        var weeklySave = weeklyEat - total;
+        if(weeklySave < 0) weeklySave = 0;
+
+        document.getElementById('weeklyEatOut').textContent = '$' + weeklyEat.toFixed(0);
+        document.getElementById('weeklySavings').textContent = '$' + weeklySave.toFixed(0);
+        document.getElementById('monthlySavings').textContent = '$' + (weeklySave * 4.33).toFixed(0);
+        document.getElementById('yearlySavings').textContent = '$' + (weeklySave * 52).toFixed(0);
+      }
+
+      function updateGroceryList(){
+        var container = document.getElementById('groceryList');
+        var items = {};
+        Object.keys(mealPlan).forEach(function(k){
+          var m = mealPlan[k];
+          if(items[m.name]){
+            items[m.name].count++;
+            items[m.name].total += m.cost;
+          } else {
+            items[m.name] = { count: 1, total: m.cost, unit: m.cost };
+          }
+        });
+
+        var names = Object.keys(items);
+        if(names.length === 0){
+          container.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">Add meals to your plan to generate a grocery list.</p>';
+          return;
+        }
+
+        var html = '<ul>';
+        var grandTotal = 0;
+        names.sort().forEach(function(name){
+          var it = items[name];
+          html += '<li><span>' + escHtml(name) + ' x' + it.count + '</span><span class="item-cost">$' + it.total.toFixed(2) + '</span></li>';
+          grandTotal += it.total;
+        });
+        html += '<li style="font-weight:700;border-top:2px solid var(--border);"><span>Total</span><span class="item-cost">$' + grandTotal.toFixed(2) + '</span></li>';
+        html += '</ul>';
+        container.innerHTML = html;
+      }
+
+      document.getElementById('avgRestaurantCost').addEventListener('input', function(){ updateSummary(); });
+      document.getElementById('mealsPerWeek').addEventListener('input', function(){ updateSummary(); });
+
+      document.getElementById('copyPlanBtn').addEventListener('click', function(){
+        var lines = ['WEEKLY MEAL PLAN',''];
+        DAYS.forEach(function(d){
+          var dayLine = d + ': ';
+          var parts = [];
+          MEALS.forEach(function(m){
+            var data = mealPlan[getKey(d, m)];
+            if(data) parts.push(m + ' - ' + data.name + ' ($' + data.cost.toFixed(2) + ')');
+          });
+          lines.push(dayLine + (parts.length ? parts.join(' | ') : 'No meals planned'));
+        });
+        var total = 0;
+        Object.keys(mealPlan).forEach(function(k){ total += mealPlan[k].cost; });
+        lines.push('');
+        lines.push('Weekly Total: $' + total.toFixed(2));
+        lines.push('Monthly Projection: $' + (total * 4.33).toFixed(0));
+        navigator.clipboard.writeText(lines.join('\n')).then(function(){
+          if(window.showToast) window.showToast('Meal plan copied to clipboard!');
+        });
+      });
+
+      document.getElementById('copyGroceryBtn').addEventListener('click', function(){
+        var items = {};
+        Object.keys(mealPlan).forEach(function(k){
+          var m = mealPlan[k];
+          if(items[m.name]){ items[m.name].count++; items[m.name].total += m.cost; }
+          else { items[m.name] = { count: 1, total: m.cost }; }
+        });
+        var names = Object.keys(items);
+        if(names.length === 0){ if(window.showToast) window.showToast('No meals planned yet.'); return; }
+        var lines = ['GROCERY LIST',''];
+        var grand = 0;
+        names.sort().forEach(function(n){
+          lines.push('- ' + n + ' x' + items[n].count + ' — $' + items[n].total.toFixed(2));
+          grand += items[n].total;
+        });
+        lines.push('');
+        lines.push('Total: $' + grand.toFixed(2));
+        navigator.clipboard.writeText(lines.join('\n')).then(function(){
+          if(window.showToast) window.showToast('Grocery list copied to clipboard!');
+        });
+      });
+
+      document.getElementById('clearPlanBtn').addEventListener('click', function(){
+        mealPlan = {};
+        savePlan();
+        buildGrid();
+        updateSummary();
+        selectedPreset = null;
+        presetBtns.forEach(function(b){ b.style.borderColor = 'var(--border)'; b.style.background = 'var(--surface)'; });
+        if(window.showToast) window.showToast('Meal plan cleared.');
+      });
+
+      loadPlan();
+      buildGrid();
+      updateSummary();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools !== 'undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/meal-prep-cost-planner',title:'Meal Prep Cost Planner',description:'Plan weekly meals and calculate total grocery cost with savings comparison.'});
+      }
+    });
+  </script>
+</body>
+</html>

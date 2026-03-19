@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freezer Inventory Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track what's in your freezer. Add items with expiry dates, get alerts before food expires. Reduce waste and save money. Free, private tool.">
+  <meta property="og:title" content="Freezer Inventory Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Track freezer items with expiry dates and alerts. Reduce food waste and save money.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/freezer-inventory-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Freezer Inventory Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track freezer items with expiry dates and alerts. Reduce food waste and save money.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/freezer-inventory-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .freezer-add-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .freezer-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; }
+    .freezer-form-group label { display: block; font-weight: 600; margin-bottom: 0.3rem; color: var(--text); font-size: 0.85rem; }
+    .freezer-form-group input, .freezer-form-group select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 0.9rem; box-sizing: border-box; }
+    .freezer-search-box { width: 100%; padding: 0.6rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 0.9rem; box-sizing: border-box; margin-bottom: 1rem; }
+    .freezer-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .freezer-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .freezer-stat-val { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+    .freezer-stat-label { font-size: 0.75rem; color: var(--text-muted); }
+    .freezer-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .freezer-filter-btn { padding: 0.4rem 1rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+    .freezer-filter-btn.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .freezer-use-soon { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.5rem; display: none; }
+    .freezer-use-soon h3 { color: var(--heading); margin: 0 0 0.8rem; font-size: 1rem; }
+    .freezer-item-list { margin-top: 0.5rem; }
+    .freezer-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.5rem; background: var(--surface); flex-wrap: wrap; gap: 0.5rem; }
+    .freezer-item-info { flex: 1; min-width: 200px; }
+    .freezer-item-name { font-weight: 600; color: var(--heading); }
+    .freezer-item-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .freezer-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+    .freezer-badge-green { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .freezer-badge-yellow { background: var(--heading); color: var(--bg); }
+    .freezer-badge-orange { background: var(--heading); color: var(--bg); opacity: 0.85; }
+    .freezer-badge-red { background: var(--text-muted); color: var(--bg); }
+    .freezer-item-actions { display: flex; gap: 0.3rem; }
+    .freezer-item-actions button { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .freezer-item-actions button:hover { border-color: var(--heading); color: var(--heading); }
+    .freezer-item.status-expired { opacity: 0.6; border-style: dashed; }
+    .freezer-item.status-red { border-color: var(--text-muted); }
+    .freezer-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .freezer-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; margin-top: 1rem; display: none; }
+    .freezer-summary h3 { color: var(--heading); margin: 0 0 0.5rem; font-size: 1rem; }
+    .freezer-summary-text { font-size: 0.85rem; color: var(--text); white-space: pre-line; line-height: 1.6; }
+
+    @media (max-width: 600px) {
+      .freezer-form-grid { grid-template-columns: 1fr; }
+      .freezer-stats-row { grid-template-columns: repeat(2, 1fr); }
+      .freezer-add-form { padding: 1rem; }
+      .freezer-controls { gap: 0.3rem; }
+      .freezer-filter-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; }
+      .freezer-item { padding: 0.6rem 0.8rem; }
+      .freezer-item-info { min-width: 150px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "Freezer Inventory Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is my freezer inventory data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All data is saved in your browser's localStorage only. Nothing is uploaded to any server. Your inventory stays completely private on your device."}}, {"@type": "Question", "name": "How does the auto-suggest expiry date work?", "acceptedAnswer": {"@type": "Answer", "text": "When you select a category and enter a frozen date, the tool automatically calculates a recommended expiry date based on USDA guidelines. Meat gets 6 months, vegetables 8 months, bread 3 months, seafood 4 months, and so on. You can override the suggestion at any time."}}, {"@type": "Question", "name": "What do the color codes mean?", "acceptedAnswer": {"@type": "Answer", "text": "Green means the item has more than 2 months until expiry. Yellow means 1 to 2 months remaining. Orange means less than 1 month left. Red means the item has passed its recommended use-by date and should be inspected before consuming."}}, {"@type": "Question", "name": "Can I share my freezer inventory with someone?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Share Summary button to copy a text summary of your freezer contents to the clipboard. You can paste it into a message, email, or note to share with family members or roommates."}}, {"@type": "Question", "name": "Will I lose my data if I clear my browser cache?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Since data is stored in localStorage, clearing your browser data will remove your inventory. Use the Export CSV button to create a backup you can save to your computer."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Freezer Inventory Tracker", "description": "Track freezer items with expiry dates and alerts. Reduce food waste and save money.", "url": "https://tool.teamzlab.com/restaurant/freezer-inventory-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Freezer Inventory Tracker</h1>
+      <p class="tool-description">Know exactly what is in your freezer. Add items with expiry dates, get alerts before food goes bad, and reduce waste. All data saved privately in your browser.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="freezer-add-form">
+        <h3 style="color:var(--heading);margin:0 0 0.8rem;">Add Freezer Item</h3>
+        <div class="freezer-form-grid">
+          <div class="freezer-form-group">
+            <label for="freezerItemName">Item Name</label>
+            <input type="text" id="freezerItemName" placeholder="e.g. Chicken thighs">
+          </div>
+          <div class="freezer-form-group">
+            <label for="freezerCategory">Category</label>
+            <select id="freezerCategory">
+              <option value="Meat">Meat</option>
+              <option value="Vegetables">Vegetables</option>
+              <option value="Fruit">Fruit</option>
+              <option value="Bread">Bread</option>
+              <option value="Prepared Meals">Prepared Meals</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Seafood">Seafood</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="freezer-form-group">
+            <label for="freezerQty">Quantity</label>
+            <input type="text" id="freezerQty" placeholder="e.g. 2 lbs, 1 bag">
+          </div>
+          <div class="freezer-form-group">
+            <label for="freezerDateFrozen">Date Frozen</label>
+            <input type="date" id="freezerDateFrozen">
+          </div>
+          <div class="freezer-form-group">
+            <label for="freezerExpiry">Expiry Date</label>
+            <input type="date" id="freezerExpiry">
+          </div>
+          <div class="freezer-form-group">
+            <label for="freezerValue">Estimated Value ($) <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+            <input type="number" id="freezerValue" min="0" step="0.01" placeholder="5.99">
+          </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap;">
+          <button class="btn-primary" id="addFreezerBtn">Add to Freezer</button>
+          <button class="btn-secondary" id="clearFreezerForm">Clear Form</button>
+        </div>
+      </div>
+
+      <div class="freezer-stats-row">
+        <div class="freezer-stat-card"><div class="freezer-stat-val" id="statTotal">0</div><div class="freezer-stat-label">Total Items</div></div>
+        <div class="freezer-stat-card"><div class="freezer-stat-val" id="statExpiring">0</div><div class="freezer-stat-label">Expiring Soon</div></div>
+        <div class="freezer-stat-card"><div class="freezer-stat-val" id="statExpired">0</div><div class="freezer-stat-label">Expired</div></div>
+        <div class="freezer-stat-card"><div class="freezer-stat-val" id="statValue">$0</div><div class="freezer-stat-label">Total Value</div></div>
+      </div>
+
+      <input type="text" class="freezer-search-box" id="freezerSearch" placeholder="Search items or filter by category...">
+
+      <div class="freezer-controls" id="categoryFilters">
+        <button class="freezer-filter-btn active" data-cat="All">All</button>
+        <button class="freezer-filter-btn" data-cat="Meat">Meat</button>
+        <button class="freezer-filter-btn" data-cat="Vegetables">Vegetables</button>
+        <button class="freezer-filter-btn" data-cat="Fruit">Fruit</button>
+        <button class="freezer-filter-btn" data-cat="Bread">Bread</button>
+        <button class="freezer-filter-btn" data-cat="Prepared Meals">Meals</button>
+        <button class="freezer-filter-btn" data-cat="Dairy">Dairy</button>
+        <button class="freezer-filter-btn" data-cat="Seafood">Seafood</button>
+        <button class="freezer-filter-btn" data-cat="Other">Other</button>
+      </div>
+
+      <div class="freezer-use-soon" id="useSoonSection">
+        <h3>Use Soon (expiring within 2 weeks)</h3>
+        <div id="useSoonList"></div>
+      </div>
+
+      <div class="freezer-item-list" id="freezerItemList">
+        <div class="freezer-empty">Your freezer is empty. Add items above to start tracking.</div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;flex-wrap:wrap;">
+        <button class="btn-secondary" id="shareSummaryBtn">Share Summary</button>
+        <button class="btn-secondary" id="exportCsvBtn">Export CSV</button>
+      </div>
+
+      <div class="freezer-summary" id="summarySection">
+        <h3>Inventory Summary</h3>
+        <div class="freezer-summary-text" id="summaryText"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How a Freezer Inventory Tracker Reduces Food Waste</h2>
+      <p>The average household throws away roughly four hundred dollars worth of frozen food every year, mostly because items get buried and forgotten. A study by the Natural Resources Defense Council found that up to 20 percent of food Americans buy ends up in the trash, and the freezer is one of the biggest culprits. Items get pushed to the back, labels become unreadable under frost, and expiry dates pass without anyone noticing. This tracker gives you a clear, searchable list of everything in your freezer sorted by expiry date so the oldest items always surface first. Color-coded alerts warn you when items are approaching their recommended use-by date, giving you time to plan meals around them before quality degrades. By knowing exactly what you have, you also avoid buying duplicates at the grocery store, saving both money and freezer space.</p>
+
+      <h2>Recommended Freezer Storage Times by Category</h2>
+      <p>Not all frozen food lasts equally long. Raw meat like beef and pork stays safe for up to six months, while ground meat should be used within three to four months. Poultry keeps well for up to nine months when properly wrapped. Seafood varies widely: lean fish lasts six to eight months, fatty fish like salmon around two to three months, and shrimp up to six months. Vegetables that have been blanched before freezing maintain quality for eight to twelve months, making them some of the longest-lasting freezer items. Bread and baked goods are best within three months as they tend to develop freezer burn quickly. Prepared meals and leftovers should be consumed within two to three months for the best taste and texture. Dairy products like butter freeze well for six months, while milk and cheese can last three months. This tool auto-suggests an expiry date based on the category you select, taking the guesswork out of freezer management.</p>
+
+      <h2>Freezer Organization Tips for Maximum Freshness</h2>
+      <p>Organization is just as important as tracking. Use the FIFO method (First In, First Out) by placing newer items behind older ones. Label everything with the item name, date frozen, and quantity before it goes in. Flat-freeze soups, sauces, and stews in zip-lock bags so they stack neatly and thaw faster. Keep your freezer at zero degrees Fahrenheit or negative eighteen Celsius for optimal preservation. A full freezer actually runs more efficiently than a half-empty one because the frozen mass helps maintain temperature. Leave small gaps between items for air circulation during the initial freeze. Group items by category, keeping all meats together, all vegetables in one section, and prepared meals in another. This makes it easy to find what you need and matches the category filter in this tracker. Finally, do a monthly freezer audit using this tool to identify items that need to be used soon and update quantities as you cook through your inventory.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Freezer Inventory Tracker'}];
+    var FAQS = [
+      {q:'Is my freezer inventory data private?',a:'Yes. All data is saved in your browser\'s localStorage only. Nothing is uploaded to any server. Your inventory stays completely private on your device.'},
+      {q:'How does the auto-suggest expiry date work?',a:'When you select a category and enter a frozen date, the tool automatically calculates a recommended expiry date based on USDA guidelines. Meat gets 6 months, vegetables 8 months, bread 3 months, seafood 4 months, and so on. You can override the suggestion at any time.'},
+      {q:'What do the color codes mean?',a:'Green means the item has more than 2 months until expiry. Yellow means 1 to 2 months remaining. Orange means less than 1 month left. Red means the item has passed its recommended use-by date and should be inspected before consuming.'},
+      {q:'Can I share my freezer inventory with someone?',a:'Yes. Click the Share Summary button to copy a text summary of your freezer contents to the clipboard. You can paste it into a message, email, or note to share with family members or roommates.'},
+      {q:'Will I lose my data if I clear my browser cache?',a:'Yes. Since data is stored in localStorage, clearing your browser data will remove your inventory. Use the Export CSV button to create a backup you can save to your computer.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Pantry Inventory Tracker',url:'/restaurant/pantry-inventory-tracker/',desc:'Track pantry, fridge, and freezer items with expiry alerts'},
+      {name:'Recipe Cost Calculator',url:'/restaurant/food-cost-calculator/',desc:'Calculate food costs and pricing per dish'},
+      {name:'What Should I Cook?',url:'/restaurant/what-to-cook-generator/',desc:'Get meal ideas using ingredients you have'},
+      {name:'Recipe Scaler',url:'/restaurant/recipe-scaler/',desc:'Scale recipes up or down with smart conversion'},
+      {name:'Cooking Unit Converter',url:'/restaurant/cooking-unit-converter/',desc:'Convert cups, grams, ounces, and more'},
+      {name:'Kitchen Timer',url:'/restaurant/kitchen-timer/',desc:'Run multiple timers simultaneously'}
+    ];
+
+    (function(){
+      var STORAGE_KEY = 'freezerInventoryItems';
+      var items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      var activeCategory = 'All';
+      var searchQuery = '';
+
+      var CATEGORY_MONTHS = {
+        'Meat': 6, 'Vegetables': 8, 'Fruit': 10, 'Bread': 3,
+        'Prepared Meals': 3, 'Dairy': 6, 'Seafood': 4, 'Other': 6
+      };
+
+      function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      }
+
+      function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+      }
+
+      function daysUntil(dateStr) {
+        if (!dateStr) return 9999;
+        var now = new Date(); now.setHours(0,0,0,0);
+        var target = new Date(dateStr); target.setHours(0,0,0,0);
+        return Math.ceil((target - now) / 86400000);
+      }
+
+      function getStatus(days) {
+        if (days <= 0) return 'expired';
+        if (days <= 30) return 'orange';
+        if (days <= 60) return 'yellow';
+        return 'green';
+      }
+
+      function getStatusLabel(days) {
+        if (days <= 0) return 'Expired';
+        if (days <= 14) return days + ' day' + (days !== 1 ? 's' : '') + ' left';
+        if (days <= 30) return Math.ceil(days / 7) + ' weeks left';
+        var months = Math.floor(days / 30);
+        return months + ' month' + (months !== 1 ? 's' : '') + ' left';
+      }
+
+      function getBadgeClass(status) {
+        return 'freezer-badge freezer-badge-' + (status === 'expired' ? 'red' : status);
+      }
+
+      function autoSuggestExpiry() {
+        var cat = document.getElementById('freezerCategory').value;
+        var frozenDate = document.getElementById('freezerDateFrozen').value;
+        if (frozenDate && CATEGORY_MONTHS[cat]) {
+          var d = new Date(frozenDate);
+          d.setMonth(d.getMonth() + CATEGORY_MONTHS[cat]);
+          document.getElementById('freezerExpiry').value = d.toISOString().split('T')[0];
+        }
+      }
+
+      function getFiltered() {
+        return items.filter(function(item) {
+          var catMatch = activeCategory === 'All' || item.category === activeCategory;
+          var searchMatch = !searchQuery || item.name.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1 || item.category.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
+          return catMatch && searchMatch;
+        });
+      }
+
+      function renderUseSoon() {
+        var section = document.getElementById('useSoonSection');
+        var list = document.getElementById('useSoonList');
+        var urgent = items.filter(function(item) {
+          var days = daysUntil(item.expiry);
+          return days > 0 && days <= 14;
+        }).sort(function(a, b) { return daysUntil(a.expiry) - daysUntil(b.expiry); });
+
+        if (urgent.length === 0) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        list.innerHTML = urgent.map(function(item) {
+          var days = daysUntil(item.expiry);
+          return '<div class="freezer-item"><div class="freezer-item-info"><span class="freezer-item-name">' + item.name + '</span> <span class="freezer-badge freezer-badge-orange">' + days + ' day' + (days !== 1 ? 's' : '') + '</span><div class="freezer-item-meta">' + item.category + ' | ' + item.qty + '</div></div></div>';
+        }).join('');
+      }
+
+      function renderList() {
+        var filtered = getFiltered();
+        filtered.sort(function(a, b) { return daysUntil(a.expiry) - daysUntil(b.expiry); });
+
+        var listEl = document.getElementById('freezerItemList');
+        if (filtered.length === 0) {
+          listEl.innerHTML = '<div class="freezer-empty">' + (items.length === 0 ? 'Your freezer is empty. Add items above to start tracking.' : 'No items match your filter.') + '</div>';
+          return;
+        }
+
+        listEl.innerHTML = filtered.map(function(item) {
+          var days = daysUntil(item.expiry);
+          var status = getStatus(days);
+          var label = getStatusLabel(days);
+          var itemClass = 'freezer-item';
+          if (status === 'expired') itemClass += ' status-expired';
+          else if (status === 'orange') itemClass += ' status-red';
+
+          return '<div class="' + itemClass + '" data-id="' + item.id + '">' +
+            '<div class="freezer-item-info">' +
+            '<span class="freezer-item-name">' + item.name + '</span> ' +
+            '<span class="' + getBadgeClass(status) + '">' + label + '</span>' +
+            '<div class="freezer-item-meta">' + item.category + ' | ' + item.qty +
+            (item.dateFrozen ? ' | Frozen: ' + item.dateFrozen : '') +
+            (item.expiry ? ' | Exp: ' + item.expiry : '') +
+            (item.value ? ' | $' + parseFloat(item.value).toFixed(2) : '') +
+            '</div></div>' +
+            '<div class="freezer-item-actions">' +
+            '<button class="freezer-use-btn" data-id="' + item.id + '" title="Mark as used">Used</button>' +
+            '<button class="freezer-del-btn" data-id="' + item.id + '" title="Remove">&times;</button>' +
+            '</div></div>';
+        }).join('');
+
+        listEl.querySelectorAll('.freezer-use-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            items = items.filter(function(i) { return i.id !== btn.dataset.id; });
+            save(); renderAll();
+            if (window.showToast) window.showToast('Item marked as used');
+          });
+        });
+
+        listEl.querySelectorAll('.freezer-del-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            items = items.filter(function(i) { return i.id !== btn.dataset.id; });
+            save(); renderAll();
+            if (window.showToast) window.showToast('Item removed');
+          });
+        });
+      }
+
+      function renderStats() {
+        document.getElementById('statTotal').textContent = items.length;
+        var expiring = items.filter(function(i) { var d = daysUntil(i.expiry); return d > 0 && d <= 14; }).length;
+        var expired = items.filter(function(i) { return daysUntil(i.expiry) <= 0; }).length;
+        var totalValue = items.reduce(function(s, i) { return s + (parseFloat(i.value) || 0); }, 0);
+        document.getElementById('statExpiring').textContent = expiring;
+        document.getElementById('statExpired').textContent = expired;
+        document.getElementById('statValue').textContent = '$' + totalValue.toFixed(0);
+      }
+
+      function renderAll() {
+        renderStats();
+        renderUseSoon();
+        renderList();
+      }
+
+      // Auto-suggest expiry on category or date change
+      document.getElementById('freezerCategory').addEventListener('change', autoSuggestExpiry);
+      document.getElementById('freezerDateFrozen').addEventListener('change', autoSuggestExpiry);
+
+      // Set default frozen date to today
+      document.getElementById('freezerDateFrozen').value = new Date().toISOString().split('T')[0];
+      autoSuggestExpiry();
+
+      // Add item
+      document.getElementById('addFreezerBtn').addEventListener('click', function() {
+        var name = document.getElementById('freezerItemName').value.trim();
+        if (!name) {
+          if (window.showToast) window.showToast('Please enter an item name');
+          return;
+        }
+        items.push({
+          id: generateId(),
+          name: name,
+          category: document.getElementById('freezerCategory').value,
+          qty: document.getElementById('freezerQty').value || '1',
+          dateFrozen: document.getElementById('freezerDateFrozen').value || '',
+          expiry: document.getElementById('freezerExpiry').value || '',
+          value: document.getElementById('freezerValue').value || 0
+        });
+        save();
+        renderAll();
+        document.getElementById('freezerItemName').value = '';
+        document.getElementById('freezerQty').value = '';
+        document.getElementById('freezerValue').value = '';
+        document.getElementById('freezerDateFrozen').value = new Date().toISOString().split('T')[0];
+        autoSuggestExpiry();
+        if (window.showToast) window.showToast(name + ' added to freezer');
+      });
+
+      // Clear form
+      document.getElementById('clearFreezerForm').addEventListener('click', function() {
+        document.getElementById('freezerItemName').value = '';
+        document.getElementById('freezerQty').value = '';
+        document.getElementById('freezerValue').value = '';
+        document.getElementById('freezerDateFrozen').value = new Date().toISOString().split('T')[0];
+        document.getElementById('freezerCategory').selectedIndex = 0;
+        autoSuggestExpiry();
+      });
+
+      // Category filter
+      document.getElementById('categoryFilters').addEventListener('click', function(e) {
+        var btn = e.target.closest('.freezer-filter-btn');
+        if (!btn) return;
+        document.querySelectorAll('.freezer-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        activeCategory = btn.dataset.cat;
+        renderList();
+      });
+
+      // Search
+      document.getElementById('freezerSearch').addEventListener('input', function() {
+        searchQuery = this.value;
+        renderList();
+      });
+
+      // Share summary
+      document.getElementById('shareSummaryBtn').addEventListener('click', function() {
+        if (items.length === 0) {
+          if (window.showToast) window.showToast('No items to share');
+          return;
+        }
+        var categories = {};
+        items.forEach(function(item) {
+          if (!categories[item.category]) categories[item.category] = [];
+          categories[item.category].push(item);
+        });
+        var text = 'Freezer Inventory (' + items.length + ' items)\n';
+        text += '---\n';
+        Object.keys(categories).sort().forEach(function(cat) {
+          text += '\n' + cat + ':\n';
+          categories[cat].forEach(function(item) {
+            var days = daysUntil(item.expiry);
+            var status = days <= 0 ? ' [EXPIRED]' : days <= 14 ? ' [USE SOON]' : '';
+            text += '  - ' + item.name + ' (' + item.qty + ')' + status + '\n';
+          });
+        });
+        var expiring = items.filter(function(i) { return daysUntil(i.expiry) > 0 && daysUntil(i.expiry) <= 14; }).length;
+        if (expiring > 0) text += '\n' + expiring + ' item(s) need to be used within 2 weeks.';
+
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function() {
+            if (window.showToast) window.showToast('Summary copied to clipboard');
+          });
+        }
+        var summaryEl = document.getElementById('summarySection');
+        summaryEl.style.display = 'block';
+        document.getElementById('summaryText').textContent = text;
+      });
+
+      // Export CSV
+      document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        if (items.length === 0) {
+          if (window.showToast) window.showToast('No items to export');
+          return;
+        }
+        var csv = 'Name,Category,Quantity,Date Frozen,Expiry Date,Value\n';
+        items.forEach(function(item) {
+          csv += '"' + item.name + '","' + item.category + '","' + item.qty + '","' + item.dateFrozen + '","' + item.expiry + '","' + (item.value || 0) + '"\n';
+        });
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'freezer-inventory.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (window.showToast) window.showToast('CSV exported');
+      });
+
+      renderAll();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof TeamzTools !== 'undefined') {
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/freezer-inventory-tracker',title:'Freezer Inventory Tracker',description:'Track freezer items with expiry dates and alerts. Reduce food waste and save money.'});
+      }
+    });
+  </script>
+</body>
+</html>

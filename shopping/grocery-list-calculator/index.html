@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grocery List Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Create a grocery list with prices. See your total before shopping. Set a budget limit and track spending. Free, private, saves in your browser.">
+  <meta property="og:title" content="Grocery List Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Create a grocery list with prices. See your total before shopping. Set a budget limit and track spending.">
+  <meta property="og:url" content="https://tool.teamzlab.com/shopping/grocery-list-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/shopping.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Grocery List Calculator">
+  <meta name="twitter:description" content="Create a grocery list with prices. See your total before shopping.">
+  <link rel="canonical" href="https://tool.teamzlab.com/shopping/grocery-list-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .grocery-budget-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem;border-radius:8px;background:var(--surface);border:1px solid var(--border);margin-bottom:1rem;flex-wrap:wrap}
+    .grocery-total{font-size:1.6rem;font-weight:800;color:var(--heading)}
+    .grocery-remaining{font-size:1rem;font-weight:600;color:var(--text-muted)}
+    .grocery-remaining.over{color:var(--heading);font-weight:700}
+    .grocery-form{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr;gap:.5rem;align-items:end;margin-bottom:1rem}
+    .grocery-form label{display:block;font-weight:600;font-size:.8rem;margin-bottom:.2rem;color:var(--text)}
+    .grocery-form input,.grocery-form select{width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:.95rem}
+    .grocery-settings{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem}
+    .grocery-settings label{display:block;font-weight:600;font-size:.8rem;margin-bottom:.2rem;color:var(--text)}
+    .grocery-settings input,.grocery-settings select{width:100%;padding:.55rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:.95rem}
+    .grocery-item{display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr auto auto;gap:.5rem;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--border)}
+    .grocery-item.checked .gi-name,.grocery-item.checked .gi-qty,.grocery-item.checked .gi-price,.grocery-item.checked .gi-cat{text-decoration:line-through;opacity:.5}
+    .gi-name{font-weight:600;color:var(--heading);word-break:break-word}
+    .gi-qty,.gi-price,.gi-cat{color:var(--text);font-size:.9rem}
+    .gi-actions{display:flex;gap:.25rem}
+    .gi-actions button{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);padding:.2rem}
+    .gi-actions button:hover{color:var(--heading)}
+    .gi-check input{width:18px;height:18px;cursor:pointer;accent-color:var(--heading)}
+    .category-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;margin-top:1rem}
+    .cat-card{padding:.6rem;border-radius:6px;background:var(--surface);border:1px solid var(--border);text-align:center}
+    .cat-card h4{margin:0;font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
+    .cat-card .cat-total{font-size:1.1rem;font-weight:700;color:var(--heading)}
+    .grocery-sort{display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+    .grocery-sort button{padding:.3rem .7rem;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-size:.8rem;cursor:pointer}
+    .grocery-sort button.active{background:var(--heading);color:var(--bg);border-color:var(--heading)}
+    .grocery-empty{text-align:center;padding:2rem;color:var(--text-muted);font-style:italic}
+    @media(max-width:600px){
+      .grocery-form{grid-template-columns:1fr 1fr}
+      .grocery-settings{grid-template-columns:1fr}
+      .grocery-item{grid-template-columns:1fr 1fr;gap:.3rem;padding:.5rem 0}
+      .gi-name{grid-column:1/-1}
+      .gi-actions{justify-content:flex-end}
+      .gi-check{justify-self:end}
+      .grocery-budget-bar{flex-direction:column;text-align:center}
+      .category-summary{grid-template-columns:1fr 1fr}
+      .tool-content h2{font-size:var(--text-lg)}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Shopping", "item": "https://tool.teamzlab.com/shopping/"}, {"@type": "ListItem", "position": 3, "name": "Grocery List Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does this grocery list save automatically?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your grocery list, budget, and currency preference are saved in your browser localStorage. They persist between visits and are never sent to any server. Clearing browser data will remove them."}}, {"@type": "Question", "name": "Can I share my grocery list with someone?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Copy List button to copy a plain-text version of your list with item names, quantities, prices, and the total. You can paste it into WhatsApp, iMessage, or any messaging app."}}, {"@type": "Question", "name": "What currencies are supported?", "acceptedAnswer": {"@type": "Answer", "text": "The calculator supports USD, EUR, GBP, BDT, and INR. Select your currency from the dropdown and all prices and totals will display with the correct symbol."}}, {"@type": "Question", "name": "How does the budget tracker work?", "acceptedAnswer": {"@type": "Answer", "text": "Enter your budget limit at the top. As you add items, the remaining budget updates in real time. When your total exceeds the budget, the remaining amount turns red so you know to remove items or adjust quantities."}}, {"@type": "Question", "name": "Can I check off items while shopping?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each item has a checkbox. When you check it, the item gets a strikethrough to show it has been picked up. This helps you track progress through the store without losing the item from your list."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Grocery List Calculator", "description": "Create a grocery list with prices and budget tracking. Free, private, saves in your browser.", "url": "https://tool.teamzlab.com/shopping/grocery-list-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Grocery List Calculator</h1>
+      <p class="tool-description">Build your grocery list with prices and quantities. See your running total before you shop, set a budget limit, and track spending by category. Everything stays private in your browser.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="grocery-budget-bar">
+        <div>
+          <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Running Total</div>
+          <div class="grocery-total" id="running-total">0.00</div>
+        </div>
+        <div>
+          <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Remaining</div>
+          <div class="grocery-remaining" id="budget-remaining">--</div>
+        </div>
+        <div>
+          <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">Items</div>
+          <div style="font-size:1.2rem;font-weight:700;color:var(--heading)" id="item-count">0</div>
+        </div>
+      </div>
+
+      <div class="grocery-settings">
+        <div>
+          <label for="budget-limit">Budget Limit</label>
+          <input type="number" id="budget-limit" min="0" step="1" placeholder="100" value="100">
+        </div>
+        <div>
+          <label for="currency-select">Currency</label>
+          <select id="currency-select">
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (&euro;)</option>
+            <option value="GBP">GBP (&pound;)</option>
+            <option value="BDT">BDT (&curren;)</option>
+            <option value="INR">INR (&curren;)</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="margin-top:0">Add Item</h3>
+      <div class="grocery-form">
+        <div>
+          <label for="item-name">Item Name</label>
+          <input type="text" id="item-name" placeholder="e.g. Milk">
+        </div>
+        <div>
+          <label for="item-qty">Quantity</label>
+          <input type="number" id="item-qty" min="1" step="1" value="1">
+        </div>
+        <div>
+          <label for="item-price">Price/Unit</label>
+          <input type="number" id="item-price" min="0" step="0.01" placeholder="3.49">
+        </div>
+        <div>
+          <label for="item-category">Category</label>
+          <select id="item-category">
+            <option value="Produce">Produce</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Meat">Meat</option>
+            <option value="Bakery">Bakery</option>
+            <option value="Frozen">Frozen</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Household">Household</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+        <button class="btn btn-primary" id="add-item-btn">Add Item</button>
+        <button class="btn btn-secondary" id="share-list-btn">Copy List</button>
+        <button class="btn btn-secondary" id="clear-list-btn">Clear List</button>
+      </div>
+
+      <div class="grocery-sort">
+        <span style="font-size:.8rem;color:var(--text-muted);align-self:center">Sort:</span>
+        <button class="active" data-sort="custom">Custom</button>
+        <button data-sort="category">Category</button>
+        <button data-sort="name">Name</button>
+        <button data-sort="price">Price</button>
+      </div>
+
+      <div id="grocery-list"></div>
+      <div id="category-summary"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Grocery List Calculator Works</h2>
+      <p>This grocery list calculator helps you plan your shopping trip with a clear budget in mind. Add each item you need along with the quantity and estimated price per unit. The tool instantly calculates your running total so you can see exactly how much your cart will cost before you step into the store. Set a budget limit and the calculator shows your remaining budget in real time, turning the display when you exceed it.</p>
+      <p>Every item is assigned to a category such as Produce, Dairy, Meat, or Household. The category subtotals help you understand where most of your money goes. You can sort your list by category to group items together for a faster shopping trip, or sort by price to see your most expensive items first. Check off items as you shop and they appear with a strikethrough so you never lose track of progress.</p>
+
+      <h2>Budget Planning Tips for Grocery Shopping</h2>
+      <p>Setting a budget before you shop is one of the most effective ways to control spending. Studies show that shoppers who use a list spend 23% less than those who browse without one. Start by reviewing what you already have at home, then add only what you need. Group items by category and estimate prices based on your usual store. If your total exceeds your budget, remove lower-priority items before you leave the house.</p>
+      <p>Consider using the price per unit to compare different brands and sizes. Buying store brands for pantry staples can save 20-30% without sacrificing quality. Seasonal produce is almost always cheaper and fresher. Planning meals for the week before making your list prevents overbuying and reduces food waste, which the average household wastes about $1,500 worth of food per year.</p>
+
+      <h2>Organize Your List by Store Layout</h2>
+      <p>Most grocery stores follow a similar layout: produce near the entrance, dairy and meat along the back and sides, and packaged goods in the center aisles. Sorting your list by category mirrors this layout, helping you move through the store efficiently without backtracking. The category sort feature groups your items automatically so you can work through each section in order.</p>
+      <p>Use the copy list feature to share your shopping list with family members via WhatsApp or text message. The list formats as plain text with quantities, prices, and your total, making it easy to read on any device. All your data is saved locally in your browser, so your list persists between visits. No account, no signup, completely private.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS=[{name:'Home',url:'/'},{name:'Shopping',url:'/shopping/'},{name:'Grocery List Calculator'}];
+    var FAQS=[
+      {q:'Does this grocery list save automatically?',a:'Yes. Your grocery list, budget, and currency preference are saved in your browser localStorage. They persist between visits and are never sent to any server. Clearing browser data will remove them.'},
+      {q:'Can I share my grocery list with someone?',a:'Yes. Click the Copy List button to copy a plain-text version of your list with item names, quantities, prices, and the total. You can paste it into WhatsApp, iMessage, or any messaging app.'},
+      {q:'What currencies are supported?',a:'The calculator supports USD, EUR, GBP, BDT, and INR. Select your currency from the dropdown and all prices and totals will display with the correct symbol.'},
+      {q:'How does the budget tracker work?',a:'Enter your budget limit at the top. As you add items, the remaining budget updates in real time. When your total exceeds the budget, the remaining amount turns red so you know to remove items or adjust quantities.'},
+      {q:'Can I check off items while shopping?',a:'Yes. Each item has a checkbox. When you check it, the item gets a strikethrough to show it has been picked up. This helps you track progress through the store without losing the item from your list.'}
+    ];
+    var RELATED_TOOLS=[
+      {name:'Grocery Budget Planner',url:'/shopping/grocery-budget-planner/'},
+      {name:'Price Per Unit Calculator',url:'/shopping/price-per-unit-calculator/'},
+      {name:'Discount Calculator',url:'/shopping/discount-calculator/'},
+      {name:'Impulse Buy Calculator',url:'/shopping/impulse-buy-calculator/'},
+      {name:'Subscription Cost Calculator',url:'/shopping/subscription-cost-calculator/'},
+      {name:'Tip Calculator',url:'/evergreen/tip-calculator/'}
+    ];
+
+    var CURRENCY_SYMBOLS={USD:'$',EUR:'\u20AC',GBP:'\u00A3',BDT:'\u09F3',INR:'\u20B9'};
+    var groceryItems=[];
+    var currentSort='custom';
+
+    function getCurrency(){return document.getElementById('currency-select').value}
+    function getSymbol(){return CURRENCY_SYMBOLS[getCurrency()]||'$'}
+
+    function saveList(){
+      localStorage.setItem('teamz_grocery_list',JSON.stringify(groceryItems));
+    }
+    function loadList(){
+      var data=localStorage.getItem('teamz_grocery_list');
+      if(data){try{groceryItems=JSON.parse(data)}catch(e){groceryItems=[]}}
+    }
+
+    function updateTotals(){
+      var total=0;
+      groceryItems.forEach(function(item){total+=item.qty*item.price});
+      var sym=getSymbol();
+      document.getElementById('running-total').textContent=sym+total.toFixed(2);
+      document.getElementById('item-count').textContent=groceryItems.length;
+      var budget=parseFloat(document.getElementById('budget-limit').value);
+      var remainEl=document.getElementById('budget-remaining');
+      if(budget>0){
+        var remaining=budget-total;
+        remainEl.textContent=(remaining>=0?sym+remaining.toFixed(2):'-'+sym+Math.abs(remaining).toFixed(2));
+        remainEl.className='grocery-remaining'+(remaining<0?' over':'');
+      }else{
+        remainEl.textContent='--';
+        remainEl.className='grocery-remaining';
+      }
+      updateCategorySummary();
+    }
+
+    function updateCategorySummary(){
+      var cats={};
+      groceryItems.forEach(function(item){
+        if(!cats[item.category])cats[item.category]=0;
+        cats[item.category]+=item.qty*item.price;
+      });
+      var keys=Object.keys(cats).sort();
+      if(keys.length===0){document.getElementById('category-summary').innerHTML='';return}
+      var sym=getSymbol();
+      var html='<div class="category-summary">';
+      keys.forEach(function(k){
+        html+='<div class="cat-card"><h4>'+k+'</h4><div class="cat-total">'+sym+cats[k].toFixed(2)+'</div></div>';
+      });
+      html+='</div>';
+      document.getElementById('category-summary').innerHTML=html;
+    }
+
+    function getSortedItems(){
+      var items=groceryItems.slice();
+      if(currentSort==='category'){items.sort(function(a,b){return a.category.localeCompare(b.category)||a.name.localeCompare(b.name)})}
+      else if(currentSort==='name'){items.sort(function(a,b){return a.name.localeCompare(b.name)})}
+      else if(currentSort==='price'){items.sort(function(a,b){return(b.qty*b.price)-(a.qty*a.price)})}
+      return items;
+    }
+
+    function renderList(){
+      var container=document.getElementById('grocery-list');
+      if(groceryItems.length===0){
+        container.innerHTML='<div class="grocery-empty">Your grocery list is empty. Add items above.</div>';
+        updateTotals();return;
+      }
+      var sorted=getSortedItems();
+      var sym=getSymbol();
+      var html='';
+      sorted.forEach(function(item){
+        var lineTotal=(item.qty*item.price).toFixed(2);
+        var checkedClass=item.checked?' checked':'';
+        var checkedAttr=item.checked?' checked':'';
+        html+='<div class="grocery-item'+checkedClass+'" data-id="'+item.id+'">';
+        html+='<div class="gi-name">'+escapeHtml(item.name)+'</div>';
+        html+='<div class="gi-qty">x'+item.qty+'</div>';
+        html+='<div class="gi-price">'+sym+lineTotal+'</div>';
+        html+='<div class="gi-cat">'+item.category+'</div>';
+        html+='<div class="gi-check"><input type="checkbox"'+checkedAttr+' onchange="toggleCheck('+item.id+')"></div>';
+        html+='<div class="gi-actions"><button onclick="deleteItem('+item.id+')" title="Delete">&times;</button></div>';
+        html+='</div>';
+      });
+      container.innerHTML=html;
+      updateTotals();
+    }
+
+    function escapeHtml(str){var d=document.createElement('div');d.textContent=str;return d.innerHTML}
+
+    function addItem(){
+      var nameEl=document.getElementById('item-name');
+      var name=nameEl.value.trim();
+      if(!name){if(window.showToast)window.showToast('Enter an item name');return}
+      var qty=parseInt(document.getElementById('item-qty').value)||1;
+      var price=parseFloat(document.getElementById('item-price').value)||0;
+      var category=document.getElementById('item-category').value;
+      var id=Date.now()+Math.floor(Math.random()*1000);
+      groceryItems.push({id:id,name:name,qty:qty,price:price,category:category,checked:false});
+      saveList();renderList();
+      nameEl.value='';
+      document.getElementById('item-price').value='';
+      document.getElementById('item-qty').value='1';
+      nameEl.focus();
+    }
+
+    function deleteItem(id){
+      groceryItems=groceryItems.filter(function(i){return i.id!==id});
+      saveList();renderList();
+    }
+
+    function toggleCheck(id){
+      groceryItems.forEach(function(i){if(i.id===id)i.checked=!i.checked});
+      saveList();renderList();
+    }
+
+    function shareList(){
+      if(groceryItems.length===0){if(window.showToast)window.showToast('Add items to your list first');return}
+      var sym=getSymbol();
+      var total=0;
+      var text='Grocery List\n';
+      text+='------------\n';
+      groceryItems.forEach(function(item){
+        var line=(item.checked?'[x] ':'[ ] ')+item.name+' x'+item.qty+' - '+sym+(item.qty*item.price).toFixed(2)+' ('+item.category+')';
+        text+=line+'\n';
+        total+=item.qty*item.price;
+      });
+      var budget=parseFloat(document.getElementById('budget-limit').value);
+      text+='------------\n';
+      text+='Total: '+sym+total.toFixed(2);
+      if(budget>0)text+=' | Budget: '+sym+budget.toFixed(2);
+      text+='\n\nMade with tool.teamzlab.com/shopping/grocery-list-calculator/';
+      navigator.clipboard.writeText(text).then(function(){
+        if(window.showToast)window.showToast('List copied to clipboard');
+      }).catch(function(){
+        if(window.showToast)window.showToast('Could not copy — try again');
+      });
+    }
+
+    function clearList(){
+      groceryItems=[];
+      localStorage.removeItem('teamz_grocery_list');
+      renderList();
+      if(window.showToast)window.showToast('List cleared');
+    }
+
+    document.getElementById('add-item-btn').addEventListener('click',addItem);
+    document.getElementById('share-list-btn').addEventListener('click',shareList);
+    document.getElementById('clear-list-btn').addEventListener('click',clearList);
+    document.getElementById('budget-limit').addEventListener('input',function(){updateTotals();saveList()});
+    document.getElementById('currency-select').addEventListener('change',function(){renderList()});
+    document.getElementById('item-name').addEventListener('keydown',function(e){if(e.key==='Enter')addItem()});
+
+    document.querySelectorAll('.grocery-sort button').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('.grocery-sort button').forEach(function(b){b.classList.remove('active')});
+        btn.classList.add('active');
+        currentSort=btn.getAttribute('data-sort');
+        renderList();
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded',function(){
+      loadList();renderList();
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'shopping/grocery-list-calculator',title:'Grocery List Calculator',description:'Create a grocery list with prices and budget tracking. Free, private, saves in your browser.'});
+      }
+    });
+  </script>
+</body>
+</html>
