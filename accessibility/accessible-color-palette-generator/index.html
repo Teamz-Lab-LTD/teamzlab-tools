@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessible Color Palette — Teamz Lab Tools</title>
+  <meta name="description" content="Generate WCAG-compliant color palettes from any brand color. See contrast ratios for every combination and check AA/AAA pass rates instantly.">
+  <meta property="og:title" content="Accessible Color Palette — Teamz Lab Tools">
+  <meta property="og:description" content="Generate WCAG-compliant color palettes from any brand color. See contrast ratios for every combination.">
+  <meta property="og:url" content="https://tool.teamzlab.com/accessibility/accessible-color-palette-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/accessibility.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Accessible Color Palette — Teamz Lab Tools">
+  <meta name="twitter:description" content="Generate WCAG-compliant color palettes from any brand color. See contrast ratios for every combination.">
+  <link rel="canonical" href="https://tool.teamzlab.com/accessibility/accessible-color-palette-generator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .color-input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .color-input-row input[type="color"] { width: 60px; height: 48px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; padding: 2px; background: var(--surface); }
+    .color-input-row input[type="text"] { width: 120px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: monospace; font-size: var(--text-base); }
+
+    .palette-strip { display: flex; gap: 0; border-radius: 12px; overflow: hidden; margin-bottom: 24px; border: 1px solid var(--border); }
+    .palette-swatch { flex: 1; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s; position: relative; }
+    .palette-swatch:hover { transform: scaleY(1.08); z-index: 2; }
+    .palette-swatch .swatch-label { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+
+    .matrix-section { margin-bottom: 24px; }
+    .matrix-scroll { overflow-x: auto; }
+    .contrast-matrix { border-collapse: collapse; width: 100%; min-width: 500px; }
+    .contrast-matrix th, .contrast-matrix td { padding: 6px 8px; text-align: center; font-size: 12px; border: 1px solid var(--border); }
+    .contrast-matrix th { background: var(--surface); color: var(--heading); font-weight: 600; white-space: nowrap; }
+    .contrast-matrix .swatch-th { width: 28px; height: 28px; border-radius: 4px; display: inline-block; vertical-align: middle; margin-right: 4px; }
+    .contrast-matrix td .ratio { font-weight: 700; display: block; }
+    .contrast-matrix td .badges { display: flex; gap: 2px; justify-content: center; flex-wrap: wrap; margin-top: 2px; }
+    .badge { font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; }
+    .badge--pass { background: var(--surface); color: var(--heading); border: 1px solid var(--heading); }
+    .badge--fail { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); opacity: 0.5; }
+
+    .cvd-section { margin-bottom: 24px; }
+    .cvd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cvd-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+    .cvd-panel h4 { margin: 0 0 8px; font-size: var(--text-sm); color: var(--heading); }
+    .cvd-panel p { margin: 0 0 10px; font-size: 12px; color: var(--text-muted); }
+    .cvd-strip { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .cvd-swatch { flex: 1; height: 40px; }
+
+    .copy-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+
+    .stats-bar { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 120px; text-align: center; }
+    .stat-card .stat-value { font-size: var(--text-xl); font-weight: 700; color: var(--heading); }
+    .stat-card .stat-label { font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px; }
+
+    @media (max-width: 600px) {
+      .palette-strip { flex-wrap: wrap; border-radius: 8px; }
+      .palette-swatch { min-height: 50px; min-width: 50%; }
+      .cvd-grid { grid-template-columns: 1fr; }
+      .stats-bar { flex-direction: column; }
+      .color-input-row { flex-direction: column; align-items: stretch; }
+      .color-input-row input[type="color"] { width: 100%; }
+      .color-input-row input[type="text"] { width: 100%; }
+      .copy-bar { flex-direction: column; }
+      .copy-bar button { width: 100%; }
+      h2 { font-size: var(--text-lg); }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Accessible Color Palette Generator</h1>
+      <p class="tool-description">Enter any brand or base color and instantly generate a full accessible color palette. Every shade is tested against every other for WCAG contrast compliance — so you know exactly which combinations work for text, buttons, and backgrounds.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Choose Your Base Color</h2>
+      <div class="color-input-row">
+        <input type="color" id="base-color" value="#2563EB">
+        <input type="text" id="hex-input" value="#2563EB" placeholder="#2563EB" maxlength="7">
+        <button class="btn-primary" id="generate-btn">Generate Palette</button>
+        <button class="btn-secondary tool-clear-btn" id="clear-btn">Reset</button>
+      </div>
+
+      <h2>Generated Palette</h2>
+      <div id="palette-strip" class="palette-strip"></div>
+
+      <div id="stats-bar" class="stats-bar"></div>
+
+      <div class="copy-bar">
+        <button class="btn-secondary" id="copy-css-btn">Copy as CSS Variables</button>
+        <button class="btn-secondary" id="copy-json-btn">Copy as JSON</button>
+      </div>
+
+      <h2>Contrast Matrix</h2>
+      <p style="color:var(--text-muted);font-size:var(--text-sm);margin-bottom:12px;">Every color tested against every other. Green badges = pass, faded = fail.</p>
+      <div class="matrix-section">
+        <div class="matrix-scroll">
+          <table class="contrast-matrix" id="contrast-matrix"></table>
+        </div>
+      </div>
+
+      <h2>Color Blindness Preview</h2>
+      <div id="cvd-section" class="cvd-grid"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why Accessible Color Palettes Matter</h2>
+      <p>Color is one of the most powerful tools in design, but when used without accessibility in mind, it can exclude millions of users. An estimated 1 in 12 men and 1 in 200 women have some form of color vision deficiency. Additionally, people with low vision, aging eyes, or situational impairments (like screen glare) rely on high contrast to read text and interact with interfaces. WCAG (Web Content Accessibility Guidelines) sets clear contrast thresholds: 4.5:1 for normal text (AA), 3:1 for large text (AA), and 7:1 for enhanced readability (AAA). A well-designed accessible palette ensures compliance from the start rather than fixing contrast issues after launch.</p>
+
+      <h2>How This Generator Works</h2>
+      <p>This tool takes your brand color and generates 10 shades ranging from very light (tint) to very dark (shade) by mixing with white and black in perceptually even steps. It then calculates the relative luminance of each shade using the WCAG formula (linearizing sRGB values and weighting red, green, and blue channels) and computes contrast ratios for every possible pairing. The contrast matrix marks each pair as passing or failing WCAG AA text (4.5:1), AA large text (3:1), and AAA text (7:1). The color blindness preview applies Brettel simulation matrices to show how your palette appears under protanopia and deuteranopia — the two most common forms of color vision deficiency.</p>
+
+      <h2>Tips for Building Accessible Color Systems</h2>
+      <p>Start with your primary brand color and generate a full shade scale. Use the lightest shades for backgrounds and the darkest for text — this naturally produces high contrast. Reserve mid-tones for borders, disabled states, and decorative elements where contrast is less critical. Always test your chosen foreground-background pairs in the contrast matrix before shipping. If a critical pair fails AA, adjust the shade one step darker or lighter. For data visualizations, check the color blindness preview to ensure all categories remain distinguishable. Pair colors with patterns, labels, or icons as a secondary signal. Finally, export your palette as CSS custom properties to enforce consistency across your codebase and prevent developers from accidentally picking non-compliant shades.</p>
+
+      <h2>Understanding WCAG Contrast Levels</h2>
+      <p>WCAG defines three contrast levels. Level AA for normal text requires a minimum ratio of 4.5:1 — this is the baseline for legal compliance under ADA and EN 301 549. Level AA for large text (18px bold or 24px regular) requires 3:1. Level AAA, the enhanced level, requires 7:1 for normal text and 4.5:1 for large text. While AAA is not required by law, it significantly improves readability for users with low vision and in challenging environments like outdoor screens or low-brightness settings. Aim for AAA wherever possible, especially for body text and critical UI elements.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'Accessible Color Palette Generator'}]);
+    TeamzTools.injectBreadcrumbSchema([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'Accessible Color Palette Generator'}]);
+
+    var baseColorInput = document.getElementById('base-color');
+    var hexInput = document.getElementById('hex-input');
+    var palette = [];
+
+    // Sync color picker and hex input
+    baseColorInput.addEventListener('input', function() {
+      hexInput.value = this.value.toUpperCase();
+    });
+    hexInput.addEventListener('input', function() {
+      var v = this.value.trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+        baseColorInput.value = v;
+      }
+    });
+
+    // Parse hex to RGB
+    function hexToRgb(hex) {
+      hex = hex.replace('#', '');
+      return { r: parseInt(hex.substring(0,2), 16), g: parseInt(hex.substring(2,4), 16), b: parseInt(hex.substring(4,6), 16) };
+    }
+    function rgbToHex(r, g, b) {
+      return '#' + [r,g,b].map(function(c) { return Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0'); }).join('').toUpperCase();
+    }
+
+    // Mix two colors
+    function mixColors(c1, c2, amount) {
+      return {
+        r: c1.r + (c2.r - c1.r) * amount,
+        g: c1.g + (c2.g - c1.g) * amount,
+        b: c1.b + (c2.b - c1.b) * amount
+      };
+    }
+
+    // Generate 10 shades from light to dark
+    function generateShades(hex) {
+      var base = hexToRgb(hex);
+      var white = { r: 255, g: 255, b: 255 };
+      var black = { r: 0, g: 0, b: 0 };
+      var shades = [];
+      // 5 tints (lighter), base, 4 shades (darker) = 10 total
+      var tintSteps = [0.9, 0.75, 0.55, 0.35, 0.15];
+      var shadeSteps = [0.2, 0.4, 0.6, 0.8];
+      for (var i = 0; i < tintSteps.length; i++) {
+        var c = mixColors(base, white, tintSteps[i]);
+        shades.push({ hex: rgbToHex(c.r, c.g, c.b), label: (i + 1) * 100, rgb: c });
+      }
+      shades.push({ hex: hex.toUpperCase(), label: 500, rgb: base });
+      for (var j = 0; j < shadeSteps.length; j++) {
+        var c2 = mixColors(base, black, shadeSteps[j]);
+        shades.push({ hex: rgbToHex(c2.r, c2.g, c2.b), label: 600 + j * 100, rgb: c2 });
+      }
+      return shades;
+    }
+
+    // Relative luminance (WCAG 2.1)
+    function relativeLuminance(rgb) {
+      var srgb = [rgb.r / 255, rgb.g / 255, rgb.b / 255];
+      var lin = srgb.map(function(c) {
+        return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+    }
+
+    // Contrast ratio
+    function contrastRatio(rgb1, rgb2) {
+      var l1 = relativeLuminance(rgb1);
+      var l2 = relativeLuminance(rgb2);
+      var lighter = Math.max(l1, l2);
+      var darker = Math.min(l1, l2);
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    // Determine text color for a swatch
+    function textColorFor(rgb) {
+      return relativeLuminance(rgb) > 0.4 ? '#000000' : '#FFFFFF';
+    }
+
+    // Color blindness simulation matrices
+    var cvdMatrices = {
+      protanopia: [0.152286,1.052583,-0.204868, 0.114503,0.786281,0.099216, -0.003882,-0.048116,1.051998],
+      deuteranopia: [0.367322,0.860646,-0.227968, 0.280085,0.672501,0.047413, -0.011820,0.042940,0.968881]
+    };
+    function simulateCVD(rgb, matrix) {
+      var r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+      r = r <= 0.04045 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+      g = g <= 0.04045 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+      b = b <= 0.04045 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+      var nr = matrix[0]*r + matrix[1]*g + matrix[2]*b;
+      var ng = matrix[3]*r + matrix[4]*g + matrix[5]*b;
+      var nb = matrix[6]*r + matrix[7]*g + matrix[8]*b;
+      nr = nr <= 0.0031308 ? 12.92 * nr : 1.055 * Math.pow(Math.max(0,nr), 1/2.4) - 0.055;
+      ng = ng <= 0.0031308 ? 12.92 * ng : 1.055 * Math.pow(Math.max(0,ng), 1/2.4) - 0.055;
+      nb = nb <= 0.0031308 ? 12.92 * nb : 1.055 * Math.pow(Math.max(0,nb), 1/2.4) - 0.055;
+      return rgbToHex(nr * 255, ng * 255, nb * 255);
+    }
+
+    // Render palette strip
+    function renderPalette() {
+      var strip = document.getElementById('palette-strip');
+      strip.innerHTML = '';
+      palette.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'palette-swatch';
+        div.style.background = s.hex;
+        div.title = s.label + ': ' + s.hex + ' (click to copy)';
+        var lbl = document.createElement('span');
+        lbl.className = 'swatch-label';
+        lbl.style.color = textColorFor(s.rgb);
+        lbl.textContent = s.hex;
+        div.appendChild(lbl);
+        div.addEventListener('click', function() {
+          navigator.clipboard.writeText(s.hex).then(function() {
+            if (window.showToast) window.showToast('Copied ' + s.hex);
+          });
+        });
+        strip.appendChild(div);
+      });
+    }
+
+    // Render stats
+    function renderStats() {
+      var totalPairs = 0, aaPass = 0, aaaPass = 0, aaLargePass = 0;
+      for (var i = 0; i < palette.length; i++) {
+        for (var j = i + 1; j < palette.length; j++) {
+          totalPairs++;
+          var ratio = contrastRatio(palette[i].rgb, palette[j].rgb);
+          if (ratio >= 4.5) aaPass++;
+          if (ratio >= 7) aaaPass++;
+          if (ratio >= 3) aaLargePass++;
+        }
+      }
+      var bar = document.getElementById('stats-bar');
+      bar.innerHTML =
+        '<div class="stat-card"><div class="stat-value">' + totalPairs + '</div><div class="stat-label">Total Pairs</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + aaPass + '</div><div class="stat-label">AA Text (4.5:1)</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + aaLargePass + '</div><div class="stat-label">AA Large (3:1)</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + aaaPass + '</div><div class="stat-label">AAA Text (7:1)</div></div>';
+    }
+
+    // Render contrast matrix
+    function renderMatrix() {
+      var table = document.getElementById('contrast-matrix');
+      var html = '<thead><tr><th></th>';
+      palette.forEach(function(s) {
+        html += '<th><span class="swatch-th" style="background:' + s.hex + ';"></span>' + s.label + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+      for (var i = 0; i < palette.length; i++) {
+        html += '<tr><th><span class="swatch-th" style="background:' + palette[i].hex + ';"></span>' + palette[i].label + '</th>';
+        for (var j = 0; j < palette.length; j++) {
+          if (i === j) {
+            html += '<td style="background:var(--surface);color:var(--text-muted);">—</td>';
+          } else {
+            var ratio = contrastRatio(palette[i].rgb, palette[j].rgb);
+            var ratioStr = ratio.toFixed(2) + ':1';
+            var aaText = ratio >= 4.5;
+            var aaLarge = ratio >= 3;
+            var aaa = ratio >= 7;
+            html += '<td style="background:' + palette[i].hex + ';color:' + palette[j].hex + ';">';
+            html += '<span class="ratio" style="color:' + palette[j].hex + ';">' + ratioStr + '</span>';
+            html += '<span class="badges">';
+            html += '<span class="badge ' + (aaText ? 'badge--pass' : 'badge--fail') + '">AA</span>';
+            html += '<span class="badge ' + (aaLarge ? 'badge--pass' : 'badge--fail') + '">AA+</span>';
+            html += '<span class="badge ' + (aaa ? 'badge--pass' : 'badge--fail') + '">AAA</span>';
+            html += '</span></td>';
+          }
+        }
+        html += '</tr>';
+      }
+      html += '</tbody>';
+      table.innerHTML = html;
+    }
+
+    // Render color blindness preview
+    function renderCVD() {
+      var section = document.getElementById('cvd-section');
+      var types = [
+        { key: 'protanopia', name: 'Protanopia', desc: 'No red cones — affects ~1% of men' },
+        { key: 'deuteranopia', name: 'Deuteranopia', desc: 'No green cones — affects ~6% of men' }
+      ];
+      var html = '';
+      types.forEach(function(type) {
+        html += '<div class="cvd-panel"><h4>' + type.name + '</h4><p>' + type.desc + '</p><div class="cvd-strip">';
+        palette.forEach(function(s) {
+          var simHex = simulateCVD(s.rgb, cvdMatrices[type.key]);
+          html += '<div class="cvd-swatch" style="background:' + simHex + ';" title="' + s.label + ': ' + simHex + '"></div>';
+        });
+        html += '</div></div>';
+      });
+      section.innerHTML = html;
+    }
+
+    // Generate everything
+    function generate() {
+      var hex = hexInput.value.trim().toUpperCase();
+      if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        if (window.showToast) window.showToast('Please enter a valid hex color (e.g. #2563EB)');
+        return;
+      }
+      palette = generateShades(hex);
+      renderPalette();
+      renderStats();
+      renderMatrix();
+      renderCVD();
+    }
+
+    // Event listeners
+    document.getElementById('generate-btn').addEventListener('click', generate);
+    hexInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') generate(); });
+
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      baseColorInput.value = '#2563EB';
+      hexInput.value = '#2563EB';
+      palette = [];
+      document.getElementById('palette-strip').innerHTML = '';
+      document.getElementById('stats-bar').innerHTML = '';
+      document.getElementById('contrast-matrix').innerHTML = '';
+      document.getElementById('cvd-section').innerHTML = '';
+    });
+
+    // Copy as CSS variables
+    document.getElementById('copy-css-btn').addEventListener('click', function() {
+      if (!palette.length) { if (window.showToast) window.showToast('Generate a palette first'); return; }
+      var css = ':root {\n';
+      palette.forEach(function(s) {
+        css += '  --color-' + s.label + ': ' + s.hex + ';\n';
+      });
+      css += '}';
+      navigator.clipboard.writeText(css).then(function() {
+        if (window.showToast) window.showToast('CSS variables copied!');
+      });
+    });
+
+    // Copy as JSON
+    document.getElementById('copy-json-btn').addEventListener('click', function() {
+      if (!palette.length) { if (window.showToast) window.showToast('Generate a palette first'); return; }
+      var obj = {};
+      palette.forEach(function(s) { obj[s.label] = s.hex; });
+      navigator.clipboard.writeText(JSON.stringify(obj, null, 2)).then(function() {
+        if (window.showToast) window.showToast('JSON palette copied!');
+      });
+    });
+
+    // Generate on load
+    generate();
+
+    // FAQs
+    var faqs = [
+      { q: 'What contrast ratio do I need for WCAG AA compliance?', a: 'WCAG AA requires a minimum contrast ratio of 4.5:1 for normal text (under 18px bold or 24px regular) and 3:1 for large text. These thresholds ensure readability for users with low vision.' },
+      { q: 'What is WCAG AAA and when should I target it?', a: 'WCAG AAA requires 7:1 contrast for normal text and 4.5:1 for large text. While not legally required, AAA significantly improves readability for people with low vision, aging eyes, and users in challenging lighting conditions. Aim for AAA on body text.' },
+      { q: 'How does the palette generator create shades?', a: 'It takes your base color and mixes it with white (for tints/lighter shades) and black (for shades/darker variants) at perceptually even intervals, producing 10 steps from very light to very dark.' },
+      { q: 'How is the contrast ratio calculated?', a: 'Contrast ratio follows the WCAG 2.1 formula: (L1 + 0.05) / (L2 + 0.05), where L1 and L2 are the relative luminances of the two colors. Relative luminance is calculated by linearizing sRGB values and weighting the red, green, and blue channels.' },
+      { q: 'What do the color blindness previews show?', a: 'The previews simulate how your palette appears to people with protanopia (no red cones, ~1% of men) and deuteranopia (no green cones, ~6% of men). This helps ensure your color choices remain distinguishable for color blind users.' },
+      { q: 'Is my data private?', a: 'Yes. All color calculations happen entirely in your browser. No data is sent to any server. Your brand colors stay completely private.' },
+      { q: 'Can I export the palette for my design system?', a: 'Yes. Use the "Copy as CSS Variables" button to get ready-to-use custom properties, or "Copy as JSON" for design tokens compatible with Tailwind, Figma plugins, and other tooling.' }
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.renderRelatedTools([
+      { slug: '/uidesign/color-contrast-checker/', name: 'Color Contrast Checker', description: 'Check WCAG contrast ratios between any text and background color pair.' },
+      { slug: '/accessibility/color-blindness-simulator/', name: 'Color Blindness Simulator', description: 'Upload images and see how they look under protanopia, deuteranopia, and more.' },
+      { slug: '/accessibility/wcag-accessibility-checklist/', name: 'WCAG Accessibility Checklist', description: 'Interactive WCAG 2.1 Level AA compliance checklist for web projects.' },
+      { slug: '/accessibility/ada-compliance-checker/', name: 'ADA Compliance Checker', description: 'Paste HTML and get an instant accessibility audit for headings, ARIA, and contrast.' },
+      { slug: '/health/color-blind-test/', name: 'Color Blind Test (Ishihara)', description: 'Test your own color vision with Ishihara-style dot plates.' },
+      { slug: '/accessibility/screen-reader-text-preview/', name: 'Screen Reader Text Preview', description: 'See exactly what a screen reader would announce from your HTML.' }
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'accessibility/accessible-color-palette-generator',
+      title: 'Accessible Color Palette Generator',
+      description: 'Generate WCAG-compliant color palettes from any brand color with full contrast matrix and color blindness preview.'
+    });
+  });
+  </script>
+</body>
+</html>

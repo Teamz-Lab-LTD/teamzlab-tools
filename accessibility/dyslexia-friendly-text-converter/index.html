@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dyslexia-Friendly Text Converter — Teamz Lab Tools</title>
+  <meta name="description" content="Convert any text to dyslexia-friendly formatting with OpenDyslexic font, wider spacing, reading ruler, and syllable highlights. Free and private.">
+  <meta property="og:title" content="Dyslexia-Friendly Text Converter — Teamz Lab Tools">
+  <meta property="og:description" content="Convert any text to dyslexia-friendly formatting with OpenDyslexic font, wider spacing, reading ruler, and syllable highlights.">
+  <meta property="og:url" content="https://tool.teamzlab.com/accessibility/dyslexia-friendly-text-converter/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/accessibility.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Dyslexia-Friendly Text Converter — Teamz Lab Tools">
+  <meta name="twitter:description" content="Convert any text to dyslexia-friendly formatting with OpenDyslexic font, wider spacing, reading ruler, and syllable highlights.">
+  <link rel="canonical" href="https://tool.teamzlab.com/accessibility/dyslexia-friendly-text-converter/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Lexend:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    @font-face {
+      font-family: 'OpenDyslexic';
+      src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Regular.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'OpenDyslexic';
+      src: url('https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/woff/OpenDyslexic-Bold.woff') format('woff');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    .converter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .converter-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+    .converter-panel h3 { margin: 0 0 12px; color: var(--heading); font-size: var(--text-lg); }
+    .converter-panel textarea { width: 100%; min-height: 200px; font-size: 16px; resize: vertical; }
+
+    .preview-area { min-height: 200px; line-height: 2; font-size: 18px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; }
+    .preview-area p { margin-bottom: 16px; }
+    .preview-area--ruler { cursor: crosshair; }
+
+    .reading-ruler { position: absolute; left: 0; right: 0; height: 40px; pointer-events: none; z-index: 10; transition: top 0.1s ease; }
+    .reading-ruler::before, .reading-ruler::after { content: ''; position: absolute; left: 0; right: 0; background: var(--text); opacity: 0.15; }
+    .reading-ruler::before { top: 0; height: 100%; opacity: 0; }
+    .reading-ruler::after { display: none; }
+    .ruler-overlay-top, .ruler-overlay-bottom { position: absolute; left: 0; right: 0; background: var(--text); opacity: 0.12; pointer-events: none; z-index: 9; }
+
+    .settings-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; }
+    .setting-group { display: flex; align-items: center; gap: 6px; }
+    .setting-group label { font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap; }
+    .setting-group select, .setting-group input[type="range"] { font-size: var(--text-sm); }
+
+    .toggle-btn { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: var(--text-sm); font-weight: 500; transition: all 0.2s; }
+    .toggle-btn--active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+
+    .syllable-even { border-bottom: 2px solid var(--heading); }
+    .syllable-odd { border-bottom: 2px dashed var(--text-muted); }
+
+    .simulator-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .simulator-box h3 { margin: 0 0 8px; color: var(--heading); }
+    .simulator-text { font-size: 18px; line-height: 2; padding: 16px; background: var(--bg); border-radius: 8px; min-height: 100px; }
+
+    .action-bar { display: flex; gap: 8px; margin-top: 16px; }
+
+    @media (max-width: 600px) {
+      .converter-grid { grid-template-columns: 1fr; }
+      .settings-bar { flex-direction: column; align-items: stretch; }
+      .action-bar { flex-direction: column; }
+      .action-bar button { width: 100%; }
+      h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Accessibility Tools", "item": "https://tool.teamzlab.com/accessibility/"}, {"@type": "ListItem", "position": 3, "name": "Dyslexia-Friendly Text Converter"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the best font for dyslexia?", "acceptedAnswer": {"@type": "Answer", "text": "There is no single best font — it varies per person. OpenDyslexic uses weighted bottoms to anchor letters. Lexend is designed by Google to reduce visual stress. Arial, Verdana, and Comic Sans MS are also popular choices. Try each one in this tool to find what works for you."}}, {"@type": "Question", "name": "Does letter spacing really help dyslexic readers?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Research published in the Proceedings of the National Academy of Sciences found that increased letter spacing improved reading speed by 20% and halved errors for dyslexic children. Wider spacing reduces \"visual crowding\" where letters appear to merge."}}, {"@type": "Question", "name": "What is a reading ruler?", "acceptedAnswer": {"@type": "Answer", "text": "A reading ruler is an overlay that highlights one line at a time, dimming the rest of the text. It helps dyslexic readers track which line they are on and reduces visual distraction from surrounding text. Toggle it on in this tool and move your mouse over the preview."}}, {"@type": "Question", "name": "How does the dyslexia simulator work?", "acceptedAnswer": {"@type": "Answer", "text": "The simulator scrambles middle letters within words and swaps commonly confused letter pairs (b/d, p/q, m/w). This gives non-dyslexic readers a sense of the extra cognitive effort required to decode text. It is an approximation — real dyslexia experiences vary greatly."}}, {"@type": "Question", "name": "Is dyslexia a vision problem?", "acceptedAnswer": {"@type": "Answer", "text": "No. Dyslexia is a neurological difference in how the brain processes language, not a vision issue. People with dyslexia have normal eyesight. The brain processes written symbols differently, which is why formatting changes (not just glasses) help."}}, {"@type": "Question", "name": "Can I use this tool for my students?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. Teachers can paste reading materials, apply dyslexia-friendly formatting, and share the formatted version. The simulator is also excellent for classroom demonstrations to build empathy and understanding among students."}}, {"@type": "Question", "name": "Is my text sent to any server?", "acceptedAnswer": {"@type": "Answer", "text": "No. Everything runs entirely in your browser. Your text is never uploaded, stored, or shared. The fonts are loaded from a public CDN but your text content stays completely private."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Dyslexia-Friendly Text Converter", "description": "Convert text to dyslexia-friendly formatting with specialized fonts and reading aids.", "url": "https://tool.teamzlab.com/accessibility/dyslexia-friendly-text-converter/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Dyslexia-Friendly Text Converter</h1>
+      <p class="tool-description">Paste any text and instantly convert it to a dyslexia-friendly format. Choose fonts designed for readability, adjust spacing and size, use a reading ruler, and highlight syllables. Includes a dyslexia simulator so others can understand the experience.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Reading Settings</h2>
+      <div class="settings-bar">
+        <div class="setting-group">
+          <label for="font-select">Font:</label>
+          <select id="font-select">
+            <option value="OpenDyslexic">OpenDyslexic</option>
+            <option value="Lexend">Lexend</option>
+            <option value="Arial">Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Comic Sans MS">Comic Sans MS</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label for="font-size">Size:</label>
+          <input type="range" id="font-size" min="14" max="32" value="20" step="1">
+          <span id="font-size-val">20px</span>
+        </div>
+        <div class="setting-group">
+          <label for="letter-spacing">Letter spacing:</label>
+          <input type="range" id="letter-spacing" min="0" max="8" value="2" step="0.5">
+          <span id="spacing-val">2px</span>
+        </div>
+        <div class="setting-group">
+          <label for="line-height">Line height:</label>
+          <input type="range" id="line-height" min="1.5" max="3" value="2" step="0.1">
+          <span id="lh-val">2</span>
+        </div>
+        <button class="toggle-btn" id="ruler-toggle">Reading Ruler</button>
+        <button class="toggle-btn" id="syllable-toggle">Syllable Highlights</button>
+      </div>
+
+      <div class="converter-grid">
+        <div class="converter-panel">
+          <h3>Original Text</h3>
+          <textarea id="input-text" placeholder="Paste or type any text here...">The quick brown fox jumps over the lazy dog. Reading with dyslexia can be challenging, but the right formatting makes a big difference. Wider letter spacing, heavier bottom-weighted fonts, and larger text sizes all help reduce visual crowding and letter confusion.</textarea>
+        </div>
+        <div class="converter-panel">
+          <h3>Dyslexia-Friendly Preview</h3>
+          <div id="preview-area" class="preview-area"></div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-primary" id="copy-btn">Copy Formatted Text</button>
+        <button class="btn-secondary" id="speak-btn">Read Aloud</button>
+        <button class="btn-secondary tool-clear-btn" id="clear-btn">Clear</button>
+      </div>
+
+      <h2>Dyslexia Simulator</h2>
+      <p style="color:var(--text-muted);margin-bottom:12px;">This shows non-dyslexic readers what reading can feel like with dyslexia. Letters swap, blur, and shift — demonstrating the constant effort required.</p>
+      <div class="simulator-box">
+        <h3>What Dyslexia Can Feel Like</h3>
+        <div id="simulator-text" class="simulator-text"></div>
+        <div style="margin-top:12px;">
+          <button class="btn-secondary" id="scramble-btn">Scramble Again</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Dyslexia-Friendly Formatting Helps</h2>
+      <p>Dyslexia affects approximately 15-20% of the population worldwide. It is a neurological difference in how the brain processes written language — not a vision problem and certainly not a sign of low intelligence. People with dyslexia often experience letters that appear to move, swap, mirror, or crowd together. The right formatting can dramatically reduce these effects. Research shows that increased letter spacing alone can improve reading speed by 20% for dyslexic readers. Bottom-weighted fonts like OpenDyslexic add visual anchoring so letters are harder to flip mentally. Larger text and wider line height reduce visual crowding between lines.</p>
+
+      <h2>Best Fonts for Dyslexia</h2>
+      <p>OpenDyslexic is the most popular free dyslexia font, designed with heavier bottom portions to prevent letter rotation. Lexend is a Google Font family specifically engineered to reduce visual stress and improve reading fluency. Arial and Verdana are widely available sans-serif fonts that many dyslexic readers find clearer than serif fonts. Comic Sans MS, despite its reputation, is genuinely helpful for many dyslexic readers because of its irregular letterforms which make each character more distinct. The best font varies per person — try each option to find yours.</p>
+
+      <h2>Reading Tools That Make a Difference</h2>
+      <p>The reading ruler overlay highlights a single line at a time, reducing visual distraction from surrounding text. Syllable highlighting breaks words into syllable chunks, making long words easier to decode. Text-to-speech lets you listen while reading, reinforcing comprehension through dual channels. These tools work best in combination — dyslexic-friendly font plus spacing plus a reading ruler creates a significantly better reading experience than any single change alone.</p>
+
+      <h2>Understanding the Dyslexia Simulator</h2>
+      <p>The simulator scrambles letters within words to give non-dyslexic readers a taste of the cognitive load involved. This is not exactly what dyslexia looks like — the real experience varies enormously between individuals — but it demonstrates why reading takes more effort and energy. Share the simulator with teachers, employers, or family members to build understanding and empathy.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'Dyslexia-Friendly Text Converter'}]);
+    TeamzTools.injectBreadcrumbSchema([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'Dyslexia-Friendly Text Converter'}]);
+
+    var inputEl = document.getElementById('input-text');
+    var previewEl = document.getElementById('preview-area');
+    var fontSelect = document.getElementById('font-select');
+    var fontSizeEl = document.getElementById('font-size');
+    var letterSpacingEl = document.getElementById('letter-spacing');
+    var lineHeightEl = document.getElementById('line-height');
+    var rulerToggle = document.getElementById('ruler-toggle');
+    var syllableToggle = document.getElementById('syllable-toggle');
+
+    var rulerOn = false;
+    var syllablesOn = false;
+
+    function updatePreview() {
+      var text = inputEl.value.trim();
+      if (!text) { previewEl.innerHTML = '<p style="color:var(--text-muted);">Type or paste text on the left to see the preview.</p>'; return; }
+
+      var font = fontSelect.value;
+      var size = fontSizeEl.value + 'px';
+      var spacing = letterSpacingEl.value + 'px';
+      var lh = lineHeightEl.value;
+
+      previewEl.style.fontFamily = '"' + font + '", sans-serif';
+      previewEl.style.fontSize = size;
+      previewEl.style.letterSpacing = spacing;
+      previewEl.style.lineHeight = lh;
+
+      var paragraphs = text.split(/\n\n+/);
+      var html = '';
+      paragraphs.forEach(function(para) {
+        if (syllablesOn) {
+          var words = para.split(/\s+/);
+          var processed = words.map(function(word) {
+            var syllables = splitSyllables(word);
+            return syllables.map(function(s, i) {
+              return '<span class="syllable-' + (i % 2 === 0 ? 'even' : 'odd') + '">' + s + '</span>';
+            }).join('');
+          }).join(' ');
+          html += '<p>' + processed + '</p>';
+        } else {
+          html += '<p>' + para + '</p>';
+        }
+      });
+      previewEl.innerHTML = html;
+
+      document.getElementById('font-size-val').textContent = fontSizeEl.value + 'px';
+      document.getElementById('spacing-val').textContent = letterSpacingEl.value + 'px';
+      document.getElementById('lh-val').textContent = lineHeightEl.value;
+    }
+
+    function splitSyllables(word) {
+      if (word.length <= 3) return [word];
+      var vowels = 'aeiouyAEIOUY';
+      var syllables = [];
+      var current = '';
+      var prevVowel = false;
+      for (var i = 0; i < word.length; i++) {
+        var ch = word[i];
+        var isVowel = vowels.indexOf(ch) !== -1;
+        current += ch;
+        if (isVowel) { prevVowel = true; }
+        else if (prevVowel && current.length >= 2) {
+          syllables.push(current.slice(0, -1));
+          current = ch;
+          prevVowel = false;
+        }
+      }
+      if (current) {
+        if (syllables.length > 0 && current.length === 1) {
+          syllables[syllables.length - 1] += current;
+        } else {
+          syllables.push(current);
+        }
+      }
+      return syllables.length > 0 ? syllables : [word];
+    }
+
+    inputEl.addEventListener('input', updatePreview);
+    fontSelect.addEventListener('change', updatePreview);
+    fontSizeEl.addEventListener('input', updatePreview);
+    letterSpacingEl.addEventListener('input', updatePreview);
+    lineHeightEl.addEventListener('input', updatePreview);
+
+    rulerToggle.addEventListener('click', function() {
+      rulerOn = !rulerOn;
+      rulerToggle.classList.toggle('toggle-btn--active', rulerOn);
+      previewEl.classList.toggle('preview-area--ruler', rulerOn);
+      if (!rulerOn) {
+        var overlays = previewEl.querySelectorAll('.ruler-overlay-top, .ruler-overlay-bottom');
+        overlays.forEach(function(o) { o.remove(); });
+      }
+    });
+
+    previewEl.addEventListener('mousemove', function(e) {
+      if (!rulerOn) return;
+      var rect = previewEl.getBoundingClientRect();
+      var y = e.clientY - rect.top;
+      var rulerHeight = 36;
+      var topOverlay = previewEl.querySelector('.ruler-overlay-top');
+      var bottomOverlay = previewEl.querySelector('.ruler-overlay-bottom');
+      if (!topOverlay) {
+        topOverlay = document.createElement('div');
+        topOverlay.className = 'ruler-overlay-top';
+        previewEl.appendChild(topOverlay);
+      }
+      if (!bottomOverlay) {
+        bottomOverlay = document.createElement('div');
+        bottomOverlay.className = 'ruler-overlay-bottom';
+        previewEl.appendChild(bottomOverlay);
+      }
+      topOverlay.style.top = '0';
+      topOverlay.style.height = Math.max(0, y - rulerHeight / 2) + 'px';
+      bottomOverlay.style.top = (y + rulerHeight / 2) + 'px';
+      bottomOverlay.style.bottom = '0';
+      bottomOverlay.style.height = 'auto';
+    });
+
+    previewEl.addEventListener('mouseleave', function() {
+      var overlays = previewEl.querySelectorAll('.ruler-overlay-top, .ruler-overlay-bottom');
+      overlays.forEach(function(o) { o.remove(); });
+    });
+
+    syllableToggle.addEventListener('click', function() {
+      syllablesOn = !syllablesOn;
+      syllableToggle.classList.toggle('toggle-btn--active', syllablesOn);
+      updatePreview();
+    });
+
+    // Copy
+    document.getElementById('copy-btn').addEventListener('click', function() {
+      var text = inputEl.value.trim();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        if (window.showToast) window.showToast('Text copied!');
+      });
+    });
+
+    // Read aloud
+    var speaking = false;
+    document.getElementById('speak-btn').addEventListener('click', function() {
+      if (speaking) {
+        window.speechSynthesis.cancel();
+        speaking = false;
+        this.textContent = 'Read Aloud';
+        return;
+      }
+      var text = inputEl.value.trim();
+      if (!text) return;
+      var utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 0.85;
+      utter.onend = function() { speaking = false; document.getElementById('speak-btn').textContent = 'Read Aloud'; };
+      window.speechSynthesis.speak(utter);
+      speaking = true;
+      this.textContent = 'Stop Reading';
+    });
+
+    // Clear
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      inputEl.value = '';
+      updatePreview();
+      window.speechSynthesis.cancel();
+      speaking = false;
+      document.getElementById('speak-btn').textContent = 'Read Aloud';
+    });
+
+    // Dyslexia simulator
+    function scrambleWord(word) {
+      if (word.length <= 3) return word;
+      var first = word[0];
+      var last = word[word.length - 1];
+      var middle = word.slice(1, -1).split('');
+      for (var i = middle.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = middle[i]; middle[i] = middle[j]; middle[j] = temp;
+      }
+      var confusions = { 'b': 'd', 'd': 'b', 'p': 'q', 'q': 'p', 'm': 'w', 'w': 'm' };
+      middle = middle.map(function(ch) {
+        if (confusions[ch] && Math.random() > 0.6) return confusions[ch];
+        return ch;
+      });
+      return first + middle.join('') + last;
+    }
+
+    function runSimulator() {
+      var text = inputEl.value.trim() || 'The quick brown fox jumps over the lazy dog. Reading with dyslexia means letters can appear to move, swap places, and blur together. It takes more effort and energy to decode every single word.';
+      var words = text.split(/(\s+)/);
+      var scrambled = words.map(function(w) {
+        if (/^\s+$/.test(w)) return w;
+        return scrambleWord(w);
+      }).join('');
+      document.getElementById('simulator-text').textContent = scrambled;
+    }
+
+    document.getElementById('scramble-btn').addEventListener('click', runSimulator);
+
+    updatePreview();
+    runSimulator();
+
+    // FAQs
+    var faqs = [
+      { q: 'What is the best font for dyslexia?', a: 'There is no single best font — it varies per person. OpenDyslexic uses weighted bottoms to anchor letters. Lexend is designed by Google to reduce visual stress. Arial, Verdana, and Comic Sans MS are also popular choices. Try each one in this tool to find what works for you.' },
+      { q: 'Does letter spacing really help dyslexic readers?', a: 'Yes. Research published in the Proceedings of the National Academy of Sciences found that increased letter spacing improved reading speed by 20% and halved errors for dyslexic children. Wider spacing reduces "visual crowding" where letters appear to merge.' },
+      { q: 'What is a reading ruler?', a: 'A reading ruler is an overlay that highlights one line at a time, dimming the rest of the text. It helps dyslexic readers track which line they are on and reduces visual distraction from surrounding text. Toggle it on in this tool and move your mouse over the preview.' },
+      { q: 'How does the dyslexia simulator work?', a: 'The simulator scrambles middle letters within words and swaps commonly confused letter pairs (b/d, p/q, m/w). This gives non-dyslexic readers a sense of the extra cognitive effort required to decode text. It is an approximation — real dyslexia experiences vary greatly.' },
+      { q: 'Is dyslexia a vision problem?', a: 'No. Dyslexia is a neurological difference in how the brain processes language, not a vision issue. People with dyslexia have normal eyesight. The brain processes written symbols differently, which is why formatting changes (not just glasses) help.' },
+      { q: 'Can I use this tool for my students?', a: 'Absolutely. Teachers can paste reading materials, apply dyslexia-friendly formatting, and share the formatted version. The simulator is also excellent for classroom demonstrations to build empathy and understanding among students.' },
+      { q: 'Is my text sent to any server?', a: 'No. Everything runs entirely in your browser. Your text is never uploaded, stored, or shared. The fonts are loaded from a public CDN but your text content stays completely private.' }
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.renderRelatedTools([
+      { slug: '/accessibility/spoon-theory-energy-planner/', name: 'Spoon Theory Energy Planner', description: 'Plan your day with limited energy using spoon theory.' },
+      { slug: '/text/readability-checker/', name: 'Readability Checker', description: 'Check Flesch-Kincaid, SMOG, and Gunning Fog readability scores.' },
+      { slug: '/health/attention-span-test/', name: 'Attention Span Test', description: 'Test your focus with 5 interactive cognitive challenges.' },
+      { slug: '/health/eye-exercise-timer/', name: 'Eye Exercise Timer', description: 'Guided eye exercises with the 20-20-20 rule and more.' },
+      { slug: '/tools/ai-text-to-speech/', name: 'AI Text to Speech', description: 'Convert text to natural-sounding speech in multiple languages.' },
+      { slug: '/health/time-blindness-calculator/', name: 'Time Blindness Calculator', description: 'Get realistic ADHD time estimates with transition buffers.' }
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'accessibility/dyslexia-friendly-text-converter',
+      title: 'Dyslexia-Friendly Text Converter',
+      description: 'Convert text to dyslexia-friendly formatting with specialized fonts and reading aids.'
+    });
+  });
+  </script>
+</body>
+</html>

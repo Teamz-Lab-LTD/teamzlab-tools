@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADA Compliance Checker — Teamz Lab Tools</title>
+  <meta name="description" content="Scan HTML for ADA accessibility issues instantly. Detect missing alt text, heading errors, ARIA problems, and more. Free, private, client-side.">
+  <meta property="og:title" content="ADA Compliance Checker — Teamz Lab Tools">
+  <meta property="og:description" content="Scan HTML for ADA accessibility issues instantly. Detect missing alt text, heading errors, ARIA problems, and more.">
+  <meta property="og:url" content="https://tool.teamzlab.com/accessibility/ada-compliance-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/accessibility.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ADA Compliance Checker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Scan HTML for ADA accessibility issues instantly. Detect missing alt text, heading errors, ARIA problems, and more.">
+  <link rel="canonical" href="https://tool.teamzlab.com/accessibility/ada-compliance-checker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .score-dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .score-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .score-card h3 { margin: 0 0 8px; color: var(--text-muted); font-size: var(--text-sm); text-transform: uppercase; letter-spacing: 1px; }
+    .score-value { font-size: var(--text-2xl); font-weight: 700; color: var(--heading); }
+
+    .html-input { width: 100%; min-height: 200px; font-family: monospace; font-size: var(--text-sm); padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); resize: vertical; }
+
+    .severity-section { margin-bottom: 20px; }
+    .severity-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 8px; margin-bottom: 8px; background: var(--surface); border: 1px solid var(--border); }
+    .severity-header h3 { margin: 0; font-size: var(--text-base); color: var(--heading); }
+    .severity-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+    .badge-critical { background: var(--heading); color: var(--bg); }
+    .badge-warning { background: var(--border); color: var(--text); }
+    .badge-info { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .issue-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--text); }
+    .issue-item:last-child { border-bottom: none; }
+    .issue-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .issue-icon--critical { color: var(--heading); }
+    .issue-icon--warning { color: var(--text-muted); }
+    .issue-icon--info { color: var(--text-muted); }
+    .issue-detail strong { color: var(--heading); }
+
+    .results-placeholder { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: var(--text-sm); }
+
+    .action-bar { display: flex; gap: 8px; margin-top: 20px; }
+
+    @media (max-width: 600px) {
+      .score-dashboard { grid-template-columns: 1fr; }
+      .action-bar { flex-direction: column; }
+      .action-bar button { width: 100%; }
+      h2 { font-size: var(--text-lg); }
+      .html-input { min-height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>ADA Compliance Checker</h1>
+      <p class="tool-description">Paste your HTML code below and instantly scan for ADA and WCAG accessibility issues. This checker analyzes heading hierarchy, alt text, form labels, ARIA landmarks, skip navigation, contrast hints, and more — all client-side and private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="form-group">
+        <label for="html-input">Paste your HTML code:</label>
+        <textarea id="html-input" class="html-input" placeholder="<!DOCTYPE html>\n<html>\n<head>...</head>\n<body>...</body>\n</html>"></textarea>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-primary" id="scan-btn">Scan for Issues</button>
+        <button class="btn-secondary tool-clear-btn" id="clear-btn">Clear</button>
+      </div>
+
+      <div id="results-area" style="margin-top: 24px;">
+        <div class="results-placeholder">Paste HTML above and click "Scan for Issues" to begin.</div>
+      </div>
+
+      <div class="score-dashboard" id="score-dashboard" style="display:none; margin-top: 24px;">
+        <div class="score-card">
+          <h3>Score</h3>
+          <div id="score-value" class="score-value">—</div>
+        </div>
+        <div class="score-card">
+          <h3>Issues Found</h3>
+          <div id="issue-count" class="score-value">0</div>
+        </div>
+        <div class="score-card">
+          <h3>Result</h3>
+          <div id="result-status" class="score-value" style="font-size:var(--text-lg);">—</div>
+        </div>
+      </div>
+
+      <div class="action-bar" id="export-bar" style="display:none;">
+        <button class="btn-secondary" id="export-btn">Export Results as Text</button>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the ADA Compliance Checker Works</h2>
+      <p>This tool parses your HTML in the browser and runs a series of automated accessibility checks based on WCAG 2.1 guidelines and ADA requirements. It inspects your document for missing alt text on images, unlabeled form controls, heading hierarchy issues (skipped levels or missing H1), absence of a lang attribute on the html element, missing skip navigation links, empty links or buttons, missing ARIA landmarks, missing page title, missing viewport meta tag, and basic contrast indicators. Each issue is categorized by severity — Critical, Warning, or Info — so you can prioritize the most impactful fixes first.</p>
+
+      <h2>Why ADA Compliance Matters</h2>
+      <p>The Americans with Disabilities Act (ADA) requires that digital content be accessible to people with disabilities. Over 5,000 ADA-related accessibility lawsuits were filed in 2025, and the DOJ now explicitly requires WCAG 2.1 Level AA compliance for government websites by April 2026. Even private businesses face legal risk. Beyond legal compliance, accessible websites reach a wider audience — over 1 billion people worldwide live with some form of disability. Fixing accessibility issues also improves SEO, as search engines reward well-structured, semantically correct HTML.</p>
+
+      <h2>Common Accessibility Issues to Fix</h2>
+      <div class="example-box">
+        <h4>Top Fixes for Better Accessibility</h4>
+        <ul>
+          <li><strong>Alt text:</strong> Every informational image needs descriptive alt text. Decorative images should use alt="".</li>
+          <li><strong>Form labels:</strong> Every input, select, and textarea needs an associated label element or aria-label.</li>
+          <li><strong>Heading hierarchy:</strong> Start with one H1 and don't skip levels (H1 to H3 without H2 is a violation).</li>
+          <li><strong>Skip navigation:</strong> Add a "Skip to main content" link as the first focusable element.</li>
+          <li><strong>ARIA landmarks:</strong> Use main, nav, header, footer, or their ARIA role equivalents.</li>
+          <li><strong>Language attribute:</strong> Always include lang="en" (or appropriate code) on the html tag.</li>
+        </ul>
+      </div>
+
+      <h2>Tips for Maintaining ADA Compliance</h2>
+      <p>Accessibility is not a one-time fix — it requires ongoing attention. Run this checker every time you update your HTML. Combine automated checks with manual testing: use keyboard navigation to ensure all interactive elements are reachable, test with a screen reader like NVDA or VoiceOver, and verify color contrast with a dedicated contrast checker. Build accessibility into your development workflow by adding checks to your CI/CD pipeline and training your team on WCAG principles.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'ADA Compliance Checker'}]);
+    TeamzTools.injectBreadcrumbSchema([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'ADA Compliance Checker'}]);
+
+    var resultsArea = document.getElementById('results-area');
+    var scoreDashboard = document.getElementById('score-dashboard');
+    var exportBar = document.getElementById('export-bar');
+    var lastIssues = [];
+
+    function runChecks(html) {
+      var issues = [];
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, 'text/html');
+
+      // 1. Missing lang attribute
+      var htmlEl = doc.querySelector('html');
+      if (!htmlEl || !htmlEl.getAttribute('lang')) {
+        issues.push({ severity: 'critical', rule: 'Missing lang attribute', detail: 'The <html> element is missing a lang attribute. Screen readers need this to determine pronunciation.' });
+      }
+
+      // 2. Missing page title
+      var titleEl = doc.querySelector('title');
+      if (!titleEl || !titleEl.textContent.trim()) {
+        issues.push({ severity: 'critical', rule: 'Missing page title', detail: 'No <title> element found or title is empty. Every page needs a descriptive title.' });
+      }
+
+      // 3. Missing viewport meta
+      var viewport = doc.querySelector('meta[name="viewport"]');
+      if (!viewport) {
+        issues.push({ severity: 'warning', rule: 'Missing viewport meta', detail: 'No <meta name="viewport"> found. Mobile accessibility requires a viewport meta tag.' });
+      }
+
+      // 4. Missing H1
+      var h1s = doc.querySelectorAll('h1');
+      if (h1s.length === 0) {
+        issues.push({ severity: 'critical', rule: 'Missing H1 heading', detail: 'No <h1> element found. Every page should have exactly one H1 as the main heading.' });
+      } else if (h1s.length > 1) {
+        issues.push({ severity: 'warning', rule: 'Multiple H1 headings', detail: 'Found ' + h1s.length + ' <h1> elements. Best practice is one H1 per page.' });
+      }
+
+      // 5. Heading hierarchy (skipped levels)
+      var headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      var prevLevel = 0;
+      for (var i = 0; i < headings.length; i++) {
+        var level = parseInt(headings[i].tagName.charAt(1));
+        if (prevLevel > 0 && level > prevLevel + 1) {
+          issues.push({ severity: 'warning', rule: 'Skipped heading level', detail: 'Heading jumps from <h' + prevLevel + '> to <h' + level + '>. Heading levels should not skip (e.g., H2 to H4).' });
+          break;
+        }
+        prevLevel = level;
+      }
+
+      // 6. Images missing alt text
+      var images = doc.querySelectorAll('img');
+      var missingAlt = 0;
+      for (var j = 0; j < images.length; j++) {
+        if (!images[j].hasAttribute('alt')) missingAlt++;
+      }
+      if (missingAlt > 0) {
+        issues.push({ severity: 'critical', rule: 'Images missing alt text', detail: missingAlt + ' <img> element(s) missing the alt attribute. All images need alt text or alt="" for decorative images.' });
+      }
+
+      // 7. Form inputs missing labels
+      var inputs = doc.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]), select, textarea');
+      var unlabeled = 0;
+      for (var k = 0; k < inputs.length; k++) {
+        var inp = inputs[k];
+        var hasLabel = false;
+        if (inp.id) {
+          hasLabel = !!doc.querySelector('label[for="' + inp.id + '"]');
+        }
+        if (!hasLabel && !inp.getAttribute('aria-label') && !inp.getAttribute('aria-labelledby') && !inp.closest('label')) {
+          unlabeled++;
+        }
+      }
+      if (unlabeled > 0) {
+        issues.push({ severity: 'critical', rule: 'Form inputs missing labels', detail: unlabeled + ' form input(s) have no associated <label>, aria-label, or aria-labelledby. Screen readers cannot identify these fields.' });
+      }
+
+      // 8. Missing skip navigation link
+      var skipLink = doc.querySelector('a[href="#main"], a[href="#content"], a[href="#main-content"], [class*="skip"], [id*="skip"]');
+      if (!skipLink) {
+        issues.push({ severity: 'warning', rule: 'Missing skip navigation link', detail: 'No skip navigation link found. A "Skip to main content" link helps keyboard users bypass repeated navigation.' });
+      }
+
+      // 9. Missing ARIA landmarks
+      var hasMain = doc.querySelector('main, [role="main"]');
+      var hasNav = doc.querySelector('nav, [role="navigation"]');
+      if (!hasMain) {
+        issues.push({ severity: 'warning', rule: 'Missing main landmark', detail: 'No <main> element or role="main" found. ARIA landmarks help assistive technology users navigate the page.' });
+      }
+      if (!hasNav) {
+        issues.push({ severity: 'info', rule: 'Missing nav landmark', detail: 'No <nav> element or role="navigation" found. Navigation landmarks help screen reader users find the menu.' });
+      }
+
+      // 10. Empty links
+      var links = doc.querySelectorAll('a');
+      var emptyLinks = 0;
+      for (var m = 0; m < links.length; m++) {
+        var linkText = links[m].textContent.trim();
+        var hasAriaLabel = links[m].getAttribute('aria-label');
+        var hasImg = links[m].querySelector('img[alt]');
+        if (!linkText && !hasAriaLabel && !hasImg) emptyLinks++;
+      }
+      if (emptyLinks > 0) {
+        issues.push({ severity: 'critical', rule: 'Empty links', detail: emptyLinks + ' <a> element(s) have no text content, aria-label, or image with alt text. Links must have accessible names.' });
+      }
+
+      // 11. Empty buttons
+      var buttons = doc.querySelectorAll('button, input[type="button"], input[type="submit"]');
+      var emptyButtons = 0;
+      for (var n = 0; n < buttons.length; n++) {
+        var btn = buttons[n];
+        var btnText = btn.textContent.trim();
+        var btnAriaLabel = btn.getAttribute('aria-label');
+        var btnValue = btn.getAttribute('value');
+        if (!btnText && !btnAriaLabel && !btnValue) emptyButtons++;
+      }
+      if (emptyButtons > 0) {
+        issues.push({ severity: 'critical', rule: 'Empty buttons', detail: emptyButtons + ' button(s) have no text content, aria-label, or value. Buttons must have accessible names.' });
+      }
+
+      // 12. Basic contrast hint: check for inline styles with light text on light background
+      var allElements = doc.querySelectorAll('[style]');
+      var contrastWarnings = 0;
+      for (var p = 0; p < allElements.length; p++) {
+        var style = allElements[p].getAttribute('style') || '';
+        if (/color\s*:\s*(#fff|#ffffff|white|#fefefe|#fafafa)/i.test(style) && !/background/i.test(style)) {
+          contrastWarnings++;
+        }
+      }
+      if (contrastWarnings > 0) {
+        issues.push({ severity: 'info', rule: 'Potential contrast issue', detail: contrastWarnings + ' element(s) use light text colors in inline styles without a visible background. Verify contrast ratio is at least 4.5:1.' });
+      }
+
+      // 13. Missing document structure (no header/footer)
+      var hasHeader = doc.querySelector('header, [role="banner"]');
+      var hasFooter = doc.querySelector('footer, [role="contentinfo"]');
+      if (!hasHeader) {
+        issues.push({ severity: 'info', rule: 'Missing header landmark', detail: 'No <header> or role="banner" found. A header landmark helps users identify the top of the page.' });
+      }
+      if (!hasFooter) {
+        issues.push({ severity: 'info', rule: 'Missing footer landmark', detail: 'No <footer> or role="contentinfo" found. A footer landmark helps users identify the bottom of the page.' });
+      }
+
+      // 14. Tables missing headers
+      var tables = doc.querySelectorAll('table');
+      for (var t = 0; t < tables.length; t++) {
+        if (!tables[t].querySelector('th')) {
+          issues.push({ severity: 'warning', rule: 'Table missing headers', detail: 'A <table> element has no <th> cells. Data tables need header cells for screen readers.' });
+          break;
+        }
+      }
+
+      // 15. Autoplaying media
+      var autoplay = doc.querySelectorAll('video[autoplay], audio[autoplay]');
+      if (autoplay.length > 0) {
+        issues.push({ severity: 'warning', rule: 'Autoplaying media', detail: autoplay.length + ' media element(s) have autoplay enabled. Users should be able to control media playback.' });
+      }
+
+      return issues;
+    }
+
+    function renderResults(issues) {
+      lastIssues = issues;
+      resultsArea.innerHTML = '';
+      scoreDashboard.style.display = 'grid';
+      exportBar.style.display = 'flex';
+
+      // Calculate score
+      var maxChecks = 15;
+      var criticalCount = issues.filter(function(i) { return i.severity === 'critical'; }).length;
+      var warningCount = issues.filter(function(i) { return i.severity === 'warning'; }).length;
+      var infoCount = issues.filter(function(i) { return i.severity === 'info'; }).length;
+      var totalIssues = issues.length;
+
+      // Score: deduct more for critical, less for warnings, minimal for info
+      var deductions = (criticalCount * 15) + (warningCount * 7) + (infoCount * 2);
+      var score = Math.max(0, 100 - deductions);
+
+      document.getElementById('score-value').textContent = score + '/100';
+      document.getElementById('issue-count').textContent = totalIssues;
+
+      var statusEl = document.getElementById('result-status');
+      if (totalIssues === 0) {
+        statusEl.textContent = 'All Checks Passed';
+        statusEl.style.color = 'var(--heading)';
+      } else if (criticalCount > 0) {
+        statusEl.textContent = 'Needs Fixes';
+        statusEl.style.color = 'var(--heading)';
+      } else if (warningCount > 0) {
+        statusEl.textContent = 'Minor Issues';
+        statusEl.style.color = 'var(--text-muted)';
+      } else {
+        statusEl.textContent = 'Looking Good';
+        statusEl.style.color = 'var(--heading)';
+      }
+
+      if (totalIssues === 0) {
+        resultsArea.innerHTML = '<div class="results-placeholder" style="color:var(--heading);font-weight:600;">No accessibility issues found. Your HTML passes all checks.</div>';
+        return;
+      }
+
+      // Group by severity
+      var groups = { critical: [], warning: [], info: [] };
+      var groupLabels = { critical: 'Critical', warning: 'Warning', info: 'Info' };
+      issues.forEach(function(issue) { groups[issue.severity].push(issue); });
+
+      ['critical', 'warning', 'info'].forEach(function(severity) {
+        if (groups[severity].length === 0) return;
+        var section = document.createElement('div');
+        section.className = 'severity-section';
+        var header = document.createElement('div');
+        header.className = 'severity-header';
+        header.innerHTML = '<span class="severity-badge badge-' + severity + '">' + groupLabels[severity] + '</span><h3>' + groups[severity].length + ' ' + groupLabels[severity] + ' Issue' + (groups[severity].length > 1 ? 's' : '') + '</h3>';
+        section.appendChild(header);
+
+        groups[severity].forEach(function(issue) {
+          var item = document.createElement('div');
+          item.className = 'issue-item';
+          var iconClass = 'issue-icon issue-icon--' + severity;
+          var iconChar = severity === 'critical' ? '!' : severity === 'warning' ? '?' : 'i';
+          item.innerHTML = '<span class="' + iconClass + '">' + iconChar + '</span><div class="issue-detail"><strong>' + issue.rule + '</strong><br>' + issue.detail + '</div>';
+          section.appendChild(item);
+        });
+
+        resultsArea.appendChild(section);
+      });
+    }
+
+    // Scan button
+    document.getElementById('scan-btn').addEventListener('click', function() {
+      var html = document.getElementById('html-input').value.trim();
+      if (!html) {
+        if (window.showToast) window.showToast('Please paste some HTML code first.');
+        return;
+      }
+      var issues = runChecks(html);
+      renderResults(issues);
+      if (window.showToast) window.showToast('Scan complete — ' + issues.length + ' issue(s) found.');
+    });
+
+    // Clear button
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      document.getElementById('html-input').value = '';
+      resultsArea.innerHTML = '<div class="results-placeholder">Paste HTML above and click "Scan for Issues" to begin.</div>';
+      scoreDashboard.style.display = 'none';
+      exportBar.style.display = 'none';
+      lastIssues = [];
+      if (window.showToast) window.showToast('Cleared.');
+    });
+
+    // Export
+    document.getElementById('export-btn').addEventListener('click', function() {
+      if (lastIssues.length === 0 && scoreDashboard.style.display === 'none') {
+        if (window.showToast) window.showToast('Run a scan first.');
+        return;
+      }
+      var criticalCount = lastIssues.filter(function(i) { return i.severity === 'critical'; }).length;
+      var warningCount = lastIssues.filter(function(i) { return i.severity === 'warning'; }).length;
+      var infoCount = lastIssues.filter(function(i) { return i.severity === 'info'; }).length;
+      var deductions = (criticalCount * 15) + (warningCount * 7) + (infoCount * 2);
+      var score = Math.max(0, 100 - deductions);
+
+      var report = 'ADA Compliance Check Report\n';
+      report += '===========================\n';
+      report += 'Date: ' + new Date().toLocaleDateString() + '\n';
+      report += 'Score: ' + score + '/100\n';
+      report += 'Total Issues: ' + lastIssues.length + '\n';
+      report += 'Critical: ' + criticalCount + ' | Warnings: ' + warningCount + ' | Info: ' + infoCount + '\n\n';
+
+      ['critical', 'warning', 'info'].forEach(function(severity) {
+        var group = lastIssues.filter(function(i) { return i.severity === severity; });
+        if (group.length === 0) return;
+        report += severity.toUpperCase() + '\n';
+        report += '-'.repeat(30) + '\n';
+        group.forEach(function(issue) {
+          report += '  [' + issue.severity.toUpperCase() + '] ' + issue.rule + '\n';
+          report += '    ' + issue.detail + '\n\n';
+        });
+      });
+
+      report += '\nGenerated by Teamz Lab Tools — https://tool.teamzlab.com/accessibility/ada-compliance-checker/\n';
+
+      var blob = new Blob([report], { type: 'text/plain' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ada-compliance-report.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (window.showToast) window.showToast('Report downloaded!');
+    });
+
+    // FAQs
+    var faqs = [
+      { q: 'What does this ADA compliance checker test?', a: 'It checks for 15 common accessibility issues including missing alt text, form labels, heading hierarchy, lang attribute, skip navigation, ARIA landmarks, empty links/buttons, page title, viewport meta, table headers, autoplaying media, and basic contrast indicators.' },
+      { q: 'Is this tool a complete WCAG audit?', a: 'No. This is an automated first-pass scanner. It catches the most common issues but cannot replace manual testing with screen readers, keyboard navigation, or a full WCAG 2.1 Level AA audit. Use it alongside the WCAG Accessibility Checklist for thorough coverage.' },
+      { q: 'Is my HTML sent to a server?', a: 'No. Everything runs client-side in your browser. Your HTML never leaves your device, making this tool completely private and safe for sensitive content.' },
+      { q: 'What is the scoring system?', a: 'The score starts at 100 and deducts points for issues found: 15 points per critical issue, 7 per warning, and 2 per info-level suggestion. A score above 80 means minor fixes needed; below 50 means significant accessibility barriers exist.' },
+      { q: 'How often should I run accessibility checks?', a: 'Run checks every time you update your HTML or add new content. Accessibility is ongoing — new features, content updates, and design changes can all introduce barriers. Build checks into your development workflow.' },
+      { q: 'What are ARIA landmarks and why do they matter?', a: 'ARIA landmarks (main, nav, header, footer, aside) define regions of a page for screen readers. They let users jump directly to content sections instead of navigating through every element. Use semantic HTML elements like <main> and <nav> which automatically create landmarks.' }
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.renderRelatedTools([
+      { slug: '/accessibility/wcag-accessibility-checklist/', name: 'WCAG Accessibility Checklist', description: 'Interactive WCAG 2.1 Level AA compliance checklist with score tracking.' },
+      { slug: '/accessibility/color-blindness-simulator/', name: 'Color Blindness Simulator', description: 'See how your designs look under different types of color blindness.' },
+      { slug: '/accessibility/accessible-color-palette-generator/', name: 'Accessible Color Palette Generator', description: 'Generate WCAG-compliant color palettes from any brand color.' },
+      { slug: '/accessibility/screen-reader-text-preview/', name: 'Screen Reader Text Preview', description: 'Preview what screen readers announce from your HTML markup.' },
+      { slug: '/accessibility/dyslexia-friendly-text-converter/', name: 'Dyslexia-Friendly Text Converter', description: 'Convert text to dyslexia-friendly formatting with reading aids.' },
+      { slug: '/uidesign/color-contrast-checker/', name: 'Color Contrast Checker', description: 'Check WCAG contrast ratios between text and background colors.' }
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'accessibility/ada-compliance-checker',
+      title: 'ADA Compliance Checker',
+      description: 'Scan HTML for ADA accessibility issues. Detect missing alt text, heading errors, ARIA landmarks, and more.'
+    });
+  });
+  </script>
+</body>
+</html>
