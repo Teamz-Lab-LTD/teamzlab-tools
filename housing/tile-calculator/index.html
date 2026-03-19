@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tile Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how many tiles you need for floors or walls. Enter room and tile sizes, get exact quantity with waste allowance and cost estimate. Free tool.">
+  <meta property="og:title" content="Tile Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate how many tiles you need for floors or walls. Enter room and tile sizes, get exact quantity with waste allowance and cost estimate. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/housing/tile-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/housing.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tile Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate how many tiles you need for floors or walls. Enter room and tile sizes, get exact quantity with waste allowance and cost estimate. Free tool.">
+  <link rel="canonical" href="https://tool.teamzlab.com/housing/tile-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .tile-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .tile-form-grid .full-width {
+      grid-column: 1 / -1;
+    }
+    .tile-form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--heading);
+      font-size: var(--text-sm);
+    }
+    .tile-form-group input,
+    .tile-form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+    }
+    .tile-form-group input:focus,
+    .tile-form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .tile-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .tile-preset-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-family: inherit;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .tile-preset-btn:hover {
+      border-color: var(--accent);
+    }
+    .tile-preset-btn.active {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .tile-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .tile-results {
+      margin-top: 24px;
+      display: none;
+    }
+    .tile-results.visible {
+      display: block;
+    }
+    .tile-result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .tile-result-item {
+      padding: 16px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .tile-result-item .label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .tile-result-item .value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .tile-result-item.highlight {
+      background: var(--heading);
+    }
+    .tile-result-item.highlight .label {
+      color: var(--bg);
+      opacity: 0.8;
+    }
+    .tile-result-item.highlight .value {
+      color: var(--bg);
+    }
+    .tile-visual-preview {
+      margin-top: 24px;
+    }
+    .tile-visual-preview h3 {
+      color: var(--heading);
+      margin-bottom: 12px;
+      font-size: var(--text-lg);
+    }
+    .tile-grid-container {
+      display: grid;
+      gap: 2px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .tile-grid-cell {
+      aspect-ratio: 1;
+      background: var(--heading);
+      opacity: 0.15;
+      border-radius: 2px;
+      min-width: 12px;
+      min-height: 12px;
+    }
+    .tile-grid-cell:nth-child(odd) {
+      opacity: 0.22;
+    }
+    .tile-grid-container.diagonal .tile-grid-cell {
+      transform: rotate(45deg) scale(0.72);
+    }
+    .tile-grid-container.herringbone .tile-grid-cell:nth-child(even) {
+      transform: skewX(-15deg);
+    }
+    .tile-grid-container.herringbone .tile-grid-cell:nth-child(odd) {
+      transform: skewX(15deg);
+    }
+    .tile-comparison {
+      margin-top: 24px;
+    }
+    .tile-comparison h3 {
+      color: var(--heading);
+      margin-bottom: 12px;
+      font-size: var(--text-lg);
+    }
+    .tile-comparison table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .tile-comparison th,
+    .tile-comparison td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: var(--text-sm);
+    }
+    .tile-comparison th {
+      background: var(--heading);
+      color: var(--bg);
+      font-weight: 600;
+    }
+    .tile-comparison td {
+      color: var(--text);
+    }
+    .tile-summary-text {
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 600px) {
+      .tile-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .tile-result-grid {
+        grid-template-columns: 1fr;
+      }
+      .tile-actions {
+        flex-direction: column;
+      }
+      .tile-actions .btn-primary,
+      .tile-actions .btn-secondary {
+        width: 100%;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Housing & Energy", "item": "https://tool.teamzlab.com/housing/"}, {"@type": "ListItem", "position": 3, "name": "Tile Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much extra tile should I buy for waste?", "acceptedAnswer": {"@type": "Answer", "text": "For straight layouts in simple rectangular rooms, add 10 percent extra. For diagonal layouts, add 15 percent because the angled cuts along walls generate more waste. For herringbone patterns, add 20 percent due to the complex cuts at every boundary. If your room has many alcoves, niches, or an irregular shape, consider adding an extra 5 percent on top of the pattern-based waste. This calculator automatically adds waste based on your selected pattern and waste factor, so the total already includes the recommended overage."}}, {"@type": "Question", "name": "Does grout width affect how many tiles I need?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, grout width affects the total tile count. Wider grout joints effectively increase the footprint of each tile, meaning you need slightly fewer tiles. The standard grout width is 3mm for rectified tiles and 5mm to 6mm for standard tiles. This calculator includes grout spacing in its calculations. For typical 3mm joints on 12-inch tiles, the difference is small — roughly 1 to 2 percent fewer tiles compared to zero grout — but it becomes more significant with smaller tiles or wider joints."}}, {"@type": "Question", "name": "What is the difference between straight and diagonal tile layout?", "acceptedAnswer": {"@type": "Answer", "text": "Straight layout places tiles parallel to the walls in a simple grid pattern. It is the easiest to install and produces the least waste. Diagonal layout rotates the grid 45 degrees so tiles sit at an angle to the walls. This creates a more dynamic visual effect and can make rooms appear larger, but every tile touching a wall must be cut at a 45-degree angle, generating significantly more waste — typically 15 percent more material. Diagonal layouts also require more skill and time to install correctly, increasing labor costs."}}, {"@type": "Question", "name": "How do I calculate tiles for an L-shaped room?", "acceptedAnswer": {"@type": "Answer", "text": "Divide the L-shaped room into two or more rectangles. Measure the length and width of each rectangle separately, calculate the area of each, and add them together to get the total area. Then use the direct area input mode in this calculator by selecting Total Area Directly from the Input Mode dropdown. Enter the combined area, and the calculator will determine the correct number of tiles with waste allowance for the entire L-shaped space."}}, {"@type": "Question", "name": "Can I use this calculator for wall tiles?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. To calculate wall tiles, measure the height and width of each wall you want to tile. Enter these as the room length (height) and room width (width of the wall). For multiple walls, calculate each wall separately and add the areas together, then use the direct area input mode. Remember to subtract the area of any windows, doors, or openings that will not be tiled. Wall tiling typically uses the same waste factors as floor tiling, though complex patterns around fixtures may require slightly more waste."}}, {"@type": "Question", "name": "How many boxes of tile should I order?", "acceptedAnswer": {"@type": "Answer", "text": "This calculator divides the total number of tiles (including waste) by the number of tiles per box and rounds up to the nearest whole box. You cannot buy partial boxes at most retailers. Always confirm the tiles-per-box count on the product packaging, as it varies by manufacturer and tile size. It is wise to order one extra box beyond the calculated amount to have replacement tiles available for future repairs, since matching tiles from a different production batch may show slight color variations."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Tile Calculator", "description": "Calculate how many tiles you need for floors or walls. Enter room and tile sizes, get exact quantity with waste allowance and cost estimate. Free tool.", "url": "https://tool.teamzlab.com/housing/tile-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Tile & Flooring Calculator</h1>
+      <p class="tool-description">Calculate exactly how many tiles you need for any floor or wall project. Enter your room dimensions and tile size, choose a layout pattern, and get the total quantity with waste allowance and cost estimate — all in your browser, completely free and private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Room Dimensions</h2>
+      <div class="tile-form-grid">
+        <div class="tile-form-group">
+          <label for="room-unit">Room Unit</label>
+          <select id="room-unit">
+            <option value="ft">Feet (ft)</option>
+            <option value="m">Meters (m)</option>
+          </select>
+        </div>
+        <div class="tile-form-group">
+          <label for="input-mode">Input Mode</label>
+          <select id="input-mode">
+            <option value="dimensions">Length &times; Width</option>
+            <option value="area">Total Area Directly</option>
+          </select>
+        </div>
+        <div class="tile-form-group" id="room-length-group">
+          <label for="room-length">Room Length</label>
+          <input type="number" id="room-length" placeholder="e.g. 12" min="0.1" step="0.1">
+        </div>
+        <div class="tile-form-group" id="room-width-group">
+          <label for="room-width">Room Width</label>
+          <input type="number" id="room-width" placeholder="e.g. 10" min="0.1" step="0.1">
+        </div>
+        <div class="tile-form-group" id="room-area-group" style="display:none;">
+          <label for="room-area">Total Area</label>
+          <input type="number" id="room-area" placeholder="e.g. 120" min="0.1" step="0.1">
+        </div>
+      </div>
+
+      <h2>Tile Size</h2>
+      <div class="tile-presets" id="tile-presets">
+        <button type="button" class="tile-preset-btn" data-l="12" data-w="12">12&times;12&Prime;</button>
+        <button type="button" class="tile-preset-btn" data-l="18" data-w="18">18&times;18&Prime;</button>
+        <button type="button" class="tile-preset-btn" data-l="24" data-w="24">24&times;24&Prime;</button>
+        <button type="button" class="tile-preset-btn" data-l="6" data-w="6">6&times;6&Prime;</button>
+        <button type="button" class="tile-preset-btn" data-l="4" data-w="4">4&times;4&Prime;</button>
+        <button type="button" class="tile-preset-btn" data-l="0" data-w="0">Custom</button>
+      </div>
+      <div class="tile-form-grid">
+        <div class="tile-form-group">
+          <label for="tile-unit">Tile Unit</label>
+          <select id="tile-unit">
+            <option value="in">Inches (in)</option>
+            <option value="cm">Centimeters (cm)</option>
+          </select>
+        </div>
+        <div class="tile-form-group" style="visibility:hidden;" id="tile-spacer"></div>
+        <div class="tile-form-group">
+          <label for="tile-length">Tile Length</label>
+          <input type="number" id="tile-length" placeholder="e.g. 12" min="0.1" step="0.1" value="12">
+        </div>
+        <div class="tile-form-group">
+          <label for="tile-width">Tile Width</label>
+          <input type="number" id="tile-width" placeholder="e.g. 12" min="0.1" step="0.1" value="12">
+        </div>
+      </div>
+
+      <h2>Layout & Waste</h2>
+      <div class="tile-form-grid">
+        <div class="tile-form-group">
+          <label for="grout-width">Grout/Gap Width (mm)</label>
+          <input type="number" id="grout-width" placeholder="3" min="0" step="0.5" value="3">
+        </div>
+        <div class="tile-form-group">
+          <label for="layout-pattern">Layout Pattern</label>
+          <select id="layout-pattern">
+            <option value="straight">Straight</option>
+            <option value="diagonal">Diagonal (+15% waste)</option>
+            <option value="herringbone">Herringbone (+20% waste)</option>
+          </select>
+        </div>
+        <div class="tile-form-group">
+          <label for="waste-factor">Waste Factor</label>
+          <select id="waste-factor">
+            <option value="5">5%</option>
+            <option value="10" selected>10%</option>
+            <option value="15">15%</option>
+          </select>
+        </div>
+        <div class="tile-form-group">
+          <label for="tiles-per-box">Tiles Per Box</label>
+          <input type="number" id="tiles-per-box" placeholder="e.g. 10" min="1" step="1" value="10">
+        </div>
+      </div>
+
+      <h2>Cost (Optional)</h2>
+      <div class="tile-form-grid">
+        <div class="tile-form-group">
+          <label for="price-mode">Price Mode</label>
+          <select id="price-mode">
+            <option value="per-tile">Price Per Tile</option>
+            <option value="per-box">Price Per Box</option>
+          </select>
+        </div>
+        <div class="tile-form-group">
+          <label for="price-value">Price ($)</label>
+          <input type="number" id="price-value" placeholder="e.g. 2.50" min="0" step="0.01">
+        </div>
+      </div>
+
+      <div class="tile-actions">
+        <button type="button" class="btn-primary" id="calculate-btn">Calculate Tiles</button>
+        <button type="button" class="btn-secondary" id="clear-btn">Clear</button>
+      </div>
+
+      <div class="tile-results" id="tile-results">
+        <div class="tile-summary-text" id="result-summary"></div>
+        <div class="tile-result-grid" id="result-grid"></div>
+
+        <div class="tile-visual-preview" id="visual-preview">
+          <h3>Tile Layout Preview</h3>
+          <div class="tile-grid-container" id="tile-grid"></div>
+        </div>
+
+        <div class="tile-comparison">
+          <h3>Tile Size Comparison</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Tile Size</th>
+                <th>Area per Tile</th>
+                <th>Tiles Needed</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Tile Calculator Works</h2>
+      <p>This tile calculator estimates the number of tiles required for any floor or wall project by dividing the total surface area by the area of a single tile, including grout gaps. It accounts for the layout pattern you choose and adds a waste allowance to ensure you buy enough material for cuts, breakages, and pattern matching. Straight layouts are the most efficient, requiring the least cutting and material waste. Diagonal installations angle tiles at 45 degrees, creating a visually striking pattern but generating more off-cuts along walls and edges — typically adding around 15 percent extra material. Herringbone patterns, where rectangular tiles interlock in a zigzag arrangement, produce even more waste due to the angled cuts at every boundary, adding roughly 20 percent to your order. The calculator also factors in grout spacing, which slightly reduces the effective area each tile covers and ensures your estimate matches real-world installation conditions.</p>
+      <p>Getting the right tile quantity is critical for any renovation project. Ordering too few tiles means a mid-project trip to the store, where the same batch or dye lot may no longer be available, leading to visible color differences on your finished floor or wall. Ordering too many wastes money and leaves you with surplus material. The standard recommendation is to add 10 percent waste for straight layouts in simple rectangular rooms, increase to 15 percent for diagonal patterns or rooms with many alcoves and corners, and use 20 percent for herringbone or complex geometric patterns. This calculator handles all of these scenarios automatically, giving you the exact number of tiles and boxes to purchase.</p>
+
+      <h2>Choosing the Right Tile Size</h2>
+      <p>Tile size significantly affects both the look and cost of your project. Large-format tiles such as 24-by-24-inch create a modern, seamless appearance with fewer grout lines and make small rooms look larger. However, they require a perfectly level subfloor and are harder to cut, increasing installation labor costs. Medium tiles in the 12-by-12 to 18-by-18-inch range offer the best balance of aesthetics, ease of installation, and material efficiency. Small tiles like 4-by-4 or 6-by-6-inch are ideal for backsplashes, shower walls, and accent areas, but using them on large floors dramatically increases the number of grout lines and installation time. The comparison table in this calculator shows how many tiles of each common size you would need for your room, helping you make an informed decision before purchasing.</p>
+      <p>Beyond the tile count, consider the cost implications. Larger tiles generally cost more per piece but may require fewer tiles overall and less labor time. Smaller tiles are cheaper individually but the total cost can be higher once you factor in additional grout, longer installation time, and more cuts. Use the optional cost fields in this calculator to compare your total material expense across different tile sizes before committing to a purchase.</p>
+
+      <h2>Tips for Accurate Tile Estimation</h2>
+      <p>Always measure your room at the widest points, as walls are rarely perfectly straight. For L-shaped or irregular rooms, divide the space into rectangles, calculate each section separately, and add the results together using the direct area input mode. When tiling walls, measure each wall individually and account for window and door openings by subtracting their area from the total. For shower enclosures, include all three walls plus the floor. Always round up to the nearest full box when ordering, and keep a few extra tiles stored safely for future repairs — matching tiles years later can be nearly impossible if the product is discontinued. Finally, check your retailer's return policy before ordering, as many stores accept unopened boxes, allowing you to buy slightly more than needed without financial risk.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Breadcrumbs
+      var breadcrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'Housing & Energy', url: '/housing/' },
+        { name: 'Tile Calculator' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+      TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+      // FAQs
+      var faqs = [
+        {
+          q: 'How much extra tile should I buy for waste?',
+          a: 'For straight layouts in simple rectangular rooms, add 10 percent extra. For diagonal layouts, add 15 percent because the angled cuts along walls generate more waste. For herringbone patterns, add 20 percent due to the complex cuts at every boundary. If your room has many alcoves, niches, or an irregular shape, consider adding an extra 5 percent on top of the pattern-based waste. This calculator automatically adds waste based on your selected pattern and waste factor, so the total already includes the recommended overage.'
+        },
+        {
+          q: 'Does grout width affect how many tiles I need?',
+          a: 'Yes, grout width affects the total tile count. Wider grout joints effectively increase the footprint of each tile, meaning you need slightly fewer tiles. The standard grout width is 3mm for rectified tiles and 5mm to 6mm for standard tiles. This calculator includes grout spacing in its calculations. For typical 3mm joints on 12-inch tiles, the difference is small — roughly 1 to 2 percent fewer tiles compared to zero grout — but it becomes more significant with smaller tiles or wider joints.'
+        },
+        {
+          q: 'What is the difference between straight and diagonal tile layout?',
+          a: 'Straight layout places tiles parallel to the walls in a simple grid pattern. It is the easiest to install and produces the least waste. Diagonal layout rotates the grid 45 degrees so tiles sit at an angle to the walls. This creates a more dynamic visual effect and can make rooms appear larger, but every tile touching a wall must be cut at a 45-degree angle, generating significantly more waste — typically 15 percent more material. Diagonal layouts also require more skill and time to install correctly, increasing labor costs.'
+        },
+        {
+          q: 'How do I calculate tiles for an L-shaped room?',
+          a: 'Divide the L-shaped room into two or more rectangles. Measure the length and width of each rectangle separately, calculate the area of each, and add them together to get the total area. Then use the direct area input mode in this calculator by selecting Total Area Directly from the Input Mode dropdown. Enter the combined area, and the calculator will determine the correct number of tiles with waste allowance for the entire L-shaped space.'
+        },
+        {
+          q: 'Can I use this calculator for wall tiles?',
+          a: 'Yes. To calculate wall tiles, measure the height and width of each wall you want to tile. Enter these as the room length (height) and room width (width of the wall). For multiple walls, calculate each wall separately and add the areas together, then use the direct area input mode. Remember to subtract the area of any windows, doors, or openings that will not be tiled. Wall tiling typically uses the same waste factors as floor tiling, though complex patterns around fixtures may require slightly more waste.'
+        },
+        {
+          q: 'How many boxes of tile should I order?',
+          a: 'This calculator divides the total number of tiles (including waste) by the number of tiles per box and rounds up to the nearest whole box. You cannot buy partial boxes at most retailers. Always confirm the tiles-per-box count on the product packaging, as it varies by manufacturer and tile size. It is wise to order one extra box beyond the calculated amount to have replacement tiles available for future repairs, since matching tiles from a different production batch may show slight color variations.'
+        }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      // Related tools
+      TeamzTools.renderRelatedTools([
+        { slug: 'housing/moving-cost-estimator', name: 'Moving Cost Estimator', description: 'Estimate the total cost of moving to a new home including packing and storage fees.' },
+        { slug: 'housing/how-much-house-can-i-afford', name: 'How Much House Can I Afford', description: 'Calculate how much house you can afford based on income, debts, and down payment.' },
+        { slug: 'housing/appliance-running-cost-calculator', name: 'Appliance Running Cost Calculator', description: 'Calculate the electricity cost of running any household appliance by wattage and usage.' },
+        { slug: 'housing/kwh-cost-calculator', name: 'kWh Cost Calculator', description: 'Calculate your electricity cost based on kilowatt-hour usage and your rate per kWh.' },
+        { slug: 'housing/roommate-split-calculator', name: 'Roommate Split Calculator', description: 'Split rent and bills fairly between roommates using equal or proportional shares.' },
+        { slug: 'housing/rent-burden-calculator', name: 'Rent Burden Calculator', description: 'Calculate what percentage of your monthly income goes to rent and housing costs.' }
+      ]);
+
+      // WebApp schema
+      TeamzTools.injectWebAppSchema({
+        title: 'Tile Calculator',
+        description: 'Calculate how many tiles you need for floors or walls. Enter room and tile sizes, get exact quantity with waste allowance and cost estimate. Free tool.',
+        slug: 'housing/tile-calculator'
+      });
+
+      // Input mode toggle
+      var inputMode = document.getElementById('input-mode');
+      var lengthGroup = document.getElementById('room-length-group');
+      var widthGroup = document.getElementById('room-width-group');
+      var areaGroup = document.getElementById('room-area-group');
+
+      inputMode.addEventListener('change', function () {
+        if (this.value === 'area') {
+          lengthGroup.style.display = 'none';
+          widthGroup.style.display = 'none';
+          areaGroup.style.display = '';
+        } else {
+          lengthGroup.style.display = '';
+          widthGroup.style.display = '';
+          areaGroup.style.display = 'none';
+        }
+      });
+
+      // Tile presets
+      var presetBtns = document.querySelectorAll('.tile-preset-btn');
+      var tileLengthInput = document.getElementById('tile-length');
+      var tileWidthInput = document.getElementById('tile-width');
+
+      presetBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          presetBtns.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          var l = parseFloat(btn.getAttribute('data-l'));
+          var w = parseFloat(btn.getAttribute('data-w'));
+          if (l > 0 && w > 0) {
+            tileLengthInput.value = l;
+            tileWidthInput.value = w;
+            document.getElementById('tile-unit').value = 'in';
+          }
+        });
+      });
+
+      // Calculate
+      document.getElementById('calculate-btn').addEventListener('click', calculate);
+
+      // Clear
+      document.getElementById('clear-btn').addEventListener('click', function () {
+        document.querySelectorAll('.tool-calculator input[type="number"]').forEach(function (input) {
+          input.value = '';
+        });
+        document.querySelectorAll('.tool-calculator select').forEach(function (sel) {
+          sel.selectedIndex = 0;
+        });
+        tileLengthInput.value = '12';
+        tileWidthInput.value = '12';
+        document.getElementById('grout-width').value = '3';
+        document.getElementById('tiles-per-box').value = '10';
+        presetBtns.forEach(function (b) { b.classList.remove('active'); });
+        document.getElementById('tile-results').classList.remove('visible');
+        inputMode.dispatchEvent(new Event('change'));
+      });
+
+      function calculate() {
+        var mode = document.getElementById('input-mode').value;
+        var roomUnit = document.getElementById('room-unit').value;
+        var totalAreaRaw;
+
+        if (mode === 'area') {
+          totalAreaRaw = parseFloat(document.getElementById('room-area').value);
+          if (!totalAreaRaw || totalAreaRaw <= 0) {
+            if (window.showToast) window.showToast('Please enter a valid total area.');
+            return;
+          }
+        } else {
+          var roomL = parseFloat(document.getElementById('room-length').value);
+          var roomW = parseFloat(document.getElementById('room-width').value);
+          if (!roomL || !roomW || roomL <= 0 || roomW <= 0) {
+            if (window.showToast) window.showToast('Please enter valid room length and width.');
+            return;
+          }
+          totalAreaRaw = roomL * roomW;
+        }
+
+        // Convert room area to sq ft for calculation
+        var totalAreaSqFt = roomUnit === 'm' ? totalAreaRaw * 10.7639 : totalAreaRaw;
+
+        var tileUnit = document.getElementById('tile-unit').value;
+        var tileL = parseFloat(tileLengthInput.value);
+        var tileW = parseFloat(tileWidthInput.value);
+        if (!tileL || !tileW || tileL <= 0 || tileW <= 0) {
+          if (window.showToast) window.showToast('Please enter valid tile dimensions.');
+          return;
+        }
+
+        // Convert tile to inches
+        var tileLIn = tileUnit === 'cm' ? tileL / 2.54 : tileL;
+        var tileWIn = tileUnit === 'cm' ? tileW / 2.54 : tileW;
+
+        var groutMm = parseFloat(document.getElementById('grout-width').value) || 0;
+        var groutIn = groutMm / 25.4;
+
+        // Effective tile dimensions with grout
+        var effL = tileLIn + groutIn;
+        var effW = tileWIn + groutIn;
+
+        // Tile area in sq ft
+        var tileAreaSqFt = (effL * effW) / 144;
+
+        // Base tiles needed
+        var baseTiles = Math.ceil(totalAreaSqFt / tileAreaSqFt);
+
+        // Waste factor
+        var wastePercent = parseInt(document.getElementById('waste-factor').value, 10);
+        var pattern = document.getElementById('layout-pattern').value;
+        var patternWaste = 0;
+        if (pattern === 'diagonal') patternWaste = 15;
+        if (pattern === 'herringbone') patternWaste = 20;
+
+        var totalWastePercent = wastePercent + patternWaste;
+        var tilesWithWaste = Math.ceil(baseTiles * (1 + totalWastePercent / 100));
+
+        // Boxes
+        var tilesPerBox = parseInt(document.getElementById('tiles-per-box').value, 10) || 10;
+        var boxesNeeded = Math.ceil(tilesWithWaste / tilesPerBox);
+
+        // Grout estimate (kg) — approx formula: joint_volume * density
+        // Simplified: grout kg = (total_area_m2 * grout_width_mm * grout_depth_mm * (1/tileL_mm + 1/tileW_mm)) * 1.6 / 1000
+        var totalAreaM2 = totalAreaSqFt * 0.092903;
+        var tileLMm = tileLIn * 25.4;
+        var tileWMm = tileWIn * 25.4;
+        var groutDepth = 6; // assume 6mm depth
+        var groutKg = totalAreaM2 * groutMm * groutDepth * (1 / tileLMm + 1 / tileWMm) * 1.6;
+        groutKg = Math.ceil(groutKg * 10) / 10;
+
+        // Cost
+        var priceMode = document.getElementById('price-mode').value;
+        var priceValue = parseFloat(document.getElementById('price-value').value) || 0;
+        var totalCost = 0;
+        if (priceValue > 0) {
+          if (priceMode === 'per-tile') {
+            totalCost = tilesWithWaste * priceValue;
+          } else {
+            totalCost = boxesNeeded * priceValue;
+          }
+        }
+
+        // Area per tile (no grout) for display
+        var tileAreaDisplay = (tileLIn * tileWIn) / 144;
+
+        // Build results
+        var resultGrid = document.getElementById('result-grid');
+        var items = [
+          { label: 'Total Room Area', value: totalAreaSqFt.toFixed(1) + ' sq ft (' + totalAreaM2.toFixed(1) + ' m\u00B2)' },
+          { label: 'Tiles Needed (Exact)', value: baseTiles.toLocaleString() },
+          { label: 'Tiles with Waste (' + totalWastePercent + '%)', value: tilesWithWaste.toLocaleString(), highlight: true },
+          { label: 'Boxes Needed', value: boxesNeeded.toLocaleString() },
+          { label: 'Grout Estimate', value: groutKg + ' kg' }
+        ];
+        if (priceValue > 0) {
+          items.push({ label: 'Estimated Cost', value: '$' + totalCost.toFixed(2), highlight: true });
+        }
+
+        resultGrid.innerHTML = items.map(function (item) {
+          return '<div class="tile-result-item' + (item.highlight ? ' highlight' : '') + '">' +
+            '<div class="label">' + item.label + '</div>' +
+            '<div class="value">' + item.value + '</div>' +
+            '</div>';
+        }).join('');
+
+        // Summary
+        var patternLabel = pattern === 'straight' ? 'straight' : pattern === 'diagonal' ? 'diagonal' : 'herringbone';
+        var summary = 'For a ' + totalAreaSqFt.toFixed(1) + ' sq ft area with ' + tileL + '\u00D7' + tileW + ' ' + tileUnit + ' tiles in a ' + patternLabel + ' layout, you need ' + tilesWithWaste + ' tiles (' + boxesNeeded + ' boxes of ' + tilesPerBox + ').';
+        if (totalWastePercent > 0) {
+          summary += ' This includes ' + totalWastePercent + '% waste allowance (' + wastePercent + '% base + ' + patternWaste + '% pattern).';
+        }
+        if (priceValue > 0) {
+          summary += ' Estimated material cost: $' + totalCost.toFixed(2) + '.';
+        }
+        document.getElementById('result-summary').textContent = summary;
+
+        // Visual preview
+        var previewCols = Math.min(Math.floor(Math.sqrt(baseTiles * 1.5)), 20);
+        var previewRows = Math.min(Math.ceil(baseTiles / previewCols), 12);
+        var grid = document.getElementById('tile-grid');
+        grid.className = 'tile-grid-container' + (pattern !== 'straight' ? ' ' + pattern : '');
+        grid.style.gridTemplateColumns = 'repeat(' + previewCols + ', 1fr)';
+        var cells = '';
+        var totalCells = previewCols * previewRows;
+        for (var i = 0; i < totalCells; i++) {
+          cells += '<div class="tile-grid-cell"></div>';
+        }
+        grid.innerHTML = cells;
+
+        // Comparison table
+        var compSizes = [
+          { label: '4\u00D74 in', l: 4, w: 4 },
+          { label: '6\u00D76 in', l: 6, w: 6 },
+          { label: '12\u00D712 in', l: 12, w: 12 },
+          { label: '18\u00D718 in', l: 18, w: 18 },
+          { label: '24\u00D724 in', l: 24, w: 24 }
+        ];
+        var compBody = document.getElementById('comparison-body');
+        compBody.innerHTML = compSizes.map(function (s) {
+          var area = (s.l * s.w) / 144;
+          var needed = Math.ceil(totalAreaSqFt / area);
+          var neededWaste = Math.ceil(needed * (1 + totalWastePercent / 100));
+          return '<tr><td>' + s.label + '</td><td>' + area.toFixed(2) + ' sq ft</td><td>' + neededWaste.toLocaleString() + '</td></tr>';
+        }).join('');
+
+        // Show results
+        document.getElementById('tile-results').classList.add('visible');
+        document.getElementById('tile-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paint Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how much paint you need for any room. Enter dimensions, doors, and windows to get gallons needed and cost estimate. Free painting calculator.">
+  <meta property="og:title" content="Paint Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate how much paint you need for any room. Enter dimensions, doors, and windows to get gallons needed and cost estimate. Free painting calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/housing/paint-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/housing.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Paint Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate how much paint you need for any room. Enter dimensions, doors, and windows to get gallons needed and cost estimate. Free painting calculator.">
+  <link rel="canonical" href="https://tool.teamzlab.com/housing/paint-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .paint-rooms-list { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+    .paint-room-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+    }
+    .paint-room-card h3 {
+      margin: 0 0 14px 0;
+      font-size: var(--text-lg);
+      color: var(--heading);
+    }
+    .paint-room-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .paint-room-grid label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .paint-room-grid input, .paint-room-grid select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+    }
+    .paint-room-grid input:focus, .paint-room-grid select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .paint-remove-room {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .paint-remove-room:hover { color: var(--heading); background: var(--border); }
+    .paint-global-settings {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .paint-global-settings label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .paint-global-settings input, .paint-global-settings select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+    }
+    .paint-global-settings input:focus, .paint-global-settings select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .paint-actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .paint-result-section { margin-top: 24px; }
+    .paint-result-section h3 {
+      margin: 0 0 12px 0;
+      color: var(--heading);
+      font-size: var(--text-lg);
+    }
+    .paint-result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .paint-result-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .paint-result-item .paint-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .paint-result-item .paint-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .paint-room-breakdown {
+      margin-top: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    .paint-room-breakdown table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .paint-room-breakdown th {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 2px solid var(--border);
+      color: var(--heading);
+      font-weight: 600;
+    }
+    .paint-room-breakdown td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .paint-diagram-wrapper {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .paint-diagram {
+      position: relative;
+      border: 3px solid var(--heading);
+      border-radius: 4px;
+      width: 280px;
+      height: 180px;
+      background: var(--surface);
+    }
+    .paint-diagram-label {
+      position: absolute;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .paint-diagram-label.top { top: -18px; left: 50%; transform: translateX(-50%); }
+    .paint-diagram-label.side { top: 50%; right: -50px; transform: translateY(-50%); }
+    .paint-diagram-door {
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      width: 30px;
+      height: 50px;
+      border: 2px solid var(--text-muted);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      background: var(--bg);
+    }
+    .paint-diagram-window {
+      position: absolute;
+      top: 30%;
+      border: 2px solid var(--text-muted);
+      width: 40px;
+      height: 30px;
+      background: var(--bg);
+      border-radius: 2px;
+    }
+    .paint-diagram-window:nth-child(3) { right: 15%; }
+    .paint-diagram-window:nth-child(4) { right: 45%; }
+    .paint-diagram-fill {
+      position: absolute;
+      inset: 0;
+      border-radius: 2px;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .paint-tips {
+      margin-top: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .paint-tips h4 {
+      margin: 0 0 10px 0;
+      color: var(--heading);
+      font-size: var(--text-base);
+    }
+    .paint-tips ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--text);
+      font-size: var(--text-sm);
+      line-height: 1.7;
+    }
+
+    @media (max-width: 600px) {
+      .paint-room-grid { grid-template-columns: 1fr; }
+      .paint-global-settings { grid-template-columns: 1fr; }
+      .paint-result-grid { grid-template-columns: 1fr; }
+      .paint-actions { flex-direction: column; }
+      .paint-actions .btn-primary, .paint-actions .btn-secondary { width: 100%; }
+      .paint-room-breakdown { overflow-x: auto; }
+      .paint-diagram-wrapper { overflow-x: auto; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Housing & Energy", "item": "https://tool.teamzlab.com/housing/"}, {"@type": "ListItem", "position": 3, "name": "Paint Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much paint do I need for a 12x12 room?", "acceptedAnswer": {"@type": "Answer", "text": "A standard 12x12 foot room with 8-foot ceilings has about 384 square feet of wall area. After subtracting one door (21 sq ft) and two windows (30 sq ft), you have roughly 333 paintable square feet. At 350 sq ft per gallon coverage, you need about 1 gallon per coat. For the recommended two coats, plan on 2 gallons of paint. Always buy a little extra for touch-ups."}}, {"@type": "Question", "name": "Should I use one coat or two coats of paint?", "acceptedAnswer": {"@type": "Answer", "text": "Two coats are recommended for nearly all painting projects. The first coat provides base coverage while the second coat ensures even color, hides roller marks, and improves durability. One coat may suffice if you are repainting the same color or using a high-quality paint-and-primer-in-one product over a light-colored wall. Three coats are needed when covering very dark colors with a light shade."}}, {"@type": "Question", "name": "What is the difference between interior and exterior paint coverage?", "acceptedAnswer": {"@type": "Answer", "text": "Interior wall paint typically covers 350 to 400 square feet per gallon because indoor walls are usually smooth and primed. Exterior paint covers only 250 to 350 square feet per gallon because outdoor surfaces like wood siding, stucco, and brick are rougher and more porous, absorbing more paint. Exterior paints are also formulated differently with UV resistance and weatherproofing additives that affect application thickness."}}, {"@type": "Question", "name": "Do I need primer before painting?", "acceptedAnswer": {"@type": "Answer", "text": "Primer is recommended when painting over dark colors, new drywall, patched areas, wood surfaces, or stained walls. Primer provides a uniform base that improves paint adhesion and color accuracy. If you are painting a similar or lighter color over an already-painted wall in good condition, a self-priming paint may eliminate the need for separate primer. Tinted primer matched to your final color can reduce the number of topcoats needed."}}, {"@type": "Question", "name": "How do I calculate paint for a room with vaulted ceilings?", "acceptedAnswer": {"@type": "Answer", "text": "For vaulted or cathedral ceilings, measure the height at the shortest and tallest points of each wall, then use the average height in the calculator. For example, if one wall is 8 feet on one end and 14 feet on the other, use 11 feet as the height. This gives a close approximation of the actual wall area. For the triangular gable wall itself, measure the base width and peak height and calculate the area as half the base times the height."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Paint Calculator", "description": "Calculate how much paint you need for any room. Enter dimensions, doors, and windows to get gallons needed and cost estimate. Free painting calculator.", "url": "https://tool.teamzlab.com/housing/paint-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Paint Calculator</h1>
+      <p class="tool-description">Estimate how much paint you need for any room or your entire house. Enter room dimensions, doors, and windows to get accurate gallon estimates and total cost.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2 style="margin-top:0;">Global Settings</h2>
+      <div class="paint-global-settings">
+        <label>
+          Unit
+          <select id="paint-unit">
+            <option value="ft">Feet (ft)</option>
+            <option value="m">Meters (m)</option>
+          </select>
+        </label>
+        <label>
+          Paint Type
+          <select id="paint-type">
+            <option value="interior">Interior Wall (350 sq ft/gal)</option>
+            <option value="exterior">Exterior (300 sq ft/gal)</option>
+            <option value="ceiling">Ceiling (400 sq ft/gal)</option>
+            <option value="trim">Trim (300 sq ft/gal)</option>
+          </select>
+        </label>
+        <label>
+          Number of Coats
+          <select id="paint-coats">
+            <option value="1">1 Coat</option>
+            <option value="2" selected>2 Coats</option>
+            <option value="3">3 Coats</option>
+          </select>
+        </label>
+        <label>
+          Coverage Rate (sq ft/gallon)
+          <input type="number" id="paint-coverage" value="350" min="50" step="10">
+        </label>
+        <label>
+          Price per Gallon ($)
+          <input type="number" id="paint-price" value="35" min="0" step="1">
+        </label>
+      </div>
+
+      <h2>Rooms</h2>
+      <div id="paint-rooms-list" class="paint-rooms-list"></div>
+
+      <div class="paint-actions">
+        <button class="btn-secondary" id="paint-add-room" type="button">+ Add Room</button>
+        <button class="btn-primary" id="paint-calculate" type="button">Calculate Paint Needed</button>
+        <button class="btn-secondary" id="paint-clear" type="button">Clear All</button>
+      </div>
+
+      <div id="paint-results" class="paint-result-section" style="display:none;">
+        <h3>Results</h3>
+        <div id="paint-result-grid" class="paint-result-grid"></div>
+        <div id="paint-room-breakdown" class="paint-room-breakdown"></div>
+        <div id="paint-diagram" class="paint-diagram-wrapper"></div>
+        <div id="paint-tips-section" class="paint-tips">
+          <h4>Paint Finish Guide</h4>
+          <ul>
+            <li><strong>Flat/Matte:</strong> Hides imperfections, ideal for ceilings and low-traffic rooms. Not washable.</li>
+            <li><strong>Eggshell:</strong> Slight sheen, good for living rooms and bedrooms. Easy to clean.</li>
+            <li><strong>Satin:</strong> Smooth finish, great for kitchens, bathrooms, and hallways. Moisture-resistant.</li>
+            <li><strong>Semi-Gloss:</strong> Durable and washable, best for trim, doors, cabinets, and high-moisture areas.</li>
+            <li><strong>Gloss:</strong> Highest sheen, very durable. Used for trim accents and furniture. Shows every imperfection.</li>
+            <li><strong>Primer:</strong> Apply primer first if painting over dark colors, new drywall, or stained surfaces for best coverage.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Paint Calculator Works</h2>
+      <p>This paint calculator estimates the amount of paint required to cover the walls of one or more rooms in your home. It works by computing the total wall surface area from the room's length, width, and height, then subtracting the area occupied by doors and windows. Each standard door is approximately 21 square feet and each standard window is about 15 square feet. The remaining paintable area is then divided by the paint coverage rate, which varies depending on the paint type. Interior wall paint typically covers 350 square feet per gallon, ceiling paint covers about 400, and exterior or trim paint covers around 300 square feet per gallon. Multiply by the number of coats you plan to apply and you have the total gallons needed.</p>
+      <p>The calculator supports multiple rooms so you can estimate paint for an entire house in one session. Each room has independent dimensions, door count, and window count. The results show a per-room breakdown alongside the total gallons and estimated cost, giving you a complete shopping list before heading to the paint store. All calculations happen in your browser with no data sent anywhere.</p>
+
+      <h2>Tips for Estimating Paint Accurately</h2>
+      <p>Getting an accurate paint estimate saves both money and trips to the store. Always round up to the nearest full gallon since most stores do not sell partial gallons of custom-mixed colors. If you are painting over a dark color with a lighter shade, plan for at least two to three coats and consider using a tinted primer as the first coat. Textured walls such as knockdown, orange peel, or popcorn ceilings absorb more paint and may reduce coverage by 10 to 20 percent. In those cases, lower the coverage rate in the calculator to account for the extra paint absorbed by the texture.</p>
+      <p>Measure each wall individually if your room is not a perfect rectangle. For rooms with vaulted ceilings, use the average wall height. Always buy slightly more than calculated since you will need extra for touch-ups after furniture is moved back in. Most paint stores allow returns of unopened gallons, so buying one extra is a low-risk strategy. Store leftover paint in a cool, dry place with a tight seal for future touch-ups, which can last for several years.</p>
+
+      <h2>Understanding Paint Coverage Rates</h2>
+      <p>Paint coverage rate describes how many square feet one gallon of paint can cover in a single coat on a smooth, primed surface. The standard industry figure is 350 to 400 square feet per gallon for interior latex paint. However, actual coverage depends on several factors including wall texture, paint quality, application method, and surface porosity. Rolling typically provides more even coverage than brushing for large surfaces. Higher-quality paints with better pigment concentration often cover more area per gallon and may require fewer coats, potentially saving money despite a higher per-gallon price.</p>
+      <p>Exterior paints generally have lower coverage rates around 250 to 350 square feet per gallon because outdoor surfaces tend to be rougher and more porous. Trim and specialty paints also cover less area because they are applied to smaller, more detailed surfaces where more paint is used per square foot. Always check the specific coverage rate printed on your paint can and adjust the calculator accordingly for the most accurate estimate.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Breadcrumbs
+      var breadcrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'Housing & Energy', url: '/housing/' },
+        { name: 'Paint Calculator' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+      TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+      // FAQs
+      var faqs = [
+        {
+          q: 'How much paint do I need for a 12x12 room?',
+          a: 'A standard 12x12 foot room with 8-foot ceilings has about 384 square feet of wall area. After subtracting one door (21 sq ft) and two windows (30 sq ft), you have roughly 333 paintable square feet. At 350 sq ft per gallon coverage, you need about 1 gallon per coat. For the recommended two coats, plan on 2 gallons of paint. Always buy a little extra for touch-ups.'
+        },
+        {
+          q: 'Should I use one coat or two coats of paint?',
+          a: 'Two coats are recommended for nearly all painting projects. The first coat provides base coverage while the second coat ensures even color, hides roller marks, and improves durability. One coat may suffice if you are repainting the same color or using a high-quality paint-and-primer-in-one product over a light-colored wall. Three coats are needed when covering very dark colors with a light shade.'
+        },
+        {
+          q: 'What is the difference between interior and exterior paint coverage?',
+          a: 'Interior wall paint typically covers 350 to 400 square feet per gallon because indoor walls are usually smooth and primed. Exterior paint covers only 250 to 350 square feet per gallon because outdoor surfaces like wood siding, stucco, and brick are rougher and more porous, absorbing more paint. Exterior paints are also formulated differently with UV resistance and weatherproofing additives that affect application thickness.'
+        },
+        {
+          q: 'Do I need primer before painting?',
+          a: 'Primer is recommended when painting over dark colors, new drywall, patched areas, wood surfaces, or stained walls. Primer provides a uniform base that improves paint adhesion and color accuracy. If you are painting a similar or lighter color over an already-painted wall in good condition, a self-priming paint may eliminate the need for separate primer. Tinted primer matched to your final color can reduce the number of topcoats needed.'
+        },
+        {
+          q: 'How do I calculate paint for a room with vaulted ceilings?',
+          a: 'For vaulted or cathedral ceilings, measure the height at the shortest and tallest points of each wall, then use the average height in the calculator. For example, if one wall is 8 feet on one end and 14 feet on the other, use 11 feet as the height. This gives a close approximation of the actual wall area. For the triangular gable wall itself, measure the base width and peak height and calculate the area as half the base times the height.'
+        }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      // Related tools
+      TeamzTools.renderRelatedTools([
+        { slug: 'housing/concrete-calculator', name: 'Concrete Calculator', description: 'Calculate how much concrete you need for slabs, footings, and columns.' },
+        { slug: 'housing/tile-calculator', name: 'Tile Calculator', description: 'Estimate tiles needed for floors and walls with waste factor included.' },
+        { slug: 'housing/moving-cost-estimator', name: 'Moving Cost Estimator', description: 'Estimate the total cost of moving to a new home including services and packing.' },
+        { slug: 'housing/appliance-running-cost-calculator', name: 'Appliance Running Cost Calculator', description: 'Calculate the electricity cost of running any household appliance.' },
+        { slug: 'housing/roommate-split-calculator', name: 'Roommate Split Calculator', description: 'Split rent fairly between roommates by room size or equal share.' },
+        { slug: 'housing/how-much-house-can-i-afford', name: 'How Much House Can I Afford', description: 'Calculate the maximum home price you can afford based on income and debts.' }
+      ]);
+
+      // WebApp schema
+      TeamzTools.injectWebAppSchema({
+        title: 'Paint Calculator',
+        description: 'Calculate how much paint you need for any room. Enter dimensions, doors, and windows to get gallons needed and cost estimate. Free painting calculator.',
+        slug: 'housing/paint-calculator'
+      });
+
+      // ---- Paint Calculator Logic ----
+      var roomCounter = 0;
+      var DOOR_SQFT = 21;
+      var WINDOW_SQFT = 15;
+      var SQFT_PER_SQM = 10.7639;
+
+      var coverageRates = {
+        interior: 350,
+        exterior: 300,
+        ceiling: 400,
+        trim: 300
+      };
+
+      function addRoom() {
+        roomCounter++;
+        var card = document.createElement('div');
+        card.className = 'paint-room-card';
+        card.dataset.roomId = roomCounter;
+        card.innerHTML =
+          '<h3>Room ' + roomCounter + '</h3>' +
+          (roomCounter > 1 ? '<button type="button" class="paint-remove-room" title="Remove room">&times;</button>' : '') +
+          '<div class="paint-room-grid">' +
+            '<label>Length<input type="number" id="room-length-' + roomCounter + '" placeholder="e.g. 12" min="0" step="0.1"></label>' +
+            '<label>Width<input type="number" id="room-width-' + roomCounter + '" placeholder="e.g. 12" min="0" step="0.1"></label>' +
+            '<label>Height<input type="number" id="room-height-' + roomCounter + '" placeholder="e.g. 8" value="8" min="0" step="0.1"></label>' +
+            '<label>Doors<input type="number" id="room-doors-' + roomCounter + '" value="1" min="0" step="1"></label>' +
+            '<label>Windows<input type="number" id="room-windows-' + roomCounter + '" value="2" min="0" step="1"></label>' +
+          '</div>';
+        document.getElementById('paint-rooms-list').appendChild(card);
+
+        var removeBtn = card.querySelector('.paint-remove-room');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', function () {
+            card.remove();
+          });
+        }
+      }
+
+      function getPaintTypeLabel(type) {
+        var labels = { interior: 'Interior Wall', exterior: 'Exterior', ceiling: 'Ceiling', trim: 'Trim' };
+        return labels[type] || type;
+      }
+
+      function calculate() {
+        var unit = document.getElementById('paint-unit').value;
+        var paintType = document.getElementById('paint-type').value;
+        var coats = parseInt(document.getElementById('paint-coats').value) || 2;
+        var coverage = parseFloat(document.getElementById('paint-coverage').value) || coverageRates[paintType] || 350;
+        var pricePerGallon = parseFloat(document.getElementById('paint-price').value) || 0;
+
+        var roomCards = document.querySelectorAll('.paint-room-card');
+        if (roomCards.length === 0) {
+          if (window.showToast) window.showToast('Please add at least one room.');
+          return;
+        }
+
+        var totalWallArea = 0;
+        var totalPaintableArea = 0;
+        var totalGallons = 0;
+        var roomResults = [];
+        var hasError = false;
+
+        roomCards.forEach(function (card) {
+          var rid = card.dataset.roomId;
+          var length = parseFloat(document.getElementById('room-length-' + rid).value);
+          var width = parseFloat(document.getElementById('room-width-' + rid).value);
+          var height = parseFloat(document.getElementById('room-height-' + rid).value);
+          var doors = parseInt(document.getElementById('room-doors-' + rid).value) || 0;
+          var windows = parseInt(document.getElementById('room-windows-' + rid).value) || 0;
+
+          if (!length || !width || !height || length <= 0 || width <= 0 || height <= 0) {
+            hasError = true;
+            return;
+          }
+
+          // Convert to sq ft if meters
+          var l = unit === 'm' ? length * 3.28084 : length;
+          var w = unit === 'm' ? width * 3.28084 : width;
+          var h = unit === 'm' ? height * 3.28084 : height;
+
+          var wallArea = 2 * (l + w) * h;
+          var doorArea = doors * DOOR_SQFT;
+          var windowArea = windows * WINDOW_SQFT;
+          var paintable = Math.max(0, wallArea - doorArea - windowArea);
+          var gallons = (paintable * coats) / coverage;
+
+          totalWallArea += wallArea;
+          totalPaintableArea += paintable;
+          totalGallons += gallons;
+
+          roomResults.push({
+            name: 'Room ' + rid,
+            wallArea: wallArea,
+            paintable: paintable,
+            gallons: gallons,
+            doors: doors,
+            windows: windows,
+            length: length,
+            width: width,
+            height: height
+          });
+        });
+
+        if (hasError) {
+          if (window.showToast) window.showToast('Please fill in all room dimensions (length, width, height).');
+          return;
+        }
+
+        var gallonsRounded = Math.ceil(totalGallons);
+        var totalCost = gallonsRounded * pricePerGallon;
+        var unitLabel = unit === 'm' ? 'sq m' : 'sq ft';
+        var displayWall = unit === 'm' ? totalWallArea / SQFT_PER_SQM : totalWallArea;
+        var displayPaintable = unit === 'm' ? totalPaintableArea / SQFT_PER_SQM : totalPaintableArea;
+
+        // Render results
+        var resultGrid = document.getElementById('paint-result-grid');
+        resultGrid.innerHTML =
+          '<div class="paint-result-item"><div class="paint-label">Total Wall Area</div><div class="paint-value">' + displayWall.toFixed(1) + ' ' + unitLabel + '</div></div>' +
+          '<div class="paint-result-item"><div class="paint-label">Paintable Area</div><div class="paint-value">' + displayPaintable.toFixed(1) + ' ' + unitLabel + '</div></div>' +
+          '<div class="paint-result-item"><div class="paint-label">Gallons Needed</div><div class="paint-value">' + gallonsRounded + ' gal</div></div>' +
+          '<div class="paint-result-item"><div class="paint-label">Estimated Cost</div><div class="paint-value">$' + totalCost.toFixed(2) + '</div></div>';
+
+        // Room breakdown table
+        var breakdown = document.getElementById('paint-room-breakdown');
+        if (roomResults.length > 1) {
+          var tableHtml = '<h4 style="color:var(--heading);margin:0 0 8px;">Room Breakdown</h4><table><thead><tr><th>Room</th><th>Dimensions</th><th>Wall Area</th><th>Paintable</th><th>Gallons</th></tr></thead><tbody>';
+          roomResults.forEach(function (r) {
+            var rWall = unit === 'm' ? r.wallArea / SQFT_PER_SQM : r.wallArea;
+            var rPaint = unit === 'm' ? r.paintable / SQFT_PER_SQM : r.paintable;
+            tableHtml += '<tr><td>' + r.name + '</td><td>' + r.length + ' x ' + r.width + ' x ' + r.height + '</td><td>' + rWall.toFixed(1) + ' ' + unitLabel + '</td><td>' + rPaint.toFixed(1) + ' ' + unitLabel + '</td><td>' + Math.ceil(r.gallons) + '</td></tr>';
+          });
+          tableHtml += '</tbody></table>';
+          breakdown.innerHTML = tableHtml;
+          breakdown.style.display = 'block';
+        } else {
+          breakdown.style.display = 'none';
+        }
+
+        // Visual diagram for first room
+        var diagramDiv = document.getElementById('paint-diagram');
+        if (roomResults.length > 0) {
+          var rm = roomResults[0];
+          var doorEls = '';
+          for (var d = 0; d < Math.min(rm.doors, 3); d++) {
+            doorEls += '<div class="paint-diagram-door" style="left:' + (15 + d * 20) + '%;"></div>';
+          }
+          var winEls = '';
+          for (var w = 0; w < Math.min(rm.windows, 4); w++) {
+            winEls += '<div class="paint-diagram-window" style="right:' + (10 + w * 20) + '%;"></div>';
+          }
+          diagramDiv.innerHTML =
+            '<div class="paint-diagram">' +
+              '<div class="paint-diagram-fill" style="background:var(--accent);"></div>' +
+              '<div class="paint-diagram-label top">' + rm.length + ' ' + (unit === 'm' ? 'm' : 'ft') + '</div>' +
+              '<div class="paint-diagram-label side">' + rm.height + ' ' + (unit === 'm' ? 'm' : 'ft') + '</div>' +
+              doorEls + winEls +
+            '</div>';
+        }
+
+        document.getElementById('paint-results').style.display = 'block';
+        document.getElementById('paint-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function clearAll() {
+        roomCounter = 0;
+        document.getElementById('paint-rooms-list').innerHTML = '';
+        document.getElementById('paint-results').style.display = 'none';
+        document.getElementById('paint-unit').value = 'ft';
+        document.getElementById('paint-type').value = 'interior';
+        document.getElementById('paint-coats').value = '2';
+        document.getElementById('paint-coverage').value = '350';
+        document.getElementById('paint-price').value = '35';
+        addRoom();
+        if (window.showToast) window.showToast('All rooms cleared.');
+      }
+
+      // Update coverage when paint type changes
+      document.getElementById('paint-type').addEventListener('change', function () {
+        var type = this.value;
+        document.getElementById('paint-coverage').value = coverageRates[type] || 350;
+      });
+
+      document.getElementById('paint-add-room').addEventListener('click', addRoom);
+      document.getElementById('paint-calculate').addEventListener('click', calculate);
+      document.getElementById('paint-clear').addEventListener('click', clearAll);
+
+      // Initialize with one room
+      addRoom();
+    });
+  </script>
+</body>
+</html>
