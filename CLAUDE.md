@@ -198,24 +198,56 @@ Every tool page MUST have:
 
 ## File Structure
 ```
-/shared/css/tools.css          — main tool page styles
-/shared/css/utility-tools.css  — utility engine output styles
-/shared/js/common.js           — header, footer, schema, breadcrumbs
-/shared/js/tool-engine.js      — calculator-type tools
-/shared/js/utility-engine.js   — text/dev/generator tools
-/shared/js/ai-engine.js        — central AI manager (Chrome AI + Transformers.js + caching)
-/shared/js/search-index.js     — search data (auto-generated)
-/branding/css/teamz-branding.css — design tokens, brand styles
-/branding/js/theme.js          — dark/light theme toggle
-/sitemap.xml                   — auto-generated
-/llms.txt                      — AI search index, concise (auto-generated, per llmstxt.org spec)
-/llms-full.txt                 — AI search index, full descriptions (auto-generated)
-/robots.txt                    — allows all crawlers, references sitemap + llms.txt + llms-full.txt
-/manifest.json                 — PWA manifest
-/sw.js                         — service worker
+/                              — root (HTML pages, configs, symlinks to scripts/)
+├── index.html                 — homepage
+├── CLAUDE.md                  — this file (AI assistant rules)
+├── sitemap.xml                — auto-generated
+├── robots.txt                 — allows all crawlers
+├── manifest.json              — PWA manifest
+├── sw.js                      — service worker
+├── llms.txt                   — AI search index (auto-generated)
+├── llms-full.txt              — AI search index, full (auto-generated)
+│
+├── shared/                    — central CSS/JS (DO NOT duplicate per-tool)
+│   ├── css/tools.css          — main tool page styles
+│   ├── css/utility-tools.css  — utility engine output styles
+│   ├── js/common.js           — header, footer, schema, breadcrumbs, feedback
+│   ├── js/tool-engine.js      — calculator-type tools
+│   ├── js/utility-engine.js   — text/dev/generator tools
+│   ├── js/ai-engine.js        — central AI manager (Chrome AI + Transformers.js)
+│   ├── js/search-index.js     — search data (auto-generated)
+│   └── js/adsense.js          — AdSense integration
+│
+├── branding/                  — git submodule (teamz-lab-branding-web-component)
+│   ├── css/teamz-branding.css — design tokens, brand styles
+│   └── js/theme.js            — dark/light theme toggle
+│
+├── scripts/                   — all build/QA/SEO scripts
+│   ├── build.sh               — full build + 8-step validation
+│   ├── build-search-index.sh  — rebuild search + counts + sitemap
+│   ├── build-sitemap.sh       — rebuild sitemap only
+│   ├── build-static-schema.py — rebuild JSON-LD schemas
+│   ├── build-seo-audit.sh     — SEO keyword audit
+│   ├── build-qa-check.sh      — automated QA checker
+│   ├── build-validate-freshness.sh — stale content checker
+│   ├── build-og-images.py     — regenerate hub OG images
+│   ├── build-search-console.sh — Google Search Console API
+│   ├── seo-keyword-engine.py  — SEO keyword analysis engine
+│   └── qa-test.sh / qa-test.py — QA test runner
+│
+├── icons/                     — favicons (16-512px)
+├── og-images/                 — hub-level OG images for social sharing
+├── docs/                      — SEO audit docs, setup guides
+│
+├── [hub]/                     — tool category hubs (40+ hubs)
+│   ├── index.html             — hub page listing all tools in category
+│   └── [tool-slug]/           — individual tool
+│       └── index.html         — tool page
+│
+└── *.sh / *.py                — symlinks to scripts/ (backward compatible)
 ```
 
-## Build Scripts
+## Build Scripts (in scripts/, symlinked at root)
 ```bash
 ./build-search-index.sh   # Rebuild search after adding/changing tools
 ./build-sitemap.sh        # Rebuild sitemap (also pings Google/Bing)

@@ -68,6 +68,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'BD University CGPA Calculator',d:'Calculate your university CGPA on the 4-point scale. Free BD CGPA calculator for National University, DU, and others — private and instant.',h:'/bd/cgpa-calculator/'},
   {t:'Bangladesh CV Maker',d:'Create a professional Bangladesh CV with the right format. Free BD CV maker with photo, education, and experience sections — private and instant.',h:'/bd/cv-maker/'},
   {t:'Bangladesh Electricity Bill Calculator',d:'Calculate your Bangladesh electricity bill with 2026 BERC tariff slabs. Free BPDB bill calculator — private, instant, and accurate.',h:'/bd/electricity-bill-calculator/'},
+  {t:'ফ্যামিলি কার্ড জেনারেটর',d:'Create a fun family card with your name and photo. Share on Facebook and WhatsApp. Free online family card maker for Bangladesh. Private, no data stor',h:'/bd/family-card-generator/'},
   {t:'Bangladesh Freelancer Tax Calculator',d:'Calculate Bangladesh freelancer income tax with IT exemption. Free tax calculator for freelancers — private, instant, and updated for 2026.',h:'/bd/freelancer-tax-calculator/'},
   {t:'HSC GPA Calculator Bangladesh',d:'Calculate your HSC GPA with Bangladesh grading system. Free HSC grade calculator — enter marks, get GPA instantly. Private and accurate.',h:'/bd/hsc-gpa-calculator/'},
   {t:'Bangladesh Tools',d:'Free Bangladesh tools — bKash charge calculator, Nagad charges, SSC GPA, HSC GPA, electricity bill, income tax, and more. Updated for 2026.',h:'/bd/'},
