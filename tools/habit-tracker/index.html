@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track your daily habits with streaks and progress. Add custom habits, check them off daily, and build consistency. Free, private, works offline.">
+  <meta property="og:title" content="Habit Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Track daily habits with streaks, heatmaps, and stats. Free, private, works offline.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/habit-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Habit Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track daily habits with streaks, heatmaps, and stats. Free, private, works offline.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/habit-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 1rem; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .privacy-badge::before { content: '\1F512'; }
+
+    /* Add Habit Form */
+    .habit-add-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .habit-add-form h2 { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0 0 1rem; }
+    .habit-presets { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .habit-preset-btn { padding: 0.5rem 1rem; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: 999px; font-family: var(--font); font-size: var(--text-sm); font-weight: 500; cursor: pointer; transition: all 0.15s; }
+    .habit-preset-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .habit-preset-btn.selected { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .habit-custom-row { display: flex; gap: 0.5rem; align-items: center; }
+    .habit-custom-row input { flex: 1; padding: 0.6rem 1rem; font-family: var(--font); font-size: var(--text-md); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; }
+    .habit-custom-row input:focus { border-color: var(--heading); }
+    .habit-emoji-pick { position: relative; }
+    .habit-emoji-btn { width: 42px; height: 42px; border: 1px solid var(--border); background: var(--bg); border-radius: 8px; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .habit-emoji-dropdown { position: absolute; top: 48px; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.25rem; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: none; }
+    .habit-emoji-dropdown.open { display: grid; }
+    .habit-emoji-opt { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border: none; background: none; border-radius: 6px; cursor: pointer; }
+    .habit-emoji-opt:hover { background: var(--bg); }
+
+    /* Today's Habits */
+    .habit-today { margin-bottom: 2rem; }
+    .habit-today-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .habit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; }
+    .habit-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; cursor: pointer; transition: all 0.15s; user-select: none; position: relative; }
+    .habit-card:hover { border-color: var(--heading); }
+    .habit-card.done { border-color: var(--heading); background: var(--bg); }
+    .habit-card-emoji { font-size: 2rem; margin-bottom: 0.25rem; }
+    .habit-card-name { font-size: var(--text-sm); font-weight: 600; color: var(--heading); margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .habit-card-streak { font-size: var(--text-xs); color: var(--text-muted); }
+    .habit-card-check { position: absolute; top: 6px; right: 8px; font-size: 1.1rem; opacity: 0; transition: opacity 0.15s; }
+    .habit-card.done .habit-card-check { opacity: 1; }
+    .habit-card-delete { position: absolute; top: 6px; left: 8px; font-size: 0.85rem; opacity: 0; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; transition: opacity 0.15s; }
+    .habit-card:hover .habit-card-delete { opacity: 0.6; }
+    .habit-card-delete:hover { opacity: 1 !important; color: var(--heading); }
+    .habit-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-size: var(--text-md); }
+
+    /* Stats */
+    .habit-stats { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .habit-stats-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0 0 1rem; }
+    .habit-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .habit-stat { text-align: center; }
+    .habit-stat-value { font-size: var(--text-h3); font-weight: 800; color: var(--heading); display: block; }
+    .habit-stat-label { font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* Heatmap */
+    .habit-heatmap-title { font-size: var(--text-md); font-weight: 600; color: var(--heading); margin: 0 0 0.75rem; }
+    .habit-heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 1.5rem; }
+    .habit-heatmap-cell { aspect-ratio: 1; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); position: relative; }
+    .habit-heatmap-cell[data-level="1"] { background: var(--heading); opacity: 0.25; }
+    .habit-heatmap-cell[data-level="2"] { background: var(--heading); opacity: 0.5; }
+    .habit-heatmap-cell[data-level="3"] { background: var(--heading); opacity: 0.75; }
+    .habit-heatmap-cell[data-level="4"] { background: var(--heading); opacity: 1; }
+    .habit-heatmap-cell .habit-heatmap-tip { display: none; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--heading); color: var(--bg); font-size: 10px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; z-index: 10; }
+    .habit-heatmap-cell:hover .habit-heatmap-tip { display: block; }
+    .habit-heatmap-legend { display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end; font-size: var(--text-xs); color: var(--text-muted); }
+    .habit-heatmap-legend-cell { width: 12px; height: 12px; border-radius: 2px; }
+
+    /* Weekly view */
+    .habit-weekly-title { font-size: var(--text-md); font-weight: 600; color: var(--heading); margin: 1.5rem 0 0.75rem; }
+    .habit-weekly { overflow-x: auto; }
+    .habit-weekly table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .habit-weekly th { padding: 0.4rem 0.5rem; text-align: center; color: var(--text-muted); font-weight: 600; font-size: var(--text-xs); }
+    .habit-weekly td { padding: 0.4rem 0.5rem; text-align: center; color: var(--text); }
+    .habit-weekly td.wd-done { color: var(--heading); font-weight: 700; }
+    .habit-weekly tr td:first-child { text-align: left; font-weight: 600; color: var(--heading); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Actions row */
+    .habit-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+
+    .privacy-note { text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-top: 1rem; font-style: italic; }
+
+    @media (max-width: 600px) {
+      .habit-add-form { padding: 1rem; }
+      .habit-stats { padding: 1rem; }
+      .habit-stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .habit-grid { grid-template-columns: repeat(2, 1fr); }
+      .habit-custom-row { flex-direction: column; }
+      .habit-custom-row input { width: 100%; }
+      .habit-actions { flex-direction: column; }
+      .habit-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Habit Tracker", "description": "Track daily habits with streaks, heatmaps, and completion stats. Free and private.", "url": "https://tool.teamzlab.com/tools/habit-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="privacy-badge">100% Private — Data saved on your device only</div>
+      <h1>Habit Tracker</h1>
+      <p class="tool-description">Build better habits with daily check-ins. Track streaks, visualize your progress on a heatmap, and stay consistent. All data is stored locally in your browser — private and works offline.</p>
+    </section>
+
+    <section class="tool-calculator" id="habit-app">
+      <!-- Add Habit -->
+      <div class="habit-add-form">
+        <h2>Add a Habit</h2>
+        <div class="habit-presets" id="habit-presets"></div>
+        <div class="habit-custom-row">
+          <div class="habit-emoji-pick">
+            <button class="habit-emoji-btn" id="emoji-btn" type="button">⭐</button>
+            <div class="habit-emoji-dropdown" id="emoji-dropdown"></div>
+          </div>
+          <input type="text" id="habit-name-input" placeholder="Custom habit name..." maxlength="30">
+          <button class="btn-primary" id="add-habit-btn" type="button">Add</button>
+        </div>
+      </div>
+
+      <!-- Today's Habits -->
+      <div class="habit-today">
+        <div class="habit-today-title" id="today-label"></div>
+        <div class="habit-grid" id="habit-grid"></div>
+      </div>
+
+      <!-- Stats -->
+      <div class="habit-stats" id="habit-stats" style="display:none;">
+        <div class="habit-stats-title">Your Stats</div>
+        <div class="habit-stats-grid">
+          <div class="habit-stat"><span class="habit-stat-value" id="stat-total">0</span><span class="habit-stat-label">Habits</span></div>
+          <div class="habit-stat"><span class="habit-stat-value" id="stat-streak">0</span><span class="habit-stat-label">Best Streak</span></div>
+          <div class="habit-stat"><span class="habit-stat-value" id="stat-rate">0%</span><span class="habit-stat-label">Completion</span></div>
+          <div class="habit-stat"><span class="habit-stat-value" id="stat-best-day">—</span><span class="habit-stat-label">Best Day</span></div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="habit-heatmap-title">Last 30 Days</div>
+        <div class="habit-heatmap" id="habit-heatmap"></div>
+        <div class="habit-heatmap-legend">
+          <span>Less</span>
+          <div class="habit-heatmap-legend-cell" style="background: var(--bg); border: 1px solid var(--border);"></div>
+          <div class="habit-heatmap-legend-cell" style="background: var(--heading); opacity: 0.25;"></div>
+          <div class="habit-heatmap-legend-cell" style="background: var(--heading); opacity: 0.5;"></div>
+          <div class="habit-heatmap-legend-cell" style="background: var(--heading); opacity: 0.75;"></div>
+          <div class="habit-heatmap-legend-cell" style="background: var(--heading); opacity: 1;"></div>
+          <span>More</span>
+        </div>
+
+        <!-- Weekly View -->
+        <div class="habit-weekly-title">This Week</div>
+        <div class="habit-weekly" id="habit-weekly"></div>
+      </div>
+
+      <!-- Actions -->
+      <div class="habit-actions">
+        <button class="btn-secondary" id="share-streak-btn" type="button">Share Streak</button>
+        <button class="btn-secondary" id="reset-data-btn" type="button">Reset All Data</button>
+      </div>
+
+      <p class="privacy-note">All data is stored in your browser. Nothing is sent to any server.</p>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Habit Tracking Works</h2>
+      <p>Habit tracking is a simple but powerful method for building consistency. The concept is straightforward: choose a behavior you want to make automatic, then record whether you did it each day. The act of tracking itself serves as a reminder and a motivator. When you see an unbroken chain of checkmarks, you are less likely to skip a day because you do not want to break the streak. This is sometimes called the "Seinfeld Strategy" — do not break the chain.</p>
+      <p>Research in behavioral psychology shows that habits form through a loop of cue, routine, and reward. Tracking provides both the cue (opening the tracker) and the reward (seeing your streak grow). Over time, the behavior requires less willpower because it becomes automatic. This tool gives you a visual record of your progress, a heatmap that shows density of completed habits, and streak counts that reward consistency.</p>
+
+      <h2>The 21-Day Myth and Real Habit Formation</h2>
+      <p>You may have heard that it takes 21 days to form a habit. This number comes from a 1960s observation by a plastic surgeon, not from rigorous research. A 2009 study published in the European Journal of Social Psychology by Phillippa Lally and colleagues found that on average it takes 66 days for a new behavior to become automatic — and the range was 18 to 254 days depending on the person and the complexity of the habit.</p>
+      <p>The key insight is that missing a single day does not reset your progress. What matters is getting back on track the next day. This tracker shows your current streak and your longest streak separately, so a one-day miss does not erase your history. The heatmap also helps you see patterns — maybe you are consistent on weekdays but skip weekends. That kind of insight lets you adjust your approach and build a sustainable routine.</p>
+
+      <h2>Tips for Building Lasting Habits</h2>
+      <p>Start small. If you want to exercise daily, start with five minutes rather than an hour. Stack new habits onto existing ones — after your morning coffee, meditate for two minutes. Use this tracker to keep yourself accountable. The streak counter creates a form of positive pressure that encourages you not to break the chain. Share your progress with friends or on social media using the share button to add external accountability.</p>
+      <p>Focus on identity over outcomes. Instead of "I want to lose weight," think "I am someone who moves every day." Each checkmark in this tracker is a vote for the person you are becoming. The completion rate percentage shows you how reliable you have been, and the weekly view helps you spot which days need extra attention. Track between three and seven habits to keep things manageable — more than that tends to overwhelm and reduce completion rates.</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    var STORAGE_KEY = 'teamz_habit_tracker';
+    var PRESETS = [
+      { emoji: '\uD83D\uDCA7', name: 'Water' },
+      { emoji: '\uD83C\uDFC3', name: 'Exercise' },
+      { emoji: '\uD83D\uDCD6', name: 'Read' },
+      { emoji: '\uD83E\uDDD8', name: 'Meditate' },
+      { emoji: '\uD83D\uDC8A', name: 'Vitamins' },
+      { emoji: '\uD83D\uDE34', name: 'Sleep 8h' },
+      { emoji: '\uD83D\uDEAB', name: 'No Sugar' },
+      { emoji: '\u270D\uFE0F', name: 'Journal' }
+    ];
+    var EMOJIS = ['\uD83D\uDCA7','\uD83C\uDFC3','\uD83D\uDCD6','\uD83E\uDDD8','\uD83D\uDC8A','\uD83D\uDE34','\uD83D\uDEAB','\u270D\uFE0F','\u2B50','\uD83C\uDF4E','\uD83E\uDDCD','\uD83C\uDFB5','\uD83D\uDCBB','\uD83C\uDF31','\uD83E\uDD64','\uD83D\uDCAA','\uD83D\uDCF5','\uD83D\uDE4F','\uD83C\uDFA8','\uD83C\uDFAF'];
+
+    var selectedEmoji = '\u2B50';
+    var selectedPreset = null;
+
+    function getToday() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function loadData() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return { habits: [], log: {} };
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function getDayName(dateStr) {
+      var d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en', { weekday: 'short' });
+    }
+
+    function formatDate(dateStr) {
+      var d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+    }
+
+    function getStreak(habitId, data) {
+      var today = getToday();
+      var streak = 0;
+      var d = new Date(today + 'T12:00:00');
+      while (true) {
+        var key = d.toISOString().slice(0, 10);
+        var dayLog = data.log[key] || [];
+        if (dayLog.indexOf(habitId) !== -1) {
+          streak++;
+          d.setDate(d.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      return streak;
+    }
+
+    function getLongestStreak(habitId, data) {
+      var dates = Object.keys(data.log).sort();
+      if (!dates.length) return 0;
+      var best = 0, current = 0;
+      var start = new Date(dates[0] + 'T12:00:00');
+      var end = new Date(dates[dates.length - 1] + 'T12:00:00');
+      var d = new Date(start);
+      while (d <= end) {
+        var key = d.toISOString().slice(0, 10);
+        var dayLog = data.log[key] || [];
+        if (dayLog.indexOf(habitId) !== -1) {
+          current++;
+          if (current > best) best = current;
+        } else {
+          current = 0;
+        }
+        d.setDate(d.getDate() + 1);
+      }
+      return best;
+    }
+
+    // Render preset buttons
+    function renderPresets() {
+      var container = document.getElementById('habit-presets');
+      container.innerHTML = '';
+      PRESETS.forEach(function(p) {
+        var btn = document.createElement('button');
+        btn.className = 'habit-preset-btn';
+        btn.type = 'button';
+        btn.textContent = p.emoji + ' ' + p.name;
+        btn.addEventListener('click', function() {
+          var data = loadData();
+          // Check duplicate
+          var exists = data.habits.some(function(h) { return h.name === p.name; });
+          if (exists) {
+            if (window.showToast) window.showToast('Habit "' + p.name + '" already exists');
+            return;
+          }
+          selectedPreset = p;
+          document.getElementById('habit-name-input').value = p.name;
+          selectedEmoji = p.emoji;
+          document.getElementById('emoji-btn').textContent = p.emoji;
+          // Auto-add
+          addHabit();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    // Render emoji picker
+    function renderEmojiPicker() {
+      var dropdown = document.getElementById('emoji-dropdown');
+      dropdown.innerHTML = '';
+      EMOJIS.forEach(function(em) {
+        var btn = document.createElement('button');
+        btn.className = 'habit-emoji-opt';
+        btn.type = 'button';
+        btn.textContent = em;
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          selectedEmoji = em;
+          document.getElementById('emoji-btn').textContent = em;
+          dropdown.classList.remove('open');
+        });
+        dropdown.appendChild(btn);
+      });
+    }
+
+    function addHabit() {
+      var nameInput = document.getElementById('habit-name-input');
+      var name = nameInput.value.trim();
+      if (!name) {
+        if (window.showToast) window.showToast('Enter a habit name');
+        return;
+      }
+      var data = loadData();
+      var exists = data.habits.some(function(h) { return h.name === name; });
+      if (exists) {
+        if (window.showToast) window.showToast('Habit "' + name + '" already exists');
+        return;
+      }
+      var id = 'h_' + Date.now();
+      data.habits.push({ id: id, emoji: selectedEmoji, name: name });
+      saveData(data);
+      nameInput.value = '';
+      selectedEmoji = '\u2B50';
+      document.getElementById('emoji-btn').textContent = '\u2B50';
+      selectedPreset = null;
+      renderAll();
+      if (window.showToast) window.showToast('Added: ' + name);
+    }
+
+    function deleteHabit(habitId) {
+      var data = loadData();
+      var habit = data.habits.find(function(h) { return h.id === habitId; });
+      if (!habit) return;
+      if (!confirm('Delete "' + habit.name + '"? This removes all its history.')) return;
+      data.habits = data.habits.filter(function(h) { return h.id !== habitId; });
+      // Remove from logs
+      Object.keys(data.log).forEach(function(date) {
+        data.log[date] = data.log[date].filter(function(id) { return id !== habitId; });
+        if (!data.log[date].length) delete data.log[date];
+      });
+      saveData(data);
+      renderAll();
+      if (window.showToast) window.showToast('Deleted: ' + habit.name);
+    }
+
+    function toggleHabit(habitId) {
+      var today = getToday();
+      var data = loadData();
+      if (!data.log[today]) data.log[today] = [];
+      var idx = data.log[today].indexOf(habitId);
+      if (idx === -1) {
+        data.log[today].push(habitId);
+      } else {
+        data.log[today].splice(idx, 1);
+      }
+      saveData(data);
+      renderAll();
+    }
+
+    function renderHabitGrid() {
+      var data = loadData();
+      var today = getToday();
+      var grid = document.getElementById('habit-grid');
+      var label = document.getElementById('today-label');
+      var d = new Date(today + 'T12:00:00');
+      label.textContent = 'Today — ' + d.toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' });
+
+      if (!data.habits.length) {
+        grid.innerHTML = '<div class="habit-empty">No habits yet. Add one above to get started.</div>';
+        return;
+      }
+
+      var todayLog = data.log[today] || [];
+      grid.innerHTML = '';
+      data.habits.forEach(function(habit) {
+        var isDone = todayLog.indexOf(habit.id) !== -1;
+        var streak = getStreak(habit.id, data);
+        var card = document.createElement('div');
+        card.className = 'habit-card' + (isDone ? ' done' : '');
+        card.innerHTML =
+          '<button class="habit-card-delete" title="Delete habit">&times;</button>' +
+          '<div class="habit-card-check">\u2705</div>' +
+          '<div class="habit-card-emoji">' + habit.emoji + '</div>' +
+          '<div class="habit-card-name">' + habit.name + '</div>' +
+          '<div class="habit-card-streak">' + (streak > 0 ? '\uD83D\uDD25 ' + streak + ' day' + (streak !== 1 ? 's' : '') : 'Start today!') + '</div>';
+        card.addEventListener('click', function(e) {
+          if (e.target.closest('.habit-card-delete')) return;
+          toggleHabit(habit.id);
+        });
+        card.querySelector('.habit-card-delete').addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteHabit(habit.id);
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function renderStats() {
+      var data = loadData();
+      var statsEl = document.getElementById('habit-stats');
+      if (!data.habits.length) {
+        statsEl.style.display = 'none';
+        return;
+      }
+      statsEl.style.display = '';
+
+      // Total habits
+      document.getElementById('stat-total').textContent = data.habits.length;
+
+      // Best streak across all habits
+      var bestStreak = 0;
+      data.habits.forEach(function(h) {
+        var s = getLongestStreak(h.id, data);
+        if (s > bestStreak) bestStreak = s;
+      });
+      document.getElementById('stat-streak').textContent = bestStreak;
+
+      // Completion rate (last 30 days)
+      var today = new Date(getToday() + 'T12:00:00');
+      var totalPossible = 0, totalDone = 0;
+      for (var i = 0; i < 30; i++) {
+        var d = new Date(today);
+        d.setDate(d.getDate() - i);
+        var key = d.toISOString().slice(0, 10);
+        var dayLog = data.log[key] || [];
+        totalPossible += data.habits.length;
+        data.habits.forEach(function(h) {
+          if (dayLog.indexOf(h.id) !== -1) totalDone++;
+        });
+      }
+      var rate = totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
+      document.getElementById('stat-rate').textContent = rate + '%';
+
+      // Best day (day of week with highest completions)
+      var dayTotals = [0, 0, 0, 0, 0, 0, 0];
+      var dayCounts = [0, 0, 0, 0, 0, 0, 0];
+      Object.keys(data.log).forEach(function(dateStr) {
+        var dayOfWeek = new Date(dateStr + 'T12:00:00').getDay();
+        dayTotals[dayOfWeek] += data.log[dateStr].length;
+        dayCounts[dayOfWeek]++;
+      });
+      var bestDay = 0, bestAvg = 0;
+      var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      for (var j = 0; j < 7; j++) {
+        var avg = dayCounts[j] > 0 ? dayTotals[j] / dayCounts[j] : 0;
+        if (avg > bestAvg) { bestAvg = avg; bestDay = j; }
+      }
+      document.getElementById('stat-best-day').textContent = Object.keys(data.log).length > 0 ? dayNames[bestDay] : '\u2014';
+    }
+
+    function renderHeatmap() {
+      var data = loadData();
+      var container = document.getElementById('habit-heatmap');
+      container.innerHTML = '';
+      if (!data.habits.length) return;
+
+      var today = new Date(getToday() + 'T12:00:00');
+      var maxPerDay = data.habits.length;
+
+      // Build 35 cells (5 weeks) ending today
+      var cells = [];
+      for (var i = 34; i >= 0; i--) {
+        var d = new Date(today);
+        d.setDate(d.getDate() - i);
+        var key = d.toISOString().slice(0, 10);
+        var dayLog = data.log[key] || [];
+        var count = 0;
+        data.habits.forEach(function(h) {
+          if (dayLog.indexOf(h.id) !== -1) count++;
+        });
+        cells.push({ date: key, count: count });
+      }
+
+      cells.forEach(function(cell) {
+        var div = document.createElement('div');
+        div.className = 'habit-heatmap-cell';
+        var ratio = maxPerDay > 0 ? cell.count / maxPerDay : 0;
+        var level = 0;
+        if (ratio > 0 && ratio <= 0.25) level = 1;
+        else if (ratio > 0.25 && ratio <= 0.5) level = 2;
+        else if (ratio > 0.5 && ratio <= 0.75) level = 3;
+        else if (ratio > 0.75) level = 4;
+        div.setAttribute('data-level', level);
+        var tip = document.createElement('span');
+        tip.className = 'habit-heatmap-tip';
+        tip.textContent = formatDate(cell.date) + ': ' + cell.count + '/' + maxPerDay;
+        div.appendChild(tip);
+        container.appendChild(div);
+      });
+    }
+
+    function renderWeekly() {
+      var data = loadData();
+      var container = document.getElementById('habit-weekly');
+      if (!data.habits.length) {
+        container.innerHTML = '';
+        return;
+      }
+
+      var today = new Date(getToday() + 'T12:00:00');
+      var dayOfWeek = today.getDay();
+      // Build last 7 days ending today
+      var days = [];
+      for (var i = 6; i >= 0; i--) {
+        var d = new Date(today);
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().slice(0, 10));
+      }
+
+      var html = '<table><thead><tr><th></th>';
+      days.forEach(function(dateStr) {
+        html += '<th>' + getDayName(dateStr) + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+
+      data.habits.forEach(function(habit) {
+        html += '<tr><td>' + habit.emoji + ' ' + habit.name + '</td>';
+        days.forEach(function(dateStr) {
+          var dayLog = data.log[dateStr] || [];
+          var done = dayLog.indexOf(habit.id) !== -1;
+          html += '<td class="' + (done ? 'wd-done' : '') + '">' + (done ? '\u2705' : '\u2014') + '</td>';
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    function renderAll() {
+      renderHabitGrid();
+      renderStats();
+      renderHeatmap();
+      renderWeekly();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function() {
+      renderPresets();
+      renderEmojiPicker();
+      renderAll();
+
+      // Emoji picker toggle
+      document.getElementById('emoji-btn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        document.getElementById('emoji-dropdown').classList.toggle('open');
+      });
+      document.addEventListener('click', function() {
+        document.getElementById('emoji-dropdown').classList.remove('open');
+      });
+
+      // Add habit button
+      document.getElementById('add-habit-btn').addEventListener('click', addHabit);
+
+      // Enter key
+      document.getElementById('habit-name-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') addHabit();
+      });
+
+      // Share streak
+      document.getElementById('share-streak-btn').addEventListener('click', function() {
+        var data = loadData();
+        if (!data.habits.length) {
+          if (window.showToast) window.showToast('Add some habits first');
+          return;
+        }
+        // Find habit with best current streak
+        var best = null, bestStreak = 0;
+        data.habits.forEach(function(h) {
+          var s = getStreak(h.id, data);
+          if (s > bestStreak) { bestStreak = s; best = h; }
+        });
+        var text;
+        if (best && bestStreak > 0) {
+          text = "I'm on a " + bestStreak + '-day streak for ' + best.emoji + ' ' + best.name + '! \uD83D\uDD25\nTrack your habits: https://tool.teamzlab.com/tools/habit-tracker/';
+        } else {
+          text = "I'm tracking " + data.habits.length + ' habits daily!\nTrack yours: https://tool.teamzlab.com/tools/habit-tracker/';
+        }
+        if (navigator.share) {
+          navigator.share({ text: text }).catch(function() {});
+        } else {
+          navigator.clipboard.writeText(text).then(function() {
+            if (window.showToast) window.showToast('Streak copied to clipboard!');
+          });
+        }
+      });
+
+      // Reset
+      document.getElementById('reset-data-btn').addEventListener('click', function() {
+        if (!confirm('Reset ALL habit data? This cannot be undone.')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        renderAll();
+        if (window.showToast) window.showToast('All habit data cleared');
+      });
+
+      // Breadcrumbs + schemas
+      if (typeof TeamzTools !== 'undefined') {
+        TeamzTools.renderBreadcrumbs();
+        TeamzTools.injectBreadcrumbSchema();
+
+        TeamzTools.renderFAQs([
+          { q: 'Is my habit data private?', a: 'Yes. All data is stored locally in your browser using localStorage. Nothing is sent to any server. Your habits and streaks stay on your device.' },
+          { q: 'Does the tracker work offline?', a: 'Yes. After loading the page once, the habit tracker works entirely offline. You can check off habits without an internet connection.' },
+          { q: 'How are streaks calculated?', a: 'A streak counts consecutive days you completed a habit, starting from today and going backward. If you miss a day, the current streak resets, but your longest streak is always preserved in your stats.' },
+          { q: 'Can I track more than 8 habits?', a: 'Yes. The preset buttons are just quick-start options. Use the custom name field to add as many habits as you like. However, research suggests tracking 3 to 7 habits is most effective.' },
+          { q: 'What does the heatmap show?', a: 'The heatmap displays the last 30 days in a grid. Darker cells mean you completed more of your habits that day. Hovering over a cell shows the exact count. It works like the GitHub contribution graph.' }
+        ]);
+        TeamzTools.injectFAQSchema([
+          { q: 'Is my habit data private?', a: 'Yes. All data is stored locally in your browser using localStorage. Nothing is sent to any server. Your habits and streaks stay on your device.' },
+          { q: 'Does the tracker work offline?', a: 'Yes. After loading the page once, the habit tracker works entirely offline. You can check off habits without an internet connection.' },
+          { q: 'How are streaks calculated?', a: 'A streak counts consecutive days you completed a habit, starting from today and going backward. If you miss a day, the current streak resets, but your longest streak is always preserved in your stats.' },
+          { q: 'Can I track more than 8 habits?', a: 'Yes. The preset buttons are just quick-start options. Use the custom name field to add as many habits as you like. However, research suggests tracking 3 to 7 habits is most effective.' },
+          { q: 'What does the heatmap show?', a: 'The heatmap displays the last 30 days in a grid. Darker cells mean you completed more of your habits that day. Hovering over a cell shows the exact count. It works like the GitHub contribution graph.' }
+        ]);
+
+        TeamzTools.injectWebAppSchema({
+          slug: 'tools/habit-tracker',
+          title: 'Habit Tracker',
+          description: 'Track daily habits with streaks, heatmaps, and completion stats. Free and private.'
+        });
+
+        TeamzTools.renderRelatedTools([
+          { slug: '/tools/daily-planner/', name: 'Daily Planner', description: 'Plan your day with tasks, priorities, and time blocks.' },
+          { slug: '/tools/focus-timer/', name: 'Focus Timer', description: 'Distraction-free countdown timer for deep work sessions.' },
+          { slug: '/health/dopamine-detox-planner/', name: 'Dopamine Detox Planner', description: 'Plan a structured dopamine detox to reset your reward system.' },
+          { slug: '/health/sleep-quality-test/', name: 'Sleep Quality Test', description: 'Assess your sleep habits and get personalized improvement tips.' },
+          { slug: '/evergreen/pomodoro-timer/', name: 'Pomodoro Timer', description: 'Work in focused 25-minute intervals with timed breaks.' },
+          { slug: '/health/water-intake-calculator/', name: 'Water Intake Calculator', description: 'Calculate your ideal daily water intake based on weight and activity.' }
+        ]);
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

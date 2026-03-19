@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Splitter — Teamz Lab Tools</title>
+  <meta name="description" content="Split bills and expenses between friends fairly. Add multiple items, assign to people, and see who owes what. Share the summary. Free, private tool.">
+  <meta property="og:title" content="Expense Splitter — Teamz Lab Tools">
+  <meta property="og:description" content="Split bills and expenses between friends fairly. Add items, assign people, see who owes what. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/expense-splitter/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Expense Splitter — Teamz Lab Tools">
+  <meta name="twitter:description" content="Split bills and expenses between friends fairly. Add items, assign people, see who owes what. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/expense-splitter/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .splitter-app { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+    .splitter-section { margin-bottom: 1.5rem; }
+    .splitter-section-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    .splitter-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .splitter-input { padding: 0.6rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; box-sizing: border-box; }
+    .splitter-input:focus { border-color: var(--heading); }
+    .splitter-input--name { flex: 1; min-width: 140px; }
+    .splitter-input--amount { width: 120px; }
+    .splitter-input--desc { flex: 1; min-width: 140px; }
+    .splitter-select { padding: 0.6rem 0.75rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; box-sizing: border-box; }
+    .splitter-select:focus { border-color: var(--heading); }
+
+    .people-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .person-tag { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 0.35rem 0.85rem; font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .person-tag-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; font-family: var(--font); }
+    .person-tag-remove:hover { color: var(--danger, crimson); }
+
+    .expense-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; }
+    .expense-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .expense-card-title { font-weight: 700; color: var(--heading); font-size: var(--text-md); }
+    .expense-card-amount { font-weight: 800; color: var(--heading); font-size: var(--text-lg); }
+    .expense-card-meta { font-size: var(--text-sm); color: var(--text-muted); }
+    .expense-card-delete { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0.2rem; }
+    .expense-card-delete:hover { color: var(--danger, crimson); }
+
+    .split-checkboxes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .split-checkbox { display: flex; align-items: center; gap: 0.3rem; font-size: var(--text-sm); color: var(--text); cursor: pointer; }
+    .split-checkbox input { accent-color: var(--heading); cursor: pointer; }
+
+    .split-custom-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; font-size: var(--text-sm); }
+    .split-custom-input { width: 80px; padding: 0.35rem 0.5rem; font-size: var(--text-sm); font-family: var(--font); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; outline: none; box-sizing: border-box; }
+
+    .currency-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .currency-label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+
+    .results-dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .result-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .result-card-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.25rem; }
+    .result-card-value { font-size: var(--text-h4); font-weight: 800; color: var(--heading); }
+    .result-card.full { grid-column: 1 / -1; }
+
+    .balance-list { margin-bottom: 1.5rem; }
+    .balance-item { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; padding: 0.6rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+    .balance-name { font-weight: 700; color: var(--heading); min-width: 80px; font-size: var(--text-sm); }
+    .balance-bar-track { flex: 1; height: 18px; background: var(--surface); border-radius: 9px; overflow: hidden; position: relative; border: 1px solid var(--border); }
+    .balance-bar-fill { height: 100%; border-radius: 9px; transition: width 0.3s; }
+    .balance-bar-fill.owed { background: var(--heading); }
+    .balance-bar-fill.owes { background: var(--danger, crimson); }
+    .balance-value { min-width: 80px; text-align: right; font-weight: 700; font-size: var(--text-sm); }
+    .balance-value.positive { color: var(--heading); }
+    .balance-value.negative { color: var(--danger, crimson); }
+
+    .settlement-list { margin-bottom: 1rem; }
+    .settlement-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.4rem; font-size: var(--text-sm); color: var(--text); }
+    .settlement-arrow { color: var(--heading); font-weight: 700; }
+
+    .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-muted); font-size: var(--text-md); }
+
+    .expense-form { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+    .expense-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .expense-form-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .expense-form-field.full { grid-column: 1 / -1; }
+    .expense-form-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+
+    .splitter-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+    @media (max-width: 600px) {
+      .splitter-app { padding: 1.25rem; }
+      .results-dashboard { grid-template-columns: 1fr; }
+      .expense-form-grid { grid-template-columns: 1fr; }
+      .splitter-row { flex-direction: column; align-items: stretch; }
+      .splitter-input--amount { width: 100%; }
+      .splitter-actions { flex-direction: column; }
+      .splitter-actions button { width: 100%; }
+      .balance-name { min-width: 60px; }
+      .balance-value { min-width: 60px; }
+      h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tool.teamzlab.com/tools/"}, {"@type": "ListItem", "position": 3, "name": "Expense Splitter"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the expense splitter calculate who owes what?", "acceptedAnswer": {"@type": "Answer", "text": "The tool tracks every expense, who paid, and who was included in the split. It then calculates each person's net balance (total paid minus total share owed). People with a negative balance owe money, and those with a positive balance are owed money. The settlement plan uses a greedy algorithm to minimize the number of transactions needed to settle all debts."}}, {"@type": "Question", "name": "Can I split expenses unequally?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. For each expense you can choose Equal split (everyone pays the same), Custom amounts (you specify exact amounts per person), or Percentage split (you assign a percentage to each person). You can mix split types across different expenses in the same group."}}, {"@type": "Question", "name": "Is my financial data private?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. All data is stored in your browser's localStorage. Nothing is sent to any server. Your names, amounts, and expense details remain entirely on your device."}}, {"@type": "Question", "name": "How many people can I add?", "acceptedAnswer": {"@type": "Answer", "text": "You can add up to 10 people per group. This covers most common scenarios like restaurant bills, house shares, and group trips."}}, {"@type": "Question", "name": "Can I share the settlement plan with my group?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click \"Copy Summary\" to copy a text version of the settlement plan to your clipboard. Paste it into WhatsApp, iMessage, Slack, or any other messenger to let everyone know who pays whom."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Expense Splitter", "description": "Split bills and expenses between friends fairly. Free, private tool.", "url": "https://tool.teamzlab.com/tools/expense-splitter/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Expense Splitter</h1>
+      <p class="tool-description">Split bills and shared expenses between friends, roommates, or travel groups. Add people, log expenses, choose how to split, and get a settlement plan showing exactly who pays whom. Everything runs in your browser — no signup, no servers.</p>
+    </section>
+
+    <section class="splitter-app" id="splitter-app">
+      <!-- Currency -->
+      <div class="currency-row">
+        <span class="currency-label">Currency:</span>
+        <select id="currency-select" class="splitter-select">
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (&euro;)</option>
+          <option value="GBP">GBP (&pound;)</option>
+          <option value="BDT">BDT (&#x09F3;)</option>
+          <option value="INR">INR (&#x20B9;)</option>
+        </select>
+      </div>
+
+      <!-- People -->
+      <div class="splitter-section">
+        <div class="splitter-section-title">People</div>
+        <div class="people-list" id="people-list"></div>
+        <div class="splitter-row">
+          <input type="text" id="person-name-input" class="splitter-input splitter-input--name" placeholder="Enter name" maxlength="30">
+          <button class="btn-primary" id="add-person-btn" type="button">Add Person</button>
+        </div>
+      </div>
+
+      <!-- Add Expense Form -->
+      <div class="splitter-section">
+        <div class="splitter-section-title">Add Expense</div>
+        <div class="expense-form" id="expense-form">
+          <div class="expense-form-grid">
+            <div class="expense-form-field">
+              <label for="expense-desc">Description</label>
+              <input type="text" id="expense-desc" class="splitter-input" placeholder="e.g., Dinner, Uber, Hotel" maxlength="60">
+            </div>
+            <div class="expense-form-field">
+              <label for="expense-amount">Amount</label>
+              <input type="number" id="expense-amount" class="splitter-input" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="expense-form-field">
+              <label for="expense-paid-by">Paid By</label>
+              <select id="expense-paid-by" class="splitter-select"></select>
+            </div>
+            <div class="expense-form-field">
+              <label for="expense-split-type">Split Type</label>
+              <select id="expense-split-type" class="splitter-select">
+                <option value="equal">Equal</option>
+                <option value="custom">Custom Amounts</option>
+                <option value="percentage">Percentage</option>
+              </select>
+            </div>
+            <div class="expense-form-field full">
+              <label>Split Among</label>
+              <div class="split-checkboxes" id="split-checkboxes"></div>
+            </div>
+            <div class="expense-form-field full" id="custom-split-area" style="display:none;">
+              <label id="custom-split-label">Custom Split</label>
+              <div id="custom-split-inputs"></div>
+            </div>
+          </div>
+          <div style="margin-top: 1rem;">
+            <button class="btn-primary" id="add-expense-btn" type="button">Add Expense</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expense List -->
+      <div class="splitter-section">
+        <div class="splitter-section-title">Expenses</div>
+        <div id="expense-list"></div>
+      </div>
+
+      <!-- Results -->
+      <div class="splitter-section" id="results-section" style="display:none;">
+        <div class="splitter-section-title">Summary</div>
+        <div class="results-dashboard" id="results-dashboard"></div>
+
+        <div class="splitter-section-title">Balances</div>
+        <div class="balance-list" id="balance-list"></div>
+
+        <div class="splitter-section-title">Settlement Plan</div>
+        <div class="settlement-list" id="settlement-list"></div>
+
+        <div class="splitter-actions">
+          <button class="btn-secondary" id="share-summary-btn" type="button">Copy Summary</button>
+          <button class="btn-secondary" id="clear-all-btn" type="button">Clear All</button>
+        </div>
+      </div>
+
+      <div class="empty-state" id="empty-state">Add at least 2 people and an expense to see the split.</div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Split Expenses Fairly</h2>
+      <p>Splitting expenses among a group can quickly become awkward if not handled transparently. The expense splitter removes guesswork by tracking every payment, assigning each cost to the right people, and calculating the minimum number of transactions needed to settle up. Whether you are sharing a restaurant bill, splitting rent, or tracking costs across a multi-day road trip, the tool does the math so nobody has to.</p>
+      <p>Start by adding every person in the group. Then log each expense with a description, the amount, who paid, and who should share the cost. By default the tool divides each expense equally among the selected people, but you can switch to custom amounts or percentage splits for items that are not shared evenly. The running totals update instantly as you add entries.</p>
+
+      <h2>Equal vs. Proportional Splits</h2>
+      <p>An equal split works well when everyone orders roughly the same thing or shares a common cost like a taxi or accommodation. Each person pays the total divided by the number of participants. A proportional or custom split is better when costs differ — for example, one person orders an expensive dish or stays an extra night. The expense splitter supports both modes per expense, so you can mix and match within the same trip.</p>
+      <p>Percentage splits are useful for recurring shared costs like rent, where each roommate pays a fixed share based on room size or agreement. Enter the agreed percentages and the tool calculates the exact amount each person owes for that expense.</p>
+
+      <h2>Tips for Managing Group Trip Expenses</h2>
+      <p>Designate one person to handle shared payments whenever possible — it reduces the number of transactions and makes tracking simpler. Log every expense immediately instead of waiting until the end of the trip. Use the settlement plan at the end to see the shortest path to settling all debts: the algorithm minimizes transfers so instead of everyone paying everyone, you get a clean list like "Alice pays Bob $20, Carol pays Bob $5."</p>
+      <p>Copy the settlement summary and share it via WhatsApp or any messenger to keep the group informed. All data stays in your browser, so there is no account to create and no personal information leaves your device. Use the Clear All button when a trip is done and you are ready to start fresh.</p>
+    </section>
+
+    <div id="faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var CURRENCIES = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', BDT: '\u09F3', INR: '\u20B9' };
+      var people = [];
+      var expenses = [];
+      var STORAGE_KEY = 'teamz_expense_splitter';
+      var MAX_PEOPLE = 10;
+
+      function getCurrency() {
+        return document.getElementById('currency-select').value;
+      }
+
+      function getSymbol() {
+        return CURRENCIES[getCurrency()] || '$';
+      }
+
+      function fmt(n) {
+        return getSymbol() + Math.abs(n).toFixed(2);
+      }
+
+      function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ people: people, expenses: expenses, currency: getCurrency() }));
+        } catch(e) {}
+      }
+
+      function load() {
+        try {
+          var d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (d) {
+            people = d.people || [];
+            expenses = d.expenses || [];
+            if (d.currency) document.getElementById('currency-select').value = d.currency;
+          }
+        } catch(e) {}
+      }
+
+      function renderPeople() {
+        var list = document.getElementById('people-list');
+        if (people.length === 0) {
+          list.innerHTML = '<span style="color:var(--text-muted);font-size:var(--text-sm);">No people added yet.</span>';
+        } else {
+          list.innerHTML = people.map(function(p, i) {
+            return '<span class="person-tag">' + escHtml(p) + ' <button class="person-tag-remove" data-idx="' + i + '" title="Remove">&times;</button></span>';
+          }).join('');
+        }
+        // Update paid-by dropdown
+        var paidBy = document.getElementById('expense-paid-by');
+        var prev = paidBy.value;
+        paidBy.innerHTML = people.length === 0
+          ? '<option value="">Add people first</option>'
+          : people.map(function(p) { return '<option value="' + escHtml(p) + '">' + escHtml(p) + '</option>'; }).join('');
+        if (people.indexOf(prev) > -1) paidBy.value = prev;
+
+        // Update split checkboxes
+        renderSplitCheckboxes();
+      }
+
+      function renderSplitCheckboxes() {
+        var container = document.getElementById('split-checkboxes');
+        container.innerHTML = people.map(function(p) {
+          return '<label class="split-checkbox"><input type="checkbox" value="' + escHtml(p) + '" checked> ' + escHtml(p) + '</label>';
+        }).join('');
+        updateCustomSplitInputs();
+      }
+
+      function getCheckedPeople() {
+        var boxes = document.querySelectorAll('#split-checkboxes input[type="checkbox"]');
+        var checked = [];
+        boxes.forEach(function(b) { if (b.checked) checked.push(b.value); });
+        return checked;
+      }
+
+      function updateCustomSplitInputs() {
+        var splitType = document.getElementById('expense-split-type').value;
+        var area = document.getElementById('custom-split-area');
+        var container = document.getElementById('custom-split-inputs');
+        var label = document.getElementById('custom-split-label');
+        if (splitType === 'equal') {
+          area.style.display = 'none';
+          return;
+        }
+        area.style.display = '';
+        var checked = getCheckedPeople();
+        var suffix = splitType === 'percentage' ? '%' : getSymbol();
+        label.textContent = splitType === 'percentage' ? 'Percentage Split' : 'Custom Amounts';
+        container.innerHTML = checked.map(function(p) {
+          return '<div class="split-custom-row"><span style="min-width:80px;color:var(--text);font-weight:600;">' + escHtml(p) + '</span><input type="number" class="split-custom-input" data-person="' + escHtml(p) + '" placeholder="0" min="0" step="0.01"> <span style="color:var(--text-muted);">' + suffix + '</span></div>';
+        }).join('');
+      }
+
+      function renderExpenses() {
+        var container = document.getElementById('expense-list');
+        if (expenses.length === 0) {
+          container.innerHTML = '<div class="empty-state">No expenses added yet.</div>';
+          return;
+        }
+        container.innerHTML = expenses.map(function(e, i) {
+          var splitText = e.splitType === 'equal' ? 'Equal split' : (e.splitType === 'percentage' ? 'Percentage split' : 'Custom split');
+          return '<div class="expense-card">' +
+            '<div class="expense-card-header"><span class="expense-card-title">' + escHtml(e.desc) + '</span><span class="expense-card-amount">' + fmt(e.amount) + '</span></div>' +
+            '<div class="expense-card-meta">Paid by <strong>' + escHtml(e.paidBy) + '</strong> &middot; ' + splitText + ' among ' + e.splitAmong.map(escHtml).join(', ') + '</div>' +
+            '<button class="expense-card-delete" data-expense-idx="' + i + '" title="Remove">&times;</button>' +
+            '</div>';
+        }).join('');
+      }
+
+      function calculateBalances() {
+        var balances = {};
+        people.forEach(function(p) { balances[p] = 0; });
+
+        expenses.forEach(function(e) {
+          // Person who paid gets credited
+          if (balances[e.paidBy] === undefined) balances[e.paidBy] = 0;
+          balances[e.paidBy] += e.amount;
+
+          // Calculate each person's share
+          var shares = {};
+          if (e.splitType === 'equal') {
+            var share = e.amount / e.splitAmong.length;
+            e.splitAmong.forEach(function(p) { shares[p] = share; });
+          } else if (e.splitType === 'custom') {
+            e.splitAmong.forEach(function(p) { shares[p] = e.customAmounts[p] || 0; });
+          } else if (e.splitType === 'percentage') {
+            e.splitAmong.forEach(function(p) {
+              shares[p] = (e.customAmounts[p] || 0) / 100 * e.amount;
+            });
+          }
+
+          // Debit each person their share
+          Object.keys(shares).forEach(function(p) {
+            if (balances[p] === undefined) balances[p] = 0;
+            balances[p] -= shares[p];
+          });
+        });
+
+        return balances;
+      }
+
+      function calculateSettlement(balances) {
+        var debtors = [];
+        var creditors = [];
+        Object.keys(balances).forEach(function(p) {
+          var b = Math.round(balances[p] * 100) / 100;
+          if (b < -0.01) debtors.push({ name: p, amount: -b });
+          else if (b > 0.01) creditors.push({ name: p, amount: b });
+        });
+        debtors.sort(function(a, b) { return b.amount - a.amount; });
+        creditors.sort(function(a, b) { return b.amount - a.amount; });
+
+        var settlements = [];
+        var di = 0, ci = 0;
+        while (di < debtors.length && ci < creditors.length) {
+          var transfer = Math.min(debtors[di].amount, creditors[ci].amount);
+          if (transfer > 0.01) {
+            settlements.push({ from: debtors[di].name, to: creditors[ci].name, amount: transfer });
+          }
+          debtors[di].amount -= transfer;
+          creditors[ci].amount -= transfer;
+          if (debtors[di].amount < 0.01) di++;
+          if (creditors[ci].amount < 0.01) ci++;
+        }
+        return settlements;
+      }
+
+      function renderResults() {
+        var section = document.getElementById('results-section');
+        var emptyState = document.getElementById('empty-state');
+        if (people.length < 2 || expenses.length === 0) {
+          section.style.display = 'none';
+          emptyState.style.display = '';
+          return;
+        }
+        section.style.display = '';
+        emptyState.style.display = 'none';
+
+        var totalExpenses = expenses.reduce(function(s, e) { return s + e.amount; }, 0);
+        var balances = calculateBalances();
+        var settlements = calculateSettlement(balances);
+
+        // Dashboard
+        var dashboard = document.getElementById('results-dashboard');
+        dashboard.innerHTML = '<div class="result-card"><div class="result-card-label">Total Expenses</div><div class="result-card-value">' + fmt(totalExpenses) + '</div></div>' +
+          '<div class="result-card"><div class="result-card-label">People</div><div class="result-card-value">' + people.length + '</div></div>';
+
+        // Per-person shares
+        var perPersonShare = {};
+        expenses.forEach(function(e) {
+          if (e.splitType === 'equal') {
+            var share = e.amount / e.splitAmong.length;
+            e.splitAmong.forEach(function(p) { perPersonShare[p] = (perPersonShare[p] || 0) + share; });
+          } else if (e.splitType === 'custom') {
+            e.splitAmong.forEach(function(p) { perPersonShare[p] = (perPersonShare[p] || 0) + (e.customAmounts[p] || 0); });
+          } else if (e.splitType === 'percentage') {
+            e.splitAmong.forEach(function(p) { perPersonShare[p] = (perPersonShare[p] || 0) + ((e.customAmounts[p] || 0) / 100 * e.amount); });
+          }
+        });
+        people.forEach(function(p) {
+          dashboard.innerHTML += '<div class="result-card"><div class="result-card-label">' + escHtml(p) + '\'s Share</div><div class="result-card-value">' + fmt(perPersonShare[p] || 0) + '</div></div>';
+        });
+
+        // Balance bars
+        var balanceList = document.getElementById('balance-list');
+        var maxBal = 0;
+        people.forEach(function(p) { var ab = Math.abs(balances[p] || 0); if (ab > maxBal) maxBal = ab; });
+        balanceList.innerHTML = people.map(function(p) {
+          var b = Math.round((balances[p] || 0) * 100) / 100;
+          var pct = maxBal > 0 ? (Math.abs(b) / maxBal * 100) : 0;
+          var cls = b >= 0 ? 'owed' : 'owes';
+          var valCls = b >= 0 ? 'positive' : 'negative';
+          var label = b >= 0 ? 'gets back ' + fmt(b) : 'owes ' + fmt(b);
+          return '<div class="balance-item"><span class="balance-name">' + escHtml(p) + '</span><div class="balance-bar-track"><div class="balance-bar-fill ' + cls + '" style="width:' + pct + '%"></div></div><span class="balance-value ' + valCls + '">' + label + '</span></div>';
+        }).join('');
+
+        // Settlement plan
+        var settlementList = document.getElementById('settlement-list');
+        if (settlements.length === 0) {
+          settlementList.innerHTML = '<div class="empty-state">All settled up!</div>';
+        } else {
+          settlementList.innerHTML = settlements.map(function(s) {
+            return '<div class="settlement-item"><strong>' + escHtml(s.from) + '</strong> <span class="settlement-arrow">&#8594;</span> <strong>' + escHtml(s.to) + '</strong> <span style="margin-left:auto;font-weight:700;color:var(--heading);">' + fmt(s.amount) + '</span></div>';
+          }).join('');
+        }
+      }
+
+      function addPerson() {
+        var input = document.getElementById('person-name-input');
+        var name = input.value.trim();
+        if (!name) { if (window.showToast) window.showToast('Enter a name.'); return; }
+        if (people.length >= MAX_PEOPLE) { if (window.showToast) window.showToast('Maximum ' + MAX_PEOPLE + ' people allowed.'); return; }
+        if (people.indexOf(name) > -1) { if (window.showToast) window.showToast('That name is already added.'); return; }
+        people.push(name);
+        input.value = '';
+        input.focus();
+        save();
+        renderPeople();
+        renderResults();
+      }
+
+      function removePerson(idx) {
+        var name = people[idx];
+        // Remove expenses involving this person
+        expenses = expenses.filter(function(e) {
+          return e.paidBy !== name && e.splitAmong.indexOf(name) === -1;
+        });
+        people.splice(idx, 1);
+        save();
+        renderPeople();
+        renderExpenses();
+        renderResults();
+      }
+
+      function addExpense() {
+        if (people.length < 2) { if (window.showToast) window.showToast('Add at least 2 people first.'); return; }
+        var desc = document.getElementById('expense-desc').value.trim();
+        var amount = parseFloat(document.getElementById('expense-amount').value);
+        var paidBy = document.getElementById('expense-paid-by').value;
+        var splitType = document.getElementById('expense-split-type').value;
+        var splitAmong = getCheckedPeople();
+
+        if (!desc) { if (window.showToast) window.showToast('Enter a description.'); return; }
+        if (isNaN(amount) || amount <= 0) { if (window.showToast) window.showToast('Enter a valid amount.'); return; }
+        if (!paidBy) { if (window.showToast) window.showToast('Select who paid.'); return; }
+        if (splitAmong.length === 0) { if (window.showToast) window.showToast('Select at least one person to split among.'); return; }
+
+        var customAmounts = {};
+        if (splitType === 'custom') {
+          var total = 0;
+          var inputs = document.querySelectorAll('#custom-split-inputs .split-custom-input');
+          inputs.forEach(function(inp) {
+            var val = parseFloat(inp.value) || 0;
+            customAmounts[inp.dataset.person] = val;
+            total += val;
+          });
+          if (Math.abs(total - amount) > 0.02) {
+            if (window.showToast) window.showToast('Custom amounts (' + getSymbol() + total.toFixed(2) + ') must equal the total (' + fmt(amount) + ').');
+            return;
+          }
+        } else if (splitType === 'percentage') {
+          var totalPct = 0;
+          var inputs = document.querySelectorAll('#custom-split-inputs .split-custom-input');
+          inputs.forEach(function(inp) {
+            var val = parseFloat(inp.value) || 0;
+            customAmounts[inp.dataset.person] = val;
+            totalPct += val;
+          });
+          if (Math.abs(totalPct - 100) > 0.5) {
+            if (window.showToast) window.showToast('Percentages must add up to 100% (currently ' + totalPct.toFixed(1) + '%).');
+            return;
+          }
+        }
+
+        expenses.push({
+          desc: desc,
+          amount: amount,
+          paidBy: paidBy,
+          splitType: splitType,
+          splitAmong: splitAmong,
+          customAmounts: customAmounts,
+          id: Date.now()
+        });
+
+        // Reset form
+        document.getElementById('expense-desc').value = '';
+        document.getElementById('expense-amount').value = '';
+        document.getElementById('expense-split-type').value = 'equal';
+        renderSplitCheckboxes();
+
+        save();
+        renderExpenses();
+        renderResults();
+        if (window.showToast) window.showToast('Expense added!');
+      }
+
+      function removeExpense(idx) {
+        expenses.splice(idx, 1);
+        save();
+        renderExpenses();
+        renderResults();
+      }
+
+      function shareSummary() {
+        if (expenses.length === 0) { if (window.showToast) window.showToast('No expenses to share.'); return; }
+        var balances = calculateBalances();
+        var settlements = calculateSettlement(balances);
+        var totalExpenses = expenses.reduce(function(s, e) { return s + e.amount; }, 0);
+        var text = 'Expense Split Summary\n';
+        text += '---------------------\n';
+        text += 'Total: ' + fmt(totalExpenses) + ' (' + getCurrency() + ')\n';
+        text += 'People: ' + people.join(', ') + '\n\n';
+        text += 'Settlement Plan:\n';
+        if (settlements.length === 0) {
+          text += 'All settled up!\n';
+        } else {
+          settlements.forEach(function(s) {
+            text += s.from + ' pays ' + s.to + ' ' + fmt(s.amount) + '\n';
+          });
+        }
+        text += '\nSplit with tool.teamzlab.com/tools/expense-splitter/';
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            if (window.showToast) window.showToast('Summary copied! Paste in WhatsApp or any chat.');
+          });
+        } else {
+          // Fallback
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (window.showToast) window.showToast('Summary copied!');
+        }
+      }
+
+      function clearAll() {
+        people = [];
+        expenses = [];
+        localStorage.removeItem(STORAGE_KEY);
+        renderPeople();
+        renderExpenses();
+        renderResults();
+        if (window.showToast) window.showToast('All data cleared.');
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        load();
+        renderPeople();
+        renderExpenses();
+        renderResults();
+
+        // Add person
+        document.getElementById('add-person-btn').addEventListener('click', addPerson);
+        document.getElementById('person-name-input').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') addPerson();
+        });
+
+        // Remove person (delegated)
+        document.getElementById('people-list').addEventListener('click', function(e) {
+          var btn = e.target.closest('.person-tag-remove');
+          if (btn) removePerson(parseInt(btn.dataset.idx));
+        });
+
+        // Add expense
+        document.getElementById('add-expense-btn').addEventListener('click', addExpense);
+
+        // Remove expense (delegated)
+        document.getElementById('expense-list').addEventListener('click', function(e) {
+          var btn = e.target.closest('.expense-card-delete');
+          if (btn) removeExpense(parseInt(btn.dataset.expenseIdx));
+        });
+
+        // Split type change
+        document.getElementById('expense-split-type').addEventListener('change', updateCustomSplitInputs);
+
+        // Checkbox change updates custom inputs
+        document.getElementById('split-checkboxes').addEventListener('change', updateCustomSplitInputs);
+
+        // Currency change
+        document.getElementById('currency-select').addEventListener('change', function() {
+          save();
+          renderExpenses();
+          renderResults();
+        });
+
+        // Share summary
+        document.getElementById('share-summary-btn').addEventListener('click', shareSummary);
+
+        // Clear all
+        document.getElementById('clear-all-btn').addEventListener('click', function() {
+          clearAll();
+        });
+
+        // Schemas and common components
+        var BREADCRUMBS = [
+          { name: 'Home', url: '/' },
+          { name: 'Tools', url: '/tools/' },
+          { name: 'Expense Splitter' }
+        ];
+
+        var FAQS = [
+          { q: 'How does the expense splitter calculate who owes what?', a: 'The tool tracks every expense, who paid, and who was included in the split. It then calculates each person\'s net balance (total paid minus total share owed). People with a negative balance owe money, and those with a positive balance are owed money. The settlement plan uses a greedy algorithm to minimize the number of transactions needed to settle all debts.' },
+          { q: 'Can I split expenses unequally?', a: 'Yes. For each expense you can choose Equal split (everyone pays the same), Custom amounts (you specify exact amounts per person), or Percentage split (you assign a percentage to each person). You can mix split types across different expenses in the same group.' },
+          { q: 'Is my financial data private?', a: 'Absolutely. All data is stored in your browser\'s localStorage. Nothing is sent to any server. Your names, amounts, and expense details remain entirely on your device.' },
+          { q: 'How many people can I add?', a: 'You can add up to 10 people per group. This covers most common scenarios like restaurant bills, house shares, and group trips.' },
+          { q: 'Can I share the settlement plan with my group?', a: 'Yes. Click "Copy Summary" to copy a text version of the settlement plan to your clipboard. Paste it into WhatsApp, iMessage, Slack, or any other messenger to let everyone know who pays whom.' }
+        ];
+
+        var RELATED_TOOLS = [
+          { slug: 'evergreen/tip-calculator', name: 'Tip Calculator', description: 'Calculate tips and split restaurant bills.' },
+          { slug: 'tools/personal-budget-tracker', name: 'Budget Tracker', description: 'Track income and expenses privately.' },
+          { slug: 'evergreen/sales-tax-calculator', name: 'Sales Tax Calculator', description: 'Calculate sales tax for any purchase.' },
+          { slug: 'tools/subscription-tracker', name: 'Subscription Tracker', description: 'Track recurring subscriptions and costs.' },
+          { slug: 'evergreen/percentage-calculator', name: 'Percentage Calculator', description: 'Quick percentage calculations.' },
+          { slug: 'tools/daily-planner', name: 'Daily Planner', description: 'Plan your day with time blocks.' }
+        ];
+
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.injectWebAppSchema({ slug: 'tools/expense-splitter', title: 'Expense Splitter', description: 'Split bills and expenses between friends fairly. Free, private tool.' });
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>
