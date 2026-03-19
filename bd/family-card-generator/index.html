@@ -59,8 +59,11 @@
           <input type="text" id="fc-card-no" class="tool-input" placeholder="১২৩৪৫৬৭৮৯১" maxlength="16">
         </div>
         <div class="tool-field">
-          <label class="tool-label" for="fc-sign">স্বাক্ষর (নাম লিখুন)</label>
-          <input type="text" id="fc-sign" class="tool-input" placeholder="আপনার স্বাক্ষর" style="font-style:italic;">
+          <label class="tool-label">স্বাক্ষর (আঙুল বা মাউস দিয়ে সই করুন)</label>
+          <div style="position:relative;display:inline-block;">
+            <canvas id="fc-sign-pad" width="280" height="80" style="border:1px solid var(--border);border-radius:8px;background:var(--bg);cursor:crosshair;touch-action:none;"></canvas>
+            <button type="button" id="fc-sign-clear" style="position:absolute;top:4px;right:4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:0.7rem;cursor:pointer;color:var(--text-muted);font-family:inherit;">মুছুন</button>
+          </div>
         </div>
       </div>
       <div class="tool-field">
@@ -114,7 +117,34 @@
     var userPhoto = null;
     var nameInput = document.getElementById('fc-name');
     var cardNoInput = document.getElementById('fc-card-no');
-    var signInput = document.getElementById('fc-sign');
+
+    // Signature drawing pad
+    var signPad = document.getElementById('fc-sign-pad');
+    var signCtx = signPad.getContext('2d');
+    var isDrawing = false;
+    var signHasContent = false;
+
+    function getSignPos(e) {
+      var rect = signPad.getBoundingClientRect();
+      var touch = e.touches ? e.touches[0] : e;
+      return { x: (touch.clientX - rect.left) * (signPad.width / rect.width), y: (touch.clientY - rect.top) * (signPad.height / rect.height) };
+    }
+
+    signPad.addEventListener('mousedown', function(e) { isDrawing = true; signHasContent = true; var p = getSignPos(e); signCtx.beginPath(); signCtx.moveTo(p.x, p.y); });
+    signPad.addEventListener('mousemove', function(e) { if (!isDrawing) return; var p = getSignPos(e); signCtx.lineWidth = 2; signCtx.lineCap = 'round'; signCtx.strokeStyle = 'var(--heading)'; signCtx.lineTo(p.x, p.y); signCtx.stroke(); });
+    signPad.addEventListener('mouseup', function() { isDrawing = false; renderCard(); });
+    signPad.addEventListener('mouseleave', function() { isDrawing = false; });
+
+    // Touch support
+    signPad.addEventListener('touchstart', function(e) { e.preventDefault(); isDrawing = true; signHasContent = true; var p = getSignPos(e); signCtx.beginPath(); signCtx.moveTo(p.x, p.y); });
+    signPad.addEventListener('touchmove', function(e) { e.preventDefault(); if (!isDrawing) return; var p = getSignPos(e); signCtx.lineWidth = 2; signCtx.lineCap = 'round'; signCtx.strokeStyle = '#1a1a2e'; signCtx.lineTo(p.x, p.y); signCtx.stroke(); });
+    signPad.addEventListener('touchend', function() { isDrawing = false; renderCard(); });
+
+    document.getElementById('fc-sign-clear').addEventListener('click', function() {
+      signCtx.clearRect(0, 0, signPad.width, signPad.height);
+      signHasContent = false;
+      renderCard();
+    });
 
     // Load Bangladesh Government Seal (local SVG)
     var govEmblem = new Image();
@@ -145,7 +175,6 @@
     // Live update
     nameInput.addEventListener('input', renderCard);
     cardNoInput.addEventListener('input', renderCard);
-    signInput.addEventListener('input', renderCard);
 
     // Convert to Bangla digits
     function toBanglaDigits(str) {
@@ -296,7 +325,6 @@
       ctx.fillText(generateBarcode(), 300, barcodeY - 10);
 
       // Signature area — bottom left with white box
-      var signText = signInput.value.trim();
       var sigX = 40, sigY = 380, sigW = 200, sigH = 80;
       ctx.fillStyle = 'rgba(255,255,255,0.85)';
       roundRect(ctx, sigX, sigY, sigW, sigH, 6);
@@ -310,11 +338,9 @@
       ctx.strokeStyle = 'rgba(100, 50, 130, 0.3)';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(sigX + 10, sigY + 58); ctx.lineTo(sigX + sigW - 10, sigY + 58); ctx.stroke();
-      // Signature text (italic handwriting style)
-      if (signText) {
-        ctx.fillStyle = 'rgba(30, 10, 60, 0.8)';
-        ctx.font = 'italic 600 20px "Noto Sans Bengali", cursive, sans-serif';
-        ctx.fillText(signText, sigX + 15, sigY + 50);
+      // Draw hand-drawn signature from pad
+      if (signHasContent) {
+        ctx.drawImage(signPad, sigX + 5, sigY + 22, sigW - 10, 35);
       }
 
       // Watermark — "নমুনা কার্ড" large diagonal
@@ -357,27 +383,27 @@
 
     // Share WhatsApp
     document.getElementById('fc-share-wa').addEventListener('click', function() {
-      var url = TeamzTools.shareEncode({ name: nameInput.value, cardNo: cardNoInput.value, sign: signInput.value });
+      var url = TeamzTools.shareEncode({ name: nameInput.value, cardNo: cardNoInput.value });
       var msg = '😂 দেখো আমার ফ্যামিলি কার্ড! ' + url;
       window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
     });
 
     // Share Facebook
     document.getElementById('fc-share-fb').addEventListener('click', function() {
-      var url = TeamzTools.shareEncode({ name: nameInput.value, cardNo: cardNoInput.value, sign: signInput.value });
+      var url = TeamzTools.shareEncode({ name: nameInput.value, cardNo: cardNoInput.value });
       window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank');
     });
 
     // Share Link
     document.getElementById('fc-share-link').addEventListener('click', function() {
-      TeamzTools.copyShareLink({ name: nameInput.value, cardNo: cardNoInput.value, sign: signInput.value }, showToast);
+      TeamzTools.copyShareLink({ name: nameInput.value, cardNo: cardNoInput.value }, showToast);
     });
 
     // Load from shared URL
     var shared = TeamzTools.shareDecode();
     if (shared.name) { nameInput.value = shared.name; }
     if (shared.cardNo) { cardNoInput.value = shared.cardNo; }
-    if (shared.sign) { signInput.value = shared.sign; }
+    // Signature is hand-drawn — not shared via URL (privacy)
 
     // Initial render (wait for fonts)
     if (document.fonts && document.fonts.ready) {
