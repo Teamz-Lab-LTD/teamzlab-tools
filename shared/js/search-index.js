@@ -970,6 +970,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Playlist Duration Calculator',d:'Calculate total duration of a video playlist by entering individual video lengths. See total watch time, time at different speeds, and finish time. Fr',h:'/video/playlist-duration-calculator/'},
   {t:'SRT Subtitle Formatter',d:'Edit and format SRT subtitle files online. Shift timing, remove formatting tags, renumber entries, and clean text. Download formatted SRT. Free.',h:'/video/srt-subtitle-formatter/'},
   {t:'Watch Speed Calculator',d:'Calculate how long a video or podcast takes at different playback speeds. See adjusted duration at 1.25x, 1.5x, 2x with time saved. Free tool.',h:'/video/watch-speed-calculator/'},
+  {t:'YouTube Thumbnail Downloader',d:'',h:'/video/youtube-thumbnail-downloader/'},
   {t:'YouTube Timestamp Link Generator',d:'Generate YouTube links that start at a specific timestamp. Create shareable URLs with time codes for any YouTube video. Free and private tool.',h:'/video/youtube-timestamp-link-maker/'},
   {t:'Công cụ Việt Nam',d:'Công cụ miễn phí cho Việt Nam — kiểm tra thay đổi BHXH và điều kiện vay sinh viên STEM.',h:'/vn/'},
   {t:'Ki&#7875;m Tra Thay &#272;&#7893;i BHXH Vi&#7879;t Nam',d:'Ki&#7875;m tra thay &#273;&#7893;i BHXH Vi&#7879;t Nam 2026 theo Ngh&#7883; &#273;&#7883;nh 159/2025. T&iacute;nh m&#7913;c &#273;&oacute;ng m&#7899;i',h:'/vn/social-insurance-change-checker/'},
