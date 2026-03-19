@@ -918,6 +918,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Digital Card & Sharing Tools',d:'Free digital card tools — vCard generator, QR business card, email signature maker, WiFi sharing card, link-in-bio generator, and NFC calculator.',h:'/tools/'},
   {t:'Job Application Tracker',d:'Track your job applications privately. No sign-up required. Monitor application status, interviews, and response rates. All data stays on your device.',h:'/tools/job-application-tracker/'},
   {t:'Love Calculator',d:'Calculate your love compatibility! Enter two names and get a fun love percentage score with relationship advice. Free, shareable, 100% private.',h:'/tools/love-calculator/'},
+  {t:'Name Meaning Generator',d:'Discover the meaning, origin, and personality traits of any name. Get numerology number, famous namesakes, and shareable name card. Free tool.',h:'/tools/name-meaning-generator/'},
   {t:'NFC Tag Size Calculator',d:'Free NFC tag size calculator to check if your data fits on NTAG213, NTAG215, NTAG216, NTAG424, or MIFARE Classic tags. Calculate NDEF overhead size.',h:'/tools/nfc-tag-size-calculator/'},
   {t:'Number Typing Practice — 10-Key Speed',d:'Practice 10-key number typing with random numbers, phone numbers, dates, and currency amounts. Track WPM and accuracy. Free and private in your browse',h:'/tools/number-typing-practice/'},
   {t:'Paragraph Typing Test — Free Online',d:'Take a free paragraph typing test with easy, medium, and hard difficulty. Track gross and net WPM, accuracy, and problem keys. Private and offline-rea',h:'/tools/paragraph-typing-test/'},
