@@ -172,6 +172,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Geburtstagswünsche Generator',d:'Erstellen Sie personalisierte Geburtstagswünsche für Familie und Freunde. 100+ deutsche Glückwünsche mit schönen Karten. Kostenlos teilen.',h:'/de/geburtstagswuensche-generator/'},
   {t:'Geräte-Stromkosten Rechner',d:'Was kostet Ihr Gerät an Strom pro Tag, Monat und Jahr? Berechnen Sie die Stromkosten jedes Haushaltsgeräts mit diesem kostenlosen Rechner.',h:'/de/geraete-stromkosten-rechner/'},
   {t:'Deutschland Rechner',d:'Kostenlose Rechner für Deutschland — Elterngeld, Mietbelastung, Stromabschlag, Pendlerkosten, Wohngeld und mehr.',h:'/de/'},
+  {t:'KFZ-Steuer-Rechner 2026',d:'Berechnen Sie Ihre Kfz-Steuer 2026 kostenlos. Hubraum, CO2-Ausstoß, Kraftstoffart und Erstzulassung. Privat und ohne Anmeldung.',h:'/de/kfz-steuer-rechner/'},
   {t:'Kinderzuschlag Rechner',d:'Prüfen Sie, ob Ihnen Kinderzuschlag zusteht. Berechnen Sie den möglichen KiZ-Betrag für Ihre Familie — kostenlos und sofort.',h:'/de/kinderzuschlag-rechner/'},
   {t:'Kreditrechner',d:'Berechnen Sie Ihre monatliche Kreditrate, Gesamtzinsen und Tilgungsplan. F&uuml;r Ratenkredite, Autokredite und Konsumkredite. Kostenlos und privat.',h:'/de/kreditrechner/'},
   {t:'Mietbelastungsrechner',d:'Wie viel Prozent Ihres Einkommens geht für Miete drauf? Prüfen Sie Ihre Mietbelastung kostenlos — mit Bewertung nach Destatis-Richtwerten.',h:'/de/mietbelastungs-rechner/'},
