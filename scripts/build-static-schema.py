@@ -259,16 +259,7 @@ def process_file(filepath):
     # Auto-fix missing twitter tags
     content = fix_twitter_tags(content)
 
-    # Remove old static schema blocks
-    if MARKER in content:
-        content = re.sub(
-            rf"{re.escape(MARKER)}.*?{re.escape(MARKER)}\n?",
-            "",
-            content,
-            flags=re.DOTALL,
-        )
-
-    # Extract all schemas
+    # Extract all schemas from JS calls
     schema_blocks = []
 
     bc = extract_breadcrumbs(content)
@@ -284,8 +275,23 @@ def process_file(filepath):
         schema_blocks.append(json.dumps(webapp, ensure_ascii=False))
 
     if not schema_blocks:
+        # No JS schema calls found — check if static schemas already exist
+        if MARKER in content:
+            marker_match = re.search(rf"{re.escape(MARKER)}(.*?){re.escape(MARKER)}", content, re.DOTALL)
+            if marker_match and 'application/ld+json' in marker_match.group(1):
+                count += 1  # Already has valid static schemas, no changes needed
+                return
         skip += 1
         return
+
+    # Remove old static schema blocks before injecting new ones
+    if MARKER in content:
+        content = re.sub(
+            rf"{re.escape(MARKER)}.*?{re.escape(MARKER)}\n?",
+            "",
+            content,
+            flags=re.DOTALL,
+        )
 
     # Build the injection block
     lines = [MARKER]
