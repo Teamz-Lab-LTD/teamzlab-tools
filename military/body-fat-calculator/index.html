@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Military Body Fat Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate body fat percentage using official DoD tape test formulas for Army, Navy, Air Force, and Marines. Check pass/fail standards by branch and age. Free.">
+  <meta property="og:title" content="Military Body Fat Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate body fat using DoD tape test formulas. Check pass/fail by branch and age. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/military/body-fat-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/military.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Military Body Fat Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate body fat using DoD tape test formulas. Check pass/fail by branch and age. Free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/military/body-fat-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .bf-verdict {
+      text-align: center;
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 20px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+    }
+    .bf-verdict.pass {
+      border-color: var(--heading);
+    }
+    .bf-verdict .verdict-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+    .bf-verdict .verdict-label {
+      font-family: var(--ff);
+      font-weight: 700;
+      font-size: var(--text-xl);
+      color: var(--heading);
+      margin-bottom: 8px;
+    }
+    .bf-verdict .verdict-detail {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .bf-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .bf-stat {
+      text-align: center;
+      padding: 20px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    .bf-stat .stat-value {
+      font-family: var(--ff);
+      font-weight: 800;
+      font-size: var(--text-xl);
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .bf-stat .stat-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .bf-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+      margin-top: 16px;
+    }
+    .bf-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      color: var(--heading);
+      font-weight: 600;
+    }
+    .bf-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .bf-table tr.highlight-row {
+      background: var(--surface);
+      font-weight: 600;
+    }
+    .bf-section {
+      margin-top: 24px;
+    }
+    .bf-section h3 {
+      font-family: var(--ff);
+      font-weight: 700;
+      font-size: var(--text-lg);
+      color: var(--heading);
+      margin-bottom: 12px;
+    }
+    .bf-gauge {
+      position: relative;
+      height: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .bf-gauge-fill {
+      height: 100%;
+      border-radius: var(--radius-md);
+      transition: width 0.5s ease;
+      background: var(--heading);
+    }
+    .bf-gauge-marker {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 3px;
+      background: var(--accent);
+    }
+    .bf-gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .hip-group { display: none; }
+    .hip-group.active { display: block; }
+    .bf-formula-note {
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+    .bf-formula-note p {
+      color: var(--text);
+      line-height: 1.6;
+      font-size: var(--text-sm);
+      margin: 0;
+    }
+    .bf-formula-note code {
+      font-family: monospace;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-xs);
+      color: var(--heading);
+    }
+    @media (max-width: 600px) {
+      .bf-stats {
+        grid-template-columns: 1fr;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .bf-table {
+        font-size: 12px;
+      }
+      .bf-table th, .bf-table td {
+        padding: 6px 8px;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Military Tools", "item": "https://tool.teamzlab.com/military/"}, {"@type": "ListItem", "position": 3, "name": "Military Body Fat Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the military calculate body fat?", "acceptedAnswer": {"@type": "Answer", "text": "The DoD uses a circumference-based method. For males, neck and waist measurements are used. For females, neck, waist, and hip measurements are used. These are plugged into logarithmic formulas validated against hydrostatic weighing to estimate body fat percentage."}}, {"@type": "Question", "name": "What are the Army body fat standards?", "acceptedAnswer": {"@type": "Answer", "text": "Army standards (AR 600-9) allow: males 17-20: 20%, 21-27: 22%, 28-39: 24%, 40+: 26%. Females 17-20: 30%, 21-27: 32%, 28-39: 34%, 40+: 36%. Other branches have similar but slightly different standards."}}, {"@type": "Question", "name": "When is the tape test administered?", "acceptedAnswer": {"@type": "Answer", "text": "The tape test is given when a service member exceeds the screening weight on the height/weight table. It is part of the body composition assessment conducted at least annually. Members in body composition programs may be tested more frequently, typically monthly."}}, {"@type": "Question", "name": "How accurate is the DoD tape test?", "acceptedAnswer": {"@type": "Answer", "text": "The circumference method has a standard error of 3-4% compared to laboratory methods like hydrostatic weighing or DEXA scans. It tends to overestimate body fat in muscular individuals and underestimate it in those with less muscle mass. Despite limitations, it provides a standardized measurement."}}, {"@type": "Question", "name": "What happens if I fail the body fat test?", "acceptedAnswer": {"@type": "Answer", "text": "Consequences vary by branch but typically include enrollment in a body composition program, counseling, and a set timeframe to meet standards. Repeated failures can result in bars to reenlistment, removal from promotion lists, and potentially involuntary separation from service."}}, {"@type": "Question", "name": "Can I dispute my tape test results?", "acceptedAnswer": {"@type": "Answer", "text": "You can request a re-measurement by a different trained assessor. Some branches allow alternative methods like DEXA scans at military treatment facilities, though the tape test remains the primary standard. Ensure measurements follow proper protocol at the correct anatomical landmarks."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Military Body Fat Calculator", "description": "Calculate body fat percentage using DoD tape test formulas.", "url": "https://tool.teamzlab.com/military/body-fat-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Military Body Fat Calculator</h1>
+      <p class="tool-description">Calculate your body fat percentage using the official Department of Defense circumference-based tape test method. Select your military branch, enter your measurements, and instantly see your results with pass/fail standards by branch and age group.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="tool-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="bf-branch">Military Branch</label>
+            <select id="bf-branch">
+              <option value="army">Army</option>
+              <option value="navy">Navy</option>
+              <option value="airforce">Air Force</option>
+              <option value="marines">Marines</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bf-gender">Gender</label>
+            <select id="bf-gender">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bf-age">Age</label>
+            <input type="number" id="bf-age" placeholder="e.g. 25" min="17" max="62" value="25">
+          </div>
+          <div class="form-group">
+            <label for="bf-height">Height (inches)</label>
+            <input type="number" id="bf-height" placeholder="e.g. 70" min="50" max="84" step="0.5" value="70">
+          </div>
+          <div class="form-group">
+            <label for="bf-neck">Neck Circumference (inches)</label>
+            <input type="number" id="bf-neck" placeholder="e.g. 15.5" min="10" max="25" step="0.25" value="15.5">
+          </div>
+          <div class="form-group">
+            <label for="bf-waist">Waist Circumference (inches)</label>
+            <input type="number" id="bf-waist" placeholder="e.g. 34" min="20" max="60" step="0.25" value="34">
+          </div>
+          <div class="form-group hip-group" id="hip-group">
+            <label for="bf-hip">Hip Circumference (inches)</label>
+            <input type="number" id="bf-hip" placeholder="e.g. 38" min="25" max="60" step="0.25" value="38">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="calculate-btn">Calculate Body Fat</button>
+          <button class="btn-secondary" id="reset-btn">Reset</button>
+        </div>
+      </div>
+      <div id="result-area" class="tool-result" style="display:none;"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Military Body Fat Test Works</h2>
+      <p>The Department of Defense uses a circumference-based tape test method to estimate body fat percentage when service members exceed weight standards on the height and weight screening. This method, prescribed in DoD Instruction 1308.3, requires measurements of the neck and waist for males, and the neck, waist, and hips for females. Measurements are taken at specific anatomical landmarks using a standard tape measure. For males, the neck is measured at the narrowest point below the larynx, and the waist is measured at the navel level. For females, the hip measurement is taken at the widest point of the buttocks. The measurements are then plugged into logarithmic formulas that were validated against hydrostatic weighing. While not as precise as laboratory methods, the DoD tape test provides a standardized, repeatable assessment that can be administered anywhere with minimal equipment. Each measurement is taken three times and rounded to the nearest half inch, with the average used for the calculation.</p>
+
+      <h2>Body Fat Standards by Military Branch</h2>
+      <p>Each military branch sets its own maximum allowable body fat percentages based on age and gender. The Army follows AR 600-9, which sets male limits at 20% for ages 17-20, 22% for 21-27, 24% for 28-39, and 26% for 40 and older. Female limits are 30%, 32%, 34%, and 36% for the same age groups respectively. The Navy and Marines use similar standards, while the Air Force has slightly different thresholds. Service members who exceed both the screening weight table and the body fat maximum may be enrolled in a body composition program and face career consequences including bars to reenlistment and removal from promotion consideration. The standards recognize that body composition naturally changes with age and that differences exist between males and females in essential fat storage. Maintaining body composition within standards is considered an indicator of overall physical fitness and military readiness, which is why these assessments are conducted at least annually across all branches.</p>
+
+      <h2>Tips for Accurate Tape Test Measurements</h2>
+      <p>Getting accurate tape test results depends on proper measurement technique. First, measurements should be taken in the morning before physical training and after using the restroom. The subject should stand upright with arms at their sides and breathe normally. The tape should make contact with the skin without compressing the underlying tissue. For the neck measurement, place the tape just below the Adam's apple and measure at the narrowest point. For the waist, measure at the level of the navel, keeping the tape horizontal. The hip measurement for females goes around the widest point of the buttocks with feet together. Each measurement should be taken three times and rounded to the nearest half inch. If you are close to the maximum, small differences in measurement technique can affect results by 1-2 percentage points. Hydration levels, recent meals, and time of day can all influence circumference measurements. Consistent conditions for each measurement session help ensure reliable tracking of body composition changes over time.</p>
+
+      <h2>Reducing Body Fat for Military Standards</h2>
+      <p>Service members who need to reduce body fat should focus on a combination of proper nutrition and exercise. A caloric deficit of 500 to 750 calories per day typically produces safe, sustainable fat loss of 1 to 1.5 pounds per week. Prioritize protein intake at 0.7 to 1 gram per pound of body weight to preserve lean muscle mass during weight loss. Resistance training two to four times per week is essential for maintaining muscle while losing fat. High-intensity interval training and steady-state cardio both contribute to fat loss, but the total caloric deficit matters more than exercise type. Avoid crash diets and extreme restriction, which can impair performance, reduce muscle mass, and lead to rebound weight gain. Many installations offer nutrition counseling and body composition improvement programs through Army Wellness Centers or similar facilities. Tracking waist measurements weekly provides better feedback than scale weight alone, since you may be gaining muscle while losing fat.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Military Tools', url: '/military/' },
+      { name: 'Military Body Fat Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'How does the military calculate body fat?', a: 'The DoD uses a circumference-based method. For males, neck and waist measurements are used. For females, neck, waist, and hip measurements are used. These are plugged into logarithmic formulas validated against hydrostatic weighing to estimate body fat percentage.' },
+      { q: 'What are the Army body fat standards?', a: 'Army standards (AR 600-9) allow: males 17-20: 20%, 21-27: 22%, 28-39: 24%, 40+: 26%. Females 17-20: 30%, 21-27: 32%, 28-39: 34%, 40+: 36%. Other branches have similar but slightly different standards.' },
+      { q: 'When is the tape test administered?', a: 'The tape test is given when a service member exceeds the screening weight on the height/weight table. It is part of the body composition assessment conducted at least annually. Members in body composition programs may be tested more frequently, typically monthly.' },
+      { q: 'How accurate is the DoD tape test?', a: 'The circumference method has a standard error of 3-4% compared to laboratory methods like hydrostatic weighing or DEXA scans. It tends to overestimate body fat in muscular individuals and underestimate it in those with less muscle mass. Despite limitations, it provides a standardized measurement.' },
+      { q: 'What happens if I fail the body fat test?', a: 'Consequences vary by branch but typically include enrollment in a body composition program, counseling, and a set timeframe to meet standards. Repeated failures can result in bars to reenlistment, removal from promotion lists, and potentially involuntary separation from service.' },
+      { q: 'Can I dispute my tape test results?', a: 'You can request a re-measurement by a different trained assessor. Some branches allow alternative methods like DEXA scans at military treatment facilities, though the tape test remains the primary standard. Ensure measurements follow proper protocol at the correct anatomical landmarks.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'military/military-pay-calculator', name: 'Military Pay Calculator', description: 'Calculate total military compensation including base pay, BAH, and BAS.' },
+      { slug: 'military/military-retirement-calculator', name: 'Military Retirement Calculator', description: 'Calculate military retirement pay under High-3 or BRS.' },
+      { slug: 'military/va-disability-calculator', name: 'VA Disability Calculator', description: 'Calculate your combined VA disability rating using VA math.' },
+      { slug: 'military/bah-calculator', name: 'BAH Calculator', description: 'Look up Basic Allowance for Housing rates by location and rank.' },
+      { slug: 'military/va-loan-calculator', name: 'VA Loan Calculator', description: 'Calculate VA home loan payments with no PMI or down payment.' },
+      { slug: 'military/tsp-calculator', name: 'TSP Calculator', description: 'Project your TSP growth with military matching contributions.' }
+    ];
+
+    var TOOL_CONFIG = {
+      slug: 'military/body-fat-calculator',
+      title: 'Military Body Fat Calculator',
+      description: 'Calculate body fat percentage using DoD tape test formulas.'
+    };
+
+    // Max body fat standards by branch, gender, and age group
+    var BF_STANDARDS = {
+      army: {
+        male:   [{ maxAge: 20, limit: 20 }, { maxAge: 27, limit: 22 }, { maxAge: 39, limit: 24 }, { maxAge: 99, limit: 26 }],
+        female: [{ maxAge: 20, limit: 30 }, { maxAge: 27, limit: 32 }, { maxAge: 39, limit: 34 }, { maxAge: 99, limit: 36 }]
+      },
+      navy: {
+        male:   [{ maxAge: 21, limit: 22 }, { maxAge: 29, limit: 23 }, { maxAge: 39, limit: 24 }, { maxAge: 99, limit: 26 }],
+        female: [{ maxAge: 21, limit: 33 }, { maxAge: 29, limit: 34 }, { maxAge: 39, limit: 35 }, { maxAge: 99, limit: 36 }]
+      },
+      airforce: {
+        male:   [{ maxAge: 29, limit: 20 }, { maxAge: 39, limit: 24 }, { maxAge: 99, limit: 26 }],
+        female: [{ maxAge: 29, limit: 28 }, { maxAge: 39, limit: 32 }, { maxAge: 99, limit: 34 }]
+      },
+      marines: {
+        male:   [{ maxAge: 25, limit: 18 }, { maxAge: 30, limit: 19 }, { maxAge: 35, limit: 20 }, { maxAge: 40, limit: 21 }, { maxAge: 45, limit: 22 }, { maxAge: 99, limit: 23 }],
+        female: [{ maxAge: 25, limit: 26 }, { maxAge: 30, limit: 27 }, { maxAge: 35, limit: 28 }, { maxAge: 40, limit: 29 }, { maxAge: 45, limit: 30 }, { maxAge: 99, limit: 31 }]
+      }
+    };
+
+    function getMaxBF(branch, gender, age) {
+      var standards = BF_STANDARDS[branch][gender];
+      for (var i = 0; i < standards.length; i++) {
+        if (age <= standards[i].maxAge) return standards[i].limit;
+      }
+      return standards[standards.length - 1].limit;
+    }
+
+    function getAgeGroup(age) {
+      if (age <= 20) return '17-20';
+      if (age <= 27) return '21-27';
+      if (age <= 39) return '28-39';
+      return '40+';
+    }
+
+    function toggleHip() {
+      var gender = document.getElementById('bf-gender').value;
+      var hipGroup = document.getElementById('hip-group');
+      if (gender === 'female') {
+        hipGroup.classList.add('active');
+      } else {
+        hipGroup.classList.remove('active');
+      }
+    }
+
+    function calculate() {
+      var branch = document.getElementById('bf-branch').value;
+      var gender = document.getElementById('bf-gender').value;
+      var age = parseInt(document.getElementById('bf-age').value);
+      var height = parseFloat(document.getElementById('bf-height').value);
+      var neck = parseFloat(document.getElementById('bf-neck').value);
+      var waist = parseFloat(document.getElementById('bf-waist').value);
+      var hip = parseFloat(document.getElementById('bf-hip').value) || 0;
+
+      if (!age || age < 17 || age > 62) {
+        window.showToast('Please enter a valid age (17-62).', 'error');
+        return;
+      }
+      if (!height || height < 50 || height > 84) {
+        window.showToast('Please enter a valid height (50-84 inches).', 'error');
+        return;
+      }
+      if (!neck || neck < 10) {
+        window.showToast('Please enter a valid neck circumference.', 'error');
+        return;
+      }
+      if (!waist || waist < 20) {
+        window.showToast('Please enter a valid waist circumference.', 'error');
+        return;
+      }
+      if (gender === 'female' && (!hip || hip < 25)) {
+        window.showToast('Please enter a valid hip circumference for females.', 'error');
+        return;
+      }
+      if (gender === 'male' && waist <= neck) {
+        window.showToast('Waist must be larger than neck for valid calculation.', 'error');
+        return;
+      }
+      if (gender === 'female' && (waist + hip) <= neck) {
+        window.showToast('Waist + hip must be larger than neck for valid calculation.', 'error');
+        return;
+      }
+
+      // DoD body fat formulas
+      var bodyFat;
+      if (gender === 'male') {
+        bodyFat = 86.010 * Math.log10(waist - neck) - 70.041 * Math.log10(height) + 36.76;
+      } else {
+        bodyFat = 163.205 * Math.log10(waist + hip - neck) - 97.684 * Math.log10(height) - 78.387;
+      }
+      bodyFat = Math.round(bodyFat * 10) / 10;
+
+      // Clamp to reasonable range
+      if (bodyFat < 2) bodyFat = 2;
+      if (bodyFat > 50) bodyFat = 50;
+
+      var maxAllowed = getMaxBF(branch, gender, age);
+      var passed = bodyFat <= maxAllowed;
+      var diff = Math.abs(bodyFat - maxAllowed);
+      var diffText = passed ? diff.toFixed(1) + '% below' : diff.toFixed(1) + '% above';
+
+      var branchNames = { army: 'Army', navy: 'Navy', airforce: 'Air Force', marines: 'Marines' };
+      var branchName = branchNames[branch];
+
+      var html = '';
+
+      // Verdict
+      html += '<div class="bf-verdict ' + (passed ? 'pass' : '') + '">';
+      html += '<div class="verdict-icon">' + (passed ? '&#10003;' : '&#9888;') + '</div>';
+      html += '<div class="verdict-label">' + (passed ? 'PASS' : 'DOES NOT MEET STANDARD') + '</div>';
+      html += '<div class="verdict-detail">' + branchName + ' | ' + (gender === 'male' ? 'Male' : 'Female') + ' | Age ' + age + ' | Max Allowed: ' + maxAllowed + '% | Your Result: ' + bodyFat + '% (' + diffText + ' standard)</div>';
+      html += '</div>';
+
+      // Stats
+      html += '<div class="bf-stats">';
+      html += '<div class="bf-stat"><div class="stat-value">' + bodyFat + '%</div><div class="stat-label">Body Fat</div></div>';
+      html += '<div class="bf-stat"><div class="stat-value">' + maxAllowed + '%</div><div class="stat-label">Max Allowed</div></div>';
+      html += '<div class="bf-stat"><div class="stat-value">' + diffText + '</div><div class="stat-label">vs Standard</div></div>';
+      html += '</div>';
+
+      // Visual gauge
+      var gaugeMax = gender === 'male' ? 40 : 50;
+      var bfPct = Math.min((bodyFat / gaugeMax) * 100, 100);
+      var maxPct = (maxAllowed / gaugeMax) * 100;
+      html += '<div class="bf-section">';
+      html += '<h3>Body Fat Gauge</h3>';
+      html += '<div class="bf-gauge">';
+      html += '<div class="bf-gauge-fill" style="width:' + bfPct + '%"></div>';
+      html += '<div class="bf-gauge-marker" style="left:' + maxPct + '%" title="Max standard: ' + maxAllowed + '%"></div>';
+      html += '</div>';
+      html += '<div class="bf-gauge-labels"><span>0%</span><span>Max: ' + maxAllowed + '%</span><span>' + gaugeMax + '%</span></div>';
+      html += '</div>';
+
+      // Measurement summary
+      html += '<div class="bf-section">';
+      html += '<h3>Measurement Summary</h3>';
+      html += '<table class="bf-table">';
+      html += '<tr><th>Measurement</th><th>Value</th></tr>';
+      html += '<tr><td>Height</td><td>' + height + ' inches (' + Math.floor(height / 12) + '\' ' + (height % 12) + '")</td></tr>';
+      html += '<tr><td>Neck Circumference</td><td>' + neck + ' inches</td></tr>';
+      html += '<tr><td>Waist Circumference</td><td>' + waist + ' inches</td></tr>';
+      if (gender === 'female') {
+        html += '<tr><td>Hip Circumference</td><td>' + hip + ' inches</td></tr>';
+      }
+      html += '<tr><td>Branch</td><td>' + branchName + '</td></tr>';
+      html += '<tr><td>Age Group</td><td>' + getAgeGroup(age) + '</td></tr>';
+      html += '<tr><td><strong>Calculated Body Fat</strong></td><td><strong>' + bodyFat + '%</strong></td></tr>';
+      html += '<tr><td><strong>Max Allowed</strong></td><td><strong>' + maxAllowed + '%</strong></td></tr>';
+      html += '<tr><td><strong>Result</strong></td><td><strong>' + (passed ? 'PASS' : 'DOES NOT MEET STANDARD') + '</strong></td></tr>';
+      html += '</table>';
+      html += '</div>';
+
+      // All branch standards table
+      html += '<div class="bf-section">';
+      html += '<h3>Max Body Fat Standards — All Branches (' + (gender === 'male' ? 'Male' : 'Female') + ')</h3>';
+      html += '<table class="bf-table">';
+      html += '<tr><th>Branch</th>';
+
+      // Collect unique age groups across all branches for this gender
+      var ageGroups = [];
+      var branchKeys = ['army', 'navy', 'airforce', 'marines'];
+      for (var b = 0; b < branchKeys.length; b++) {
+        var stds = BF_STANDARDS[branchKeys[b]][gender];
+        for (var s = 0; s < stds.length; s++) {
+          var label = stds[s].maxAge >= 99 ? (stds[s === 0 ? 0 : s].maxAge >= 99 ? '40+' : '') : '';
+        }
+      }
+      // Simple approach: show standard age buckets
+      var displayAges = ['17-20', '21-27', '28-39', '40+'];
+      var testAges = [19, 25, 35, 45];
+      for (var a = 0; a < displayAges.length; a++) {
+        html += '<th>' + displayAges[a] + '</th>';
+      }
+      html += '</tr>';
+
+      for (var b = 0; b < branchKeys.length; b++) {
+        var bName = branchNames[branchKeys[b]];
+        var isCurrent = branchKeys[b] === branch;
+        html += '<tr' + (isCurrent ? ' class="highlight-row"' : '') + '>';
+        html += '<td>' + bName + '</td>';
+        for (var a = 0; a < testAges.length; a++) {
+          var limit = getMaxBF(branchKeys[b], gender, testAges[a]);
+          html += '<td>' + limit + '%</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</table>';
+      html += '</div>';
+
+      // Formula note
+      html += '<div class="bf-formula-note">';
+      if (gender === 'male') {
+        html += '<p><strong>Formula used (Male):</strong><br><code>%BF = 86.010 x log10(waist - neck) - 70.041 x log10(height) + 36.76</code></p>';
+      } else {
+        html += '<p><strong>Formula used (Female):</strong><br><code>%BF = 163.205 x log10(waist + hip - neck) - 97.684 x log10(height) - 78.387</code></p>';
+      }
+      html += '</div>';
+
+      var resultArea = document.getElementById('result-area');
+      resultArea.innerHTML = html;
+      resultArea.style.display = 'block';
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.showToast('Body fat calculated!', 'success');
+    }
+
+    function resetForm() {
+      document.getElementById('bf-branch').value = 'army';
+      document.getElementById('bf-gender').value = 'male';
+      document.getElementById('bf-age').value = '25';
+      document.getElementById('bf-height').value = '70';
+      document.getElementById('bf-neck').value = '15.5';
+      document.getElementById('bf-waist').value = '34';
+      document.getElementById('bf-hip').value = '38';
+      document.getElementById('result-area').style.display = 'none';
+      toggleHip();
+      window.showToast('Form reset.', 'info');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      document.getElementById('bf-gender').addEventListener('change', toggleHip);
+      document.getElementById('calculate-btn').addEventListener('click', calculate);
+      document.getElementById('reset-btn').addEventListener('click', resetForm);
+
+      toggleHip();
+    });
+  </script>
+</body>
+</html>
