@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screen Reader Text Preview — Teamz Lab Tools</title>
+  <meta name="description" content="Preview how screen readers announce your HTML. Detect missing alt text, empty links, and unlabeled form inputs. Free, private, runs in your browser.">
+  <meta property="og:title" content="Screen Reader Text Preview — Teamz Lab Tools">
+  <meta property="og:description" content="Preview how screen readers announce your HTML. Detect missing alt text, empty links, and unlabeled form inputs.">
+  <meta property="og:url" content="https://tool.teamzlab.com/accessibility/screen-reader-text-preview/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/accessibility.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Screen Reader Text Preview — Teamz Lab Tools">
+  <meta name="twitter:description" content="Preview how screen readers announce your HTML. Detect missing alt text, empty links, and unlabeled form inputs.">
+  <link rel="canonical" href="https://tool.teamzlab.com/accessibility/screen-reader-text-preview/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sr-input-area { width: 100%; min-height: 200px; font-family: 'Courier New', monospace; font-size: var(--text-sm); padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); resize: vertical; }
+    .sr-output { margin-top: 20px; }
+    .sr-output-list { list-style: none; padding: 0; margin: 0; }
+    .sr-output-list li { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--text); line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }
+    .sr-output-list li:last-child { border-bottom: none; }
+    .sr-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; background: var(--border); color: var(--text); }
+    .sr-tag--heading { background: var(--heading); color: var(--bg); }
+    .sr-tag--link { background: var(--accent); color: var(--accent-text); }
+    .sr-tag--image { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .sr-tag--button { background: var(--heading); color: var(--bg); }
+    .sr-tag--form { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .sr-tag--landmark { background: var(--heading); color: var(--bg); }
+    .sr-tag--list { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .sr-tag--table { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .sr-tag--text { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+
+    .sr-issues { margin-top: 20px; }
+    .sr-issue-item { padding: 10px 14px; border-left: 3px solid var(--heading); background: var(--surface); margin-bottom: 8px; border-radius: 0 8px 8px 0; font-size: var(--text-sm); color: var(--text); }
+    .sr-issue-item strong { color: var(--heading); }
+
+    .sr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .sr-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+    .sr-stat-card h4 { margin: 0 0 4px; font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .sr-stat-value { font-size: var(--text-xl); font-weight: 700; color: var(--heading); }
+
+    .action-bar { display: flex; gap: 8px; margin-top: 20px; }
+    .sr-reading-indicator { display: none; align-items: center; gap: 8px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; font-size: var(--text-sm); color: var(--text); }
+    .sr-reading-indicator.active { display: flex; }
+    .sr-pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--heading); animation: sr-pulse-anim 1s infinite; }
+    @keyframes sr-pulse-anim { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    @media (max-width: 600px) {
+      .sr-stats { grid-template-columns: 1fr 1fr; }
+      .action-bar { flex-direction: column; }
+      .action-bar button { width: 100%; }
+      h2 { font-size: var(--text-lg); }
+      .sr-input-area { min-height: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Screen Reader Text Preview</h1>
+      <p class="tool-description">Paste your HTML and see exactly what a screen reader would announce to users. Identifies missing alt text, empty links, unlabeled inputs, and missing landmarks so you can fix accessibility issues before they reach real users.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="form-group">
+        <label for="html-input">Paste your HTML code:</label>
+        <textarea id="html-input" class="sr-input-area" placeholder="<h1>Welcome</h1>&#10;<img src=&quot;hero.jpg&quot; alt=&quot;Team meeting&quot;>&#10;<nav>&#10;  <a href=&quot;/about&quot;>About Us</a>&#10;</nav>"></textarea>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn-primary" id="preview-btn">Preview Screen Reader Output</button>
+        <button class="btn-secondary tool-clear-btn" id="clear-btn">Clear</button>
+      </div>
+
+      <div id="sr-results" style="display:none;">
+        <h2>Screen Reader Announcement Order</h2>
+
+        <div class="sr-stats" id="sr-stats"></div>
+
+        <div class="sr-output">
+          <ul class="sr-output-list" id="sr-output-list"></ul>
+        </div>
+
+        <div class="sr-issues" id="sr-issues"></div>
+
+        <div class="sr-reading-indicator" id="sr-reading-indicator">
+          <span class="sr-pulse"></span>
+          <span id="sr-reading-text">Reading aloud...</span>
+        </div>
+
+        <div class="action-bar" style="margin-top:16px;">
+          <button class="btn-primary" id="read-aloud-btn">Read Aloud (TTS)</button>
+          <button class="btn-secondary" id="stop-reading-btn" style="display:none;">Stop Reading</button>
+          <button class="btn-secondary" id="export-btn">Export as Text</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Screen Readers Process HTML</h2>
+      <p>Screen readers like NVDA, JAWS, and VoiceOver traverse the DOM (Document Object Model) of a web page sequentially. They announce each element based on its semantic role: headings are announced with their level, images are announced with their alt text, links and buttons are identified by their accessible name, and form inputs are read with their associated labels. ARIA landmarks like <code>nav</code>, <code>main</code>, and <code>aside</code> help screen reader users navigate quickly between major page sections. When these semantics are missing or incorrect, screen reader users encounter confusing, incomplete, or unusable content.</p>
+
+      <h2>Common Accessibility Issues This Tool Detects</h2>
+      <p>This tool scans your HTML for the most impactful screen reader accessibility issues. Missing alt text on images forces screen readers to announce the file name — or nothing at all — leaving blind users guessing at content. Empty links (with no text and no aria-label) are announced as just "link" with no indication of where they go. Form inputs without associated labels leave users unsure what information to enter. Missing landmark regions make it difficult for screen reader users to navigate efficiently. Each of these issues is flagged with specific guidance on how to fix it.</p>
+
+      <h2>Improving Your HTML for Screen Readers</h2>
+      <p>Start by ensuring every image has descriptive alt text (or <code>alt=""</code> for purely decorative images). Give every link and button meaningful text content or an <code>aria-label</code>. Associate form inputs with labels using the <code>for</code> attribute or by wrapping inputs inside <code>label</code> elements. Use semantic HTML elements like <code>nav</code>, <code>main</code>, <code>header</code>, <code>footer</code>, and <code>aside</code> instead of generic <code>div</code> elements. Structure your headings in a logical hierarchy (h1 through h6) without skipping levels. These changes dramatically improve the experience for the millions of people who rely on screen readers to access the web.</p>
+
+      <h2>Web Speech API for Live Audio Preview</h2>
+      <p>This tool includes a "Read Aloud" feature powered by the Web Speech API, which is built into modern browsers. It reads the screen reader output sequentially, giving you an approximate experience of what a screen reader user would hear. While it does not replicate the exact behavior of NVDA or VoiceOver (which have their own speech engines and navigation modes), it provides a useful audio preview of your content's accessibility. Use it alongside manual screen reader testing for the most thorough audit.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'Screen Reader Text Preview'}]);
+    TeamzTools.injectBreadcrumbSchema([{name:'Home',url:'/'},{name:'Accessibility Tools',url:'/accessibility/'},{name:'Screen Reader Text Preview'}]);
+
+    var htmlInput = document.getElementById('html-input');
+    var resultsDiv = document.getElementById('sr-results');
+    var outputList = document.getElementById('sr-output-list');
+    var issuesDiv = document.getElementById('sr-issues');
+    var statsDiv = document.getElementById('sr-stats');
+    var readingIndicator = document.getElementById('sr-reading-indicator');
+    var currentUtterance = null;
+    var announcements = [];
+
+    document.getElementById('preview-btn').addEventListener('click', function() {
+      var html = htmlInput.value.trim();
+      if (!html) {
+        if (window.showToast) window.showToast('Please paste some HTML first.');
+        return;
+      }
+      parseAndPreview(html);
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      htmlInput.value = '';
+      resultsDiv.style.display = 'none';
+      announcements = [];
+      stopReading();
+      if (window.showToast) window.showToast('Cleared!');
+    });
+
+    function parseAndPreview(html) {
+      var parser = new DOMParser();
+      var doc = parser.parseFromString(html, 'text/html');
+      announcements = [];
+      var issues = [];
+      var stats = { headings: 0, links: 0, images: 0, forms: 0 };
+
+      function getLabelForInput(el, doc) {
+        var id = el.getAttribute('id');
+        if (id) {
+          var label = doc.querySelector('label[for="' + id + '"]');
+          if (label) return label.textContent.trim();
+        }
+        var parent = el.closest('label');
+        if (parent) return parent.textContent.trim();
+        var ariaLabel = el.getAttribute('aria-label');
+        if (ariaLabel) return ariaLabel;
+        var ariaLabelledby = el.getAttribute('aria-labelledby');
+        if (ariaLabelledby) {
+          var refEl = doc.getElementById(ariaLabelledby);
+          if (refEl) return refEl.textContent.trim();
+        }
+        return '';
+      }
+
+      function traverse(node) {
+        if (node.nodeType === 3) {
+          var text = node.textContent.trim();
+          if (text && node.parentNode && !['SCRIPT','STYLE','NOSCRIPT'].includes(node.parentNode.tagName)) {
+            var parentTag = node.parentNode.tagName;
+            if (!['H1','H2','H3','H4','H5','H6','A','BUTTON','LABEL','TH','TD','LI','FIGCAPTION'].includes(parentTag)) {
+              announcements.push({ type: 'text', tag: 'Text', text: text });
+            }
+          }
+          return;
+        }
+        if (node.nodeType !== 1) return;
+        var tag = node.tagName;
+        var role = node.getAttribute('role');
+        var ariaLabel = node.getAttribute('aria-label');
+
+        // ARIA landmarks
+        var landmarkMap = {
+          'HEADER': 'Banner', 'NAV': 'Navigation', 'MAIN': 'Main content',
+          'ASIDE': 'Complementary', 'FOOTER': 'Content info', 'SECTION': null, 'FORM': null
+        };
+        var roleMap = {
+          'banner': 'Banner', 'navigation': 'Navigation', 'main': 'Main content',
+          'complementary': 'Complementary', 'contentinfo': 'Content info', 'search': 'Search',
+          'region': 'Region', 'alert': 'Alert', 'alertdialog': 'Alert dialog',
+          'dialog': 'Dialog', 'status': 'Status', 'log': 'Log', 'timer': 'Timer'
+        };
+
+        if (role && roleMap[role]) {
+          var label = ariaLabel ? roleMap[role] + ': ' + ariaLabel : roleMap[role] + ' landmark';
+          announcements.push({ type: 'landmark', tag: 'Landmark', text: label });
+        } else if (landmarkMap[tag] !== undefined && landmarkMap[tag]) {
+          var lLabel = ariaLabel ? landmarkMap[tag] + ': ' + ariaLabel : landmarkMap[tag] + ' landmark';
+          announcements.push({ type: 'landmark', tag: 'Landmark', text: lLabel });
+        }
+
+        // ARIA live regions
+        var ariaLive = node.getAttribute('aria-live');
+        if (ariaLive && ariaLive !== 'off') {
+          announcements.push({ type: 'landmark', tag: 'Live', text: ariaLive + ' live region' });
+        }
+
+        // Headings
+        var headingMatch = tag.match(/^H([1-6])$/);
+        if (headingMatch) {
+          stats.headings++;
+          var hText = node.textContent.trim();
+          announcements.push({ type: 'heading', tag: 'H' + headingMatch[1], text: 'Heading level ' + headingMatch[1] + ': ' + hText });
+          return;
+        }
+
+        // Images
+        if (tag === 'IMG') {
+          stats.images++;
+          var alt = node.getAttribute('alt');
+          if (alt === null) {
+            announcements.push({ type: 'image', tag: 'Image', text: 'Image: no alt text (inaccessible)' });
+            issues.push('Image missing alt attribute: ' + (node.getAttribute('src') || 'unknown source'));
+          } else if (alt === '') {
+            // Decorative image — skipped by screen readers
+          } else {
+            announcements.push({ type: 'image', tag: 'Image', text: 'Image: ' + alt });
+          }
+          return;
+        }
+
+        // SVG with role="img"
+        if (tag === 'SVG' && role === 'img') {
+          stats.images++;
+          var svgLabel = ariaLabel || node.querySelector('title')?.textContent?.trim();
+          if (svgLabel) {
+            announcements.push({ type: 'image', tag: 'Image', text: 'Image: ' + svgLabel });
+          } else {
+            announcements.push({ type: 'image', tag: 'Image', text: 'Image: no label (inaccessible)' });
+            issues.push('SVG with role="img" missing aria-label or <title>');
+          }
+          return;
+        }
+
+        // Links
+        if (tag === 'A') {
+          stats.links++;
+          var linkText = ariaLabel || node.textContent.trim();
+          var imgChild = node.querySelector('img');
+          if (!linkText && imgChild) {
+            linkText = imgChild.getAttribute('alt') || '';
+          }
+          if (!linkText) {
+            announcements.push({ type: 'link', tag: 'Link', text: 'Link: (empty — inaccessible)' });
+            issues.push('Empty link found — add text content or aria-label');
+          } else {
+            announcements.push({ type: 'link', tag: 'Link', text: 'Link: ' + linkText });
+          }
+          return;
+        }
+
+        // Buttons
+        if (tag === 'BUTTON' || (tag === 'INPUT' && ['button','submit','reset'].includes(node.getAttribute('type')))) {
+          var btnText = ariaLabel || node.textContent.trim() || node.getAttribute('value') || '';
+          if (!btnText) {
+            announcements.push({ type: 'button', tag: 'Button', text: 'Button: (empty — inaccessible)' });
+            issues.push('Button without accessible name — add text content or aria-label');
+          } else {
+            announcements.push({ type: 'button', tag: 'Button', text: 'Button: ' + btnText });
+          }
+          if (tag === 'INPUT') return;
+        }
+
+        // Form inputs
+        if (tag === 'INPUT' && !['button','submit','reset','hidden'].includes(node.getAttribute('type'))) {
+          stats.forms++;
+          var inputType = node.getAttribute('type') || 'text';
+          var inputLabel = getLabelForInput(node, node.ownerDocument);
+          var typeNames = {
+            'text': 'Text input', 'email': 'Email input', 'password': 'Password input',
+            'tel': 'Phone input', 'url': 'URL input', 'number': 'Number input',
+            'search': 'Search input', 'date': 'Date input', 'time': 'Time input',
+            'range': 'Slider', 'file': 'File upload', 'color': 'Color picker',
+            'checkbox': 'Checkbox', 'radio': 'Radio button'
+          };
+          var typeName = typeNames[inputType] || inputType + ' input';
+          if (inputLabel) {
+            var extra = '';
+            if (inputType === 'checkbox') extra = node.checked ? ', checked' : ', not checked';
+            if (inputType === 'radio') extra = node.checked ? ', selected' : ', not selected';
+            announcements.push({ type: 'form', tag: 'Form', text: typeName + ': ' + inputLabel + extra });
+          } else {
+            announcements.push({ type: 'form', tag: 'Form', text: typeName + ': (no label — inaccessible)' });
+            issues.push('Form input (' + inputType + ') missing label');
+          }
+          return;
+        }
+
+        // Textarea
+        if (tag === 'TEXTAREA') {
+          stats.forms++;
+          var taLabel = getLabelForInput(node, node.ownerDocument);
+          if (taLabel) {
+            announcements.push({ type: 'form', tag: 'Form', text: 'Text area: ' + taLabel });
+          } else {
+            announcements.push({ type: 'form', tag: 'Form', text: 'Text area: (no label — inaccessible)' });
+            issues.push('Textarea missing label');
+          }
+          return;
+        }
+
+        // Select
+        if (tag === 'SELECT') {
+          stats.forms++;
+          var selLabel = getLabelForInput(node, node.ownerDocument);
+          var selVal = node.querySelector('option[selected]')?.textContent?.trim() || node.querySelector('option')?.textContent?.trim() || '';
+          if (selLabel) {
+            announcements.push({ type: 'form', tag: 'Form', text: 'Dropdown: ' + selLabel + (selVal ? ', current value: ' + selVal : '') });
+          } else {
+            announcements.push({ type: 'form', tag: 'Form', text: 'Dropdown: (no label — inaccessible)' });
+            issues.push('Select dropdown missing label');
+          }
+          return;
+        }
+
+        // Lists
+        if (tag === 'UL' || tag === 'OL') {
+          var items = node.querySelectorAll(':scope > li');
+          var listType = tag === 'OL' ? 'Ordered list' : 'List';
+          announcements.push({ type: 'list', tag: 'List', text: listType + ' with ' + items.length + ' items' });
+          items.forEach(function(li, i) {
+            var prefix = tag === 'OL' ? (i + 1) + '. ' : '';
+            announcements.push({ type: 'list', tag: 'Item', text: prefix + li.textContent.trim() });
+          });
+          return;
+        }
+
+        // Tables
+        if (tag === 'TABLE') {
+          var rows = node.querySelectorAll('tr');
+          var cols = rows.length > 0 ? rows[0].querySelectorAll('th, td').length : 0;
+          var caption = node.querySelector('caption');
+          var tableText = 'Table with ' + rows.length + ' rows, ' + cols + ' columns';
+          if (caption) tableText += ', caption: ' + caption.textContent.trim();
+          announcements.push({ type: 'table', tag: 'Table', text: tableText });
+          var headers = node.querySelectorAll('th');
+          if (headers.length > 0) {
+            var headerTexts = [];
+            headers.forEach(function(th) { headerTexts.push(th.textContent.trim()); });
+            announcements.push({ type: 'table', tag: 'Headers', text: 'Column headers: ' + headerTexts.join(', ') });
+          }
+          return;
+        }
+
+        // Recurse into children
+        for (var i = 0; i < node.childNodes.length; i++) {
+          traverse(node.childNodes[i]);
+        }
+
+        // End landmark
+        if ((role && roleMap[role]) || (landmarkMap[tag] !== undefined && landmarkMap[tag])) {
+          announcements.push({ type: 'landmark', tag: 'End', text: 'End of ' + (role ? roleMap[role] : landmarkMap[tag]) });
+        }
+      }
+
+      traverse(doc.body);
+
+      // Check for missing landmarks
+      var hasMain = doc.querySelector('main') || doc.querySelector('[role="main"]');
+      var hasNav = doc.querySelector('nav') || doc.querySelector('[role="navigation"]');
+      if (!hasMain && html.length > 200) issues.push('No <main> landmark found — screen reader users cannot skip to main content');
+      if (!hasNav && doc.querySelectorAll('a').length > 3) issues.push('No <nav> landmark found — consider wrapping navigation links in a <nav> element');
+
+      // Check heading hierarchy
+      var headingLevels = [];
+      doc.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(function(h) {
+        headingLevels.push(parseInt(h.tagName.charAt(1)));
+      });
+      for (var i = 1; i < headingLevels.length; i++) {
+        if (headingLevels[i] - headingLevels[i-1] > 1) {
+          issues.push('Heading level skipped: h' + headingLevels[i-1] + ' jumps to h' + headingLevels[i] + ' — use sequential heading levels');
+          break;
+        }
+      }
+
+      renderOutput(announcements, issues, stats);
+    }
+
+    function renderOutput(items, issues, stats) {
+      outputList.innerHTML = '';
+      items.forEach(function(item) {
+        var li = document.createElement('li');
+        var tagClass = 'sr-tag--' + item.type;
+        li.innerHTML = '<span class="sr-tag ' + tagClass + '">' + escapeHtml(item.tag) + '</span><span>' + escapeHtml(item.text) + '</span>';
+        outputList.appendChild(li);
+      });
+
+      // Stats
+      statsDiv.innerHTML =
+        '<div class="sr-stat-card"><h4>Headings</h4><div class="sr-stat-value">' + stats.headings + '</div></div>' +
+        '<div class="sr-stat-card"><h4>Links</h4><div class="sr-stat-value">' + stats.links + '</div></div>' +
+        '<div class="sr-stat-card"><h4>Images</h4><div class="sr-stat-value">' + stats.images + '</div></div>' +
+        '<div class="sr-stat-card"><h4>Form Inputs</h4><div class="sr-stat-value">' + stats.forms + '</div></div>';
+
+      // Issues
+      issuesDiv.innerHTML = '';
+      if (issues.length > 0) {
+        var issueTitle = document.createElement('h3');
+        issueTitle.style.color = 'var(--heading)';
+        issueTitle.style.marginBottom = '12px';
+        issueTitle.textContent = 'Issues Found (' + issues.length + ')';
+        issuesDiv.appendChild(issueTitle);
+        issues.forEach(function(issue) {
+          var div = document.createElement('div');
+          div.className = 'sr-issue-item';
+          div.innerHTML = '<strong>Issue:</strong> ' + escapeHtml(issue);
+          issuesDiv.appendChild(div);
+        });
+      } else {
+        var noIssue = document.createElement('div');
+        noIssue.className = 'sr-issue-item';
+        noIssue.style.borderLeftColor = 'var(--heading)';
+        noIssue.innerHTML = '<strong>No issues found.</strong> Your HTML looks good for screen readers.';
+        issuesDiv.appendChild(noIssue);
+      }
+
+      resultsDiv.style.display = 'block';
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Read aloud with Web Speech API
+    document.getElementById('read-aloud-btn').addEventListener('click', function() {
+      if (announcements.length === 0) {
+        if (window.showToast) window.showToast('Nothing to read. Preview HTML first.');
+        return;
+      }
+      if (!('speechSynthesis' in window)) {
+        if (window.showToast) window.showToast('Your browser does not support Text-to-Speech.');
+        return;
+      }
+      stopReading();
+      var fullText = announcements.map(function(a) { return a.text; }).join('. ');
+      currentUtterance = new SpeechSynthesisUtterance(fullText);
+      currentUtterance.rate = 0.9;
+      currentUtterance.onstart = function() {
+        readingIndicator.classList.add('active');
+        document.getElementById('stop-reading-btn').style.display = '';
+      };
+      currentUtterance.onend = function() {
+        readingIndicator.classList.remove('active');
+        document.getElementById('stop-reading-btn').style.display = 'none';
+      };
+      speechSynthesis.speak(currentUtterance);
+    });
+
+    document.getElementById('stop-reading-btn').addEventListener('click', stopReading);
+
+    function stopReading() {
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      readingIndicator.classList.remove('active');
+      document.getElementById('stop-reading-btn').style.display = 'none';
+    }
+
+    // Export as text
+    document.getElementById('export-btn').addEventListener('click', function() {
+      if (announcements.length === 0) {
+        if (window.showToast) window.showToast('Nothing to export. Preview HTML first.');
+        return;
+      }
+      var report = 'Screen Reader Text Preview Report\n';
+      report += '==================================\n';
+      report += 'Date: ' + new Date().toLocaleDateString() + '\n\n';
+      report += 'ANNOUNCEMENT ORDER\n';
+      report += '----------------------------------\n';
+      announcements.forEach(function(a, i) {
+        report += (i + 1) + '. [' + a.tag + '] ' + a.text + '\n';
+      });
+      report += '\nGenerated by Teamz Lab Tools — https://tool.teamzlab.com/accessibility/screen-reader-text-preview/\n';
+
+      var blob = new Blob([report], { type: 'text/plain' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'screen-reader-preview.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      if (window.showToast) window.showToast('Report downloaded!');
+    });
+
+    // FAQs
+    var faqs = [
+      { q: 'What does this screen reader preview tool do?', a: 'It parses your HTML and shows the sequential list of announcements a screen reader would make — headings, images, links, buttons, form inputs, lists, tables, and ARIA landmarks — in the order they would be read aloud.' },
+      { q: 'Is this the same as testing with a real screen reader?', a: 'It gives you an accurate preview of the announcement order and content, but real screen readers (NVDA, JAWS, VoiceOver) have additional navigation modes, rotor menus, and keyboard shortcuts. Use this tool for a quick check, then test with a real screen reader for a complete audit.' },
+      { q: 'Why are some images skipped in the output?', a: 'Images with alt="" (empty alt attribute) are treated as decorative by screen readers and are intentionally skipped. This is correct behavior — use alt="" for images that do not convey meaningful content.' },
+      { q: 'What issues does the tool detect?', a: 'It flags missing alt text on images, empty links, unlabeled form inputs, missing <main> and <nav> landmarks, heading level skips, and buttons without accessible names.' },
+      { q: 'Does the Read Aloud feature use a real screen reader?', a: 'No, it uses the Web Speech API built into your browser. It reads the same text a screen reader would announce, giving you an audio preview of the experience. For true screen reader testing, use NVDA (Windows), VoiceOver (Mac), or TalkBack (Android).' },
+      { q: 'Is my HTML sent to any server?', a: 'No. Everything runs entirely in your browser. Your HTML is parsed locally using the DOMParser API and never leaves your device.' }
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.renderRelatedTools([
+      { slug: '/accessibility/wcag-accessibility-checklist/', name: 'WCAG Accessibility Checklist', description: 'Interactive WCAG 2.1 Level AA compliance checklist with score tracking.' },
+      { slug: '/accessibility/ada-compliance-checker/', name: 'ADA Compliance Checker', description: 'Paste HTML and get an instant automated accessibility audit.' },
+      { slug: '/accessibility/dyslexia-friendly-text-converter/', name: 'Dyslexia-Friendly Text Converter', description: 'Convert text to dyslexia-friendly formatting with reading aids.' },
+      { slug: '/accessibility/color-blindness-simulator/', name: 'Color Blindness Simulator', description: 'See how your designs look under different types of color blindness.' },
+      { slug: '/accessibility/accessible-color-palette-generator/', name: 'Accessible Color Palette Generator', description: 'Generate WCAG-compliant color palettes from any brand color.' },
+      { slug: '/tools/ai-text-to-speech/', name: 'AI Text to Speech', description: 'Convert text to natural speech with AI-powered voices.' }
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'accessibility/screen-reader-text-preview',
+      title: 'Screen Reader Text Preview',
+      description: 'Preview how screen readers announce your HTML. Detect missing alt text, empty links, and unlabeled inputs.'
+    });
+  });
+  </script>
+</body>
+</html>
