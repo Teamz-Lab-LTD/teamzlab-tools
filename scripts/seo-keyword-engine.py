@@ -46,7 +46,7 @@ import time
 from collections import defaultdict, Counter
 from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_URL = "https://tool.teamzlab.com"
 
 # Directories to exclude from tool discovery
