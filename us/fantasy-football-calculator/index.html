@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy Football Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate fantasy football points for any player performance. Supports PPR, Standard, and Half-PPR scoring. Compare players instantly. Free tool.">
+  <meta property="og:title" content="Fantasy Football Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate fantasy football points for any player performance. Supports PPR, Standard, and Half-PPR scoring. Compare players instantly. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/us/fantasy-football-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/us.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Fantasy Football Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate fantasy football points for any player performance. Supports PPR, Standard, and Half-PPR scoring. Compare players instantly. Free tool.">
+  <link rel="canonical" href="https://tool.teamzlab.com/us/fantasy-football-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ff-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .ff-tab { padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: var(--text-sm); border: 1px solid var(--border); background: var(--surface); color: var(--heading); transition: all 0.2s; }
+    .ff-tab.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .ff-tab:hover:not(.active) { border-color: var(--heading); }
+    .ff-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .ff-form-group { display: flex; flex-direction: column; gap: 6px; }
+    .ff-form-group label { font-weight: 600; font-size: var(--text-sm); color: var(--text); }
+    .ff-form-group input, .ff-form-group select { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: var(--text-base); font-family: inherit; }
+    .ff-form-group input:focus, .ff-form-group select:focus { outline: none; border-color: var(--heading); }
+    .ff-actions { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+    .ff-result { margin-top: 20px; }
+    .ff-result-header { font-size: var(--text-xl); font-weight: 700; color: var(--heading); margin-bottom: 16px; }
+    .ff-total { font-size: clamp(32px, 6vw, 48px); font-weight: 800; color: var(--heading); margin-bottom: 8px; }
+    .ff-format-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: var(--text-sm); font-weight: 600; background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .ff-breakdown { margin-top: 16px; border-top: 1px solid var(--border); }
+    .ff-breakdown-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .ff-breakdown-label { color: var(--text); }
+    .ff-breakdown-value { font-weight: 700; color: var(--heading); }
+    .ff-breakdown-value.positive { color: var(--heading); }
+    .ff-breakdown-value.negative { color: var(--text-muted); }
+    .ff-compare-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+    .ff-compare-card { padding: 20px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+    .ff-compare-card h3 { margin: 0 0 16px; color: var(--heading); font-size: var(--text-lg); }
+    .ff-custom-toggle { display: flex; align-items: center; gap: 10px; margin: 16px 0; cursor: pointer; font-weight: 600; color: var(--text); font-size: var(--text-sm); }
+    .ff-custom-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--heading); }
+    .ff-custom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 16px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 20px; }
+    .ff-custom-grid .ff-form-group input { padding: 8px 10px; font-size: var(--text-sm); }
+    .ff-player-name { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: var(--text-base); font-family: inherit; width: 100%; box-sizing: border-box; margin-bottom: 16px; }
+    .ff-player-name:focus { outline: none; border-color: var(--heading); }
+    .ff-winner-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; background: var(--heading); color: var(--bg); font-size: var(--text-sm); font-weight: 700; margin-left: 8px; }
+    @media (max-width: 600px) {
+      .ff-form-grid { grid-template-columns: 1fr; }
+      .ff-compare-wrapper { grid-template-columns: 1fr; }
+      .ff-custom-grid { grid-template-columns: 1fr 1fr; }
+      .ff-actions { flex-direction: column; }
+      .ff-actions .btn-primary, .ff-actions .btn-secondary { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "US Tools", "item": "https://tool.teamzlab.com/us/"}, {"@type": "ListItem", "position": 3, "name": "Fantasy Football Points Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is PPR scoring in fantasy football?", "acceptedAnswer": {"@type": "Answer", "text": "PPR stands for Point Per Reception. In PPR leagues, players earn 1 additional point for every catch they make, on top of yardage and touchdown points. This makes pass-catching running backs and high-volume receivers more valuable than in Standard scoring."}}, {"@type": "Question", "name": "How many points is a passing touchdown worth?", "acceptedAnswer": {"@type": "Answer", "text": "In most fantasy football leagues, a passing touchdown is worth 4 points. Some leagues use 6-point passing TDs to increase quarterback value. Rushing and receiving touchdowns are always worth 6 points."}}, {"@type": "Question", "name": "What is the difference between Standard and Half-PPR?", "acceptedAnswer": {"@type": "Answer", "text": "In Standard scoring, receptions earn 0 bonus points. In Half-PPR, each reception is worth 0.5 points. This gives a moderate boost to pass-catchers without making them as dominant as in full PPR leagues."}}, {"@type": "Question", "name": "How are defense and special teams scored?", "acceptedAnswer": {"@type": "Answer", "text": "Defenses earn points for sacks (1 pt), interceptions (2 pts), fumble recoveries (2 pts), defensive touchdowns (6 pts), and safeties (2 pts). Points allowed determines a sliding scale bonus: 0 points allowed = 10 pts, 1-6 = 7 pts, 7-13 = 4 pts, 14-20 = 1 pt, 21-27 = 0 pts, 28-34 = -1 pt, 35+ = -4 pts."}}, {"@type": "Question", "name": "How are kicker points calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Kickers earn points based on field goal distance: 3 points for 0-39 yards, 4 points for 40-49 yards, and 5 points for 50+ yards. Extra points made are worth 1 point each, and missed extra points cost -1 point."}}, {"@type": "Question", "name": "Can I customize the scoring values?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Toggle the \"Customize point values\" option to adjust every scoring category. This lets you match your specific league settings, including non-standard values for passing yards, touchdowns, turnovers, and kicker stats."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Fantasy Football Points Calculator", "description": "Calculate fantasy football points for any player performance.", "url": "https://tool.teamzlab.com/us/fantasy-football-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Fantasy Football Points Calculator</h1>
+      <p class="tool-description">Calculate fantasy football points for any player stat line. Choose your scoring format (Standard, PPR, or Half-PPR), enter stats, and get an instant point breakdown. Compare two players side by side to make lineup decisions.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Mode Tabs -->
+      <div class="ff-tabs">
+        <button class="ff-tab active" id="tab-single" type="button">Single Player</button>
+        <button class="ff-tab" id="tab-compare" type="button">Compare Players</button>
+      </div>
+
+      <!-- Scoring Format & Position -->
+      <div class="ff-form-grid">
+        <div class="ff-form-group">
+          <label for="scoring-format">Scoring Format</label>
+          <select id="scoring-format">
+            <option value="standard">Standard</option>
+            <option value="ppr" selected>PPR (Point Per Reception)</option>
+            <option value="half-ppr">Half-PPR</option>
+          </select>
+        </div>
+        <div class="ff-form-group">
+          <label for="position">Position</label>
+          <select id="position">
+            <option value="qb">QB (Quarterback)</option>
+            <option value="rb" selected>RB (Running Back)</option>
+            <option value="wr">WR (Wide Receiver)</option>
+            <option value="te">TE (Tight End)</option>
+            <option value="k">K (Kicker)</option>
+            <option value="def">DEF (Defense/Special Teams)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Custom Scoring Toggle -->
+      <label class="ff-custom-toggle">
+        <input type="checkbox" id="custom-scoring-toggle"> Customize point values
+      </label>
+      <div id="custom-scoring-panel" class="ff-custom-grid" style="display:none;">
+        <div class="ff-form-group"><label for="cs-pass-yard">Pass Yard</label><input type="number" id="cs-pass-yard" value="0.04" step="0.01"></div>
+        <div class="ff-form-group"><label for="cs-pass-td">Pass TD</label><input type="number" id="cs-pass-td" value="4" step="1"></div>
+        <div class="ff-form-group"><label for="cs-int">Interception</label><input type="number" id="cs-int" value="-2" step="1"></div>
+        <div class="ff-form-group"><label for="cs-rush-yard">Rush/Rec Yard</label><input type="number" id="cs-rush-yard" value="0.1" step="0.01"></div>
+        <div class="ff-form-group"><label for="cs-rush-td">Rush/Rec TD</label><input type="number" id="cs-rush-td" value="6" step="1"></div>
+        <div class="ff-form-group"><label for="cs-fumble">Fumble Lost</label><input type="number" id="cs-fumble" value="-2" step="1"></div>
+        <div class="ff-form-group"><label for="cs-reception">Reception</label><input type="number" id="cs-reception" value="1" step="0.5"></div>
+        <div class="ff-form-group"><label for="cs-fg-short">FG 0-39 yds</label><input type="number" id="cs-fg-short" value="3" step="1"></div>
+        <div class="ff-form-group"><label for="cs-fg-mid">FG 40-49 yds</label><input type="number" id="cs-fg-mid" value="4" step="1"></div>
+        <div class="ff-form-group"><label for="cs-fg-long">FG 50+ yds</label><input type="number" id="cs-fg-long" value="5" step="1"></div>
+        <div class="ff-form-group"><label for="cs-xp-made">XP Made</label><input type="number" id="cs-xp-made" value="1" step="1"></div>
+        <div class="ff-form-group"><label for="cs-xp-miss">XP Missed</label><input type="number" id="cs-xp-miss" value="-1" step="1"></div>
+      </div>
+
+      <!-- Single Player Form -->
+      <div id="single-panel">
+        <input type="text" class="ff-player-name" id="player-name-1" placeholder="Player name (optional, e.g. Patrick Mahomes)">
+        <div id="stats-form-1"></div>
+      </div>
+
+      <!-- Compare Panel -->
+      <div id="compare-panel" style="display:none;">
+        <div class="ff-compare-wrapper">
+          <div class="ff-compare-card">
+            <h3>Player 1</h3>
+            <input type="text" class="ff-player-name" id="cmp-name-1" placeholder="Player 1 name">
+            <div id="cmp-stats-1"></div>
+          </div>
+          <div class="ff-compare-card">
+            <h3>Player 2</h3>
+            <input type="text" class="ff-player-name" id="cmp-name-2" placeholder="Player 2 name">
+            <div id="cmp-stats-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ff-actions">
+        <button class="btn-primary" id="calculate-btn" type="button">Calculate Points</button>
+        <button class="btn-secondary" id="clear-btn" type="button">Clear All</button>
+        <button class="btn-secondary" id="share-btn-action" type="button">Share Result</button>
+      </div>
+
+      <!-- Results -->
+      <div id="result-area"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Fantasy Football Scoring Works</h2>
+      <p>Fantasy football scoring converts real NFL player statistics into points for your fantasy team. Every passing yard, rushing touchdown, reception, and turnover translates into a specific point value. The three main scoring formats are Standard (no points for receptions), PPR (1 point per reception), and Half-PPR (0.5 points per reception). Understanding these formats is essential for drafting the right players and making smart lineup decisions each week.</p>
+      <p>In Standard scoring, running backs who get most of their value from rushing are favored. In PPR formats, pass-catching running backs and high-volume wide receivers gain a significant edge because every catch adds a full point. Half-PPR strikes a balance, rewarding receptions without making them overly dominant. Most modern fantasy leagues use PPR or Half-PPR scoring because it adds another dimension to player evaluation and reduces the gap between positions.</p>
+
+      <h2>PPR vs Standard: Which Format Is Better?</h2>
+      <p>The debate between PPR and Standard scoring comes down to how much you value receptions. In PPR leagues, a running back who catches 5 passes for 30 yards scores 8 points from receiving alone (5 receptions + 3 yards points). In Standard, that same line scores only 3 points. This dramatically changes player rankings and draft strategy. Wide receivers and pass-catching tight ends become more valuable in PPR, while power rushers who rarely catch passes lose relative value.</p>
+      <p>Half-PPR has emerged as the most popular compromise. It rewards receptions enough to differentiate players but does not make volume receivers disproportionately valuable. When comparing players across formats, always check how many receptions they average per game. A player who catches 6 passes per game gains 6 extra points in PPR, 3 in Half-PPR, and 0 in Standard, which can be the difference between a starter and a bench player.</p>
+
+      <h2>Draft Strategy and Scoring Optimization</h2>
+      <p>Your scoring format should directly influence your draft strategy. In PPR leagues, target wide receivers and tight ends with high reception counts early. Players like slot receivers who see 8-10 targets per game become league-winners in PPR because their floor is elevated by volume. In Standard leagues, prioritize running backs who dominate carries and score rushing touchdowns, since they do not benefit from the reception bonus.</p>
+      <p>Quarterbacks are scored differently from other positions. Passing yards are worth only 0.04 points (25 yards per point) compared to 0.1 points per rushing or receiving yard (10 yards per point). This is why a QB who throws for 300 yards gets 12 passing points, while a running back who rushes for 100 yards gets 10 points from a much smaller yardage total. Touchdowns are the great equalizer: passing TDs are worth 4 points while rushing and receiving TDs are worth 6. Understanding these values helps you project weekly scores and identify mismatches in your lineup.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      // Default scoring values
+      var DEFAULT_SCORING = {
+        passYard: 0.04, passTD: 4, interception: -2,
+        rushYard: 0.1, rushTD: 6, recYard: 0.1, recTD: 6,
+        reception: { standard: 0, ppr: 1, 'half-ppr': 0.5 },
+        fumble: -2,
+        fgShort: 3, fgMid: 4, fgLong: 5,
+        xpMade: 1, xpMissed: -1
+      };
+
+      // Stat fields per position
+      var POSITION_STATS = {
+        qb: [
+          { id: 'pass-yards', label: 'Passing Yards', placeholder: 'e.g. 320' },
+          { id: 'pass-tds', label: 'Passing TDs', placeholder: 'e.g. 3' },
+          { id: 'interceptions', label: 'Interceptions Thrown', placeholder: 'e.g. 1' },
+          { id: 'rush-yards', label: 'Rushing Yards', placeholder: 'e.g. 28' },
+          { id: 'rush-tds', label: 'Rushing TDs', placeholder: 'e.g. 0' },
+          { id: 'fumbles', label: 'Fumbles Lost', placeholder: 'e.g. 0' }
+        ],
+        rb: [
+          { id: 'rush-yards', label: 'Rushing Yards', placeholder: 'e.g. 95' },
+          { id: 'rush-tds', label: 'Rushing TDs', placeholder: 'e.g. 1' },
+          { id: 'receptions', label: 'Receptions', placeholder: 'e.g. 4' },
+          { id: 'rec-yards', label: 'Receiving Yards', placeholder: 'e.g. 35' },
+          { id: 'rec-tds', label: 'Receiving TDs', placeholder: 'e.g. 0' },
+          { id: 'fumbles', label: 'Fumbles Lost', placeholder: 'e.g. 0' }
+        ],
+        wr: [
+          { id: 'receptions', label: 'Receptions', placeholder: 'e.g. 7' },
+          { id: 'rec-yards', label: 'Receiving Yards', placeholder: 'e.g. 110' },
+          { id: 'rec-tds', label: 'Receiving TDs', placeholder: 'e.g. 1' },
+          { id: 'rush-yards', label: 'Rushing Yards', placeholder: 'e.g. 5' },
+          { id: 'rush-tds', label: 'Rushing TDs', placeholder: 'e.g. 0' },
+          { id: 'fumbles', label: 'Fumbles Lost', placeholder: 'e.g. 0' }
+        ],
+        te: [
+          { id: 'receptions', label: 'Receptions', placeholder: 'e.g. 5' },
+          { id: 'rec-yards', label: 'Receiving Yards', placeholder: 'e.g. 65' },
+          { id: 'rec-tds', label: 'Receiving TDs', placeholder: 'e.g. 1' },
+          { id: 'rush-yards', label: 'Rushing Yards', placeholder: 'e.g. 0' },
+          { id: 'rush-tds', label: 'Rushing TDs', placeholder: 'e.g. 0' },
+          { id: 'fumbles', label: 'Fumbles Lost', placeholder: 'e.g. 0' }
+        ],
+        k: [
+          { id: 'fg-short', label: 'FG Made (0-39 yds)', placeholder: 'e.g. 1' },
+          { id: 'fg-mid', label: 'FG Made (40-49 yds)', placeholder: 'e.g. 1' },
+          { id: 'fg-long', label: 'FG Made (50+ yds)', placeholder: 'e.g. 0' },
+          { id: 'xp-made', label: 'Extra Points Made', placeholder: 'e.g. 3' },
+          { id: 'xp-missed', label: 'Extra Points Missed', placeholder: 'e.g. 0' }
+        ],
+        def: [
+          { id: 'def-sacks', label: 'Sacks', placeholder: 'e.g. 3' },
+          { id: 'def-int', label: 'Interceptions', placeholder: 'e.g. 2' },
+          { id: 'def-fr', label: 'Fumble Recoveries', placeholder: 'e.g. 1' },
+          { id: 'def-td', label: 'Defensive/ST TDs', placeholder: 'e.g. 0' },
+          { id: 'def-safety', label: 'Safeties', placeholder: 'e.g. 0' },
+          { id: 'def-pa', label: 'Points Allowed', placeholder: 'e.g. 14' }
+        ]
+      };
+
+      // Clone for WR and TE same as RB shape (reordered above)
+
+      var mode = 'single'; // or 'compare'
+
+      function getScoring() {
+        var format = document.getElementById('scoring-format').value;
+        var custom = document.getElementById('custom-scoring-toggle').checked;
+        if (custom) {
+          return {
+            passYard: parseFloat(document.getElementById('cs-pass-yard').value) || 0,
+            passTD: parseFloat(document.getElementById('cs-pass-td').value) || 0,
+            interception: parseFloat(document.getElementById('cs-int').value) || 0,
+            rushYard: parseFloat(document.getElementById('cs-rush-yard').value) || 0,
+            rushTD: parseFloat(document.getElementById('cs-rush-td').value) || 0,
+            recYard: parseFloat(document.getElementById('cs-rush-yard').value) || 0,
+            recTD: parseFloat(document.getElementById('cs-rush-td').value) || 0,
+            reception: parseFloat(document.getElementById('cs-reception').value) || 0,
+            fumble: parseFloat(document.getElementById('cs-fumble').value) || 0,
+            fgShort: parseFloat(document.getElementById('cs-fg-short').value) || 0,
+            fgMid: parseFloat(document.getElementById('cs-fg-mid').value) || 0,
+            fgLong: parseFloat(document.getElementById('cs-fg-long').value) || 0,
+            xpMade: parseFloat(document.getElementById('cs-xp-made').value) || 0,
+            xpMissed: parseFloat(document.getElementById('cs-xp-miss').value) || 0
+          };
+        }
+        return {
+          passYard: DEFAULT_SCORING.passYard,
+          passTD: DEFAULT_SCORING.passTD,
+          interception: DEFAULT_SCORING.interception,
+          rushYard: DEFAULT_SCORING.rushYard,
+          rushTD: DEFAULT_SCORING.rushTD,
+          recYard: DEFAULT_SCORING.recYard,
+          recTD: DEFAULT_SCORING.recTD,
+          reception: DEFAULT_SCORING.reception[format],
+          fumble: DEFAULT_SCORING.fumble,
+          fgShort: DEFAULT_SCORING.fgShort,
+          fgMid: DEFAULT_SCORING.fgMid,
+          fgLong: DEFAULT_SCORING.fgLong,
+          xpMade: DEFAULT_SCORING.xpMade,
+          xpMissed: DEFAULT_SCORING.xpMissed
+        };
+      }
+
+      function renderStatsForm(containerId, prefix) {
+        var pos = document.getElementById('position').value;
+        var stats = POSITION_STATS[pos];
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        var html = '<div class="ff-form-grid">';
+        stats.forEach(function(s) {
+          var inputId = prefix + '-' + s.id;
+          html += '<div class="ff-form-group">';
+          html += '<label for="' + inputId + '">' + s.label + '</label>';
+          html += '<input type="number" id="' + inputId + '" placeholder="' + s.placeholder + '" min="0" step="1" value="0">';
+          html += '</div>';
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      }
+
+      function getVal(id) {
+        var el = document.getElementById(id);
+        return el ? (parseFloat(el.value) || 0) : 0;
+      }
+
+      function calcPoints(prefix) {
+        var pos = document.getElementById('position').value;
+        var scoring = getScoring();
+        var breakdown = [];
+        var total = 0;
+
+        if (pos === 'qb') {
+          var passYds = getVal(prefix + '-pass-yards');
+          var passTDs = getVal(prefix + '-pass-tds');
+          var ints = getVal(prefix + '-interceptions');
+          var rushYds = getVal(prefix + '-rush-yards');
+          var rushTDs = getVal(prefix + '-rush-tds');
+          var fumbles = getVal(prefix + '-fumbles');
+
+          var pYdPts = passYds * scoring.passYard;
+          var pTDPts = passTDs * scoring.passTD;
+          var intPts = ints * scoring.interception;
+          var rYdPts = rushYds * scoring.rushYard;
+          var rTDPts = rushTDs * scoring.rushTD;
+          var fumPts = fumbles * scoring.fumble;
+
+          breakdown.push({ label: 'Passing Yards (' + passYds + ' yds)', value: pYdPts });
+          breakdown.push({ label: 'Passing TDs (' + passTDs + ')', value: pTDPts });
+          breakdown.push({ label: 'Interceptions (' + ints + ')', value: intPts });
+          breakdown.push({ label: 'Rushing Yards (' + rushYds + ' yds)', value: rYdPts });
+          breakdown.push({ label: 'Rushing TDs (' + rushTDs + ')', value: rTDPts });
+          breakdown.push({ label: 'Fumbles Lost (' + fumbles + ')', value: fumPts });
+          total = pYdPts + pTDPts + intPts + rYdPts + rTDPts + fumPts;
+        } else if (pos === 'k') {
+          var fgS = getVal(prefix + '-fg-short');
+          var fgM = getVal(prefix + '-fg-mid');
+          var fgL = getVal(prefix + '-fg-long');
+          var xpM = getVal(prefix + '-xp-made');
+          var xpX = getVal(prefix + '-xp-missed');
+
+          var fgSPts = fgS * scoring.fgShort;
+          var fgMPts = fgM * scoring.fgMid;
+          var fgLPts = fgL * scoring.fgLong;
+          var xpMPts = xpM * scoring.xpMade;
+          var xpXPts = xpX * scoring.xpMissed;
+
+          breakdown.push({ label: 'FG 0-39 yds (' + fgS + ')', value: fgSPts });
+          breakdown.push({ label: 'FG 40-49 yds (' + fgM + ')', value: fgMPts });
+          breakdown.push({ label: 'FG 50+ yds (' + fgL + ')', value: fgLPts });
+          breakdown.push({ label: 'XP Made (' + xpM + ')', value: xpMPts });
+          breakdown.push({ label: 'XP Missed (' + xpX + ')', value: xpXPts });
+          total = fgSPts + fgMPts + fgLPts + xpMPts + xpXPts;
+        } else if (pos === 'def') {
+          var sacks = getVal(prefix + '-def-sacks');
+          var dInts = getVal(prefix + '-def-int');
+          var fr = getVal(prefix + '-def-fr');
+          var dTD = getVal(prefix + '-def-td');
+          var safety = getVal(prefix + '-def-safety');
+          var pa = getVal(prefix + '-def-pa');
+
+          var sackPts = sacks * 1;
+          var dIntPts = dInts * 2;
+          var frPts = fr * 2;
+          var dTDPts = dTD * 6;
+          var safetyPts = safety * 2;
+          var paPts = 0;
+          if (pa === 0) paPts = 10;
+          else if (pa <= 6) paPts = 7;
+          else if (pa <= 13) paPts = 4;
+          else if (pa <= 20) paPts = 1;
+          else if (pa <= 27) paPts = 0;
+          else if (pa <= 34) paPts = -1;
+          else paPts = -4;
+
+          breakdown.push({ label: 'Sacks (' + sacks + ')', value: sackPts });
+          breakdown.push({ label: 'Interceptions (' + dInts + ')', value: dIntPts });
+          breakdown.push({ label: 'Fumble Recoveries (' + fr + ')', value: frPts });
+          breakdown.push({ label: 'Defensive/ST TDs (' + dTD + ')', value: dTDPts });
+          breakdown.push({ label: 'Safeties (' + safety + ')', value: safetyPts });
+          breakdown.push({ label: 'Points Allowed (' + pa + ')', value: paPts });
+          total = sackPts + dIntPts + frPts + dTDPts + safetyPts + paPts;
+        } else {
+          // RB, WR, TE
+          var rushYds2 = getVal(prefix + '-rush-yards');
+          var rushTDs2 = getVal(prefix + '-rush-tds');
+          var recs = getVal(prefix + '-receptions');
+          var recYds = getVal(prefix + '-rec-yards');
+          var recTDs = getVal(prefix + '-rec-tds');
+          var fumbles2 = getVal(prefix + '-fumbles');
+
+          var rYdPts2 = rushYds2 * scoring.rushYard;
+          var rTDPts2 = rushTDs2 * scoring.rushTD;
+          var recPts = recs * scoring.reception;
+          var recYdPts = recYds * scoring.recYard;
+          var recTDPts = recTDs * scoring.recTD;
+          var fumPts2 = fumbles2 * scoring.fumble;
+
+          breakdown.push({ label: 'Rushing Yards (' + rushYds2 + ' yds)', value: rYdPts2 });
+          breakdown.push({ label: 'Rushing TDs (' + rushTDs2 + ')', value: rTDPts2 });
+          breakdown.push({ label: 'Receptions (' + recs + ')', value: recPts });
+          breakdown.push({ label: 'Receiving Yards (' + recYds + ' yds)', value: recYdPts });
+          breakdown.push({ label: 'Receiving TDs (' + recTDs + ')', value: recTDPts });
+          breakdown.push({ label: 'Fumbles Lost (' + fumbles2 + ')', value: fumPts2 });
+          total = rYdPts2 + rTDPts2 + recPts + recYdPts + recTDPts + fumPts2;
+        }
+
+        return { total: total, breakdown: breakdown };
+      }
+
+      function renderResult(name, result, containerId) {
+        var format = document.getElementById('scoring-format').value;
+        var formatLabel = format === 'ppr' ? 'PPR' : format === 'half-ppr' ? 'Half-PPR' : 'Standard';
+        var pos = document.getElementById('position').value.toUpperCase();
+        var playerLabel = name || pos;
+
+        var html = '<div class="ff-result-header">' + playerLabel + '</div>';
+        html += '<div class="ff-total">' + result.total.toFixed(1) + ' pts</div>';
+        html += '<span class="ff-format-badge">' + formatLabel + ' | ' + pos + '</span>';
+        html += '<div class="ff-breakdown">';
+        result.breakdown.forEach(function(row) {
+          var cls = row.value > 0 ? 'positive' : row.value < 0 ? 'negative' : '';
+          html += '<div class="ff-breakdown-row"><span class="ff-breakdown-label">' + row.label + '</span>';
+          html += '<span class="ff-breakdown-value ' + cls + '">' + (row.value > 0 ? '+' : '') + row.value.toFixed(1) + '</span></div>';
+        });
+        html += '</div>';
+        return html;
+      }
+
+      function calculate() {
+        var area = document.getElementById('result-area');
+        if (mode === 'single') {
+          var name = document.getElementById('player-name-1').value.trim();
+          var result = calcPoints('p1');
+          area.innerHTML = renderResult(name, result);
+        } else {
+          var name1 = document.getElementById('cmp-name-1').value.trim() || 'Player 1';
+          var name2 = document.getElementById('cmp-name-2').value.trim() || 'Player 2';
+          var r1 = calcPoints('c1');
+          var r2 = calcPoints('c2');
+
+          var html = '<div class="ff-compare-wrapper">';
+          html += '<div class="ff-compare-card">';
+          if (r1.total >= r2.total) html += '<span class="ff-winner-badge">Winner</span>';
+          html += renderResult(name1, r1);
+          html += '</div><div class="ff-compare-card">';
+          if (r2.total > r1.total) html += '<span class="ff-winner-badge">Winner</span>';
+          html += renderResult(name2, r2);
+          html += '</div></div>';
+
+          var diff = Math.abs(r1.total - r2.total).toFixed(1);
+          var winner = r1.total >= r2.total ? name1 : name2;
+          html += '<p style="text-align:center;margin-top:16px;color:var(--text-muted);font-size:var(--text-sm);">' + winner + ' wins by ' + diff + ' points</p>';
+          area.innerHTML = html;
+        }
+      }
+
+      function clearAll() {
+        var inputs = document.querySelectorAll('.tool-calculator input[type="number"]');
+        inputs.forEach(function(inp) {
+          if (inp.id.startsWith('cs-')) return; // keep custom scoring defaults
+          inp.value = '0';
+        });
+        document.querySelectorAll('.ff-player-name').forEach(function(el) { el.value = ''; });
+        document.getElementById('result-area').innerHTML = '';
+      }
+
+      function shareResult() {
+        if (mode === 'single') {
+          var name = document.getElementById('player-name-1').value.trim() || 'Player';
+          var result = calcPoints('p1');
+          var format = document.getElementById('scoring-format').value;
+          var formatLabel = format === 'ppr' ? 'PPR' : format === 'half-ppr' ? 'Half-PPR' : 'Standard';
+          var text = name + ' scored ' + result.total.toFixed(1) + ' fantasy points in ' + formatLabel + '!';
+        } else {
+          var n1 = document.getElementById('cmp-name-1').value.trim() || 'Player 1';
+          var n2 = document.getElementById('cmp-name-2').value.trim() || 'Player 2';
+          var r1 = calcPoints('c1');
+          var r2 = calcPoints('c2');
+          var text = n1 + ': ' + r1.total.toFixed(1) + ' pts vs ' + n2 + ': ' + r2.total.toFixed(1) + ' pts';
+        }
+        var url = window.location.href;
+        if (navigator.share) {
+          navigator.share({ title: 'Fantasy Football Points', text: text, url: url });
+        } else if (navigator.clipboard) {
+          navigator.clipboard.writeText(text + ' ' + url).then(function() {
+            if (window.showToast) window.showToast('Result copied to clipboard!');
+          });
+        }
+      }
+
+      function rebuildForms() {
+        if (mode === 'single') {
+          renderStatsForm('stats-form-1', 'p1');
+        } else {
+          renderStatsForm('cmp-stats-1', 'c1');
+          renderStatsForm('cmp-stats-2', 'c2');
+        }
+        document.getElementById('result-area').innerHTML = '';
+      }
+
+      // Init
+      document.addEventListener('DOMContentLoaded', function() {
+        // Tabs
+        document.getElementById('tab-single').addEventListener('click', function() {
+          mode = 'single';
+          this.classList.add('active');
+          document.getElementById('tab-compare').classList.remove('active');
+          document.getElementById('single-panel').style.display = '';
+          document.getElementById('compare-panel').style.display = 'none';
+          rebuildForms();
+        });
+        document.getElementById('tab-compare').addEventListener('click', function() {
+          mode = 'compare';
+          this.classList.add('active');
+          document.getElementById('tab-single').classList.remove('active');
+          document.getElementById('single-panel').style.display = 'none';
+          document.getElementById('compare-panel').style.display = '';
+          rebuildForms();
+        });
+
+        // Position change
+        document.getElementById('position').addEventListener('change', rebuildForms);
+
+        // Custom scoring toggle
+        document.getElementById('custom-scoring-toggle').addEventListener('change', function() {
+          document.getElementById('custom-scoring-panel').style.display = this.checked ? '' : 'none';
+          // Sync reception value with format
+          if (!this.checked) return;
+          var format = document.getElementById('scoring-format').value;
+          document.getElementById('cs-reception').value = DEFAULT_SCORING.reception[format];
+        });
+
+        // Scoring format change updates custom reception default
+        document.getElementById('scoring-format').addEventListener('change', function() {
+          if (document.getElementById('custom-scoring-toggle').checked) {
+            document.getElementById('cs-reception').value = DEFAULT_SCORING.reception[this.value];
+          }
+        });
+
+        // Buttons
+        document.getElementById('calculate-btn').addEventListener('click', calculate);
+        document.getElementById('clear-btn').addEventListener('click', clearAll);
+        document.getElementById('share-btn-action').addEventListener('click', shareResult);
+
+        // Build initial form
+        rebuildForms();
+
+        // Breadcrumbs, schemas, FAQs, related tools
+        var BREADCRUMBS = [
+          { name: 'Home', url: '/' },
+          { name: 'US Tools', url: '/us/' },
+          { name: 'Fantasy Football Points Calculator' }
+        ];
+
+        var FAQS = [
+          { q: 'What is PPR scoring in fantasy football?', a: 'PPR stands for Point Per Reception. In PPR leagues, players earn 1 additional point for every catch they make, on top of yardage and touchdown points. This makes pass-catching running backs and high-volume receivers more valuable than in Standard scoring.' },
+          { q: 'How many points is a passing touchdown worth?', a: 'In most fantasy football leagues, a passing touchdown is worth 4 points. Some leagues use 6-point passing TDs to increase quarterback value. Rushing and receiving touchdowns are always worth 6 points.' },
+          { q: 'What is the difference between Standard and Half-PPR?', a: 'In Standard scoring, receptions earn 0 bonus points. In Half-PPR, each reception is worth 0.5 points. This gives a moderate boost to pass-catchers without making them as dominant as in full PPR leagues.' },
+          { q: 'How are defense and special teams scored?', a: 'Defenses earn points for sacks (1 pt), interceptions (2 pts), fumble recoveries (2 pts), defensive touchdowns (6 pts), and safeties (2 pts). Points allowed determines a sliding scale bonus: 0 points allowed = 10 pts, 1-6 = 7 pts, 7-13 = 4 pts, 14-20 = 1 pt, 21-27 = 0 pts, 28-34 = -1 pt, 35+ = -4 pts.' },
+          { q: 'How are kicker points calculated?', a: 'Kickers earn points based on field goal distance: 3 points for 0-39 yards, 4 points for 40-49 yards, and 5 points for 50+ yards. Extra points made are worth 1 point each, and missed extra points cost -1 point.' },
+          { q: 'Can I customize the scoring values?', a: 'Yes. Toggle the "Customize point values" option to adjust every scoring category. This lets you match your specific league settings, including non-standard values for passing yards, touchdowns, turnovers, and kicker stats.' }
+        ];
+
+        var RELATED_TOOLS = [
+          { slug: 'us/nfl-passer-rating-calculator', name: 'NFL Passer Rating Calculator', description: 'Calculate any quarterback\'s official NFL passer rating.' },
+          { slug: 'us/nba-stats-calculator', name: 'NBA Stats Calculator', description: 'Calculate advanced NBA player stats and efficiency metrics.' },
+          { slug: 'us/march-madness-pool-calculator', name: 'March Madness Pool Calculator', description: 'Calculate bracket pool payouts and expected value.' },
+          { slug: 'us/sports-jersey-size-guide', name: 'Sports Jersey Size Guide', description: 'Find your perfect jersey size for NFL, NBA, MLB, and more.' },
+          { slug: 'sports/calories-burned-calculator', name: 'Calories Burned Calculator', description: 'Calculate calories burned during sports and exercise.' },
+          { slug: 'us/baseball-era-calculator', name: 'Baseball ERA Calculator', description: 'Calculate ERA, WHIP, K/9, and other pitching stats.' }
+        ];
+
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.injectWebAppSchema({
+          slug: 'us/fantasy-football-calculator',
+          title: 'Fantasy Football Points Calculator',
+          description: 'Calculate fantasy football points for any player performance.'
+        });
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>
