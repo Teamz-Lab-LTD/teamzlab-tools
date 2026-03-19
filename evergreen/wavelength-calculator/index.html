@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wavelength Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate wavelength from frequency or frequency from wavelength. Identify EM spectrum band, antenna lengths, and wave speed — free, private, no signup.">
+  <meta property="og:title" content="Wavelength Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate wavelength, frequency, EM spectrum position, and antenna lengths — free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/wavelength-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Wavelength Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate wavelength, frequency, EM spectrum position, and antenna lengths — free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/wavelength-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .wl-section { margin-bottom: 24px; }
+    .wl-section h2 { margin-bottom: 12px; }
+    .wl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .wl-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--text-muted); font-weight: 500; }
+    .wl-grid input, .wl-grid select { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 15px; }
+    .wl-input-row { display: flex; gap: 6px; }
+    .wl-input-row input { flex: 1; }
+    .wl-input-row select { width: 90px; }
+    .wl-calc-btn { background: var(--heading); color: var(--bg); border: none; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 15px; width: 100%; margin-top: 8px; }
+    .wl-calc-btn:hover { opacity: 0.9; }
+    .wl-results { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+    .wl-results h3 { margin-bottom: 10px; color: var(--heading); }
+    .wl-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .wl-result-item { padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+    .wl-result-item .label { font-size: 13px; color: var(--text-muted); margin-bottom: 2px; }
+    .wl-result-item .value { font-size: 18px; font-weight: 700; color: var(--heading); }
+    .wl-result-item.wide { grid-column: 1 / -1; }
+    .wl-mode { display: flex; gap: 8px; margin-bottom: 16px; }
+    .wl-mode button { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 600; font-size: 14px; }
+    .wl-mode button.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .wl-spectrum-bar { width: 100%; height: 28px; border-radius: 6px; margin: 10px 0; position: relative; overflow: hidden; }
+    .wl-spectrum-bar .wl-gradient {
+      width: 100%; height: 100%;
+      background: linear-gradient(to right,
+        var(--text-muted) 0%, var(--text-muted) 10%,
+        var(--border) 10%, var(--border) 20%,
+        var(--border) 20%, var(--border) 30%,
+        hsl(0,100%,50%) 30%, hsl(32,100%,50%) 35%, hsl(60,100%,50%) 40%, hsl(120,100%,50%) 48%, hsl(210,100%,53%) 55%, hsl(260,100%,50%) 60%,
+        var(--border) 60%, var(--border) 70%,
+        var(--text-muted) 70%, var(--text-muted) 80%,
+        var(--text-muted) 80%, var(--text-muted) 100%);
+    }
+    .wl-spectrum-marker { position: absolute; top: 0; width: 3px; height: 100%; background: var(--heading); border-radius: 2px; transition: left 0.3s; }
+    .wl-spectrum-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); padding: 0 2px; }
+    .formula-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin: 16px 0; }
+    .formula-box h3 { color: var(--heading); margin-bottom: 8px; font-size: 16px; }
+    .formula-box .formula { font-family: monospace; font-size: 15px; color: var(--heading); margin: 4px 0; }
+    @media (max-width: 600px) {
+      .wl-grid { grid-template-columns: 1fr; }
+      .wl-result-grid { grid-template-columns: 1fr; }
+      .wl-mode { flex-wrap: wrap; }
+      .wl-input-row { flex-wrap: wrap; }
+      .wl-spectrum-labels { font-size: 9px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "Wavelength Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the wavelength formula?", "acceptedAnswer": {"@type": "Answer", "text": "Wavelength (lambda) equals wave speed (v) divided by frequency (f): lambda = v/f. For electromagnetic waves in vacuum, v is the speed of light (299,792,458 m/s)."}}, {"@type": "Question", "name": "How do I calculate antenna length from frequency?", "acceptedAnswer": {"@type": "Answer", "text": "A quarter-wave antenna is lambda/4 long and a half-wave antenna is lambda/2 long. First calculate wavelength (lambda = c/f), then divide by 4 or 2. For 100 MHz, lambda is about 3 m, so a quarter-wave antenna is about 75 cm."}}, {"@type": "Question", "name": "What are the EM spectrum bands?", "acceptedAnswer": {"@type": "Answer", "text": "The electromagnetic spectrum includes radio waves (>1 mm), microwaves (1 mm to 1 m), infrared (700 nm to 1 mm), visible light (380-700 nm), ultraviolet (10-380 nm), X-rays (0.01-10 nm), and gamma rays (<0.01 nm)."}}, {"@type": "Question", "name": "Can I calculate wavelength for sound waves?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, change the wave speed to the speed of sound in your medium. Sound in air is about 343 m/s, in water about 1,480 m/s, and in steel about 5,960 m/s. The calculator works for any wave type."}}, {"@type": "Question", "name": "What is wave number (k)?", "acceptedAnswer": {"@type": "Answer", "text": "Wave number k equals 2*pi divided by wavelength (k = 2*pi/lambda). It represents the number of radians per unit distance and is used extensively in optics, quantum mechanics, and spectroscopy."}}, {"@type": "Question", "name": "What wavelength units does this calculator support?", "acceptedAnswer": {"@type": "Answer", "text": "This calculator supports kilometers, meters, centimeters, millimeters, micrometers, nanometers, and picometers — covering everything from radio waves to gamma rays."}}, {"@type": "Question", "name": "Is this wavelength calculator free to use?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely free with no signup. All calculations run in your browser — no data is transmitted to any server, ensuring total privacy."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Wavelength Calculator", "description": "Calculate wavelength, frequency, EM spectrum position, and antenna lengths.", "url": "https://tool.teamzlab.com/evergreen/wavelength-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Wavelength Calculator</h1>
+      <p class="tool-description">Calculate wavelength from frequency or frequency from wavelength using &lambda; = v/f. Identify EM spectrum band position, compute antenna lengths (&lambda;/4 and &lambda;/2), and customize wave speed. Default: speed of light for electromagnetic waves. Free, private, in-browser.</p>
+    </section>
+    <section class="tool-calculator">
+
+      <!-- Mode selector -->
+      <div class="wl-section">
+        <h2>Conversion Mode</h2>
+        <div class="wl-mode">
+          <button type="button" id="mode-freq-to-wl" class="active">Frequency &rarr; Wavelength</button>
+          <button type="button" id="mode-wl-to-freq">Wavelength &rarr; Frequency</button>
+        </div>
+
+        <!-- Frequency input -->
+        <div id="wl-freq-inputs" class="wl-grid">
+          <label>Frequency
+            <div class="wl-input-row">
+              <input type="number" id="wl-freq-value" placeholder="e.g. 100" min="0" step="any">
+              <select id="wl-freq-unit">
+                <option value="1">Hz</option>
+                <option value="1e3">kHz</option>
+                <option value="1e6" selected>MHz</option>
+                <option value="1e9">GHz</option>
+                <option value="1e12">THz</option>
+              </select>
+            </div>
+          </label>
+          <label>Wave Speed (m/s)
+            <input type="number" id="wl-speed-1" placeholder="299792458" min="0" step="any" value="299792458">
+          </label>
+        </div>
+
+        <!-- Wavelength input -->
+        <div id="wl-wl-inputs" class="wl-grid" style="display:none;">
+          <label>Wavelength
+            <div class="wl-input-row">
+              <input type="number" id="wl-wl-value" placeholder="e.g. 3" min="0" step="any">
+              <select id="wl-wl-unit">
+                <option value="1e3">km</option>
+                <option value="1" selected>m</option>
+                <option value="1e-2">cm</option>
+                <option value="1e-3">mm</option>
+                <option value="1e-6">&micro;m</option>
+                <option value="1e-9">nm</option>
+                <option value="1e-12">pm</option>
+              </select>
+            </div>
+          </label>
+          <label>Wave Speed (m/s)
+            <input type="number" id="wl-speed-2" placeholder="299792458" min="0" step="any" value="299792458">
+          </label>
+        </div>
+
+        <button type="button" id="wl-calc-btn" class="wl-calc-btn">Calculate</button>
+
+        <div id="wl-results" class="wl-results" style="display:none;">
+          <h3>Results</h3>
+          <div class="wl-result-grid">
+            <div class="wl-result-item"><div class="label">Wavelength (&lambda;)</div><div class="value" id="res-wl">—</div></div>
+            <div class="wl-result-item"><div class="label">Frequency (f)</div><div class="value" id="res-wl-freq">—</div></div>
+            <div class="wl-result-item"><div class="label">Angular Frequency (&omega;)</div><div class="value" id="res-wl-omega">—</div></div>
+            <div class="wl-result-item"><div class="label">Wave Number (k = 2&pi;/&lambda;)</div><div class="value" id="res-wl-k">—</div></div>
+            <div class="wl-result-item"><div class="label">Antenna &lambda;/4 (Quarter-Wave)</div><div class="value" id="res-ant-quarter">—</div></div>
+            <div class="wl-result-item"><div class="label">Antenna &lambda;/2 (Half-Wave)</div><div class="value" id="res-ant-half">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EM Spectrum -->
+      <div class="wl-section">
+        <h2>EM Spectrum Position</h2>
+        <div id="wl-spectrum-section" style="display:none;">
+          <div class="wl-result-item wide" style="margin-bottom: 12px;">
+            <div class="label">Band Classification</div>
+            <div class="value" id="res-em-band">—</div>
+          </div>
+          <div class="wl-spectrum-bar">
+            <div class="wl-gradient"></div>
+            <div class="wl-spectrum-marker" id="spectrum-marker" style="left: -10px;"></div>
+          </div>
+          <div class="wl-spectrum-labels">
+            <span>Radio</span><span>Micro</span><span>IR</span><span>Visible</span><span>UV</span><span>X-ray</span><span>Gamma</span>
+          </div>
+        </div>
+        <div id="wl-spectrum-empty" style="color: var(--text-muted); font-size: 14px;">Enter a frequency or wavelength to see EM spectrum position.</div>
+      </div>
+
+      <!-- Formula Reference -->
+      <div class="formula-box">
+        <h3>Wavelength Formulas</h3>
+        <p class="formula">&lambda; = v / f &nbsp;&nbsp;|&nbsp;&nbsp; f = v / &lambda;</p>
+        <p class="formula">&omega; = 2&pi;f &nbsp;(angular frequency, rad/s)</p>
+        <p class="formula">k = 2&pi; / &lambda; &nbsp;(wave number, rad/m)</p>
+        <p class="formula">Antenna: &lambda;/4 = quarter-wave &nbsp;|&nbsp; &lambda;/2 = half-wave</p>
+      </div>
+
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Wavelength Calculator Works</h2>
+      <p>This wavelength calculator uses the fundamental wave equation lambda = v/f to convert between wavelength and frequency for any type of wave. By default, the wave speed is set to the speed of light in vacuum (299,792,458 m/s) for electromagnetic wave calculations. You can change the wave speed to calculate wavelengths for sound waves in air (about 343 m/s), sound in water (about 1,480 m/s), or any other medium. Enter a frequency in Hz, kHz, MHz, GHz, or THz and the calculator instantly computes the wavelength. Switch to wavelength-to-frequency mode and enter a wavelength in km, m, cm, mm, micrometers, nanometers, or picometers to find the corresponding frequency. The calculator also determines angular frequency, wave number, and antenna lengths for RF engineering applications. All processing runs entirely in your browser with no data sent to any server.</p>
+
+      <h2>Electromagnetic Spectrum Classification</h2>
+      <p>The electromagnetic spectrum spans an enormous range of frequencies and wavelengths. Radio waves have wavelengths from kilometers down to about 1 millimeter, used for broadcasting, communications, and radar. Microwaves range from 1 millimeter to 1 meter in wavelength, powering everything from microwave ovens to satellite links and 5G networks. Infrared radiation spans from about 700 nanometers to 1 millimeter and is used in thermal imaging, remote controls, and fiber optic communications. Visible light occupies a narrow band from approximately 380 to 700 nanometers — the only portion of the EM spectrum detectable by the human eye. Ultraviolet radiation ranges from 10 to 380 nanometers and is responsible for sunburn and fluorescence. X-rays span 0.01 to 10 nanometers, essential for medical imaging. Gamma rays have the shortest wavelengths below 0.01 nanometers and the highest energies, produced by nuclear reactions and certain astronomical events. This calculator identifies which band your frequency or wavelength falls into and shows its position on a visual spectrum bar.</p>
+
+      <h2>Antenna Length and RF Engineering</h2>
+      <p>In radio frequency engineering, antenna dimensions are directly related to the wavelength of the signal being transmitted or received. A quarter-wave monopole antenna has a length of lambda divided by 4, while a half-wave dipole antenna measures lambda divided by 2. For example, an FM radio station broadcasting at 100 MHz has a wavelength of about 3 meters, making a quarter-wave antenna approximately 75 centimeters long. A Wi-Fi antenna at 2.4 GHz uses a wavelength of about 12.5 centimeters, so a quarter-wave antenna is roughly 3.1 centimeters. This calculator computes both quarter-wave and half-wave antenna lengths automatically, helping RF engineers, ham radio operators, and hobbyists design antennas without manual calculation. The antenna length values assume free-space wavelength — actual antenna elements may be slightly shorter due to velocity factor of the conductor material.</p>
+
+      <h2>Sound Waves and Custom Wave Speed</h2>
+      <p>While this calculator defaults to the speed of light for EM waves, you can enter any wave speed to calculate wavelengths for other wave types. Sound travels at approximately 343 meters per second in air at room temperature, about 1,480 m/s in water, and roughly 5,960 m/s in steel. A 440 Hz concert A note has a wavelength of about 0.78 meters in air. Ultrasound used in medical imaging typically operates at 2 to 18 MHz with wavelengths in the millimeter range in tissue. Seismic waves travel at several kilometers per second through rock, with wavelengths that can span kilometers. By adjusting the wave speed field, this calculator handles any wave propagation scenario — acoustic, seismic, electromagnetic, or mechanical — making it a versatile tool for physicists, engineers, musicians, and students.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/wavelength-calculator',
+      title: 'Wavelength Calculator',
+      description: 'Calculate wavelength, frequency, EM spectrum position, and antenna lengths.'
+    };
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Wavelength Calculator' }
+    ];
+    var FAQS = [
+      { q: 'What is the wavelength formula?', a: 'Wavelength (lambda) equals wave speed (v) divided by frequency (f): lambda = v/f. For electromagnetic waves in vacuum, v is the speed of light (299,792,458 m/s).' },
+      { q: 'How do I calculate antenna length from frequency?', a: 'A quarter-wave antenna is lambda/4 long and a half-wave antenna is lambda/2 long. First calculate wavelength (lambda = c/f), then divide by 4 or 2. For 100 MHz, lambda is about 3 m, so a quarter-wave antenna is about 75 cm.' },
+      { q: 'What are the EM spectrum bands?', a: 'The electromagnetic spectrum includes radio waves (>1 mm), microwaves (1 mm to 1 m), infrared (700 nm to 1 mm), visible light (380-700 nm), ultraviolet (10-380 nm), X-rays (0.01-10 nm), and gamma rays (<0.01 nm).' },
+      { q: 'Can I calculate wavelength for sound waves?', a: 'Yes, change the wave speed to the speed of sound in your medium. Sound in air is about 343 m/s, in water about 1,480 m/s, and in steel about 5,960 m/s. The calculator works for any wave type.' },
+      { q: 'What is wave number (k)?', a: 'Wave number k equals 2*pi divided by wavelength (k = 2*pi/lambda). It represents the number of radians per unit distance and is used extensively in optics, quantum mechanics, and spectroscopy.' },
+      { q: 'What wavelength units does this calculator support?', a: 'This calculator supports kilometers, meters, centimeters, millimeters, micrometers, nanometers, and picometers — covering everything from radio waves to gamma rays.' },
+      { q: 'Is this wavelength calculator free to use?', a: 'Yes, completely free with no signup. All calculations run in your browser — no data is transmitted to any server, ensuring total privacy.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/frequency-calculator', name: 'Frequency Calculator', description: 'Convert between frequency and period with angular frequency.' },
+      { slug: 'evergreen/capacitor-calculator', name: 'Capacitor Calculator', description: 'Calculate capacitance, reactance, energy, and time constant.' },
+      { slug: 'evergreen/ohms-law-calculator', name: 'Ohms Law Calculator', description: 'Calculate voltage, current, resistance, and power.' },
+      { slug: 'evergreen/led-resistor-calculator', name: 'LED Resistor Calculator', description: 'Calculate the correct resistor for any LED circuit.' },
+      { slug: 'evergreen/wire-gauge-calculator', name: 'Wire Gauge Calculator', description: 'Calculate AWG wire gauge, ampacity, and voltage drop.' },
+      { slug: 'evergreen/scientific-calculator', name: 'Scientific Calculator', description: 'Full-featured scientific calculator for engineering math.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      var mode = 'freq-to-wl';
+
+      // Mode toggle
+      document.getElementById('mode-freq-to-wl').addEventListener('click', function() {
+        mode = 'freq-to-wl';
+        this.classList.add('active');
+        document.getElementById('mode-wl-to-freq').classList.remove('active');
+        document.getElementById('wl-freq-inputs').style.display = '';
+        document.getElementById('wl-wl-inputs').style.display = 'none';
+      });
+      document.getElementById('mode-wl-to-freq').addEventListener('click', function() {
+        mode = 'wl-to-freq';
+        this.classList.add('active');
+        document.getElementById('mode-freq-to-wl').classList.remove('active');
+        document.getElementById('wl-freq-inputs').style.display = 'none';
+        document.getElementById('wl-wl-inputs').style.display = '';
+      });
+
+      // Calculate
+      document.getElementById('wl-calc-btn').addEventListener('click', calculate);
+
+      // Auto-calculate on input
+      document.querySelectorAll('#wl-freq-value, #wl-wl-value, #wl-speed-1, #wl-speed-2').forEach(function(el) {
+        el.addEventListener('input', calculate);
+      });
+      document.querySelectorAll('#wl-freq-unit, #wl-wl-unit').forEach(function(el) {
+        el.addEventListener('change', calculate);
+      });
+
+      function calculate() {
+        var freqHz, wavelengthM, speed;
+
+        if (mode === 'freq-to-wl') {
+          var fVal = parseFloat(document.getElementById('wl-freq-value').value);
+          var fUnit = parseFloat(document.getElementById('wl-freq-unit').value);
+          speed = parseFloat(document.getElementById('wl-speed-1').value);
+          if (isNaN(fVal) || fVal <= 0 || isNaN(speed) || speed <= 0) { hideResults(); return; }
+          freqHz = fVal * fUnit;
+          wavelengthM = speed / freqHz;
+        } else {
+          var wVal = parseFloat(document.getElementById('wl-wl-value').value);
+          var wUnit = parseFloat(document.getElementById('wl-wl-unit').value);
+          speed = parseFloat(document.getElementById('wl-speed-2').value);
+          if (isNaN(wVal) || wVal <= 0 || isNaN(speed) || speed <= 0) { hideResults(); return; }
+          wavelengthM = wVal * wUnit;
+          freqHz = speed / wavelengthM;
+        }
+
+        var omega = 2 * Math.PI * freqHz;
+        var k = 2 * Math.PI / wavelengthM;
+        var antQuarter = wavelengthM / 4;
+        var antHalf = wavelengthM / 2;
+
+        document.getElementById('res-wl').textContent = formatLength(wavelengthM);
+        document.getElementById('res-wl-freq').textContent = formatFrequency(freqHz);
+        document.getElementById('res-wl-omega').textContent = formatNumber(omega) + ' rad/s';
+        document.getElementById('res-wl-k').textContent = formatNumber(k) + ' rad/m';
+        document.getElementById('res-ant-quarter').textContent = formatLength(antQuarter);
+        document.getElementById('res-ant-half').textContent = formatLength(antHalf);
+
+        // EM spectrum classification
+        var band = classifyEM(wavelengthM);
+        document.getElementById('res-em-band').textContent = band.name;
+
+        // Position marker on spectrum bar
+        var markerPos = getSpectrumPosition(wavelengthM);
+        document.getElementById('spectrum-marker').style.left = markerPos + '%';
+
+        showResults();
+      }
+
+      function classifyEM(wavelengthM) {
+        // wavelength in meters
+        if (wavelengthM > 1e-1) return { name: 'Radio Wave', pos: 5 };
+        if (wavelengthM > 1e-3) return { name: 'Microwave', pos: 15 };
+        if (wavelengthM > 7e-7) return { name: 'Infrared (IR)', pos: 25 };
+        if (wavelengthM > 6.2e-7) return { name: 'Visible Light (Red)', pos: 32 };
+        if (wavelengthM > 5.7e-7) return { name: 'Visible Light (Orange)', pos: 36 };
+        if (wavelengthM > 5e-7) return { name: 'Visible Light (Yellow)', pos: 40 };
+        if (wavelengthM > 4.5e-7) return { name: 'Visible Light (Green)', pos: 46 };
+        if (wavelengthM > 4e-7) return { name: 'Visible Light (Blue)', pos: 52 };
+        if (wavelengthM > 3.8e-7) return { name: 'Visible Light (Violet)', pos: 58 };
+        if (wavelengthM > 1e-8) return { name: 'Ultraviolet (UV)', pos: 65 };
+        if (wavelengthM > 1e-11) return { name: 'X-Ray', pos: 78 };
+        return { name: 'Gamma Ray', pos: 92 };
+      }
+
+      function getSpectrumPosition(wavelengthM) {
+        // Map wavelength to 0-100% position on spectrum bar
+        // Radio > 0.1m → left, Gamma < 1e-11m → right
+        var logWl = Math.log10(wavelengthM);
+        // Range: log10(1e3) = 3 (far radio) to log10(1e-13) = -13 (gamma)
+        // Map 3 → 0%, -13 → 100%
+        var pct = ((3 - logWl) / 16) * 100;
+        return Math.max(0, Math.min(100, pct));
+      }
+
+      function showResults() {
+        document.getElementById('wl-results').style.display = '';
+        document.getElementById('wl-spectrum-section').style.display = '';
+        document.getElementById('wl-spectrum-empty').style.display = 'none';
+      }
+
+      function hideResults() {
+        document.getElementById('wl-results').style.display = 'none';
+        document.getElementById('wl-spectrum-section').style.display = 'none';
+        document.getElementById('wl-spectrum-empty').style.display = '';
+      }
+
+      function formatFrequency(hz) {
+        if (hz >= 1e12) return formatNumber(hz / 1e12) + ' THz';
+        if (hz >= 1e9) return formatNumber(hz / 1e9) + ' GHz';
+        if (hz >= 1e6) return formatNumber(hz / 1e6) + ' MHz';
+        if (hz >= 1e3) return formatNumber(hz / 1e3) + ' kHz';
+        return formatNumber(hz) + ' Hz';
+      }
+
+      function formatLength(meters) {
+        if (meters >= 1e3) return formatNumber(meters / 1e3) + ' km';
+        if (meters >= 1) return formatNumber(meters) + ' m';
+        if (meters >= 1e-2) return formatNumber(meters * 100) + ' cm';
+        if (meters >= 1e-3) return formatNumber(meters * 1e3) + ' mm';
+        if (meters >= 1e-6) return formatNumber(meters * 1e6) + ' \u00B5m';
+        if (meters >= 1e-9) return formatNumber(meters * 1e9) + ' nm';
+        return formatNumber(meters * 1e12) + ' pm';
+      }
+
+      function formatNumber(n) {
+        if (n === 0) return '0';
+        if (Math.abs(n) >= 1e15) return n.toExponential(3);
+        if (Math.abs(n) >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+        if (Math.abs(n) >= 1) return n.toFixed(6).replace(/\.?0+$/, '');
+        if (Math.abs(n) >= 1e-6) return n.toFixed(10).replace(/\.?0+$/, '');
+        return n.toExponential(4);
+      }
+    });
+  </script>
+</body>
+</html>

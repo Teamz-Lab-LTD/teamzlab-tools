@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logic Gate Simulator — Teamz Lab Tools</title>
+  <meta name="description" content="Simulate AND, OR, NOT, NAND, NOR, XOR, XNOR logic gates with live truth tables, toggle inputs, gate chaining, and boolean expressions. Free and private.">
+  <meta property="og:title" content="Logic Gate Simulator — Teamz Lab Tools">
+  <meta property="og:description" content="Simulate logic gates with live truth tables, toggle inputs, gate chaining, and boolean expressions. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/logic-gate-simulator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Logic Gate Simulator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Simulate logic gates with live truth tables, toggle inputs, gate chaining, and boolean expressions. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/logic-gate-simulator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .lg-gate-select { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .lg-gate-btn { padding: 10px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.15s; }
+    .lg-gate-btn.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .lg-gate-btn:hover { border-color: var(--heading); }
+    .lg-inputs { display: flex; gap: 24px; align-items: center; margin-bottom: 18px; }
+    .lg-toggle-group { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .lg-toggle-label { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+    .lg-toggle { width: 60px; height: 34px; border-radius: 17px; border: 2px solid var(--border); background: var(--surface); cursor: pointer; position: relative; transition: all 0.2s; }
+    .lg-toggle.on { background: var(--heading); border-color: var(--heading); }
+    .lg-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg); transition: transform 0.2s; }
+    .lg-toggle.on::after { transform: translateX(26px); }
+    .lg-toggle-val { font-size: 20px; font-weight: 700; color: var(--heading); }
+    .lg-output-box { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 18px; }
+    .lg-output-label { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+    .lg-output-val { font-size: 32px; font-weight: 800; color: var(--heading); }
+    .lg-expression { font-family: monospace; font-size: 16px; color: var(--heading); padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 18px; }
+    .lg-symbol { font-family: monospace; font-size: 14px; color: var(--text); padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; white-space: pre; line-height: 1.4; margin-bottom: 18px; }
+    .lg-truth-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 14px; }
+    .lg-truth-table th { background: var(--heading); color: var(--bg); padding: 10px 14px; text-align: center; font-weight: 600; }
+    .lg-truth-table td { padding: 10px 14px; text-align: center; border-bottom: 1px solid var(--border); }
+    .lg-truth-table tr.lg-active { background: var(--surface); font-weight: 700; }
+    .lg-section { margin-bottom: 24px; }
+    .lg-section h2 { margin-bottom: 12px; }
+    .lg-chain-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    .lg-chain-arrow { font-size: 20px; color: var(--text-muted); font-weight: 700; }
+    .lg-chain-result { padding: 14px 18px; border: 1px solid var(--border); border-radius: 10px; }
+    .lg-chain-result .label { font-size: 13px; color: var(--text-muted); }
+    .lg-chain-result .value { font-size: 22px; font-weight: 700; color: var(--heading); }
+    @media (max-width: 600px) {
+      .lg-gate-select { gap: 6px; }
+      .lg-gate-btn { padding: 8px 12px; font-size: 13px; }
+      .lg-inputs { gap: 16px; }
+      .lg-output-val { font-size: 24px; }
+      .lg-chain-row { flex-direction: column; align-items: stretch; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "Logic Gate Simulator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What logic gates does this simulator support?", "acceptedAnswer": {"@type": "Answer", "text": "This simulator supports all seven fundamental logic gates: AND, OR, NOT, NAND, NOR, XOR, and XNOR. Each gate shows live output, truth table, gate symbol, and boolean expression."}}, {"@type": "Question", "name": "What is a universal logic gate?", "acceptedAnswer": {"@type": "Answer", "text": "NAND and NOR are called universal gates because any other logic gate (AND, OR, NOT, XOR, XNOR) can be constructed using only NAND gates or only NOR gates. This property makes them fundamental in digital circuit design."}}, {"@type": "Question", "name": "How does the multi-gate chain work?", "acceptedAnswer": {"@type": "Answer", "text": "The chain mode connects two gates in sequence. The output of Gate 1 becomes input A of Gate 2. You provide a separate input C for Gate 2. The combined boolean expression and final output are displayed in real time."}}, {"@type": "Question", "name": "What is the difference between XOR and XNOR?", "acceptedAnswer": {"@type": "Answer", "text": "XOR (exclusive OR) outputs 1 when exactly one input is 1 and outputs 0 when both inputs are the same. XNOR is the complement of XOR, outputting 1 when both inputs are the same (both 0 or both 1)."}}, {"@type": "Question", "name": "Can I use this simulator for learning digital electronics?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, this simulator is designed for students, hobbyists, and teachers. It provides instant visual feedback with toggle switches, truth tables, gate symbols, and boolean expressions to help you understand digital logic fundamentals."}}, {"@type": "Question", "name": "Is this logic gate simulator free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, this simulator is completely free, requires no signup, and runs entirely in your browser. No data is sent to any server, ensuring complete privacy."}}, {"@type": "Question", "name": "What is a truth table?", "acceptedAnswer": {"@type": "Answer", "text": "A truth table lists all possible input combinations for a logic gate and the corresponding output. For a 2-input gate, there are 4 rows (00, 01, 10, 11). The current input combination is highlighted in the table."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Logic Gate Simulator", "description": "Simulate AND, OR, NOT, NAND, NOR, XOR, XNOR logic gates with live truth tables and gate chaining.", "url": "https://tool.teamzlab.com/evergreen/logic-gate-simulator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Logic Gate Simulator</h1>
+      <p class="tool-description">Simulate AND, OR, NOT, NAND, NOR, XOR, and XNOR logic gates. Toggle inputs, see live output, truth tables, gate symbols, boolean expressions, and chain two gates together. Free, private, runs in your browser.</p>
+    </section>
+    <section class="tool-calculator">
+
+      <!-- Gate Selector -->
+      <div class="lg-section">
+        <h2>Select Logic Gate</h2>
+        <div class="lg-gate-select" id="gate-select">
+          <button type="button" class="lg-gate-btn active" data-gate="AND">AND</button>
+          <button type="button" class="lg-gate-btn" data-gate="OR">OR</button>
+          <button type="button" class="lg-gate-btn" data-gate="NOT">NOT</button>
+          <button type="button" class="lg-gate-btn" data-gate="NAND">NAND</button>
+          <button type="button" class="lg-gate-btn" data-gate="NOR">NOR</button>
+          <button type="button" class="lg-gate-btn" data-gate="XOR">XOR</button>
+          <button type="button" class="lg-gate-btn" data-gate="XNOR">XNOR</button>
+        </div>
+      </div>
+
+      <!-- Input Toggles -->
+      <div class="lg-section">
+        <h2>Inputs</h2>
+        <div class="lg-inputs">
+          <div class="lg-toggle-group">
+            <span class="lg-toggle-label">Input A</span>
+            <div class="lg-toggle" id="toggle-a" tabindex="0" role="switch" aria-checked="false"></div>
+            <span class="lg-toggle-val" id="val-a">0</span>
+          </div>
+          <div class="lg-toggle-group" id="input-b-group">
+            <span class="lg-toggle-label">Input B</span>
+            <div class="lg-toggle" id="toggle-b" tabindex="0" role="switch" aria-checked="false"></div>
+            <span class="lg-toggle-val" id="val-b">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="lg-output-box">
+        <span class="lg-output-label">Output:</span>
+        <span class="lg-output-val" id="output-val">0</span>
+        <span id="output-expression" class="lg-expression" style="margin:0;flex:1;text-align:right;"></span>
+      </div>
+
+      <!-- Gate Symbol -->
+      <div class="lg-section">
+        <h2>Gate Symbol</h2>
+        <div class="lg-symbol" id="gate-symbol"></div>
+      </div>
+
+      <!-- Truth Table -->
+      <div class="lg-section">
+        <h2>Truth Table</h2>
+        <table class="lg-truth-table" id="truth-table"></table>
+      </div>
+
+      <!-- Multi-Gate Chain -->
+      <div class="lg-section">
+        <h2>Multi-Gate Chain</h2>
+        <p style="font-size:14px;color:var(--text-muted);margin-bottom:12px;">Chain two gates: the output of Gate 1 feeds into Gate 2 as input A. Set a second input C for Gate 2.</p>
+        <div class="lg-chain-row">
+          <div>
+            <label style="font-size:13px;color:var(--text-muted);font-weight:500;">Gate 1</label>
+            <select id="chain-gate1" style="padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;">
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+              <option value="NOT">NOT</option>
+              <option value="NAND">NAND</option>
+              <option value="NOR">NOR</option>
+              <option value="XOR">XOR</option>
+              <option value="XNOR">XNOR</option>
+            </select>
+          </div>
+          <span class="lg-chain-arrow">&rarr;</span>
+          <div>
+            <label style="font-size:13px;color:var(--text-muted);font-weight:500;">Gate 2</label>
+            <select id="chain-gate2" style="padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;">
+              <option value="AND">AND</option>
+              <option value="OR">OR</option>
+              <option value="NOT">NOT</option>
+              <option value="NAND">NAND</option>
+              <option value="NOR">NOR</option>
+              <option value="XOR">XOR</option>
+              <option value="XNOR">XNOR</option>
+            </select>
+          </div>
+        </div>
+        <div class="lg-inputs" style="margin-bottom:10px;">
+          <div class="lg-toggle-group">
+            <span class="lg-toggle-label">Input C (Gate 2)</span>
+            <div class="lg-toggle" id="toggle-c" tabindex="0" role="switch" aria-checked="false"></div>
+            <span class="lg-toggle-val" id="val-c">0</span>
+          </div>
+        </div>
+        <div class="lg-chain-result">
+          <div class="label">Chain Output</div>
+          <div class="value" id="chain-output">0</div>
+          <div class="label" id="chain-expression" style="margin-top:4px;font-family:monospace;color:var(--heading);"></div>
+        </div>
+      </div>
+
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Logic Gate Simulator Works</h2>
+      <p>This logic gate simulator lets you experiment with the seven fundamental digital logic gates used in computer science and electronics: AND, OR, NOT, NAND, NOR, XOR, and XNOR. Toggle the input switches to see how each gate processes binary inputs and produces an output. The simulator displays the live output value, the complete truth table with the current input combination highlighted, a text-based gate symbol diagram, and the boolean expression for the selected gate. All processing runs entirely in your browser with no data sent to any server, making it completely private and free. Whether you are a student learning digital electronics, a hobbyist building circuits, or a teacher demonstrating boolean logic, this tool provides instant visual feedback for understanding gate behavior.</p>
+
+      <h2>Understanding the Seven Logic Gates</h2>
+      <p>The AND gate outputs 1 only when both inputs are 1. The OR gate outputs 1 when at least one input is 1. The NOT gate (inverter) has a single input and outputs the opposite value. The NAND gate is an AND gate followed by an inverter, outputting 0 only when both inputs are 1. The NOR gate is an OR followed by NOT, outputting 1 only when both inputs are 0. The XOR (exclusive OR) gate outputs 1 when exactly one input is 1, and the XNOR gate outputs 1 when both inputs are the same. NAND and NOR gates are called universal gates because any other gate can be built using only NAND or only NOR gates. Understanding these gates is the foundation of digital circuit design, processor architecture, and computer science.</p>
+
+      <h2>Multi-Gate Chaining and Boolean Expressions</h2>
+      <p>Real digital circuits rarely use a single gate in isolation. This simulator includes a multi-gate chain mode where the output of one gate feeds directly into a second gate as its first input. You select Gate 1 and Gate 2 independently, toggle your inputs, and see the final chained output along with the combined boolean expression. This helps you understand how complex logic functions are built from simple gates. For example, chaining an AND gate with a NOT gate creates a NAND function. Boolean algebra expressions like A AND B, A XOR B, or NOT(A OR B) are displayed in real time, helping you connect the visual toggle switches with formal logic notation used in textbooks and datasheets.</p>
+
+      <h2>Logic Gates in Real-World Applications</h2>
+      <p>Logic gates form the building blocks of every digital device you use. CPUs contain billions of transistors arranged as logic gates to perform arithmetic, comparison, and data routing operations. Memory chips use gate configurations to store bits. Networking equipment uses logic to route packets. Even simple household electronics like alarm systems and washing machines use combinational logic to make decisions based on sensor inputs. Field-programmable gate arrays (FPGAs) allow engineers to configure custom gate arrangements for specialized tasks like video processing, cryptography, and real-time control systems. By practicing with this simulator, you build intuition that transfers directly to circuit design, hardware description languages like Verilog and VHDL, and computer architecture courses.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/logic-gate-simulator',
+      title: 'Logic Gate Simulator',
+      description: 'Simulate AND, OR, NOT, NAND, NOR, XOR, XNOR logic gates with live truth tables and gate chaining.'
+    };
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Logic Gate Simulator' }
+    ];
+    var FAQS = [
+      { q: 'What logic gates does this simulator support?', a: 'This simulator supports all seven fundamental logic gates: AND, OR, NOT, NAND, NOR, XOR, and XNOR. Each gate shows live output, truth table, gate symbol, and boolean expression.' },
+      { q: 'What is a universal logic gate?', a: 'NAND and NOR are called universal gates because any other logic gate (AND, OR, NOT, XOR, XNOR) can be constructed using only NAND gates or only NOR gates. This property makes them fundamental in digital circuit design.' },
+      { q: 'How does the multi-gate chain work?', a: 'The chain mode connects two gates in sequence. The output of Gate 1 becomes input A of Gate 2. You provide a separate input C for Gate 2. The combined boolean expression and final output are displayed in real time.' },
+      { q: 'What is the difference between XOR and XNOR?', a: 'XOR (exclusive OR) outputs 1 when exactly one input is 1 and outputs 0 when both inputs are the same. XNOR is the complement of XOR, outputting 1 when both inputs are the same (both 0 or both 1).' },
+      { q: 'Can I use this simulator for learning digital electronics?', a: 'Yes, this simulator is designed for students, hobbyists, and teachers. It provides instant visual feedback with toggle switches, truth tables, gate symbols, and boolean expressions to help you understand digital logic fundamentals.' },
+      { q: 'Is this logic gate simulator free?', a: 'Yes, this simulator is completely free, requires no signup, and runs entirely in your browser. No data is sent to any server, ensuring complete privacy.' },
+      { q: 'What is a truth table?', a: 'A truth table lists all possible input combinations for a logic gate and the corresponding output. For a 2-input gate, there are 4 rows (00, 01, 10, 11). The current input combination is highlighted in the table.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/scientific-calculator', name: 'Scientific Calculator', description: 'Full-featured scientific calculator for math and engineering.' },
+      { slug: 'evergreen/ohms-law-calculator', name: 'Ohms Law Calculator', description: 'Calculate voltage, current, resistance, and power.' },
+      { slug: 'evergreen/resistor-color-code-calculator', name: 'Resistor Color Code Calculator', description: 'Decode resistor color bands to resistance value.' },
+      { slug: 'evergreen/capacitor-calculator', name: 'Capacitor Calculator', description: 'Calculate series/parallel capacitance and energy.' },
+      { slug: 'evergreen/led-resistor-calculator', name: 'LED Resistor Calculator', description: 'Find the correct resistor for any LED circuit.' },
+      { slug: 'evergreen/voltage-divider-calculator', name: 'Voltage Divider Calculator', description: 'Calculate output voltage for resistive dividers.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      var gate = 'AND';
+      var inputA = 0, inputB = 0, inputC = 0;
+
+      // Gate logic
+      function evalGate(g, a, b) {
+        switch (g) {
+          case 'AND':  return a & b;
+          case 'OR':   return a | b;
+          case 'NOT':  return a ? 0 : 1;
+          case 'NAND': return (a & b) ? 0 : 1;
+          case 'NOR':  return (a | b) ? 0 : 1;
+          case 'XOR':  return a ^ b;
+          case 'XNOR': return (a ^ b) ? 0 : 1;
+          default: return 0;
+        }
+      }
+
+      function getExpression(g, aLabel, bLabel) {
+        switch (g) {
+          case 'AND':  return aLabel + ' AND ' + bLabel;
+          case 'OR':   return aLabel + ' OR ' + bLabel;
+          case 'NOT':  return 'NOT ' + aLabel;
+          case 'NAND': return 'NOT(' + aLabel + ' AND ' + bLabel + ')';
+          case 'NOR':  return 'NOT(' + aLabel + ' OR ' + bLabel + ')';
+          case 'XOR':  return aLabel + ' XOR ' + bLabel;
+          case 'XNOR': return 'NOT(' + aLabel + ' XOR ' + bLabel + ')';
+          default: return '';
+        }
+      }
+
+      function getSymbol(g) {
+        var symbols = {
+          'AND':  '  A ──┐\n       │ AND ├── Q\n  B ──┘',
+          'OR':   '  A ──┐\n       │ OR  ├── Q\n  B ──┘',
+          'NOT':  '  A ──│>o── Q',
+          'NAND': '  A ──┐\n       │NAND├o── Q\n  B ──┘',
+          'NOR':  '  A ──┐\n       │ NOR├o── Q\n  B ──┘',
+          'XOR':  '  A ──┐\n       │ XOR├── Q\n  B ──┘',
+          'XNOR': '  A ──┐\n       │XNOR├o── Q\n  B ──┘'
+        };
+        return symbols[g] || '';
+      }
+
+      function isUnary(g) { return g === 'NOT'; }
+
+      function update() {
+        // Show/hide input B
+        document.getElementById('input-b-group').style.display = isUnary(gate) ? 'none' : '';
+
+        // Compute output
+        var out = evalGate(gate, inputA, inputB);
+        document.getElementById('output-val').textContent = out;
+        document.getElementById('output-expression').textContent = getExpression(gate, 'A', 'B') + ' = ' + out;
+
+        // Gate symbol
+        document.getElementById('gate-symbol').textContent = getSymbol(gate);
+
+        // Truth table
+        renderTruthTable();
+
+        // Chain
+        updateChain();
+      }
+
+      function renderTruthTable() {
+        var table = document.getElementById('truth-table');
+        var html = '';
+        if (isUnary(gate)) {
+          html += '<tr><th>A</th><th>Q</th></tr>';
+          for (var a = 0; a <= 1; a++) {
+            var q = evalGate(gate, a, 0);
+            var active = (a === inputA) ? ' class="lg-active"' : '';
+            html += '<tr' + active + '><td>' + a + '</td><td>' + q + '</td></tr>';
+          }
+        } else {
+          html += '<tr><th>A</th><th>B</th><th>Q</th></tr>';
+          for (var a = 0; a <= 1; a++) {
+            for (var b = 0; b <= 1; b++) {
+              var q = evalGate(gate, a, b);
+              var active = (a === inputA && b === inputB) ? ' class="lg-active"' : '';
+              html += '<tr' + active + '><td>' + a + '</td><td>' + b + '</td><td>' + q + '</td></tr>';
+            }
+          }
+        }
+        table.innerHTML = html;
+      }
+
+      function updateChain() {
+        var g1 = document.getElementById('chain-gate1').value;
+        var g2 = document.getElementById('chain-gate2').value;
+        var out1 = evalGate(g1, inputA, inputB);
+        var out2 = evalGate(g2, out1, inputC);
+        document.getElementById('chain-output').textContent = out2;
+        var expr1 = getExpression(g1, 'A', 'B');
+        var expr2 = getExpression(g2, '(' + expr1 + ')', 'C');
+        document.getElementById('chain-expression').textContent = expr2 + ' = ' + out2;
+      }
+
+      // Toggle switches
+      function setupToggle(id, valId, getter, setter) {
+        var el = document.getElementById(id);
+        el.addEventListener('click', function() {
+          var v = getter() ? 0 : 1;
+          setter(v);
+          el.classList.toggle('on', v === 1);
+          el.setAttribute('aria-checked', v === 1 ? 'true' : 'false');
+          document.getElementById(valId).textContent = v;
+          update();
+        });
+        el.addEventListener('keydown', function(e) {
+          if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); el.click(); }
+        });
+      }
+
+      setupToggle('toggle-a', 'val-a', function() { return inputA; }, function(v) { inputA = v; });
+      setupToggle('toggle-b', 'val-b', function() { return inputB; }, function(v) { inputB = v; });
+      setupToggle('toggle-c', 'val-c', function() { return inputC; }, function(v) { inputC = v; });
+
+      // Gate selection
+      document.getElementById('gate-select').addEventListener('click', function(e) {
+        var btn = e.target.closest('.lg-gate-btn');
+        if (!btn) return;
+        document.querySelectorAll('.lg-gate-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        gate = btn.dataset.gate;
+        update();
+      });
+
+      // Chain selects
+      document.getElementById('chain-gate1').addEventListener('change', function() { updateChain(); });
+      document.getElementById('chain-gate2').addEventListener('change', function() { updateChain(); });
+
+      update();
+    });
+  </script>
+</body>
+</html>

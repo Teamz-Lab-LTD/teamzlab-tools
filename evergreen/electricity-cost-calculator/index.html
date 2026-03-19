@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electricity Cost Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate electricity cost for any device. See daily, monthly, yearly costs and kWh usage. Compare LED vs CFL vs incandescent. Free, private, no signup.">
+  <meta property="og:title" content="Electricity Cost Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate electricity cost for any device. Daily, monthly, yearly costs. LED vs CFL comparison. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/electricity-cost-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Electricity Cost Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate electricity cost for any device. Daily, monthly, yearly costs. LED vs CFL comparison. Free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/electricity-cost-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .elec-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .elec-tabs button { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 600; font-size: 14px; }
+    .elec-tabs button.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .elec-panel { display: none; }
+    .elec-panel.active { display: block; }
+    .elec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .elec-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 14px; color: var(--text-muted); font-weight: 500; }
+    .elec-grid input, .elec-grid select { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 15px; }
+    .elec-calc-btn { background: var(--heading); color: var(--bg); border: none; padding: 12px 28px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 15px; width: 100%; margin-top: 8px; }
+    .elec-calc-btn:hover { opacity: 0.9; }
+    .elec-results { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+    .elec-results h3 { margin-bottom: 10px; color: var(--heading); }
+    .elec-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .elec-result-item { padding: 12px; border-radius: 8px; border: 1px solid var(--border); }
+    .elec-result-item .label { font-size: 13px; color: var(--text-muted); margin-bottom: 2px; }
+    .elec-result-item .value { font-size: 18px; font-weight: 700; color: var(--heading); }
+    .elec-device-list { margin-bottom: 16px; }
+    .elec-device-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+    .elec-device-row input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; }
+    .elec-device-row .elec-name { flex: 2; min-width: 120px; }
+    .elec-device-row .elec-watts { flex: 1; min-width: 70px; }
+    .elec-device-row .elec-hrs { flex: 1; min-width: 70px; }
+    .elec-device-row button { background: none; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 14px; }
+    .elec-device-row button:hover { border-color: var(--heading); }
+    .elec-add-btn { background: var(--surface); border: 1px solid var(--border); color: var(--heading); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .elec-add-btn:hover { border-color: var(--heading); }
+    .elec-compare-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+    .elec-compare-table th, .elec-compare-table td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
+    .elec-compare-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .elec-compare-table td { color: var(--text); }
+    .elec-section { margin-bottom: 24px; }
+    .elec-device-header { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); font-weight: 600; }
+    .elec-device-header span:nth-child(1) { flex: 2; min-width: 120px; }
+    .elec-device-header span:nth-child(2) { flex: 1; min-width: 70px; }
+    .elec-device-header span:nth-child(3) { flex: 1; min-width: 70px; }
+    .elec-device-header span:nth-child(4) { width: 44px; }
+    .elec-multi-total { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+    @media (max-width: 600px) {
+      .elec-grid { grid-template-columns: 1fr; }
+      .elec-result-grid { grid-template-columns: 1fr; }
+      .elec-tabs { flex-wrap: wrap; }
+      .elec-device-row { flex-direction: column; }
+      .elec-device-row input { width: 100%; }
+      .elec-device-header { display: none; }
+      .elec-compare-table { font-size: 12px; }
+      .elec-compare-table th, .elec-compare-table td { padding: 6px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Electricity Cost Calculator</h1>
+      <p class="tool-description">Calculate how much electricity any device costs to run. See daily, monthly, and yearly costs with kWh consumed. Add multiple devices or compare lighting options. Free, private, runs in your browser.</p>
+    </section>
+    <section class="tool-calculator">
+
+      <div class="elec-tabs">
+        <button type="button" id="tab-single" class="active">Single Device</button>
+        <button type="button" id="tab-multi">Multiple Devices</button>
+        <button type="button" id="tab-compare">LED vs CFL vs Bulb</button>
+      </div>
+
+      <!-- Single Device -->
+      <div id="panel-single" class="elec-panel active">
+        <div class="elec-section">
+          <h2>Calculate Electricity Cost</h2>
+          <div class="elec-grid">
+            <label>Device Wattage (W)
+              <input type="number" id="single-watts" placeholder="e.g. 100" min="0" step="any">
+            </label>
+            <label>Hours of Use Per Day
+              <input type="number" id="single-hours" placeholder="e.g. 8" min="0" max="24" step="any">
+            </label>
+            <label>Electricity Rate ($/kWh)
+              <input type="number" id="single-rate" placeholder="e.g. 0.12" min="0" step="any" value="0.12">
+            </label>
+          </div>
+          <button type="button" id="single-calc-btn" class="elec-calc-btn">Calculate Cost</button>
+          <div id="single-results" class="elec-results" style="display:none;">
+            <h3>Electricity Cost Breakdown</h3>
+            <div class="elec-result-grid">
+              <div class="elec-result-item"><div class="label">Daily Cost</div><div class="value" id="res-daily">--</div></div>
+              <div class="elec-result-item"><div class="label">Monthly Cost (30 days)</div><div class="value" id="res-monthly">--</div></div>
+              <div class="elec-result-item"><div class="label">Yearly Cost (365 days)</div><div class="value" id="res-yearly">--</div></div>
+              <div class="elec-result-item"><div class="label">Daily kWh</div><div class="value" id="res-kwh-daily">--</div></div>
+              <div class="elec-result-item"><div class="label">Monthly kWh</div><div class="value" id="res-kwh-monthly">--</div></div>
+              <div class="elec-result-item"><div class="label">Yearly kWh</div><div class="value" id="res-kwh-yearly">--</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multiple Devices -->
+      <div id="panel-multi" class="elec-panel">
+        <div class="elec-section">
+          <h2>Multiple Devices Cost</h2>
+          <div class="elec-grid" style="margin-bottom:12px;">
+            <label>Electricity Rate ($/kWh)
+              <input type="number" id="multi-rate" placeholder="e.g. 0.12" min="0" step="any" value="0.12">
+            </label>
+          </div>
+          <div class="elec-device-header">
+            <span>Device Name</span>
+            <span>Watts</span>
+            <span>Hrs/Day</span>
+            <span></span>
+          </div>
+          <div id="device-list" class="elec-device-list">
+            <div class="elec-device-row" data-index="0">
+              <input type="text" id="dev-name-0" class="elec-name" placeholder="Device name">
+              <input type="number" id="dev-watts-0" class="elec-watts" placeholder="Watts" min="0" step="any">
+              <input type="number" id="dev-hours-0" class="elec-hrs" placeholder="Hrs/day" min="0" max="24" step="any">
+              <button type="button" class="elec-remove-btn" title="Remove">&times;</button>
+            </div>
+            <div class="elec-device-row" data-index="1">
+              <input type="text" id="dev-name-1" class="elec-name" placeholder="Device name">
+              <input type="number" id="dev-watts-1" class="elec-watts" placeholder="Watts" min="0" step="any">
+              <input type="number" id="dev-hours-1" class="elec-hrs" placeholder="Hrs/day" min="0" max="24" step="any">
+              <button type="button" class="elec-remove-btn" title="Remove">&times;</button>
+            </div>
+          </div>
+          <button type="button" id="add-device" class="elec-add-btn">+ Add Device</button>
+          <button type="button" id="multi-calc-btn" class="elec-calc-btn" style="margin-top:12px;">Calculate Total Cost</button>
+          <div id="multi-results" class="elec-results" style="display:none;">
+            <h3>Per-Device Breakdown</h3>
+            <div id="multi-breakdown"></div>
+            <div class="elec-multi-total">
+              <div class="elec-result-grid">
+                <div class="elec-result-item"><div class="label">Total Daily Cost</div><div class="value" id="multi-daily">--</div></div>
+                <div class="elec-result-item"><div class="label">Total Monthly Cost</div><div class="value" id="multi-monthly">--</div></div>
+                <div class="elec-result-item"><div class="label">Total Yearly Cost</div><div class="value" id="multi-yearly">--</div></div>
+                <div class="elec-result-item"><div class="label">Total Yearly kWh</div><div class="value" id="multi-kwh">--</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LED vs CFL vs Incandescent -->
+      <div id="panel-compare" class="elec-panel">
+        <div class="elec-section">
+          <h2>LED vs CFL vs Incandescent Comparison</h2>
+          <div class="elec-grid">
+            <label>Desired Brightness (lumens)
+              <select id="compare-lumens">
+                <option value="450">450 lm (~40W incandescent)</option>
+                <option value="800" selected>800 lm (~60W incandescent)</option>
+                <option value="1100">1100 lm (~75W incandescent)</option>
+                <option value="1600">1600 lm (~100W incandescent)</option>
+                <option value="2600">2600 lm (~150W incandescent)</option>
+              </select>
+            </label>
+            <label>Hours Per Day
+              <input type="number" id="compare-hours" placeholder="e.g. 8" min="0" max="24" step="any" value="8">
+            </label>
+            <label>Electricity Rate ($/kWh)
+              <input type="number" id="compare-rate" placeholder="e.g. 0.12" min="0" step="any" value="0.12">
+            </label>
+          </div>
+          <button type="button" id="compare-calc-btn" class="elec-calc-btn">Compare Costs</button>
+          <div id="compare-results" class="elec-results" style="display:none;">
+            <h3>Annual Cost Comparison</h3>
+            <div style="overflow-x:auto;">
+              <table class="elec-compare-table" id="compare-table">
+                <thead>
+                  <tr><th>Type</th><th>Wattage</th><th>Yearly kWh</th><th>Yearly Cost</th><th>Lifespan</th><th>Bulb Cost</th></tr>
+                </thead>
+                <tbody id="compare-tbody"></tbody>
+              </table>
+            </div>
+            <div class="elec-result-grid" style="margin-top:12px;">
+              <div class="elec-result-item"><div class="label">LED Savings vs Incandescent</div><div class="value" id="compare-savings">--</div></div>
+              <div class="elec-result-item"><div class="label">LED Savings vs CFL</div><div class="value" id="compare-savings-cfl">--</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Electricity Cost Calculator Works</h2>
+      <p>This electricity cost calculator converts device wattage and usage hours into kilowatt-hours consumed and multiplies by your local electricity rate to show daily, monthly, and yearly costs. The formula is straightforward: kWh equals watts multiplied by hours divided by 1000, and cost equals kWh multiplied by your rate per kWh. The multiple devices mode lets you add unlimited appliances to see which ones contribute most to your electricity bill. The LED versus CFL versus incandescent comparison uses standard wattage equivalents for each brightness level and factors in both energy costs and bulb replacement costs over time. All calculations run entirely in your browser with no data collected or sent to any server. Enter your local electricity rate from your utility bill to get accurate cost estimates for your region.</p>
+
+      <h2>Understanding Your Electricity Bill</h2>
+      <p>Most residential electricity bills charge per kilowatt-hour, with rates varying dramatically by location. In the United States, average residential rates range from about 10 cents per kWh in states like Louisiana and Idaho to over 30 cents in Connecticut and Hawaii. European rates tend to be higher, with Germany averaging around 35 cents per kWh and the UK around 28 pence per kWh. Many utilities use tiered pricing where the rate increases as you use more electricity in a billing period. Some offer time-of-use rates where electricity costs less during off-peak hours, typically late night and early morning. Understanding your rate structure helps you make informed decisions about when to run high-wattage appliances like dishwashers, laundry machines, and electric vehicle chargers. Check your most recent utility bill for your exact rate, as it may include additional charges for transmission, distribution, and renewable energy surcharges beyond the base generation rate.</p>
+
+      <h2>Biggest Electricity Users in Your Home</h2>
+      <p>Heating and cooling systems typically account for 40 to 50 percent of residential electricity consumption. Central air conditioning units draw 3000 to 5000 watts, while portable space heaters use 1000 to 1500 watts. Water heaters are the second largest consumer at 4000 to 5500 watts, though they cycle on and off rather than running continuously. Kitchen appliances vary widely: a refrigerator uses 100 to 400 watts continuously, an electric oven draws 2000 to 5000 watts during use, and a microwave uses 600 to 1200 watts. Entertainment electronics add up: a gaming PC draws 300 to 500 watts, a large television uses 100 to 200 watts, and a gaming console uses 40 to 200 watts depending on whether it is playing a game or in standby. Lighting can be significant in older homes using incandescent bulbs. Switching to LED lighting typically reduces lighting electricity costs by 75 to 85 percent while providing the same brightness.</p>
+
+      <h2>Tips to Reduce Your Electricity Costs</h2>
+      <p>The most impactful step is switching to LED lighting throughout your home, which can save 200 to 500 dollars per year for a typical household. Use smart power strips to eliminate standby power draw from electronics, which can account for 5 to 10 percent of total electricity use. Set your thermostat to 68 degrees Fahrenheit in winter and 78 degrees in summer, and use ceiling fans to extend comfort ranges by 4 to 6 degrees. Run dishwashers and laundry machines during off-peak hours if your utility offers time-of-use pricing. Replace old appliances with Energy Star rated models, which use 10 to 50 percent less energy than standard models. Consider a smart thermostat that learns your schedule and optimizes heating and cooling automatically. For long-term savings, solar panels can offset 50 to 100 percent of electricity costs depending on your location and roof orientation, with typical payback periods of 6 to 10 years after incentives.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/electricity-cost-calculator',
+      title: 'Electricity Cost Calculator',
+      description: 'Calculate electricity cost for any device. See daily, monthly, yearly costs and kWh consumed.'
+    };
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Electricity Cost Calculator' }
+    ];
+    var FAQS = [
+      { q: 'How do I calculate electricity cost for a device?', a: 'Multiply the device wattage by hours of daily use, divide by 1000 to get kWh, then multiply by your electricity rate. For example, a 100W device used 8 hours at $0.12/kWh costs $0.096 per day.' },
+      { q: 'What is a kilowatt-hour (kWh)?', a: 'A kilowatt-hour is the energy consumed by a 1000-watt device running for one hour. It is the standard billing unit on electricity bills. A 100-watt light bulb running for 10 hours uses 1 kWh.' },
+      { q: 'How much does it cost to run a space heater?', a: 'A typical 1500W space heater running 8 hours per day at $0.12/kWh costs about $1.44 per day, $43.20 per month, or $525.60 per year. This makes space heaters one of the most expensive appliances to operate.' },
+      { q: 'Are LED bulbs really cheaper than incandescent?', a: 'Yes, LED bulbs use 75-85% less electricity than incandescent bulbs for the same brightness. An LED producing 800 lumens uses about 10W vs 60W for incandescent, saving roughly $7-10 per bulb per year at average rates.' },
+      { q: 'How do I find my electricity rate?', a: 'Check your most recent electricity bill for the rate per kWh. In the US, average residential rates range from $0.10 to $0.30 per kWh depending on state. Your bill may show multiple rate tiers.' },
+      { q: 'What uses the most electricity in a home?', a: 'Heating and cooling systems account for 40-50% of home electricity use. Water heaters, refrigerators, and clothes dryers are also major consumers. Switching to efficient appliances and LED lighting reduces costs significantly.' },
+      { q: 'Is this electricity cost calculator free?', a: 'Yes, this calculator is completely free, requires no signup, and runs entirely in your browser. No data is sent to any server — your calculations remain private.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/solar-panel-calculator', name: 'Solar Panel Calculator', description: 'Estimate solar panel costs and energy production.' },
+      { slug: 'evergreen/savings-calculator', name: 'Savings Calculator', description: 'Project savings growth with compound interest.' },
+      { slug: 'evergreen/roi-calculator', name: 'ROI Calculator', description: 'Calculate return on any investment.' },
+      { slug: 'evergreen/discount-calculator', name: 'Discount Calculator', description: 'Calculate sale prices and savings amounts.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'See how compound interest grows your money.' },
+      { slug: 'evergreen/tip-calculator', name: 'Tip Calculator', description: 'Calculate tips and split bills easily.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      // Tab switching
+      var tabs = document.querySelectorAll('.elec-tabs button');
+      var panels = document.querySelectorAll('.elec-panel');
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          tabs.forEach(function(t) { t.classList.remove('active'); });
+          panels.forEach(function(p) { p.classList.remove('active'); });
+          tab.classList.add('active');
+          var panelId = 'panel-' + tab.id.replace('tab-', '');
+          document.getElementById(panelId).classList.add('active');
+        });
+      });
+
+      // Single device calculation
+      document.getElementById('single-calc-btn').addEventListener('click', function() {
+        var watts = parseFloat(document.getElementById('single-watts').value);
+        var hours = parseFloat(document.getElementById('single-hours').value);
+        var rate = parseFloat(document.getElementById('single-rate').value);
+
+        if (isNaN(watts) || watts <= 0) { if (window.showToast) window.showToast('Enter a valid wattage'); return; }
+        if (isNaN(hours) || hours <= 0) { if (window.showToast) window.showToast('Enter valid hours per day'); return; }
+        if (isNaN(rate) || rate <= 0) { if (window.showToast) window.showToast('Enter a valid electricity rate'); return; }
+
+        var dailyKwh = (watts * hours) / 1000;
+        var dailyCost = dailyKwh * rate;
+        var monthlyCost = dailyCost * 30;
+        var yearlyCost = dailyCost * 365;
+
+        document.getElementById('res-daily').textContent = '$' + dailyCost.toFixed(2);
+        document.getElementById('res-monthly').textContent = '$' + monthlyCost.toFixed(2);
+        document.getElementById('res-yearly').textContent = '$' + yearlyCost.toFixed(2);
+        document.getElementById('res-kwh-daily').textContent = dailyKwh.toFixed(3) + ' kWh';
+        document.getElementById('res-kwh-monthly').textContent = (dailyKwh * 30).toFixed(2) + ' kWh';
+        document.getElementById('res-kwh-yearly').textContent = (dailyKwh * 365).toFixed(1) + ' kWh';
+        document.getElementById('single-results').style.display = '';
+      });
+
+      // Multiple devices
+      var devIndex = 2;
+      document.getElementById('add-device').addEventListener('click', function() {
+        var row = document.createElement('div');
+        row.className = 'elec-device-row';
+        row.dataset.index = devIndex;
+        row.innerHTML = '<input type="text" id="dev-name-' + devIndex + '" class="elec-name" placeholder="Device name">' +
+          '<input type="number" id="dev-watts-' + devIndex + '" class="elec-watts" placeholder="Watts" min="0" step="any">' +
+          '<input type="number" id="dev-hours-' + devIndex + '" class="elec-hrs" placeholder="Hrs/day" min="0" max="24" step="any">' +
+          '<button type="button" class="elec-remove-btn" title="Remove">\u00D7</button>';
+        document.getElementById('device-list').appendChild(row);
+        devIndex++;
+      });
+
+      document.getElementById('device-list').addEventListener('click', function(e) {
+        if (e.target.classList.contains('elec-remove-btn')) {
+          var rows = document.querySelectorAll('.elec-device-row');
+          if (rows.length > 1) {
+            e.target.closest('.elec-device-row').remove();
+          } else {
+            if (window.showToast) window.showToast('At least one device required');
+          }
+        }
+      });
+
+      document.getElementById('multi-calc-btn').addEventListener('click', function() {
+        var rate = parseFloat(document.getElementById('multi-rate').value);
+        if (isNaN(rate) || rate <= 0) { if (window.showToast) window.showToast('Enter a valid electricity rate'); return; }
+
+        var rows = document.querySelectorAll('.elec-device-row');
+        var totalDailyCost = 0;
+        var totalYearlyKwh = 0;
+        var html = '<table class="elec-compare-table"><thead><tr><th>Device</th><th>Watts</th><th>Hrs/Day</th><th>Monthly Cost</th><th>Yearly Cost</th></tr></thead><tbody>';
+        var hasValid = false;
+
+        rows.forEach(function(row) {
+          var name = row.querySelector('.elec-name').value || 'Unnamed';
+          var watts = parseFloat(row.querySelector('.elec-watts').value);
+          var hours = parseFloat(row.querySelector('.elec-hrs').value);
+          if (!isNaN(watts) && watts > 0 && !isNaN(hours) && hours > 0) {
+            hasValid = true;
+            var dailyKwh = (watts * hours) / 1000;
+            var dailyCost = dailyKwh * rate;
+            totalDailyCost += dailyCost;
+            totalYearlyKwh += dailyKwh * 365;
+            html += '<tr><td>' + name + '</td><td>' + watts + 'W</td><td>' + hours + 'h</td><td>$' + (dailyCost * 30).toFixed(2) + '</td><td>$' + (dailyCost * 365).toFixed(2) + '</td></tr>';
+          }
+        });
+
+        html += '</tbody></table>';
+        if (!hasValid) { if (window.showToast) window.showToast('Add at least one device with watts and hours'); return; }
+
+        document.getElementById('multi-breakdown').innerHTML = html;
+        document.getElementById('multi-daily').textContent = '$' + totalDailyCost.toFixed(2);
+        document.getElementById('multi-monthly').textContent = '$' + (totalDailyCost * 30).toFixed(2);
+        document.getElementById('multi-yearly').textContent = '$' + (totalDailyCost * 365).toFixed(2);
+        document.getElementById('multi-kwh').textContent = totalYearlyKwh.toFixed(1) + ' kWh';
+        document.getElementById('multi-results').style.display = '';
+      });
+
+      // LED vs CFL vs Incandescent comparison
+      var bulbData = {
+        '450':  { led: 6, cfl: 10, inc: 40 },
+        '800':  { led: 10, cfl: 14, inc: 60 },
+        '1100': { led: 13, cfl: 19, inc: 75 },
+        '1600': { led: 18, cfl: 23, inc: 100 },
+        '2600': { led: 25, cfl: 40, inc: 150 }
+      };
+
+      document.getElementById('compare-calc-btn').addEventListener('click', function() {
+        var lumens = document.getElementById('compare-lumens').value;
+        var hours = parseFloat(document.getElementById('compare-hours').value);
+        var rate = parseFloat(document.getElementById('compare-rate').value);
+
+        if (isNaN(hours) || hours <= 0) { if (window.showToast) window.showToast('Enter valid hours per day'); return; }
+        if (isNaN(rate) || rate <= 0) { if (window.showToast) window.showToast('Enter a valid electricity rate'); return; }
+
+        var data = bulbData[lumens];
+        var types = [
+          { name: 'LED', watts: data.led, lifespan: '25,000 hrs', cost: '$2.50' },
+          { name: 'CFL', watts: data.cfl, lifespan: '10,000 hrs', cost: '$2.00' },
+          { name: 'Incandescent', watts: data.inc, lifespan: '1,000 hrs', cost: '$1.00' }
+        ];
+
+        var tbody = '';
+        var costs = {};
+        types.forEach(function(t) {
+          var yearlyKwh = (t.watts * hours * 365) / 1000;
+          var yearlyCost = yearlyKwh * rate;
+          costs[t.name] = yearlyCost;
+          tbody += '<tr><td>' + t.name + '</td><td>' + t.watts + 'W</td><td>' + yearlyKwh.toFixed(1) + '</td><td>$' + yearlyCost.toFixed(2) + '</td><td>' + t.lifespan + '</td><td>' + t.cost + '</td></tr>';
+        });
+
+        document.getElementById('compare-tbody').innerHTML = tbody;
+        var savingsInc = costs['Incandescent'] - costs['LED'];
+        var savingsCfl = costs['CFL'] - costs['LED'];
+        document.getElementById('compare-savings').textContent = '$' + savingsInc.toFixed(2) + '/yr';
+        document.getElementById('compare-savings-cfl').textContent = '$' + savingsCfl.toFixed(2) + '/yr';
+        document.getElementById('compare-results').style.display = '';
+      });
+    });
+  </script>
+</body>
+</html>
