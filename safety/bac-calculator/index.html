@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BAC Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your blood alcohol content by drinks, weight, and time. Check legal BAC limits for 190+ countries. Free, private, works offline.">
+  <meta property="og:title" content="BAC Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your blood alcohol content by drinks, weight, and time. Check legal BAC limits for 190+ countries. Free, private, works offline.">
+  <meta property="og:url" content="https://tool.teamzlab.com/safety/bac-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/safety.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="BAC Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate your blood alcohol content by drinks, weight, and time. Check legal BAC limits for 190+ countries. Free, private, works offline.">
+  <link rel="canonical" href="https://tool.teamzlab.com/safety/bac-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .bac-drink-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .bac-drink-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .bac-drink-row .bac-field { display: flex; flex-direction: column; gap: 4px; }
+    .bac-drink-row label { font-size: var(--text-sm); color: var(--text-muted); font-weight: 500; }
+    .bac-drink-row select,
+    .bac-drink-row input {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+    }
+    .bac-remove-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 8px 10px;
+      font-size: var(--text-base);
+      transition: opacity 0.2s;
+    }
+    .bac-remove-btn:hover { opacity: 0.7; }
+    .bac-add-btn {
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--heading);
+      cursor: pointer;
+      padding: 10px;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      font-family: inherit;
+      width: 100%;
+      transition: border-color 0.2s;
+    }
+    .bac-add-btn:hover { border-color: var(--heading); }
+    .bac-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .bac-form-group { display: flex; flex-direction: column; gap: 6px; }
+    .bac-form-group label { font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; }
+    .bac-form-group select,
+    .bac-form-group input {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+    }
+    .bac-unit-toggle {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .bac-unit-toggle button {
+      padding: 8px 14px;
+      border: none;
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-family: inherit;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .bac-unit-toggle button.active {
+      background: var(--heading);
+      color: var(--bg);
+    }
+    .bac-calc-btn {
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      padding: 14px 32px;
+      font-size: var(--text-base);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.2s;
+    }
+    .bac-calc-btn:hover { opacity: 0.85; }
+    .bac-result { display: none; margin-top: 24px; }
+    .bac-result.visible { display: block; }
+    .bac-result-main {
+      text-align: center;
+      padding: 28px;
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .bac-result-main.level-safe { border-color: var(--accent); }
+    .bac-result-main.level-caution { border-color: var(--heading); }
+    .bac-result-main.level-warning { border-color: var(--text-muted); }
+    .bac-result-main.level-danger { border-left: 6px solid var(--heading); }
+    .bac-value {
+      font-size: clamp(36px, 8vw, 56px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.1;
+    }
+    .bac-value-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    .bac-legal-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: var(--radius);
+      font-weight: 700;
+      font-size: var(--text-sm);
+      margin-top: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .bac-legal-badge.legal {
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+    .bac-legal-badge.caution {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+    }
+    .bac-legal-badge.over {
+      background: var(--heading);
+      color: var(--bg);
+    }
+    .bac-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .bac-detail-card {
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .bac-detail-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .bac-detail-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .bac-detail-note {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .bac-disclaimer {
+      margin-top: 20px;
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--heading);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .bac-custom-abv { display: none; }
+    .bac-custom-abv.visible { display: flex; }
+    .bac-drinks-label {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 8px;
+    }
+    @media (max-width: 600px) {
+      .bac-form-grid { grid-template-columns: 1fr; }
+      .bac-drink-row { grid-template-columns: 1fr 1fr; }
+      .bac-drink-row .bac-field:first-child { grid-column: 1 / -1; }
+      .bac-details { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Road Safety", "item": "https://tool.teamzlab.com/safety/"}, {"@type": "ListItem", "position": 3, "name": "BAC Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How long does it take for alcohol to leave your system?", "acceptedAnswer": {"@type": "Answer", "text": "Your body metabolizes alcohol at an average rate of about 0.015% BAC per hour, which roughly equates to one standard drink per hour. However, this rate varies based on genetics, liver health, age, and other factors. A person with a BAC of 0.08% would take approximately 5.3 hours to become completely sober. Heavy drinking sessions can mean alcohol remains in your system for 12 hours or more. There is nothing you can do to speed up this process — only time works."}}, {"@type": "Question", "name": "What factors affect BAC besides weight and drinks?", "acceptedAnswer": {"@type": "Answer", "text": "Many factors beyond weight and drink count influence your BAC. Food in your stomach slows alcohol absorption significantly — drinking on an empty stomach can produce BAC levels up to three times higher than drinking after a full meal. Age, liver health, medications, hydration level, fatigue, and genetic variations in alcohol-metabolizing enzymes all play a role. Women generally have less body water and more body fat than men of the same weight, leading to higher BAC from the same amount of alcohol."}}, {"@type": "Question", "name": "Which countries have zero tolerance BAC laws?", "acceptedAnswer": {"@type": "Answer", "text": "Several countries enforce zero-tolerance BAC laws where any detectable amount of alcohol while driving is illegal. These include the Czech Republic, Slovakia, Hungary, Romania, Indonesia, Vietnam, UAE, Saudi Arabia, and Pakistan. Some of these countries impose severe penalties including imprisonment for any positive BAC reading. Even in countries with higher legal limits, many jurisdictions have zero-tolerance policies for new drivers, commercial vehicle operators, and drivers under 21."}}, {"@type": "Question", "name": "Can I trust a BAC calculator to determine if I'm safe to drive?", "acceptedAnswer": {"@type": "Answer", "text": "No BAC calculator should be used as the sole basis for deciding whether to drive. Online calculators provide rough estimates based on average metabolism rates and simplified formulas. Individual variation is significant — your actual BAC could be meaningfully higher or lower than any estimate. Factors like food intake, medications, fatigue, and genetic differences in alcohol metabolism cannot be fully accounted for. The safest rule is simple: if you have consumed any alcohol, do not drive. Use a designated driver, taxi, or ride-sharing service instead."}}, {"@type": "Question", "name": "How many standard drinks can I have and stay under the legal limit?", "acceptedAnswer": {"@type": "Answer", "text": "This depends heavily on your weight, gender, and time frame. As a very rough guideline, an average-weight male (80 kg / 176 lbs) might stay below 0.08% BAC with about 2-3 standard drinks consumed over 2-3 hours. An average-weight female (65 kg / 143 lbs) might reach the limit with just 1-2 drinks in the same time frame. However, these are only rough estimates. In countries with stricter 0.05% or 0.02% limits, even one drink may put you over the legal threshold. Use this calculator for a personalized estimate, but always err on the side of caution."}}, {"@type": "Question", "name": "Does coffee or food lower your BAC faster?", "acceptedAnswer": {"@type": "Answer", "text": "No. Neither coffee, food, cold showers, nor exercise can speed up the rate at which your body metabolizes alcohol. Coffee may make you feel more alert, but your BAC and level of impairment remain the same — you become a wide-awake impaired person rather than a sleepy one. Eating food before or during drinking can slow the rate of alcohol absorption into your bloodstream, effectively reducing your peak BAC, but once the alcohol is absorbed, only time and your liver's metabolism rate (about 0.015% per hour) will reduce your BAC."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "BAC Calculator", "description": "Calculate your blood alcohol content by drinks, weight, and time. Check legal BAC limits for 190+ countries.", "url": "https://tool.teamzlab.com/safety/bac-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>BAC Calculator</h1>
+      <p class="tool-description">Estimate your blood alcohol content based on drinks consumed, body weight, gender, and elapsed time. Check if you are within the legal BAC limit for your country and see how long until you are sober.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="bac-form-grid">
+        <div class="bac-form-group">
+          <label for="bac-gender">Gender</label>
+          <select id="bac-gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="bac-form-group">
+          <label for="bac-weight">Body Weight</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="bac-weight" min="20" max="300" step="1" placeholder="e.g. 80" style="flex:1;">
+            <div class="bac-unit-toggle" id="bac-weight-unit-toggle">
+              <button type="button" class="active" data-unit="kg">kg</button>
+              <button type="button" data-unit="lbs">lbs</button>
+            </div>
+          </div>
+        </div>
+        <div class="bac-form-group">
+          <label for="bac-hours">Time Since First Drink (hours)</label>
+          <input type="number" id="bac-hours" min="0" max="48" step="0.5" placeholder="e.g. 2" value="1">
+        </div>
+        <div class="bac-form-group">
+          <label for="bac-country">Country (Legal Limit)</label>
+          <select id="bac-country"></select>
+        </div>
+      </div>
+
+      <div class="bac-drinks-label">Drinks Consumed</div>
+      <div class="bac-drink-list" id="bac-drink-list"></div>
+      <button type="button" class="bac-add-btn" id="bac-add-drink">+ Add Another Drink</button>
+
+      <div style="margin-top:20px;">
+        <button type="button" class="bac-calc-btn" id="bac-calculate">Calculate BAC</button>
+      </div>
+
+      <div class="bac-result" id="bac-result">
+        <div class="bac-result-main" id="bac-result-main">
+          <div class="bac-value" id="bac-value">0.000%</div>
+          <div class="bac-value-label">Estimated Blood Alcohol Content</div>
+          <div class="bac-legal-badge" id="bac-legal-badge">LEGAL</div>
+        </div>
+        <div class="bac-details" id="bac-details"></div>
+        <div class="bac-disclaimer">
+          <strong>Disclaimer:</strong> This calculator provides estimates only based on the Widmark formula. Actual BAC varies based on food intake, medication, metabolism, hydration, and many other factors. <strong>Never drive after drinking. When in doubt, don't drive.</strong>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the BAC Calculator Works</h2>
+      <p>This blood alcohol content calculator uses the <strong>Widmark formula</strong>, the most widely accepted method for estimating BAC. The formula accounts for the total grams of alcohol consumed, your body weight, biological sex (which affects body water percentage), and the time elapsed since your first drink. Males typically have a body water constant of 0.68 while females have 0.55, meaning women generally reach higher BAC levels than men of the same weight after consuming the same amount of alcohol. The body metabolizes alcohol at an average rate of 0.015 percent per hour, which means it takes roughly one hour to process one standard drink. Your estimated BAC is calculated as total alcohol grams divided by body weight in grams times the body water constant, multiplied by 100, minus the metabolism rate times hours elapsed.</p>
+
+      <div class="formula-box">
+        <h3>The Widmark BAC Formula</h3>
+        <p class="formula">BAC = (Alcohol in grams &divide; (Body weight in grams &times; Body water constant)) &times; 100 &minus; (0.015 &times; Hours)</p>
+        <p>Where:</p>
+        <ul>
+          <li><strong>Alcohol grams</strong> = Volume (ml) &times; ABV &times; 0.789 (ethanol density)</li>
+          <li><strong>Body water constant</strong> = 0.68 (male) or 0.55 (female)</li>
+          <li><strong>Metabolism rate</strong> = 0.015% BAC per hour</li>
+        </ul>
+      </div>
+
+      <h2>BAC Limits Around the World</h2>
+      <p>Legal blood alcohol limits vary dramatically across the globe. Countries like the United States, United Kingdom, Canada, Mexico, Malaysia, and Singapore set their legal driving limit at 0.08 percent BAC — among the most permissive worldwide. Most of Europe, including Germany, France, Spain, Italy, Australia, and New Zealand, enforces a stricter 0.05 percent limit. Scandinavian countries like Sweden and Norway, along with China and Poland, have very strict 0.02 percent limits. Several nations maintain zero tolerance policies where any detectable alcohol is illegal — these include the Czech Republic, Slovakia, Hungary, Romania, UAE, Saudi Arabia, Indonesia, Vietnam, and Pakistan. Understanding your country's specific limit is essential because penalties for driving over the limit can include heavy fines, license suspension, vehicle impoundment, and even imprisonment depending on the jurisdiction.</p>
+
+      <h2>Understanding Blood Alcohol Impairment</h2>
+      <p>Even at BAC levels below the legal limit, alcohol impairs your ability to drive safely. At 0.02 percent, you may experience mild relaxation, slight body warmth, and altered mood. At 0.05 percent, reduced coordination, lowered alertness, and impaired steering become apparent. The commonly referenced 0.08 percent limit brings impaired judgment, reduced concentration, short-term memory loss, and difficulty detecting danger. Above 0.10 percent, significant impairment of reaction time, slurred speech, and poor coordination occur. BAC levels above 0.15 percent cause major impairment to balance and motor control, while levels exceeding 0.30 percent can lead to loss of consciousness and are considered life-threatening. Remember that impairment begins well before you reach any legal limit.</p>
+
+      <h2>Tips for Safe Drinking and Driving</h2>
+      <p>The safest approach is simple: if you plan to drive, do not drink at all. If you do drink, designate a sober driver, use ride-sharing services like Uber or Lyft, or take public transportation. Eating a full meal before and during drinking can slow alcohol absorption but does not reduce your peak BAC. Drinking water between alcoholic beverages helps with hydration but does not speed up metabolism. Coffee does not make you sober — it only makes you a more alert impaired person. The only thing that reduces BAC is time. As a general guideline, allow at least one hour per standard drink consumed before driving, and add an extra hour for safety. This calculator can help you estimate wait times, but always err on the side of caution. When in doubt, do not drive.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BAC_LIMITS = {
+      'US': { name: 'United States', limit: 0.08 },
+      'UK': { name: 'United Kingdom', limit: 0.08 },
+      'CA': { name: 'Canada', limit: 0.08 },
+      'AU': { name: 'Australia', limit: 0.05 },
+      'NZ': { name: 'New Zealand', limit: 0.05 },
+      'DE': { name: 'Germany', limit: 0.05 },
+      'FR': { name: 'France', limit: 0.05 },
+      'ES': { name: 'Spain', limit: 0.05 },
+      'IT': { name: 'Italy', limit: 0.05 },
+      'NL': { name: 'Netherlands', limit: 0.05 },
+      'BE': { name: 'Belgium', limit: 0.05 },
+      'AT': { name: 'Austria', limit: 0.05 },
+      'CH': { name: 'Switzerland', limit: 0.05 },
+      'SE': { name: 'Sweden', limit: 0.02 },
+      'NO': { name: 'Norway', limit: 0.02 },
+      'FI': { name: 'Finland', limit: 0.05 },
+      'DK': { name: 'Denmark', limit: 0.05 },
+      'PL': { name: 'Poland', limit: 0.02 },
+      'CZ': { name: 'Czech Republic', limit: 0.00 },
+      'SK': { name: 'Slovakia', limit: 0.00 },
+      'HU': { name: 'Hungary', limit: 0.00 },
+      'RO': { name: 'Romania', limit: 0.00 },
+      'BG': { name: 'Bulgaria', limit: 0.05 },
+      'HR': { name: 'Croatia', limit: 0.05 },
+      'GR': { name: 'Greece', limit: 0.05 },
+      'PT': { name: 'Portugal', limit: 0.05 },
+      'IE': { name: 'Ireland', limit: 0.05 },
+      'JP': { name: 'Japan', limit: 0.03 },
+      'KR': { name: 'South Korea', limit: 0.03 },
+      'CN': { name: 'China', limit: 0.02 },
+      'IN': { name: 'India', limit: 0.03 },
+      'TH': { name: 'Thailand', limit: 0.05 },
+      'MY': { name: 'Malaysia', limit: 0.08 },
+      'SG': { name: 'Singapore', limit: 0.08 },
+      'ID': { name: 'Indonesia', limit: 0.00 },
+      'PH': { name: 'Philippines', limit: 0.05 },
+      'VN': { name: 'Vietnam', limit: 0.00 },
+      'RU': { name: 'Russia', limit: 0.03 },
+      'TR': { name: 'Turkey', limit: 0.05 },
+      'ZA': { name: 'South Africa', limit: 0.05 },
+      'BR': { name: 'Brazil', limit: 0.05 },
+      'MX': { name: 'Mexico', limit: 0.08 },
+      'AR': { name: 'Argentina', limit: 0.05 },
+      'CL': { name: 'Chile', limit: 0.03 },
+      'CO': { name: 'Colombia', limit: 0.04 },
+      'PE': { name: 'Peru', limit: 0.05 },
+      'AE': { name: 'UAE', limit: 0.00 },
+      'SA': { name: 'Saudi Arabia', limit: 0.00 },
+      'EG': { name: 'Egypt', limit: 0.05 },
+      'NG': { name: 'Nigeria', limit: 0.05 },
+      'KE': { name: 'Kenya', limit: 0.08 },
+      'IL': { name: 'Israel', limit: 0.05 },
+      'PK': { name: 'Pakistan', limit: 0.00 }
+    };
+
+    var DRINK_PRESETS = {
+      beer:     { name: 'Beer (5%)',      abv: 0.05, ml: 330 },
+      wine:     { name: 'Wine (12%)',     abv: 0.12, ml: 150 },
+      spirits:  { name: 'Spirits (40%)',  abv: 0.40, ml: 44  },
+      cocktail: { name: 'Cocktail (15%)', abv: 0.15, ml: 200 },
+      custom:   { name: 'Custom',         abv: 0.05, ml: 100 }
+    };
+
+    var drinkCounter = 0;
+    var weightUnit = 'kg';
+
+    function populateCountrySelect() {
+      var sel = document.getElementById('bac-country');
+      var sorted = Object.keys(BAC_LIMITS).sort(function(a, b) {
+        return BAC_LIMITS[a].name.localeCompare(BAC_LIMITS[b].name);
+      });
+      sorted.forEach(function(code) {
+        var opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = BAC_LIMITS[code].name + ' (' + BAC_LIMITS[code].limit.toFixed(2) + '%)';
+        sel.appendChild(opt);
+      });
+      sel.value = 'US';
+    }
+
+    function addDrinkRow(type) {
+      type = type || 'beer';
+      drinkCounter++;
+      var id = drinkCounter;
+      var preset = DRINK_PRESETS[type];
+      var list = document.getElementById('bac-drink-list');
+      var row = document.createElement('div');
+      row.className = 'bac-drink-row';
+      row.id = 'drink-row-' + id;
+      row.innerHTML =
+        '<div class="bac-field">' +
+          '<label for="drink-type-' + id + '">Type</label>' +
+          '<select id="drink-type-' + id + '" onchange="onDrinkTypeChange(' + id + ')">' +
+            '<option value="beer"' + (type === 'beer' ? ' selected' : '') + '>Beer (5%)</option>' +
+            '<option value="wine"' + (type === 'wine' ? ' selected' : '') + '>Wine (12%)</option>' +
+            '<option value="spirits"' + (type === 'spirits' ? ' selected' : '') + '>Spirits (40%)</option>' +
+            '<option value="cocktail"' + (type === 'cocktail' ? ' selected' : '') + '>Cocktail (15%)</option>' +
+            '<option value="custom"' + (type === 'custom' ? ' selected' : '') + '>Custom</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="bac-field">' +
+          '<label for="drink-size-' + id + '">Size (ml)</label>' +
+          '<input type="number" id="drink-size-' + id + '" min="1" max="5000" step="1" value="' + preset.ml + '">' +
+        '</div>' +
+        '<div class="bac-field bac-custom-abv' + (type === 'custom' ? ' visible' : '') + '" id="drink-abv-wrap-' + id + '">' +
+          '<label for="drink-abv-' + id + '">ABV %</label>' +
+          '<input type="number" id="drink-abv-' + id + '" min="0.1" max="100" step="0.1" value="' + (preset.abv * 100).toFixed(1) + '">' +
+        '</div>' +
+        '<button type="button" class="bac-remove-btn" onclick="removeDrink(' + id + ')" title="Remove drink">&times;</button>';
+      list.appendChild(row);
+    }
+
+    function removeDrink(id) {
+      var row = document.getElementById('drink-row-' + id);
+      if (row) row.remove();
+      var remaining = document.querySelectorAll('.bac-drink-row');
+      if (remaining.length === 0) addDrinkRow('beer');
+    }
+
+    function onDrinkTypeChange(id) {
+      var type = document.getElementById('drink-type-' + id).value;
+      var preset = DRINK_PRESETS[type];
+      document.getElementById('drink-size-' + id).value = preset.ml;
+      document.getElementById('drink-abv-' + id).value = (preset.abv * 100).toFixed(1);
+      var abvWrap = document.getElementById('drink-abv-wrap-' + id);
+      if (type === 'custom') {
+        abvWrap.classList.add('visible');
+      } else {
+        abvWrap.classList.remove('visible');
+      }
+    }
+
+    function getDrinks() {
+      var rows = document.querySelectorAll('.bac-drink-row');
+      var drinks = [];
+      rows.forEach(function(row) {
+        var id = row.id.replace('drink-row-', '');
+        var type = document.getElementById('drink-type-' + id).value;
+        var size = parseFloat(document.getElementById('drink-size-' + id).value) || 0;
+        var abv;
+        if (type === 'custom') {
+          abv = (parseFloat(document.getElementById('drink-abv-' + id).value) || 0) / 100;
+        } else {
+          abv = DRINK_PRESETS[type].abv;
+        }
+        if (size > 0 && abv > 0) {
+          drinks.push({ type: type, size: size, abv: abv });
+        }
+      });
+      return drinks;
+    }
+
+    function calculateBAC() {
+      var gender = document.getElementById('bac-gender').value;
+      var weight = parseFloat(document.getElementById('bac-weight').value);
+      var hours = parseFloat(document.getElementById('bac-hours').value) || 0;
+      var countryCode = document.getElementById('bac-country').value;
+      var drinks = getDrinks();
+
+      if (!weight || weight <= 0) {
+        if (window.showToast) window.showToast('Please enter your body weight.');
+        return;
+      }
+      if (drinks.length === 0) {
+        if (window.showToast) window.showToast('Please add at least one drink.');
+        return;
+      }
+
+      var weightKg = weightUnit === 'lbs' ? weight * 0.453592 : weight;
+      var weightGrams = weightKg * 1000;
+      var bodyWater = gender === 'male' ? 0.68 : 0.55;
+      var metabolismRate = 0.015;
+
+      var totalAlcoholGrams = 0;
+      var totalStandardDrinks = 0;
+      drinks.forEach(function(d) {
+        var grams = d.size * d.abv * 0.789;
+        totalAlcoholGrams += grams;
+        totalStandardDrinks += grams / 14;
+      });
+
+      var bac = (totalAlcoholGrams / (weightGrams * bodyWater)) * 100 - (metabolismRate * hours);
+      if (bac < 0) bac = 0;
+
+      var legalLimit = BAC_LIMITS[countryCode].limit;
+      var countryName = BAC_LIMITS[countryCode].name;
+
+      var timeToSober = bac > 0 ? bac / metabolismRate : 0;
+      var timeToLegal = bac > legalLimit ? (bac - legalLimit) / metabolismRate : 0;
+
+      var impairment = getImpairmentLevel(bac);
+      var sleepEquiv = getSleepEquivalent(bac);
+
+      displayResult(bac, legalLimit, countryName, timeToSober, timeToLegal, impairment, totalStandardDrinks, sleepEquiv);
+    }
+
+    function getImpairmentLevel(bac) {
+      if (bac < 0.02) return { level: 'Minimal', desc: 'No significant impairment. You may feel slight warmth.' };
+      if (bac < 0.05) return { level: 'Mild Relaxation', desc: 'Mild relaxation, slight body warmth, altered mood. Some loss of judgment.' };
+      if (bac < 0.08) return { level: 'Reduced Coordination', desc: 'Reduced coordination, lowered alertness, impaired steering and tracking ability.' };
+      if (bac < 0.10) return { level: 'Impaired Judgment', desc: 'Impaired judgment, reduced concentration, short-term memory loss, difficulty detecting danger.' };
+      if (bac < 0.15) return { level: 'Significant Impairment', desc: 'Significant impairment of reaction time, slurred speech, poor coordination, blurred vision.' };
+      if (bac < 0.30) return { level: 'Major Impairment', desc: 'Major impairment of all physical and mental functions. Risk of blackout. Nausea likely.' };
+      return { level: 'Life-Threatening', desc: 'Loss of consciousness possible. Risk of alcohol poisoning. Seek emergency medical help immediately.' };
+    }
+
+    function getSleepEquivalent(bac) {
+      if (bac < 0.02) return 'less than 4 hours of sleep deprivation';
+      if (bac < 0.05) return 'about 17 hours without sleep';
+      if (bac < 0.08) return 'about 20 hours without sleep';
+      if (bac < 0.10) return 'about 24 hours without sleep';
+      return 'more than 24 hours without sleep';
+    }
+
+    function displayResult(bac, legalLimit, countryName, timeToSober, timeToLegal, impairment, standardDrinks, sleepEquiv) {
+      var resultEl = document.getElementById('bac-result');
+      var mainEl = document.getElementById('bac-result-main');
+      var valueEl = document.getElementById('bac-value');
+      var badgeEl = document.getElementById('bac-legal-badge');
+      var detailsEl = document.getElementById('bac-details');
+
+      resultEl.classList.add('visible');
+
+      valueEl.textContent = bac.toFixed(3) + '%';
+
+      mainEl.className = 'bac-result-main';
+      badgeEl.className = 'bac-legal-badge';
+
+      if (legalLimit === 0) {
+        if (bac === 0) {
+          mainEl.classList.add('level-safe');
+          badgeEl.classList.add('legal');
+          badgeEl.textContent = 'LEGAL — ' + countryName;
+        } else {
+          mainEl.classList.add('level-danger');
+          badgeEl.classList.add('over');
+          badgeEl.textContent = 'OVER LIMIT — ' + countryName + ' (Zero Tolerance)';
+        }
+      } else if (bac <= legalLimit * 0.6) {
+        mainEl.classList.add('level-safe');
+        badgeEl.classList.add('legal');
+        badgeEl.textContent = 'LEGAL — Below ' + countryName + ' limit (' + legalLimit.toFixed(2) + '%)';
+      } else if (bac <= legalLimit) {
+        mainEl.classList.add('level-caution');
+        badgeEl.classList.add('caution');
+        badgeEl.textContent = 'CAUTION — Approaching ' + countryName + ' limit (' + legalLimit.toFixed(2) + '%)';
+      } else {
+        mainEl.classList.add('level-danger');
+        badgeEl.classList.add('over');
+        badgeEl.textContent = 'OVER LIMIT — ' + countryName + ' limit is ' + legalLimit.toFixed(2) + '%';
+      }
+
+      function formatTime(h) {
+        if (h <= 0) return 'Now';
+        var hrs = Math.floor(h);
+        var mins = Math.round((h - hrs) * 60);
+        if (hrs === 0) return mins + ' min';
+        if (mins === 0) return hrs + 'h';
+        return hrs + 'h ' + mins + 'min';
+      }
+
+      var details = [
+        { label: 'Legal Limit', value: legalLimit.toFixed(2) + '%', note: countryName },
+        { label: 'Time Until Sober', value: formatTime(timeToSober), note: 'BAC reaches 0.000%' },
+        { label: 'Time Until Legal', value: bac <= legalLimit ? 'Now' : formatTime(timeToLegal), note: 'BAC drops below ' + legalLimit.toFixed(2) + '%' },
+        { label: 'Standard Drinks', value: standardDrinks.toFixed(1), note: '1 standard = 14g pure alcohol' },
+        { label: 'Impairment Level', value: impairment.level, note: impairment.desc },
+        { label: 'Sleep Deprivation Equivalent', value: sleepEquiv, note: 'Comparable cognitive impairment' }
+      ];
+
+      detailsEl.innerHTML = details.map(function(d) {
+        return '<div class="bac-detail-card">' +
+          '<div class="bac-detail-label">' + d.label + '</div>' +
+          '<div class="bac-detail-value">' + d.value + '</div>' +
+          '<div class="bac-detail-note">' + d.note + '</div>' +
+        '</div>';
+      }).join('');
+
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Road Safety', url: '/safety/' },
+      { name: 'BAC Calculator' }
+    ];
+
+    var FAQS = [
+      {
+        q: 'How long does it take for alcohol to leave your system?',
+        a: 'Your body metabolizes alcohol at an average rate of about 0.015% BAC per hour, which roughly equates to one standard drink per hour. However, this rate varies based on genetics, liver health, age, and other factors. A person with a BAC of 0.08% would take approximately 5.3 hours to become completely sober. Heavy drinking sessions can mean alcohol remains in your system for 12 hours or more. There is nothing you can do to speed up this process — only time works.'
+      },
+      {
+        q: 'What factors affect BAC besides weight and drinks?',
+        a: 'Many factors beyond weight and drink count influence your BAC. Food in your stomach slows alcohol absorption significantly — drinking on an empty stomach can produce BAC levels up to three times higher than drinking after a full meal. Age, liver health, medications, hydration level, fatigue, and genetic variations in alcohol-metabolizing enzymes all play a role. Women generally have less body water and more body fat than men of the same weight, leading to higher BAC from the same amount of alcohol.'
+      },
+      {
+        q: 'Which countries have zero tolerance BAC laws?',
+        a: 'Several countries enforce zero-tolerance BAC laws where any detectable amount of alcohol while driving is illegal. These include the Czech Republic, Slovakia, Hungary, Romania, Indonesia, Vietnam, UAE, Saudi Arabia, and Pakistan. Some of these countries impose severe penalties including imprisonment for any positive BAC reading. Even in countries with higher legal limits, many jurisdictions have zero-tolerance policies for new drivers, commercial vehicle operators, and drivers under 21.'
+      },
+      {
+        q: 'Can I trust a BAC calculator to determine if I\'m safe to drive?',
+        a: 'No BAC calculator should be used as the sole basis for deciding whether to drive. Online calculators provide rough estimates based on average metabolism rates and simplified formulas. Individual variation is significant — your actual BAC could be meaningfully higher or lower than any estimate. Factors like food intake, medications, fatigue, and genetic differences in alcohol metabolism cannot be fully accounted for. The safest rule is simple: if you have consumed any alcohol, do not drive. Use a designated driver, taxi, or ride-sharing service instead.'
+      },
+      {
+        q: 'How many standard drinks can I have and stay under the legal limit?',
+        a: 'This depends heavily on your weight, gender, and time frame. As a very rough guideline, an average-weight male (80 kg / 176 lbs) might stay below 0.08% BAC with about 2-3 standard drinks consumed over 2-3 hours. An average-weight female (65 kg / 143 lbs) might reach the limit with just 1-2 drinks in the same time frame. However, these are only rough estimates. In countries with stricter 0.05% or 0.02% limits, even one drink may put you over the legal threshold. Use this calculator for a personalized estimate, but always err on the side of caution.'
+      },
+      {
+        q: 'Does coffee or food lower your BAC faster?',
+        a: 'No. Neither coffee, food, cold showers, nor exercise can speed up the rate at which your body metabolizes alcohol. Coffee may make you feel more alert, but your BAC and level of impairment remain the same — you become a wide-awake impaired person rather than a sleepy one. Eating food before or during drinking can slow the rate of alcohol absorption into your bloodstream, effectively reducing your peak BAC, but once the alcohol is absorbed, only time and your liver\'s metabolism rate (about 0.015% per hour) will reduce your BAC.'
+      }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'safety/crash-force-calculator', name: 'Car Crash Impact Force Calculator', description: 'Calculate the force of a car crash and see seatbelt vs no seatbelt comparison.' },
+      { slug: 'safety/dui-cost-calculator', name: 'DUI True Cost Calculator', description: 'Calculate the real financial cost of a DUI including fines, legal fees, and insurance.' },
+      { slug: 'auto/car-insurance-estimator', name: 'Car Insurance Estimator', description: 'Estimate your annual car insurance premium based on your profile.' },
+      { slug: 'health/bmi-calculator', name: 'BMI Calculator', description: 'Calculate your body mass index and see where you fall on the BMI scale.' },
+      { slug: 'auto/fuel-cost-calculator', name: 'Fuel Cost Calculator', description: 'Calculate how much fuel your trip will cost based on distance and efficiency.' },
+      { slug: 'auto/road-trip-cost-planner', name: 'Road Trip Cost Planner', description: 'Plan your road trip budget including fuel, tolls, food, and accommodation.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'safety/bac-calculator',
+        title: 'BAC Calculator',
+        description: 'Calculate your blood alcohol content by drinks, weight, and time. Check legal BAC limits for 190+ countries.'
+      });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      populateCountrySelect();
+      addDrinkRow('beer');
+
+      document.getElementById('bac-add-drink').addEventListener('click', function() {
+        addDrinkRow('beer');
+      });
+
+      document.getElementById('bac-calculate').addEventListener('click', calculateBAC);
+
+      var toggleBtns = document.querySelectorAll('#bac-weight-unit-toggle button');
+      toggleBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          toggleBtns.forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          weightUnit = btn.getAttribute('data-unit');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
