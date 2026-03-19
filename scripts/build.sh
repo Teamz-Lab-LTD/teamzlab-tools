@@ -200,6 +200,26 @@ print(f'TOTAL:{total}')
   fi
 fi
 
+# 9. Broken internal link check
+echo ""
+echo "[9/9] Checking for broken internal links..."
+BROKEN=0
+BROKEN_OUTPUT=$(grep -roh 'href="/[^"]*/"' --include="*.html" "$BASE" 2>/dev/null | sort -u | sed 's/href="//;s/"$//' | while IFS= read -r link; do
+  DIR="${link#/}"
+  DIR="${DIR%/}"
+  if [ -n "$DIR" ] && [ ! -f "$BASE/${DIR}/index.html" ] && [ ! -d "$BASE/${DIR}" ]; then
+    echo "  BROKEN: $link"
+  fi
+done)
+if [ -n "$BROKEN_OUTPUT" ]; then
+  echo "$BROKEN_OUTPUT"
+  BROKEN_COUNT=$(echo "$BROKEN_OUTPUT" | wc -l | tr -d ' ')
+  echo "  $BROKEN_COUNT broken internal link(s) found!"
+  ERRORS=$((ERRORS + BROKEN_COUNT))
+else
+  echo "  All internal links valid!"
+fi
+
 echo ""
 echo "============================================="
 total=$(grep -c '<url>' "$BASE/sitemap.xml")

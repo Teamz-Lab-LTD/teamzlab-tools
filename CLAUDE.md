@@ -49,6 +49,7 @@ Example output to user:
    - **Warns if <2 H2 tags in content** (need 2+ for mid-content ads)
    - **Warns if no JS logic** (addEventListener/functions)
    - **Warns if central CSS classes redefined** (share-btn, tool-result, etc.)
+   - **Warns about broken internal links** (href="/path/" pointing to non-existent pages)
    - Rebuilds static JSON-LD schema in all pages (`build-static-schema.py`)
 
 2. **Build scripts** — run manually or via hook:
