@@ -2089,4 +2089,96 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   })();
+
+  // ===================================================================
+  // AUTO-SAVE: Automatically save & restore all form inputs per tool page
+  // Works on ALL tool pages — no per-tool code needed.
+  // Saves: input[type=text/number/date/email/tel/url], textarea, select
+  // Storage key: 'tz_autosave_' + page path
+  // Clears on: explicit "Clear" button click (if tool has one)
+  // ===================================================================
+  (function initAutoSave() {
+    // Only run on tool pages (not homepage, hub pages, about, etc.)
+    var path = window.location.pathname;
+    var segments = path.replace(/^\/|\/$/g, '').split('/');
+    if (segments.length < 2) return; // Hub or homepage — skip
+
+    // Don't auto-save if page was opened via share link (has query params)
+    if (window.location.search && window.location.search.length > 5) return;
+
+    var STORAGE_KEY = 'tz_autosave_' + path;
+    var debounceTimer = null;
+
+    function getFormData() {
+      var data = {};
+      var inputs = document.querySelectorAll('.tool-calculator input, .tool-calculator textarea, .tool-calculator select');
+      inputs.forEach(function(el) {
+        var key = el.id || el.name;
+        if (!key) return;
+        if (el.type === 'file') return; // Never save file inputs
+        if (el.type === 'checkbox') { data[key] = el.checked; return; }
+        if (el.type === 'radio') { if (el.checked) data[key] = el.value; return; }
+        if (el.value && el.value.trim()) data[key] = el.value;
+      });
+      return Object.keys(data).length > 0 ? data : null;
+    }
+
+    function restoreFormData() {
+      try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+        var data = JSON.parse(saved);
+        if (!data || typeof data !== 'object') return;
+
+        var restored = 0;
+        Object.keys(data).forEach(function(key) {
+          var el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
+          if (!el) return;
+          if (el.type === 'checkbox') { el.checked = !!data[key]; }
+          else if (el.type === 'radio') { if (el.value === data[key]) el.checked = true; }
+          else { el.value = data[key]; }
+          restored++;
+          // Trigger input event so tool JS picks up the restored values
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        if (restored > 0) {
+          console.log('[AutoSave] Restored ' + restored + ' fields for ' + path);
+        }
+      } catch (e) {
+        // Silently fail — don't break the tool
+      }
+    }
+
+    function saveFormData() {
+      try {
+        var data = getFormData();
+        if (data) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+      } catch (e) {
+        // Storage full or unavailable — silently fail
+      }
+    }
+
+    function debouncedSave() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(saveFormData, 500);
+    }
+
+    // Restore saved data after a short delay (let tool JS initialize first)
+    setTimeout(restoreFormData, 300);
+
+    // Listen for changes on all form elements
+    document.querySelector('.tool-calculator')?.addEventListener('input', debouncedSave);
+    document.querySelector('.tool-calculator')?.addEventListener('change', debouncedSave);
+
+    // Clear saved data when user clicks any "Clear" or "Reset" button
+    document.querySelectorAll('.tool-clear-btn, [id*="clear"], [id*="reset"]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+      });
+    });
+  })();
 });
