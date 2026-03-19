@@ -33,6 +33,8 @@
     .noise-info-card p { margin: 0; font-size: 0.85rem; color: var(--text-muted); }
     .vol-display { font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem; }
     .stop-btn { padding: 0.6rem 2rem; background: var(--danger); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; margin-top: 1.5rem; }
+    .waveform-container { height: 100px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); overflow: hidden; position: relative; margin-top: 1.5rem; }
+    .waveform-container canvas { width: 100%; height: 100%; }
     .app-banner { margin-top: 2rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; text-align: center; }
     .app-banner p { color: var(--text); }
     .app-banner .title { font-size: 1.1rem; font-weight: 600; margin: 0 0 0.5rem; }
@@ -127,18 +129,68 @@
       var audioCtx = null;
       var noiseNode = null;
       var gainNode = null;
+      var analyserNode = null;
       var timerTimeout = null;
       var timerInterval = null;
+      var waveformAnimFrame = null;
 
       function stopNoise() {
         if (timerTimeout) { clearTimeout(timerTimeout); timerTimeout = null; }
         if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (waveformAnimFrame) { cancelAnimationFrame(waveformAnimFrame); waveformAnimFrame = null; }
         if (noiseNode) {
+          try { noiseNode.stop(); } catch (e) {}
           try { noiseNode.disconnect(); } catch (e) {}
           noiseNode = null;
         }
         if (gainNode) { gainNode = null; }
+        if (analyserNode) { analyserNode = null; }
         if (audioCtx) { audioCtx.close(); audioCtx = null; }
+        clearWaveformCanvas();
+      }
+
+      function clearWaveformCanvas() {
+        var canvas = document.getElementById('noise-waveform');
+        if (!canvas) return;
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim();
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function drawWaveform() {
+        var canvas = document.getElementById('noise-waveform');
+        if (!canvas || !analyserNode) return;
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        var ctx = canvas.getContext('2d');
+        var bufLen = analyserNode.frequencyBinCount;
+        var dataArr = new Uint8Array(bufLen);
+        function draw() {
+          if (!analyserNode) return;
+          waveformAnimFrame = requestAnimationFrame(draw);
+          analyserNode.getByteTimeDomainData(dataArr);
+          var bg = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim();
+          var accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = accent;
+          ctx.beginPath();
+          var sliceWidth = canvas.width / bufLen;
+          var x = 0;
+          for (var i = 0; i < bufLen; i++) {
+            var v = dataArr[i] / 128.0;
+            var y = v * canvas.height / 2;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+            x += sliceWidth;
+          }
+          ctx.lineTo(canvas.width, canvas.height / 2);
+          ctx.stroke();
+        }
+        draw();
       }
 
       window.addEventListener('beforeunload', stopNoise);
@@ -159,7 +211,9 @@
           { key: 'noise_type', label: 'Noise Type', type: 'select', options: [
             { value: 'white', label: 'White Noise' },
             { value: 'pink', label: 'Pink Noise' },
-            { value: 'brown', label: 'Brown Noise (Deep)' }
+            { value: 'brown', label: 'Brown Noise (Deep)' },
+            { value: 'rain', label: 'Rain' },
+            { value: 'ocean', label: 'Ocean Waves' }
           ]},
           { key: 'volume', label: 'Volume', type: 'number', default: 30, min: 0, max: 100, hint: '% volume' },
           { key: 'timer', label: 'Sleep Timer', type: 'select', options: [
@@ -178,52 +232,79 @@
           var timer = inputs.timer || 'none';
 
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          var bufferSize = 4096;
-          noiseNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
           gainNode = audioCtx.createGain();
           gainNode.gain.setValueAtTime(vol / 100, audioCtx.currentTime);
+          analyserNode = audioCtx.createAnalyser();
+          analyserNode.fftSize = 256;
 
+          // Generate noise buffer based on type
+          var sampleRate = audioCtx.sampleRate;
+          var bufLen = 2 * sampleRate;
+          if (noiseType === 'ocean') bufLen = 4 * sampleRate;
+          var buffer = audioCtx.createBuffer(1, bufLen, sampleRate);
+          var data = buffer.getChannelData(0);
           var b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
           var lastBrown = 0;
+          var i, w, pink;
 
-          noiseNode.onaudioprocess = function (e) {
-            var output = e.outputBuffer.getChannelData(0);
-            var len = output.length;
-            var i, white;
-
-            if (noiseType === 'white') {
-              for (i = 0; i < len; i++) {
-                output[i] = Math.random() * 2 - 1;
-              }
-            } else if (noiseType === 'pink') {
-              for (i = 0; i < len; i++) {
-                white = Math.random() * 2 - 1;
-                b0 = 0.99886 * b0 + white * 0.0555179;
-                b1 = 0.99332 * b1 + white * 0.0750759;
-                b2 = 0.96900 * b2 + white * 0.1538520;
-                b3 = 0.86650 * b3 + white * 0.3104856;
-                b4 = 0.55000 * b4 + white * 0.5329522;
-                b5 = -0.7616 * b5 - white * 0.0168980;
-                output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-                b6 = white * 0.115926;
-              }
-            } else if (noiseType === 'brown') {
-              for (i = 0; i < len; i++) {
-                white = Math.random() * 2 - 1;
-                lastBrown = (lastBrown + (0.02 * white)) / 1.02;
-                output[i] = lastBrown * 3.5;
-              }
+          if (noiseType === 'white') {
+            for (i = 0; i < bufLen; i++) { data[i] = Math.random() * 2 - 1; }
+          } else if (noiseType === 'pink') {
+            for (i = 0; i < bufLen; i++) {
+              w = Math.random() * 2 - 1;
+              b0 = 0.99886 * b0 + w * 0.0555179;
+              b1 = 0.99332 * b1 + w * 0.0750759;
+              b2 = 0.96900 * b2 + w * 0.1538520;
+              b3 = 0.86650 * b3 + w * 0.3104856;
+              b4 = 0.55000 * b4 + w * 0.5329522;
+              b5 = -0.7616 * b5 - w * 0.0168980;
+              data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+              b6 = w * 0.115926;
             }
-          };
+          } else if (noiseType === 'brown') {
+            for (i = 0; i < bufLen; i++) {
+              w = Math.random() * 2 - 1;
+              lastBrown = (lastBrown + (0.02 * w)) / 1.02;
+              data[i] = lastBrown * 3.5;
+            }
+          } else if (noiseType === 'rain') {
+            for (i = 0; i < bufLen; i++) {
+              w = Math.random() * 2 - 1;
+              b0 = 0.99886 * b0 + w * 0.0555179;
+              b1 = 0.99332 * b1 + w * 0.0750759;
+              b2 = 0.96900 * b2 + w * 0.1538520;
+              b3 = 0.86650 * b3 + w * 0.3104856;
+              b4 = 0.55000 * b4 + w * 0.5329522;
+              b5 = -0.7616 * b5 - w * 0.0168980;
+              pink = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+              b6 = w * 0.115926;
+              var drop = Math.random() > 0.98 ? (Math.random() * 0.3) : 0;
+              data[i] = pink * 0.8 + drop;
+            }
+          } else if (noiseType === 'ocean') {
+            for (i = 0; i < bufLen; i++) {
+              w = Math.random() * 2 - 1;
+              lastBrown = (lastBrown + 0.02 * w) / 1.02;
+              var wave = Math.sin(2 * Math.PI * i / (sampleRate * 6)) * 0.5 + 0.5;
+              data[i] = lastBrown * 3.5 * (0.3 + wave * 0.7);
+            }
+          }
 
+          noiseNode = audioCtx.createBufferSource();
+          noiseNode.buffer = buffer;
+          noiseNode.loop = true;
           noiseNode.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
+          gainNode.connect(analyserNode);
+          analyserNode.connect(audioCtx.destination);
+          noiseNode.start();
 
-          var noiseNames = { white: 'White Noise', pink: 'Pink Noise', brown: 'Brown Noise' };
+          var noiseNames = { white: 'White Noise', pink: 'Pink Noise', brown: 'Brown Noise', rain: 'Rain', ocean: 'Ocean Waves' };
           var noiseDescs = {
             white: 'Equal energy across all frequencies — bright, consistent masking sound.',
             pink: 'More bass, less treble — sounds like steady rainfall or a gentle waterfall.',
-            brown: 'Deep, bass-heavy rumble — like distant thunder or heavy ocean surf.'
+            brown: 'Deep, bass-heavy rumble — like distant thunder or heavy ocean surf.',
+            rain: 'Pink noise with raindrop bursts — natural rainfall ambience for deep relaxation.',
+            ocean: 'Modulated brown noise — rhythmic wave-like swells for calm and sleep.'
           };
 
           var timerText = 'No Timer';
@@ -244,10 +325,14 @@
           }
           html += '</div>';
 
+          html += '<div class="waveform-container"><canvas id="noise-waveform"></canvas></div>';
+
           html += '<div class="noise-info-grid">';
           html += '<div class="noise-info-card"><h4>White Noise</h4><p>Equal energy at all frequencies. Bright, hissing sound like TV static. Best for blocking sharp, high-pitched noises.</p></div>';
           html += '<div class="noise-info-card"><h4>Pink Noise</h4><p>More bass, less treble. Sounds like rain or a waterfall. Often preferred for sleep — gentler on the ears.</p></div>';
           html += '<div class="noise-info-card"><h4>Brown Noise</h4><p>Deep bass rumble. Like distant thunder or heavy surf. Most immersive and calming for many listeners.</p></div>';
+          html += '<div class="noise-info-card"><h4>Rain</h4><p>Pink noise with random raindrop bursts. Natural rainfall ambience ideal for sleep and relaxation.</p></div>';
+          html += '<div class="noise-info-card"><h4>Ocean Waves</h4><p>Modulated brown noise with rhythmic swells. Mimics ocean surf for a deeply calming experience.</p></div>';
           html += '</div>';
 
           html += '<div style="text-align:center;"><button onclick="window.stopNoiseGen()" class="stop-btn">Stop Noise</button></div>';
@@ -257,6 +342,8 @@
           var outputEl = document.getElementById('util-output');
           outputEl.style.display = 'block';
           outputEl.innerHTML = '<div class="tool-output-header"><span class="tool-output-title">White Noise Generator</span></div><div class="tool-output--preview">' + html + '</div>';
+
+          drawWaveform();
 
           if (timer !== 'none') {
             var totalSec = parseInt(timer) * 60;

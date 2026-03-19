@@ -54,6 +54,10 @@
     .rt-btn-primary { border: none; background: var(--heading); color: var(--bg); }
     .rt-btn-secondary { border: 1px solid var(--border); background: var(--surface); color: var(--text); }
     .rt-btn-secondary:hover { border-color: var(--heading); }
+    .rt-summary-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin: 1rem 0; }
+    .rt-summary-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1.5rem; text-align: center; }
+    .rt-summary-stat .rt-stat-label { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+    .rt-summary-stat .rt-stat-value { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
   </style>
 <!-- STATIC-SCHEMA -->
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Health", "item": "https://tool.teamzlab.com/health/"}, {"@type": "ListItem", "position": 3, "name": "Reaction Time Test"}]}</script>
@@ -77,6 +81,12 @@
         <div class="rt-sub">Test your reaction time</div>
       </div>
       <div class="rt-attempts" id="rtAttempts"></div>
+      <div class="rt-summary-row" id="rtSummary" style="display:none">
+        <div class="rt-summary-stat"><div class="rt-stat-label">Best</div><div class="rt-stat-value" id="rtStatBest">—</div></div>
+        <div class="rt-summary-stat"><div class="rt-stat-label">Average</div><div class="rt-stat-value" id="rtStatAvg">—</div></div>
+        <div class="rt-summary-stat"><div class="rt-stat-label">Rating</div><div class="rt-stat-value" id="rtStatRating">—</div></div>
+        <div class="rt-summary-stat"><div class="rt-stat-label">Rounds</div><div class="rt-stat-value" id="rtStatCount">0/5</div></div>
+      </div>
       <div id="rtFinal"></div>
     </section>
 
@@ -134,6 +144,7 @@
       var box = document.getElementById('rtBox');
       var roundInfo = document.getElementById('rtRoundInfo');
       var attemptsEl = document.getElementById('rtAttempts');
+      var summaryEl = document.getElementById('rtSummary');
       var finalEl = document.getElementById('rtFinal');
 
       var state = 'idle'; // idle, waiting, ready, result, done
@@ -142,6 +153,32 @@
       var attempts = [];
       var timeout = null;
       var startTime = 0;
+
+      function getRating(ms) {
+        if (ms < 150) return 'Superhuman';
+        if (ms < 200) return 'Exceptional';
+        if (ms < 250) return 'Excellent';
+        if (ms < 300) return 'Good';
+        if (ms < 350) return 'Average';
+        if (ms < 500) return 'Below Avg';
+        return 'Slow';
+      }
+
+      function updateSummary() {
+        if (attempts.length === 0) {
+          summaryEl.style.display = 'none';
+          return;
+        }
+        summaryEl.style.display = 'flex';
+        var best = Math.min.apply(null, attempts);
+        var sum = 0;
+        attempts.forEach(function(a) { sum += a; });
+        var avg = Math.round(sum / attempts.length);
+        document.getElementById('rtStatBest').textContent = best + 'ms';
+        document.getElementById('rtStatAvg').textContent = avg + 'ms';
+        document.getElementById('rtStatRating').textContent = getRating(avg);
+        document.getElementById('rtStatCount').textContent = attempts.length + '/' + totalRounds;
+      }
 
       function updateAttempts() {
         var html = '';
@@ -179,6 +216,7 @@
           round = 0;
           finalEl.innerHTML = '';
           updateAttempts();
+          updateSummary();
           startRound();
         } else if (state === 'waiting') {
           // Too soon
@@ -198,10 +236,11 @@
           var elapsed = Math.round(performance.now() - startTime);
           attempts.push(elapsed);
           state = 'result';
-          var rating = elapsed < 150 ? 'Superhuman!' : elapsed < 250 ? 'Excellent!' : elapsed < 350 ? 'Average' : elapsed < 500 ? 'Below Average' : 'Slow';
+          var ratingText = getRating(elapsed);
           box.className = 'rt-box result';
-          box.innerHTML = '<div class="rt-big">' + elapsed + 'ms</div><div class="rt-sub">' + rating + '</div>';
+          box.innerHTML = '<div class="rt-big">' + elapsed + 'ms</div><div class="rt-sub">' + ratingText + '</div>';
           updateAttempts();
+          updateSummary();
           setTimeout(function() {
             if (round < totalRounds) {
               state = 'idle';
@@ -218,6 +257,7 @@
           finalEl.innerHTML = '';
           state = 'idle';
           updateAttempts();
+          updateSummary();
           box.className = 'rt-box waiting';
           box.innerHTML = '<div class="rt-big">Click to Start</div><div class="rt-sub">Test your reaction time</div>';
           roundInfo.textContent = 'Round 1 of 5';
