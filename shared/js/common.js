@@ -2111,7 +2111,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function getFormData() {
       var data = {};
-      var inputs = document.querySelectorAll('.tool-calculator input, .tool-calculator textarea, .tool-calculator select');
+      var inputs = document.querySelectorAll('.tool-calculator input, .tool-calculator textarea, .tool-calculator select, .site-main input, .site-main textarea, .site-main select');
       inputs.forEach(function(el) {
         var key = el.id || el.name;
         if (!key) return;
@@ -2170,9 +2170,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Restore saved data after a short delay (let tool JS initialize first)
     setTimeout(restoreFormData, 300);
 
-    // Listen for changes on all form elements
-    document.querySelector('.tool-calculator')?.addEventListener('input', debouncedSave);
-    document.querySelector('.tool-calculator')?.addEventListener('change', debouncedSave);
+    // Listen for changes on all form elements (tool-calculator or site-main as fallback)
+    var formContainer = document.querySelector('.tool-calculator') || document.querySelector('.site-main');
+    if (formContainer) {
+      formContainer.addEventListener('input', debouncedSave);
+      formContainer.addEventListener('change', debouncedSave);
+    }
 
     // Clear saved data when user clicks any "Clear" or "Reset" button
     document.querySelectorAll('.tool-clear-btn, [id*="clear"], [id*="reset"]').forEach(function(btn) {
