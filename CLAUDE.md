@@ -350,8 +350,18 @@ Before committing ANY new tool (whether built by AI or by user), verify ALL:
 9. **Meta description** 120-155 chars, starts with action verb
 10. **Title** max 60 chars with keyword + "Teamz Lab Tools"
 11. **Mobile responsive** `@media (max-width: 600px)`
+12. **Every input MUST have an `id` attribute** — auto-save uses `id` as storage key
 - **ALWAYS audit user-added tools too** — don't assume they follow the template
 - Run `./build.sh` + `python3 build-static-schema.py` after adding any tool
+
+### Rule 16: Auto-save is CENTRAL — never duplicate it
+- `common.js` auto-saves ALL form inputs to localStorage for every tool page
+- It saves inputs in `.tool-calculator` and `.site-main` (100% coverage)
+- **NEVER add per-tool localStorage save/restore for basic form inputs** — it's already handled
+- Every `<input>`, `<select>`, `<textarea>` MUST have an `id` attribute for auto-save to work
+- Clear/Reset buttons (`.tool-clear-btn`, `id*="clear"`, `id*="reset"`) auto-clear saved data
+- Auto-save is SKIPPED when page has query params (shared link views)
+- For complex data (arrays, dynamic lists, canvas), custom save logic may be needed IN ADDITION to central auto-save
 
 ### Rule 15: AdSense content structure for maximum revenue
 - Every tool page MUST have **3+ H2 sections** in `.tool-content` for the mid-content ad slot
