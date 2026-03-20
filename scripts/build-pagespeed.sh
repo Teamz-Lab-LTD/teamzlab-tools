@@ -12,13 +12,22 @@
 
 cd "$(dirname "$0")/.."
 SITE="https://tool.teamzlab.com"
+API_KEY_FILE="$HOME/.config/teamzlab/pagespeed-api-key.txt"
+
+if [ ! -f "$API_KEY_FILE" ]; then
+    echo "  ERROR: No PageSpeed API key found"
+    echo "  Save your API key to: $API_KEY_FILE"
+    echo "  Run: echo 'YOUR_API_KEY' > ~/.config/teamzlab/pagespeed-api-key.txt"
+    exit 1
+fi
+API_KEY=$(cat "$API_KEY_FILE" | tr -d '[:space:]')
 
 check_page() {
     local path="$1"
     local url="${SITE}${path}"
     local strategy="${2:-mobile}"
 
-    local result=$(curl -s "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$url'))")&strategy=$strategy&category=performance&category=accessibility&category=seo" 2>/dev/null)
+    local result=$(curl -s "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$url'))")&strategy=$strategy&category=performance&category=accessibility&category=seo&key=${API_KEY}" 2>/dev/null)
 
     echo "$result" | python3 -c "
 import json, sys
