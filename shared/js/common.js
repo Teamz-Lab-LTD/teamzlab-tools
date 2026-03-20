@@ -1811,7 +1811,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // AdSense: Load ad integration script
   (function loadAdSense() {
     var s = document.createElement('script');
-    s.src = '/shared/js/adsense.js';
+    s.src = '/shared/js/adsense.js?v=202603201719';
     s.async = true;
     document.body.appendChild(s);
   })();
