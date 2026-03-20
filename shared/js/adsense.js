@@ -94,9 +94,23 @@
   }, 3000);
 
   // 3. Detect actual ad impressions (Auto Ads injects iframes dynamically)
-  setTimeout(function () {
-    var autoAdFrames = document.querySelectorAll('ins.adsbygoogle[data-ad-status="filled"], iframe[id^="aswift_"], iframe[id^="google_ads_iframe"]');
-    var filled = autoAdFrames.length;
+  //    Auto Ads can take 8-15s to render — check at 10s and 20s
+  var impressionTracked = false;
+
+  function checkAdImpressions(attempt) {
+    if (impressionTracked) return;
+
+    // Auto Ads creates: iframes with aswift_, google_ads_iframe, or inside .adsbygoogle-noablate
+    var adIframes = document.querySelectorAll(
+      'iframe[id^="aswift_"], iframe[id^="google_ads_iframe"], ' +
+      'ins.adsbygoogle[data-ad-status="filled"], ' +
+      'div[id^="google_ads_iframe"], ' +
+      '.adsbygoogle-noablate iframe'
+    );
+    // Also check for any Google ad container divs
+    var googleAdDivs = document.querySelectorAll('div[id^="div-gpt-ad"], div[data-google-query-id]');
+    var filled = adIframes.length + googleAdDivs.length;
+
     var allIns = document.querySelectorAll('ins.adsbygoogle');
     var unfilled = 0;
     allIns.forEach(function (ins) {
@@ -104,19 +118,29 @@
     });
 
     if (filled > 0) {
+      impressionTracked = true;
       trackWithRetry('ad_impression_confirmed', {
         ads_filled: filled,
         ads_unfilled: unfilled,
+        ins_tags: allIns.length,
+        check_attempt: attempt,
         device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
       }, 5);
-    } else if (window.adsbygoogle && !unfilled) {
+    } else if (attempt >= 2) {
+      // Final check — no ads after 20s
+      impressionTracked = true;
       trackWithRetry('ad_no_impression', {
-        reason: 'no_auto_ads_rendered',
-        adsense_loaded: true,
-        ins_tags: allIns.length
+        reason: filled === 0 ? 'no_auto_ads_rendered' : 'unknown',
+        adsense_loaded: !!window.adsbygoogle,
+        ins_tags: allIns.length,
+        unfilled: unfilled,
+        device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
       }, 5);
     }
-  }, 5000);
+  }
+
+  setTimeout(function () { checkAdImpressions(1); }, 10000);
+  setTimeout(function () { checkAdImpressions(2); }, 20000);
 
   // 4. Hide existing .ad-slot placeholder text (the "Ad Space" text)
   //    These divs stay in DOM (common.js uses them as layout anchors)
