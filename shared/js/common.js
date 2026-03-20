@@ -1529,61 +1529,101 @@ document.addEventListener('DOMContentLoaded', function () {
     update();
   })();
 
-  // In-app browser detection — show "Open in Browser" banner
+  // In-app browser detection — aggressive redirect / overlay
   var ua = navigator.userAgent || '';
   var isInAppBrowser = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat|MicroMessenger|WeChat|TikTok|BytedanceWebview/i.test(ua);
 
   if (isInAppBrowser) {
-    (function initInAppBanner() {
-      var dismissed = false;
-      try { dismissed = sessionStorage.getItem('tz_inapp_closed') === '1'; } catch(e) {}
-      if (dismissed) return;
-
+    (function initInAppRedirect() {
       var pageUrl = window.location.href;
+      var isAndroid = /android/i.test(ua);
+      var isIOS = /iphone|ipad|ipod/i.test(ua);
+
       var appName = 'this app';
-      if (/FBAN|FBAV|FB_IAB/i.test(ua)) appName = 'Facebook';
-      else if (/Messenger/i.test(ua)) appName = 'Messenger';
-      else if (/Instagram/i.test(ua)) appName = 'Instagram';
-      else if (/TikTok|BytedanceWebview/i.test(ua)) appName = 'TikTok';
-      else if (/Line\//i.test(ua)) appName = 'LINE';
-      else if (/Twitter/i.test(ua)) appName = 'Twitter';
-      else if (/Snapchat/i.test(ua)) appName = 'Snapchat';
-      else if (/MicroMessenger|WeChat/i.test(ua)) appName = 'WeChat';
+      var menuIcon = '⋯';
+      if (/FBAN|FBAV|FB_IAB/i.test(ua)) { appName = 'Facebook'; menuIcon = '⋮'; }
+      else if (/Messenger/i.test(ua)) { appName = 'Messenger'; menuIcon = 'ⓘ'; }
+      else if (/Instagram/i.test(ua)) { appName = 'Instagram'; menuIcon = '⋯'; }
+      else if (/TikTok|BytedanceWebview/i.test(ua)) { appName = 'TikTok'; menuIcon = '⋯'; }
+      else if (/Line\//i.test(ua)) { appName = 'LINE'; menuIcon = '⋮'; }
+      else if (/Twitter/i.test(ua)) { appName = 'Twitter/X'; menuIcon = '⋮'; }
+      else if (/Snapchat/i.test(ua)) { appName = 'Snapchat'; menuIcon = '⋮'; }
+      else if (/MicroMessenger|WeChat/i.test(ua)) { appName = 'WeChat'; menuIcon = '⋯'; }
 
-      var bar = document.createElement('div');
-      bar.className = 'inapp-browser-banner';
-      bar.innerHTML =
-        '<div class="inapp-browser-banner__content">' +
-          '<span>You\'re in ' + appName + '\'s browser. Photo upload &amp; some features may not work.</span>' +
-          '<div class="inapp-browser-banner__actions">' +
-            '<button class="inapp-browser-banner__btn" id="inapp-open-btn">Open in Browser</button>' +
-            '<button class="inapp-browser-banner__close" id="inapp-close-btn">&times;</button>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(bar);
+      // Android: auto-redirect to Chrome via intent immediately
+      if (isAndroid) {
+        var intentUrl = 'intent://' + pageUrl.replace(/^https?:\/\//, '') +
+          '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
+          encodeURIComponent(pageUrl) + ';end';
+        window.location.href = intentUrl;
+        // Fallback: if intent fails after 2s, show overlay
+        setTimeout(function() { showInAppOverlay(); }, 2000);
+        return;
+      }
 
-      document.getElementById('inapp-open-btn').addEventListener('click', function() {
-        // Try intent-based open for Android
-        var isAndroid = /android/i.test(ua);
-        var isIOS = /iphone|ipad|ipod/i.test(ua);
-        if (isAndroid) {
-          window.location.href = 'intent://' + pageUrl.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
-        } else if (isIOS) {
-          // iOS Safari open — copy URL for user
-          navigator.clipboard.writeText(pageUrl).then(function() {
-            alert('Link copied! Open Safari and paste the URL to use all features.');
-          }).catch(function() {
-            prompt('Copy this link and open in Safari:', pageUrl);
-          });
+      // iOS + others: show overlay immediately
+      showInAppOverlay();
+
+      function showInAppOverlay() {
+        var dismissed = false;
+        try { dismissed = sessionStorage.getItem('tz_inapp_closed') === '1'; } catch(e) {}
+        if (dismissed) return;
+
+        var browserName = isIOS ? 'Safari' : 'Chrome';
+        var stepsHTML = '';
+
+        if (isIOS) {
+          stepsHTML =
+            '<li><span class="inapp-overlay__step-num">1</span>Tap the <strong>' + menuIcon + '</strong> menu or <strong>share icon</strong> at the bottom</li>' +
+            '<li><span class="inapp-overlay__step-num">2</span>Tap <strong>"Open in ' + browserName + '"</strong> or <strong>"Open in Browser"</strong></li>';
         } else {
-          window.open(pageUrl, '_system');
+          stepsHTML =
+            '<li><span class="inapp-overlay__step-num">1</span>Tap the <strong>' + menuIcon + '</strong> menu at the top right</li>' +
+            '<li><span class="inapp-overlay__step-num">2</span>Tap <strong>"Open in ' + browserName + '"</strong></li>';
         }
-      });
 
-      document.getElementById('inapp-close-btn').addEventListener('click', function() {
-        bar.style.display = 'none';
-        try { sessionStorage.setItem('tz_inapp_closed', '1'); } catch(e) {}
-      });
+        var overlay = document.createElement('div');
+        overlay.className = 'inapp-overlay';
+        overlay.innerHTML =
+          '<div class="inapp-overlay__card">' +
+            '<div class="inapp-overlay__icon">\uD83D\uDD12</div>' +
+            '<h2 class="inapp-overlay__title">Open in ' + browserName + ' for Full Experience</h2>' +
+            '<p class="inapp-overlay__desc">' + appName + '\'s browser blocks ads that keep this tool free, and limits features like file upload and copy.</p>' +
+            '<ul class="inapp-overlay__steps">' + stepsHTML + '</ul>' +
+            '<button class="inapp-overlay__btn" id="inapp-copy-btn">\uD83D\uDCCB Copy Link &amp; Open in ' + browserName + '</button>' +
+            '<button class="inapp-overlay__skip" id="inapp-skip-btn">Continue anyway (limited experience)</button>' +
+            '<p class="inapp-overlay__note">This tool is 100% free — ads help us keep it that way.</p>' +
+          '</div>';
+        document.body.appendChild(overlay);
+
+        document.getElementById('inapp-copy-btn').addEventListener('click', function() {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pageUrl).then(function() {
+              if (window.showToast) window.showToast('Link copied! Now open ' + browserName + ' and paste.');
+            }).catch(function() {
+              fallbackCopy();
+            });
+          } else {
+            fallbackCopy();
+          }
+        });
+
+        function fallbackCopy() {
+          var ta = document.createElement('textarea');
+          ta.value = pageUrl;
+          ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (window.showToast) window.showToast('Link copied! Now open ' + browserName + ' and paste.');
+        }
+
+        document.getElementById('inapp-skip-btn').addEventListener('click', function() {
+          overlay.remove();
+          try { sessionStorage.setItem('tz_inapp_closed', '1'); } catch(e) {}
+        });
+      }
     })();
   }
 
