@@ -598,15 +598,32 @@
       }
 
       if (uploadedLogo) {
-        var maxLogoH = 70;
-        var maxLogoW = 280;
+        var maxLogoH = 90;
+        var maxLogoW = 320;
         var lw = uploadedLogo.width;
         var lh = uploadedLogo.height;
         var scale = Math.min(maxLogoW / lw, maxLogoH / lh, 1);
         var drawW = lw * scale;
         var drawH = lh * scale;
         var logoY = companyName ? sectionY + 15 : sectionY - 20;
-        ctx.drawImage(uploadedLogo, W/2 - drawW/2, logoY, drawW, drawH);
+        // Outside-blend: draw logo with feathered edges
+        var pad = 30;
+        var tmpW = drawW + pad * 2;
+        var tmpH = drawH + pad * 2;
+        var tmp = document.createElement('canvas');
+        tmp.width = tmpW; tmp.height = tmpH;
+        var tc = tmp.getContext('2d');
+        tc.drawImage(uploadedLogo, pad, pad, drawW, drawH);
+        // Radial fade from edges only
+        tc.globalCompositeOperation = 'destination-in';
+        var grd = tc.createRadialGradient(tmpW/2, tmpH/2, Math.min(tmpW, tmpH)*0.3, tmpW/2, tmpH/2, Math.max(tmpW, tmpH)*0.55);
+        grd.addColorStop(0, 'rgba(0,0,0,1)');
+        grd.addColorStop(0.75, 'rgba(0,0,0,1)');
+        grd.addColorStop(0.9, 'rgba(0,0,0,0.4)');
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        tc.fillStyle = grd;
+        tc.fillRect(0, 0, tmpW, tmpH);
+        ctx.drawImage(tmp, W/2 - tmpW/2, logoY - pad);
         bottomY = logoY + drawH + 20;
       }
     }
