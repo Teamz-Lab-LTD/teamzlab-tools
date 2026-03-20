@@ -39,19 +39,34 @@
   var isInApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat|MicroMessenger|WeChat|TikTok|BytedanceWebview/i.test(ua);
 
   if (isInApp) {
-    // Wait for user to dismiss the in-app overlay before loading ads
-    // (overlay blocks the page — ads behind it = wasted impressions)
+    // Check if user already dismissed overlay in this session (returning visitor)
+    var alreadySkipped = false;
+    try { alreadySkipped = sessionStorage.getItem('tz_inapp_closed') === '1'; } catch(e) {}
+    if (alreadySkipped) {
+      // User already chose "Continue anyway" earlier — load ads immediately
+      loadAds();
+      return;
+    }
+
+    // Wait for overlay to appear first, THEN wait for it to be dismissed.
+    // This prevents the race condition where adsense.js polls before
+    // common.js has created the overlay DOM element.
+    var overlayAppeared = false;
     var waitForSkip = setInterval(function() {
-      var overlayGone = !document.querySelector('.inapp-overlay');
-      var skipped = false;
-      try { skipped = sessionStorage.getItem('tz_inapp_closed') === '1'; } catch(e) {}
-      if (overlayGone || skipped) {
+      var overlayExists = !!document.querySelector('.inapp-overlay');
+      if (overlayExists) overlayAppeared = true;
+
+      // Only load ads if overlay appeared AND was then removed (user skipped)
+      if (overlayAppeared && !overlayExists) {
         clearInterval(waitForSkip);
         loadAds();
       }
     }, 500);
-    // Safety: if overlay doesn't appear within 5s (e.g. Android auto-redirected), load anyway
-    setTimeout(function() { clearInterval(waitForSkip); loadAds(); }, 5000);
+
+    // Safety timeout: if overlay never appears after 8s, user was likely
+    // redirected to a real browser (Android intent / iOS Chrome scheme).
+    // In that case this page will be abandoned — loading ads is harmless.
+    setTimeout(function() { clearInterval(waitForSkip); loadAds(); }, 8000);
     return;
   }
 
