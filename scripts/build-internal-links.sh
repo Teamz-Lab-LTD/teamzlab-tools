@@ -75,22 +75,42 @@ for slug, filepath in tools.items():
 
     has_related.append(slug)
 
-    # Extract the related tools array
+    # Extract the related tools array — supports multiple patterns:
+    # 1. renderRelatedTools([ ... ])  (inline)
+    # 2. var RELATED_TOOLS = [ ... ]; ... renderRelatedTools(RELATED_TOOLS)
+    # 3. window.RELATED_TOOLS = [ ... ];
+    block = None
     m = re.search(r'renderRelatedTools\(\s*\[(.*?)\]\s*\)', content, re.DOTALL)
-    if not m:
+    if m:
+        block = m.group(1)
+    else:
+        # Try RELATED_TOOLS variable pattern
+        m2 = re.search(r'(?:var|const|let)\s+RELATED_TOOLS\s*=\s*\[(.*?)\]\s*;', content, re.DOTALL)
+        if m2:
+            block = m2.group(1)
+        else:
+            m3 = re.search(r'window\.RELATED_TOOLS\s*=\s*\[(.*?)\]\s*;', content, re.DOTALL)
+            if m3:
+                block = m3.group(1)
+
+    if not block:
         continue
 
-    block = m.group(1)
+    # Extract slugs in both formats: slug: 'x/y' and url: '/x/y/'
     slugs = re.findall(r"slug\s*:\s*['\"]([^'\"]+)['\"]", block)
+    urls = re.findall(r"url\s*:\s*['\"]/?([^'\"]+?)/?\s*['\"]", block)
     names = re.findall(r"name\s*:\s*['\"]([^'\"]+)['\"]", block)
-    descs = re.findall(r"description\s*:\s*['\"]([^'\"]*?)['\"]", block)
+    descs = re.findall(r"(?:description|desc)\s*:\s*['\"]([^'\"]*?)['\"]", block)
+
+    # Combine slug and url entries
+    all_slugs = [s.strip('/') for s in slugs] + [u.strip('/') for u in urls if '/' in u and not u.startswith('http')]
 
     related = []
-    for i, s in enumerate(slugs):
+    for i, s in enumerate(all_slugs):
         n = names[i] if i < len(names) else ''
         d = descs[i] if i < len(descs) else ''
-        related.append({'slug': s.strip('/'), 'name': n, 'desc': d})
-        incoming_links[s.strip('/')] += 1
+        related.append({'slug': s, 'name': n, 'desc': d})
+        incoming_links[s] += 1
 
     all_related_data[slug] = related
 
