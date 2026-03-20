@@ -255,6 +255,43 @@ def post_medium(config, title, body, tags, canonical_url):
     return None, f"HTTP {status}: {json.dumps(resp)[:200]}"
 
 
+def refresh_google_token(creds_file):
+    """Refresh Google OAuth2 access token using refresh token."""
+    with open(creds_file) as f:
+        creds = json.load(f)
+
+    refresh_token = creds.get("refresh_token")
+    client_id = creds.get("client_id")
+    client_secret = creds.get("client_secret")
+
+    if not all([refresh_token, client_id, client_secret]):
+        return None
+
+    import urllib.parse as up
+    token_data = up.urlencode({
+        "refresh_token": refresh_token,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "grant_type": "refresh_token",
+    }).encode()
+
+    status, resp = api_request("https://oauth2.googleapis.com/token", data=None, headers={"User-Agent": "TeamzLabDistribute/1.0"})
+    req = urllib.request.Request("https://oauth2.googleapis.com/token", data=token_data,
+        headers={"User-Agent": "TeamzLabDistribute/1.0"})
+    try:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as r:
+            tokens = json.loads(r.read())
+            new_token = tokens.get("access_token")
+            if new_token:
+                creds["access_token"] = new_token
+                with open(creds_file, "w") as f:
+                    json.dump(creds, f, indent=2)
+                return new_token
+    except Exception:
+        pass
+    return None
+
+
 def post_blogger(config, title, body, tags, canonical_url):
     """Post article to Blogger via REST API."""
     cfg = config["blogger"]
@@ -263,14 +300,14 @@ def post_blogger(config, title, body, tags, canonical_url):
 
     creds_file = os.path.expanduser(cfg["credentials_file"])
     if not os.path.exists(creds_file):
-        return None, f"Credentials file not found: {creds_file}"
+        return None, f"Credentials file not found: {creds_file}. Run: python3 scripts/distribute/blogger-auth.py"
 
     with open(creds_file) as f:
         creds = json.load(f)
 
     access_token = creds.get("access_token")
     if not access_token:
-        return None, "No access_token in credentials file. Run blogger auth first."
+        return None, "No access_token. Run: python3 scripts/distribute/blogger-auth.py"
 
     # Convert markdown to basic HTML
     html_body = markdown_to_html(body)
@@ -290,8 +327,20 @@ def post_blogger(config, title, body, tags, canonical_url):
 
     if status in (200, 201):
         return resp.get("url", "posted"), None
+
+    # Try refreshing token
     if status == 401:
-        return None, "Access token expired. Re-run blogger auth."
+        new_token = refresh_google_token(creds_file)
+        if new_token:
+            status, resp = api_request(
+                f"https://www.googleapis.com/blogger/v3/blogs/{cfg['blog_id']}/posts/",
+                data=post_data,
+                headers={"Authorization": f"Bearer {new_token}"}
+            )
+            if status in (200, 201):
+                return resp.get("url", "posted"), None
+
+        return None, "Access token expired. Run: python3 scripts/distribute/blogger-auth.py"
     return None, f"HTTP {status}: {json.dumps(resp)[:200]}"
 
 
