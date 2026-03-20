@@ -1,7 +1,7 @@
 #!/bin/bash
 # =============================================================
 #  Teamz Lab Tools — Search Console Data Pull
-#  Usage: ./build-search-console.sh [--status|--queries|--pages|--all]
+#  Usage: ./build-search-console.sh [--status|--queries|--pages|--opportunities|--all]
 #  Requires: python3 + google API libs + OAuth token
 #  Setup: see docs/search-console-setup.md
 # =============================================================
@@ -84,12 +84,21 @@ API_BASE = f'https://searchconsole.googleapis.com/webmasters/v3/sites/{ENCODED_S
 end_date = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
 start_date = (datetime.now() - timedelta(days=90)).strftime('%Y-%m-%d')
 start_date_7d = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d')
+start_date_30d = (datetime.now() - timedelta(days=33)).strftime('%Y-%m-%d')
+# For decline detection: compare recent 14 days vs prior 14 days
+recent_end = end_date
+recent_start = (datetime.now() - timedelta(days=17)).strftime('%Y-%m-%d')
+prior_end = (datetime.now() - timedelta(days=18)).strftime('%Y-%m-%d')
+prior_start = (datetime.now() - timedelta(days=32)).strftime('%Y-%m-%d')
 
-def query_search(dimensions, row_limit=50, start=start_date, end=end_date):
-    r = requests.post(f'{API_BASE}/searchAnalytics/query', headers=headers, json={
+def query_search(dimensions, row_limit=50, start=start_date, end=end_date, filters=None):
+    payload = {
         'startDate': start, 'endDate': end,
         'dimensions': dimensions, 'rowLimit': row_limit
-    })
+    }
+    if filters:
+        payload['dimensionFilterGroups'] = [{'filters': filters}]
+    r = requests.post(f'{API_BASE}/searchAnalytics/query', headers=headers, json=payload)
     return r.json().get('rows', [])
 
 print("=" * 70)
@@ -181,10 +190,165 @@ if MODE in ('--all',):
     else:
         print("  No country data yet")
 
+# --- OPPORTUNITIES: CTR Quick Wins (ranking #4-10 but low CTR) ---
+if MODE in ('--opportunities', '--all'):
+    print("\n" + "=" * 70)
+    print("  OPPORTUNITIES ANALYZER")
+    print("=" * 70)
+
+    # 1) CTR Quick Wins — pages ranking #4-10 with below-average CTR
+    print("\n🎯 CTR QUICK WINS (Ranking #4-10, Low CTR — Improve Title/Description)")
+    print("-" * 90)
+    rows = query_search(['query', 'page'], row_limit=500, start=start_date_30d)
+    ctr_wins = []
+    for row in rows:
+        pos = row.get('position', 0)
+        ctr = row.get('ctr', 0)
+        impr = row.get('impressions', 0)
+        clicks = row.get('clicks', 0)
+        if 4 <= pos <= 10 and impr >= 10:
+            # Expected CTR by position (industry averages)
+            expected_ctr = {4: 0.06, 5: 0.04, 6: 0.03, 7: 0.025, 8: 0.02, 9: 0.018, 10: 0.015}
+            exp = expected_ctr.get(round(pos), 0.03)
+            if ctr < exp:
+                potential_clicks = int(impr * exp) - clicks
+                ctr_wins.append({
+                    'query': row['keys'][0],
+                    'page': row['keys'][1].replace('https://tool.teamzlab.com', ''),
+                    'pos': pos, 'ctr': ctr, 'impr': impr, 'clicks': clicks,
+                    'expected_ctr': exp, 'potential': potential_clicks
+                })
+    ctr_wins.sort(key=lambda x: x['potential'], reverse=True)
+    if ctr_wins[:15]:
+        print(f"  {'Query':<35} {'Page':<30} {'Pos':>4} {'CTR':>6} {'Exp':>6} {'+Clicks':>8}")
+        print("  " + "-" * 91)
+        total_potential = 0
+        for w in ctr_wins[:15]:
+            q = w['query'][:35]
+            p = w['page'][:30]
+            total_potential += w['potential']
+            print(f"  {q:<35} {p:<30} {w['pos']:>4.1f} {w['ctr']*100:>5.1f}% {w['expected_ctr']*100:>5.1f}% {w['potential']:>+7}")
+        print(f"\n  Total potential: +{total_potential} clicks/month by optimizing titles & descriptions")
+        print("  ACTION: Rewrite <title> and <meta description> for these pages to be more compelling")
+    else:
+        print("  No CTR optimization opportunities found (or not enough data yet)")
+
+    # 2) Striking Distance — pages ranking #11-20 (page 2, almost page 1)
+    print("\n🏃 STRIKING DISTANCE (Ranking #11-20 — Small Push = Page 1)")
+    print("-" * 90)
+    striking = []
+    for row in rows:
+        pos = row.get('position', 0)
+        impr = row.get('impressions', 0)
+        if 11 <= pos <= 20 and impr >= 5:
+            striking.append({
+                'query': row['keys'][0],
+                'page': row['keys'][1].replace('https://tool.teamzlab.com', ''),
+                'pos': pos, 'impr': impr, 'clicks': row.get('clicks', 0)
+            })
+    striking.sort(key=lambda x: x['impr'], reverse=True)
+    if striking[:15]:
+        print(f"  {'Query':<40} {'Page':<30} {'Pos':>4} {'Impr':>7}")
+        print("  " + "-" * 83)
+        for s in striking[:15]:
+            q = s['query'][:40]
+            p = s['page'][:30]
+            print(f"  {q:<40} {p:<30} {s['pos']:>4.1f} {s['impr']:>7}")
+        print(f"\n  ACTION: Add more content, internal links, or backlinks to push these to page 1")
+        print("  TIP: Add the query as an H2 heading, expand FAQ section, add internal links from related tools")
+    else:
+        print("  No striking distance pages found (or not enough data yet)")
+
+    # 3) Declining Pages — compare recent 14 days vs prior 14 days
+    print("\n📉 DECLINING PAGES (Losing Clicks — Act Before They Drop Further)")
+    print("-" * 90)
+    recent_rows = query_search(['page'], row_limit=200, start=recent_start, end=recent_end)
+    prior_rows = query_search(['page'], row_limit=200, start=prior_start, end=prior_end)
+    recent_map = {}
+    for row in recent_rows:
+        page = row['keys'][0].replace('https://tool.teamzlab.com', '')
+        recent_map[page] = {
+            'clicks': row.get('clicks', 0),
+            'impr': row.get('impressions', 0),
+            'pos': row.get('position', 0)
+        }
+    declines = []
+    for row in prior_rows:
+        page = row['keys'][0].replace('https://tool.teamzlab.com', '')
+        prior_clicks = row.get('clicks', 0)
+        prior_impr = row.get('impressions', 0)
+        prior_pos = row.get('position', 0)
+        recent = recent_map.get(page, {'clicks': 0, 'impr': 0, 'pos': 0})
+        click_change = recent['clicks'] - prior_clicks
+        impr_change = recent['impr'] - prior_impr
+        pos_change = recent['pos'] - prior_pos  # positive = worse
+        if prior_clicks >= 3 and (click_change < -2 or (prior_impr >= 10 and impr_change < -5)):
+            declines.append({
+                'page': page, 'prior_clicks': prior_clicks,
+                'recent_clicks': recent['clicks'], 'click_change': click_change,
+                'prior_impr': prior_impr, 'recent_impr': recent['impr'],
+                'impr_change': impr_change, 'pos_change': pos_change
+            })
+    declines.sort(key=lambda x: x['click_change'])
+    if declines[:10]:
+        print(f"  {'Page':<45} {'Clicks':>13} {'Impr':>13} {'Pos':>8}")
+        print(f"  {'':<45} {'Prior>Now':>13} {'Prior>Now':>13} {'Change':>8}")
+        print("  " + "-" * 81)
+        for d in declines[:10]:
+            p = d['page'][:45]
+            cc = f"{d['prior_clicks']}>{d['recent_clicks']}"
+            ic = f"{d['prior_impr']}>{d['recent_impr']}"
+            pc = f"{d['pos_change']:+.1f}" if d['pos_change'] else "="
+            print(f"  {p:<45} {cc:>13} {ic:>13} {pc:>8}")
+        print(f"\n  ACTION: Check these pages for content staleness, broken features, or algorithm changes")
+        print("  TIP: Update data, add fresh content, check if competitors launched similar tools")
+    else:
+        print("  No significant declines detected (good news!)")
+
+    # 4) High-Impression Zero-Click Queries (brand awareness but no traffic)
+    print("\n👀 HIGH IMPRESSIONS, ZERO CLICKS (Visible But Not Clicked)")
+    print("-" * 90)
+    zero_click = []
+    for row in rows:
+        impr = row.get('impressions', 0)
+        clicks = row.get('clicks', 0)
+        if impr >= 20 and clicks == 0:
+            zero_click.append({
+                'query': row['keys'][0],
+                'page': row['keys'][1].replace('https://tool.teamzlab.com', ''),
+                'pos': row.get('position', 0), 'impr': impr
+            })
+    zero_click.sort(key=lambda x: x['impr'], reverse=True)
+    if zero_click[:10]:
+        print(f"  {'Query':<40} {'Page':<30} {'Pos':>4} {'Impr':>7}")
+        print("  " + "-" * 83)
+        for z in zero_click[:10]:
+            q = z['query'][:40]
+            p = z['page'][:30]
+            print(f"  {q:<40} {p:<30} {z['pos']:>4.1f} {z['impr']:>7}")
+        print(f"\n  ACTION: These queries show your pages in search but nobody clicks")
+        print("  TIP: Rewrite title to include the exact query + add a compelling meta description")
+    else:
+        print("  No zero-click high-impression queries found")
+
+    # 5) Summary score
+    print("\n" + "=" * 70)
+    print("  OPPORTUNITY SUMMARY")
+    print("=" * 70)
+    print(f"  CTR quick wins:        {len(ctr_wins)} queries (ranking well but under-clicked)")
+    print(f"  Striking distance:     {len(striking)} queries (page 2 — almost page 1)")
+    print(f"  Declining pages:       {len(declines)} pages (losing traffic)")
+    print(f"  Zero-click queries:    {len(zero_click)} queries (seen but not clicked)")
+    if ctr_wins:
+        total_p = sum(w['potential'] for w in ctr_wins)
+        print(f"\n  ESTIMATED UPSIDE: +{total_p} clicks/month from CTR fixes alone")
+    print()
+
 print("\n" + "=" * 70)
-print("  Run: ./build-search-console.sh --queries   (queries only)")
-print("  Run: ./build-search-console.sh --pages     (pages only)")
-print("  Run: ./build-search-console.sh --status    (indexing only)")
+print("  Run: ./build-search-console.sh --queries        (queries only)")
+print("  Run: ./build-search-console.sh --pages          (pages only)")
+print("  Run: ./build-search-console.sh --status         (indexing only)")
+print("  Run: ./build-search-console.sh --opportunities  (quick wins only)")
 print("  Docs: docs/search-console-setup.md")
 print("=" * 70)
 PYEOF

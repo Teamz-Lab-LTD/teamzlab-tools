@@ -201,9 +201,9 @@ print(f'TOTAL:{total}')
   fi
 fi
 
-# 9. Broken internal link check
+# 9. Broken internal link check + related tools validation
 echo ""
-echo "[9/9] Checking for broken internal links..."
+echo "[9/10] Checking for broken internal links..."
 BROKEN=0
 BROKEN_OUTPUT=$(grep -roh 'href="/[^"]*/"' --include="*.html" "$BASE" 2>/dev/null | sort -u | sed 's/href="//;s/"$//' | while IFS= read -r link; do
   DIR="${link#/}"
@@ -219,6 +219,24 @@ if [ -n "$BROKEN_OUTPUT" ]; then
   ERRORS=$((ERRORS + BROKEN_COUNT))
 else
   echo "  All internal links valid!"
+fi
+
+# 10. Related tools & internal link health
+echo ""
+echo "[10/10] Related tools & internal link health..."
+LINK_HEALTH=$(bash "$SCRIPTS/build-internal-links.sh" --quick 2>&1)
+LINK_BROKEN=$(echo "$LINK_HEALTH" | grep "Broken related slugs:" | grep -oP '\d+')
+LINK_ORPHANS=$(echo "$LINK_HEALTH" | grep "Orphan pages" | grep -oP '\d+' | head -1)
+LINK_MISSING=$(echo "$LINK_HEALTH" | grep "Missing related tools:" | grep -oP '\d+')
+LINK_COVERAGE=$(echo "$LINK_HEALTH" | grep "Related Tools coverage:" | grep -oP '\d+%')
+echo "  Related Tools coverage: $LINK_COVERAGE"
+echo "  Broken related slugs:  ${LINK_BROKEN:-0}"
+echo "  Orphan pages:          ${LINK_ORPHANS:-0}"
+echo "  Missing related tools: ${LINK_MISSING:-0}"
+if [ -n "$LINK_BROKEN" ] && [ "$LINK_BROKEN" -gt 0 ] 2>/dev/null; then
+  echo ""
+  echo "$LINK_HEALTH" | grep "BROKEN RELATED" -A 20 | head -15
+  ERRORS=$((ERRORS + LINK_BROKEN))
 fi
 
 echo ""

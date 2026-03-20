@@ -94,6 +94,13 @@ case "${1:-audit}" in
         shift
         python3 "$SCRIPT" aso-compare "$@"
         ;;
+    --volume)
+        shift
+        python3 "$SCRIPTS/build-keyword-volume.py" "$@"
+        ;;
+    --volume-bulk)
+        python3 "$SCRIPTS/build-keyword-volume.py" --bulk
+        ;;
     --verbose|-v)
         python3 "$SCRIPT" audit --verbose
         ;;
