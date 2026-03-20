@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Disease Risk Checker — Teamz Lab Tools</title>
+  <meta name="description" content="Check mosquito-borne disease risks by country — dengue, malaria, Zika, yellow fever. Get vaccination tips and prevention advice. Free, private.">
+  <meta property="og:title" content="Travel Disease Risk Checker — Teamz Lab Tools">
+  <meta property="og:description" content="Check mosquito-borne disease risks by country — dengue, malaria, Zika, yellow fever. Get vaccination tips and prevention advice. Free, private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/pest/travel-disease-risk/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/pest.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Travel Disease Risk Checker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Check mosquito-borne disease risks by country — dengue, malaria, Zika, yellow fever. Get vaccination tips and prevention advice. Free, private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/pest/travel-disease-risk/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .disease-results { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+    .overall-risk-badge { display: inline-block; padding: 10px 24px; border-radius: 8px; font-weight: 700; font-size: var(--text-lg); text-transform: uppercase; letter-spacing: 0.5px; }
+    .risk-low { background: var(--surface); color: var(--heading); border: 2px solid var(--border); }
+    .risk-moderate { background: var(--surface); color: var(--heading); border-left: 5px solid var(--heading); padding-left: 19px; }
+    .risk-high { background: var(--heading); color: var(--bg); }
+    .risk-very_high { background: var(--heading); color: var(--bg); }
+    .risk-none { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .disease-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+    .disease-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+    .disease-card-header h3 { margin: 0; font-size: var(--text-base); color: var(--heading); }
+    .risk-tag { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: var(--text-sm); font-weight: 600; text-transform: uppercase; }
+    .risk-tag.tag-none { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .risk-tag.tag-very_low { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .risk-tag.tag-low { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .risk-tag.tag-moderate { background: var(--surface); color: var(--heading); border: 2px solid var(--heading); }
+    .risk-tag.tag-high { background: var(--heading); color: var(--bg); }
+    .risk-tag.tag-very_high { background: var(--heading); color: var(--bg); }
+    .disease-card .peak-warning { font-size: var(--text-sm); color: var(--heading); font-weight: 600; margin-top: 6px; }
+    .disease-card .notes { font-size: var(--text-sm); color: var(--text); margin-top: 4px; }
+    .reco-section { margin-top: 24px; }
+    .reco-section h3 { color: var(--heading); margin-bottom: 10px; font-size: var(--text-base); }
+    .reco-section ul { list-style: disc; padding-left: 20px; }
+    .reco-section li { margin-bottom: 6px; color: var(--text); font-size: var(--text-sm); }
+    .reco-section .emergency-box { background: var(--surface); border: 2px solid var(--heading); border-radius: 8px; padding: 14px 18px; margin-top: 12px; }
+    .reco-section .emergency-box p { margin: 0; color: var(--heading); font-weight: 600; font-size: var(--text-sm); }
+    .disclaimer-box { margin-top: 20px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: var(--text-sm); color: var(--text-muted); }
+    .print-btn { margin-top: 16px; }
+    .activity-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    .activity-checks label { display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--text); cursor: pointer; }
+    .activity-checks input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
+    .country-search-wrap { position: relative; }
+    .country-search-wrap input { width: 100%; box-sizing: border-box; }
+    .country-dropdown { position: absolute; top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; z-index: 100; display: none; }
+    .country-dropdown .country-option { padding: 10px 14px; cursor: pointer; font-size: var(--text-sm); color: var(--text); }
+    .country-dropdown .country-option:hover, .country-dropdown .country-option.active { background: var(--border); color: var(--heading); }
+    .country-dropdown .region-label { padding: 6px 14px; font-size: var(--text-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; }
+    #disease-results { display: none; }
+    @media (max-width: 600px) {
+      .tool-calculator h2, .tool-content h2 { font-size: var(--text-lg); }
+      .activity-checks { grid-template-columns: 1fr; }
+      .disease-card-header { flex-direction: column; align-items: flex-start; }
+      .overall-risk-badge { font-size: var(--text-base); padding: 8px 18px; }
+    }
+    @media print {
+      .site-header, .site-footer, .ad-slot, #tool-faqs, #related-tools, .tool-content, .print-btn, .tool-hero, .tool-calculator > .form-section { display: none !important; }
+      #disease-results { display: block !important; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Pest & Insect Safety", "item": "https://tool.teamzlab.com/pest/"}, {"@type": "ListItem", "position": 3, "name": "Travel Disease Risk Checker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which countries have the highest risk of mosquito-borne diseases?", "acceptedAnswer": {"@type": "Answer", "text": "Sub-Saharan African countries like Nigeria, DRC, Mozambique, and Tanzania have the highest overall risk due to year-round malaria transmission combined with dengue and yellow fever. In the Americas, Brazil, Colombia, and Haiti have very high dengue and Zika risk. Southeast Asian countries like Indonesia and the Philippines also see major dengue epidemics annually. Risk varies by season, region within each country, and type of travel activity."}}, {"@type": "Question", "name": "Do I need antimalarial medication for my trip?", "acceptedAnswer": {"@type": "Answer", "text": "Antimalarial medication is strongly recommended for travel to Sub-Saharan Africa, parts of South Asia, the Amazon basin, and Papua New Guinea. The decision depends on your specific destination, itinerary, and activities. Urban-only travel in some countries may not require antimalarials, while rural or jungle travel in the same country might. Common options include atovaquone-proguanil (Malarone), doxycycline, and mefloquine. Always consult a travel medicine specialist 4-6 weeks before departure."}}, {"@type": "Question", "name": "How effective is DEET at preventing mosquito bites?", "acceptedAnswer": {"@type": "Answer", "text": "DEET at concentrations of 20-50% is the gold standard insect repellent, providing 4-12 hours of protection depending on concentration. A 30% DEET product protects for approximately 6-8 hours. Higher concentrations do not repel better — they simply last longer. Picaridin at 20% concentration is an equally effective alternative with a more pleasant feel. Oil of lemon eucalyptus (PMD) provides about 2 hours of protection. Always reapply after swimming or heavy sweating."}}, {"@type": "Question", "name": "Can I get dengue more than once?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, you can get dengue up to four times because there are four distinct serotypes (DENV-1 through DENV-4). Infection with one serotype provides lifelong immunity to that specific serotype but only temporary cross-protection against the others. Critically, a second dengue infection with a different serotype carries a higher risk of developing severe dengue (dengue hemorrhagic fever), which can be life-threatening. This makes prevention especially important for repeat travelers to endemic areas."}}, {"@type": "Question", "name": "Is the yellow fever vaccine mandatory for travel?", "acceptedAnswer": {"@type": "Answer", "text": "Yellow fever vaccination is legally required for entry to many countries in tropical Africa and South America, including Nigeria, Ghana, DRC, Bolivia, and others. Some countries require proof of vaccination only if you are arriving from or transiting through an endemic country. The vaccine provides lifelong protection after a single dose and must be administered at least 10 days before travel. You will receive an International Certificate of Vaccination (yellow card) that may be checked at border crossings."}}, {"@type": "Question", "name": "How soon after a mosquito bite can symptoms appear?", "acceptedAnswer": {"@type": "Answer", "text": "Incubation periods vary by disease. Dengue symptoms typically appear 4-10 days after an infected bite. Malaria has an incubation period of 7-30 days, though some Plasmodium vivax strains can remain dormant for months. Zika symptoms appear 3-14 days after infection, with many cases being asymptomatic. Chikungunya symptoms appear 3-7 days after a bite. Japanese encephalitis has a 5-15 day incubation period. Yellow fever symptoms typically begin 3-6 days after infection. Because of these varying timelines, travelers should monitor their health for up to 3 months after returning from endemic areas."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Travel Disease Risk Checker", "description": "Check mosquito-borne disease risks by country — dengue, malaria, Zika, yellow fever. Get vaccination tips and prevention advice.", "url": "https://tool.teamzlab.com/pest/travel-disease-risk/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Travel Disease Risk Checker</h1>
+      <p class="tool-description">Check mosquito-borne disease risks for your travel destination. Get country-specific risk levels for dengue, malaria, Zika, yellow fever, chikungunya, and Japanese encephalitis — plus vaccination recommendations and prevention tips.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="form-section">
+        <div class="form-group">
+          <label for="country-search">Destination Country</label>
+          <div class="country-search-wrap">
+            <input type="text" id="country-search" placeholder="Type to search countries..." autocomplete="off">
+            <div id="country-dropdown" class="country-dropdown"></div>
+          </div>
+          <input type="hidden" id="selected-country" value="">
+        </div>
+        <div class="form-group">
+          <label for="travel-month">Travel Month</label>
+          <select id="travel-month">
+            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="trip-duration">Trip Duration</label>
+          <select id="trip-duration">
+            <option value="short">Under 1 week</option>
+            <option value="1-2weeks">1-2 weeks</option>
+            <option value="2-4weeks">2-4 weeks</option>
+            <option value="1-3months">1-3 months</option>
+            <option value="3+months">3+ months</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Activities Planned</label>
+          <div class="activity-checks">
+            <label><input type="checkbox" id="act-urban" value="urban"> Urban/city travel only</label>
+            <label><input type="checkbox" id="act-rural" value="rural"> Rural/countryside areas</label>
+            <label><input type="checkbox" id="act-jungle" value="jungle"> Jungle/rainforest trekking</label>
+            <label><input type="checkbox" id="act-beach" value="beach"> Beach/coastal areas</label>
+            <label><input type="checkbox" id="act-camping" value="camping"> Camping/outdoor sleeping</label>
+            <label><input type="checkbox" id="act-volunteer" value="volunteer"> Volunteering/aid work</label>
+          </div>
+        </div>
+        <button class="btn-primary" id="check-risk-btn" type="button">Check Risk</button>
+      </div>
+      <div id="disease-results"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Mosquito-Borne Diseases by Region</h2>
+      <p>Mosquito-borne diseases remain one of the biggest health threats for international travelers. Dengue fever is the most widespread, present in over 100 countries across tropical and subtropical regions with an estimated 390 million infections annually. Southeast Asia, Latin America, and Sub-Saharan Africa carry the highest dengue burden, with peak transmission during rainy seasons when mosquito populations surge. Malaria remains endemic in large parts of Africa, South Asia, and the Amazon basin, causing over 600,000 deaths per year — the vast majority in Sub-Saharan Africa. Zika virus gained global attention during the 2015-2016 outbreak in the Americas and continues circulating at lower levels. Yellow fever is confined primarily to tropical Africa and South America, but carries a high fatality rate and requires proof of vaccination for entry to many countries. Japanese encephalitis is found in rural agricultural areas of East and Southeast Asia, while chikungunya has spread rapidly through the tropics since 2004.</p>
+
+      <h2>How to Prevent Mosquito Bites While Traveling</h2>
+      <p>Prevention is the single most effective strategy against mosquito-borne diseases since no vaccines exist for dengue (for most travelers), Zika, or chikungunya. The CDC and WHO recommend using insect repellents containing 20-50% DEET, 20% picaridin, or oil of lemon eucalyptus on exposed skin. Apply repellent over sunscreen, not under it. Wear long-sleeved shirts and long pants, especially during peak biting hours — Aedes mosquitoes (dengue, Zika, chikungunya) bite during daytime, while Anopheles mosquitoes (malaria) bite primarily between dusk and dawn. For rural and jungle travel, treat clothing and gear with 0.5% permethrin or purchase pre-treated clothing. Sleep under insecticide-treated bed nets (ITNs) when staying in accommodation without air conditioning or window screens. Stay in air-conditioned or well-screened rooms when possible. Remove standing water near your accommodation to reduce mosquito breeding sites. These measures combined can reduce your risk of mosquito bites by over 90%.</p>
+
+      <h2>Vaccinations for Mosquito-Borne Diseases</h2>
+      <p>Several mosquito-borne diseases have effective vaccines available. The yellow fever vaccine (YF-17D) is one of the most effective vaccines ever developed, providing lifelong immunity after a single dose. It is required for entry to many African and South American countries and should be administered at least 10 days before travel. The Japanese encephalitis vaccine (Ixiaro) is recommended for travelers spending extended time in rural agricultural areas of Asia, particularly during transmission season. A two-dose series is given 28 days apart. For malaria, no vaccine is widely available for travelers — instead, antimalarial prophylaxis medications are prescribed. Options include atovaquone-proguanil (Malarone), doxycycline, and mefloquine, with the choice depending on the destination, drug resistance patterns, trip duration, and individual medical history. Consult a travel medicine specialist at least 4-6 weeks before departure to ensure adequate time for vaccine series and medication adjustments.</p>
+
+      <h2>What to Do If You Get Sick After Travel</h2>
+      <p>Post-travel illness is common, and mosquito-borne diseases can have incubation periods ranging from a few days to several weeks. Dengue symptoms typically appear 4-10 days after a bite and include sudden high fever, severe headache, pain behind the eyes, joint and muscle pain, and rash. Malaria symptoms can appear 7 days to several months after exposure, presenting as cyclic fevers, chills, sweating, and fatigue. Zika is often mild with fever, rash, joint pain, and conjunctivitis, but poses serious risks during pregnancy. If you develop fever, unusual fatigue, or rash within two weeks to three months of returning from a tropical destination, seek medical attention immediately and inform your doctor about your travel history, destinations visited, and any mosquito exposure. Early diagnosis of malaria can be lifesaving, as severe cases can progress rapidly. Keep a record of your travel dates and locations to help healthcare providers make accurate diagnoses.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* ── Country Disease Risk Data ── */
+    var COUNTRY_RISKS = {
+      'Thailand': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10], notes: 'Endemic nationwide, higher in rural areas' },
+        malaria: { risk: 'low', peak: [6,7,8,9], notes: 'Border areas only (Myanmar, Cambodia, Laos borders)' },
+        zika: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Active transmission reported' },
+        chikungunya: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Sporadic outbreaks' },
+        japanese_encephalitis: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Rural rice-farming areas, vaccine available' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Vietnam': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10,11], notes: 'Endemic, especially southern regions' },
+        malaria: { risk: 'low', peak: [6,7,8,9,10], notes: 'Central highlands and border areas only' },
+        zika: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Cases reported in southern provinces' },
+        chikungunya: { risk: 'low', peak: [5,6,7,8,9], notes: 'Sporadic cases' },
+        japanese_encephalitis: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Northern rural areas, vaccine available' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Indonesia': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'very_high', peak: [1,2,3,4,5,11,12], notes: 'Endemic across all islands, major outbreaks yearly' },
+        malaria: { risk: 'moderate', peak: [1,2,3,4,5,10,11,12], notes: 'Eastern Indonesia, Papua, rural areas' },
+        zika: { risk: 'moderate', peak: [1,2,3,4,5], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4,5], notes: 'Widespread outbreaks reported' },
+        japanese_encephalitis: { risk: 'moderate', peak: [1,2,3,4,5,10,11,12], notes: 'Rural Bali, Java, Kalimantan' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Philippines': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'very_high', peak: [6,7,8,9,10,11], notes: 'National epidemic declared 2026' },
+        malaria: { risk: 'low', peak: [6,7,8,9], notes: 'Rural areas of Mindanao and Palawan only' },
+        zika: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'moderate', peak: [4,5,6,7,8,9,10,11], notes: 'Rural areas, vaccine available' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Malaysia': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'high', peak: [1,2,6,7,8,9,10,11], notes: 'Endemic, urban and suburban areas' },
+        malaria: { risk: 'low', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Malaysian Borneo interior only' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Cases reported' },
+        chikungunya: { risk: 'low', peak: [6,7,8,9], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'low', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Rare, Sarawak state' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Cambodia': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10], notes: 'Endemic, peak during monsoon' },
+        malaria: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Rural and forested border areas' },
+        zika: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Rural rice-farming areas' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Myanmar': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10], notes: 'Endemic nationwide' },
+        malaria: { risk: 'high', peak: [5,6,7,8,9,10,11], notes: 'Widespread in rural and forested areas' },
+        zika: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Cases reported' },
+        chikungunya: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Sporadic outbreaks' },
+        japanese_encephalitis: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Rural agricultural areas' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Laos': {
+        region: 'Southeast Asia',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10], notes: 'Endemic, rainy season peak' },
+        malaria: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Northern and rural provinces' },
+        zika: { risk: 'low', peak: [5,6,7,8,9], notes: 'Low-level transmission' },
+        chikungunya: { risk: 'low', peak: [5,6,7,8,9], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Rural areas, vaccine recommended' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'India': {
+        region: 'South Asia',
+        dengue: { risk: 'high', peak: [7,8,9,10,11], notes: 'Endemic, monsoon season peak' },
+        malaria: { risk: 'high', peak: [7,8,9,10,11], notes: 'Most regions, especially rural' },
+        zika: { risk: 'moderate', peak: [7,8,9,10], notes: 'Cases reported' },
+        chikungunya: { risk: 'high', peak: [7,8,9,10], notes: 'Widespread outbreaks' },
+        japanese_encephalitis: { risk: 'high', peak: [5,6,7,8,9,10], notes: 'Rural areas, vaccine recommended' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Certificate required if arriving from endemic country' }
+      },
+      'Sri Lanka': {
+        region: 'South Asia',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10,11], notes: 'Endemic island-wide, monsoon peaks' },
+        malaria: { risk: 'very_low', peak: [], notes: 'Nearly eliminated, rare local cases' },
+        zika: { risk: 'low', peak: [5,6,7,8,9], notes: 'Low-level transmission' },
+        chikungunya: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'moderate', peak: [10,11,12,1,2], notes: 'Rural north-central areas' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Bangladesh': {
+        region: 'South Asia',
+        dengue: { risk: 'very_high', peak: [6,7,8,9,10,11], notes: 'Major outbreaks in Dhaka, endemic' },
+        malaria: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Chittagong Hill Tracts, border areas' },
+        zika: { risk: 'low', peak: [7,8,9], notes: 'Cases reported' },
+        chikungunya: { risk: 'high', peak: [6,7,8,9,10], notes: 'Widespread outbreaks' },
+        japanese_encephalitis: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Rural rice-growing areas' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Nepal': {
+        region: 'South Asia',
+        dengue: { risk: 'moderate', peak: [7,8,9,10], notes: 'Terai lowlands, emerging in Kathmandu' },
+        malaria: { risk: 'low', peak: [7,8,9,10], notes: 'Terai districts only' },
+        zika: { risk: 'low', peak: [7,8,9], notes: 'Low risk' },
+        chikungunya: { risk: 'low', peak: [7,8,9], notes: 'Sporadic cases' },
+        japanese_encephalitis: { risk: 'high', peak: [6,7,8,9,10], notes: 'Terai region, vaccine recommended' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Pakistan': {
+        region: 'South Asia',
+        dengue: { risk: 'high', peak: [8,9,10,11], notes: 'Endemic in Punjab, Sindh, KPK' },
+        malaria: { risk: 'moderate', peak: [7,8,9,10], notes: 'Rural areas, Balochistan, Sindh' },
+        zika: { risk: 'low', peak: [8,9,10], notes: 'Low-level risk' },
+        chikungunya: { risk: 'moderate', peak: [8,9,10], notes: 'Outbreaks in Karachi' },
+        japanese_encephalitis: { risk: 'low', peak: [7,8,9], notes: 'Rare cases' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'China': {
+        region: 'East Asia',
+        dengue: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Southern provinces — Guangdong, Yunnan, Hainan' },
+        malaria: { risk: 'very_low', peak: [6,7,8,9], notes: 'Yunnan border areas only, near elimination' },
+        zika: { risk: 'low', peak: [6,7,8,9], notes: 'Imported cases primarily' },
+        chikungunya: { risk: 'low', peak: [6,7,8,9], notes: 'Rare' },
+        japanese_encephalitis: { risk: 'moderate', peak: [6,7,8,9], notes: 'Rural areas, vaccine recommended for extended travel' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Japan': {
+        region: 'East Asia',
+        dengue: { risk: 'very_low', peak: [8,9], notes: 'Rare local cases, mostly imported' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'low', peak: [6,7,8,9], notes: 'Rare cases in rural areas, vaccine available' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Nigeria': {
+        region: 'Africa',
+        dengue: { risk: 'high', peak: [4,5,6,7,8,9,10], notes: 'Endemic' },
+        malaria: { risk: 'very_high', peak: [4,5,6,7,8,9,10], notes: 'Nationwide, year-round. Antimalarials essential' },
+        zika: { risk: 'moderate', peak: [4,5,6,7,8,9], notes: 'Active' },
+        chikungunya: { risk: 'moderate', peak: [4,5,6,7,8,9], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [7,8,9,10], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'Kenya': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [3,4,5,10,11], notes: 'Coastal areas and Mombasa' },
+        malaria: { risk: 'very_high', peak: [4,5,6,10,11], notes: 'Most areas except Nairobi and highlands above 2500m' },
+        zika: { risk: 'low', peak: [4,5,10,11], notes: 'Low-level transmission' },
+        chikungunya: { risk: 'moderate', peak: [3,4,5,10,11], notes: 'Coastal outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'moderate', peak: [4,5,6,7,8,9], notes: 'Vaccine recommended, required if transiting from endemic country' }
+      },
+      'Tanzania': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [3,4,5,11,12], notes: 'Dar es Salaam and coastal areas' },
+        malaria: { risk: 'very_high', peak: [3,4,5,6,11,12], notes: 'Nationwide, year-round. Antimalarials essential' },
+        zika: { risk: 'low', peak: [3,4,5], notes: 'Low risk' },
+        chikungunya: { risk: 'moderate', peak: [3,4,5,11,12], notes: 'Coastal outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'moderate', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Vaccine required for entry' }
+      },
+      'Ghana': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Urban outbreaks increasing' },
+        malaria: { risk: 'very_high', peak: [4,5,6,7,8,9,10], notes: 'Nationwide, year-round. Antimalarials essential' },
+        zika: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Cases reported' },
+        chikungunya: { risk: 'low', peak: [5,6,7,8,9], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [5,6,7,8,9,10], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'Ethiopia': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [3,4,5,9,10,11], notes: 'Eastern lowlands' },
+        malaria: { risk: 'very_high', peak: [9,10,11,12], notes: 'Below 2000m elevation, major rainy season peak' },
+        zika: { risk: 'low', peak: [9,10,11], notes: 'Low risk' },
+        chikungunya: { risk: 'moderate', peak: [3,4,5,9,10,11], notes: 'Eastern regions' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [6,7,8,9,10], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'Uganda': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [3,4,5,10,11], notes: 'Increasing outbreaks' },
+        malaria: { risk: 'very_high', peak: [3,4,5,6,10,11,12], notes: 'Nationwide except Kampala center. Antimalarials essential' },
+        zika: { risk: 'moderate', peak: [3,4,5,10,11], notes: 'Zika first discovered here' },
+        chikungunya: { risk: 'moderate', peak: [3,4,5,10,11], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'Senegal': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [7,8,9,10,11], notes: 'Dakar and coastal areas' },
+        malaria: { risk: 'high', peak: [7,8,9,10,11], notes: 'Nationwide, rainy season peak' },
+        zika: { risk: 'low', peak: [7,8,9,10], notes: 'Low risk' },
+        chikungunya: { risk: 'low', peak: [7,8,9,10], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [7,8,9,10], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'Mozambique': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [1,2,3,4,11,12], notes: 'Coastal cities' },
+        malaria: { risk: 'very_high', peak: [11,12,1,2,3,4,5], notes: 'Nationwide, year-round. Antimalarials essential' },
+        zika: { risk: 'low', peak: [1,2,3,4], notes: 'Low risk' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'DRC': {
+        region: 'Africa',
+        dengue: { risk: 'moderate', peak: [3,4,5,9,10,11], notes: 'Urban areas' },
+        malaria: { risk: 'very_high', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Nationwide, year-round. Antimalarials essential' },
+        zika: { risk: 'moderate', peak: [3,4,5,9,10,11], notes: 'Active' },
+        chikungunya: { risk: 'moderate', peak: [3,4,5,9,10,11], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'very_high', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'South Africa': {
+        region: 'Africa',
+        dengue: { risk: 'very_low', peak: [], notes: 'Rare imported cases' },
+        malaria: { risk: 'moderate', peak: [10,11,12,1,2,3,4], notes: 'Limpopo, Mpumalanga, KwaZulu-Natal border areas only' },
+        zika: { risk: 'very_low', peak: [], notes: 'Minimal risk' },
+        chikungunya: { risk: 'very_low', peak: [], notes: 'Rare' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Certificate required if arriving from endemic country' }
+      },
+      'Egypt': {
+        region: 'Africa',
+        dengue: { risk: 'very_low', peak: [], notes: 'Rare, Red Sea coast' },
+        malaria: { risk: 'very_low', peak: [], notes: 'Nearly eliminated, Al Fayyum area occasionally' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Certificate required if arriving from endemic country' }
+      },
+      'Morocco': {
+        region: 'Africa',
+        dengue: { risk: 'very_low', peak: [], notes: 'Not endemic' },
+        malaria: { risk: 'none', peak: [], notes: 'Eliminated' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Brazil': {
+        region: 'South America',
+        dengue: { risk: 'very_high', peak: [1,2,3,4,5], notes: 'Major outbreaks annually, all regions' },
+        malaria: { risk: 'moderate', peak: [1,2,3,4,5,12], notes: 'Amazon region primarily' },
+        zika: { risk: 'high', peak: [1,2,3,4], notes: 'Active transmission, risk to pregnant travelers' },
+        chikungunya: { risk: 'high', peak: [1,2,3,4,5], notes: 'Widespread' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [12,1,2,3,4,5], notes: 'Vaccine REQUIRED for entry from endemic areas' }
+      },
+      'Colombia': {
+        region: 'South America',
+        dengue: { risk: 'very_high', peak: [1,2,3,4,5,6,9,10,11], notes: 'Endemic below 2200m elevation' },
+        malaria: { risk: 'moderate', peak: [4,5,6,10,11], notes: 'Pacific coast, Amazon, Orinoquia regions' },
+        zika: { risk: 'high', peak: [1,2,3,4,5], notes: 'Active transmission below 2200m' },
+        chikungunya: { risk: 'high', peak: [1,2,3,4,5], notes: 'Widespread outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'moderate', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Vaccine recommended for jungle areas' }
+      },
+      'Peru': {
+        region: 'South America',
+        dengue: { risk: 'high', peak: [1,2,3,4,5], notes: 'Amazon basin and northern coast' },
+        malaria: { risk: 'moderate', peak: [1,2,3,4,5], notes: 'Amazon region — Loreto, Madre de Dios' },
+        zika: { risk: 'moderate', peak: [1,2,3,4], notes: 'Amazon basin' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4], notes: 'Northern regions' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [1,2,3,4,5], notes: 'Vaccine REQUIRED for Amazon regions' }
+      },
+      'Ecuador': {
+        region: 'South America',
+        dengue: { risk: 'high', peak: [1,2,3,4,5], notes: 'Coastal and Amazon regions' },
+        malaria: { risk: 'moderate', peak: [1,2,3,4,5], notes: 'Amazon basin, Esmeraldas province' },
+        zika: { risk: 'moderate', peak: [1,2,3,4], notes: 'Coastal lowlands' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4], notes: 'Outbreaks in coastal areas' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'moderate', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Vaccine recommended for Amazon travel' }
+      },
+      'Argentina': {
+        region: 'South America',
+        dengue: { risk: 'moderate', peak: [1,2,3,4], notes: 'Northern provinces — Misiones, Salta, Tucuman' },
+        malaria: { risk: 'very_low', peak: [], notes: 'Nearly eliminated, rare cases in north' },
+        zika: { risk: 'low', peak: [1,2,3], notes: 'Low-level transmission in north' },
+        chikungunya: { risk: 'low', peak: [1,2,3,4], notes: 'Northern provinces' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'low', peak: [12,1,2,3], notes: 'Misiones and Corrientes provinces, vaccine recommended' }
+      },
+      'Venezuela': {
+        region: 'South America',
+        dengue: { risk: 'very_high', peak: [6,7,8,9,10,11], notes: 'Endemic nationwide' },
+        malaria: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Bolivar state, Amazon, mining areas' },
+        zika: { risk: 'high', peak: [6,7,8,9,10], notes: 'Active transmission' },
+        chikungunya: { risk: 'high', peak: [6,7,8,9,10], notes: 'Widespread' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'moderate', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Southern border areas, vaccine recommended' }
+      },
+      'Bolivia': {
+        region: 'South America',
+        dengue: { risk: 'high', peak: [1,2,3,4,5], notes: 'Lowland departments — Santa Cruz, Beni, Cochabamba' },
+        malaria: { risk: 'moderate', peak: [1,2,3,4,5], notes: 'Amazon basin areas' },
+        zika: { risk: 'moderate', peak: [1,2,3,4], notes: 'Lowland areas' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4], notes: 'Lowland outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'high', peak: [1,2,3,4,5], notes: 'Vaccine REQUIRED for entry' }
+      },
+      'Paraguay': {
+        region: 'South America',
+        dengue: { risk: 'high', peak: [1,2,3,4,5], notes: 'Endemic, annual outbreaks' },
+        malaria: { risk: 'very_low', peak: [], notes: 'Nearly eliminated' },
+        zika: { risk: 'moderate', peak: [1,2,3,4], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'low', peak: [12,1,2,3], notes: 'Vaccine recommended' }
+      },
+      'Mexico': {
+        region: 'Central America',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Pacific coast, Yucatan, Gulf states' },
+        malaria: { risk: 'low', peak: [7,8,9,10], notes: 'Chiapas, Tabasco, limited foci' },
+        zika: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Active in southern states' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Southern and coastal states' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Guatemala': {
+        region: 'Central America',
+        dengue: { risk: 'high', peak: [6,7,8,9,10], notes: 'Lowland areas endemic' },
+        malaria: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Rural lowland areas, Peten' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Honduras': {
+        region: 'Central America',
+        dengue: { risk: 'very_high', peak: [6,7,8,9,10,11], notes: 'Endemic, frequent outbreaks' },
+        malaria: { risk: 'moderate', peak: [6,7,8,9,10], notes: 'Rural lowland areas' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Costa Rica': {
+        region: 'Central America',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Pacific and Caribbean lowlands' },
+        malaria: { risk: 'very_low', peak: [7,8,9], notes: 'Limon province only, rare' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active in lowlands' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Panama': {
+        region: 'Central America',
+        dengue: { risk: 'high', peak: [5,6,7,8,9,10,11], notes: 'Endemic, urban and rural' },
+        malaria: { risk: 'low', peak: [5,6,7,8,9,10], notes: 'Darien province and indigenous areas' },
+        zika: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [5,6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Belize': {
+        region: 'Central America',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Endemic' },
+        malaria: { risk: 'low', peak: [6,7,8,9], notes: 'Western border areas' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Dominican Republic': {
+        region: 'Caribbean',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Endemic, rainy season peaks' },
+        malaria: { risk: 'low', peak: [6,7,8,9,10], notes: 'Limited areas, primarily western provinces' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Haiti': {
+        region: 'Caribbean',
+        dengue: { risk: 'very_high', peak: [6,7,8,9,10,11], notes: 'Endemic, frequent outbreaks' },
+        malaria: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Nationwide, year-round' },
+        zika: { risk: 'high', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'high', peak: [6,7,8,9], notes: 'Widespread' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Jamaica': {
+        region: 'Caribbean',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Endemic' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Cuba': {
+        region: 'Caribbean',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Endemic, periodic outbreaks' },
+        malaria: { risk: 'none', peak: [], notes: 'Eliminated' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Cases reported' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Puerto Rico': {
+        region: 'Caribbean',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Endemic, periodic epidemics' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Trinidad and Tobago': {
+        region: 'Caribbean',
+        dengue: { risk: 'high', peak: [6,7,8,9,10,11], notes: 'Endemic' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'moderate', peak: [6,7,8,9], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [6,7,8,9], notes: 'Outbreaks' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Saudi Arabia': {
+        region: 'Middle East',
+        dengue: { risk: 'moderate', peak: [1,2,3,4,10,11,12], notes: 'Western and southwestern regions, Jeddah, Mecca' },
+        malaria: { risk: 'low', peak: [1,2,3,10,11,12], notes: 'Southwestern border areas (Asir, Jizan)' },
+        zika: { risk: 'low', peak: [], notes: 'Rare' },
+        chikungunya: { risk: 'low', peak: [1,2,3], notes: 'Sporadic in southwest' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Certificate required if arriving from endemic country' }
+      },
+      'UAE': {
+        region: 'Middle East',
+        dengue: { risk: 'very_low', peak: [], notes: 'Rare imported cases' },
+        malaria: { risk: 'none', peak: [], notes: 'Eliminated' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Oman': {
+        region: 'Middle East',
+        dengue: { risk: 'low', peak: [1,2,3,10,11,12], notes: 'Sporadic cases in Dhofar region' },
+        malaria: { risk: 'very_low', peak: [], notes: 'Nearly eliminated' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'very_low', peak: [], notes: 'Rare' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Yemen': {
+        region: 'Middle East',
+        dengue: { risk: 'high', peak: [4,5,6,7,8,9], notes: 'Widespread, humanitarian crisis increasing risk' },
+        malaria: { risk: 'high', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Nationwide, year-round' },
+        zika: { risk: 'low', peak: [4,5,6], notes: 'Low risk' },
+        chikungunya: { risk: 'moderate', peak: [4,5,6,7,8], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Papua New Guinea': {
+        region: 'Pacific',
+        dengue: { risk: 'high', peak: [1,2,3,4,11,12], notes: 'Endemic, all coastal and lowland areas' },
+        malaria: { risk: 'very_high', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Nationwide below 1800m. Antimalarials essential' },
+        zika: { risk: 'moderate', peak: [1,2,3,4], notes: 'Active transmission' },
+        chikungunya: { risk: 'moderate', peak: [1,2,3,4], notes: 'Outbreaks reported' },
+        japanese_encephalitis: { risk: 'low', peak: [1,2,3,4,5], notes: 'Rare cases in western province' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Fiji': {
+        region: 'Pacific',
+        dengue: { risk: 'high', peak: [11,12,1,2,3,4], notes: 'Endemic, wet season outbreaks' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'moderate', peak: [11,12,1,2,3], notes: 'Outbreaks reported' },
+        chikungunya: { risk: 'low', peak: [11,12,1,2], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Solomon Islands': {
+        region: 'Pacific',
+        dengue: { risk: 'high', peak: [11,12,1,2,3,4], notes: 'Endemic' },
+        malaria: { risk: 'high', peak: [1,2,3,4,5,6,7,8,9,10,11,12], notes: 'Nationwide, year-round' },
+        zika: { risk: 'moderate', peak: [11,12,1,2,3], notes: 'Active transmission' },
+        chikungunya: { risk: 'low', peak: [11,12,1,2], notes: 'Sporadic' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'United States': {
+        region: 'Low Risk',
+        dengue: { risk: 'very_low', peak: [7,8,9], notes: 'Rare local cases in southern Florida, Texas, Hawaii' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'very_low', peak: [], notes: 'Rare cases' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Canada': {
+        region: 'Low Risk',
+        dengue: { risk: 'none', peak: [], notes: 'Not present' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'United Kingdom': {
+        region: 'Low Risk',
+        dengue: { risk: 'none', peak: [], notes: 'Not present' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Germany': {
+        region: 'Low Risk',
+        dengue: { risk: 'none', peak: [], notes: 'Not present' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'France': {
+        region: 'Low Risk',
+        dengue: { risk: 'very_low', peak: [7,8,9], notes: 'Rare local cases in southern France' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'very_low', peak: [7,8,9], notes: 'Rare local cases in south' },
+        japanese_encephalitis: { risk: 'none', peak: [], notes: 'Not present' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Australia': {
+        region: 'Low Risk',
+        dengue: { risk: 'low', peak: [1,2,3,4], notes: 'Northern Queensland only, sporadic outbreaks' },
+        malaria: { risk: 'none', peak: [], notes: 'Not present' },
+        zika: { risk: 'very_low', peak: [], notes: 'Rare' },
+        chikungunya: { risk: 'very_low', peak: [], notes: 'Rare imported cases' },
+        japanese_encephalitis: { risk: 'low', peak: [1,2,3,4], notes: 'Northern Australia, outbreaks in 2022-2023' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'South Korea': {
+        region: 'Low Risk',
+        dengue: { risk: 'none', peak: [], notes: 'Not present' },
+        malaria: { risk: 'very_low', peak: [6,7,8,9], notes: 'DMZ border area only, Plasmodium vivax' },
+        zika: { risk: 'none', peak: [], notes: 'Not present' },
+        chikungunya: { risk: 'none', peak: [], notes: 'Not present' },
+        japanese_encephalitis: { risk: 'low', peak: [7,8,9,10], notes: 'Rural areas, vaccine part of national program' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      },
+      'Singapore': {
+        region: 'Low Risk',
+        dengue: { risk: 'moderate', peak: [5,6,7,8,9,10], notes: 'Endemic urban dengue, periodic surges' },
+        malaria: { risk: 'none', peak: [], notes: 'Eliminated' },
+        zika: { risk: 'low', peak: [5,6,7,8,9], notes: 'Outbreaks in 2016, low-level since' },
+        chikungunya: { risk: 'low', peak: [5,6,7,8,9], notes: 'Sporadic cases' },
+        japanese_encephalitis: { risk: 'very_low', peak: [], notes: 'Very rare' },
+        yellow_fever: { risk: 'none', peak: [], notes: 'Not present' }
+      }
+    };
+
+    var DISEASE_NAMES = {
+      dengue: 'Dengue Fever',
+      malaria: 'Malaria',
+      zika: 'Zika Virus',
+      chikungunya: 'Chikungunya',
+      japanese_encephalitis: 'Japanese Encephalitis',
+      yellow_fever: 'Yellow Fever'
+    };
+
+    var RISK_LABELS = {
+      none: 'None', very_low: 'Very Low', low: 'Low', moderate: 'Moderate', high: 'High', very_high: 'Very High'
+    };
+
+    var RISK_ORDER = { none: 0, very_low: 1, low: 2, moderate: 3, high: 4, very_high: 5 };
+
+    /* ── Country Search ── */
+    var countryNames = Object.keys(COUNTRY_RISKS).sort();
+    var regions = {};
+    countryNames.forEach(function(c) {
+      var r = COUNTRY_RISKS[c].region;
+      if (!regions[r]) regions[r] = [];
+      regions[r].push(c);
+    });
+    var regionOrder = ['Southeast Asia','South Asia','East Asia','Africa','Central America','South America','Caribbean','Middle East','Pacific','Low Risk'];
+
+    var searchInput = document.getElementById('country-search');
+    var dropdown = document.getElementById('country-dropdown');
+    var selectedCountryInput = document.getElementById('selected-country');
+    var activeIndex = -1;
+
+    function renderDropdown(filter) {
+      var html = '';
+      var count = 0;
+      var visibleItems = [];
+      regionOrder.forEach(function(reg) {
+        if (!regions[reg]) return;
+        var countries = regions[reg].filter(function(c) {
+          return !filter || c.toLowerCase().indexOf(filter.toLowerCase()) !== -1;
+        });
+        if (countries.length === 0) return;
+        html += '<div class="region-label">' + reg + '</div>';
+        countries.forEach(function(c) {
+          html += '<div class="country-option" data-country="' + c + '">' + c + '</div>';
+          visibleItems.push(c);
+          count++;
+        });
+      });
+      dropdown.innerHTML = html;
+      dropdown.style.display = count > 0 ? 'block' : 'none';
+      activeIndex = -1;
+      return visibleItems;
+    }
+
+    var visibleItems = [];
+
+    searchInput.addEventListener('focus', function() {
+      visibleItems = renderDropdown(searchInput.value);
+    });
+
+    searchInput.addEventListener('input', function() {
+      visibleItems = renderDropdown(searchInput.value);
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+      var opts = dropdown.querySelectorAll('.country-option');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, opts.length - 1);
+        opts.forEach(function(o, i) { o.classList.toggle('active', i === activeIndex); });
+        if (opts[activeIndex]) opts[activeIndex].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        opts.forEach(function(o, i) { o.classList.toggle('active', i === activeIndex); });
+        if (opts[activeIndex]) opts[activeIndex].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeIndex >= 0 && opts[activeIndex]) {
+          selectCountry(opts[activeIndex].getAttribute('data-country'));
+        }
+      } else if (e.key === 'Escape') {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    dropdown.addEventListener('click', function(e) {
+      var opt = e.target.closest('.country-option');
+      if (opt) selectCountry(opt.getAttribute('data-country'));
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.country-search-wrap')) {
+        dropdown.style.display = 'none';
+      }
+    });
+
+    function selectCountry(name) {
+      searchInput.value = name;
+      selectedCountryInput.value = name;
+      dropdown.style.display = 'none';
+    }
+
+    /* ── Risk Calculation ── */
+    function getActivityModifier(activities) {
+      var mod = 0;
+      if (activities.indexOf('jungle') !== -1) mod += 2;
+      if (activities.indexOf('rural') !== -1) mod += 1;
+      if (activities.indexOf('camping') !== -1) mod += 2;
+      if (activities.indexOf('volunteer') !== -1) mod += 1;
+      if (activities.indexOf('urban') !== -1 && activities.length === 1) mod -= 1;
+      return mod;
+    }
+
+    function getDurationModifier(duration) {
+      if (duration === 'short') return -1;
+      if (duration === '1-2weeks') return 0;
+      if (duration === '2-4weeks') return 1;
+      if (duration === '1-3months') return 2;
+      return 3;
+    }
+
+    function adjustRisk(baseRisk, modifier) {
+      var level = RISK_ORDER[baseRisk] || 0;
+      level = Math.max(0, Math.min(5, level + modifier));
+      var keys = Object.keys(RISK_ORDER);
+      for (var i = 0; i < keys.length; i++) {
+        if (RISK_ORDER[keys[i]] === level) return keys[i];
+      }
+      return baseRisk;
+    }
+
+    function calculateOverallRisk(diseases, month, activities, duration) {
+      var maxRisk = 0;
+      var actMod = getActivityModifier(activities);
+      var durMod = getDurationModifier(duration);
+      var totalMod = Math.round((actMod + durMod) / 3);
+      var diseaseKeys = ['dengue','malaria','zika','chikungunya','japanese_encephalitis','yellow_fever'];
+      diseaseKeys.forEach(function(d) {
+        if (!diseases[d]) return;
+        var base = RISK_ORDER[diseases[d].risk] || 0;
+        var inPeak = diseases[d].peak.indexOf(month) !== -1;
+        var adjusted = base + totalMod + (inPeak ? 1 : 0);
+        if (adjusted > maxRisk) maxRisk = adjusted;
+      });
+      maxRisk = Math.max(0, Math.min(5, maxRisk));
+      var keys = Object.keys(RISK_ORDER);
+      for (var i = 0; i < keys.length; i++) {
+        if (RISK_ORDER[keys[i]] === maxRisk) return keys[i];
+      }
+      return 'low';
+    }
+
+    function getRecommendations(diseases, month, activities, country) {
+      var recs = { vaccinations: [], antimalarials: '', prevention: [], emergency: '' };
+      /* Yellow fever vaccine */
+      if (diseases.yellow_fever && (diseases.yellow_fever.risk === 'high' || diseases.yellow_fever.risk === 'very_high' || (diseases.yellow_fever.notes && diseases.yellow_fever.notes.toLowerCase().indexOf('required') !== -1))) {
+        recs.vaccinations.push('Yellow Fever vaccine — REQUIRED for entry. Get vaccinated at least 10 days before departure.');
+      } else if (diseases.yellow_fever && diseases.yellow_fever.risk === 'moderate') {
+        recs.vaccinations.push('Yellow Fever vaccine — recommended for travel to this region.');
+      }
+      /* Japanese encephalitis vaccine */
+      if (diseases.japanese_encephalitis && RISK_ORDER[diseases.japanese_encephalitis.risk] >= 2) {
+        var rural = activities.indexOf('rural') !== -1 || activities.indexOf('jungle') !== -1 || activities.indexOf('camping') !== -1;
+        if (rural) {
+          recs.vaccinations.push('Japanese Encephalitis vaccine — recommended for rural/outdoor travel in Asia. Two-dose series, 28 days apart.');
+        } else {
+          recs.vaccinations.push('Japanese Encephalitis vaccine — consider if visiting rural areas. Consult travel clinic.');
+        }
+      }
+      /* Antimalarials */
+      if (diseases.malaria) {
+        var mRisk = RISK_ORDER[diseases.malaria.risk] || 0;
+        var mInPeak = diseases.malaria.peak.indexOf(month) !== -1;
+        if (mRisk >= 4 || (mRisk >= 3 && mInPeak)) {
+          recs.antimalarials = 'Antimalarial prophylaxis is STRONGLY recommended. Options: Atovaquone-proguanil (Malarone) — start 1-2 days before, take daily, continue 7 days after. Doxycycline — start 1-2 days before, take daily, continue 28 days after. Mefloquine — start 2 weeks before, take weekly, continue 4 weeks after. Consult your doctor for the best option based on drug resistance in ' + country + '.';
+        } else if (mRisk >= 2) {
+          recs.antimalarials = 'Antimalarial medication may be advisable depending on your specific itinerary. Consult a travel medicine specialist, especially if visiting rural or forested areas.';
+        }
+      }
+      /* Prevention checklist */
+      recs.prevention.push('Use DEET 20-50% or picaridin 20% insect repellent on exposed skin');
+      recs.prevention.push('Wear long sleeves and long pants, especially at dusk and dawn');
+      if (activities.indexOf('rural') !== -1 || activities.indexOf('jungle') !== -1 || activities.indexOf('camping') !== -1) {
+        recs.prevention.push('Sleep under an insecticide-treated bed net (ITN)');
+        recs.prevention.push('Use permethrin-treated clothing and gear for trekking');
+      }
+      recs.prevention.push('Stay in air-conditioned or well-screened accommodation');
+      recs.prevention.push('Remove standing water near your accommodation');
+      if (activities.indexOf('beach') !== -1) {
+        recs.prevention.push('Apply repellent over sunscreen, reapply after swimming');
+      }
+      /* Emergency */
+      recs.emergency = 'If you develop fever, severe headache, joint/muscle pain, rash, or unusual fatigue within 2 weeks to 3 months after returning home, seek medical attention immediately and tell your doctor about your travel to ' + country + '.';
+      return recs;
+    }
+
+    /* ── Results Rendering ── */
+    function checkRisk() {
+      var country = selectedCountryInput.value;
+      if (!country || !COUNTRY_RISKS[country]) {
+        if (window.showToast) window.showToast('Please select a valid destination country.');
+        return;
+      }
+      var month = parseInt(document.getElementById('travel-month').value, 10);
+      var duration = document.getElementById('trip-duration').value;
+      var activities = [];
+      document.querySelectorAll('.activity-checks input:checked').forEach(function(cb) {
+        activities.push(cb.value);
+      });
+      if (activities.length === 0) activities.push('urban');
+
+      var diseases = COUNTRY_RISKS[country];
+      var overall = calculateOverallRisk(diseases, month, activities, duration);
+      var recs = getRecommendations(diseases, month, activities, country);
+      var monthNames = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      var html = '';
+      html += '<h2 style="margin-top:24px;color:var(--heading);">Risk Assessment: ' + country + '</h2>';
+      html += '<p style="color:var(--text-muted);font-size:var(--text-sm);margin-bottom:16px;">Travel month: ' + monthNames[month] + ' | Duration: ' + duration.replace(/-/g,' ').replace('+',' +') + '</p>';
+
+      /* Overall badge */
+      var badgeClass = 'risk-' + overall;
+      html += '<div style="margin-bottom:20px;"><span class="overall-risk-badge ' + badgeClass + '">Overall Risk: ' + RISK_LABELS[overall] + '</span></div>';
+
+      /* Disease cards */
+      var diseaseKeys = ['dengue','malaria','zika','chikungunya','japanese_encephalitis','yellow_fever'];
+      html += '<div class="disease-results">';
+      diseaseKeys.forEach(function(d) {
+        if (!diseases[d] || diseases[d].risk === 'none') return;
+        var inPeak = diseases[d].peak.indexOf(month) !== -1;
+        html += '<div class="disease-card">';
+        html += '<div class="disease-card-header">';
+        html += '<h3>' + DISEASE_NAMES[d] + '</h3>';
+        html += '<span class="risk-tag tag-' + diseases[d].risk + '">' + RISK_LABELS[diseases[d].risk] + '</span>';
+        html += '</div>';
+        if (inPeak) {
+          html += '<div class="peak-warning">&#9888; Peak season in ' + monthNames[month] + ' — increased risk</div>';
+        }
+        if (diseases[d].notes) {
+          html += '<div class="notes">' + diseases[d].notes + '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+
+      /* Show low-risk message if all none/very_low */
+      var anyRisk = false;
+      diseaseKeys.forEach(function(d) {
+        if (diseases[d] && diseases[d].risk !== 'none' && diseases[d].risk !== 'very_low') anyRisk = true;
+      });
+      if (!anyRisk) {
+        html += '<div class="disease-card" style="margin-top:12px;"><p style="color:var(--heading);font-weight:600;">This is a low-risk destination for mosquito-borne diseases. Standard precautions recommended.</p></div>';
+      }
+
+      /* Recommendations */
+      html += '<div class="reco-section">';
+      if (recs.vaccinations.length > 0) {
+        html += '<h3>Vaccinations</h3><ul>';
+        recs.vaccinations.forEach(function(v) { html += '<li>' + v + '</li>'; });
+        html += '</ul>';
+      }
+      if (recs.antimalarials) {
+        html += '<h3>Antimalarial Medication</h3><p style="color:var(--text);font-size:var(--text-sm);">' + recs.antimalarials + '</p>';
+      }
+      html += '<h3>Prevention Checklist</h3><ul>';
+      recs.prevention.forEach(function(p) { html += '<li>' + p + '</li>'; });
+      html += '</ul>';
+      html += '<div class="emergency-box"><p>' + recs.emergency + '</p></div>';
+      html += '</div>';
+
+      /* Disclaimer */
+      html += '<div class="disclaimer-box">This tool provides general travel health guidance based on publicly available data. Consult a travel medicine specialist for personalized advice.</div>';
+
+      /* Print button */
+      html += '<button class="btn-secondary print-btn" id="print-btn" type="button">Print / Save Summary</button>';
+
+      var resultsDiv = document.getElementById('disease-results');
+      resultsDiv.innerHTML = html;
+      resultsDiv.style.display = 'block';
+      resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      document.getElementById('print-btn').addEventListener('click', function() {
+        window.print();
+      });
+    }
+
+    document.getElementById('check-risk-btn').addEventListener('click', checkRisk);
+
+    /* ── Breadcrumbs, FAQs, Schemas ── */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Pest & Insect Safety', url: '/pest/' },
+      { name: 'Travel Disease Risk Checker' }
+    ];
+
+    var FAQS = [
+      {
+        q: 'Which countries have the highest risk of mosquito-borne diseases?',
+        a: 'Sub-Saharan African countries like Nigeria, DRC, Mozambique, and Tanzania have the highest overall risk due to year-round malaria transmission combined with dengue and yellow fever. In the Americas, Brazil, Colombia, and Haiti have very high dengue and Zika risk. Southeast Asian countries like Indonesia and the Philippines also see major dengue epidemics annually. Risk varies by season, region within each country, and type of travel activity.'
+      },
+      {
+        q: 'Do I need antimalarial medication for my trip?',
+        a: 'Antimalarial medication is strongly recommended for travel to Sub-Saharan Africa, parts of South Asia, the Amazon basin, and Papua New Guinea. The decision depends on your specific destination, itinerary, and activities. Urban-only travel in some countries may not require antimalarials, while rural or jungle travel in the same country might. Common options include atovaquone-proguanil (Malarone), doxycycline, and mefloquine. Always consult a travel medicine specialist 4-6 weeks before departure.'
+      },
+      {
+        q: 'How effective is DEET at preventing mosquito bites?',
+        a: 'DEET at concentrations of 20-50% is the gold standard insect repellent, providing 4-12 hours of protection depending on concentration. A 30% DEET product protects for approximately 6-8 hours. Higher concentrations do not repel better — they simply last longer. Picaridin at 20% concentration is an equally effective alternative with a more pleasant feel. Oil of lemon eucalyptus (PMD) provides about 2 hours of protection. Always reapply after swimming or heavy sweating.'
+      },
+      {
+        q: 'Can I get dengue more than once?',
+        a: 'Yes, you can get dengue up to four times because there are four distinct serotypes (DENV-1 through DENV-4). Infection with one serotype provides lifelong immunity to that specific serotype but only temporary cross-protection against the others. Critically, a second dengue infection with a different serotype carries a higher risk of developing severe dengue (dengue hemorrhagic fever), which can be life-threatening. This makes prevention especially important for repeat travelers to endemic areas.'
+      },
+      {
+        q: 'Is the yellow fever vaccine mandatory for travel?',
+        a: 'Yellow fever vaccination is legally required for entry to many countries in tropical Africa and South America, including Nigeria, Ghana, DRC, Bolivia, and others. Some countries require proof of vaccination only if you are arriving from or transiting through an endemic country. The vaccine provides lifelong protection after a single dose and must be administered at least 10 days before travel. You will receive an International Certificate of Vaccination (yellow card) that may be checked at border crossings.'
+      },
+      {
+        q: 'How soon after a mosquito bite can symptoms appear?',
+        a: 'Incubation periods vary by disease. Dengue symptoms typically appear 4-10 days after an infected bite. Malaria has an incubation period of 7-30 days, though some Plasmodium vivax strains can remain dormant for months. Zika symptoms appear 3-14 days after infection, with many cases being asymptomatic. Chikungunya symptoms appear 3-7 days after a bite. Japanese encephalitis has a 5-15 day incubation period. Yellow fever symptoms typically begin 3-6 days after infection. Because of these varying timelines, travelers should monitor their health for up to 3 months after returning from endemic areas.'
+      }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'pest/mosquito-disease-checker', name: 'Mosquito Disease Symptom Checker', description: 'Check your symptoms against dengue, malaria, Zika and more.' },
+      { slug: 'pest/bug-bite-identifier', name: 'Bug Bite Identifier', description: 'Identify what bit you from symptoms and appearance.' },
+      { slug: 'pest/bed-bug-checker', name: 'Bed Bug Detector Checklist', description: 'Check hotels for bed bugs before settling in.' },
+      { slug: 'pest/snake-bite-guide', name: 'Snake Bite First Aid Guide', description: 'Region-specific snake bite first aid steps.' },
+      { slug: 'auto/road-trip-cost-planner', name: 'Road Trip Cost Planner', description: 'Plan your trip budget including fuel, tolls, and food.' },
+      { slug: 'safety/bac-calculator', name: 'BAC Calculator', description: 'Calculate blood alcohol content for responsible drinking.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'pest/travel-disease-risk',
+        title: 'Travel Disease Risk Checker',
+        description: 'Check mosquito-borne disease risks by country — dengue, malaria, Zika, yellow fever. Get vaccination tips and prevention advice.'
+      });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
