@@ -8,6 +8,8 @@
  * 3. Ad blocker detection tracked in Firebase/GA4
  * 4. Existing .ad-slot divs in HTML are left alone (used as layout anchors by common.js)
  *    — CSS collapses them since they have no adsbygoogle content
+ * 5. In-app browsers: ads load AFTER user dismisses redirect overlay
+ *    — fill rates are lower but some revenue > zero revenue
  *
  * Analytics Events Tracked:
  * - adsense_script_loaded     → AdSense JS loaded successfully
@@ -32,80 +34,103 @@
   // Don't run in localhost
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
 
-  // Don't run in in-app browsers (Messenger, Facebook, Instagram, etc.)
+  // In-app browser detection
   var ua = navigator.userAgent || '';
-  if (/FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat/i.test(ua)) return;
+  var isInApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat|MicroMessenger|WeChat|TikTok|BytedanceWebview/i.test(ua);
 
-  // --- Analytics helper: track ad events in Firebase + GA4 ---
-  function trackAdEvent(eventName, params) {
-    var fullParams = Object.assign({
-      page_path: path,
-      tool_slug: path.replace(/^\/|\/$/g, ''),
-      timestamp: new Date().toISOString()
-    }, params || {});
-
-    // GA4 gtag
-    if (window.gtag) {
-      try { window.gtag('event', eventName, fullParams); } catch (e) {}
-    }
-    // Firebase Analytics
-    if (window._fbAnalytics) {
-      try { window._fbAnalytics.logEvent(eventName, fullParams); } catch (e) {}
-    }
+  if (isInApp) {
+    // Wait for user to dismiss the in-app overlay before loading ads
+    // (overlay blocks the page — ads behind it = wasted impressions)
+    var waitForSkip = setInterval(function() {
+      var overlayGone = !document.querySelector('.inapp-overlay');
+      var skipped = false;
+      try { skipped = sessionStorage.getItem('tz_inapp_closed') === '1'; } catch(e) {}
+      if (overlayGone || skipped) {
+        clearInterval(waitForSkip);
+        loadAds();
+      }
+    }, 500);
+    // Safety: if overlay doesn't appear within 5s (e.g. Android auto-redirected), load anyway
+    setTimeout(function() { clearInterval(waitForSkip); loadAds(); }, 5000);
+    return;
   }
 
-  // --- Retry analytics if not ready yet (Firebase loads async) ---
-  function trackWithRetry(eventName, params, retries) {
-    if (window.gtag || window._fbAnalytics) {
-      trackAdEvent(eventName, params);
-    } else if (retries > 0) {
-      setTimeout(function () { trackWithRetry(eventName, params, retries - 1); }, 1000);
+  // Normal browsers: load ads immediately
+  loadAds();
+
+  function loadAds() {
+    // Prevent double-load (safety for in-app timer + interval race)
+    if (window.__tzAdsLoaded) return;
+    window.__tzAdsLoaded = true;
+
+    // --- Analytics helper: track ad events in Firebase + GA4 ---
+    function trackAdEvent(eventName, params) {
+      var fullParams = Object.assign({
+        page_path: path,
+        tool_slug: path.replace(/^\/|\/$/g, ''),
+        timestamp: new Date().toISOString(),
+        in_app_browser: isInApp ? 'yes' : 'no'
+      }, params || {});
+
+      if (window.gtag) {
+        try { window.gtag('event', eventName, fullParams); } catch (e) {}
+      }
+      if (window._fbAnalytics) {
+        try { window._fbAnalytics.logEvent(eventName, fullParams); } catch (e) {}
+      }
     }
-  }
 
-  // 1. Inject AdSense script — Auto Ads handles all placement
-  var script = document.createElement('script');
-  script.async = true;
-  script.crossOrigin = 'anonymous';
-  script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + PUB_ID;
-  script.onload = function () {
-    trackWithRetry('adsense_script_loaded', { status: 'success' }, 5);
-    trackWithRetry('auto_ads_initialized', {
-      mode: 'auto_ads_only',
-      device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
-    }, 5);
-  };
-  script.onerror = function () {
-    trackWithRetry('adsense_script_blocked', {
-      status: 'blocked',
-      reason: 'script_load_failed',
-      likely_cause: 'ad_blocker'
-    }, 5);
-  };
-  document.head.appendChild(script);
+    // --- Retry analytics if not ready yet (Firebase loads async) ---
+    function trackWithRetry(eventName, params, retries) {
+      if (window.gtag || window._fbAnalytics) {
+        trackAdEvent(eventName, params);
+      } else if (retries > 0) {
+        setTimeout(function () { trackWithRetry(eventName, params, retries - 1); }, 1000);
+      }
+    }
 
-  // 2. Detect ad blocker (check if AdSense script actually created the global)
-  setTimeout(function () {
-    if (!window.adsbygoogle || typeof window.adsbygoogle.push !== 'function') {
-      trackWithRetry('ad_blocker_detected', {
-        blocker_type: 'adsense_global_missing',
-        user_agent: ua.substring(0, 100)
+    // 1. Inject AdSense script — Auto Ads handles all placement
+    var script = document.createElement('script');
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + PUB_ID;
+    script.onload = function () {
+      trackWithRetry('adsense_script_loaded', { status: 'success' }, 5);
+      trackWithRetry('auto_ads_initialized', {
+        mode: 'auto_ads_only',
+        device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
       }, 5);
+    };
+    script.onerror = function () {
+      trackWithRetry('adsense_script_blocked', {
+        status: 'blocked',
+        reason: 'script_load_failed',
+        likely_cause: 'ad_blocker'
+      }, 5);
+    };
+    document.head.appendChild(script);
+
+    // 2. Detect ad blocker (check if AdSense script actually created the global)
+    setTimeout(function () {
+      if (!window.adsbygoogle || typeof window.adsbygoogle.push !== 'function') {
+        trackWithRetry('ad_blocker_detected', {
+          blocker_type: 'adsense_global_missing',
+          user_agent: ua.substring(0, 100)
+        }, 5);
+      }
+    }, 3000);
+
+    // 3. Hide existing .ad-slot placeholder text (the "Ad Space" text)
+    function cleanAdSlots() {
+      document.querySelectorAll('.ad-slot').forEach(function (slot) {
+        slot.textContent = '';
+      });
     }
-  }, 3000);
 
-  // 3. Hide existing .ad-slot placeholder text (the "Ad Space" text)
-  //    These divs stay in DOM (common.js uses them as layout anchors)
-  //    but CSS already collapses them since they have no adsbygoogle content
-  function cleanAdSlots() {
-    document.querySelectorAll('.ad-slot').forEach(function (slot) {
-      slot.textContent = '';
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', cleanAdSlots);
-  } else {
-    cleanAdSlots();
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', cleanAdSlots);
+    } else {
+      cleanAdSlots();
+    }
   }
 })();

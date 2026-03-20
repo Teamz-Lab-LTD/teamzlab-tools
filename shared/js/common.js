@@ -1561,7 +1561,39 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      // iOS + others: show overlay immediately
+      // iOS: try multiple redirect tricks before showing overlay
+      if (isIOS) {
+        var redirected = false;
+
+        // Trick 1: Try googlechrome:// scheme (opens Chrome iOS if installed)
+        // googlechrome:// for http, googlechromes:// for https
+        var chromeScheme = pageUrl.replace(/^https:\/\//, 'googlechromes://').replace(/^http:\/\//, 'googlechrome://');
+        var hiddenFrame = document.createElement('iframe');
+        hiddenFrame.style.cssText = 'display:none;width:0;height:0';
+        hiddenFrame.src = chromeScheme;
+        document.body.appendChild(hiddenFrame);
+
+        // Trick 2: Try window.open with _blank (some in-app browsers trigger "Open in Safari")
+        setTimeout(function() {
+          if (redirected) return;
+          try { window.open(pageUrl, '_blank'); } catch(e) {}
+        }, 800);
+
+        // Trick 3: If still here after 2s, show overlay (tricks didn't work)
+        setTimeout(function() {
+          if (redirected) return;
+          try { document.body.removeChild(hiddenFrame); } catch(e) {}
+          showInAppOverlay();
+        }, 2000);
+
+        // If page becomes hidden, user was redirected
+        document.addEventListener('visibilitychange', function() {
+          if (document.hidden) redirected = true;
+        });
+        return;
+      }
+
+      // Other platforms: show overlay immediately
       showInAppOverlay();
 
       function showInAppOverlay() {
@@ -1597,15 +1629,32 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.appendChild(overlay);
 
         document.getElementById('inapp-copy-btn').addEventListener('click', function() {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(pageUrl).then(function() {
-              if (window.showToast) window.showToast('Link copied! Now open ' + browserName + ' and paste.');
-            }).catch(function() {
-              fallbackCopy();
-            });
-          } else {
-            fallbackCopy();
+          // Copy the URL first
+          function doCopy(cb) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(pageUrl).then(cb).catch(function() { fallbackCopy(); cb(); });
+            } else {
+              fallbackCopy(); cb();
+            }
           }
+
+          doCopy(function() {
+            if (window.showToast) window.showToast('Link copied! Opening browser...');
+            // After copying, try to open in external browser
+            if (isIOS) {
+              // Try Chrome iOS first, then Safari fallback
+              var chromeUrl = pageUrl.replace(/^https:\/\//, 'googlechromes://').replace(/^http:\/\//, 'googlechrome://');
+              window.location.href = chromeUrl;
+              // If Chrome not installed, try x-web-search (opens Safari)
+              setTimeout(function() {
+                window.location.href = 'x-safari-' + pageUrl;
+              }, 500);
+            } else if (isAndroid) {
+              window.location.href = 'intent://' + pageUrl.replace(/^https?:\/\//, '') +
+                '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' +
+                encodeURIComponent(pageUrl) + ';end';
+            }
+          });
         });
 
         function fallbackCopy() {
@@ -1616,7 +1665,6 @@ document.addEventListener('DOMContentLoaded', function () {
           ta.select();
           document.execCommand('copy');
           document.body.removeChild(ta);
-          if (window.showToast) window.showToast('Link copied! Now open ' + browserName + ' and paste.');
         }
 
         document.getElementById('inapp-skip-btn').addEventListener('click', function() {
