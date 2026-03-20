@@ -4,11 +4,13 @@ Teamz Lab Tools — Content Distribution Script
 Posts articles to 8 platforms with duplicate detection.
 
 Usage:
-    python3 scripts/distribute/distribute.py post "Article Title" content.md [--platforms all|devto,medium,...]
-    python3 scripts/distribute/distribute.py post "Article Title" content.md --platforms devto,hashnode
-    python3 scripts/distribute/distribute.py status                          # Show posting history
-    python3 scripts/distribute/distribute.py setup                           # Show setup instructions
-    python3 scripts/distribute/distribute.py test                            # Test API connections
+    python3 scripts/distribute/distribute.py post "Title" content.md [--platforms devto,hashnode,...]
+    python3 scripts/distribute/distribute.py edit "slug" content.md [--platforms devto,bluesky,...]
+    python3 scripts/distribute/distribute.py delete "slug" [--platforms devto,bluesky,...]
+    python3 scripts/distribute/distribute.py list [--platform devto]          # List all posts on a platform
+    python3 scripts/distribute/distribute.py status                           # Show posting history
+    python3 scripts/distribute/distribute.py setup                            # Show setup instructions
+    python3 scripts/distribute/distribute.py test                             # Test API connections
 
 Platforms: devto, hashnode, medium, blogger, wordpress, tumblr, bluesky, mastodon
 """
@@ -294,14 +296,15 @@ def post_blogger(config, title, body, tags, canonical_url):
 
 
 def post_wordpress(config, title, body, tags, canonical_url):
-    """Post article to WordPress.com via REST API."""
+    """Post article to WordPress.com via REST API (OAuth2)."""
     cfg = config["wordpress"]
     if not cfg.get("enabled"):
         return None, "Platform disabled in config"
 
-    # WordPress.com REST API with application password
-    auth_str = f"{cfg['username']}:{cfg['app_password']}"
-    auth_b64 = base64.b64encode(auth_str.encode()).decode()
+    # Check for OAuth2 access token (from wordpress-auth.py)
+    access_token = cfg.get("access_token", "")
+    if not access_token:
+        return None, "No access_token. Run: python3 scripts/distribute/wordpress-auth.py CLIENT_ID CLIENT_SECRET"
 
     post_data = {
         "title": title,
@@ -316,16 +319,8 @@ def post_wordpress(config, title, body, tags, canonical_url):
     status, resp = api_request(
         f"https://public-api.wordpress.com/rest/v1.1/sites/{site}/posts/new",
         data=post_data,
-        headers={"Authorization": f"Bearer {cfg['app_password']}"}
+        headers={"Authorization": f"Bearer {access_token}"}
     )
-
-    # Try basic auth if bearer fails
-    if status in (401, 403):
-        status, resp = api_request(
-            f"https://public-api.wordpress.com/rest/v1.1/sites/{site}/posts/new",
-            data=post_data,
-            headers={"Authorization": f"Basic {auth_b64}"}
-        )
 
     if status in (200, 201):
         return resp.get("URL", resp.get("short_URL", "posted")), None
@@ -771,11 +766,13 @@ def cmd_test():
                 print(f"FAILED — credentials file not found: {creds_file}")
 
         elif platform == "wordpress":
-            auth_str = f"{cfg.get('username', '')}:{cfg.get('app_password', '')}"
-            auth_b64 = base64.b64encode(auth_str.encode()).decode()
+            token = cfg.get("access_token", "")
+            if not token:
+                print(f"FAILED — no access_token. Run wordpress-auth.py first")
+                continue
             status, resp = api_request(
                 f"https://public-api.wordpress.com/rest/v1.1/sites/{cfg.get('site', '')}/",
-                headers={"Authorization": f"Basic {auth_b64}"}
+                headers={"Authorization": f"Bearer {token}"}
             )
             if status == 200:
                 print(f"OK — site: {resp.get('name', 'unknown')}")
@@ -924,6 +921,411 @@ Step 5: Distribute!
 """)
 
 
+# ─── Edit / Delete / List ─────────────────────────────────────────────────────
+
+def cmd_edit(slug, filepath, platforms):
+    """Edit an existing post on specified platforms."""
+    config = load_config()
+    history = load_history()
+
+    if not os.path.exists(filepath):
+        print(f"  ERROR: File not found: {filepath}")
+        sys.exit(1)
+
+    meta, body = read_markdown(filepath)
+    tags = [t.strip() for t in meta.get("tags", "tools,free,web").split(",")]
+    canonical_url = meta.get("canonical_url", meta.get("canonical", ""))
+
+    # Find the history entry
+    entry = None
+    for post in history["posts"]:
+        if post["slug"] == slug:
+            entry = post
+            break
+
+    if not entry:
+        print(f"  ERROR: No post found with slug '{slug}'")
+        print(f"  Run 'status' to see all slugs")
+        sys.exit(1)
+
+    # Add footer
+    defaults = config.get("defaults", {})
+    site_url = defaults.get("site_url", "https://tool.teamzlab.com")
+    body_with_footer = body + f"\n\n---\n\n*Originally published at [{site_url}]({site_url})*"
+
+    title = entry["title"]
+
+    print(f"\n{'=' * 60}")
+    print(f"  Editing: {title}")
+    print(f"  Slug: {slug}")
+    print(f"  Platforms: {', '.join(platforms)}")
+    print(f"{'=' * 60}\n")
+
+    for platform in platforms:
+        posted = entry.get("platforms", {}).get(platform)
+        if not posted:
+            print(f"  [{platform}] SKIP — not posted yet (use 'post' first)")
+            continue
+
+        cfg = config.get(platform, {})
+        if not cfg.get("enabled"):
+            print(f"  [{platform}] SKIP — not enabled in config")
+            continue
+
+        print(f"  [{platform}] Editing...", end=" ", flush=True)
+
+        if platform == "devto":
+            # Get article ID
+            status, articles = api_request(
+                "https://dev.to/api/articles/me?per_page=50",
+                headers={"api-key": cfg["api_key"], "User-Agent": "TeamzLabDistribute/1.0"}
+            )
+            article_id = None
+            if status == 200:
+                posted_url = posted.get("url", "")
+                for a in articles:
+                    if a.get("url") == posted_url or a.get("canonical_url") == posted_url:
+                        article_id = a["id"]
+                        break
+                # Fallback: match by slug in URL
+                if not article_id:
+                    for a in articles:
+                        if slug.replace("-", "") in a.get("url", "").replace("-", ""):
+                            article_id = a["id"]
+                            break
+
+            if not article_id:
+                print(f"FAILED — could not find article on Dev.to")
+                continue
+
+            update_data = {
+                "article": {
+                    "body_markdown": body_with_footer,
+                    "tags": tags[:4],
+                }
+            }
+            if canonical_url:
+                update_data["article"]["canonical_url"] = canonical_url
+
+            status, resp = api_request(
+                f"https://dev.to/api/articles/{article_id}",
+                data=update_data,
+                headers={"api-key": cfg["api_key"], "User-Agent": "TeamzLabDistribute/1.0"},
+                method="PUT"
+            )
+            if status == 200:
+                print(f"OK — {resp.get('url', 'updated')}")
+                entry["platforms"][platform]["updated_at"] = datetime.now(timezone.utc).isoformat()
+            else:
+                print(f"FAILED — HTTP {status}")
+
+        elif platform == "bluesky":
+            # Bluesky can't edit — delete and repost
+            old_url = posted.get("url", "")
+            old_rkey = old_url.split("/")[-1] if "/" in old_url else ""
+
+            # Login
+            status, session = api_request(
+                "https://bsky.social/xrpc/com.atproto.server.createSession",
+                data={"identifier": cfg["handle"], "password": cfg["app_password"]},
+                headers={"User-Agent": "TeamzLabDistribute/1.0"}
+            )
+            if status != 200:
+                print(f"FAILED — auth error")
+                continue
+
+            did = session["did"]
+            jwt = session["accessJwt"]
+
+            # Delete old
+            if old_rkey:
+                api_request(
+                    "https://bsky.social/xrpc/com.atproto.repo.deleteRecord",
+                    data={"repo": did, "collection": "app.bsky.feed.post", "rkey": old_rkey},
+                    headers={"Authorization": f"Bearer {jwt}", "User-Agent": "TeamzLabDistribute/1.0"}
+                )
+
+            # Create new short post from article
+            summary = truncate(body.split("\n\n")[0] if body else "", 200)
+            text = f"{summary}\n\n"
+            if canonical_url:
+                text += canonical_url
+            elif site_url:
+                text += site_url
+            if tags:
+                text += "\n\n" + " ".join(f"#{t.replace(' ', '')}" for t in tags[:3])
+            if len(text) > 300:
+                text = text[:297] + "..."
+
+            link_url = canonical_url or site_url
+            facets = []
+            if link_url and link_url in text:
+                bs = text.encode("utf-8").index(link_url.encode("utf-8"))
+                be = bs + len(link_url.encode("utf-8"))
+                facets.append({
+                    "index": {"byteStart": bs, "byteEnd": be},
+                    "features": [{"$type": "app.bsky.richtext.facet#link", "uri": link_url}]
+                })
+
+            now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            record = {"$type": "app.bsky.feed.post", "text": text, "createdAt": now}
+            if facets:
+                record["facets"] = facets
+
+            status, resp = api_request(
+                "https://bsky.social/xrpc/com.atproto.repo.createRecord",
+                data={"repo": did, "collection": "app.bsky.feed.post", "record": record},
+                headers={"Authorization": f"Bearer {jwt}", "User-Agent": "TeamzLabDistribute/1.0"}
+            )
+            if status == 200:
+                rkey = resp.get("uri", "").split("/")[-1]
+                new_url = f"https://bsky.app/profile/{cfg['handle']}/post/{rkey}"
+                print(f"OK — {new_url}")
+                entry["platforms"][platform]["url"] = new_url
+                entry["platforms"][platform]["updated_at"] = datetime.now(timezone.utc).isoformat()
+            else:
+                print(f"FAILED — HTTP {status}")
+
+        elif platform == "mastodon":
+            # Mastodon supports edit via PUT /api/v1/statuses/:id
+            instance = cfg["instance"].rstrip("/")
+            old_url = posted.get("url", "")
+            # Extract status ID from URL (last path segment)
+            status_id = old_url.rstrip("/").split("/")[-1] if old_url else ""
+
+            if not status_id:
+                print(f"FAILED — no status ID found")
+                continue
+
+            summary = truncate(body.split("\n\n")[0] if body else "", 250)
+            text = f"{summary}\n\n"
+            if canonical_url:
+                text += f"{canonical_url}\n\n"
+            if tags:
+                text += " ".join(f"#{t.replace(' ', '').replace('-', '')}" for t in tags[:5])
+            if len(text) > 500:
+                text = text[:497] + "..."
+
+            status, resp = api_request(
+                f"{instance}/api/v1/statuses/{status_id}",
+                data={"status": text},
+                headers={"Authorization": f"Bearer {cfg['access_token']}", "User-Agent": "TeamzLabDistribute/1.0"},
+                method="PUT"
+            )
+            if status == 200:
+                print(f"OK — {resp.get('url', 'updated')}")
+                entry["platforms"][platform]["updated_at"] = datetime.now(timezone.utc).isoformat()
+            else:
+                print(f"FAILED — HTTP {status}")
+
+        else:
+            print(f"SKIP — edit not implemented for {platform} yet")
+
+    save_history(history)
+
+
+def cmd_delete(slug, platforms):
+    """Delete a post from specified platforms."""
+    config = load_config()
+    history = load_history()
+
+    entry = None
+    for post in history["posts"]:
+        if post["slug"] == slug:
+            entry = post
+            break
+
+    if not entry:
+        print(f"  ERROR: No post found with slug '{slug}'")
+        print(f"  Run 'status' to see all slugs")
+        sys.exit(1)
+
+    print(f"\n{'=' * 60}")
+    print(f"  Deleting: {entry['title']}")
+    print(f"  Slug: {slug}")
+    print(f"  Platforms: {', '.join(platforms)}")
+    print(f"{'=' * 60}\n")
+
+    for platform in platforms:
+        posted = entry.get("platforms", {}).get(platform)
+        if not posted:
+            print(f"  [{platform}] SKIP — not posted")
+            continue
+
+        cfg = config.get(platform, {})
+        if not cfg.get("enabled"):
+            print(f"  [{platform}] SKIP — not enabled")
+            continue
+
+        print(f"  [{platform}] Deleting...", end=" ", flush=True)
+
+        if platform == "devto":
+            # Dev.to: unpublish (set published=false)
+            status, articles = api_request(
+                "https://dev.to/api/articles/me?per_page=50",
+                headers={"api-key": cfg["api_key"], "User-Agent": "TeamzLabDistribute/1.0"}
+            )
+            article_id = None
+            if status == 200:
+                posted_url = posted.get("url", "")
+                for a in articles:
+                    if a.get("url") == posted_url:
+                        article_id = a["id"]
+                        break
+                if not article_id:
+                    for a in articles:
+                        if slug.replace("-", "") in a.get("url", "").replace("-", ""):
+                            article_id = a["id"]
+                            break
+
+            if not article_id:
+                print(f"FAILED — could not find article")
+                continue
+
+            status, resp = api_request(
+                f"https://dev.to/api/articles/{article_id}",
+                data={"article": {"published": False}},
+                headers={"api-key": cfg["api_key"], "User-Agent": "TeamzLabDistribute/1.0"},
+                method="PUT"
+            )
+            if status == 200:
+                print(f"OK — unpublished")
+                del entry["platforms"][platform]
+            else:
+                print(f"FAILED — HTTP {status}")
+
+        elif platform == "bluesky":
+            old_url = posted.get("url", "")
+            old_rkey = old_url.split("/")[-1] if "/" in old_url else ""
+
+            status, session = api_request(
+                "https://bsky.social/xrpc/com.atproto.server.createSession",
+                data={"identifier": cfg["handle"], "password": cfg["app_password"]},
+                headers={"User-Agent": "TeamzLabDistribute/1.0"}
+            )
+            if status != 200:
+                print(f"FAILED — auth error")
+                continue
+
+            if old_rkey:
+                status, resp = api_request(
+                    "https://bsky.social/xrpc/com.atproto.repo.deleteRecord",
+                    data={"repo": session["did"], "collection": "app.bsky.feed.post", "rkey": old_rkey},
+                    headers={"Authorization": f"Bearer {session['accessJwt']}", "User-Agent": "TeamzLabDistribute/1.0"}
+                )
+                if status == 200:
+                    print(f"OK — deleted")
+                    del entry["platforms"][platform]
+                else:
+                    print(f"FAILED — HTTP {status}")
+            else:
+                print(f"FAILED — no post ID found")
+
+        elif platform == "mastodon":
+            instance = cfg["instance"].rstrip("/")
+            old_url = posted.get("url", "")
+            status_id = old_url.rstrip("/").split("/")[-1] if old_url else ""
+
+            if not status_id:
+                print(f"FAILED — no status ID")
+                continue
+
+            status, resp = api_request(
+                f"{instance}/api/v1/statuses/{status_id}",
+                headers={"Authorization": f"Bearer {cfg['access_token']}", "User-Agent": "TeamzLabDistribute/1.0"},
+                method="DELETE"
+            )
+            if status == 200:
+                print(f"OK — deleted")
+                del entry["platforms"][platform]
+            else:
+                print(f"FAILED — HTTP {status}")
+
+        else:
+            print(f"SKIP — delete not implemented for {platform} yet")
+
+    # Remove entry if no platforms left
+    if not entry.get("platforms"):
+        history["posts"] = [p for p in history["posts"] if p["slug"] != slug]
+        print(f"\n  Removed '{slug}' from history (no platforms left)")
+
+    save_history(history)
+
+
+def cmd_list(platform=None):
+    """List all posts, optionally filtered by platform."""
+    config = load_config()
+    history = load_history()
+
+    if not history["posts"]:
+        print("\n  No posts distributed yet.\n")
+        return
+
+    print(f"\n{'=' * 60}")
+    if platform:
+        print(f"  POSTS ON: {platform.upper()}")
+    else:
+        print(f"  ALL DISTRIBUTED POSTS")
+    print(f"{'=' * 60}\n")
+
+    # Also fetch live data from Dev.to if requested
+    live_posts = {}
+    if platform == "devto" or platform is None:
+        cfg = config.get("devto", {})
+        if cfg.get("enabled"):
+            status, articles = api_request(
+                "https://dev.to/api/articles/me?per_page=50",
+                headers={"api-key": cfg["api_key"], "User-Agent": "TeamzLabDistribute/1.0"}
+            )
+            if status == 200:
+                for a in articles:
+                    live_posts[a.get("url", "")] = {
+                        "title": a.get("title"),
+                        "views": a.get("page_views_count", 0),
+                        "reactions": a.get("public_reactions_count", 0),
+                        "comments": a.get("comments_count", 0),
+                        "published": a.get("published_at", "")[:10],
+                    }
+
+    count = 0
+    for post in history["posts"]:
+        platforms_posted = post.get("platforms", {})
+
+        if platform and platform not in platforms_posted:
+            continue
+
+        count += 1
+        print(f"  {count}. {post['title']}")
+        print(f"     Slug: {post['slug']}")
+
+        for p, info in platforms_posted.items():
+            if platform and p != platform:
+                continue
+
+            url = info.get("url", "")
+            date = info.get("posted_at", "")[:10]
+            updated = info.get("updated_at", "")[:10]
+
+            line = f"     {p}: {url}"
+            if updated:
+                line += f" (posted: {date}, edited: {updated})"
+            else:
+                line += f" (posted: {date})"
+
+            # Add live stats for Dev.to
+            if p == "devto" and url in live_posts:
+                stats = live_posts[url]
+                line += f"\n            Views: {stats['views']} | Reactions: {stats['reactions']} | Comments: {stats['comments']}"
+
+            print(line)
+        print()
+
+    if count == 0:
+        print(f"  No posts found{f' on {platform}' if platform else ''}.\n")
+    else:
+        print(f"  Total: {count} article(s)\n")
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -963,9 +1365,42 @@ def main():
 
         cmd_post(title, filepath, platforms)
 
+    elif command == "edit":
+        if len(sys.argv) < 4:
+            print('  Usage: python3 scripts/distribute/distribute.py edit "slug" content.md [--platforms devto,bluesky,...]')
+            sys.exit(1)
+        slug = sys.argv[2]
+        filepath = sys.argv[3]
+        platforms = ALL_PLATFORMS[:]
+        for i, arg in enumerate(sys.argv[4:], 4):
+            if arg == "--platforms" and i + 1 < len(sys.argv):
+                platforms = [p.strip() for p in sys.argv[i + 1].split(",")]
+                break
+        cmd_edit(slug, filepath, platforms)
+
+    elif command == "delete":
+        if len(sys.argv) < 3:
+            print('  Usage: python3 scripts/distribute/distribute.py delete "slug" [--platforms devto,bluesky,...]')
+            sys.exit(1)
+        slug = sys.argv[2]
+        platforms = ALL_PLATFORMS[:]
+        for i, arg in enumerate(sys.argv[3:], 3):
+            if arg == "--platforms" and i + 1 < len(sys.argv):
+                platforms = [p.strip() for p in sys.argv[i + 1].split(",")]
+                break
+        cmd_delete(slug, platforms)
+
+    elif command == "list":
+        platform = None
+        for i, arg in enumerate(sys.argv[2:], 2):
+            if arg == "--platform" and i + 1 < len(sys.argv):
+                platform = sys.argv[i + 1]
+                break
+        cmd_list(platform)
+
     else:
         print(f"  Unknown command: {command}")
-        print(f"  Available: post, status, test, setup")
+        print(f"  Available: post, edit, delete, list, status, test, setup")
         sys.exit(1)
 
 
