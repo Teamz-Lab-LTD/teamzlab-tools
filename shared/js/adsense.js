@@ -14,6 +14,8 @@
  * - adsense_script_blocked    → AdSense JS blocked (ad blocker)
  * - ad_blocker_detected       → Ad blocker preventing ads from loading
  * - auto_ads_initialized      → Auto Ads script loaded and running
+ * - ad_impression_confirmed   → At least 1 ad actually rendered on page (ads_filled count)
+ * - ad_no_impression          → AdSense loaded but no ads rendered (low inventory/geo)
  */
 
 (function () {
@@ -91,7 +93,32 @@
     }
   }, 3000);
 
-  // 3. Hide existing .ad-slot placeholder text (the "Ad Space" text)
+  // 3. Detect actual ad impressions (Auto Ads injects iframes dynamically)
+  setTimeout(function () {
+    var autoAdFrames = document.querySelectorAll('ins.adsbygoogle[data-ad-status="filled"], iframe[id^="aswift_"], iframe[id^="google_ads_iframe"]');
+    var filled = autoAdFrames.length;
+    var allIns = document.querySelectorAll('ins.adsbygoogle');
+    var unfilled = 0;
+    allIns.forEach(function (ins) {
+      if (ins.dataset.adStatus === 'unfilled') unfilled++;
+    });
+
+    if (filled > 0) {
+      trackWithRetry('ad_impression_confirmed', {
+        ads_filled: filled,
+        ads_unfilled: unfilled,
+        device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
+      }, 5);
+    } else if (window.adsbygoogle && !unfilled) {
+      trackWithRetry('ad_no_impression', {
+        reason: 'no_auto_ads_rendered',
+        adsense_loaded: true,
+        ins_tags: allIns.length
+      }, 5);
+    }
+  }, 5000);
+
+  // 4. Hide existing .ad-slot placeholder text (the "Ad Space" text)
   //    These divs stay in DOM (common.js uses them as layout anchors)
   //    but CSS already collapses them since they have no adsbygoogle content
   function cleanAdSlots() {
