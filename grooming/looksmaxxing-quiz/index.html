@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looksmaxxing Score Quiz — Teamz Lab Tools</title>
+  <meta name="description" content="Take this free looksmaxxing quiz to score your appearance across 7 categories. Get personalized glow-up tips privately — nothing leaves your browser.">
+  <meta property="og:title" content="Looksmaxxing Score Quiz — Rate Your Glow-Up">
+  <meta property="og:description" content="Score your looksmax level across 7 categories. Free, private, instant results with tips.">
+  <meta property="og:url" content="https://tool.teamzlab.com/grooming/looksmaxxing-quiz/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/grooming.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Looksmaxxing Score Quiz — Rate Your Glow-Up">
+  <meta name="twitter:description" content="Score your looksmax level across 7 categories. Free, private, instant results with tips.">
+  <link rel="canonical" href="https://tool.teamzlab.com/grooming/looksmaxxing-quiz/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .quiz-progress { display: flex; gap: 4px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .quiz-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
+    .quiz-dot.done { background: var(--accent); }
+    .quiz-dot.current { background: var(--heading); transform: scale(1.2); }
+    .quiz-question { font-size: var(--text-lg); font-weight: 600; color: var(--heading); margin-bottom: 1rem; }
+    .quiz-qnum { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.25rem; }
+    .quiz-cat { font-size: var(--text-xs); color: var(--text-muted); padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); display: inline-block; margin-bottom: 0.5rem; }
+    .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; }
+    .quiz-opt { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+      color: var(--text); cursor: pointer; text-align: left; font-size: var(--text-md); transition: border-color 0.2s; }
+    .quiz-opt:hover { border-color: var(--heading); }
+    .quiz-opt.selected { border-color: var(--heading); background: var(--bg); font-weight: 600; }
+    .quiz-nav { display: flex; gap: 1rem; margin-top: 1.5rem; }
+    .quiz-nav button { padding: 0.6rem 1.5rem; border-radius: 999px; font-weight: 600; font-size: var(--text-md); border: none; cursor: pointer; }
+    .quiz-btn-next { background: var(--heading); color: var(--bg); }
+    .quiz-btn-back { background: var(--surface); color: var(--text); border: 1px solid var(--border) !important; }
+    .quiz-btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Results */
+    .lm-results { text-align: center; }
+    .lm-score-circle { position: relative; width: 180px; height: 180px; margin: 1.5rem auto; }
+    .lm-score-circle svg { width: 180px; height: 180px; transform: rotate(-90deg); }
+    .lm-score-circle .track { fill: none; stroke: var(--border); stroke-width: 10; }
+    .lm-score-circle .bar { fill: none; stroke: var(--heading); stroke-width: 10; stroke-linecap: round;
+      stroke-dasharray: 502; stroke-dashoffset: 502; transition: stroke-dashoffset 1.5s ease; }
+    .lm-score-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      font-size: 2.5rem; font-weight: 800; color: var(--heading); }
+    .lm-tier { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 0.5rem; }
+    .lm-tier-desc { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+    .lm-cats { text-align: left; margin: 1.5rem 0; }
+    .lm-cat-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .lm-cat-label { width: 110px; font-size: var(--text-sm); font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .lm-cat-bar-bg { flex: 1; height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; }
+    .lm-cat-bar { height: 100%; border-radius: 5px; background: var(--heading); transition: width 1s ease; }
+    .lm-cat-pct { width: 40px; font-size: var(--text-sm); font-weight: 600; color: var(--heading); text-align: right; }
+
+    .lm-tips { text-align: left; margin: 1.5rem 0; }
+    .lm-tips h3 { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .lm-tip { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+      color: var(--text); margin-bottom: 0.5rem; font-size: var(--text-md); }
+    .lm-tip strong { color: var(--heading); }
+
+    .lm-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin-top: 1.5rem; }
+    .lm-actions button { padding: 0.6rem 1.25rem; border-radius: 999px; font-weight: 600; font-size: var(--text-md); border: none; cursor: pointer; }
+    .lm-btn-primary { background: var(--heading); color: var(--bg); }
+    .lm-btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border) !important; }
+
+    .lm-canvas-wrap { margin: 1.5rem auto; max-width: 100%; overflow-x: auto; }
+    .lm-canvas-wrap canvas { max-width: 100%; height: auto; border-radius: 12px; }
+
+    @media (max-width: 600px) {
+      .lm-cat-label { width: 80px; font-size: var(--text-xs); }
+      .lm-actions { flex-direction: column; }
+      .lm-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is a looksmaxxing score?", "acceptedAnswer": {"@type": "Answer", "text": "A looksmaxxing score is a self-assessment rating from 0 to 100 that measures how well you optimize your appearance across categories like skincare, fitness, grooming, style, and confidence. It reflects effort and habits, not just genetics."}}, {"@type": "Question", "name": "Is this looksmaxxing quiz accurate?", "acceptedAnswer": {"@type": "Answer", "text": "This quiz evaluates 20 factors across 7 weighted categories used by grooming and self-improvement communities. It measures controllable habits and effort, giving you an honest baseline and actionable improvement areas."}}, {"@type": "Question", "name": "What is softmaxxing vs hardmaxxing?", "acceptedAnswer": {"@type": "Answer", "text": "Softmaxxing means improving appearance through non-invasive methods like skincare, fitness, hairstyle, and clothing. Hardmaxxing involves medical or cosmetic procedures. This quiz focuses on softmaxxing because those improvements are accessible to everyone."}}, {"@type": "Question", "name": "How can I improve my looksmax score?", "acceptedAnswer": {"@type": "Answer", "text": "Focus on your lowest-scoring categories first. Common quick wins include starting a skincare routine with SPF, getting a flattering haircut, wearing properly fitted clothes, strength training 3x per week, and practicing good posture."}}, {"@type": "Question", "name": "Is my quiz data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely. This quiz runs entirely in your browser using JavaScript. No answers are sent to any server, no data is stored remotely, and no cookies are used to track you."}}, {"@type": "Question", "name": "What does mewing do for jawline?", "acceptedAnswer": {"@type": "Answer", "text": "Mewing is the practice of resting your tongue flat against the roof of your mouth. Proponents claim it can improve jawline definition over time by encouraging proper oral posture. Results vary and are most noticeable in younger individuals."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Looksmaxxing Score Quiz", "description": "Take a 20-question quiz to score your appearance optimization across 7 categories and get personalized improvement tips.", "url": "https://tool.teamzlab.com/grooming/looksmaxxing-quiz/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Looksmaxxing Score Quiz</h1>
+      <p class="tool-description">Rate your appearance optimization across 7 categories with 20 questions. Get a personalized looksmax score, category breakdown, and actionable glow-up tips — free and private.</p>
+    </section>
+
+    <section class="tool-calculator" id="tool-area">
+      <div id="quiz-area"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is Looksmaxxing?</h2>
+      <p>Looksmaxxing is the practice of maximizing your physical appearance through grooming, fitness, skincare, style, and self-care. It encompasses both <strong>softmaxxing</strong> (non-invasive improvements like better haircuts, skincare routines, and wardrobe upgrades) and <strong>hardmaxxing</strong> (more intensive changes like orthodontics or cosmetic procedures). The looksmaxxing community focuses on actionable, measurable self-improvement rather than simply accepting your current state. This quiz measures where you currently stand and gives you a roadmap for improvement.</p>
+
+      <h2>How the Looksmaxxing Quiz Scores You</h2>
+      <p>This quiz evaluates 20 aspects of your appearance across 7 weighted categories: Facial Structure (20%), Skin (15%), Hair (15%), Body &amp; Fitness (15%), Style (10%), Grooming (15%), and Confidence (10%). Each question offers 4 options scored 1-4, and your weighted scores are combined into a 0-100 percentage. The result reflects your overall appearance optimization level, not just genetics — it measures effort and consistency.</p>
+
+      <h2>Looksmaxxing Tips for Beginners</h2>
+      <p>Start with <strong>softmaxxing basics</strong>: establish a skincare routine (cleanser, moisturizer, SPF daily), find a hairstyle that suits your face shape, get clothes that actually fit, and start strength training 3 times per week. Fix your posture with daily wall angels and chin tucks. These changes alone can dramatically shift your score. Most people underestimate how much grooming consistency and proper clothing fit contribute to overall attractiveness.</p>
+
+      <h2>Softmaxxing vs Hardmaxxing</h2>
+      <p><strong>Softmaxxing</strong> covers everything you can improve without medical intervention: skincare, haircare, fitness, fashion, grooming habits, and confidence building. It is free or low-cost and yields the highest return for most people. <strong>Hardmaxxing</strong> includes orthodontics, dermatological treatments, laser hair removal, or cosmetic surgery. While effective, hardmaxxing should only be considered after you have maximized all softmaxxing options. This quiz focuses on softmaxxing categories because they represent controllable improvements anyone can make starting today.</p>
+    </section>
+
+    <div id="faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var questions = [
+      { cat: 0, q: 'How symmetrical is your face?', opts: ['Very symmetrical','Mostly symmetrical','Slightly asymmetric','Noticeably asymmetric'] },
+      { cat: 0, q: 'How defined is your jawline?', opts: ['Very sharp and defined','Decent definition','Average','Soft or undefined'] },
+      { cat: 0, q: 'How prominent are your cheekbones?', opts: ['High and defined','Moderate prominence','Subtle','Flat'] },
+      { cat: 1, q: 'How is your skin clarity?', opts: ['Clear, even tone','Occasional blemish','Regular breakouts','Persistent acne or scars'] },
+      { cat: 1, q: 'Do you follow a skincare routine?', opts: ['Full routine daily','Basic cleanse + moisturize','Occasional effort','No routine at all'] },
+      { cat: 1, q: 'Do you use sunscreen regularly?', opts: ['Daily SPF rain or shine','Most days','Sometimes','Never'] },
+      { cat: 2, q: 'How would you rate your hairstyle?', opts: ['Fresh cut, suits my face','Well-maintained','Basic or generic','Unkempt'] },
+      { cat: 2, q: 'How often do you get haircuts?', opts: ['Every 3-4 weeks','Every 6-8 weeks','When it gets too long','Rarely'] },
+      { cat: 3, q: 'How often do you exercise?', opts: ['5+ days per week','3-4 days per week','1-2 days per week','Rarely or never'] },
+      { cat: 3, q: 'How is your posture?', opts: ['Excellent, always upright','Good, mostly aware','Average, sometimes slouch','Poor, usually hunched'] },
+      { cat: 3, q: 'What is your body fat estimate?', opts: ['Athletic or lean','Average','Slightly overweight','Significantly overweight'] },
+      { cat: 4, q: 'Do your clothes fit properly?', opts: ['Tailored or fitted perfectly','Mostly good fit','Hit or miss','Usually baggy or too tight'] },
+      { cat: 4, q: 'How coordinated are your outfits?', opts: ['Well thought out combinations','Decent basics','Random picks','Do not think about it'] },
+      { cat: 5, q: 'How consistent is your hygiene routine?', opts: ['Thorough daily routine','Good basics covered','Inconsistent','Minimal effort'] },
+      { cat: 5, q: 'Do you maintain your nails?', opts: ['Clean and trimmed always','Usually good','Sometimes forget','Never think about it'] },
+      { cat: 5, q: 'Do you groom your eyebrows?', opts: ['Professionally shaped','Self-maintained','Occasional cleanup','Never'] },
+      { cat: 5, q: 'Do you wear fragrance?', opts: ['Signature scent daily','Often','Sometimes','Never'] },
+      { cat: 6, q: 'How comfortable are you with eye contact?', opts: ['Very natural and easy','Mostly comfortable','Sometimes avoid it','Usually avoid it'] },
+      { cat: 6, q: 'How often do you smile in social settings?', opts: ['Frequently and genuinely','Often','Occasionally','Rarely'] },
+      { cat: 6, q: 'How confident do you feel in social situations?', opts: ['Very confident','Fairly comfortable','Sometimes anxious','Usually uncomfortable'] }
+    ];
+
+    var catNames = ['Facial Structure','Skin','Hair','Body & Fitness','Style','Grooming','Confidence'];
+    var catWeights = [0.20, 0.15, 0.15, 0.15, 0.10, 0.15, 0.10];
+    var answers = new Array(20).fill(-1);
+    var step = 0;
+    var area = document.getElementById('quiz-area');
+
+    function render() {
+      if (step >= 20) { showResults(); return; }
+      var q = questions[step];
+      var html = '<div class="quiz-progress">';
+      for (var i = 0; i < 20; i++) {
+        var cls = i < step ? 'quiz-dot done' : (i === step ? 'quiz-dot current' : 'quiz-dot');
+        html += '<div class="' + cls + '"></div>';
+      }
+      html += '</div>';
+      html += '<div class="quiz-cat">' + catNames[q.cat] + '</div>';
+      html += '<div class="quiz-qnum">Question ' + (step + 1) + ' of 20</div>';
+      html += '<div class="quiz-question">' + q.q + '</div>';
+      html += '<div class="quiz-options">';
+      for (var j = 0; j < q.opts.length; j++) {
+        var sel = answers[step] === j ? ' selected' : '';
+        html += '<button class="quiz-opt' + sel + '" data-v="' + j + '">' + q.opts[j] + '</button>';
+      }
+      html += '</div>';
+      html += '<div class="quiz-nav">';
+      if (step > 0) html += '<button class="quiz-btn-back" id="btn-back">Back</button>';
+      html += '<button class="quiz-btn-next" id="btn-next"' + (answers[step] < 0 ? ' disabled' : '') + '>' + (step === 19 ? 'See Results' : 'Next') + '</button>';
+      html += '</div>';
+      area.innerHTML = html;
+
+      area.querySelectorAll('.quiz-opt').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          answers[step] = parseInt(this.getAttribute('data-v'));
+          render();
+        });
+      });
+      var back = document.getElementById('btn-back');
+      if (back) back.addEventListener('click', function() { step--; render(); });
+      var next = document.getElementById('btn-next');
+      next.addEventListener('click', function() { if (answers[step] >= 0) { step++; render(); } });
+    }
+
+    function calcScores() {
+      var catTotals = [0,0,0,0,0,0,0];
+      var catCounts = [0,0,0,0,0,0,0];
+      for (var i = 0; i < 20; i++) {
+        var c = questions[i].cat;
+        catTotals[c] += (4 - answers[i]); // 4=best, 1=worst
+        catCounts[c]++;
+      }
+      var catPcts = [];
+      var overall = 0;
+      for (var j = 0; j < 7; j++) {
+        var pct = Math.round((catTotals[j] / (catCounts[j] * 4)) * 100);
+        catPcts.push(pct);
+        overall += pct * catWeights[j];
+      }
+      return { overall: Math.round(overall), cats: catPcts };
+    }
+
+    function getTier(s) {
+      if (s >= 90) return { name: 'Elite', desc: 'You are in the top tier of appearance optimization. Maintain what you have and refine the details.' };
+      if (s >= 75) return { name: 'Above Average', desc: 'You put in solid effort. A few targeted improvements could push you to elite level.' };
+      if (s >= 50) return { name: 'Average', desc: 'You have a good foundation. Consistent effort in your weak areas will make a big difference.' };
+      if (s >= 30) return { name: 'Room to Grow', desc: 'There is serious potential here. Start with the basics and build habits over the next 90 days.' };
+      return { name: 'Just Starting', desc: 'Everyone starts somewhere. Focus on one category at a time and track your progress.' };
+    }
+
+    var tips = {
+      0: ['Practice mewing for jawline definition — tongue on roof of mouth, lips sealed','Chew falim gum 20 minutes daily for masseter development','Consider growing strategic facial hair to enhance jaw definition'],
+      1: ['Start a daily routine: gentle cleanser, moisturizer, and SPF 30+','Add retinol 2-3 nights per week for skin texture improvement','Drink 2+ liters of water daily and cut sugar for clearer skin'],
+      2: ['Find a hairstyle that complements your face shape — ask your barber','Get regular trims every 4-6 weeks to stay sharp','Use quality shampoo and conditioner — healthy hair makes a huge difference'],
+      3: ['Start strength training 3x per week — compound lifts build the best physique','Fix posture with daily wall angels, chin tucks, and dead hangs','Walk 8000+ steps daily — baseline fitness changes your body composition'],
+      4: ['Get clothes tailored or buy slim-fit — proper fit beats expensive brands','Build a capsule wardrobe with neutral basics that mix and match','Learn the basics of color coordination — stick to 2-3 colors per outfit'],
+      5: ['Establish a non-negotiable morning grooming routine','Invest in a signature fragrance — compliments will follow','Keep nails trimmed weekly and eyebrows cleaned up biweekly'],
+      6: ['Practice holding eye contact for 3 seconds before looking away','Smile more — it is the single easiest glow-up that costs nothing','Put yourself in social situations regularly to build natural confidence']
+    };
+
+    function getTopTips(catPcts) {
+      var indexed = catPcts.map(function(p, i) { return { i: i, p: p }; });
+      indexed.sort(function(a, b) { return a.p - b.p; });
+      var result = [];
+      for (var k = 0; k < 3; k++) {
+        var c = indexed[k].i;
+        result.push({ cat: catNames[c], tip: tips[c][0] });
+      }
+      return result;
+    }
+
+    function showResults() {
+      var sc = calcScores();
+      var tier = getTier(sc.overall);
+      var topTips = getTopTips(sc.cats);
+
+      var html = '<div class="lm-results">';
+      html += '<div class="lm-score-circle"><svg viewBox="0 0 180 180"><circle class="track" cx="90" cy="90" r="80"/><circle class="bar" id="score-bar" cx="90" cy="90" r="80"/></svg><div class="lm-score-num" id="score-num">0</div></div>';
+      html += '<div class="lm-tier">' + tier.name + '</div>';
+      html += '<div class="lm-tier-desc">' + tier.desc + '</div>';
+
+      html += '<div class="lm-cats">';
+      for (var i = 0; i < 7; i++) {
+        html += '<div class="lm-cat-row"><span class="lm-cat-label">' + catNames[i] + '</span><div class="lm-cat-bar-bg"><div class="lm-cat-bar" data-w="' + sc.cats[i] + '" style="width:0%"></div></div><span class="lm-cat-pct">' + sc.cats[i] + '%</span></div>';
+      }
+      html += '</div>';
+
+      html += '<div class="lm-tips"><h3>Your Top 3 Improvement Areas</h3>';
+      for (var t = 0; t < topTips.length; t++) {
+        html += '<div class="lm-tip"><strong>' + topTips[t].cat + ':</strong> ' + topTips[t].tip + '</div>';
+      }
+      html += '</div>';
+
+      html += '<div class="lm-canvas-wrap"><canvas id="result-canvas" width="1080" height="1080"></canvas></div>';
+
+      html += '<div class="lm-actions">';
+      html += '<button class="lm-btn-primary" id="btn-download">Download Card</button>';
+      html += '<button class="lm-btn-secondary" id="btn-copy-img">Copy Image</button>';
+      html += '<button class="lm-btn-secondary" id="btn-share-wa">Share on WhatsApp</button>';
+      html += '<button class="lm-btn-secondary" id="btn-retake">Retake Quiz</button>';
+      html += '</div></div>';
+
+      area.innerHTML = html;
+
+      // Animate score
+      var target = sc.overall;
+      var numEl = document.getElementById('score-num');
+      var barEl = document.getElementById('score-bar');
+      var circumference = 2 * Math.PI * 80;
+      setTimeout(function() {
+        barEl.style.strokeDashoffset = circumference - (circumference * target / 100);
+      }, 100);
+      var count = 0;
+      var interval = setInterval(function() {
+        count += 1;
+        if (count > target) { clearInterval(interval); return; }
+        numEl.textContent = count;
+      }, 20);
+
+      // Animate bars
+      setTimeout(function() {
+        area.querySelectorAll('.lm-cat-bar').forEach(function(bar) {
+          bar.style.width = bar.getAttribute('data-w') + '%';
+        });
+      }, 200);
+
+      // Draw canvas
+      drawCard(sc, tier);
+
+      // Buttons
+      document.getElementById('btn-download').addEventListener('click', function() {
+        var c = document.getElementById('result-canvas');
+        var a = document.createElement('a');
+        a.download = 'looksmax-score-' + sc.overall + '.png';
+        a.href = c.toDataURL('image/png');
+        a.click();
+        if (window.showToast) window.showToast('Image downloaded!');
+      });
+      document.getElementById('btn-copy-img').addEventListener('click', function() {
+        var c = document.getElementById('result-canvas');
+        c.toBlob(function(blob) {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
+            if (window.showToast) window.showToast('Image copied to clipboard!');
+          }).catch(function() {
+            if (window.showToast) window.showToast('Could not copy image');
+          });
+        });
+      });
+      document.getElementById('btn-share-wa').addEventListener('click', function() {
+        var url = 'https://tool.teamzlab.com/grooming/looksmaxxing-quiz/';
+        var text = 'I scored ' + sc.overall + '/100 on the Looksmaxxing Quiz (' + tier.name + ')! Take yours: ' + url;
+        window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      });
+      document.getElementById('btn-retake').addEventListener('click', function() {
+        answers = new Array(20).fill(-1);
+        step = 0;
+        render();
+      });
+    }
+
+    function drawCard(sc, tier) {
+      var c = document.getElementById('result-canvas');
+      var ctx = c.getContext('2d');
+      var w = 1080, h = 1080;
+
+      // Background gradient
+      var grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, '#12151A');
+      grad.addColorStop(1, '#1a1e26');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle accent line at top
+      ctx.fillStyle = '#D9FE06';
+      ctx.fillRect(0, 0, w, 4);
+
+      // Title
+      ctx.fillStyle = '#D9FE06';
+      ctx.font = '700 28px Poppins, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOOKSMAX SCORE', w / 2, 80);
+
+      // Score circle
+      var cx = w / 2, cy = 260, r = 120;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = '#2a2e36'; ctx.lineWidth = 12; ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * sc.overall / 100));
+      ctx.strokeStyle = '#D9FE06'; ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '800 72px Poppins, sans-serif';
+      ctx.fillText(sc.overall, cx, cy + 25);
+
+      // Tier
+      ctx.fillStyle = '#D9FE06';
+      ctx.font = '700 32px Poppins, sans-serif';
+      ctx.fillText(tier.name, cx, cy + r + 60);
+
+      // Category bars
+      var barX = 120, barW = 600, barH = 24, startY = 480, gap = 52;
+      ctx.textAlign = 'left';
+      for (var i = 0; i < 7; i++) {
+        var y = startY + i * gap;
+        ctx.fillStyle = '#a0a0a0';
+        ctx.font = '500 18px Poppins, sans-serif';
+        ctx.fillText(catNames[i], barX, y - 6);
+        // Track
+        ctx.fillStyle = '#2a2e36';
+        roundRect(ctx, barX, y, barW, barH, 12);
+        // Fill
+        ctx.fillStyle = '#D9FE06';
+        roundRect(ctx, barX, y, barW * sc.cats[i] / 100, barH, 12);
+        // Pct
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '600 18px Poppins, sans-serif';
+        ctx.fillText(sc.cats[i] + '%', barX + barW + 20, y + 18);
+      }
+
+      // Watermark
+      ctx.fillStyle = '#555555';
+      ctx.font = '400 16px Poppins, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('tool.teamzlab.com/grooming/looksmaxxing-quiz/', w / 2, h - 40);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      if (w < 1) return;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    render();
+
+    // Breadcrumbs
+    if (window.TeamzTools) {
+      TeamzTools.renderBreadcrumbs();
+      TeamzTools.injectBreadcrumbSchema();
+
+      var faqs = [
+        { q: 'What is a looksmaxxing score?', a: 'A looksmaxxing score is a self-assessment rating from 0 to 100 that measures how well you optimize your appearance across categories like skincare, fitness, grooming, style, and confidence. It reflects effort and habits, not just genetics.' },
+        { q: 'Is this looksmaxxing quiz accurate?', a: 'This quiz evaluates 20 factors across 7 weighted categories used by grooming and self-improvement communities. It measures controllable habits and effort, giving you an honest baseline and actionable improvement areas.' },
+        { q: 'What is softmaxxing vs hardmaxxing?', a: 'Softmaxxing means improving appearance through non-invasive methods like skincare, fitness, hairstyle, and clothing. Hardmaxxing involves medical or cosmetic procedures. This quiz focuses on softmaxxing because those improvements are accessible to everyone.' },
+        { q: 'How can I improve my looksmax score?', a: 'Focus on your lowest-scoring categories first. Common quick wins include starting a skincare routine with SPF, getting a flattering haircut, wearing properly fitted clothes, strength training 3x per week, and practicing good posture.' },
+        { q: 'Is my quiz data private?', a: 'Yes, completely. This quiz runs entirely in your browser using JavaScript. No answers are sent to any server, no data is stored remotely, and no cookies are used to track you.' },
+        { q: 'What does mewing do for jawline?', a: 'Mewing is the practice of resting your tongue flat against the roof of your mouth. Proponents claim it can improve jawline definition over time by encouraging proper oral posture. Results vary and are most noticeable in younger individuals.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      TeamzTools.injectWebAppSchema({
+        slug: 'grooming/looksmaxxing-quiz',
+        title: 'Looksmaxxing Score Quiz',
+        description: 'Take a 20-question quiz to score your appearance optimization across 7 categories and get personalized improvement tips.'
+      });
+
+      TeamzTools.renderRelatedTools([
+        { slug: 'grooming/face-shape-detector', name: 'Face Shape Detector', description: 'Detect your face shape to find the best hairstyles and glasses.' },
+        { slug: 'grooming/skincare-routine-builder', name: 'Skincare Routine Builder', description: 'Build a personalized skincare routine based on your skin type.' },
+        { slug: 'grooming/beard-style-quiz', name: 'Beard Style Quiz', description: 'Find the best beard style for your face shape with a quick quiz.' },
+        { slug: 'grooming/hair-loss-assessment', name: 'Hair Loss Assessment', description: 'Assess your hair loss stage and get treatment recommendations.' },
+        { slug: 'grooming/beard-care-routine', name: 'Beard Care Routine', description: 'Get a personalized beard care routine based on your beard type.' },
+        { slug: 'grooming/beard-growth-tracker', name: 'Beard Growth Tracker', description: 'Track your beard growth progress over time with photos and measurements.' }
+      ]);
+    }
+  })();
+  </script>
+</body>
+</html>
