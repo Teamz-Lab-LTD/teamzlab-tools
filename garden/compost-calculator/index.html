@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compost C:N Ratio Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Balance your compost pile by calculating the carbon-to-nitrogen ratio. Add ingredients, get C:N ratio and fix recommendations. Free and private.">
+  <meta property="og:title" content="Compost C:N Ratio Calculator — Balance Your Pile">
+  <meta property="og:description" content="Calculate compost carbon-to-nitrogen ratio. Add greens and browns, get C:N ratio and balancing tips. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/garden/compost-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/garden.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Compost C:N Ratio Calculator — Balance Your Pile">
+  <meta name="twitter:description" content="Calculate compost carbon-to-nitrogen ratio. Add greens and browns, get C:N ratio and balancing tips. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/garden/compost-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .compost-section-label{color:var(--heading);font-size:1rem;font-weight:600;margin:0 0 .75rem;display:flex;align-items:center;gap:.5rem}
+    .compost-section-label .badge{font-size:.7rem;padding:.15rem .5rem;border-radius:10px;font-weight:600}
+    .badge-green{background:var(--heading);color:var(--bg)}
+    .badge-brown{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+    .ingredient-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.25rem}
+    .ingredient-row{display:flex;align-items:center;gap:.5rem;padding:.5rem .6rem;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+    .ingredient-row.active{border-color:var(--heading)}
+    .ingredient-row input[type="checkbox"]{accent-color:var(--heading);width:16px;height:16px;flex-shrink:0}
+    .ingredient-row .ing-name{flex:1;font-size:.85rem;color:var(--text);line-height:1.3}
+    .ingredient-row .ing-ratio{font-size:.7rem;color:var(--text-muted);white-space:nowrap}
+    .ingredient-row input[type="number"]{width:55px;padding:.3rem .4rem;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:.85rem;text-align:center;box-sizing:border-box}
+    .ingredient-row input[type="number"]:disabled{opacity:.4}
+    .compost-result{border-top:1px solid var(--border);padding-top:1.5rem;margin-top:1rem}
+    .ratio-display{text-align:center;padding:1.5rem;margin-bottom:1.25rem}
+    .ratio-value{font-size:2.5rem;font-weight:800;color:var(--heading)}
+    .ratio-label{font-size:.85rem;color:var(--text-muted);margin-top:.25rem}
+    .ratio-status{display:inline-block;padding:.35rem 1rem;border-radius:20px;font-size:.85rem;font-weight:600;margin-top:.5rem}
+    .status-perfect{background:var(--heading);color:var(--bg)}
+    .status-warn{background:var(--surface);color:var(--heading);border:2px solid var(--heading)}
+    .breakdown-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1.25rem}
+    .breakdown-stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center}
+    .breakdown-stat .bv{font-size:1.3rem;font-weight:700;color:var(--heading)}
+    .breakdown-stat .bl{font-size:.75rem;color:var(--text-muted);margin-top:.2rem}
+    .recommendation-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem}
+    .recommendation-box h4{color:var(--heading);margin:0 0 .5rem;font-size:.95rem}
+    .recommendation-box p{color:var(--text);font-size:.85rem;margin:.25rem 0;line-height:1.5}
+    .ingredient-breakdown{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1rem}
+    .ingredient-breakdown h4{color:var(--heading);margin:0 0 .75rem;font-size:.95rem}
+    .ing-row{display:flex;justify-content:space-between;padding:.3rem 0;font-size:.85rem;border-bottom:1px solid var(--border)}
+    .ing-row:last-child{border-bottom:none}
+    .ing-row .ing-r-name{color:var(--text)}
+    .ing-row .ing-r-val{color:var(--heading);font-weight:600}
+    .ratio-bar{height:24px;border-radius:12px;overflow:hidden;display:flex;margin:1rem 0}
+    .ratio-bar .bar-carbon{background:var(--heading);transition:width .3s}
+    .ratio-bar .bar-nitrogen{background:var(--border);transition:width .3s}
+    @media(max-width:600px){
+      .ingredient-grid{grid-template-columns:1fr}
+      .breakdown-grid{grid-template-columns:1fr 1fr 1fr}
+      .breakdown-stat .bv{font-size:1.1rem}
+      .ratio-value{font-size:2rem}
+      .ingredient-row .ing-name{font-size:.8rem}
+      .tool-content h2{font-size:var(--text-lg)}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Garden & Farming", "item": "https://tool.teamzlab.com/garden/"}, {"@type": "ListItem", "position": 3, "name": "Compost Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the ideal C:N ratio for compost?", "acceptedAnswer": {"@type": "Answer", "text": "The ideal carbon-to-nitrogen ratio for active composting is 25:1 to 30:1. This balance allows microorganisms to decompose organic matter efficiently, generating enough heat to kill weed seeds and pathogens within weeks."}}, {"@type": "Question", "name": "What happens if my compost has too much nitrogen?", "acceptedAnswer": {"@type": "Answer", "text": "A C:N ratio below 20:1 means excess nitrogen. The pile will smell like ammonia, become slimy, and lose nitrogen as gas. Fix this by adding carbon-rich browns like dry leaves, shredded cardboard, or straw."}}, {"@type": "Question", "name": "What happens if my compost has too much carbon?", "acceptedAnswer": {"@type": "Answer", "text": "A C:N ratio above 35:1 means excess carbon. Decomposition slows dramatically and can take months or years. Fix this by adding nitrogen-rich greens like kitchen scraps, grass clippings, or coffee grounds, and keep the pile moist."}}, {"@type": "Question", "name": "How much brown material do I mix with greens?", "acceptedAnswer": {"@type": "Answer", "text": "A general rule is 2 to 3 parts browns for every 1 part greens by volume. This typically gives a C:N ratio near 25-30:1 because browns have much higher carbon content per unit volume than greens have nitrogen."}}, {"@type": "Question", "name": "Can I compost cardboard and newspaper?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, both are excellent carbon-rich browns. Shred them into small pieces first for faster decomposition. Avoid glossy or heavily printed paper. Cardboard has a C:N ratio of about 350:1 and newspaper about 175:1."}}, {"@type": "Question", "name": "How long does composting take?", "acceptedAnswer": {"@type": "Answer", "text": "Hot composting with proper C:N balance, moisture, and weekly turning produces finished compost in 4 to 8 weeks. Cold composting with less maintenance takes 6 to 12 months. Shredding materials speeds up both methods."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Compost C:N Ratio Calculator", "description": "Balance your compost pile by calculating the carbon-to-nitrogen ratio. Add ingredients, get C:N ratio and fix recommendations.", "url": "https://tool.teamzlab.com/garden/compost-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Compost C:N Ratio Calculator</h1>
+      <p class="tool-description">Balance your compost pile by calculating the carbon-to-nitrogen ratio. Select greens and browns, enter amounts, and get instant C:N ratio analysis with recommendations to fix imbalances.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="compost-section-label">Greens (Nitrogen-Rich) <span class="badge badge-green">Low C:N</span></div>
+      <div class="ingredient-grid" id="greensGrid"></div>
+
+      <div class="compost-section-label">Browns (Carbon-Rich) <span class="badge badge-brown">High C:N</span></div>
+      <div class="ingredient-grid" id="brownsGrid"></div>
+
+      <div style="margin-top:1.25rem">
+        <button class="btn-primary" id="calcBtn" style="width:100%;margin-bottom:.75rem">Calculate C:N Ratio</button>
+        <button class="btn-secondary tool-clear-btn" id="clearBtn" style="width:100%">Clear All</button>
+      </div>
+
+      <div id="compostResult" class="compost-result" style="display:none">
+        <div class="ratio-display" id="ratioDisplay"></div>
+        <div class="ratio-bar" id="ratioBar"></div>
+        <div class="breakdown-grid" id="breakdownGrid"></div>
+        <div class="recommendation-box" id="recommendation"></div>
+        <div class="ingredient-breakdown" id="ingredientBreakdown"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Compost C:N Ratio Calculator Works</h2>
+      <p>This calculator estimates the overall carbon-to-nitrogen ratio of your compost pile based on the ingredients you add. Each organic material has a known C:N ratio — greens like kitchen scraps and grass clippings are nitrogen-rich with low ratios, while browns like dry leaves and cardboard are carbon-rich with high ratios. Enter the volume of each ingredient in buckets or gallons and the tool computes the weighted average C:N ratio instantly. All calculations run in your browser with nothing sent to any server.</p>
+
+      <h2>What Is the Ideal C:N Ratio for Compost?</h2>
+      <p>The ideal carbon-to-nitrogen ratio for active composting is between 25:1 and 30:1. At this balance, microorganisms break down organic matter efficiently, generating heat that kills weed seeds and pathogens. A ratio below 20:1 means too much nitrogen — the pile will smell like ammonia and lose valuable nitrogen as gas. A ratio above 35:1 means too much carbon — decomposition slows dramatically and can take months or years. Most gardeners aim for roughly equal volumes of greens and browns, which naturally falls near the 25 to 30:1 sweet spot because browns are much denser in carbon per unit volume.</p>
+
+      <h2>Greens vs Browns for Composting</h2>
+      <p>Greens are nitrogen-rich materials that are usually moist and fresh. Kitchen scraps, coffee grounds, fresh grass clippings, fruit and vegetable waste, fresh manure, and seaweed are all greens with C:N ratios between 15:1 and 25:1. Browns are carbon-rich materials that are typically dry and woody. Dry leaves, straw, cardboard, newspaper, wood chips, sawdust, pine needles, and corn stalks have C:N ratios between 60:1 and 400:1. A well-balanced compost pile layers these two types to achieve the optimal ratio for fast decomposition.</p>
+
+      <h2>How to Fix an Imbalanced Compost Pile</h2>
+      <p>If your compost smells bad or is slimy, it has too much nitrogen. Add browns like shredded cardboard, dry leaves, or straw to absorb moisture and raise the C:N ratio. If your pile is dry and not decomposing, it has too much carbon. Add greens like kitchen scraps or fresh grass clippings and water the pile to lower the ratio. Turn the pile every one to two weeks to introduce oxygen, which speeds up decomposition regardless of the ratio. Shredding or chopping materials into smaller pieces also accelerates breakdown by increasing surface area for microorganisms.</p>
+
+      <h2>Tips for Faster Composting</h2>
+      <p>Maintain a pile size of at least 3 feet by 3 feet by 3 feet to retain heat. Keep moisture levels similar to a wrung-out sponge — about 40 to 60 percent. Turn the pile weekly to aerate it and redistribute heat. Chop large materials into pieces under 2 inches for faster decomposition. Avoid adding meat, dairy, oils, or diseased plants as they attract pests and create odors. With proper C:N balance, moisture, and aeration, a hot compost pile can produce finished compost in 4 to 8 weeks. Cold composting with less maintenance takes 6 to 12 months.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Garden & Farming',url:'/garden/'},{name:'Compost Calculator'}];
+    var FAQS = [
+      {q:'What is the ideal C:N ratio for compost?',a:'The ideal carbon-to-nitrogen ratio for active composting is 25:1 to 30:1. This balance allows microorganisms to decompose organic matter efficiently, generating enough heat to kill weed seeds and pathogens within weeks.'},
+      {q:'What happens if my compost has too much nitrogen?',a:'A C:N ratio below 20:1 means excess nitrogen. The pile will smell like ammonia, become slimy, and lose nitrogen as gas. Fix this by adding carbon-rich browns like dry leaves, shredded cardboard, or straw.'},
+      {q:'What happens if my compost has too much carbon?',a:'A C:N ratio above 35:1 means excess carbon. Decomposition slows dramatically and can take months or years. Fix this by adding nitrogen-rich greens like kitchen scraps, grass clippings, or coffee grounds, and keep the pile moist.'},
+      {q:'How much brown material do I mix with greens?',a:'A general rule is 2 to 3 parts browns for every 1 part greens by volume. This typically gives a C:N ratio near 25-30:1 because browns have much higher carbon content per unit volume than greens have nitrogen.'},
+      {q:'Can I compost cardboard and newspaper?',a:'Yes, both are excellent carbon-rich browns. Shred them into small pieces first for faster decomposition. Avoid glossy or heavily printed paper. Cardboard has a C:N ratio of about 350:1 and newspaper about 175:1.'},
+      {q:'How long does composting take?',a:'Hot composting with proper C:N balance, moisture, and weekly turning produces finished compost in 4 to 8 weeks. Cold composting with less maintenance takes 6 to 12 months. Shredding materials speeds up both methods.'}
+    ];
+    var RELATED_TOOLS = [
+      {slug:'garden/raised-bed-soil-calculator',name:'Raised Bed Soil Calculator',description:'Calculate soil volume for raised beds'},
+      {slug:'garden/mulch-calculator',name:'Mulch & Compost Calculator',description:'Calculate mulch and compost volume needed'},
+      {slug:'garden/fertilizer-calculator',name:'Fertilizer Calculator',description:'Calculate the right fertilizer amount'},
+      {slug:'garden/garden-savings-calculator',name:'Garden Yield & Savings Calculator',description:'Estimate harvest yield and grocery savings'},
+      {slug:'garden/planting-calendar',name:'Planting Calendar & Frost Dates',description:'Find planting dates by USDA zone'},
+      {slug:'garden/garden-watering-schedule',name:'Garden Watering Schedule',description:'Generate a weekly watering plan'}
+    ];
+
+    /* Ingredient database: {name, cn (C:N ratio), type} */
+    var GREENS = [
+      {id:'kitchen-scraps', name:'Kitchen Scraps', cn:15},
+      {id:'grass-clippings', name:'Fresh Grass Clippings', cn:20},
+      {id:'coffee-grounds', name:'Coffee Grounds', cn:20},
+      {id:'fruit-veg-waste', name:'Fruit & Veg Waste', cn:25},
+      {id:'fresh-manure', name:'Fresh Manure', cn:15},
+      {id:'seaweed', name:'Seaweed', cn:19}
+    ];
+    var BROWNS = [
+      {id:'dry-leaves', name:'Dry Leaves', cn:60},
+      {id:'straw', name:'Straw', cn:80},
+      {id:'cardboard', name:'Cardboard', cn:350},
+      {id:'newspaper', name:'Newspaper', cn:175},
+      {id:'wood-chips', name:'Wood Chips', cn:400},
+      {id:'sawdust', name:'Sawdust', cn:325},
+      {id:'pine-needles', name:'Pine Needles', cn:80},
+      {id:'corn-stalks', name:'Corn Stalks', cn:60},
+      {id:'paper', name:'Paper', cn:170},
+      {id:'dryer-lint', name:'Dryer Lint', cn:100}
+    ];
+
+    function renderIngredients(list, containerId) {
+      var container = document.getElementById(containerId);
+      container.innerHTML = list.map(function(ing) {
+        return '<div class="ingredient-row" id="row-' + ing.id + '">' +
+          '<input type="checkbox" id="chk-' + ing.id + '">' +
+          '<span class="ing-name">' + ing.name + '</span>' +
+          '<span class="ing-ratio">' + ing.cn + ':1</span>' +
+          '<input type="number" id="qty-' + ing.id + '" min="0" step="0.5" placeholder="0" disabled title="Buckets">' +
+        '</div>';
+      }).join('');
+
+      list.forEach(function(ing) {
+        var chk = document.getElementById('chk-' + ing.id);
+        var qty = document.getElementById('qty-' + ing.id);
+        var row = document.getElementById('row-' + ing.id);
+        chk.addEventListener('change', function() {
+          qty.disabled = !chk.checked;
+          row.classList.toggle('active', chk.checked);
+          if (chk.checked && (!qty.value || qty.value === '0')) qty.value = '1';
+          if (!chk.checked) qty.value = '';
+        });
+      });
+    }
+
+    renderIngredients(GREENS, 'greensGrid');
+    renderIngredients(BROWNS, 'brownsGrid');
+
+    function getSelected(list) {
+      var selected = [];
+      list.forEach(function(ing) {
+        var chk = document.getElementById('chk-' + ing.id);
+        var qty = document.getElementById('qty-' + ing.id);
+        if (chk.checked) {
+          var amount = parseFloat(qty.value) || 0;
+          if (amount > 0) selected.push({name: ing.name, cn: ing.cn, amount: amount, id: ing.id});
+        }
+      });
+      return selected;
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', function() {
+      var greens = getSelected(GREENS);
+      var browns = getSelected(BROWNS);
+      var all = greens.concat(browns);
+
+      if (all.length === 0) {
+        if (window.showToast) window.showToast('Select at least one ingredient and enter an amount');
+        return;
+      }
+
+      /* C:N ratio calculation:
+         Each ingredient contributes carbon = amount * cn and nitrogen = amount * 1
+         Overall ratio = total_carbon / total_nitrogen */
+      var totalCarbon = 0;
+      var totalNitrogen = 0;
+      var totalVolume = 0;
+
+      all.forEach(function(ing) {
+        totalCarbon += ing.amount * ing.cn;
+        totalNitrogen += ing.amount * 1;
+        totalVolume += ing.amount;
+      });
+
+      var ratio = totalNitrogen > 0 ? totalCarbon / totalNitrogen : 0;
+
+      /* Determine status */
+      var statusText, statusClass;
+      if (ratio < 20) {
+        statusText = 'Too Much Nitrogen';
+        statusClass = 'status-warn';
+      } else if (ratio >= 20 && ratio <= 35) {
+        statusText = 'Perfect Range';
+        statusClass = 'status-perfect';
+      } else {
+        statusText = 'Too Much Carbon';
+        statusClass = 'status-warn';
+      }
+
+      /* Ratio display */
+      document.getElementById('ratioDisplay').innerHTML =
+        '<div class="ratio-value">' + ratio.toFixed(1) + ':1</div>' +
+        '<div class="ratio-label">Carbon to Nitrogen Ratio</div>' +
+        '<div class="ratio-status ' + statusClass + '">' + statusText + '</div>';
+
+      /* Ratio bar */
+      var carbonPct = Math.min((totalCarbon / (totalCarbon + totalNitrogen)) * 100, 99);
+      document.getElementById('ratioBar').innerHTML =
+        '<div class="bar-carbon" style="width:' + carbonPct.toFixed(1) + '%"></div>' +
+        '<div class="bar-nitrogen" style="width:' + (100 - carbonPct).toFixed(1) + '%"></div>';
+
+      /* Breakdown stats */
+      document.getElementById('breakdownGrid').innerHTML =
+        '<div class="breakdown-stat"><div class="bv">' + totalCarbon.toFixed(0) + '</div><div class="bl">Total Carbon Units</div></div>' +
+        '<div class="breakdown-stat"><div class="bv">' + totalNitrogen.toFixed(1) + '</div><div class="bl">Total Nitrogen Units</div></div>' +
+        '<div class="breakdown-stat"><div class="bv">' + totalVolume.toFixed(1) + '</div><div class="bl">Total Buckets</div></div>';
+
+      /* Recommendations */
+      var recHTML = '<h4>Recommendation</h4>';
+      if (ratio < 20) {
+        /* Need more carbon — suggest adding dry leaves (60:1) */
+        var targetRatio = 27.5;
+        /* targetRatio = (totalCarbon + x*60) / (totalNitrogen + x)
+           targetRatio*(totalNitrogen + x) = totalCarbon + 60*x
+           targetRatio*totalNitrogen + targetRatio*x = totalCarbon + 60*x
+           targetRatio*totalNitrogen - totalCarbon = 60*x - targetRatio*x
+           x = (targetRatio*totalNitrogen - totalCarbon) / (60 - targetRatio) */
+        var needLeaves = (targetRatio * totalNitrogen - totalCarbon) / (60 - targetRatio);
+        if (needLeaves < 0) needLeaves = 0;
+        var needStraw = (targetRatio * totalNitrogen - totalCarbon) / (80 - targetRatio);
+        if (needStraw < 0) needStraw = 0;
+        recHTML += '<p>Your pile has too much nitrogen (green material). To reach the ideal 25-30:1 range:</p>';
+        recHTML += '<p>Add <strong>' + needLeaves.toFixed(1) + ' buckets of dry leaves</strong> (60:1) or <strong>' + needStraw.toFixed(1) + ' buckets of straw</strong> (80:1) to balance the ratio.</p>';
+        recHTML += '<p>Without enough carbon, your pile may smell like ammonia and lose nitrogen as gas.</p>';
+      } else if (ratio > 35) {
+        /* Need more nitrogen — suggest kitchen scraps (15:1) */
+        var targetRatio2 = 27.5;
+        var needScraps = (totalCarbon - targetRatio2 * totalNitrogen) / (targetRatio2 - 15);
+        if (needScraps < 0) needScraps = 0;
+        var needGrass = (totalCarbon - targetRatio2 * totalNitrogen) / (targetRatio2 - 20);
+        if (needGrass < 0) needGrass = 0;
+        recHTML += '<p>Your pile has too much carbon (brown material). To reach the ideal 25-30:1 range:</p>';
+        recHTML += '<p>Add <strong>' + needScraps.toFixed(1) + ' buckets of kitchen scraps</strong> (15:1) or <strong>' + needGrass.toFixed(1) + ' buckets of fresh grass clippings</strong> (20:1) to balance the ratio.</p>';
+        recHTML += '<p>Too much carbon slows decomposition. Keep the pile moist and turn it weekly.</p>';
+      } else {
+        recHTML += '<p>Your compost pile is well balanced. The C:N ratio of ' + ratio.toFixed(1) + ':1 is in the ideal 25-30:1 range for efficient composting.</p>';
+        recHTML += '<p>Keep the pile moist like a wrung-out sponge and turn it every 1-2 weeks. You should have finished compost in 4-8 weeks.</p>';
+      }
+      document.getElementById('recommendation').innerHTML = recHTML;
+
+      /* Ingredient breakdown table */
+      var brkHTML = '<h4>Ingredient Breakdown</h4>';
+      all.forEach(function(ing) {
+        var carbon = ing.amount * ing.cn;
+        var pct = totalCarbon > 0 ? ((carbon / totalCarbon) * 100).toFixed(1) : '0';
+        brkHTML += '<div class="ing-row"><span class="ing-r-name">' + ing.name + ' (' + ing.amount + ' buckets, ' + ing.cn + ':1)</span><span class="ing-r-val">' + pct + '% of carbon</span></div>';
+      });
+      document.getElementById('ingredientBreakdown').innerHTML = brkHTML;
+
+      document.getElementById('compostResult').style.display = 'block';
+      document.getElementById('compostResult').scrollIntoView({behavior:'smooth',block:'start'});
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', function() {
+      GREENS.concat(BROWNS).forEach(function(ing) {
+        var chk = document.getElementById('chk-' + ing.id);
+        var qty = document.getElementById('qty-' + ing.id);
+        var row = document.getElementById('row-' + ing.id);
+        if (chk) { chk.checked = false; }
+        if (qty) { qty.value = ''; qty.disabled = true; }
+        if (row) { row.classList.remove('active'); }
+      });
+      document.getElementById('compostResult').style.display = 'none';
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      TeamzTools.injectWebAppSchema({slug:'garden/compost-calculator',title:'Compost C:N Ratio Calculator',description:'Balance your compost pile by calculating the carbon-to-nitrogen ratio. Add ingredients, get C:N ratio and fix recommendations.'});
+    });
+  </script>
+</body>
+</html>

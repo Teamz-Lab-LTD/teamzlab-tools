@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Garden Yield &amp; Savings Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how much money you save growing your own vegetables vs buying from the grocery store. Free, private, browser-based garden ROI tool.">
+  <meta property="og:title" content="Garden Yield & Savings Calculator — Save Money Growing Veggies">
+  <meta property="og:description" content="Calculate grocery savings from your home garden. Compare yield, costs and ROI for 20+ crops. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/garden/garden-savings-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/garden.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Garden Yield & Savings Calculator — Save Money Growing Veggies">
+  <meta name="twitter:description" content="Calculate grocery savings from your home garden. Compare yield, costs and ROI for 20+ crops. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/garden/garden-savings-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .crop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.75rem;margin-bottom:1.5rem}
+    .crop-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.75rem;display:flex;align-items:center;gap:.6rem;cursor:pointer;transition:border-color .2s}
+    .crop-item:hover{border-color:var(--heading)}
+    .crop-item.selected{border-color:var(--heading);background:var(--bg)}
+    .crop-item input[type="checkbox"]{accent-color:var(--heading);width:18px;height:18px;flex-shrink:0;cursor:pointer}
+    .crop-item .crop-info{flex:1;min-width:0}
+    .crop-item .crop-name{font-weight:600;color:var(--heading);font-size:.9rem}
+    .crop-item .crop-meta{font-size:.75rem;color:var(--text-muted)}
+    .crop-item .crop-qty{width:55px;padding:.3rem .4rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:.85rem;text-align:center;box-sizing:border-box}
+    .startup-form{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+    .startup-form label{display:block;color:var(--text-muted);font-size:.85rem;margin-bottom:.3rem}
+    .startup-form input{width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.95rem;box-sizing:border-box}
+    .gs-result{border-top:1px solid var(--border);padding-top:1.5rem;margin-top:1rem}
+    .gs-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem}
+    .gs-stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center}
+    .gs-stat .sv{font-size:1.4rem;font-weight:700;color:var(--heading)}
+    .gs-stat .sl{font-size:.75rem;color:var(--text-muted);margin-top:.2rem}
+    .gs-stat.highlight{background:var(--heading);border-color:var(--heading)}
+    .gs-stat.highlight .sv,.gs-stat.highlight .sl{color:var(--bg)}
+    .gs-table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}
+    .gs-table th{text-align:left;padding:.5rem;color:var(--text-muted);font-size:.8rem;border-bottom:1px solid var(--border);font-weight:500}
+    .gs-table td{padding:.5rem;color:var(--text);font-size:.9rem;border-bottom:1px solid var(--border)}
+    .gs-table td:last-child{font-weight:600;color:var(--heading)}
+    .gs-table tr:hover{background:var(--surface)}
+    .breakeven-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.5rem}
+    .breakeven-box h3{color:var(--heading);font-size:1rem;margin:0 0 .5rem}
+    .breakeven-box p{color:var(--text);font-size:.9rem;margin:.25rem 0;line-height:1.5}
+    .select-actions{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+    .select-actions button{padding:.4rem .8rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.8rem;transition:all .2s}
+    .select-actions button:hover{border-color:var(--heading);color:var(--heading)}
+    @media(max-width:600px){
+      .crop-grid{grid-template-columns:1fr}
+      .startup-form{grid-template-columns:1fr}
+      .gs-summary{grid-template-columns:1fr 1fr}
+      .gs-stat .sv{font-size:1.2rem}
+      .gs-table{font-size:.8rem}
+      .gs-table th,.gs-table td{padding:.4rem .3rem}
+      .select-actions{flex-direction:column}
+      .select-actions button{width:100%}
+      .tool-content h2{font-size:var(--text-lg)}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Garden & Farming", "item": "https://tool.teamzlab.com/garden/"}, {"@type": "ListItem", "position": 3, "name": "Garden Savings Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much money can I save with a home garden?", "acceptedAnswer": {"@type": "Answer", "text": "A well-maintained home garden can save $600-$1,200 per year on groceries. High-value crops like tomatoes, herbs, and leafy greens offer the biggest savings because their store prices are highest relative to growing costs."}}, {"@type": "Question", "name": "What are the best vegetables to grow to save money?", "acceptedAnswer": {"@type": "Answer", "text": "Herbs (basil, cilantro) save the most per plant because store prices are $12-15 per pound. Tomatoes, peppers, kale, spinach and strawberries also deliver excellent savings. Focus on crops you eat regularly for maximum real-world savings."}}, {"@type": "Question", "name": "How much does it cost to start a vegetable garden?", "acceptedAnswer": {"@type": "Answer", "text": "A beginner garden costs $80-200 for soil, seeds and basic tools. Raised beds add $50-200 per bed. Most gardeners break even within the first season. Year two costs drop to $30-80 since tools last for years and you can save seeds."}}, {"@type": "Question", "name": "How many tomato plants do I need for a family?", "acceptedAnswer": {"@type": "Answer", "text": "For a family of four, 4-6 tomato plants typically produce enough fresh tomatoes for the season plus extra for canning. Each plant yields about 10 pounds of tomatoes. For sauce and canning, plan on 8-12 plants."}}, {"@type": "Question", "name": "Is it really cheaper to grow your own vegetables?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, for most crops. A $2 tomato seed packet produces plants worth $100+ in grocery store tomatoes. The key is growing what you actually eat and choosing high-value crops. Low-value crops like corn or potatoes save less because store prices are already low."}}, {"@type": "Question", "name": "How do I calculate garden ROI?", "acceptedAnswer": {"@type": "Answer", "text": "Subtract your total startup costs (soil, seeds, tools) from your total harvest value (yield in pounds multiplied by store price per pound). Divide the net savings by your costs and multiply by 100 for ROI percentage. Most gardens see 200-500% ROI."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Garden Yield & Savings Calculator", "description": "Calculate how much money you save growing your own vegetables vs buying from the grocery store. Free, private, browser-based garden ROI tool.", "url": "https://tool.teamzlab.com/garden/garden-savings-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Garden Yield &amp; Savings Calculator</h1>
+      <p class="tool-description">Find out how much money you save growing your own vegetables compared to buying from the grocery store. Select your crops, enter plant counts, and see your total yield, savings and ROI.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <h3 style="color:var(--heading);margin:0 0 .5rem;font-size:1rem">Select Your Crops</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin:0 0 1rem">Check each crop you plan to grow and enter the number of plants.</p>
+
+      <div class="select-actions">
+        <button id="selectAllBtn" type="button">Select All</button>
+        <button id="selectNoneBtn" type="button">Deselect All</button>
+        <button id="selectPopularBtn" type="button">Popular Picks</button>
+      </div>
+
+      <div class="crop-grid" id="cropGrid"></div>
+
+      <h3 style="color:var(--heading);margin:0 0 .5rem;font-size:1rem">Startup Costs (optional)</h3>
+      <p style="color:var(--text-muted);font-size:.85rem;margin:0 0 1rem">Estimate your upfront garden investment to calculate ROI and break-even.</p>
+      <div class="startup-form">
+        <div>
+          <label for="costSoil">Soil &amp; Compost ($)</label>
+          <input type="number" id="costSoil" placeholder="50" min="0" step="1" value="50">
+        </div>
+        <div>
+          <label for="costSeeds">Seeds &amp; Starts ($)</label>
+          <input type="number" id="costSeeds" placeholder="30" min="0" step="1" value="30">
+        </div>
+        <div>
+          <label for="costTools">Tools &amp; Supplies ($)</label>
+          <input type="number" id="costTools" placeholder="40" min="0" step="1" value="40">
+        </div>
+      </div>
+
+      <button class="btn-primary" id="calcBtn" style="width:100%;margin-bottom:1rem">Calculate Savings</button>
+      <button class="btn-secondary tool-clear-btn" id="clearBtn" style="width:100%">Clear</button>
+
+      <div id="gsResult" class="gs-result" style="display:none">
+        <div class="gs-summary" id="gsSummary"></div>
+        <h3 style="color:var(--heading);font-size:1rem;margin:1.5rem 0 .75rem">Crop Breakdown</h3>
+        <div style="overflow-x:auto">
+          <table class="gs-table">
+            <thead>
+              <tr><th>Crop</th><th>Plants</th><th>Yield (lbs)</th><th>Store Price/lb</th><th>Savings</th></tr>
+            </thead>
+            <tbody id="gsTableBody"></tbody>
+          </table>
+        </div>
+        <div class="breakeven-box" id="breakevenBox"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Garden Savings Calculator Works</h2>
+      <p>This calculator compares the cost of growing vegetables at home versus buying them at grocery store prices. Select the crops you plan to grow, enter how many plants you have, and the tool calculates your expected yield in pounds based on average harvest data for each crop. It then multiplies your yield by current 2026 grocery store prices to show your total savings. Add your startup costs for soil, seeds and tools to see your net return on investment and break-even point. All calculations run instantly in your browser with no data stored.</p>
+
+      <h2>Why Growing Your Own Vegetables Saves Money</h2>
+      <p>A single tomato plant can produce 10 pounds of tomatoes worth about $35 at store prices — from a seed that costs pennies. Herbs like basil and cilantro are even more dramatic: grocery store herbs cost $12-15 per pound, but a single plant keeps producing for months. The USDA estimates that a well-maintained home garden yields $600-$1,200 worth of produce per year from a 600 square foot plot. The biggest savings come from high-value crops like tomatoes, peppers, herbs, spinach, kale and strawberries where store markups are highest.</p>
+
+      <h2>Best Crops for Maximum Savings</h2>
+      <p>Herbs deliver the highest dollar-per-plant return because store prices for fresh herbs are extremely high ($12-15/lb). Tomatoes are the classic garden money-saver producing 10+ pounds per plant at $3.50/lb store price. Leafy greens like spinach and kale offer excellent value because they regrow after cutting, giving you multiple harvests from one plant. Strawberries, peppers, and cucumbers round out the top savings crops. Root vegetables like carrots, potatoes and onions save less per pound but are easy to grow in bulk and store well for months after harvest.</p>
+
+      <h2>Estimating Your Garden Startup Costs</h2>
+      <p>First-year garden costs are highest because you need soil amendments, basic tools and seeds or starts. A typical beginner garden setup costs $80-200 depending on size. Raised beds add $50-200 per bed for materials. However, most of these are one-time purchases — tools last for years, and you can save seeds from this year's harvest for next year. By year two, your only recurring costs are seeds ($10-30), compost ($20-50) and any replacement supplies. Most home gardeners break even within the first growing season and see pure profit by year two.</p>
+
+      <h2>Tips to Maximize Your Garden ROI</h2>
+      <p>Focus on high-value crops that you actually eat regularly — there is no savings in growing corn if you never eat it. Succession plant lettuce, spinach and radishes every 2-3 weeks for continuous harvests. Save seeds from open-pollinated varieties to eliminate seed costs in future years. Compost kitchen scraps to reduce or eliminate soil amendment purchases. Use companion planting to improve yields naturally without buying extra fertilizer. Start seeds indoors 6-8 weeks before the last frost to get a head start on the growing season and extend your harvest window.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Garden & Farming',url:'/garden/'},{name:'Garden Savings Calculator'}];
+    var FAQS = [
+      {q:'How much money can I save with a home garden?',a:'A well-maintained home garden can save $600-$1,200 per year on groceries. High-value crops like tomatoes, herbs, and leafy greens offer the biggest savings because their store prices are highest relative to growing costs.'},
+      {q:'What are the best vegetables to grow to save money?',a:'Herbs (basil, cilantro) save the most per plant because store prices are $12-15 per pound. Tomatoes, peppers, kale, spinach and strawberries also deliver excellent savings. Focus on crops you eat regularly for maximum real-world savings.'},
+      {q:'How much does it cost to start a vegetable garden?',a:'A beginner garden costs $80-200 for soil, seeds and basic tools. Raised beds add $50-200 per bed. Most gardeners break even within the first season. Year two costs drop to $30-80 since tools last for years and you can save seeds.'},
+      {q:'How many tomato plants do I need for a family?',a:'For a family of four, 4-6 tomato plants typically produce enough fresh tomatoes for the season plus extra for canning. Each plant yields about 10 pounds of tomatoes. For sauce and canning, plan on 8-12 plants.'},
+      {q:'Is it really cheaper to grow your own vegetables?',a:'Yes, for most crops. A $2 tomato seed packet produces plants worth $100+ in grocery store tomatoes. The key is growing what you actually eat and choosing high-value crops. Low-value crops like corn or potatoes save less because store prices are already low.'},
+      {q:'How do I calculate garden ROI?',a:'Subtract your total startup costs (soil, seeds, tools) from your total harvest value (yield in pounds multiplied by store price per pound). Divide the net savings by your costs and multiply by 100 for ROI percentage. Most gardens see 200-500% ROI.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Raised Bed Soil Calculator',url:'/garden/raised-bed-soil-calculator/',desc:'Calculate how much soil you need for any raised bed'},
+      {name:'Planting Calendar',url:'/garden/planting-calendar/',desc:'Find the best planting dates for your zone'},
+      {name:'Companion Planting Checker',url:'/garden/companion-planting-checker/',desc:'Check which plants grow well together'},
+      {name:'Plant Spacing Calculator',url:'/garden/plant-spacing-calculator/',desc:'Find how many plants fit in your garden bed'},
+      {name:'Seed Starting Calculator',url:'/garden/seed-starting-calculator/',desc:'Know when to start seeds indoors'},
+      {name:'Fertilizer Calculator',url:'/garden/fertilizer-calculator/',desc:'Calculate the right fertilizer amount for your garden'}
+    ];
+
+    var CROPS = [
+      {id:'tomato',name:'Tomato',emoji:'&#127813;',yieldPerPlant:10,pricePerLb:3.50,popular:true},
+      {id:'pepper',name:'Pepper',emoji:'&#127798;',yieldPerPlant:5,pricePerLb:3.00,popular:true},
+      {id:'lettuce',name:'Lettuce',emoji:'&#129388;',yieldPerPlant:2,pricePerLb:3.50,popular:true},
+      {id:'carrot',name:'Carrot',emoji:'&#129365;',yieldPerPlant:1,pricePerLb:2.00},
+      {id:'beans',name:'Beans',emoji:'&#129753;',yieldPerPlant:3,pricePerLb:3.00},
+      {id:'cucumber',name:'Cucumber',emoji:'&#129362;',yieldPerPlant:5,pricePerLb:2.50,popular:true},
+      {id:'squash',name:'Squash',emoji:'&#129747;',yieldPerPlant:8,pricePerLb:2.00},
+      {id:'zucchini',name:'Zucchini',emoji:'&#129747;',yieldPerPlant:8,pricePerLb:2.50},
+      {id:'basil',name:'Basil',emoji:'&#127807;',yieldPerPlant:0.5,pricePerLb:15.00,popular:true},
+      {id:'broccoli',name:'Broccoli',emoji:'&#129382;',yieldPerPlant:1.5,pricePerLb:3.00},
+      {id:'kale',name:'Kale',emoji:'&#129388;',yieldPerPlant:3,pricePerLb:4.00,popular:true},
+      {id:'spinach',name:'Spinach',emoji:'&#129388;',yieldPerPlant:1,pricePerLb:5.00},
+      {id:'peas',name:'Peas',emoji:'&#129753;',yieldPerPlant:2,pricePerLb:4.00},
+      {id:'corn',name:'Corn',emoji:'&#127805;',yieldPerPlant:2,pricePerLb:1.50},
+      {id:'radish',name:'Radish',emoji:'&#129385;',yieldPerPlant:0.5,pricePerLb:3.00},
+      {id:'onion',name:'Onion',emoji:'&#129476;',yieldPerPlant:1,pricePerLb:1.50},
+      {id:'watermelon',name:'Watermelon',emoji:'&#127817;',yieldPerPlant:15,pricePerLb:0.50},
+      {id:'eggplant',name:'Eggplant',emoji:'&#127814;',yieldPerPlant:5,pricePerLb:3.00},
+      {id:'strawberry',name:'Strawberry',emoji:'&#127827;',yieldPerPlant:1,pricePerLb:5.00,popular:true},
+      {id:'potato',name:'Potato',emoji:'&#129364;',yieldPerPlant:5,pricePerLb:1.50},
+      {id:'cilantro',name:'Cilantro',emoji:'&#127807;',yieldPerPlant:0.3,pricePerLb:12.00}
+    ];
+
+    // Build crop grid
+    var gridHTML = '';
+    CROPS.forEach(function(c) {
+      gridHTML += '<div class="crop-item" data-crop="' + c.id + '">' +
+        '<input type="checkbox" id="chk_' + c.id + '">' +
+        '<div class="crop-info">' +
+          '<div class="crop-name">' + c.emoji + ' ' + c.name + '</div>' +
+          '<div class="crop-meta">' + c.yieldPerPlant + ' lbs/plant &middot; $' + c.pricePerLb.toFixed(2) + '/lb</div>' +
+        '</div>' +
+        '<input type="number" class="crop-qty" id="qty_' + c.id + '" placeholder="0" min="0" step="1" value="">' +
+      '</div>';
+    });
+    document.getElementById('cropGrid').innerHTML = gridHTML;
+
+    // Click crop item to toggle checkbox
+    document.querySelectorAll('.crop-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        if (e.target.tagName === 'INPUT') return;
+        var chk = item.querySelector('input[type="checkbox"]');
+        chk.checked = !chk.checked;
+        item.classList.toggle('selected', chk.checked);
+        if (chk.checked && !item.querySelector('.crop-qty').value) {
+          item.querySelector('.crop-qty').value = '2';
+          item.querySelector('.crop-qty').focus();
+        }
+      });
+      item.querySelector('input[type="checkbox"]').addEventListener('change', function() {
+        item.classList.toggle('selected', this.checked);
+        if (this.checked && !item.querySelector('.crop-qty').value) {
+          item.querySelector('.crop-qty').value = '2';
+        }
+      });
+    });
+
+    // Select all / none / popular
+    document.getElementById('selectAllBtn').addEventListener('click', function() {
+      document.querySelectorAll('.crop-item').forEach(function(item) {
+        var chk = item.querySelector('input[type="checkbox"]');
+        chk.checked = true;
+        item.classList.add('selected');
+        if (!item.querySelector('.crop-qty').value) item.querySelector('.crop-qty').value = '2';
+      });
+    });
+    document.getElementById('selectNoneBtn').addEventListener('click', function() {
+      document.querySelectorAll('.crop-item').forEach(function(item) {
+        var chk = item.querySelector('input[type="checkbox"]');
+        chk.checked = false;
+        item.classList.remove('selected');
+      });
+    });
+    document.getElementById('selectPopularBtn').addEventListener('click', function() {
+      CROPS.forEach(function(c) {
+        var chk = document.getElementById('chk_' + c.id);
+        var item = chk.closest('.crop-item');
+        if (c.popular) {
+          chk.checked = true;
+          item.classList.add('selected');
+          if (!document.getElementById('qty_' + c.id).value) document.getElementById('qty_' + c.id).value = '3';
+        } else {
+          chk.checked = false;
+          item.classList.remove('selected');
+        }
+      });
+    });
+
+    // Calculate
+    document.getElementById('calcBtn').addEventListener('click', function() {
+      var selected = [];
+      var totalYield = 0;
+      var totalValue = 0;
+
+      CROPS.forEach(function(c) {
+        var chk = document.getElementById('chk_' + c.id);
+        if (!chk.checked) return;
+        var qty = parseInt(document.getElementById('qty_' + c.id).value) || 0;
+        if (qty <= 0) return;
+        var yld = qty * c.yieldPerPlant;
+        var val = yld * c.pricePerLb;
+        totalYield += yld;
+        totalValue += val;
+        selected.push({name: c.name, emoji: c.emoji, qty: qty, yld: yld, price: c.pricePerLb, val: val});
+      });
+
+      if (selected.length === 0) {
+        if (window.showToast) window.showToast('Please select at least one crop and enter plant count');
+        return;
+      }
+
+      var costSoil = parseFloat(document.getElementById('costSoil').value) || 0;
+      var costSeeds = parseFloat(document.getElementById('costSeeds').value) || 0;
+      var costTools = parseFloat(document.getElementById('costTools').value) || 0;
+      var totalCost = costSoil + costSeeds + costTools;
+      var netSavings = totalValue - totalCost;
+      var roi = totalCost > 0 ? ((netSavings / totalCost) * 100) : 0;
+
+      // Summary stats
+      document.getElementById('gsSummary').innerHTML =
+        '<div class="gs-stat highlight"><div class="sv">$' + netSavings.toFixed(0) + '</div><div class="sl">Net Savings</div></div>' +
+        '<div class="gs-stat"><div class="sv">$' + totalValue.toFixed(0) + '</div><div class="sl">Harvest Value</div></div>' +
+        '<div class="gs-stat"><div class="sv">' + totalYield.toFixed(1) + '</div><div class="sl">Total lbs</div></div>' +
+        '<div class="gs-stat"><div class="sv">' + selected.length + '</div><div class="sl">Crops</div></div>' +
+        '<div class="gs-stat"><div class="sv">$' + totalCost.toFixed(0) + '</div><div class="sl">Startup Cost</div></div>' +
+        '<div class="gs-stat"><div class="sv">' + (roi > 0 ? roi.toFixed(0) + '%' : 'N/A') + '</div><div class="sl">ROI</div></div>';
+
+      // Table
+      selected.sort(function(a, b) { return b.val - a.val; });
+      var tbody = '';
+      selected.forEach(function(s) {
+        tbody += '<tr><td>' + s.emoji + ' ' + s.name + '</td><td>' + s.qty + '</td><td>' + s.yld.toFixed(1) + '</td><td>$' + s.price.toFixed(2) + '</td><td>$' + s.val.toFixed(2) + '</td></tr>';
+      });
+      tbody += '<tr style="font-weight:700;border-top:2px solid var(--border)"><td>Total</td><td></td><td>' + totalYield.toFixed(1) + '</td><td></td><td>$' + totalValue.toFixed(2) + '</td></tr>';
+      document.getElementById('gsTableBody').innerHTML = tbody;
+
+      // Break-even
+      var beHTML = '<h3>Break-Even Analysis</h3>';
+      if (totalCost <= 0) {
+        beHTML += '<p>No startup costs entered — you are saving from day one.</p>';
+      } else if (netSavings > 0) {
+        var pctToBreakEven = (totalCost / totalValue) * 100;
+        beHTML += '<p>Your garden pays for itself when you harvest just <strong>' + pctToBreakEven.toFixed(0) + '%</strong> of the expected yield.</p>';
+        beHTML += '<p>After covering $' + totalCost.toFixed(0) + ' in startup costs, you net <strong>$' + netSavings.toFixed(0) + ' in savings</strong> — a ' + roi.toFixed(0) + '% return on investment.</p>';
+        beHTML += '<p>By year two, with minimal recurring costs ($30-80 for seeds and compost), your savings could exceed <strong>$' + (totalValue - 50).toFixed(0) + '</strong>.</p>';
+      } else {
+        beHTML += '<p>Your startup costs ($' + totalCost.toFixed(0) + ') exceed your first-year harvest value ($' + totalValue.toFixed(0) + '). Consider adding more high-value crops like herbs, tomatoes or leafy greens to improve your return.</p>';
+        beHTML += '<p>By year two, costs drop significantly (tools are reusable, save seeds) so most gardens become profitable in the second season.</p>';
+      }
+      document.getElementById('breakevenBox').innerHTML = beHTML;
+
+      document.getElementById('gsResult').style.display = 'block';
+      document.getElementById('gsResult').scrollIntoView({behavior:'smooth',block:'start'});
+    });
+
+    // Clear
+    document.getElementById('clearBtn').addEventListener('click', function() {
+      document.querySelectorAll('.crop-item').forEach(function(item) {
+        item.querySelector('input[type="checkbox"]').checked = false;
+        item.classList.remove('selected');
+        item.querySelector('.crop-qty').value = '';
+      });
+      document.getElementById('costSoil').value = '';
+      document.getElementById('costSeeds').value = '';
+      document.getElementById('costTools').value = '';
+      document.getElementById('gsResult').style.display = 'none';
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      TeamzTools.injectWebAppSchema({slug:'garden/garden-savings-calculator',title:'Garden Yield & Savings Calculator',description:'Calculate how much money you save growing your own vegetables vs buying from the grocery store. Free, private, browser-based garden ROI tool.'});
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harvest Date Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Estimate when your crops will be ready to harvest based on planting date and method. Track multiple crops on a timeline. Free, private, browser-based.">
+  <meta property="og:title" content="Harvest Date Calculator — Estimate Crop Harvest Dates">
+  <meta property="og:description" content="Calculate harvest dates for 25+ crops based on planting date and method. Track multiple crops, sort by earliest harvest. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/garden/harvest-date-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/garden.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Harvest Date Calculator — Estimate Crop Harvest Dates">
+  <meta name="twitter:description" content="Calculate harvest dates for 25+ crops based on planting date and method. Track multiple crops, sort by earliest harvest. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/garden/harvest-date-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .hdc-form{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+    .hdc-form label{display:block;color:var(--text-muted);font-size:.85rem;margin-bottom:.3rem}
+    .hdc-form select,.hdc-form input{width:100%;padding:.6rem .75rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:.95rem;box-sizing:border-box}
+    .hdc-actions{display:flex;gap:.75rem;margin-bottom:1.5rem}
+    .hdc-actions .btn-primary,.hdc-actions .btn-secondary{flex:1}
+    .hdc-result{border-top:1px solid var(--border);padding-top:1.5rem;margin-top:1rem}
+    .hdc-crop-list{display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.5rem}
+    .hdc-crop-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+    .hdc-crop-info{flex:1;min-width:0}
+    .hdc-crop-name{font-weight:600;color:var(--heading);font-size:1rem;margin-bottom:.25rem}
+    .hdc-crop-meta{display:flex;flex-wrap:wrap;gap:.5rem .75rem;font-size:.85rem;color:var(--text-muted);margin-bottom:.4rem}
+    .hdc-crop-meta span{display:flex;align-items:center;gap:.25rem}
+    .hdc-crop-dates{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.35rem}
+    .hdc-badge{display:inline-block;padding:.2rem .55rem;border-radius:5px;font-size:.78rem;font-weight:500}
+    .hdc-badge-start{background:var(--heading);color:var(--bg)}
+    .hdc-badge-end{background:var(--surface);color:var(--heading);border:1px solid var(--heading)}
+    .hdc-badge-remaining{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+    .hdc-tip{font-size:.82rem;color:var(--text-muted);line-height:1.45;margin-top:.25rem;padding-left:.5rem;border-left:2px solid var(--border)}
+    .hdc-remove-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-muted);cursor:pointer;padding:.3rem .5rem;font-size:.8rem;white-space:nowrap;transition:all .2s}
+    .hdc-remove-btn:hover{border-color:var(--heading);color:var(--heading)}
+    .hdc-empty{text-align:center;padding:2rem;color:var(--text-muted);font-size:.95rem}
+    .hdc-timeline-wrap{overflow-x:auto;margin-bottom:1.5rem}
+    .hdc-timeline{border-collapse:collapse;width:100%;min-width:600px}
+    .hdc-timeline th{padding:.4rem .35rem;font-size:.72rem;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:500;text-align:center;white-space:nowrap}
+    .hdc-timeline th:first-child{text-align:left;min-width:110px}
+    .hdc-timeline td{padding:.25rem .15rem;text-align:center;border-bottom:1px solid var(--border)}
+    .hdc-timeline td:first-child{text-align:left;font-size:.85rem;color:var(--text);font-weight:500;white-space:nowrap;padding-right:.5rem}
+    .hdc-cell-growing{background:var(--heading);opacity:.2;border-radius:3px}
+    .hdc-cell-harvest{background:var(--heading);opacity:.7;border-radius:3px}
+    .hdc-cell-today{border:2px solid var(--heading);border-radius:3px}
+    .hdc-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;font-size:.83rem}
+    .hdc-legend-item{display:flex;align-items:center;gap:.35rem;color:var(--text)}
+    .hdc-legend-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+    .hdc-sort-info{font-size:.82rem;color:var(--text-muted);margin-bottom:.75rem}
+    @media(max-width:600px){
+      .hdc-form{grid-template-columns:1fr}
+      .hdc-actions{flex-direction:column}
+      .hdc-crop-card{flex-direction:column;gap:.5rem}
+      .hdc-remove-btn{align-self:flex-end}
+      .hdc-crop-dates{gap:.35rem}
+      .hdc-timeline-wrap{-webkit-overflow-scrolling:touch}
+      .tool-content h2{font-size:var(--text-lg)}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Garden & Farming", "item": "https://tool.teamzlab.com/garden/"}, {"@type": "ListItem", "position": 3, "name": "Harvest Date Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What are days to maturity?", "acceptedAnswer": {"@type": "Answer", "text": "Days to maturity is the number of days from planting until the crop produces its first harvest. For direct-sown crops, counting starts when seeds go into the ground. For transplanted crops, counting typically starts from the transplant date. This number is usually printed on seed packets and plant labels."}}, {"@type": "Question", "name": "Does transplanting really speed up harvest?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Transplanted seedlings already have established roots and leaves when they go into the garden, giving them roughly a 10 to 14 day head start compared to direct-sown seeds. This calculator automatically subtracts about 14 days from the maturity window when you select the transplant method."}}, {"@type": "Question", "name": "Why does the calculator show a harvest window instead of one date?", "acceptedAnswer": {"@type": "Answer", "text": "Crops do not all mature on the same day. Environmental factors like temperature, sunlight, soil quality and watering affect growth speed. The harvest window shows the earliest and latest expected dates so you can plan realistically. Most crops are harvestable for days or weeks within this window."}}, {"@type": "Question", "name": "Can I add the same crop multiple times?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. You can add the same crop with different planting dates to plan succession plantings. This is especially useful for fast crops like lettuce, radishes and spinach where you want a continuous harvest throughout the growing season."}}, {"@type": "Question", "name": "How accurate is this harvest date estimate?", "acceptedAnswer": {"@type": "Answer", "text": "The estimates are based on average days-to-maturity data from major seed companies and agricultural extensions. Actual harvest dates can vary by one to three weeks depending on weather, soil conditions, sunlight exposure, variety, fertilization and watering. Use the estimates as a planning guide and check your plants daily once you enter the harvest window."}}, {"@type": "Question", "name": "What crops mature the fastest?", "acceptedAnswer": {"@type": "Answer", "text": "Radishes are the fastest at 22 to 30 days, followed by spinach at 40 to 50 days, zucchini at 45 to 55 days, and bush beans at 50 to 60 days. These are great choices for short-season gardens or for filling gaps between slower crops."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Harvest Date Calculator", "description": "Estimate when your crops will be ready to harvest based on planting date and method. Track multiple crops on a timeline.", "url": "https://tool.teamzlab.com/garden/harvest-date-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Harvest Date Calculator</h1>
+      <p class="tool-description">Estimate when your crops will be ready to harvest based on planting date, crop type and planting method. Add multiple crops and see all harvest dates on a timeline sorted by earliest harvest.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="hdc-form">
+        <div>
+          <label for="hdcCrop">Crop</label>
+          <select id="hdcCrop">
+            <option value="">-- Select crop --</option>
+            <option value="tomato">Tomato</option>
+            <option value="cherry-tomato">Cherry Tomato</option>
+            <option value="pepper">Pepper</option>
+            <option value="lettuce">Lettuce</option>
+            <option value="carrot">Carrot</option>
+            <option value="beans-bush">Beans (Bush)</option>
+            <option value="beans-pole">Beans (Pole)</option>
+            <option value="cucumber">Cucumber</option>
+            <option value="squash-summer">Squash (Summer)</option>
+            <option value="squash-winter">Squash (Winter)</option>
+            <option value="basil">Basil</option>
+            <option value="broccoli">Broccoli</option>
+            <option value="kale">Kale</option>
+            <option value="spinach">Spinach</option>
+            <option value="peas">Peas</option>
+            <option value="corn">Corn</option>
+            <option value="radish">Radish</option>
+            <option value="onion">Onion</option>
+            <option value="watermelon">Watermelon</option>
+            <option value="zucchini">Zucchini</option>
+            <option value="eggplant">Eggplant</option>
+            <option value="strawberry">Strawberry</option>
+            <option value="potato">Potato</option>
+            <option value="cantaloupe">Cantaloupe</option>
+            <option value="pumpkin">Pumpkin</option>
+          </select>
+        </div>
+        <div>
+          <label for="hdcPlantDate">Planting Date</label>
+          <input type="date" id="hdcPlantDate">
+        </div>
+        <div>
+          <label for="hdcMethod">Planting Method</label>
+          <select id="hdcMethod">
+            <option value="direct">Direct Sow</option>
+            <option value="transplant">Transplant</option>
+          </select>
+        </div>
+      </div>
+      <div class="hdc-actions">
+        <button class="btn-primary" id="hdcAddBtn">Add Crop to Timeline</button>
+        <button class="btn-secondary tool-clear-btn" id="hdcClearBtn">Clear All</button>
+      </div>
+
+      <div id="hdcResult" class="hdc-result" style="display:none">
+        <h3 style="color:var(--heading);font-size:1.05rem;margin:0 0 .25rem">Your Harvest Timeline</h3>
+        <p class="hdc-sort-info" id="hdcSortInfo"></p>
+        <div class="hdc-crop-list" id="hdcCropList"></div>
+
+        <h3 style="color:var(--heading);font-size:1.05rem;margin:1.5rem 0 .75rem">Visual Timeline</h3>
+        <div class="hdc-legend">
+          <div class="hdc-legend-item"><div class="hdc-legend-swatch" style="background:var(--heading);opacity:.2"></div> Growing</div>
+          <div class="hdc-legend-item"><div class="hdc-legend-swatch" style="background:var(--heading);opacity:.7"></div> Harvest Window</div>
+          <div class="hdc-legend-item"><div class="hdc-legend-swatch" style="border:2px solid var(--heading)"></div> Today</div>
+        </div>
+        <div class="hdc-timeline-wrap"><table class="hdc-timeline" id="hdcTimeline"></table></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Harvest Date Calculator Works</h2>
+      <p>This harvest date calculator uses days-to-maturity data for 25 popular crops to estimate when your garden produce will be ready to pick. Enter your planting date, select the crop variety and choose whether you are direct sowing seeds or transplanting seedlings. Transplanted crops typically mature about two weeks faster because the seedlings already have established roots and growth when they go into the garden. The calculator shows both the earliest and latest expected harvest dates, giving you a realistic harvest window rather than a single guess. All calculations run in your browser with no data sent to any server.</p>
+
+      <h2>Understanding Days to Maturity</h2>
+      <p>Days to maturity is the number of days from planting until the first harvest. For direct-sown crops like radishes, carrots and beans, this count starts from the day seeds go into the ground. For transplanted crops like tomatoes, peppers and eggplant, many seed companies count from the transplant date rather than the seed-starting date. This calculator accounts for both methods automatically. Fast crops like radishes can be ready in just 22 days, while slow growers like pumpkins and onions may need 90 to 120 days. Understanding these timelines helps you plan succession plantings and avoid gaps in your harvest schedule.</p>
+
+      <h2>Transplant vs Direct Sow — Which Is Better?</h2>
+      <p>Direct sowing works best for root vegetables like carrots and radishes that do not transplant well, plus fast-growing crops like beans and peas. Transplanting is ideal for heat-loving crops like tomatoes, peppers and eggplant that need a head start indoors before the growing season begins. Transplanted seedlings have a two-week advantage because they already have leaves and roots when they go into the ground. This calculator subtracts approximately 14 days from the maturity window for transplanted crops. If you live in a short-season climate, transplanting lets you harvest warm-season crops before the first fall frost arrives.</p>
+
+      <h2>Tips for Tracking Multiple Crop Harvests</h2>
+      <p>Add all your planted crops to the timeline to see which ones will be ready first. This helps you plan kitchen usage, canning sessions and farmers market schedules. Consider succession planting fast crops like lettuce, spinach and radishes every two to three weeks so you always have something ready to harvest. Pay attention to the harvest window — most crops have a range of days rather than an exact date. Tomatoes might start ripening at 70 days but continue producing for weeks. Check your plants daily once you enter the harvest window and pick produce at peak ripeness for the best flavor and nutrition.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Garden & Farming',url:'/garden/'},{name:'Harvest Date Calculator'}];
+    var FAQS = [
+      {q:'What are days to maturity?',a:'Days to maturity is the number of days from planting until the crop produces its first harvest. For direct-sown crops, counting starts when seeds go into the ground. For transplanted crops, counting typically starts from the transplant date. This number is usually printed on seed packets and plant labels.'},
+      {q:'Does transplanting really speed up harvest?',a:'Yes. Transplanted seedlings already have established roots and leaves when they go into the garden, giving them roughly a 10 to 14 day head start compared to direct-sown seeds. This calculator automatically subtracts about 14 days from the maturity window when you select the transplant method.'},
+      {q:'Why does the calculator show a harvest window instead of one date?',a:'Crops do not all mature on the same day. Environmental factors like temperature, sunlight, soil quality and watering affect growth speed. The harvest window shows the earliest and latest expected dates so you can plan realistically. Most crops are harvestable for days or weeks within this window.'},
+      {q:'Can I add the same crop multiple times?',a:'Yes. You can add the same crop with different planting dates to plan succession plantings. This is especially useful for fast crops like lettuce, radishes and spinach where you want a continuous harvest throughout the growing season.'},
+      {q:'How accurate is this harvest date estimate?',a:'The estimates are based on average days-to-maturity data from major seed companies and agricultural extensions. Actual harvest dates can vary by one to three weeks depending on weather, soil conditions, sunlight exposure, variety, fertilization and watering. Use the estimates as a planning guide and check your plants daily once you enter the harvest window.'},
+      {q:'What crops mature the fastest?',a:'Radishes are the fastest at 22 to 30 days, followed by spinach at 40 to 50 days, zucchini at 45 to 55 days, and bush beans at 50 to 60 days. These are great choices for short-season gardens or for filling gaps between slower crops.'}
+    ];
+    var RELATED_TOOLS = [
+      {slug:'garden/planting-calendar',name:'Planting Calendar & Frost Dates',description:'Find planting dates by USDA zone or frost date'},
+      {slug:'garden/seed-starting-calculator',name:'Seed Starting Date Calculator',description:'Calculate when to start seeds indoors'},
+      {slug:'garden/companion-planting-checker',name:'Companion Planting Checker',description:'Check which plants grow well together'},
+      {slug:'garden/plant-spacing-calculator',name:'Plant Spacing Calculator',description:'Find optimal spacing for garden plants'},
+      {slug:'garden/garden-savings-calculator',name:'Garden Yield & Savings Calculator',description:'Estimate harvest yield and grocery savings'},
+      {slug:'garden/garden-watering-schedule',name:'Garden Watering Schedule',description:'Generate custom weekly watering schedules'}
+    ];
+
+    /* ---- Crop database: days to maturity [min, max], transplant offset ---- */
+    var CROPS = {
+      'tomato':         {name:'Tomato',         min:70, max:85,  tip:'Pick when fully colored and slightly soft. Leave on vine for best flavor.'},
+      'cherry-tomato':  {name:'Cherry Tomato',  min:55, max:65,  tip:'Harvest when fruits are fully colored and pull away easily from the stem.'},
+      'pepper':         {name:'Pepper',         min:60, max:90,  tip:'Green peppers are mature but unripe. Leave longer for red, yellow or orange color.'},
+      'lettuce':        {name:'Lettuce',        min:30, max:60,  tip:'Harvest outer leaves as needed or cut the whole head at soil level before bolting.'},
+      'carrot':         {name:'Carrot',         min:70, max:80,  tip:'Pull when tops are about 3/4 inch diameter. Loosen soil first to avoid breaking.'},
+      'beans-bush':     {name:'Beans (Bush)',   min:50, max:60,  tip:'Pick when pods snap cleanly and seeds are small inside. Harvest often to encourage more.'},
+      'beans-pole':     {name:'Beans (Pole)',   min:60, max:70,  tip:'Harvest regularly when pods are firm and snap easily. Do not let pods get too large.'},
+      'cucumber':       {name:'Cucumber',       min:50, max:70,  tip:'Pick at 6-8 inches for slicing, 2-4 inches for pickling. Do not let them turn yellow.'},
+      'squash-summer':  {name:'Squash (Summer)',min:50, max:60,  tip:'Harvest when 6-8 inches long. Smaller squash have better flavor and texture.'},
+      'squash-winter':  {name:'Squash (Winter)',min:80, max:100, tip:'Harvest when skin is hard and cannot be dented with your fingernail. Cure in sun for a week.'},
+      'basil':          {name:'Basil',          min:60, max:90,  tip:'Pinch off flower buds and harvest leaves regularly to keep plants bushy and productive.'},
+      'broccoli':       {name:'Broccoli',       min:60, max:80,  tip:'Cut the main head when buds are tight and dark green. Side shoots will continue producing.'},
+      'kale':           {name:'Kale',           min:55, max:75,  tip:'Harvest outer leaves first, leaving the center to keep growing. Frost improves sweetness.'},
+      'spinach':        {name:'Spinach',        min:40, max:50,  tip:'Cut outer leaves when they reach 3-4 inches. Harvest the whole plant before it bolts in heat.'},
+      'peas':           {name:'Peas',           min:60, max:70,  tip:'Pick snap peas when pods are plump. For shelling peas, wait until pods are full but still green.'},
+      'corn':           {name:'Corn',           min:60, max:100, tip:'Harvest when silks turn brown and dry. Peel back husk slightly to check — kernels should be plump and milky.'},
+      'radish':         {name:'Radish',         min:22, max:30,  tip:'Pull when roots are about 1 inch diameter. Do not leave too long or they become woody and pithy.'},
+      'onion':          {name:'Onion',          min:90, max:120, tip:'Harvest when tops fall over and begin to yellow. Cure in a dry, shaded area for two weeks.'},
+      'watermelon':     {name:'Watermelon',     min:80, max:90,  tip:'Look for a yellow ground spot, brown tendril nearest the fruit, and a hollow sound when tapped.'},
+      'zucchini':       {name:'Zucchini',       min:45, max:55,  tip:'Pick at 6-8 inches for best flavor. Check daily — zucchini can double in size overnight.'},
+      'eggplant':       {name:'Eggplant',       min:65, max:80,  tip:'Harvest when skin is glossy and firm. Dull skin means overripe. Cut with pruning shears.'},
+      'strawberry':     {name:'Strawberry',     min:60, max:90,  tip:'Pick when berries are fully red with no white shoulders. Harvest in the morning for best sweetness.'},
+      'potato':         {name:'Potato',         min:70, max:120, tip:'Harvest new potatoes early or wait until vines die back for full-size tubers. Cure before storing.'},
+      'cantaloupe':     {name:'Cantaloupe',     min:75, max:90,  tip:'Ripe melons slip easily from the vine when lifted. The blossom end should smell sweet.'},
+      'pumpkin':        {name:'Pumpkin',        min:90, max:120, tip:'Harvest when skin is fully colored and hard. Leave 3-4 inches of stem attached for longer storage.'}
+    };
+
+    var TRANSPLANT_OFFSET = 14; /* days saved by transplanting */
+    var trackedCrops = [];
+    var cropIdCounter = 0;
+
+    /* ---- Set default planting date to today ---- */
+    (function() {
+      var today = new Date();
+      var y = today.getFullYear();
+      var m = String(today.getMonth() + 1).padStart(2, '0');
+      var d = String(today.getDate()).padStart(2, '0');
+      document.getElementById('hdcPlantDate').value = y + '-' + m + '-' + d;
+    })();
+
+    /* ---- Helper functions ---- */
+    function addDays(date, days) {
+      var d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function fmtDate(d) {
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    function fmtShort(d) {
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[d.getMonth()] + ' ' + d.getDate();
+    }
+
+    function daysBetween(a, b) {
+      return Math.round((b - a) / (1000 * 60 * 60 * 24));
+    }
+
+    /* ---- Add crop ---- */
+    document.getElementById('hdcAddBtn').addEventListener('click', function() {
+      var cropKey = document.getElementById('hdcCrop').value;
+      var plantDateStr = document.getElementById('hdcPlantDate').value;
+      var method = document.getElementById('hdcMethod').value;
+
+      if (!cropKey) {
+        if (window.showToast) window.showToast('Please select a crop');
+        return;
+      }
+      if (!plantDateStr) {
+        if (window.showToast) window.showToast('Please enter a planting date');
+        return;
+      }
+
+      var crop = CROPS[cropKey];
+      var plantDate = new Date(plantDateStr + 'T00:00:00');
+      var offset = (method === 'transplant') ? TRANSPLANT_OFFSET : 0;
+      var harvestMin = addDays(plantDate, crop.min - offset);
+      var harvestMax = addDays(plantDate, crop.max - offset);
+      var today = new Date();
+      today.setHours(0,0,0,0);
+      var daysRemaining = daysBetween(today, harvestMin);
+
+      trackedCrops.push({
+        id: ++cropIdCounter,
+        key: cropKey,
+        name: crop.name,
+        method: method,
+        plantDate: plantDate,
+        harvestStart: harvestMin,
+        harvestEnd: harvestMax,
+        daysRemaining: daysRemaining,
+        daysToMaturityMin: crop.min - offset,
+        daysToMaturityMax: crop.max - offset,
+        tip: crop.tip
+      });
+
+      /* Sort by earliest harvest */
+      trackedCrops.sort(function(a, b) { return a.harvestStart - b.harvestStart; });
+
+      renderCropList();
+      renderTimeline();
+      document.getElementById('hdcResult').style.display = 'block';
+      if (window.showToast) window.showToast(crop.name + ' added to timeline');
+    });
+
+    /* ---- Remove crop ---- */
+    function removeCrop(id) {
+      trackedCrops = trackedCrops.filter(function(c) { return c.id !== id; });
+      if (trackedCrops.length === 0) {
+        document.getElementById('hdcResult').style.display = 'none';
+      } else {
+        renderCropList();
+        renderTimeline();
+      }
+    }
+
+    /* ---- Render crop list ---- */
+    function renderCropList() {
+      var container = document.getElementById('hdcCropList');
+      var today = new Date();
+      today.setHours(0,0,0,0);
+
+      document.getElementById('hdcSortInfo').textContent = trackedCrops.length + ' crop' + (trackedCrops.length !== 1 ? 's' : '') + ' tracked — sorted by earliest harvest date';
+
+      if (trackedCrops.length === 0) {
+        container.innerHTML = '<div class="hdc-empty">No crops added yet. Select a crop and planting date above.</div>';
+        return;
+      }
+
+      var html = '';
+      trackedCrops.forEach(function(c) {
+        var remaining = daysBetween(today, c.harvestStart);
+        var statusText = '';
+        if (remaining > 0) {
+          statusText = remaining + ' day' + (remaining !== 1 ? 's' : '') + ' remaining';
+        } else if (today <= c.harvestEnd) {
+          statusText = 'Ready to harvest now!';
+        } else {
+          statusText = 'Harvest window passed';
+        }
+
+        html += '<div class="hdc-crop-card">';
+        html += '<div class="hdc-crop-info">';
+        html += '<div class="hdc-crop-name">' + c.name + '</div>';
+        html += '<div class="hdc-crop-meta">';
+        html += '<span>Planted: ' + fmtDate(c.plantDate) + '</span>';
+        html += '<span>Method: ' + (c.method === 'transplant' ? 'Transplant' : 'Direct Sow') + '</span>';
+        html += '<span>' + c.daysToMaturityMin + '–' + c.daysToMaturityMax + ' days to maturity</span>';
+        html += '</div>';
+        html += '<div class="hdc-crop-dates">';
+        html += '<span class="hdc-badge hdc-badge-start">Harvest starts: ' + fmtDate(c.harvestStart) + '</span>';
+        html += '<span class="hdc-badge hdc-badge-end">Ends: ' + fmtDate(c.harvestEnd) + '</span>';
+        html += '<span class="hdc-badge hdc-badge-remaining">' + statusText + '</span>';
+        html += '</div>';
+        html += '<div class="hdc-tip">' + c.tip + '</div>';
+        html += '</div>';
+        html += '<button class="hdc-remove-btn" onclick="removeCrop(' + c.id + ')">Remove</button>';
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    /* ---- Render timeline ---- */
+    function renderTimeline() {
+      if (trackedCrops.length === 0) return;
+
+      /* Find date range: earliest plant date to latest harvest end, padded */
+      var earliest = trackedCrops[0].plantDate;
+      var latest = trackedCrops[0].harvestEnd;
+      trackedCrops.forEach(function(c) {
+        if (c.plantDate < earliest) earliest = c.plantDate;
+        if (c.harvestEnd > latest) latest = c.harvestEnd;
+      });
+
+      /* Pad 1 week on each side */
+      earliest = addDays(earliest, -7);
+      latest = addDays(latest, 7);
+
+      /* Build bi-weekly columns */
+      var cols = [];
+      var cursor = new Date(earliest);
+      cursor.setDate(1); /* start of month */
+      while (cursor <= latest) {
+        var endOfHalf;
+        if (cursor.getDate() <= 1) {
+          endOfHalf = new Date(cursor.getFullYear(), cursor.getMonth(), 15);
+          cols.push({label: fmtShort(cursor), start: new Date(cursor), end: endOfHalf});
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 16);
+        } else {
+          endOfHalf = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+          cols.push({label: fmtShort(cursor), start: new Date(cursor), end: endOfHalf});
+          cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        }
+      }
+
+      var today = new Date();
+      today.setHours(0,0,0,0);
+
+      /* Header */
+      var thead = '<thead><tr><th>Crop</th>';
+      cols.forEach(function(col) {
+        var isToday = (today >= col.start && today <= col.end);
+        var style = isToday ? ' style="color:var(--heading);font-weight:700"' : '';
+        thead += '<th' + style + '>' + col.label + '</th>';
+      });
+      thead += '</tr></thead>';
+
+      /* Body */
+      var tbody = '<tbody>';
+      trackedCrops.forEach(function(c) {
+        tbody += '<tr><td>' + c.name + '</td>';
+        cols.forEach(function(col) {
+          var mid = new Date((col.start.getTime() + col.end.getTime()) / 2);
+          var cls = '';
+          var isToday = (today >= col.start && today <= col.end);
+
+          if (mid >= c.harvestStart && mid <= c.harvestEnd) {
+            cls = 'hdc-cell-harvest';
+          } else if (mid >= c.plantDate && mid < c.harvestStart) {
+            cls = 'hdc-cell-growing';
+          }
+          if (isToday) {
+            cls += (cls ? ' ' : '') + 'hdc-cell-today';
+          }
+          tbody += '<td><div class="' + cls + '" style="height:16px;width:100%"></div></td>';
+        });
+        tbody += '</tr>';
+      });
+      tbody += '</tbody>';
+
+      document.getElementById('hdcTimeline').innerHTML = thead + tbody;
+    }
+
+    /* ---- Clear all ---- */
+    document.getElementById('hdcClearBtn').addEventListener('click', function() {
+      trackedCrops = [];
+      cropIdCounter = 0;
+      document.getElementById('hdcCrop').value = '';
+      document.getElementById('hdcMethod').value = 'direct';
+      document.getElementById('hdcResult').style.display = 'none';
+    });
+
+    /* ---- Init ---- */
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      TeamzTools.injectWebAppSchema({slug:'garden/harvest-date-calculator',title:'Harvest Date Calculator',description:'Estimate when your crops will be ready to harvest based on planting date and method. Track multiple crops on a timeline.'});
+    });
+  </script>
+</body>
+</html>
