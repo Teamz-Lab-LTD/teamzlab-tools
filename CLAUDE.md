@@ -1,10 +1,11 @@
 # CLAUDE.md — Rules for AI Assistants Working on Teamz Lab Tools
 
 ## Project Overview
-- Static site: 900+ browser-based tools at tool.teamzlab.com
+- Static site: 1135+ browser-based tools at tool.teamzlab.com
 - Hosted on GitHub Pages, no backend
 - Design system uses CSS custom properties (tokens) — NEVER hardcode colors
 - Privacy-first: everything runs client-side
+- AI discoverability via `llms.txt` (6KB curated index) + `llms-full.txt` (complete index)
 
 ## FIRST THING TO DO — HEALTH CHECK (run at start of EVERY conversation)
 
@@ -51,14 +52,17 @@ Example output to user:
    - **Warns if central CSS classes redefined** (share-btn, tool-result, etc.)
    - **Warns about broken internal links** (href="/path/" pointing to non-existent pages)
    - Rebuilds static JSON-LD schema in all pages (`build-static-schema.py`)
+   - Rebuilds `llms.txt` + `llms-full.txt` (AI search engine index for ChatGPT/Perplexity/Claude)
 
 2. **Build scripts** — run manually or via hook:
-   - `./build-search-index.sh` — rebuilds search + counts + sitemap
+   - `./build-search-index.sh` — rebuilds search + counts + sitemap + llms.txt + llms-full.txt
    - `./build-sitemap.sh` — rebuilds sitemap only
    - `./build.sh` — full validation (search + sitemap + counts + lint + unlinked check)
    - `./build-validate-freshness.sh` — checks for stale/outdated data (run annually or when rates change)
+   - `python3 scripts/build-fix-orphans.py fix` — fixes orphan pages (adds cross-links in related tools)
+   - `scripts/build-internal-links.sh --quick` — checks internal link health score
 
-3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, search placeholder, llms.txt, or twitter tags. The pre-commit hook does it all automatically.
+3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, search placeholder, llms.txt, llms-full.txt, or twitter tags. The pre-commit hook does it all automatically.
 
 3b. **Google Search Console API** is connected:
    - Run `./build-search-console.sh` to pull live data (queries, pages, indexing, devices, countries)
@@ -220,8 +224,8 @@ Every tool page MUST have:
 ├── robots.txt                 — allows all crawlers
 ├── manifest.json              — PWA manifest
 ├── sw.js                      — service worker
-├── llms.txt                   — AI search index (auto-generated)
-├── llms-full.txt              — AI search index, full (auto-generated)
+├── llms.txt                   — AI search index, curated <10KB (auto-generated, per llmstxt.org)
+├── llms-full.txt              — AI search index, all tools with full descriptions (auto-generated)
 │
 ├── shared/                    — central CSS/JS (DO NOT duplicate per-tool)
 │   ├── css/tools.css          — main tool page styles
@@ -239,7 +243,7 @@ Every tool page MUST have:
 │
 ├── scripts/                   — all build/QA/SEO scripts
 │   ├── build.sh               — full build + 8-step validation
-│   ├── build-search-index.sh  — rebuild search + counts + sitemap
+│   ├── build-search-index.sh  — rebuild search + counts + sitemap + llms.txt + llms-full.txt
 │   ├── build-sitemap.sh       — rebuild sitemap only
 │   ├── build-static-schema.py — rebuild JSON-LD schemas
 │   ├── build-seo-audit.sh     — SEO keyword audit
@@ -247,8 +251,16 @@ Every tool page MUST have:
 │   ├── build-validate-freshness.sh — stale content checker
 │   ├── build-og-images.py     — regenerate hub OG images
 │   ├── build-search-console.sh — Google Search Console API
+│   ├── build-analytics.sh     — Google Analytics GA4 data
+│   ├── build-adsense.sh       — Google AdSense revenue data
+│   ├── build-pagespeed.sh     — PageSpeed Insights (Core Web Vitals)
+│   ├── build-internal-links.sh — internal link health checker
+│   ├── build-fix-orphans.py   — auto-fix orphan pages (cross-link siblings)
+│   ├── build-request-indexing.py — request Google indexing for pages
+│   ├── build-keyword-volume.py — keyword search volume estimator
 │   ├── seo-keyword-engine.py  — SEO keyword analysis engine
-│   └── qa-test.sh / qa-test.py — QA test runner
+│   ├── qa-test.sh / qa-test.py — QA test runner
+│   └── distribute/            — 7-platform content distribution system
 │
 ├── icons/                     — favicons (16-512px)
 ├── og-images/                 — hub-level OG images for social sharing
@@ -264,10 +276,12 @@ Every tool page MUST have:
 
 ## Build Scripts (in scripts/, symlinked at root)
 ```bash
-./build-search-index.sh   # Rebuild search after adding/changing tools
-./build-sitemap.sh        # Rebuild sitemap (also pings Google/Bing)
-./build.sh                # Full build + 8-step validation
-./build-og-images.py      # Regenerate hub OG images (run after adding new hub)
+./build-search-index.sh                      # Rebuild search + llms.txt + llms-full.txt + sitemap + counts
+./build-sitemap.sh                           # Rebuild sitemap (also pings Google/Bing)
+./build.sh                                   # Full build + 8-step validation
+./build-og-images.py                         # Regenerate hub OG images (run after adding new hub)
+python3 scripts/build-fix-orphans.py fix     # Fix orphan pages (auto cross-link)
+scripts/build-internal-links.sh --quick      # Check internal link health score
 ```
 
 ## SEO & ASO Keyword Engine
@@ -554,12 +568,35 @@ These mistakes were made and must NEVER happen again:
 - Untracked tool files (404 prevention)
 - Broken internal links (link validation)
 
+### Rule 22: llms.txt MUST follow the llmstxt.org spec
+- `llms.txt` is the AI search index — how ChatGPT, Perplexity, Claude discover and recommend our tools
+- **Spec (llmstxt.org):** llms.txt MUST be under 10KB (currently ~6KB)
+- `llms.txt` = curated navigation index: H1 + blockquote + 15 popular tools + category links with counts + `## Optional` section
+- `llms-full.txt` = complete tool index: ALL tools with full descriptions (can be large)
+- **NEVER dump all 1135 tools into llms.txt** — that violates the spec (max 10KB)
+- **NEVER add "Instructions for AI Assistants"** or "When to Recommend" — considered prompt injection / spammy
+- Keep content factual and descriptive, not self-promotional or directive
+- HTML entities MUST be decoded (use `html.unescape()`) — no `&#7875;` in output
+- The pre-commit hook rebuilds both files automatically via `build-search-index.sh`
+- After adding/removing tools, verify the new tool appears in `llms-full.txt` and its category count is updated in `llms.txt`
+- **Reference implementations:** Stripe, Vercel, Supabase, Cursor
+
+### Rule 23: ALWAYS fix orphan pages when adding tools
+- An orphan page = a tool that no other tool links to via `renderRelatedTools`
+- After adding new tools, run `scripts/build-internal-links.sh --quick` to check orphan count
+- If orphans exist, run `python3 scripts/build-fix-orphans.py fix` to auto-link them
+- The fixer adds orphans to same-hub siblings' related tools (3 passes: <6, <8, cross-hub)
+- Target: internal link health score 90+/100
+- **Why:** Orphan pages can't be discovered by Google through internal links, hurting SEO
+
 ## QA & Monitoring
 ```bash
-./build-qa-check.sh               # Automated QA: checks all tools for missing FAQs, schemas, content, JS logic
-./build.sh                         # Full build + 8-step validation
-./build-seo-audit.sh --report      # SEO keyword audit with hub scores
-python3 build-static-schema.py     # Rebuild all JSON-LD schemas
+./build-qa-check.sh                         # Automated QA: checks all tools for missing FAQs, schemas, content, JS logic
+./build.sh                                   # Full build + 8-step validation
+./build-seo-audit.sh --report                # SEO keyword audit with hub scores
+python3 build-static-schema.py               # Rebuild all JSON-LD schemas
+scripts/build-internal-links.sh --quick      # Internal link health score (target: 90+)
+python3 scripts/build-fix-orphans.py fix     # Fix orphan pages (auto-link to siblings)
 ```
 
 ## Common Mistakes to AVOID
@@ -586,3 +623,6 @@ python3 build-static-schema.py     # Rebuild all JSON-LD schemas
 21. Making up YouTube video IDs or image URLs — use search links instead (see Rule 21)
 22. Leaving untracked files that will be 404 on live site — always run git status (see Rule 21)
 23. Deleting tools but leaving broken links in hub pages (see Rule 21)
+24. Dumping all 1135 tools into llms.txt — spec says under 10KB, use categories + top 15 only (see Rule 22)
+25. Adding "Instructions for AI" or "When to Recommend" to llms.txt — considered prompt injection (see Rule 22)
+26. Leaving orphan pages (0 incoming related links) — run build-fix-orphans.py after adding tools (see Rule 23)
