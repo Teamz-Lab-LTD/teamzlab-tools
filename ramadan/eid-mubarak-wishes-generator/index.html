@@ -109,8 +109,17 @@
     .logo-drop svg { color: var(--text-muted); }
     .logo-remove { position: absolute; top: -6px; right: -6px; background: var(--heading); color: var(--bg); border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: none; line-height: 20px; text-align: center; }
 
-    /* Canvas (hidden) */
+    /* Canvas (hidden for rendering) */
     #cardCanvas { display: none; }
+
+    /* Card preview */
+    .card-preview-area { margin-top: 20px; display: none; }
+    .card-preview-area.visible { display: block; }
+    .card-preview-area h3 { font-size: var(--text-lg); color: var(--heading); margin: 0 0 10px; }
+    .card-preview-wrap { border-radius: 14px; overflow: hidden; box-shadow: 0 6px 24px rgba(0,0,0,0.12); margin-bottom: 12px; }
+    .card-preview-wrap img { display: block; width: 100%; height: auto; }
+    .card-preview-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .card-preview-actions .eid-btn-sm { flex: 1; justify-content: center; padding: 10px 16px; }
 
     @media (max-width: 600px) {
       .eid-form { padding: 18px 14px; }
@@ -248,6 +257,16 @@
           </div>
         </div>
         <div class="wish-cards-grid" id="wishCards"></div>
+        <div class="card-preview-area" id="cardPreviewArea">
+          <h3>Your Eid Card Image</h3>
+          <div class="card-preview-wrap" id="cardPreviewWrap"></div>
+          <div class="card-preview-actions">
+            <button class="eid-btn-sm" id="btnDlPreview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PNG</button>
+            <button class="eid-btn-sm" id="btnCopyPreview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Image</button>
+            <button class="eid-btn-sm wa-btn" id="btnWaPreview"><svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> WhatsApp</button>
+          </div>
+        </div>
+
         <div class="share-tool-bar" id="shareBar">
           <p><strong>Love it?</strong> Share this tool with friends & family!</p>
           <div class="share-btns">
@@ -483,6 +502,12 @@
 
     document.getElementById('eidResults').classList.add('visible');
     document.getElementById('shareBar').classList.add('visible');
+
+    // Auto-generate card preview with first wish
+    if (allWishTexts.length > 0) {
+      renderCardPreview(allWishTexts[0]);
+    }
+
     document.getElementById('eidResults').scrollIntoView({behavior:'smooth',block:'start'});
   }
 
@@ -513,7 +538,7 @@
     {bg1:'#1a1a2e',bg2:'#16213e',fg:'#e0e0f0',accent:'#64b5f6'}
   ];
 
-  function dlCard(text) {
+  function renderCardToCanvas(text) {
     var canvas = document.getElementById('cardCanvas');
     var ctx = canvas.getContext('2d');
     var W = 1080, H = 1080;
@@ -563,7 +588,6 @@
     if (companyName || uploadedLogo) {
       var sectionY = H - 180;
 
-      // "From all of us at" line
       if (companyName) {
         ctx.fillStyle = theme.fg;
         ctx.globalAlpha = 0.8;
@@ -573,7 +597,6 @@
         ctx.globalAlpha = 1;
       }
 
-      // Logo centered below
       if (uploadedLogo) {
         var maxLogoH = 70;
         var maxLogoW = 280;
@@ -593,13 +616,67 @@
     ctx.font = '16px Poppins, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('tool.teamzlab.com', W/2, Math.min(bottomY, H-15));
+  }
 
-    // Download
+  function dlCard(text) {
+    renderCardPreview(text);
     var link = document.createElement('a');
     link.download = 'eid-mubarak-wish.png';
-    link.href = canvas.toDataURL('image/png');
+    link.href = lastCardDataURL;
     link.click();
+    if (window.showToast) window.showToast('Card downloaded!');
   }
+
+  var lastCardDataURL = null;
+
+  function renderCardPreview(text) {
+    renderCardToCanvas(text);
+    var canvas = document.getElementById('cardCanvas');
+    lastCardDataURL = canvas.toDataURL('image/png');
+    var area = document.getElementById('cardPreviewArea');
+    var wrap = document.getElementById('cardPreviewWrap');
+    wrap.innerHTML = '';
+    var img = document.createElement('img');
+    img.src = lastCardDataURL;
+    img.alt = 'Eid Mubarak Card';
+    wrap.appendChild(img);
+    area.classList.add('visible');
+  }
+
+  // Card preview button handlers
+  document.getElementById('btnDlPreview').addEventListener('click', function() {
+    if (!lastCardDataURL) return;
+    var link = document.createElement('a');
+    link.download = 'eid-mubarak-wish.png';
+    link.href = lastCardDataURL;
+    link.click();
+    if (window.showToast) window.showToast('Card downloaded!');
+  });
+
+  document.getElementById('btnCopyPreview').addEventListener('click', function() {
+    var canvas = document.getElementById('cardCanvas');
+    canvas.toBlob(function(blob) {
+      if (!blob) { if (window.showToast) window.showToast('Could not copy'); return; }
+      try {
+        navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
+          if (window.showToast) window.showToast('Image copied to clipboard!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Copy not supported in this browser');
+        });
+      } catch(e) {
+        if (window.showToast) window.showToast('Copy not supported in this browser');
+      }
+    }, 'image/png');
+  });
+
+  document.getElementById('btnWaPreview').addEventListener('click', function() {
+    var name = document.getElementById('recipientName').value.trim() || 'Friend';
+    var company = document.getElementById('companyName').value.trim();
+    var msg = 'Eid Mubarak, ' + name + '!';
+    if (company) msg += ' From ' + company + '.';
+    msg += ' Create yours: https://tool.teamzlab.com/ramadan/eid-mubarak-wishes-generator/';
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+  });
 
   function wrapText(ctx, text, maxW, fontSize) {
     var cleanText = text.replace(/\n/g, ' ');
