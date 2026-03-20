@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Font Performance Analyzer — Teamz Lab Tools</title>
+  <meta name="description" content="Analyze your web font CSS for performance issues — check WOFF2, font-display, preload hints, subset usage, and get an optimization score. Free and private.">
+  <meta property="og:title" content="Web Font Performance Analyzer — Teamz Lab Tools">
+  <meta property="og:description" content="Analyze web font CSS for performance — check WOFF2, font-display, preload, and optimization score.">
+  <meta property="og:url" content="https://tool.teamzlab.com/dev/web-font-performance-analyzer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/dev.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Web Font Performance Analyzer — Teamz Lab Tools">
+  <meta name="twitter:description" content="Analyze web font CSS for performance — check WOFF2, font-display, preload, and optimization score.">
+  <link rel="canonical" href="https://tool.teamzlab.com/dev/web-font-performance-analyzer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <link rel="stylesheet" href="/shared/css/utility-tools.css">
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Dev Tools", "item": "https://tool.teamzlab.com/dev/"}, {"@type": "ListItem", "position": 3, "name": "Web Font Performance Analyzer"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What font formats does the analyzer check for?", "acceptedAnswer": {"@type": "Answer", "text": "The analyzer checks for WOFF2 (best compression, 95%+ browser support), WOFF (fallback for older browsers), TTF/OTF (legacy formats), and variable font formats. WOFF2 is recommended as the primary format with WOFF as fallback."}}, {"@type": "Question", "name": "What is font-display and which value should I use?", "acceptedAnswer": {"@type": "Answer", "text": "font-display controls how text renders while web fonts load. Use \"swap\" for body text so users see content immediately with a fallback font. Use \"optional\" for non-critical decorative fonts so the browser can skip them on slow connections. Avoid \"block\" which hides text for up to 3 seconds."}}, {"@type": "Question", "name": "How many font files is too many?", "acceptedAnswer": {"@type": "Answer", "text": "More than 6 font files per page significantly impacts load time. Each file is a separate HTTP request. Consider using a variable font (single file for all weights) or limiting to 2-3 weights per family. Most designs work well with regular and bold only."}}, {"@type": "Question", "name": "Is my font CSS sent to any server for analysis?", "acceptedAnswer": {"@type": "Answer", "text": "No. All analysis runs entirely in your browser using JavaScript. Your CSS code and font URLs never leave your device. This makes the tool safe for proprietary font configurations and internal projects."}}, {"@type": "Question", "name": "What are size-adjust and ascent-override?", "acceptedAnswer": {"@type": "Answer", "text": "These CSS properties fine-tune fallback font metrics to match your web font, preventing layout shifts (CLS) when the web font loads and replaces the fallback. They are applied to the fallback @font-face declaration and are a key technique for improving Cumulative Layout Shift scores."}}, {"@type": "Question", "name": "Does the analyzer work with Google Fonts URLs?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Paste a Google Fonts URL and the analyzer extracts family names, weights, and display settings. It checks for the display parameter, number of families and weights, and suggests optimizations like preconnect hints and self-hosting for better performance."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Web Font Performance Analyzer", "description": "Analyze web font CSS for performance issues. Check WOFF2, font-display, preload, subsetting, and get an optimization score with recommendations.", "url": "https://tool.teamzlab.com/dev/web-font-performance-analyzer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Web Font Performance Analyzer</h1>
+      <p class="tool-description">Paste your @font-face CSS or Google Fonts link and get a performance score with actionable recommendations. Check WOFF2 usage, font-display, preload hints, subsetting, and more.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="form-group">
+        <label for="font-css-input">Paste your font CSS or Google Fonts URL</label>
+        <textarea id="font-css-input" rows="10" style="width:100%;font-family:monospace;font-size:var(--text-sm);padding:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;resize:vertical;" placeholder="@font-face {
+  font-family: 'MyFont';
+  src: url('font.woff2') format('woff2'),
+       url('font.woff') format('woff');
+  font-display: swap;
+  font-weight: 400;
+}
+
+Or paste a Google Fonts URL:
+https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"></textarea>
+      </div>
+      <div class="tool-actions" style="margin-top:16px;">
+        <button id="analyze-btn" class="btn-primary">Analyze Fonts</button>
+        <button id="clear-btn" class="btn-secondary tool-clear-btn">Clear</button>
+      </div>
+      <div id="font-results" style="margin-top:24px;"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Web Font Performance Analyzer Works</h2>
+      <p>This tool parses your @font-face declarations and Google Fonts links to evaluate ten key performance metrics. Each check is scored individually and combined into an overall score out of 100. The analyzer examines font format usage, display strategies, preloading opportunities, subsetting, file count, weight count, format fallback chains, local source priority, CLS prevention properties, and variable font adoption. All analysis runs entirely in your browser with no data sent to any server.</p>
+
+      <h2>Why Web Font Performance Matters</h2>
+      <p>Web fonts are one of the most impactful resources on page load performance. Poorly optimized fonts cause Flash of Invisible Text (FOIT), Flash of Unstyled Text (FOUT), and layout shifts that hurt Core Web Vitals scores. A single unoptimized Google Fonts request can add 200-500ms to your Largest Contentful Paint. Using WOFF2 format reduces font file sizes by 30 percent compared to WOFF and over 50 percent compared to TTF. The font-display property controls how text renders while fonts load, and preconnect hints eliminate DNS lookup delays for external font servers.</p>
+
+      <h2>Key Font Performance Best Practices</h2>
+      <p>The most impactful optimization is using WOFF2 format exclusively with WOFF as a fallback for older browsers. Set font-display to swap or optional depending on your use case. Swap shows fallback text immediately and switches when the font loads, while optional gives the browser permission to skip the font entirely on slow connections. Add preconnect hints for external font origins like fonts.googleapis.com and fonts.gstatic.com. Use unicode-range to subset fonts so browsers only download the characters needed for the current page language.</p>
+      <p>Keep your font file count under six and weight count under four per family. Each additional file is a separate HTTP request that competes for bandwidth. Variable fonts solve this by containing all weights and styles in a single file, reducing requests and total download size. When using @font-face, list local() sources first so the browser can use fonts already installed on the user's system without downloading anything. Properties like size-adjust, ascent-override, and descent-override on fallback fonts prevent layout shifts when the web font loads.</p>
+
+      <h2>Google Fonts URL Optimization</h2>
+      <p>Google Fonts URLs support several optimization parameters. The display parameter controls font-display behavior and should always be set to swap or optional. The text parameter subsets the font to only include specific characters, dramatically reducing file size for logos or headings that use limited characters. Combining multiple families into a single URL reduces HTTP requests. This analyzer checks your Google Fonts URLs for these optimizations and suggests improvements. For self-hosted fonts, the analyzer evaluates your @font-face declarations against the same best practice criteria used by Lighthouse and PageSpeed Insights.</p>
+
+      <h2>Understanding the Performance Score</h2>
+      <p>The overall score weights each check based on its real-world impact. WOFF2 usage and font-display carry the highest weight because they have the largest effect on perceived load time and Core Web Vitals. File count and weight count are weighted moderately because excess requests compound on slow connections. Variable font usage and CLS prevention properties are bonus checks that reward advanced optimization. A score above 80 indicates well-optimized fonts. Below 50 means significant performance improvements are available. The recommendations section provides specific CSS code you can copy and apply immediately.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/utility-engine.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var breadcrumbs = [{name:'Home',url:'/'},{name:'Dev Tools',url:'/dev/'},{name:'Web Font Performance Analyzer'}];
+    TeamzTools.renderBreadcrumbs(breadcrumbs);
+    TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+    var faqs = [
+      {q:'What font formats does the analyzer check for?', a:'The analyzer checks for WOFF2 (best compression, 95%+ browser support), WOFF (fallback for older browsers), TTF/OTF (legacy formats), and variable font formats. WOFF2 is recommended as the primary format with WOFF as fallback.'},
+      {q:'What is font-display and which value should I use?', a:'font-display controls how text renders while web fonts load. Use "swap" for body text so users see content immediately with a fallback font. Use "optional" for non-critical decorative fonts so the browser can skip them on slow connections. Avoid "block" which hides text for up to 3 seconds.'},
+      {q:'How many font files is too many?', a:'More than 6 font files per page significantly impacts load time. Each file is a separate HTTP request. Consider using a variable font (single file for all weights) or limiting to 2-3 weights per family. Most designs work well with regular and bold only.'},
+      {q:'Is my font CSS sent to any server for analysis?', a:'No. All analysis runs entirely in your browser using JavaScript. Your CSS code and font URLs never leave your device. This makes the tool safe for proprietary font configurations and internal projects.'},
+      {q:'What are size-adjust and ascent-override?', a:'These CSS properties fine-tune fallback font metrics to match your web font, preventing layout shifts (CLS) when the web font loads and replaces the fallback. They are applied to the fallback @font-face declaration and are a key technique for improving Cumulative Layout Shift scores.'},
+      {q:'Does the analyzer work with Google Fonts URLs?', a:'Yes. Paste a Google Fonts URL and the analyzer extracts family names, weights, and display settings. It checks for the display parameter, number of families and weights, and suggests optimizations like preconnect hints and self-hosting for better performance.'}
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.renderRelatedTools([
+      {slug:'dev/css-minifier', name:'CSS Minifier', description:'Compress CSS by removing comments and whitespace.'},
+      {slug:'dev/css-gradient-generator', name:'CSS Gradient Generator', description:'Create beautiful CSS gradients with a visual editor.'},
+      {slug:'dev/color-contrast-checker', name:'Color Contrast Checker', description:'Check WCAG contrast ratios for accessibility compliance.'},
+      {slug:'dev/website-tech-stack-detector', name:'Website Tech Stack Detector', description:'Detect technologies used by any website.'},
+      {slug:'dev/svg-viewer-optimizer', name:'SVG Viewer & Optimizer', description:'View, edit, and optimize SVG files in the browser.'},
+      {slug:'dev/box-shadow-generator', name:'Box Shadow Generator', description:'Create CSS box shadows with a visual editor.'}
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug:'dev/web-font-performance-analyzer',
+      title:'Web Font Performance Analyzer',
+      description:'Analyze web font CSS for performance issues. Check WOFF2, font-display, preload, subsetting, and get an optimization score with recommendations.'
+    });
+
+    function analyzeInput(input) {
+      input = input.trim();
+      if (!input) return null;
+
+      var isGoogleUrl = /fonts\.googleapis\.com/.test(input);
+      var checks = [];
+      var recommendations = [];
+      var fontFaces = [];
+      var optimizedParts = [];
+
+      if (isGoogleUrl) {
+        return analyzeGoogleUrl(input);
+      }
+
+      // Parse @font-face blocks
+      var faceRegex = /@font-face\s*\{([^}]+)\}/gi;
+      var match;
+      while ((match = faceRegex.exec(input)) !== null) {
+        fontFaces.push(match[1]);
+      }
+
+      if (fontFaces.length === 0) {
+        // Try treating as partial CSS
+        if (input.indexOf('font-family') !== -1 || input.indexOf('src:') !== -1) {
+          fontFaces.push(input);
+        } else {
+          return null;
+        }
+      }
+
+      var allSrc = fontFaces.map(function(f) { return f; }).join('\n');
+      var totalFiles = 0;
+      var weights = {};
+      var families = {};
+
+      fontFaces.forEach(function(face) {
+        var srcMatch = face.match(/src\s*:[^;]+/gi);
+        if (srcMatch) {
+          srcMatch.forEach(function(s) {
+            var urlCount = (s.match(/url\s*\(/gi) || []).length;
+            totalFiles += urlCount;
+          });
+        }
+        var weightMatch = face.match(/font-weight\s*:\s*([^;]+)/i);
+        if (weightMatch) {
+          var w = weightMatch[1].trim();
+          weights[w] = true;
+        }
+        var famMatch = face.match(/font-family\s*:\s*['"]?([^'";]+)/i);
+        if (famMatch) {
+          families[famMatch[1].trim()] = true;
+        }
+      });
+
+      var weightCount = Object.keys(weights).length || fontFaces.length;
+      var score = 0;
+      var maxScore = 0;
+
+      // Check 1: WOFF2 (15 points)
+      maxScore += 15;
+      var hasWoff2 = /woff2/i.test(allSrc);
+      if (hasWoff2) {
+        checks.push({name:'WOFF2 Format', status:'pass', detail:'WOFF2 format detected — best compression available.'});
+        score += 15;
+      } else if (/woff/i.test(allSrc)) {
+        checks.push({name:'WOFF2 Format', status:'warning', detail:'Only WOFF detected. WOFF2 offers 30% better compression.'});
+        score += 5;
+        recommendations.push('Upgrade from WOFF to WOFF2 format for 30% smaller font files. WOFF2 has 95%+ browser support.');
+      } else {
+        checks.push({name:'WOFF2 Format', status:'fail', detail:'No WOFF2 or WOFF format found. Using legacy formats like TTF/OTF wastes bandwidth.'});
+        recommendations.push('Convert your fonts to WOFF2 format using tools like woff2_compress or Transfonter. WOFF2 reduces file size by 30-50% compared to TTF.');
+      }
+
+      // Check 2: font-display (15 points)
+      maxScore += 15;
+      var displayMatch = allSrc.match(/font-display\s*:\s*([\w-]+)/i);
+      if (displayMatch) {
+        var displayVal = displayMatch[1].toLowerCase();
+        if (displayVal === 'swap' || displayVal === 'optional' || displayVal === 'fallback') {
+          checks.push({name:'font-display', status:'pass', detail:'font-display: ' + displayVal + ' — good choice for performance.'});
+          score += 15;
+        } else if (displayVal === 'block') {
+          checks.push({name:'font-display', status:'warning', detail:'font-display: block hides text for up to 3 seconds. Consider swap or optional.'});
+          score += 5;
+          recommendations.push('Change font-display from "block" to "swap" (shows fallback text immediately) or "optional" (skips font on slow connections).');
+        } else {
+          checks.push({name:'font-display', status:'pass', detail:'font-display: ' + displayVal + ' is set.'});
+          score += 10;
+        }
+      } else {
+        checks.push({name:'font-display', status:'fail', detail:'No font-display property found. Browsers default to "auto" which may hide text for up to 3 seconds.'});
+        recommendations.push('Add font-display: swap to every @font-face rule. This shows fallback text immediately while fonts load.');
+      }
+
+      // Check 3: Preconnect hints (10 points)
+      maxScore += 10;
+      var hasExternalUrl = /url\s*\(\s*['"]?https?:\/\//i.test(allSrc);
+      var hasPreconnect = /preconnect/i.test(input);
+      if (!hasExternalUrl) {
+        checks.push({name:'Preconnect Hints', status:'pass', detail:'Self-hosted fonts detected — no preconnect needed.'});
+        score += 10;
+      } else if (hasPreconnect) {
+        checks.push({name:'Preconnect Hints', status:'pass', detail:'Preconnect hints found for external font origins.'});
+        score += 10;
+      } else {
+        checks.push({name:'Preconnect Hints', status:'warning', detail:'External font URLs detected but no preconnect hints found.'});
+        score += 0;
+        recommendations.push('Add <link rel="preconnect" href="https://your-font-origin.com" crossorigin> to your HTML <head> to eliminate DNS lookup delay.');
+      }
+
+      // Check 4: Unicode-range / subsetting (10 points)
+      maxScore += 10;
+      var hasUnicodeRange = /unicode-range/i.test(allSrc);
+      if (hasUnicodeRange) {
+        checks.push({name:'Unicode-Range Subsetting', status:'pass', detail:'unicode-range detected — browsers only download needed character subsets.'});
+        score += 10;
+      } else {
+        checks.push({name:'Unicode-Range Subsetting', status:'warning', detail:'No unicode-range found. Full font files are downloaded even if only Latin characters are needed.'});
+        score += 0;
+        recommendations.push('Add unicode-range to @font-face rules to subset fonts. Example: unicode-range: U+0000-00FF for Basic Latin. Google Fonts does this automatically.');
+      }
+
+      // Check 5: Number of font files (10 points)
+      maxScore += 10;
+      if (totalFiles === 0) totalFiles = fontFaces.length;
+      if (totalFiles <= 4) {
+        checks.push({name:'Font File Count', status:'pass', detail:totalFiles + ' font file(s) — within recommended limit.'});
+        score += 10;
+      } else if (totalFiles <= 6) {
+        checks.push({name:'Font File Count', status:'warning', detail:totalFiles + ' font files. Consider reducing to under 4 for better performance.'});
+        score += 5;
+        recommendations.push('You have ' + totalFiles + ' font files. Each is a separate HTTP request. Consider using a variable font or removing rarely used weights.');
+      } else {
+        checks.push({name:'Font File Count', status:'fail', detail:totalFiles + ' font files is excessive. Each file blocks rendering.'});
+        score += 0;
+        recommendations.push('Reduce font files from ' + totalFiles + ' to under 6. Use variable fonts, remove unused weights, or limit to 2 families with 2 weights each.');
+      }
+
+      // Check 6: Number of font weights (10 points)
+      maxScore += 10;
+      if (weightCount <= 3) {
+        checks.push({name:'Font Weight Count', status:'pass', detail:weightCount + ' font weight(s) — efficient selection.'});
+        score += 10;
+      } else if (weightCount <= 5) {
+        checks.push({name:'Font Weight Count', status:'warning', detail:weightCount + ' font weights loaded. Most designs need only 2-3 weights.'});
+        score += 5;
+        recommendations.push('You load ' + weightCount + ' font weights. Most sites only need regular (400) and bold (700). Remove weights not used in your design.');
+      } else {
+        checks.push({name:'Font Weight Count', status:'fail', detail:weightCount + ' font weights is excessive. Each weight is a separate file download.'});
+        score += 0;
+        recommendations.push('Reduce from ' + weightCount + ' weights to 2-3. If you need many weights, switch to a variable font which bundles all weights in one file.');
+      }
+
+      // Check 7: Format fallback chain (10 points)
+      maxScore += 10;
+      var hasFormatChain = /format\s*\(\s*['"]?woff2['"]?\s*\)[\s\S]*?format\s*\(\s*['"]?woff['"]?\s*\)/i.test(allSrc);
+      if (hasFormatChain) {
+        checks.push({name:'Format Fallback Chain', status:'pass', detail:'WOFF2 → WOFF fallback chain detected — good browser coverage.'});
+        score += 10;
+      } else if (hasWoff2) {
+        checks.push({name:'Format Fallback Chain', status:'warning', detail:'Only WOFF2 found without WOFF fallback. Older browsers may not render the font.'});
+        score += 7;
+        recommendations.push('Add a WOFF fallback after WOFF2 in your src list: src: url(font.woff2) format("woff2"), url(font.woff) format("woff");');
+      } else {
+        checks.push({name:'Format Fallback Chain', status:'fail', detail:'No modern format fallback chain found.'});
+        score += 0;
+        recommendations.push('Use a proper format chain: WOFF2 first for modern browsers, WOFF as fallback. Example: src: url(f.woff2) format("woff2"), url(f.woff) format("woff");');
+      }
+
+      // Check 8: local() source (5 points)
+      maxScore += 5;
+      var hasLocal = /local\s*\(/i.test(allSrc);
+      if (hasLocal) {
+        var localFirst = /src\s*:[\s]*local\s*\(/i.test(allSrc);
+        if (localFirst) {
+          checks.push({name:'Local Source Priority', status:'pass', detail:'local() listed first in src — browser checks installed fonts before downloading.'});
+          score += 5;
+        } else {
+          checks.push({name:'Local Source Priority', status:'warning', detail:'local() found but not listed first. Place local() before url() entries.'});
+          score += 3;
+          recommendations.push('Move local() to the beginning of your src list so browsers check installed system fonts before downloading.');
+        }
+      } else {
+        checks.push({name:'Local Source Priority', status:'warning', detail:'No local() source. Adding it lets browsers skip download if the font is already installed.'});
+        score += 0;
+        recommendations.push('Add local("Font Name") before url() in src. If users have the font installed, the browser skips the download entirely.');
+      }
+
+      // Check 9: CLS prevention (10 points)
+      maxScore += 10;
+      var hasSizeAdjust = /size-adjust/i.test(allSrc);
+      var hasAscentOverride = /ascent-override/i.test(allSrc);
+      var hasDescentOverride = /descent-override/i.test(allSrc);
+      var clsCount = (hasSizeAdjust ? 1 : 0) + (hasAscentOverride ? 1 : 0) + (hasDescentOverride ? 1 : 0);
+      if (clsCount >= 2) {
+        checks.push({name:'CLS Prevention (size-adjust)', status:'pass', detail:'Font metric overrides detected — reduces layout shift when fonts load.'});
+        score += 10;
+      } else if (clsCount === 1) {
+        checks.push({name:'CLS Prevention (size-adjust)', status:'warning', detail:'Partial CLS prevention. Add more metric overrides for better layout stability.'});
+        score += 5;
+        recommendations.push('Add size-adjust, ascent-override, and descent-override to your fallback @font-face to match web font metrics and prevent CLS.');
+      } else {
+        checks.push({name:'CLS Prevention (size-adjust)', status:'warning', detail:'No font metric overrides. Layout may shift when web fonts load.'});
+        score += 0;
+        recommendations.push('Add a fallback @font-face with size-adjust, ascent-override, and descent-override to prevent Cumulative Layout Shift. Tools like Fontaine can calculate these values.');
+      }
+
+      // Check 10: Variable font (5 points bonus)
+      maxScore += 5;
+      var hasVariable = /font-variation-settings/i.test(allSrc) || /wght\s/i.test(allSrc) || /font-weight\s*:\s*\d+\s+\d+/i.test(allSrc);
+      if (hasVariable) {
+        checks.push({name:'Variable Font', status:'pass', detail:'Variable font detected — single file for all weights and styles. Excellent!'});
+        score += 5;
+      } else {
+        checks.push({name:'Variable Font', status:'warning', detail:'No variable font detected. Variable fonts combine all weights into one file.'});
+        recommendations.push('Consider switching to a variable font. One file replaces multiple weight files, reducing HTTP requests and total download size.');
+      }
+
+      // Normalize score to 100
+      var finalScore = Math.round((score / maxScore) * 100);
+
+      // Build optimized CSS
+      var optimizedCss = buildOptimizedCss(fontFaces, checks);
+
+      return {
+        score: finalScore,
+        checks: checks,
+        recommendations: recommendations,
+        optimizedCss: optimizedCss,
+        stats: {
+          families: Object.keys(families).length || 1,
+          weights: weightCount,
+          files: totalFiles
+        }
+      };
+    }
+
+    function analyzeGoogleUrl(url) {
+      var checks = [];
+      var recommendations = [];
+      var score = 0;
+      var maxScore = 100;
+
+      // Parse families and weights
+      var familyMatch = url.match(/family=([^&]+)/);
+      var families = [];
+      var totalWeights = 0;
+      if (familyMatch) {
+        var parts = decodeURIComponent(familyMatch[1]).split('&')[0].split('|');
+        // Handle css2 format: family=Roboto:wght@400;700&family=Open+Sans
+        var allFamilies = url.match(/family=([^&]+)/g) || [];
+        allFamilies.forEach(function(f) {
+          var fam = decodeURIComponent(f.replace('family=', ''));
+          var name = fam.split(':')[0].replace(/\+/g, ' ');
+          families.push(name);
+          var wgts = fam.match(/@([\d;]+)/);
+          if (wgts) {
+            totalWeights += wgts[1].split(';').length;
+          } else {
+            totalWeights += 1;
+          }
+        });
+      }
+
+      // Check 1: WOFF2 — Google Fonts serves WOFF2 automatically
+      checks.push({name:'WOFF2 Format', status:'pass', detail:'Google Fonts automatically serves WOFF2 to supported browsers.'});
+      score += 15;
+
+      // Check 2: font-display
+      var displayParam = url.match(/display=(\w+)/);
+      if (displayParam) {
+        var dVal = displayParam[1];
+        if (dVal === 'swap' || dVal === 'optional' || dVal === 'fallback') {
+          checks.push({name:'font-display', status:'pass', detail:'display=' + dVal + ' parameter set — good performance.'});
+          score += 15;
+        } else {
+          checks.push({name:'font-display', status:'warning', detail:'display=' + dVal + ' — consider swap or optional.'});
+          score += 5;
+        }
+      } else {
+        checks.push({name:'font-display', status:'fail', detail:'No display parameter in URL. Add &display=swap to prevent invisible text.'});
+        recommendations.push('Add &display=swap to your Google Fonts URL to prevent Flash of Invisible Text (FOIT).');
+      }
+
+      // Check 3: Preconnect
+      checks.push({name:'Preconnect Hints', status:'warning', detail:'Remember to add preconnect hints in your HTML for fonts.googleapis.com and fonts.gstatic.com.'});
+      score += 0;
+      recommendations.push('Add these to your HTML <head>:\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>');
+
+      // Check 4: Unicode-range — Google Fonts does this automatically
+      checks.push({name:'Unicode-Range Subsetting', status:'pass', detail:'Google Fonts automatically subsets fonts with unicode-range.'});
+      score += 10;
+
+      // Check 5: File count
+      var fileEst = totalWeights * 2; // rough estimate (multiple subsets)
+      if (totalWeights <= 4) {
+        checks.push({name:'Font File Count', status:'pass', detail:'~' + totalWeights + ' weight(s) requested — reasonable file count.'});
+        score += 10;
+      } else if (totalWeights <= 6) {
+        checks.push({name:'Font File Count', status:'warning', detail:'~' + totalWeights + ' weights requested. Consider reducing for faster loads.'});
+        score += 5;
+        recommendations.push('Reduce the number of weights in your Google Fonts URL. Most designs only need 400 (regular) and 700 (bold).');
+      } else {
+        checks.push({name:'Font File Count', status:'fail', detail:totalWeights + ' weights is excessive. This generates many HTTP requests.'});
+        recommendations.push('You are loading ' + totalWeights + ' font weights. Reduce to 2-3 essential weights for much faster page loads.');
+      }
+
+      // Check 6: Weight count
+      if (totalWeights <= 3) {
+        checks.push({name:'Font Weight Count', status:'pass', detail:totalWeights + ' weight(s) — efficient selection.'});
+        score += 10;
+      } else if (totalWeights <= 5) {
+        checks.push({name:'Font Weight Count', status:'warning', detail:totalWeights + ' weights. Consider trimming to 2-3.'});
+        score += 5;
+      } else {
+        checks.push({name:'Font Weight Count', status:'fail', detail:totalWeights + ' weights is too many.'});
+        score += 0;
+      }
+
+      // Check 7: Format chain — Google handles this
+      checks.push({name:'Format Fallback Chain', status:'pass', detail:'Google Fonts serves optimal format chain automatically.'});
+      score += 10;
+
+      // Check 8: local() — Google Fonts includes local()
+      checks.push({name:'Local Source Priority', status:'pass', detail:'Google Fonts includes local() checks automatically.'});
+      score += 5;
+
+      // Check 9: CLS prevention
+      checks.push({name:'CLS Prevention (size-adjust)', status:'warning', detail:'Google Fonts does not include metric overrides. Add them to your fallback font.'});
+      score += 0;
+      recommendations.push('Create a fallback @font-face with size-adjust, ascent-override, and descent-override matching your Google Font. Use the Fontaine tool or @next/font to generate these automatically.');
+
+      // Check 10: Variable font
+      var hasVarHint = /wght@/i.test(url) && /\d+\.\.\d+/.test(url);
+      if (hasVarHint) {
+        checks.push({name:'Variable Font', status:'pass', detail:'Variable font range detected (e.g., wght@100..900). Efficient single-file delivery.'});
+        score += 5;
+      } else {
+        checks.push({name:'Variable Font', status:'warning', detail:'Not using variable font axis ranges. Consider wght@100..900 format for fewer files.'});
+        recommendations.push('Use variable font ranges in your URL: family=Roboto:wght@100..900 instead of listing individual weights.');
+      }
+
+      var finalScore = Math.round((score / maxScore) * 100);
+
+      // Build optimized URL
+      var optimizedUrl = url;
+      if (!displayParam) {
+        optimizedUrl += (optimizedUrl.indexOf('?') !== -1 ? '&' : '?') + 'display=swap';
+      }
+
+      var optimizedCss = '/* Optimized Google Fonts Setup */\n\n';
+      optimizedCss += '/* Add these preconnect hints to your <head> */\n';
+      optimizedCss += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
+      optimizedCss += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n\n';
+      optimizedCss += '/* Optimized Google Fonts URL */\n';
+      optimizedCss += '<link href="' + optimizedUrl + '" rel="stylesheet">\n\n';
+      optimizedCss += '/* Optional: Add fallback font with CLS prevention */\n';
+      optimizedCss += '@font-face {\n';
+      optimizedCss += '  font-family: "' + (families[0] || 'Google Font') + ' Fallback";\n';
+      optimizedCss += '  src: local("Arial");\n';
+      optimizedCss += '  size-adjust: 100.4%;\n';
+      optimizedCss += '  ascent-override: 96%;\n';
+      optimizedCss += '  descent-override: 23%;\n';
+      optimizedCss += '}\n';
+
+      return {
+        score: finalScore,
+        checks: checks,
+        recommendations: recommendations,
+        optimizedCss: optimizedCss,
+        stats: {
+          families: families.length,
+          weights: totalWeights,
+          files: totalWeights
+        }
+      };
+    }
+
+    function buildOptimizedCss(fontFaces, checks) {
+      if (fontFaces.length === 0) return '';
+
+      var css = '/* Optimized @font-face declarations */\n\n';
+      fontFaces.forEach(function(face, i) {
+        css += '@font-face {\n';
+
+        var famMatch = face.match(/font-family\s*:\s*([^;]+)/i);
+        if (famMatch) css += '  font-family: ' + famMatch[1].trim() + ';\n';
+
+        // Rebuild src with local() first, then woff2, then woff
+        var famName = famMatch ? famMatch[1].trim().replace(/['"]/g, '') : 'Font';
+        css += '  src: local("' + famName + '"),\n';
+
+        var srcMatch = face.match(/url\s*\([^)]+\)/gi);
+        if (srcMatch) {
+          var woff2Url = null, woffUrl = null;
+          srcMatch.forEach(function(s) {
+            if (/woff2/i.test(s)) woff2Url = s;
+            else if (/woff/i.test(s)) woffUrl = s;
+          });
+          if (woff2Url) css += '       ' + woff2Url + ' format("woff2"),\n';
+          else css += '       url("' + famName.toLowerCase().replace(/\s+/g, '-') + '.woff2") format("woff2"),\n';
+          if (woffUrl) css += '       ' + woffUrl + ' format("woff");\n';
+          else css += '       url("' + famName.toLowerCase().replace(/\s+/g, '-') + '.woff") format("woff");\n';
+        } else {
+          css += '       url("' + famName.toLowerCase().replace(/\s+/g, '-') + '.woff2") format("woff2"),\n';
+          css += '       url("' + famName.toLowerCase().replace(/\s+/g, '-') + '.woff") format("woff");\n';
+        }
+
+        // font-display
+        if (!/font-display/i.test(face)) {
+          css += '  font-display: swap;\n';
+        } else {
+          var dd = face.match(/font-display\s*:\s*[^;]+/i);
+          if (dd) css += '  ' + dd[0].trim() + ';\n';
+        }
+
+        // font-weight
+        var ww = face.match(/font-weight\s*:\s*[^;]+/i);
+        if (ww) css += '  ' + ww[0].trim() + ';\n';
+
+        // font-style
+        var ss = face.match(/font-style\s*:\s*[^;]+/i);
+        if (ss) css += '  ' + ss[0].trim() + ';\n';
+
+        // unicode-range
+        var ur = face.match(/unicode-range\s*:\s*[^;]+/i);
+        if (ur) {
+          css += '  ' + ur[0].trim() + ';\n';
+        } else {
+          css += '  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;\n';
+        }
+
+        css += '}\n\n';
+      });
+
+      return css;
+    }
+
+    function getScoreColor(score) {
+      if (score >= 80) return 'var(--heading)';
+      if (score >= 50) return 'var(--text)';
+      return 'var(--text)';
+    }
+
+    function getScoreLabel(score) {
+      if (score >= 90) return 'Excellent';
+      if (score >= 80) return 'Good';
+      if (score >= 60) return 'Needs Improvement';
+      if (score >= 40) return 'Poor';
+      return 'Critical';
+    }
+
+    function getStatusIcon(status) {
+      if (status === 'pass') return '<span style="color:var(--heading);font-weight:700;">&#10003;</span>';
+      if (status === 'warning') return '<span style="color:var(--text-muted);font-weight:700;">&#9888;</span>';
+      return '<span style="color:var(--text);font-weight:700;">&#10007;</span>';
+    }
+
+    function renderResults(result) {
+      var container = document.getElementById('font-results');
+      if (!result) {
+        container.innerHTML = '<p style="color:var(--text-muted);padding:16px;">Could not detect any @font-face rules or Google Fonts URL. Paste valid font CSS or a Google Fonts link.</p>';
+        return;
+      }
+
+      var html = '';
+
+      // Score circle
+      html += '<div style="text-align:center;padding:24px 0 16px;">';
+      html += '<div style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:6px solid var(--border);position:relative;">';
+      html += '<div>';
+      html += '<div style="font-size:var(--text-3xl);font-weight:800;color:' + getScoreColor(result.score) + ';line-height:1.2;">' + result.score + '</div>';
+      html += '<div style="font-size:var(--text-xs);color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">/100</div>';
+      html += '</div></div>';
+      html += '<div style="margin-top:8px;font-size:var(--text-lg);font-weight:600;color:var(--heading);">' + getScoreLabel(result.score) + '</div>';
+      html += '<div style="margin-top:4px;font-size:var(--text-sm);color:var(--text-muted);">' + result.stats.families + ' family, ' + result.stats.weights + ' weights, ~' + result.stats.files + ' files</div>';
+      html += '</div>';
+
+      // Checks
+      html += '<div style="border-top:1px solid var(--border);padding-top:16px;">';
+      html += '<h3 style="font-size:var(--text-base);font-weight:600;color:var(--heading);margin-bottom:12px;">Performance Checks</h3>';
+      result.checks.forEach(function(check) {
+        var bgStyle = 'padding:10px 14px;border-radius:8px;margin-bottom:8px;border:1px solid var(--border);background:var(--surface);';
+        html += '<div style="' + bgStyle + '">';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += getStatusIcon(check.status);
+        html += '<strong style="color:var(--heading);font-size:var(--text-sm);">' + check.name + '</strong>';
+        html += '</div>';
+        html += '<div style="font-size:var(--text-sm);color:var(--text-muted);margin-top:4px;padding-left:24px;">' + check.detail + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      // Recommendations
+      if (result.recommendations.length > 0) {
+        html += '<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">';
+        html += '<h3 style="font-size:var(--text-base);font-weight:600;color:var(--heading);margin-bottom:12px;">Recommendations</h3>';
+        html += '<ol style="padding-left:20px;margin:0;">';
+        result.recommendations.forEach(function(rec) {
+          html += '<li style="font-size:var(--text-sm);color:var(--text);margin-bottom:10px;line-height:1.6;">' + rec.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') + '</li>';
+        });
+        html += '</ol></div>';
+      }
+
+      // Optimized CSS
+      if (result.optimizedCss) {
+        html += '<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+        html += '<h3 style="font-size:var(--text-base);font-weight:600;color:var(--heading);margin:0;">Optimized CSS</h3>';
+        html += '<button id="copy-optimized-btn" class="btn-secondary" style="font-size:var(--text-xs);padding:6px 12px;">Copy CSS</button>';
+        html += '</div>';
+        html += '<pre style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:var(--text-sm);font-family:monospace;overflow-x:auto;color:var(--text);white-space:pre-wrap;word-break:break-all;max-width:100%;">' + result.optimizedCss.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</pre>';
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+
+      // Wire up copy button
+      var copyBtn = document.getElementById('copy-optimized-btn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+          navigator.clipboard.writeText(result.optimizedCss).then(function() {
+            if (window.showToast) window.showToast('Optimized CSS copied to clipboard!');
+          }).catch(function() {
+            // Fallback
+            var ta = document.createElement('textarea');
+            ta.value = result.optimizedCss;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (window.showToast) window.showToast('Optimized CSS copied to clipboard!');
+          });
+        });
+      }
+    }
+
+    // Event listeners
+    document.getElementById('analyze-btn').addEventListener('click', function() {
+      var input = document.getElementById('font-css-input').value;
+      var result = analyzeInput(input);
+      renderResults(result);
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      document.getElementById('font-css-input').value = '';
+      document.getElementById('font-results').innerHTML = '';
+    });
+  });
+  </script>
+  <style>
+    #font-results pre {
+      line-height: 1.5;
+    }
+    @media (max-width: 600px) {
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .tool-actions {
+        flex-direction: column;
+      }
+      .tool-actions button {
+        width: 100%;
+      }
+      #font-css-input {
+        font-size: var(--text-xs) !important;
+      }
+    }
+  </style>
+</body>
+</html>
