@@ -100,6 +100,15 @@
     .share-tool-bar p strong { color: var(--heading); }
     .share-btns { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 
+    /* Logo upload */
+    .logo-upload-row { display: flex; gap: 14px; align-items: flex-end; grid-column: 1 / -1; }
+    .logo-drop { border: 2px dashed var(--border); border-radius: 10px; padding: 10px 14px; text-align: center; cursor: pointer; background: var(--bg); transition: border-color .2s; min-width: 80px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60px; }
+    .logo-drop:hover { border-color: var(--heading); }
+    .logo-drop img { max-width: 80px; max-height: 50px; object-fit: contain; }
+    .logo-drop .logo-hint { font-size: 11px; color: var(--text-muted); }
+    .logo-drop svg { color: var(--text-muted); }
+    .logo-remove { position: absolute; top: -6px; right: -6px; background: var(--heading); color: var(--bg); border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; display: none; line-height: 20px; text-align: center; }
+
     /* Canvas (hidden) */
     #cardCanvas { display: none; }
 
@@ -206,6 +215,20 @@
             <button type="button" class="chip active" data-eid="fitr" onclick="pickEid(this)">Eid ul Fitr</button>
             <button type="button" class="chip" data-eid="adha" onclick="pickEid(this)">Eid ul Adha</button>
             <button type="button" class="chip" data-eid="both" onclick="pickEid(this)">Both / General</button>
+          </div>
+          <div class="eid-field eid-field--full">
+            <label>Company / Organization (optional — for card image)</label>
+            <div class="logo-upload-row">
+              <div class="logo-drop" id="logoDrop">
+                <button class="logo-remove" id="logoRemove">&times;</button>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span class="logo-hint">Upload Logo</span>
+                <input type="file" id="logoInput" accept="image/*" style="display:none;">
+              </div>
+              <div style="flex:1">
+                <input type="text" id="companyName" placeholder="e.g. Raintor Limited" style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:var(--text-md);font-family:var(--font);outline:none;">
+              </div>
+            </div>
           </div>
           <button class="eid-generate-btn" onclick="generate()">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -359,6 +382,46 @@
     });
   });
 
+  /* ===== LOGO UPLOAD ===== */
+  var uploadedLogo = null;
+  (function() {
+    var drop = document.getElementById('logoDrop');
+    var inp = document.getElementById('logoInput');
+    var rem = document.getElementById('logoRemove');
+    drop.addEventListener('click', function(e) { if (e.target !== rem) inp.click(); });
+    rem.addEventListener('click', function(e) {
+      e.stopPropagation();
+      uploadedLogo = null;
+      inp.value = '';
+      var img = drop.querySelector('img');
+      if (img) img.remove();
+      drop.querySelector('svg').style.display = '';
+      drop.querySelector('.logo-hint').style.display = '';
+      rem.style.display = 'none';
+    });
+    inp.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+          uploadedLogo = img;
+          var existing = drop.querySelector('img');
+          if (existing) existing.remove();
+          var pv = document.createElement('img');
+          pv.src = ev.target.result;
+          drop.appendChild(pv);
+          drop.querySelector('svg').style.display = 'none';
+          drop.querySelector('.logo-hint').style.display = 'none';
+          rem.style.display = 'block';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
+
   /* ===== STATE ===== */
   var selectedStyle = 'short';
   var selectedEid = 'fitr';
@@ -493,10 +556,43 @@
       ctx.fillText(line, W/2, startY + i*38);
     });
 
+    // Company name + logo (if provided)
+    var companyName = document.getElementById('companyName').value.trim();
+    var bottomY = H - 30;
+
+    if (companyName || uploadedLogo) {
+      var sectionY = H - 180;
+
+      // "From all of us at" line
+      if (companyName) {
+        ctx.fillStyle = theme.fg;
+        ctx.globalAlpha = 0.8;
+        ctx.font = 'italic 24px Poppins, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('From all of us at ' + companyName + '.', W/2, sectionY);
+        ctx.globalAlpha = 1;
+      }
+
+      // Logo centered below
+      if (uploadedLogo) {
+        var maxLogoH = 70;
+        var maxLogoW = 280;
+        var lw = uploadedLogo.width;
+        var lh = uploadedLogo.height;
+        var scale = Math.min(maxLogoW / lw, maxLogoH / lh, 1);
+        var drawW = lw * scale;
+        var drawH = lh * scale;
+        var logoY = companyName ? sectionY + 15 : sectionY - 20;
+        ctx.drawImage(uploadedLogo, W/2 - drawW/2, logoY, drawW, drawH);
+        bottomY = logoY + drawH + 20;
+      }
+    }
+
     // Watermark
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = '16px Poppins, sans-serif';
-    ctx.fillText('tool.teamzlab.com', W/2, H-30);
+    ctx.textAlign = 'center';
+    ctx.fillText('tool.teamzlab.com', W/2, Math.min(bottomY, H-15));
 
     // Download
     var link = document.createElement('a');
