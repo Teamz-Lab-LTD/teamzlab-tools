@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Sales Estimator by BSR — Teamz Lab Tools</title>
+  <meta name="description" content="Estimate monthly Amazon sales from Best Seller Rank. Free BSR-to-sales calculator with 22 categories, revenue projections, and confidence bands.">
+  <meta property="og:title" content="Amazon Sales Estimator by BSR — Teamz Lab Tools">
+  <meta property="og:description" content="Estimate monthly Amazon sales from Best Seller Rank. Free BSR-to-sales calculator with 22 categories, revenue projections, and confidence bands.">
+  <meta property="og:url" content="https://tool.teamzlab.com/amazon/sales-estimator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/amazon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Amazon Sales Estimator by BSR — Teamz Lab Tools">
+  <meta name="twitter:description" content="Estimate monthly Amazon sales from Best Seller Rank. Free BSR-to-sales calculator with 22 categories, revenue projections, and confidence bands.">
+  <link rel="canonical" href="https://tool.teamzlab.com/amazon/sales-estimator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .est-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .est-form .form-group { display: flex; flex-direction: column; }
+    .est-form .form-group.full-width { grid-column: 1 / -1; }
+    .est-form label { font-weight: 600; color: var(--text); margin-bottom: 0.35rem; font-size: 0.95rem; }
+    .est-form input, .est-form select {
+      padding: 0.7rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit;
+    }
+    .est-form input:focus, .est-form select:focus { outline: none; border-color: var(--accent); }
+    .est-actions { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .est-result { display: none; }
+    .est-result.visible { display: block; }
+    .est-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .est-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; text-align: center;
+    }
+    .est-card .est-label { font-size: 0.85rem; color: var(--text-muted); margin: 0 0 0.25rem; }
+    .est-card .est-value { font-size: 1.6rem; font-weight: 800; color: var(--heading); margin: 0; }
+    .est-card .est-sub { font-size: 0.8rem; color: var(--text-muted); margin: 0.25rem 0 0; }
+    .est-range-bar {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .est-range-bar .range-header { font-weight: 600; color: var(--text); margin: 0 0 0.75rem; font-size: 0.95rem; }
+    .range-visual {
+      display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;
+    }
+    .range-bar-track {
+      flex: 1; height: 10px; background: var(--border); border-radius: 5px; position: relative;
+    }
+    .range-bar-fill {
+      height: 100%; border-radius: 5px; background: var(--accent);
+    }
+    .range-bar-marker {
+      position: absolute; top: -6px; width: 4px; height: 22px; border-radius: 2px;
+      background: var(--heading);
+    }
+    .range-labels { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); }
+    .est-compete {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .compete-header { font-weight: 600; color: var(--text); margin: 0 0 0.5rem; }
+    .compete-level { font-weight: 700; font-size: 1.1rem; }
+    .compete-desc { color: var(--text-muted); font-size: 0.9rem; margin: 0.25rem 0 0; }
+    .est-table-wrap {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 1.25rem; margin-bottom: 1.5rem; overflow-x: auto;
+    }
+    .est-table-wrap .table-header { font-weight: 600; color: var(--text); margin: 0 0 0.75rem; }
+    .est-ref-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .est-ref-table th {
+      text-align: left; padding: 0.6rem 0.75rem; border-bottom: 2px solid var(--border);
+      color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase;
+    }
+    .est-ref-table td {
+      padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text);
+    }
+    .est-ref-table tr:last-child td { border-bottom: none; }
+    .est-note {
+      font-size: 0.8rem; color: var(--text-muted); font-style: italic; text-align: center;
+      margin-top: 1rem;
+    }
+    @media (max-width: 600px) {
+      .est-form { grid-template-columns: 1fr; }
+      .est-summary { grid-template-columns: 1fr; }
+      .est-actions { flex-direction: column; }
+      .est-actions button { width: 100%; }
+      .est-card .est-value { font-size: 1.3rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Amazon Seller Tools", "item": "https://tool.teamzlab.com/amazon/"}, {"@type": "ListItem", "position": 3, "name": "Sales Estimator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How accurate are Amazon sales estimates?", "acceptedAnswer": {"@type": "Answer", "text": "BSR-based sales estimates provide a reasonable approximation but are not exact. The exponential decay formula used here is widely cited by Amazon selling communities and tools like Jungle Scout. Actual accuracy depends on BSR fluctuation, seasonality, and whether the product had a recent sales spike or promotion. For best results, average the BSR over several days before estimating."}}, {"@type": "Question", "name": "How does BSR relate to sales?", "acceptedAnswer": {"@type": "Answer", "text": "BSR (Best Seller Rank) is a relative ranking Amazon assigns to every product based on recent sales velocity compared to other products in the same category. A BSR of 1 means the product is the top seller in its category. The relationship follows an exponential decay curve — BSR 1 sells dramatically more than BSR 100, which sells far more than BSR 10,000. Small improvements in BSR at lower ranks translate to large sales differences."}}, {"@type": "Question", "name": "What is a good BSR on Amazon?", "acceptedAnswer": {"@type": "Answer", "text": "A \"good\" BSR depends on the category size. In large categories like Home & Kitchen or Clothing, a BSR under 5,000 indicates strong sales (hundreds of units per month). In smaller categories like Musical Instruments or CDs & Vinyl, a BSR under 1,000 is considered excellent. Generally, a BSR under 10,000 in any category suggests the product is actively selling."}}, {"@type": "Question", "name": "How often does BSR update?", "acceptedAnswer": {"@type": "Answer", "text": "Amazon updates BSR approximately every one to two hours. Each update reflects recent sales activity weighted heavily toward the most recent orders. This means BSR can fluctuate significantly throughout the day — a product might be BSR 500 in the morning and BSR 2,000 by evening if competitors had strong sales. Track BSR over time for a reliable picture."}}, {"@type": "Question", "name": "Can BSR predict future sales?", "acceptedAnswer": {"@type": "Answer", "text": "BSR reflects current and recent sales velocity, not future performance. While a consistently low BSR suggests sustained demand, it cannot account for upcoming competition, seasonal shifts, or market changes. Use BSR estimates alongside other research — keyword search volume, review trends, and competitor analysis — to build a more complete demand forecast."}}, {"@type": "Question", "name": "How to improve BSR rank?", "acceptedAnswer": {"@type": "Answer", "text": "To improve your BSR, focus on increasing sales velocity. Run Amazon PPC campaigns targeting high-converting keywords. Optimize your listing with better images, A+ content, and compelling bullet points. Use promotions, coupons, and Lightning Deals to drive short-term sales spikes. Encourage organic reviews through great product quality and follow-up. Maintain competitive pricing and ensure inventory availability to avoid stockout penalties."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Amazon Sales Estimator", "description": "Estimate monthly Amazon sales from Best Seller Rank with category-specific curves, revenue projections, and confidence bands.", "url": "https://tool.teamzlab.com/amazon/sales-estimator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Amazon Sales Estimator</h1>
+      <p class="tool-description">Estimate how many units an Amazon product sells per month using its Best Seller Rank (BSR). Enter the BSR and category to get daily and monthly sales estimates, revenue projections, and a quick reference table for any Amazon product category.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="est-form">
+        <div class="form-group">
+          <label for="bsr-rank">BSR (Best Seller Rank)</label>
+          <input type="number" id="bsr-rank" min="1" max="10000000" placeholder="e.g. 2500" value="">
+        </div>
+        <div class="form-group">
+          <label for="product-category">Product Category</label>
+          <select id="product-category">
+            <option value="arts_crafts">Arts, Crafts &amp; Sewing</option>
+            <option value="automotive">Automotive</option>
+            <option value="baby">Baby</option>
+            <option value="beauty">Beauty &amp; Personal Care</option>
+            <option value="books">Books</option>
+            <option value="cds_vinyl">CDs &amp; Vinyl</option>
+            <option value="cell_phones">Cell Phones &amp; Accessories</option>
+            <option value="clothing" selected>Clothing, Shoes &amp; Jewelry</option>
+            <option value="electronics">Electronics</option>
+            <option value="garden">Garden &amp; Outdoor</option>
+            <option value="grocery">Grocery &amp; Gourmet</option>
+            <option value="health">Health &amp; Household</option>
+            <option value="home_kitchen">Home &amp; Kitchen</option>
+            <option value="industrial">Industrial &amp; Scientific</option>
+            <option value="kitchen_dining">Kitchen &amp; Dining</option>
+            <option value="musical">Musical Instruments</option>
+            <option value="office">Office Products</option>
+            <option value="pet">Pet Supplies</option>
+            <option value="sports">Sports &amp; Outdoors</option>
+            <option value="tools_home">Tools &amp; Home Improvement</option>
+            <option value="toys">Toys &amp; Games</option>
+            <option value="video_games">Video Games</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="selling-price">Selling Price ($) <span style="font-weight:400;color:var(--text-muted);font-size:0.85rem;">— optional</span></label>
+          <input type="number" id="selling-price" min="0" step="0.01" placeholder="e.g. 29.99" value="">
+        </div>
+      </div>
+      <div class="est-actions">
+        <button class="btn-primary" id="estimate-btn">Estimate Sales</button>
+        <button class="btn-secondary tool-clear-btn" id="clear-btn">Clear</button>
+      </div>
+
+      <div class="est-result" id="est-result">
+        <div class="est-summary" id="est-summary"></div>
+        <div class="est-range-bar" id="est-range"></div>
+        <div class="est-compete" id="est-compete"></div>
+        <div class="est-table-wrap" id="est-table"></div>
+        <p class="est-note">Estimates are based on exponential decay curves derived from publicly available BSR research. Actual sales may vary based on seasonality, promotions, and listing activity.</p>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How BSR Relates to Amazon Sales</h2>
+      <p>Amazon's Best Seller Rank (BSR) is a relative ranking that reflects how well a product is selling compared to other products in the same category. A lower BSR number indicates higher sales volume. The relationship between BSR and actual sales follows an exponential decay curve — the top-ranked products sell dramatically more than those even a few hundred ranks lower. This estimator uses the widely-cited formula <code>topSales x BSR^(-0.65)</code> to approximate monthly unit sales, where <code>topSales</code> is the estimated monthly sales for the number one product in that category.</p>
+      <p>BSR updates approximately every one to two hours, making it a near real-time indicator of sales velocity. However, a single BSR snapshot only tells part of the story. A product's rank can fluctuate significantly throughout the day based on order spikes, promotions, and competitor activity. For the most accurate picture, sellers typically track BSR over several days or weeks and average the results.</p>
+
+      <h2>Using Sales Estimates for Product Research</h2>
+      <p>Estimating monthly sales from BSR is one of the most valuable steps in Amazon product research. Before sourcing inventory or launching a new private label product, sellers use BSR data to validate demand. A product in the top 5,000 of a major category like Home &amp; Kitchen typically moves hundreds of units per month, while a BSR above 100,000 may indicate only a handful of sales. The confidence band shown in this tool — a 30 percent range above and below the estimate — accounts for BSR fluctuation and seasonal variation.</p>
+      <p>Category size matters significantly when interpreting BSR. A rank of 5,000 in Clothing, Shoes &amp; Jewelry (with over 100 million listings) represents far more sales than the same rank in Musical Instruments (with far fewer listings). This tool adjusts estimates based on each category's estimated top-seller volume, giving you a more accurate picture across all 22 major Amazon categories.</p>
+
+      <h2>Understanding Category Competitiveness</h2>
+      <p>Each Amazon category has a different level of competition and sales volume ceiling. Categories like Home &amp; Kitchen and Clothing have massive sales volumes at the top but are intensely competitive. Niche categories like CDs &amp; Vinyl or Musical Instruments have lower ceilings but may offer easier entry for new sellers. The competitiveness indicator in this tool helps you assess whether a category is viable for your business goals. High-competition categories require more aggressive pricing, advertising spend, and review generation, while lower-competition categories may allow organic growth with less investment.</p>
+      <p>Smart sellers often target the sweet spot — categories with moderate competition but consistent demand. Tools like this sales estimator, combined with keyword research and profit calculators, form the foundation of data-driven Amazon selling. Use the quick reference table to compare potential across BSR ranges and identify where your product might realistically land after launch.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      var CATEGORIES = {
+        arts_crafts:   { name: 'Arts, Crafts & Sewing', topSales: 12000 },
+        automotive:    { name: 'Automotive', topSales: 15000 },
+        baby:          { name: 'Baby', topSales: 14000 },
+        beauty:        { name: 'Beauty & Personal Care', topSales: 45000 },
+        books:         { name: 'Books', topSales: 50000 },
+        cds_vinyl:     { name: 'CDs & Vinyl', topSales: 5000 },
+        cell_phones:   { name: 'Cell Phones & Accessories', topSales: 35000 },
+        clothing:      { name: 'Clothing, Shoes & Jewelry', topSales: 90000 },
+        electronics:   { name: 'Electronics', topSales: 50000 },
+        garden:        { name: 'Garden & Outdoor', topSales: 30000 },
+        grocery:       { name: 'Grocery & Gourmet', topSales: 30000 },
+        health:        { name: 'Health & Household', topSales: 40000 },
+        home_kitchen:  { name: 'Home & Kitchen', topSales: 60000 },
+        industrial:    { name: 'Industrial & Scientific', topSales: 10000 },
+        kitchen_dining:{ name: 'Kitchen & Dining', topSales: 35000 },
+        musical:       { name: 'Musical Instruments', topSales: 5000 },
+        office:        { name: 'Office Products', topSales: 20000 },
+        pet:           { name: 'Pet Supplies', topSales: 25000 },
+        sports:        { name: 'Sports & Outdoors', topSales: 35000 },
+        tools_home:    { name: 'Tools & Home Improvement', topSales: 25000 },
+        toys:          { name: 'Toys & Games', topSales: 50000 },
+        video_games:   { name: 'Video Games', topSales: 15000 }
+      };
+
+      function estimateSales(bsr, topSales) {
+        return topSales * Math.pow(bsr, -0.65);
+      }
+
+      function formatNum(n) {
+        if (n >= 1000) return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        if (n >= 10) return Math.round(n).toLocaleString('en-US');
+        if (n >= 1) return n.toFixed(1);
+        return n.toFixed(2);
+      }
+
+      function formatCurrency(n) {
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      function getCompetitiveness(topSales) {
+        if (topSales >= 50000) return { level: 'Very High', color: 'var(--heading)', desc: 'Extremely competitive. Requires strong PPC spend, aggressive pricing, and excellent reviews to rank.' };
+        if (topSales >= 30000) return { level: 'High', color: 'var(--heading)', desc: 'Competitive category. Established brands dominate the top ranks. New sellers need a solid launch strategy.' };
+        if (topSales >= 15000) return { level: 'Moderate', color: 'var(--heading)', desc: 'Balanced competition. Good opportunity for differentiated products with steady demand.' };
+        return { level: 'Lower', color: 'var(--heading)', desc: 'Less competitive niche. Easier to rank but lower overall sales volume ceiling.' };
+      }
+
+      function buildRefTable(topSales) {
+        var ranges = [
+          { label: '1 – 100', low: 1, high: 100 },
+          { label: '100 – 500', low: 100, high: 500 },
+          { label: '500 – 1,000', low: 500, high: 1000 },
+          { label: '1,000 – 5,000', low: 1000, high: 5000 },
+          { label: '5,000 – 10,000', low: 5000, high: 10000 },
+          { label: '10,000+', low: 10000, high: 50000 }
+        ];
+        var rows = '';
+        for (var i = 0; i < ranges.length; i++) {
+          var r = ranges[i];
+          var salesHigh = Math.round(estimateSales(r.low, topSales));
+          var salesLow = Math.round(estimateSales(r.high, topSales));
+          rows += '<tr><td>' + r.label + '</td><td>' + formatNum(salesLow) + ' – ' + formatNum(salesHigh) + '</td></tr>';
+        }
+        return '<table class="est-ref-table"><thead><tr><th>BSR Range</th><th>Est. Monthly Sales</th></tr></thead><tbody>' + rows + '</tbody></table>';
+      }
+
+      function calculate() {
+        var bsrInput = document.getElementById('bsr-rank');
+        var catSelect = document.getElementById('product-category');
+        var priceInput = document.getElementById('selling-price');
+        var bsr = parseInt(bsrInput.value, 10);
+        var catKey = catSelect.value;
+        var price = parseFloat(priceInput.value) || 0;
+
+        if (!bsr || bsr < 1) {
+          if (window.showToast) window.showToast('Please enter a valid BSR rank (1 or higher).');
+          return;
+        }
+
+        var cat = CATEGORIES[catKey];
+        if (!cat) return;
+
+        var monthly = estimateSales(bsr, cat.topSales);
+        var daily = monthly / 30;
+        var lowMonthly = monthly * 0.7;
+        var highMonthly = monthly * 1.3;
+
+        // Summary cards
+        var summaryHTML = '';
+        summaryHTML += '<div class="est-card"><p class="est-label">Estimated Daily Sales</p><p class="est-value">' + formatNum(daily) + '</p><p class="est-sub">units/day</p></div>';
+        summaryHTML += '<div class="est-card"><p class="est-label">Estimated Monthly Sales</p><p class="est-value">' + formatNum(monthly) + '</p><p class="est-sub">units/month</p></div>';
+
+        if (price > 0) {
+          var monthlyRev = monthly * price;
+          var lowRev = lowMonthly * price;
+          var highRev = highMonthly * price;
+          summaryHTML += '<div class="est-card"><p class="est-label">Est. Monthly Revenue</p><p class="est-value">' + formatCurrency(monthlyRev) + '</p><p class="est-sub">' + formatCurrency(lowRev) + ' – ' + formatCurrency(highRev) + '</p></div>';
+          summaryHTML += '<div class="est-card"><p class="est-label">Est. Daily Revenue</p><p class="est-value">' + formatCurrency(monthlyRev / 30) + '</p><p class="est-sub">per day at ' + formatCurrency(price) + '/unit</p></div>';
+        }
+
+        document.getElementById('est-summary').innerHTML = summaryHTML;
+
+        // Confidence range bar
+        var maxVis = cat.topSales * 0.5;
+        var fillPct = Math.min((highMonthly / maxVis) * 100, 100);
+        var markerPct = Math.min((monthly / maxVis) * 100, 98);
+        var rangeHTML = '<p class="range-header">Sales Confidence Band (±30%)</p>';
+        rangeHTML += '<div class="range-visual"><span style="font-size:0.85rem;color:var(--text-muted);">' + formatNum(lowMonthly) + '</span>';
+        rangeHTML += '<div class="range-bar-track"><div class="range-bar-fill" style="width:' + fillPct + '%;"></div>';
+        rangeHTML += '<div class="range-bar-marker" style="left:' + markerPct + '%;"></div></div>';
+        rangeHTML += '<span style="font-size:0.85rem;color:var(--text-muted);">' + formatNum(highMonthly) + '</span></div>';
+        rangeHTML += '<div class="range-labels"><span>Low Estimate</span><span>Your BSR: ' + bsr.toLocaleString() + '</span><span>High Estimate</span></div>';
+        document.getElementById('est-range').innerHTML = rangeHTML;
+
+        // Competitiveness
+        var comp = getCompetitiveness(cat.topSales);
+        var compHTML = '<p class="compete-header">Category Competitiveness: ' + cat.name + '</p>';
+        compHTML += '<p class="compete-level" style="color:' + comp.color + ';">' + comp.level + ' Competition</p>';
+        compHTML += '<p class="compete-desc">' + comp.desc + '</p>';
+        document.getElementById('est-compete').innerHTML = compHTML;
+
+        // Reference table
+        var tableHTML = '<p class="table-header">Quick Reference: ' + cat.name + '</p>';
+        tableHTML += buildRefTable(cat.topSales);
+        document.getElementById('est-table').innerHTML = tableHTML;
+
+        // Show result
+        document.getElementById('est-result').classList.add('visible');
+      }
+
+      function clearForm() {
+        document.getElementById('bsr-rank').value = '';
+        document.getElementById('product-category').value = 'clothing';
+        document.getElementById('selling-price').value = '';
+        document.getElementById('est-result').classList.remove('visible');
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        var BREADCRUMBS = [
+          { name: 'Home', url: '/' },
+          { name: 'Amazon Seller Tools', url: '/amazon/' },
+          { name: 'Sales Estimator' }
+        ];
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+
+        var faqs = [
+          { q: 'How accurate are Amazon sales estimates?', a: 'BSR-based sales estimates provide a reasonable approximation but are not exact. The exponential decay formula used here is widely cited by Amazon selling communities and tools like Jungle Scout. Actual accuracy depends on BSR fluctuation, seasonality, and whether the product had a recent sales spike or promotion. For best results, average the BSR over several days before estimating.' },
+          { q: 'How does BSR relate to sales?', a: 'BSR (Best Seller Rank) is a relative ranking Amazon assigns to every product based on recent sales velocity compared to other products in the same category. A BSR of 1 means the product is the top seller in its category. The relationship follows an exponential decay curve — BSR 1 sells dramatically more than BSR 100, which sells far more than BSR 10,000. Small improvements in BSR at lower ranks translate to large sales differences.' },
+          { q: 'What is a good BSR on Amazon?', a: 'A "good" BSR depends on the category size. In large categories like Home & Kitchen or Clothing, a BSR under 5,000 indicates strong sales (hundreds of units per month). In smaller categories like Musical Instruments or CDs & Vinyl, a BSR under 1,000 is considered excellent. Generally, a BSR under 10,000 in any category suggests the product is actively selling.' },
+          { q: 'How often does BSR update?', a: 'Amazon updates BSR approximately every one to two hours. Each update reflects recent sales activity weighted heavily toward the most recent orders. This means BSR can fluctuate significantly throughout the day — a product might be BSR 500 in the morning and BSR 2,000 by evening if competitors had strong sales. Track BSR over time for a reliable picture.' },
+          { q: 'Can BSR predict future sales?', a: 'BSR reflects current and recent sales velocity, not future performance. While a consistently low BSR suggests sustained demand, it cannot account for upcoming competition, seasonal shifts, or market changes. Use BSR estimates alongside other research — keyword search volume, review trends, and competitor analysis — to build a more complete demand forecast.' },
+          { q: 'How to improve BSR rank?', a: 'To improve your BSR, focus on increasing sales velocity. Run Amazon PPC campaigns targeting high-converting keywords. Optimize your listing with better images, A+ content, and compelling bullet points. Use promotions, coupons, and Lightning Deals to drive short-term sales spikes. Encourage organic reviews through great product quality and follow-up. Maintain competitive pricing and ensure inventory availability to avoid stockout penalties.' }
+        ];
+        TeamzTools.renderFAQs(faqs);
+        TeamzTools.injectFAQSchema(faqs);
+
+        TeamzTools.renderRelatedTools([
+          { slug: 'amazon/bsr-sales-calculator', name: 'Amazon BSR Calculator', description: 'Deep BSR to sales rank analysis' },
+          { slug: 'amazon/product-research-scorecard', name: 'Amazon Product Research Scorecard', description: 'Score product viability out of 100' },
+          { slug: 'amazon/profit-calculator', name: 'Amazon Profit Calculator', description: 'Calculate net profit after all fees' },
+          { slug: 'amazon/fba-fee-calculator', name: 'Amazon FBA Fee Calculator', description: 'Calculate all Amazon FBA selling fees' },
+          { slug: 'amazon/competitor-analysis-tool', name: 'Amazon Competitor Analysis', description: 'Compare products side by side' },
+          { slug: 'amazon/keyword-research-tool', name: 'Amazon Keyword Research', description: 'Find profitable keywords for listings' }
+        ]);
+
+        TeamzTools.injectWebAppSchema({
+          title: 'Amazon Sales Estimator',
+          description: 'Estimate monthly Amazon sales from Best Seller Rank with category-specific curves, revenue projections, and confidence bands.',
+          slug: 'amazon/sales-estimator'
+        });
+
+        document.getElementById('estimate-btn').addEventListener('click', calculate);
+        document.getElementById('clear-btn').addEventListener('click', clearForm);
+
+        document.getElementById('bsr-rank').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); calculate(); }
+        });
+        document.getElementById('selling-price').addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); calculate(); }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

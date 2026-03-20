@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Restock Planner — Teamz Lab Tools</title>
+  <meta name="description" content="Plan optimal Amazon FBA inventory restock timing and quantities. Avoid stockouts, calculate reorder points, and project 90-day inventory levels free.">
+  <meta property="og:title" content="Amazon Restock Planner — Teamz Lab Tools">
+  <meta property="og:description" content="Plan optimal Amazon FBA restock timing and quantities. Avoid stockouts and calculate reorder points free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/amazon/restock-planner/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/amazon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Amazon Restock Planner — Teamz Lab Tools">
+  <meta name="twitter:description" content="Plan optimal Amazon FBA restock timing and quantities. Avoid stockouts and calculate reorder points free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/amazon/restock-planner/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .input-group { min-width: 0; }
+    .input-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--text); font-size: 0.9rem; }
+    .input-group label span { color: var(--text-muted); font-weight: 400; }
+    .input-group input { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+    .section-label { font-weight: 700; color: var(--heading); font-size: 1rem; margin-bottom: 0.6rem; margin-top: 0.5rem; }
+    .calc-btn { width: 100%; padding: 0.9rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; margin-top: 0.5rem; }
+    .calc-btn:hover { opacity: 0.88; }
+
+    .status-badge { display: inline-block; padding: 0.6rem 1.5rem; border-radius: 30px; font-weight: 700; font-size: 1.1rem; margin-bottom: 1rem; }
+    .status-in-stock { background: var(--surface); border: 2px solid var(--heading); color: var(--heading); }
+    .status-reorder { background: var(--surface); border: 2px solid var(--text-muted); color: var(--text-muted); }
+    .status-urgent { background: var(--surface); border: 2px solid var(--heading); color: var(--heading); font-weight: 800; }
+    .status-out { background: var(--surface); border: 2px solid var(--text-muted); color: var(--text-muted); }
+
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+    .result-card .label { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .result-card .value { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+
+    .timeline-container { margin: 1.5rem 0; padding: 1.2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .timeline-title { font-weight: 700; color: var(--heading); margin-bottom: 1rem; font-size: 1rem; }
+    .timeline-bar { position: relative; height: 6px; background: var(--border); border-radius: 3px; margin: 2.5rem 0 3rem; }
+    .timeline-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; background: var(--heading); }
+    .timeline-marker { position: absolute; top: -10px; width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--heading); background: var(--surface); transform: translateX(-50%); }
+    .timeline-marker-label { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; color: var(--text); text-align: center; }
+    .timeline-marker-date { position: absolute; top: 38px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.68rem; color: var(--text-muted); text-align: center; }
+
+    .projection-table { width: 100%; border-collapse: collapse; margin-top: 1.2rem; }
+    .projection-table th, .projection-table td { padding: 0.6rem 0.7rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .projection-table th { background: var(--surface); color: var(--heading); font-weight: 600; position: sticky; top: 0; }
+    .projection-table td { color: var(--text); }
+    .projection-table .restock-row { font-weight: 600; }
+    .projection-table .stockout-row td { color: var(--text-muted); font-style: italic; }
+    .projection-wrap { max-height: none; overflow-x: auto; margin-top: 1rem; }
+    .projection-status { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.78rem; font-weight: 600; }
+    .projection-ok { background: var(--surface); border: 1px solid var(--heading); color: var(--heading); }
+    .projection-low { background: var(--surface); border: 1px solid var(--text-muted); color: var(--text-muted); }
+    .projection-out { background: var(--surface); border: 1px solid var(--text-muted); color: var(--text-muted); }
+    .projection-restock { background: var(--surface); border: 1px solid var(--heading); color: var(--heading); }
+
+    .breakdown-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .breakdown-table th, .breakdown-table td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+    .breakdown-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .breakdown-table td:last-child { text-align: right; font-weight: 600; color: var(--heading); }
+
+    @media (max-width: 600px) {
+      .calc-grid { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr 1fr; }
+      .result-card .value { font-size: 1.2rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .timeline-marker-label { font-size: 0.65rem; }
+      .timeline-marker-date { font-size: 0.6rem; }
+      .projection-table th, .projection-table td { padding: 0.5rem; font-size: 0.8rem; }
+      .status-badge { font-size: 0.95rem; padding: 0.5rem 1rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Amazon Seller Tools", "item": "https://tool.teamzlab.com/amazon/"}, {"@type": "ListItem", "position": 3, "name": "Restock Planner"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "When should I reorder Amazon FBA inventory?", "acceptedAnswer": {"@type": "Answer", "text": "Reorder when your inventory drops to the reorder point, which equals your daily sales multiplied by total lead time (supplier plus shipping) plus safety stock days. This ensures new stock arrives before you run out."}}, {"@type": "Question", "name": "What is a reorder point for Amazon inventory?", "acceptedAnswer": {"@type": "Answer", "text": "The reorder point is the minimum inventory level that triggers a new purchase order. It accounts for how many units you sell daily, how long your supplier takes to produce, how long shipping to Amazon takes, and your desired safety buffer."}}, {"@type": "Question", "name": "How do I calculate safety stock for Amazon FBA?", "acceptedAnswer": {"@type": "Answer", "text": "Safety stock equals your average daily sales multiplied by the number of buffer days you want. Most sellers use 7 to 14 days. Higher safety stock protects against demand spikes and delays but increases storage costs."}}, {"@type": "Question", "name": "What happens when you run out of stock on Amazon?", "acceptedAnswer": {"@type": "Answer", "text": "Stockouts cause immediate lost sales, BSR ranking drops, loss of organic keyword positions to competitors, and potential loss of the Buy Box. Recovery can take weeks. Revenue at risk equals daily sales times your selling price for every day out of stock."}}, {"@type": "Question", "name": "How do I avoid Amazon long-term storage fees?", "acceptedAnswer": {"@type": "Answer", "text": "Order quantities that sell through within 90 to 180 days. Monitor your inventory age in Seller Central. Use this planner to calculate optimal order quantities that balance stockout risk against excess inventory and storage surcharges."}}, {"@type": "Question", "name": "What are best practices for Amazon inventory management?", "acceptedAnswer": {"@type": "Answer", "text": "Track 30-day and 90-day rolling sales averages, maintain 7 to 14 days of safety stock, build relationships with backup suppliers, review restock plans weekly, account for seasonal demand changes, and coordinate promotional campaigns with inventory levels."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Amazon Restock Planner", "description": "Plan optimal Amazon FBA inventory restock timing and quantities. Avoid stockouts and calculate reorder points.", "url": "https://tool.teamzlab.com/amazon/restock-planner/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Amazon Inventory Restock Planner</h1>
+      <p class="tool-description">Plan optimal FBA inventory restock timing and quantities. Know exactly when to reorder, how much to order, and avoid costly stockouts.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="section-label">Inventory Details</div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="currentInventory">Current Inventory (units)</label>
+          <input type="number" id="currentInventory" min="0" step="1" placeholder="e.g. 500">
+        </div>
+        <div class="input-group">
+          <label for="avgDailySales">Avg Daily Sales (units/day)</label>
+          <input type="number" id="avgDailySales" min="0" step="0.1" placeholder="e.g. 15">
+        </div>
+      </div>
+
+      <div class="section-label">Lead Times</div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="supplierLeadTime">Supplier Lead Time (days)</label>
+          <input type="number" id="supplierLeadTime" min="0" step="1" value="14" placeholder="e.g. 14">
+        </div>
+        <div class="input-group">
+          <label for="shippingLeadTime">Shipping to Amazon (days)</label>
+          <input type="number" id="shippingLeadTime" min="0" step="1" value="14" placeholder="e.g. 14">
+        </div>
+      </div>
+
+      <div class="section-label">Safety &amp; Costs</div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="safetyStockDays">Safety Stock (days of buffer)</label>
+          <input type="number" id="safetyStockDays" min="0" step="1" value="7" placeholder="e.g. 7">
+        </div>
+        <div class="input-group">
+          <label for="productCost">Product Cost per Unit ($)</label>
+          <input type="number" id="productCost" min="0" step="0.01" placeholder="e.g. 5.50">
+        </div>
+      </div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="sellingPrice">Selling Price per Unit ($) <span>(optional)</span></label>
+          <input type="number" id="sellingPrice" min="0" step="0.01" placeholder="e.g. 24.99">
+        </div>
+        <div class="input-group">
+          <label for="moq">Min Order Quantity (MOQ) <span>(optional)</span></label>
+          <input type="number" id="moq" min="1" step="1" value="1" placeholder="e.g. 100">
+        </div>
+      </div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="currentDate">Current Date</label>
+          <input type="date" id="currentDate">
+        </div>
+        <div class="input-group"></div>
+      </div>
+
+      <button class="calc-btn" id="calculateBtn">Plan Restock</button>
+
+      <div id="results" style="display:none;">
+        <div style="text-align:center;margin-top:1.5rem;">
+          <div class="status-badge" id="statusBadge">In Stock</div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="label">Days of Stock Left</div>
+            <div class="value" id="daysLeft">0</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Stockout Date</div>
+            <div class="value" id="stockoutDate">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Reorder Date</div>
+            <div class="value" id="reorderDate">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Days Until Reorder</div>
+            <div class="value" id="daysUntilReorder">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Order Quantity</div>
+            <div class="value" id="orderQty">0</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Order Cost</div>
+            <div class="value" id="orderCost">$0</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Reorder Point</div>
+            <div class="value" id="reorderPoint">0</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Revenue at Risk / Day</div>
+            <div class="value" id="revenueAtRisk">—</div>
+          </div>
+        </div>
+
+        <div class="timeline-container" id="timelineSection">
+          <div class="timeline-title">Inventory Timeline</div>
+          <div class="timeline-bar" id="timelineBar">
+            <div class="timeline-fill" id="timelineFill"></div>
+          </div>
+        </div>
+
+        <table class="breakdown-table">
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody id="breakdownBody"></tbody>
+        </table>
+
+        <div style="margin-top:1.5rem;">
+          <div class="section-label">90-Day Inventory Projection</div>
+          <div class="projection-wrap">
+            <table class="projection-table">
+              <thead>
+                <tr>
+                  <th>Week</th>
+                  <th>Starting Stock</th>
+                  <th>Sales</th>
+                  <th>Restock</th>
+                  <th>Ending Stock</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="projectionBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Amazon Inventory Restock Planning Works</h2>
+      <p>Running out of stock on Amazon is one of the most damaging events for FBA sellers. When your listing goes out of stock, you lose sales, your Best Sellers Rank (BSR) drops, and competitors capture your organic keyword positions. The Amazon Restock Planner calculates your optimal reorder point by factoring in your current inventory, daily sales velocity, supplier lead time, shipping transit time, and safety stock buffer. This ensures you always place orders early enough to receive inventory before running out.</p>
+      <p>The reorder point formula accounts for total lead time, which is the sum of supplier manufacturing time and shipping transit to Amazon fulfillment centers. Adding a safety stock buffer protects against demand spikes, supplier delays, and shipping disruptions that could otherwise cause a stockout.</p>
+
+      <h2>Understanding Reorder Points and Safety Stock</h2>
+      <p>Your reorder point is the inventory level at which you should place a new purchase order. It equals your daily sales rate multiplied by total lead time, plus safety stock. Safety stock acts as a buffer against uncertainty in both demand and supply chain timing. Most experienced Amazon sellers maintain 7 to 14 days of safety stock, depending on product seasonality and supplier reliability.</p>
+      <p>Setting safety stock too low risks stockouts during demand spikes or shipping delays. Setting it too high increases storage fees and ties up capital. The ideal balance depends on your product category, historical sales variance, and how quickly your supplier can fulfill rush orders. Use this planner to model different safety stock scenarios before committing.</p>
+
+      <h2>Avoiding Stockouts and Long-Term Storage Fees</h2>
+      <p>Amazon charges monthly inventory storage fees based on cubic footage, with higher rates during Q4 peak season from October through December. Products stored over 181 days incur aged inventory surcharges that can significantly erode margins. The restock planner helps you order just the right quantity, enough to avoid stockouts while minimizing excess inventory that triggers long-term storage penalties.</p>
+      <p>The 90-day projection table shows your inventory trajectory week by week, making it easy to spot when stock levels become critical. Use this data to negotiate better terms with suppliers, coordinate shipments, and plan promotional campaigns around your inventory cycles. Consistent restock planning is the foundation of a profitable Amazon FBA business.</p>
+
+      <h2>Tips for Better Inventory Management</h2>
+      <p>Track your daily sales rate over rolling 30-day and 90-day windows to account for seasonal trends. Factor in upcoming promotions, Lightning Deals, or advertising pushes that may spike demand. Build relationships with backup suppliers to reduce lead time risk. Review your restock plan weekly and adjust for actual sales performance versus projections. Consider using Amazon's restock recommendations alongside this planner for a comprehensive inventory strategy.</p>
+    </section>
+
+    <div id="faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Amazon Seller Tools',url:'/amazon/'},{name:'Restock Planner'}];
+    var FAQS = [
+      {q:'When should I reorder Amazon FBA inventory?',a:'Reorder when your inventory drops to the reorder point, which equals your daily sales multiplied by total lead time (supplier plus shipping) plus safety stock days. This ensures new stock arrives before you run out.'},
+      {q:'What is a reorder point for Amazon inventory?',a:'The reorder point is the minimum inventory level that triggers a new purchase order. It accounts for how many units you sell daily, how long your supplier takes to produce, how long shipping to Amazon takes, and your desired safety buffer.'},
+      {q:'How do I calculate safety stock for Amazon FBA?',a:'Safety stock equals your average daily sales multiplied by the number of buffer days you want. Most sellers use 7 to 14 days. Higher safety stock protects against demand spikes and delays but increases storage costs.'},
+      {q:'What happens when you run out of stock on Amazon?',a:'Stockouts cause immediate lost sales, BSR ranking drops, loss of organic keyword positions to competitors, and potential loss of the Buy Box. Recovery can take weeks. Revenue at risk equals daily sales times your selling price for every day out of stock.'},
+      {q:'How do I avoid Amazon long-term storage fees?',a:'Order quantities that sell through within 90 to 180 days. Monitor your inventory age in Seller Central. Use this planner to calculate optimal order quantities that balance stockout risk against excess inventory and storage surcharges.'},
+      {q:'What are best practices for Amazon inventory management?',a:'Track 30-day and 90-day rolling sales averages, maintain 7 to 14 days of safety stock, build relationships with backup suppliers, review restock plans weekly, account for seasonal demand changes, and coordinate promotional campaigns with inventory levels.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Amazon Storage Fee Calculator',url:'/amazon/storage-fee-calculator/',desc:'Estimate monthly storage costs'},
+      {name:'Amazon Profit Calculator',url:'/amazon/profit-calculator/',desc:'Calculate net profit after all fees'},
+      {name:'Amazon Sales Estimator',url:'/amazon/sales-estimator/',desc:'Estimate sales from BSR rank'},
+      {name:'Amazon ROI Calculator',url:'/amazon/roi-calculator/',desc:'Calculate return on investment'},
+      {name:'Amazon FBA Fee Calculator',url:'/amazon/fba-fee-calculator/',desc:'Calculate all FBA selling fees'},
+      {name:'Amazon Dimensional Weight Calculator',url:'/amazon/dimensional-weight-calculator/',desc:'Size tier and shipping weight'}
+    ];
+
+    (function() {
+      var currentDateInput = document.getElementById('currentDate');
+      var today = new Date();
+      currentDateInput.value = today.toISOString().split('T')[0];
+
+      var calculateBtn = document.getElementById('calculateBtn');
+      var results = document.getElementById('results');
+
+      function parseDate(str) {
+        var parts = str.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      }
+
+      function addDays(date, days) {
+        var d = new Date(date);
+        d.setDate(d.getDate() + days);
+        return d;
+      }
+
+      function formatDate(date) {
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+      }
+
+      function formatShortDate(date) {
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return months[date.getMonth()] + ' ' + date.getDate();
+      }
+
+      function formatCurrency(n) {
+        if (n < 0) return '-$' + Math.abs(n).toFixed(2);
+        return '$' + n.toFixed(2);
+      }
+
+      function roundUpToMOQ(qty, moq) {
+        if (moq <= 1) return Math.ceil(qty);
+        return Math.ceil(qty / moq) * moq;
+      }
+
+      function calculate() {
+        var currentInventory = parseFloat(document.getElementById('currentInventory').value) || 0;
+        var avgDailySales = parseFloat(document.getElementById('avgDailySales').value) || 0;
+        var supplierLT = parseFloat(document.getElementById('supplierLeadTime').value) || 0;
+        var shippingLT = parseFloat(document.getElementById('shippingLeadTime').value) || 0;
+        var safetyDays = parseFloat(document.getElementById('safetyStockDays').value) || 0;
+        var costPerUnit = parseFloat(document.getElementById('productCost').value) || 0;
+        var pricePerUnit = parseFloat(document.getElementById('sellingPrice').value) || 0;
+        var moq = parseInt(document.getElementById('moq').value) || 1;
+        var dateStr = document.getElementById('currentDate').value;
+
+        if (currentInventory <= 0 || avgDailySales <= 0) {
+          if (window.showToast) window.showToast('Please enter current inventory and average daily sales.');
+          return;
+        }
+        if (!dateStr) {
+          if (window.showToast) window.showToast('Please select a date.');
+          return;
+        }
+
+        var currentDate = parseDate(dateStr);
+        var totalLeadTime = supplierLT + shippingLT;
+        var daysOfStock = currentInventory / avgDailySales;
+        var stockoutDate = addDays(currentDate, Math.floor(daysOfStock));
+        var reorderPoint = (avgDailySales * totalLeadTime) + (avgDailySales * safetyDays);
+        var daysUntilReorder = daysOfStock - totalLeadTime - safetyDays;
+        var reorderDate = addDays(currentDate, Math.max(0, Math.floor(daysUntilReorder)));
+        var coverageDays = totalLeadTime + safetyDays + 30;
+        var optimalQty = roundUpToMOQ(avgDailySales * coverageDays, moq);
+        var orderCost = optimalQty * costPerUnit;
+        var revenueAtRiskPerDay = avgDailySales * pricePerUnit;
+        var deliveryDate = addDays(reorderDate, Math.floor(totalLeadTime));
+
+        var status, statusClass;
+        if (currentInventory <= 0) {
+          status = 'Out of Stock';
+          statusClass = 'status-out';
+        } else if (daysUntilReorder <= 0) {
+          status = 'Urgent \u2014 Reorder Now';
+          statusClass = 'status-urgent';
+        } else if (daysUntilReorder <= 7) {
+          status = 'Reorder Soon';
+          statusClass = 'status-reorder';
+        } else {
+          status = 'In Stock';
+          statusClass = 'status-in-stock';
+        }
+
+        var badge = document.getElementById('statusBadge');
+        badge.textContent = status;
+        badge.className = 'status-badge ' + statusClass;
+
+        document.getElementById('daysLeft').textContent = Math.floor(daysOfStock);
+        document.getElementById('stockoutDate').textContent = formatShortDate(stockoutDate);
+        document.getElementById('reorderDate').textContent = daysUntilReorder > 0 ? formatShortDate(reorderDate) : 'Now';
+        document.getElementById('daysUntilReorder').textContent = daysUntilReorder > 0 ? Math.floor(daysUntilReorder) : 'Now';
+        document.getElementById('orderQty').textContent = optimalQty.toLocaleString();
+        document.getElementById('orderCost').textContent = formatCurrency(orderCost);
+        document.getElementById('reorderPoint').textContent = Math.ceil(reorderPoint).toLocaleString() + ' units';
+        document.getElementById('revenueAtRisk').textContent = pricePerUnit > 0 ? formatCurrency(revenueAtRiskPerDay) : 'N/A';
+
+        var tbody = document.getElementById('breakdownBody');
+        tbody.innerHTML = '';
+        var rows = [
+          ['Total Lead Time', totalLeadTime + ' days'],
+          ['Daily Sales Rate', avgDailySales + ' units/day'],
+          ['Days of Stock Remaining', Math.floor(daysOfStock) + ' days'],
+          ['Reorder Point', Math.ceil(reorderPoint) + ' units'],
+          ['Safety Stock', Math.ceil(avgDailySales * safetyDays) + ' units (' + safetyDays + ' days)'],
+          ['Coverage Period (order)', coverageDays + ' days'],
+          ['Optimal Order Quantity', optimalQty.toLocaleString() + ' units'],
+          ['Order Cost', formatCurrency(orderCost)]
+        ];
+        if (pricePerUnit > 0) {
+          rows.push(['Revenue at Risk / Day', formatCurrency(revenueAtRiskPerDay)]);
+        }
+        rows.forEach(function(r) {
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + r[0] + '</td><td>' + r[1] + '</td>';
+          tbody.appendChild(tr);
+        });
+
+        renderTimeline(currentDate, reorderDate, deliveryDate, stockoutDate, daysOfStock, daysUntilReorder);
+        renderProjection(currentDate, currentInventory, avgDailySales, deliveryDate, optimalQty);
+
+        results.style.display = 'block';
+        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function renderTimeline(today, reorderDate, deliveryDate, stockoutDate, totalDays, daysUntilReorder) {
+        var container = document.getElementById('timelineBar');
+        container.innerHTML = '';
+
+        var spanDays = Math.max(Math.floor(totalDays) + 7, 14);
+        var events = [
+          { label: 'Today', date: today, day: 0 },
+          { label: 'Reorder', date: reorderDate, day: Math.max(0, Math.floor(daysUntilReorder)) },
+          { label: 'Delivery', date: deliveryDate, day: Math.max(0, Math.floor((deliveryDate - today) / 86400000)) },
+          { label: 'Stockout', date: stockoutDate, day: Math.floor(totalDays) }
+        ];
+
+        events.sort(function(a, b) { return a.day - b.day; });
+
+        var seen = {};
+        var filtered = [];
+        events.forEach(function(e) {
+          var key = e.label;
+          if (!seen[key]) {
+            seen[key] = true;
+            filtered.push(e);
+          }
+        });
+
+        var fillPct = Math.min(100, (Math.floor(totalDays) / spanDays) * 100);
+        var fill = document.createElement('div');
+        fill.className = 'timeline-fill';
+        fill.style.width = fillPct + '%';
+        container.appendChild(fill);
+
+        filtered.forEach(function(e) {
+          var pct = Math.min(95, Math.max(2, (e.day / spanDays) * 100));
+          var marker = document.createElement('div');
+          marker.className = 'timeline-marker';
+          marker.style.left = pct + '%';
+
+          var lbl = document.createElement('div');
+          lbl.className = 'timeline-marker-label';
+          lbl.textContent = e.label;
+
+          var dt = document.createElement('div');
+          dt.className = 'timeline-marker-date';
+          dt.textContent = formatShortDate(e.date);
+
+          marker.appendChild(lbl);
+          marker.appendChild(dt);
+          container.appendChild(marker);
+        });
+      }
+
+      function renderProjection(startDate, startStock, dailySales, deliveryDate, restockQty) {
+        var projBody = document.getElementById('projectionBody');
+        projBody.innerHTML = '';
+
+        var stock = startStock;
+        var restocked = false;
+        var deliveryDay = Math.floor((deliveryDate - startDate) / 86400000);
+        if (deliveryDay < 0) deliveryDay = 0;
+
+        for (var week = 0; week < 13; week++) {
+          var weekStart = week * 7;
+          var weekEnd = weekStart + 6;
+          var weekDate = addDays(startDate, weekStart);
+          var startingStock = Math.max(0, Math.round(stock));
+          var weeklySales = Math.round(dailySales * 7);
+          var restock = 0;
+
+          if (!restocked && deliveryDay >= weekStart && deliveryDay <= weekEnd) {
+            restock = restockQty;
+            restocked = true;
+          }
+
+          stock = stock - weeklySales + restock;
+          var endingStock = Math.max(0, Math.round(stock));
+
+          var statusText, statusClass, rowClass = '';
+          if (restock > 0) {
+            statusText = 'Restock';
+            statusClass = 'projection-restock';
+            rowClass = 'restock-row';
+          } else if (endingStock <= 0) {
+            statusText = 'Out of Stock';
+            statusClass = 'projection-out';
+            rowClass = 'stockout-row';
+          } else if (endingStock < dailySales * 7) {
+            statusText = 'Low';
+            statusClass = 'projection-low';
+          } else {
+            statusText = 'OK';
+            statusClass = 'projection-ok';
+          }
+
+          var tr = document.createElement('tr');
+          if (rowClass) tr.className = rowClass;
+          tr.innerHTML =
+            '<td>Week ' + (week + 1) + '<br><span style="font-size:0.75rem;color:var(--text-muted);">' + formatShortDate(weekDate) + '</span></td>' +
+            '<td>' + startingStock.toLocaleString() + '</td>' +
+            '<td>' + weeklySales.toLocaleString() + '</td>' +
+            '<td>' + (restock > 0 ? '+' + restock.toLocaleString() : '—') + '</td>' +
+            '<td>' + endingStock.toLocaleString() + '</td>' +
+            '<td><span class="projection-status ' + statusClass + '">' + statusText + '</span></td>';
+          projBody.appendChild(tr);
+        }
+      }
+
+      calculateBtn.addEventListener('click', calculate);
+
+      var allInputs = document.querySelectorAll('#tool-area input[type="number"], #tool-area input[type="date"]');
+      allInputs.forEach(function(el) {
+        el.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); calculate(); }
+        });
+      });
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof TeamzTools !== 'undefined') {
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({ slug: 'amazon/restock-planner', title: 'Amazon Restock Planner', description: 'Plan optimal Amazon FBA inventory restock timing and quantities. Avoid stockouts and calculate reorder points.' });
+      }
+    });
+  </script>
+</body>
+</html>

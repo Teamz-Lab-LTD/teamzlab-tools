@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Coupon Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate the true cost of Amazon coupons and promotions including clip fees, redemption rates, and break-even sales lift. Free, private, no sign-up.">
+  <meta property="og:title" content="Amazon Coupon Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate Amazon coupon costs, profit impact, and break-even sales lift instantly.">
+  <meta property="og:url" content="https://tool.teamzlab.com/amazon/coupon-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/amazon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Amazon Coupon Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate Amazon coupon costs, profit impact, and break-even sales lift instantly.">
+  <link rel="canonical" href="https://tool.teamzlab.com/amazon/coupon-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .input-group { min-width: 0; }
+    .input-group label { display: block; font-weight: 600; margin-bottom: 0.4rem; color: var(--text); font-size: 0.9rem; }
+    .input-group label span { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
+    .input-group input, .input-group select { width: 100%; padding: 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+    .section-label { font-weight: 700; color: var(--heading); font-size: 1rem; margin-bottom: 0.6rem; margin-top: 0.5rem; }
+    .promo-type-group { display: flex; gap: 1.5rem; margin-bottom: 1rem; }
+    .promo-type-group label { display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text); font-size: 0.95rem; font-weight: 500; }
+    .promo-type-group input[type="radio"] { accent-color: var(--heading); width: 18px; height: 18px; }
+    .calc-btn { width: 100%; padding: 0.9rem; background: var(--heading); color: var(--bg); border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s; margin-top: 0.5rem; }
+    .calc-btn:hover { opacity: 0.88; }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+    .result-card .label { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .result-card .value { font-size: 1.6rem; font-weight: 700; color: var(--heading); }
+    .comparison-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+    .comparison-table th, .comparison-table td { padding: 0.65rem 0.8rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+    .comparison-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .comparison-table td:nth-child(2), .comparison-table td:nth-child(3) { text-align: right; font-weight: 600; color: var(--heading); }
+    .comparison-table th:nth-child(2), .comparison-table th:nth-child(3) { text-align: right; }
+    .comparison-table tr:hover { background: var(--surface); }
+    .comparison-table .total-row { font-weight: 700; border-top: 2px solid var(--border); }
+    .verdict-box { margin-top: 1.5rem; padding: 1.2rem; border-radius: 10px; background: var(--surface); border: 2px solid var(--border); }
+    .verdict-box .verdict-title { font-size: 1.15rem; font-weight: 700; color: var(--heading); margin-bottom: 0.4rem; }
+    .verdict-box .verdict-text { font-size: 0.92rem; color: var(--text); line-height: 1.6; }
+    .sensitivity-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .sensitivity-table th, .sensitivity-table td { padding: 0.55rem 0.6rem; text-align: right; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .sensitivity-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .sensitivity-table td:first-child, .sensitivity-table th:first-child { text-align: left; }
+    .sensitivity-table tr:hover { background: var(--surface); }
+    .sensitivity-table .active-row { background: var(--surface); border: 2px solid var(--heading); }
+    @media (max-width: 600px) {
+      .calc-grid { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr 1fr; }
+      .result-card .value { font-size: 1.3rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .promo-type-group { flex-direction: column; gap: 0.6rem; }
+      .comparison-table, .sensitivity-table { font-size: 0.82rem; }
+      .comparison-table th, .comparison-table td,
+      .sensitivity-table th, .sensitivity-table td { padding: 0.5rem 0.4rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Amazon Seller Tools", "item": "https://tool.teamzlab.com/amazon/"}, {"@type": "ListItem", "position": 3, "name": "Coupon Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Amazon's coupon clip fee?", "acceptedAnswer": {"@type": "Answer", "text": "Amazon charges sellers a 0.60 dollar fee every time a customer clips and redeems a coupon. This clip fee is charged on top of the discount amount you provide. It applies to all coupon types including percentage off and dollar amount off promotions."}}, {"@type": "Question", "name": "Are Amazon coupons worth it for sellers?", "acceptedAnswer": {"@type": "Answer", "text": "Amazon coupons can be worth it when your profit margins are healthy (above 25 percent) and the sales lift from increased visibility offsets the coupon costs. Use this calculator to find your break-even sales lift. If your expected lift exceeds the break-even, the promotion is profitable."}}, {"@type": "Question", "name": "How do I calculate coupon ROI on Amazon?", "acceptedAnswer": {"@type": "Answer", "text": "Coupon ROI equals the net monthly profit gain divided by the total coupon budget, expressed as a percentage. The total budget includes all discounts given plus the 0.60 dollar clip fee per redemption. A positive ROI means the additional sales volume more than covers the promotion costs."}}, {"@type": "Question", "name": "What discount percentage works best for Amazon coupons?", "acceptedAnswer": {"@type": "Answer", "text": "Most successful Amazon sellers use 10 to 20 percent off coupons. Discounts below 5 percent rarely attract attention, while discounts above 25 percent often erode margins too much. Use the sensitivity analysis in this calculator to find the optimal discount for your specific product economics."}}, {"@type": "Question", "name": "How does redemption rate affect coupon profit?", "acceptedAnswer": {"@type": "Answer", "text": "Redemption rate is the percentage of customers who actually use the coupon. Lower redemption rates mean more customers buy at full price, which can make the promotion more profitable overall. Typical rates range from 20 to 40 percent. A lower rate reduces coupon costs while you still benefit from the visibility boost."}}, {"@type": "Question", "name": "When should I use coupons vs PPC advertising?", "acceptedAnswer": {"@type": "Answer", "text": "Use coupons when you want to boost conversion rate and organic ranking through increased sales velocity. Use PPC when you want to increase impressions and capture new search traffic. Compare your coupon cost per additional sale with your PPC cost per sale. Many sellers combine both for maximum impact."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Amazon Coupon Calculator", "description": "Calculate the true cost of Amazon coupons and promotions including clip fees, redemption rates, and break-even sales lift.", "url": "https://tool.teamzlab.com/amazon/coupon-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Amazon Coupon &amp; Promotion Calculator</h1>
+      <p class="tool-description">Calculate the true cost of running Amazon coupons and promotions. See profit impact, break-even sales lift, ROI, and a sensitivity analysis across discount levels — before you spend a dollar.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="section-label">Product Economics</div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="sellingPrice">Selling Price ($)</label>
+          <input type="number" id="sellingPrice" min="0" step="0.01" placeholder="e.g. 29.99">
+        </div>
+        <div class="input-group">
+          <label for="productCost">Product Cost ($) <span>all-in landed</span></label>
+          <input type="number" id="productCost" min="0" step="0.01" placeholder="e.g. 7.50">
+        </div>
+      </div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="amazonFees">Amazon Fees / Unit ($) <span>referral + FBA</span></label>
+          <input type="number" id="amazonFees" min="0" step="0.01" placeholder="e.g. 8.25">
+        </div>
+        <div class="input-group">
+          <label for="clipFee">Coupon Clip Fee ($) <span>per redemption</span></label>
+          <input type="number" id="clipFee" min="0" step="0.01" value="0.60" placeholder="0.60">
+        </div>
+      </div>
+
+      <div class="section-label">Promotion Setup</div>
+      <div class="promo-type-group">
+        <label><input type="radio" name="promoType" id="promoPercent" value="percent" checked> Percentage Off</label>
+        <label><input type="radio" name="promoType" id="promoDollar" value="dollar"> Dollar Amount Off</label>
+      </div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="discountValue" id="discountLabel">Discount (%)</label>
+          <input type="number" id="discountValue" min="0" step="0.5" placeholder="e.g. 15">
+        </div>
+        <div class="input-group">
+          <label for="redemptionRate">Redemption Rate (%) <span>default 30%</span></label>
+          <input type="number" id="redemptionRate" min="0" max="100" step="1" value="30" placeholder="30">
+        </div>
+      </div>
+
+      <div class="section-label">Sales Volume</div>
+      <div class="calc-grid">
+        <div class="input-group">
+          <label for="monthlyUnits">Monthly Units Sold <span>without coupon</span></label>
+          <input type="number" id="monthlyUnits" min="1" step="1" placeholder="e.g. 200">
+        </div>
+        <div class="input-group">
+          <label for="salesLift">Expected Sales Lift (%) <span>default 50%</span></label>
+          <input type="number" id="salesLift" min="0" step="1" value="50" placeholder="50">
+        </div>
+      </div>
+
+      <button class="calc-btn" id="calculateBtn">Calculate Coupon Impact</button>
+
+      <div id="results" style="display:none;">
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="label">Profit Change / Unit</div>
+            <div class="value" id="profitChangeUnit">$0.00</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Monthly Profit Change</div>
+            <div class="value" id="monthlyChange">$0.00</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Coupon ROI</div>
+            <div class="value" id="couponROI">0%</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Break-Even Sales Lift</div>
+            <div class="value" id="breakEvenLift">0%</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Total Coupon Budget</div>
+            <div class="value" id="totalBudget">$0.00</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Effective Price</div>
+            <div class="value" id="effectivePrice">$0.00</div>
+          </div>
+        </div>
+
+        <div class="verdict-box" id="verdictBox">
+          <div class="verdict-title" id="verdictTitle"></div>
+          <div class="verdict-text" id="verdictText"></div>
+        </div>
+
+        <h3 style="margin-top:1.8rem;color:var(--heading);">Side-by-Side Comparison</h3>
+        <table class="comparison-table">
+          <thead>
+            <tr><th>Metric</th><th>Without Coupon</th><th>With Coupon</th></tr>
+          </thead>
+          <tbody id="comparisonBody"></tbody>
+        </table>
+
+        <h3 style="margin-top:1.8rem;color:var(--heading);">Sensitivity Analysis — Discount Levels</h3>
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">How different discount percentages affect your bottom line at current volume and redemption rate.</p>
+        <table class="sensitivity-table">
+          <thead>
+            <tr><th>Discount</th><th>Discount/Unit</th><th>Profit/Unit</th><th>Monthly Gain/Loss</th><th>Break-Even Lift</th><th>ROI</th></tr>
+          </thead>
+          <tbody id="sensitivityBody"></tbody>
+        </table>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Amazon Coupon Calculator Works</h2>
+      <p>This calculator models the complete financial impact of running an Amazon coupon or percentage-off promotion. It accounts for the discount per unit, the clip fee Amazon charges per redemption (currently 0.60 dollars), the expected redemption rate, and the sales lift that coupon visibility typically generates. The result is a clear picture of whether your promotion will increase total profit or erode your margins.</p>
+      <p>Amazon coupons appear as green badges on search results and product pages, driving higher click-through rates and conversion. But the extra visibility comes at a cost: every customer who clips and uses the coupon costs you the discount amount plus the clip fee. This calculator shows you the exact break-even point so you can run promotions with confidence.</p>
+
+      <h2>Understanding Amazon Coupon Costs</h2>
+      <p>Amazon charges sellers a 0.60 dollar clip fee every time a customer redeems a coupon — this is on top of the discount you provide. For a 15 percent off coupon on a 30 dollar product, each redemption costs you 4.50 dollars in discount plus 0.60 dollars in clip fees, totaling 5.10 dollars per redeemed unit. Not every customer who sees the coupon will use it — typical redemption rates range from 20 to 40 percent depending on the discount depth and product category.</p>
+      <p>The key insight is that non-redeemed units still sell at full price, contributing full margin. A successful coupon strategy relies on the sales lift from increased visibility generating enough additional full-price and discounted sales to offset the coupon costs on redeemed units.</p>
+
+      <h2>When Amazon Coupons Are Worth Running</h2>
+      <p>Coupons work best when your product has healthy profit margins (above 25 percent), you are launching a new product that needs velocity, you want to boost organic ranking through increased sales, or you are competing in a category where competitors use coupons heavily. Avoid coupons when your margins are already thin, when the break-even sales lift exceeds what your category typically delivers, or when you can achieve similar results with PPC advertising at a lower cost per acquisition.</p>
+      <p>The sensitivity analysis table in this calculator helps you find the sweet spot — the discount level that maximizes total monthly profit without cutting too deep into your per-unit margins. Many successful Amazon sellers run 10 to 20 percent off coupons as a steady-state strategy, adjusting seasonally based on competition and inventory levels.</p>
+
+      <h2>Coupons vs PPC Advertising</h2>
+      <p>Both coupons and PPC drive additional sales, but they work differently. Coupons increase conversion rate by offering an immediate price incentive visible on the search results page. PPC increases impressions by placing your product in sponsored positions. The optimal strategy often combines both: use coupons to boost organic rank and conversion rate, while running PPC to capture additional search traffic. Compare your coupon cost per additional sale with your PPC cost per sale to determine the best allocation of your advertising budget.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Amazon Seller Tools',url:'/amazon/'},{name:'Coupon Calculator'}];
+    var FAQS = [
+      {q:'What is Amazon\'s coupon clip fee?',a:'Amazon charges sellers a 0.60 dollar fee every time a customer clips and redeems a coupon. This clip fee is charged on top of the discount amount you provide. It applies to all coupon types including percentage off and dollar amount off promotions.'},
+      {q:'Are Amazon coupons worth it for sellers?',a:'Amazon coupons can be worth it when your profit margins are healthy (above 25 percent) and the sales lift from increased visibility offsets the coupon costs. Use this calculator to find your break-even sales lift. If your expected lift exceeds the break-even, the promotion is profitable.'},
+      {q:'How do I calculate coupon ROI on Amazon?',a:'Coupon ROI equals the net monthly profit gain divided by the total coupon budget, expressed as a percentage. The total budget includes all discounts given plus the 0.60 dollar clip fee per redemption. A positive ROI means the additional sales volume more than covers the promotion costs.'},
+      {q:'What discount percentage works best for Amazon coupons?',a:'Most successful Amazon sellers use 10 to 20 percent off coupons. Discounts below 5 percent rarely attract attention, while discounts above 25 percent often erode margins too much. Use the sensitivity analysis in this calculator to find the optimal discount for your specific product economics.'},
+      {q:'How does redemption rate affect coupon profit?',a:'Redemption rate is the percentage of customers who actually use the coupon. Lower redemption rates mean more customers buy at full price, which can make the promotion more profitable overall. Typical rates range from 20 to 40 percent. A lower rate reduces coupon costs while you still benefit from the visibility boost.'},
+      {q:'When should I use coupons vs PPC advertising?',a:'Use coupons when you want to boost conversion rate and organic ranking through increased sales velocity. Use PPC when you want to increase impressions and capture new search traffic. Compare your coupon cost per additional sale with your PPC cost per sale. Many sellers combine both for maximum impact.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Amazon Profit Calculator',url:'/amazon/profit-calculator/',desc:'Calculate net profit after all fees'},
+      {name:'Amazon ACoS Calculator',url:'/amazon/acos-calculator/',desc:'Calculate advertising cost of sale'},
+      {name:'Amazon PPC Bid Calculator',url:'/amazon/ppc-bid-calculator/',desc:'Calculate optimal PPC bids'},
+      {name:'Amazon FBA Fee Calculator',url:'/amazon/fba-fee-calculator/',desc:'Calculate all FBA selling fees'},
+      {name:'Amazon ROI Calculator',url:'/amazon/roi-calculator/',desc:'Calculate return on investment'},
+      {name:'Amazon Sales Estimator',url:'/amazon/sales-estimator/',desc:'Estimate sales from BSR rank'}
+    ];
+
+    (function(){
+      var sellingPrice = document.getElementById('sellingPrice');
+      var productCost = document.getElementById('productCost');
+      var amazonFees = document.getElementById('amazonFees');
+      var clipFee = document.getElementById('clipFee');
+      var discountValue = document.getElementById('discountValue');
+      var redemptionRate = document.getElementById('redemptionRate');
+      var monthlyUnits = document.getElementById('monthlyUnits');
+      var salesLift = document.getElementById('salesLift');
+      var calculateBtn = document.getElementById('calculateBtn');
+      var results = document.getElementById('results');
+      var promoPercent = document.getElementById('promoPercent');
+      var promoDollar = document.getElementById('promoDollar');
+      var discountLabel = document.getElementById('discountLabel');
+
+      promoPercent.addEventListener('change', function() {
+        if (this.checked) discountLabel.textContent = 'Discount (%)';
+      });
+      promoDollar.addEventListener('change', function() {
+        if (this.checked) discountLabel.textContent = 'Discount ($)';
+      });
+
+      function formatCurrency(n) {
+        if (n < 0) return '-$' + Math.abs(n).toFixed(2);
+        return '$' + n.toFixed(2);
+      }
+
+      function computeCoupon(price, cost, fees, clip, discPct, discDollar, isPercent, redRate, units, lift) {
+        var discountPerUnit = isPercent ? price * (discPct / 100) : discDollar;
+        if (discountPerUnit > price) discountPerUnit = price;
+        var effectivePrice = price - discountPerUnit;
+        var couponCostPerRedemption = discountPerUnit + clip;
+
+        var profitWithout = price - cost - fees;
+        var profitWith = effectivePrice - cost - fees - clip;
+        var profitChangePerUnit = profitWith - profitWithout;
+
+        var unitsWithCoupon = Math.round(units * (1 + lift / 100));
+        var redeemedUnits = Math.round(unitsWithCoupon * (redRate / 100));
+        var nonRedeemedUnits = unitsWithCoupon - redeemedUnits;
+
+        var monthlyProfitWithout = profitWithout * units;
+        var monthlyProfitWith = (profitWith * redeemedUnits) + (profitWithout * nonRedeemedUnits);
+        var netMonthlyChange = monthlyProfitWith - monthlyProfitWithout;
+
+        var totalBudget = redeemedUnits * couponCostPerRedemption;
+
+        // Break-even sales lift: find the minimum lift% where monthlyProfitWith >= monthlyProfitWithout
+        // At lift L: unitsWithCoupon = units*(1+L/100), redeemed = unitsWithCoupon*redRate/100
+        // nonRedeemed = unitsWithCoupon - redeemed = unitsWithCoupon*(1 - redRate/100)
+        // monthlyProfitWith = profitWith * unitsWithCoupon * redRate/100 + profitWithout * unitsWithCoupon * (1-redRate/100)
+        // Set equal to profitWithout * units and solve for L:
+        // unitsWithCoupon * [profitWith * r + profitWithout * (1-r)] = profitWithout * units
+        // where r = redRate/100
+        // units*(1+L/100) * [profitWith*r + profitWithout*(1-r)] = profitWithout * units
+        // (1+L/100) = profitWithout / [profitWith*r + profitWithout*(1-r)]
+        // L/100 = profitWithout / [profitWith*r + profitWithout*(1-r)] - 1
+        var r = redRate / 100;
+        var blendedProfit = profitWith * r + profitWithout * (1 - r);
+        var breakEvenLift = 0;
+        if (blendedProfit > 0 && profitWithout > 0) {
+          breakEvenLift = ((profitWithout / blendedProfit) - 1) * 100;
+          if (breakEvenLift < 0) breakEvenLift = 0;
+        } else if (blendedProfit <= 0) {
+          breakEvenLift = Infinity;
+        }
+
+        var roi = totalBudget > 0 ? (netMonthlyChange / totalBudget) * 100 : 0;
+
+        return {
+          discountPerUnit: discountPerUnit,
+          effectivePrice: effectivePrice,
+          couponCostPerRedemption: couponCostPerRedemption,
+          profitWithout: profitWithout,
+          profitWith: profitWith,
+          profitChangePerUnit: profitChangePerUnit,
+          unitsWithCoupon: unitsWithCoupon,
+          redeemedUnits: redeemedUnits,
+          nonRedeemedUnits: nonRedeemedUnits,
+          monthlyProfitWithout: monthlyProfitWithout,
+          monthlyProfitWith: monthlyProfitWith,
+          netMonthlyChange: netMonthlyChange,
+          totalBudget: totalBudget,
+          breakEvenLift: breakEvenLift,
+          roi: roi
+        };
+      }
+
+      function calculate() {
+        var price = parseFloat(sellingPrice.value) || 0;
+        var cost = parseFloat(productCost.value) || 0;
+        var fees = parseFloat(amazonFees.value) || 0;
+        var clip = parseFloat(clipFee.value) || 0.60;
+        var disc = parseFloat(discountValue.value) || 0;
+        var redRate = parseFloat(redemptionRate.value) || 30;
+        var units = parseInt(monthlyUnits.value) || 0;
+        var lift = parseFloat(salesLift.value) || 50;
+        var isPercent = promoPercent.checked;
+
+        if (price <= 0) {
+          if (window.showToast) window.showToast('Please enter a selling price.');
+          return;
+        }
+        if (units <= 0) {
+          if (window.showToast) window.showToast('Please enter monthly units sold.');
+          return;
+        }
+        if (disc <= 0) {
+          if (window.showToast) window.showToast('Please enter a discount value.');
+          return;
+        }
+
+        var r = computeCoupon(price, cost, fees, clip, disc, disc, isPercent, redRate, units, lift);
+
+        // Update result cards
+        document.getElementById('profitChangeUnit').textContent = formatCurrency(r.profitChangePerUnit);
+        document.getElementById('monthlyChange').textContent = formatCurrency(r.netMonthlyChange);
+        document.getElementById('couponROI').textContent = r.roi === Infinity ? 'N/A' : r.roi.toFixed(1) + '%';
+        document.getElementById('breakEvenLift').textContent = r.breakEvenLift === Infinity ? 'Impossible' : r.breakEvenLift.toFixed(1) + '%';
+        document.getElementById('totalBudget').textContent = formatCurrency(r.totalBudget);
+        document.getElementById('effectivePrice').textContent = formatCurrency(r.effectivePrice);
+
+        // Verdict
+        var verdictTitle = document.getElementById('verdictTitle');
+        var verdictText = document.getElementById('verdictText');
+        var verdictBox = document.getElementById('verdictBox');
+        verdictBox.style.borderColor = 'var(--border)';
+
+        if (r.netMonthlyChange > 0) {
+          verdictTitle.textContent = 'Profitable Promotion';
+          var extraProfit = r.netMonthlyChange.toFixed(2);
+          var liftNeeded = r.breakEvenLift === Infinity ? 'N/A' : r.breakEvenLift.toFixed(1) + '%';
+          verdictText.textContent = 'This coupon generates ' + formatCurrency(r.netMonthlyChange) + ' in additional monthly profit. Your ' + lift.toFixed(0) + '% sales lift exceeds the ' + liftNeeded + ' break-even threshold. The promotion ROI is ' + r.roi.toFixed(1) + '%, meaning every dollar spent on the coupon returns ' + (1 + r.roi / 100).toFixed(2) + ' dollars.';
+        } else if (r.netMonthlyChange === 0) {
+          verdictTitle.textContent = 'Break-Even Promotion';
+          verdictText.textContent = 'This coupon exactly breaks even — you are not gaining or losing money. Consider whether the ranking boost and review velocity justify running the promotion even at zero profit gain.';
+        } else {
+          verdictTitle.textContent = 'Losing Money';
+          var lossAmt = Math.abs(r.netMonthlyChange).toFixed(2);
+          var liftNeeded2 = r.breakEvenLift === Infinity ? 'impossible to reach' : r.breakEvenLift.toFixed(1) + '%';
+          verdictText.textContent = 'This coupon costs you ' + formatCurrency(Math.abs(r.netMonthlyChange)) + ' per month. You need a sales lift of ' + liftNeeded2 + ' to break even, but you are only expecting ' + lift.toFixed(0) + '%. Consider reducing the discount, improving your product margin, or using PPC instead.';
+        }
+
+        // Comparison table
+        var compBody = document.getElementById('comparisonBody');
+        compBody.innerHTML = '';
+        var compRows = [
+          ['Selling Price', formatCurrency(price), formatCurrency(r.effectivePrice) + ' (redeemed)'],
+          ['Profit per Unit', formatCurrency(r.profitWithout), formatCurrency(r.profitWith) + ' (redeemed)'],
+          ['Monthly Units', units.toLocaleString(), r.unitsWithCoupon.toLocaleString()],
+          ['Redeemed Units', '—', r.redeemedUnits.toLocaleString()],
+          ['Full-Price Units', units.toLocaleString(), r.nonRedeemedUnits.toLocaleString()],
+          ['Monthly Profit', formatCurrency(r.monthlyProfitWithout), formatCurrency(r.monthlyProfitWith)],
+          ['Coupon Budget', '—', formatCurrency(r.totalBudget)]
+        ];
+        compRows.forEach(function(row, i) {
+          var tr = document.createElement('tr');
+          if (i === compRows.length - 2) tr.className = 'total-row';
+          tr.innerHTML = '<td>' + row[0] + '</td><td>' + row[1] + '</td><td>' + row[2] + '</td>';
+          compBody.appendChild(tr);
+        });
+
+        // Sensitivity analysis
+        var sensBody = document.getElementById('sensitivityBody');
+        sensBody.innerHTML = '';
+        var levels = [5, 10, 15, 20, 25, 30];
+        var currentDisc = isPercent ? disc : null;
+
+        levels.forEach(function(pct) {
+          var s = computeCoupon(price, cost, fees, clip, pct, 0, true, redRate, units, lift);
+          var tr = document.createElement('tr');
+          if (isPercent && pct === disc) tr.className = 'active-row';
+          var roiStr = s.totalBudget > 0 ? s.roi.toFixed(0) + '%' : 'N/A';
+          var beLift = s.breakEvenLift === Infinity ? 'N/A' : s.breakEvenLift.toFixed(1) + '%';
+          tr.innerHTML = '<td>' + pct + '% off</td>' +
+            '<td>' + formatCurrency(s.discountPerUnit) + '</td>' +
+            '<td>' + formatCurrency(s.profitWith) + '</td>' +
+            '<td>' + formatCurrency(s.netMonthlyChange) + '</td>' +
+            '<td>' + beLift + '</td>' +
+            '<td>' + roiStr + '</td>';
+          sensBody.appendChild(tr);
+        });
+
+        results.style.display = 'block';
+        results.scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
+
+      calculateBtn.addEventListener('click', calculate);
+
+      var allInputs = [sellingPrice, productCost, amazonFees, clipFee, discountValue, redemptionRate, monthlyUnits, salesLift];
+      allInputs.forEach(function(el) {
+        el.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); calculate(); }
+        });
+      });
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'amazon/coupon-calculator',title:'Amazon Coupon Calculator',description:'Calculate the true cost of Amazon coupons and promotions including clip fees, redemption rates, and break-even sales lift.'});
+      }
+    });
+  </script>
+</body>
+</html>

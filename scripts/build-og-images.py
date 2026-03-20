@@ -29,6 +29,7 @@ HUB_META = {
     '3d': ('3D Tools', '3D model viewers, STL tools'),
     'ae': ('UAE Tools', 'Calculators for the United Arab Emirates'),
     'ai': ('AI Tools', 'AI-powered utilities and analyzers'),
+    'amazon': ('Amazon Seller Tools', 'FBA calculators, listing tools, and more'),
     'apple': ('Apple Tools', 'iPhone, iPad, Mac utilities'),
     'au': ('Australia Tools', 'Tax, super, and HECS calculators'),
     'auto': ('Auto & Vehicle', 'Fuel, EV, and vehicle calculators'),

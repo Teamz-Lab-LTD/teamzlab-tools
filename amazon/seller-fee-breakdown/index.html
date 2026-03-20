@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Seller Fee Breakdown — Teamz Lab Tools</title>
+  <meta name="description" content="Visualize all Amazon seller fees with interactive charts. See referral, FBA, storage, and closing fees as a percentage of selling price. Free and private.">
+  <meta property="og:title" content="Amazon Seller Fee Breakdown — Teamz Lab Tools">
+  <meta property="og:description" content="Visualize all Amazon seller fees with interactive charts. See referral, FBA, storage, and closing fees as a percentage of selling price. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/amazon/seller-fee-breakdown/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/amazon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Amazon Seller Fee Breakdown — Teamz Lab Tools">
+  <meta name="twitter:description" content="Visualize all Amazon seller fees with interactive charts. See referral, FBA, storage, and closing fees as percentage of your selling price.">
+  <link rel="canonical" href="https://tool.teamzlab.com/amazon/seller-fee-breakdown/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sfb-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .sfb-form-grid .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    .sfb-dimensions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    .sfb-plan-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .sfb-plan-toggle button {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .sfb-plan-toggle button.active {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .sfb-season-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .sfb-season-toggle button {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .sfb-season-toggle button.active {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .sfb-results {
+      margin-top: 24px;
+    }
+    .sfb-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .sfb-summary-card {
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      text-align: center;
+    }
+    .sfb-summary-card .sfb-card-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .sfb-summary-card .sfb-card-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .sfb-summary-card.sfb-profit-positive .sfb-card-value {
+      color: var(--heading);
+    }
+    .sfb-summary-card.sfb-profit-negative .sfb-card-value {
+      color: var(--heading);
+      opacity: 0.7;
+    }
+
+    /* Stacked bar chart */
+    .sfb-stacked-bar-section {
+      margin-bottom: 28px;
+    }
+    .sfb-section-title {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 12px;
+    }
+    .sfb-stacked-bar-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .sfb-stacked-bar-track {
+      display: flex;
+      height: 40px;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .sfb-stacked-segment {
+      height: 100%;
+      transition: width 0.4s ease;
+      position: relative;
+      min-width: 2px;
+    }
+    .sfb-stacked-segment:first-child {
+      border-radius: 8px 0 0 8px;
+    }
+    .sfb-stacked-segment:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+    .sfb-stacked-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .sfb-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+    .sfb-legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    /* Pie chart (conic-gradient) */
+    .sfb-pie-section {
+      margin-bottom: 28px;
+    }
+    .sfb-pie-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .sfb-pie-chart {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .sfb-pie-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .sfb-pie-center-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .sfb-pie-center-label {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .sfb-pie-legend {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sfb-pie-legend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .sfb-pie-legend-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sfb-pie-legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .sfb-pie-legend-name {
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+    .sfb-pie-legend-value {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+
+    /* Fee detail table */
+    .sfb-table-section {
+      margin-bottom: 28px;
+    }
+    .sfb-fee-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .sfb-fee-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-weight: 600;
+      color: var(--heading);
+      border-bottom: 2px solid var(--border);
+    }
+    .sfb-fee-table th:last-child,
+    .sfb-fee-table td:last-child {
+      text-align: right;
+    }
+    .sfb-fee-table th:nth-child(2),
+    .sfb-fee-table td:nth-child(2) {
+      text-align: right;
+    }
+    .sfb-fee-table td {
+      padding: 10px 12px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    .sfb-fee-table tr:last-child td {
+      border-bottom: none;
+    }
+    .sfb-fee-table .sfb-total-row td {
+      font-weight: 700;
+      color: var(--heading);
+      border-top: 2px solid var(--border);
+    }
+
+    /* Horizontal bar breakdown */
+    .sfb-bar-section {
+      margin-bottom: 28px;
+    }
+    .sfb-bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sfb-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sfb-bar-label {
+      width: 140px;
+      flex-shrink: 0;
+      font-size: var(--text-sm);
+      color: var(--text);
+      text-align: right;
+    }
+    .sfb-bar-track {
+      flex: 1;
+      height: 24px;
+      background: var(--surface);
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .sfb-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: var(--heading);
+      transition: width 0.4s ease;
+      min-width: 2px;
+    }
+    .sfb-bar-fill.sfb-fill-referral { opacity: 1; }
+    .sfb-bar-fill.sfb-fill-fulfillment { opacity: 0.8; }
+    .sfb-bar-fill.sfb-fill-storage { opacity: 0.6; }
+    .sfb-bar-fill.sfb-fill-closing { opacity: 0.45; }
+    .sfb-bar-fill.sfb-fill-plan { opacity: 0.35; }
+    .sfb-bar-fill.sfb-fill-profit { opacity: 1; }
+    .sfb-bar-amount {
+      width: 80px;
+      flex-shrink: 0;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--heading);
+    }
+
+    /* What-if slider */
+    .sfb-whatif-section {
+      margin-bottom: 28px;
+    }
+    .sfb-whatif-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .sfb-whatif-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .sfb-whatif-slider-row label {
+      font-size: var(--text-sm);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .sfb-whatif-slider-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--heading);
+    }
+    .sfb-whatif-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+      min-width: 70px;
+      text-align: right;
+    }
+    .sfb-whatif-results {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .sfb-whatif-card {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .sfb-whatif-card-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .sfb-whatif-card-value {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+    }
+
+    /* Plan comparison */
+    .sfb-plan-compare {
+      margin-bottom: 28px;
+    }
+    .sfb-plan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .sfb-plan-card {
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .sfb-plan-card-title {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .sfb-plan-card-price {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .sfb-plan-card-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .sfb-plan-card-list li {
+      font-size: var(--text-sm);
+      color: var(--text);
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    .sfb-plan-card-bottom {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .sfb-plan-card-bottom-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .sfb-plan-card-bottom-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .sfb-plan-verdict {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .sfb-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--accent-text);
+      background: var(--accent);
+    }
+
+    @media (max-width: 600px) {
+      .sfb-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .sfb-dimensions-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .sfb-summary-grid {
+        grid-template-columns: 1fr;
+      }
+      .sfb-pie-wrapper {
+        flex-direction: column;
+        gap: 16px;
+      }
+      .sfb-pie-chart {
+        width: 160px;
+        height: 160px;
+      }
+      .sfb-bar-label {
+        width: 100px;
+        font-size: 12px;
+      }
+      .sfb-bar-amount {
+        width: 65px;
+        font-size: 12px;
+      }
+      .sfb-whatif-results {
+        grid-template-columns: 1fr 1fr;
+      }
+      .sfb-plan-grid {
+        grid-template-columns: 1fr;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .tool-calculator {
+        padding: 18px;
+      }
+      .sfb-whatif-slider-row {
+        flex-wrap: wrap;
+      }
+      .sfb-plan-toggle,
+      .sfb-season-toggle {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Amazon Seller Tools", "item": "https://tool.teamzlab.com/amazon/"}, {"@type": "ListItem", "position": 3, "name": "Seller Fee Breakdown"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What percentage does Amazon take from sellers?", "acceptedAnswer": {"@type": "Answer", "text": "Amazon takes a referral fee that varies by product category, ranging from 5% to 45% of the selling price. Most categories charge 15%. On top of that, FBA sellers pay a fulfillment fee (starting at $3.22 for Small Standard items), monthly storage fees ($0.87 to $2.40 per cubic foot), and potentially a closing fee ($1.80 for media items). Individual plan sellers also pay $0.99 per item sold."}}, {"@type": "Question", "name": "What are all the Amazon seller fees?", "acceptedAnswer": {"@type": "Answer", "text": "Amazon seller fees include: referral fee (5-45% by category), FBA fulfillment fee (based on size tier and weight, starting at $3.22), monthly storage fee ($0.87/cu ft standard, $2.40/cu ft peak season), variable closing fee ($1.80 for media categories like Books, Music, DVD, Software, Video Games), Individual plan per-item fee ($0.99 if not on Professional plan), and Professional plan subscription ($39.99/month). Long-term storage fees may also apply for inventory stored over 181 days."}}, {"@type": "Question", "name": "What is the difference between Professional and Individual seller plans?", "acceptedAnswer": {"@type": "Answer", "text": "The Professional plan costs $39.99 per month with no per-item fee, while the Individual plan has no monthly fee but charges $0.99 per item sold. The breakeven point is about 40 units per month. Professional sellers also get access to advertising, promotions, bulk listing tools, and Buy Box eligibility — critical features for scaling your Amazon business."}}, {"@type": "Question", "name": "How can I reduce my Amazon seller fees?", "acceptedAnswer": {"@type": "Answer", "text": "Optimize product packaging to fit a smaller FBA size tier (even half an inch matters). Reduce product weight to stay below fee thresholds. Manage inventory levels to avoid peak storage fees (Oct-Dec rates are 3x higher). Negotiate lower product costs with suppliers. Use the Professional plan if selling 40+ items per month. Consider Seller Fulfilled Prime for oversized items to avoid FBA fulfillment fees."}}, {"@type": "Question", "name": "What is the Amazon closing fee?", "acceptedAnswer": {"@type": "Answer", "text": "The variable closing fee is $1.80 per item charged on media category products only. Media categories include Books, Music, DVD & Blu-ray, Software, and Video Games. This fee is in addition to the referral fee and any FBA fees. Non-media categories do not incur a closing fee."}}, {"@type": "Question", "name": "Are there hidden fees on Amazon?", "acceptedAnswer": {"@type": "Answer", "text": "While Amazon is transparent about its fee structure, sellers are sometimes surprised by long-term storage fees (charged for inventory stored over 181 days), return processing fees, removal/disposal order fees, and unplanned service fees for improperly packaged items. The key \"hidden\" cost is often the gap between expected and actual size tier classification — if your product measures slightly larger than expected at the Amazon warehouse, it may be reclassified to a higher-fee tier."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Amazon Seller Fee Breakdown", "description": "Visualize all Amazon seller fees with interactive charts and dynamic pricing slider.", "url": "https://tool.teamzlab.com/amazon/seller-fee-breakdown/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Amazon Seller Fee Breakdown</h1>
+      <p class="tool-description">See exactly where your money goes on every Amazon sale. Visual breakdown of referral fees, FBA fulfillment, storage costs, closing fees, and plan fees — with interactive charts and a dynamic pricing slider. Free, private, runs entirely in your browser.</p>
+    </section>
+
+    <section class="tool-calculator" id="tool-area">
+      <div class="tool-form">
+        <div class="sfb-form-grid">
+          <div class="form-group full-width">
+            <label for="sfb-category">Product Category</label>
+            <select id="sfb-category">
+              <option value="amazon-device-accessories">Amazon Device Accessories (45%)</option>
+              <option value="automotive">Automotive (12%)</option>
+              <option value="baby">Baby Products (8% / 15%)</option>
+              <option value="beauty">Beauty (8% / 15%)</option>
+              <option value="books">Books (15%) — media</option>
+              <option value="camera">Camera &amp; Photo (8%)</option>
+              <option value="cell-phones">Cell Phone Devices (8%)</option>
+              <option value="clothing">Clothing &amp; Accessories (17%)</option>
+              <option value="computers">Computers (8%)</option>
+              <option value="dvd">DVD &amp; Blu-ray (15%) — media</option>
+              <option value="electronics" selected>Electronics (8%)</option>
+              <option value="furniture">Furniture (15%)</option>
+              <option value="garden">Garden &amp; Outdoor (15%)</option>
+              <option value="grocery">Grocery (8% / 15%)</option>
+              <option value="health">Health &amp; Personal Care (8% / 15%)</option>
+              <option value="home">Home (15%)</option>
+              <option value="industrial">Industrial &amp; Scientific (12%)</option>
+              <option value="jewelry">Jewelry (20% / 5%)</option>
+              <option value="kitchen">Kitchen (15%)</option>
+              <option value="luggage">Luggage (15%)</option>
+              <option value="music">Music (15%) — media</option>
+              <option value="musical-instruments">Musical Instruments (15%)</option>
+              <option value="office">Office Products (15%)</option>
+              <option value="outdoors">Outdoors (15%)</option>
+              <option value="pet-supplies">Pet Supplies (15% / 22%)</option>
+              <option value="shoes">Shoes, Handbags &amp; Sunglasses (15%)</option>
+              <option value="software">Software (15%) — media</option>
+              <option value="sports">Sports (15%)</option>
+              <option value="tools-home">Tools &amp; Home Improvement (15%)</option>
+              <option value="toys">Toys &amp; Games (15%)</option>
+              <option value="video-games">Video Games (15%) — media</option>
+              <option value="watches">Watches (16% / 3%)</option>
+              <option value="everything-else">Everything Else (15%)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="sfb-price">Selling Price ($)</label>
+            <input type="number" id="sfb-price" placeholder="e.g., 29.99" min="0.01" step="0.01">
+          </div>
+          <div class="form-group">
+            <label for="sfb-cost">Product Cost ($)</label>
+            <input type="number" id="sfb-cost" placeholder="e.g., 8.00" min="0" step="0.01">
+          </div>
+
+          <div class="form-group full-width">
+            <label>Product Dimensions (inches) &amp; Weight (lbs)</label>
+            <div class="sfb-dimensions-grid">
+              <div class="form-group">
+                <label for="sfb-length" style="font-size:var(--text-sm);color:var(--text-muted)">Length</label>
+                <input type="number" id="sfb-length" placeholder="in" min="0" step="0.1">
+              </div>
+              <div class="form-group">
+                <label for="sfb-width" style="font-size:var(--text-sm);color:var(--text-muted)">Width</label>
+                <input type="number" id="sfb-width" placeholder="in" min="0" step="0.1">
+              </div>
+              <div class="form-group">
+                <label for="sfb-height" style="font-size:var(--text-sm);color:var(--text-muted)">Height</label>
+                <input type="number" id="sfb-height" placeholder="in" min="0" step="0.1">
+              </div>
+              <div class="form-group">
+                <label for="sfb-weight" style="font-size:var(--text-sm);color:var(--text-muted)">Weight (lbs)</label>
+                <input type="number" id="sfb-weight" placeholder="lbs" min="0" step="0.01">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Seller Plan</label>
+            <div class="sfb-plan-toggle" id="plan-toggle">
+              <button type="button" class="active" data-plan="professional">Professional</button>
+              <button type="button" data-plan="individual">Individual ($0.99/item)</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Storage Season</label>
+            <div class="sfb-season-toggle" id="season-toggle">
+              <button type="button" class="active" data-season="standard">Jan — Sep ($0.87/cu ft)</button>
+              <button type="button" data-season="peak">Oct — Dec ($2.40/cu ft)</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="sfb-calc-btn" type="button">Break Down My Fees</button>
+      </div>
+
+      <div id="sfb-results" class="sfb-results" style="display:none;">
+        <div class="tool-result" style="border-top:1px solid var(--border);padding-top:20px;">
+          <div id="sfb-tier-display"></div>
+          <div class="sfb-summary-grid" id="sfb-summary-grid"></div>
+
+          <!-- Stacked bar chart -->
+          <div class="sfb-stacked-bar-section" id="sfb-stacked-bar-section"></div>
+
+          <!-- Pie chart -->
+          <div class="sfb-pie-section" id="sfb-pie-section"></div>
+
+          <!-- Fee detail table -->
+          <div class="sfb-table-section" id="sfb-table-section"></div>
+
+          <!-- Horizontal bar breakdown -->
+          <div class="sfb-bar-section" id="sfb-bar-section"></div>
+
+          <!-- What-if slider -->
+          <div class="sfb-whatif-section" id="sfb-whatif-section"></div>
+
+          <!-- Plan comparison -->
+          <div class="sfb-plan-compare" id="sfb-plan-compare"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Understanding All Amazon Seller Fees</h2>
+      <p>Amazon charges multiple types of fees to sellers, and understanding each one is essential for profitable selling. The referral fee is a percentage of the total selling price that varies by category, ranging from 5% for certain Jewelry tiers to 45% for Amazon Device Accessories. Most categories charge 15%, making it the single largest fee for most sellers. The FBA fulfillment fee covers picking, packing, and shipping your product to the customer, determined by the item's size tier and weight. Monthly inventory storage fees are charged per cubic foot of warehouse space, with standard rates of $0.87 per cubic foot from January through September and peak rates of $2.40 from October through December.</p>
+      <p>Beyond these core fees, media category items (Books, Music, DVD, Software, Video Games) incur an additional $1.80 closing fee per item. Individual plan sellers also pay $0.99 per item sold on top of all other fees. This seller fee breakdown tool calculates every applicable fee and shows exactly how your selling price gets divided among Amazon's fee structure.</p>
+
+      <h2>How Amazon FBA Size Tiers Affect Your Costs</h2>
+      <p>Amazon classifies every FBA product into one of four size tiers based on dimensions and weight: Small Standard (max 15 x 12 x 0.75 inches, up to 1 lb), Large Standard (max 18 x 14 x 8 inches, up to 20 lbs), Large Bulky (max 59 x 33 x 33 inches, up to 50 lbs), and Extra-Large (above Large Bulky limits, up to 150 lbs). The difference between tiers is significant — a Small Standard item starts at $3.22 for fulfillment, while a Large Bulky item starts at $9.73. Optimizing product packaging to fit a smaller size tier can save substantial money per unit.</p>
+      <p>Weight also plays a critical role within each tier. Large Standard items above 3 lbs incur additional per-half-pound surcharges, and Large Bulky items add $0.42 per pound above the first pound. Even small reductions in product weight or dimensions can move your item to a lower fee bracket, directly improving your profit margin on every sale.</p>
+
+      <h2>Professional vs Individual Seller Plans</h2>
+      <p>Amazon offers two seller plans: Professional at $39.99 per month with no per-item fee, and Individual at no monthly fee but a $0.99 charge per item sold. The breakeven point is approximately 40 units per month — if you sell more than 40 items monthly, the Professional plan costs less overall. Professional sellers also gain access to advanced selling tools including bulk listing, advertising, promotions, and the Buy Box eligibility.</p>
+      <p>For new sellers testing the waters, the Individual plan keeps fixed costs low. However, as sales volume grows, switching to Professional becomes essential for both cost savings and competitive positioning. This tool's plan comparison section shows the exact cost difference for your specific product and volume, helping you choose the right plan for your business stage.</p>
+
+      <h2>Tips to Minimize Amazon Seller Fees</h2>
+      <p>Start by optimizing product packaging to target a smaller FBA size tier. Switching from a box to a poly bag, reducing packaging dimensions by even half an inch, or trimming product weight below a threshold (like 1 lb for Small Standard) can save $0.50 to $3.00 per unit. Manage inventory carefully during peak storage months (October through December) when rates nearly triple. Use the "What If" slider in this tool to find the optimal price point where your profit margin stays healthy after all fees are accounted for. Consider negotiating lower product costs with suppliers, since every dollar saved on cost goes directly to your bottom line.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Amazon Seller Tools',url:'/amazon/'},{name:'Seller Fee Breakdown'}];
+
+    var FAQS = [
+      {q:'What percentage does Amazon take from sellers?',a:'Amazon takes a referral fee that varies by product category, ranging from 5% to 45% of the selling price. Most categories charge 15%. On top of that, FBA sellers pay a fulfillment fee (starting at $3.22 for Small Standard items), monthly storage fees ($0.87 to $2.40 per cubic foot), and potentially a closing fee ($1.80 for media items). Individual plan sellers also pay $0.99 per item sold.'},
+      {q:'What are all the Amazon seller fees?',a:'Amazon seller fees include: referral fee (5-45% by category), FBA fulfillment fee (based on size tier and weight, starting at $3.22), monthly storage fee ($0.87/cu ft standard, $2.40/cu ft peak season), variable closing fee ($1.80 for media categories like Books, Music, DVD, Software, Video Games), Individual plan per-item fee ($0.99 if not on Professional plan), and Professional plan subscription ($39.99/month). Long-term storage fees may also apply for inventory stored over 181 days.'},
+      {q:'What is the difference between Professional and Individual seller plans?',a:'The Professional plan costs $39.99 per month with no per-item fee, while the Individual plan has no monthly fee but charges $0.99 per item sold. The breakeven point is about 40 units per month. Professional sellers also get access to advertising, promotions, bulk listing tools, and Buy Box eligibility — critical features for scaling your Amazon business.'},
+      {q:'How can I reduce my Amazon seller fees?',a:'Optimize product packaging to fit a smaller FBA size tier (even half an inch matters). Reduce product weight to stay below fee thresholds. Manage inventory levels to avoid peak storage fees (Oct-Dec rates are 3x higher). Negotiate lower product costs with suppliers. Use the Professional plan if selling 40+ items per month. Consider Seller Fulfilled Prime for oversized items to avoid FBA fulfillment fees.'},
+      {q:'What is the Amazon closing fee?',a:'The variable closing fee is $1.80 per item charged on media category products only. Media categories include Books, Music, DVD & Blu-ray, Software, and Video Games. This fee is in addition to the referral fee and any FBA fees. Non-media categories do not incur a closing fee.'},
+      {q:'Are there hidden fees on Amazon?',a:'While Amazon is transparent about its fee structure, sellers are sometimes surprised by long-term storage fees (charged for inventory stored over 181 days), return processing fees, removal/disposal order fees, and unplanned service fees for improperly packaged items. The key "hidden" cost is often the gap between expected and actual size tier classification — if your product measures slightly larger than expected at the Amazon warehouse, it may be reclassified to a higher-fee tier.'}
+    ];
+
+    var RELATED_TOOLS = [
+      {slug:'amazon/fba-fee-calculator',name:'Amazon FBA Fee Calculator',description:'Detailed FBA fee calculation'},
+      {slug:'amazon/referral-fee-calculator',name:'Amazon Referral Fee Calculator',description:'Category-specific referral fees'},
+      {slug:'amazon/profit-calculator',name:'Amazon Profit Calculator',description:'Net profit after all fees'},
+      {slug:'amazon/storage-fee-calculator',name:'Amazon Storage Fee Calculator',description:'Monthly storage cost estimates'},
+      {slug:'amazon/dimensional-weight-calculator',name:'Amazon Dimensional Weight Calculator',description:'Size tier classification'},
+      {slug:'amazon/roi-calculator',name:'Amazon ROI Calculator',description:'Return on investment analysis'}
+    ];
+
+    (function() {
+      /* --- Referral Fee Rates --- */
+      var REFERRAL_RATES = {
+        'amazon-device-accessories': {flat: 0.45},
+        'automotive': {flat: 0.12},
+        'baby': {tiered: [{max: 10, rate: 0.08}, {max: Infinity, rate: 0.15}]},
+        'beauty': {tiered: [{max: 10, rate: 0.08}, {max: Infinity, rate: 0.15}]},
+        'books': {flat: 0.15, media: true},
+        'camera': {flat: 0.08},
+        'cell-phones': {flat: 0.08},
+        'clothing': {flat: 0.17},
+        'computers': {flat: 0.08},
+        'dvd': {flat: 0.15, media: true},
+        'electronics': {flat: 0.08},
+        'furniture': {flat: 0.15},
+        'garden': {flat: 0.15},
+        'grocery': {tiered: [{max: 15, rate: 0.08}, {max: Infinity, rate: 0.15}]},
+        'health': {tiered: [{max: 10, rate: 0.08}, {max: Infinity, rate: 0.15}]},
+        'home': {flat: 0.15},
+        'industrial': {flat: 0.12},
+        'jewelry': {tiered: [{max: 250, rate: 0.20}, {max: Infinity, rate: 0.05}]},
+        'kitchen': {flat: 0.15},
+        'luggage': {flat: 0.15},
+        'music': {flat: 0.15, media: true},
+        'musical-instruments': {flat: 0.15},
+        'office': {flat: 0.15},
+        'outdoors': {flat: 0.15},
+        'pet-supplies': {tiered: [{max: 10, rate: 0.22}, {max: Infinity, rate: 0.15}]},
+        'shoes': {flat: 0.15},
+        'software': {flat: 0.15, media: true},
+        'sports': {flat: 0.15},
+        'tools-home': {flat: 0.15},
+        'toys': {flat: 0.15},
+        'video-games': {flat: 0.15, media: true},
+        'watches': {tiered: [{max: 1500, rate: 0.16}, {max: Infinity, rate: 0.03}]},
+        'everything-else': {flat: 0.15}
+      };
+
+      /* Colors for chart segments (using opacity of --heading) */
+      var SEGMENT_COLORS = [
+        {bg: 'var(--heading)', opacity: 1},
+        {bg: 'var(--heading)', opacity: 0.75},
+        {bg: 'var(--heading)', opacity: 0.55},
+        {bg: 'var(--heading)', opacity: 0.40},
+        {bg: 'var(--heading)', opacity: 0.25}
+      ];
+
+      function getReferralFee(category, price) {
+        var config = REFERRAL_RATES[category];
+        if (!config) return price * 0.15;
+        var rate = config.flat;
+        if (rate) return Math.max(price * rate, 0.30);
+        if (config.tiered) {
+          var fee = 0;
+          var remaining = price;
+          for (var i = 0; i < config.tiered.length; i++) {
+            var tier = config.tiered[i];
+            if (category === 'jewelry' || category === 'watches') {
+              var bracket = Math.min(remaining, tier.max - (i > 0 ? config.tiered[i-1].max : 0));
+              if (bracket <= 0) break;
+              fee += bracket * tier.rate;
+              remaining -= bracket;
+            } else {
+              if (price <= tier.max) {
+                fee = price * tier.rate;
+                break;
+              }
+            }
+          }
+          return Math.max(fee, 0.30);
+        }
+        return Math.max(price * 0.15, 0.30);
+      }
+
+      function getReferralRateLabel(category) {
+        var config = REFERRAL_RATES[category];
+        if (!config) return '15%';
+        if (config.flat) return (config.flat * 100) + '%';
+        return 'tiered';
+      }
+
+      function isMediaCategory(category) {
+        var config = REFERRAL_RATES[category];
+        return config && config.media === true;
+      }
+
+      /* --- Size Tier --- */
+      function getSizeTier(length, width, height, weight) {
+        var dims = [length, width, height].sort(function(a, b) { return b - a; });
+        var longest = dims[0];
+        var median = dims[1];
+        var shortest = dims[2];
+
+        if (longest <= 15 && median <= 12 && shortest <= 0.75 && weight <= 1) {
+          return 'Small Standard';
+        }
+        if (longest <= 18 && median <= 14 && shortest <= 8 && weight <= 20) {
+          return 'Large Standard';
+        }
+        var girth = 2 * (median + shortest);
+        if (longest > 59 || (longest + girth) > 130 || weight > 50 || longest > 108) {
+          return 'Extra-Large';
+        }
+        return 'Large Bulky';
+      }
+
+      /* --- FBA Fulfillment Fee --- */
+      function getFulfillmentFee(sizeTier, weight) {
+        if (sizeTier === 'Small Standard') {
+          if (weight * 16 <= 15) return 3.22;
+          return 3.40;
+        }
+        if (sizeTier === 'Large Standard') {
+          if (weight <= 0.75) return 3.86;
+          if (weight <= 1) return 4.08;
+          if (weight <= 1.5) return 4.76;
+          if (weight <= 2) return 5.33;
+          if (weight <= 2.5) return 5.61;
+          if (weight <= 3) return 5.79;
+          var extraHalfLbs = Math.ceil((weight - 3) / 0.5);
+          return 6.13 + (extraHalfLbs * 0.32);
+        }
+        if (sizeTier === 'Large Bulky') {
+          var extraLbs = Math.max(0, Math.ceil(weight) - 1);
+          return 9.73 + (extraLbs * 0.42);
+        }
+        if (sizeTier === 'Extra-Large') {
+          if (weight <= 50) {
+            return 26.33 + (Math.max(0, Math.ceil(weight) - 1) * 0.38);
+          }
+          if (weight <= 70) {
+            return 40.12 + (Math.max(0, Math.ceil(weight) - 1) * 0.75);
+          }
+          return 54.81 + (Math.max(0, Math.ceil(weight) - 1) * 0.75);
+        }
+        return 0;
+      }
+
+      /* --- Storage Fee --- */
+      function getStorageFee(length, width, height, season) {
+        var cubicFt = (length * width * height) / 1728;
+        var rate = season === 'peak' ? 2.40 : 0.87;
+        return cubicFt * rate;
+      }
+
+      /* --- Plan & Season toggles --- */
+      var currentPlan = 'professional';
+      var currentSeason = 'standard';
+
+      document.querySelectorAll('#plan-toggle button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('#plan-toggle button').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentPlan = btn.getAttribute('data-plan');
+        });
+      });
+
+      document.querySelectorAll('#season-toggle button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('#season-toggle button').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentSeason = btn.getAttribute('data-season');
+        });
+      });
+
+      /* --- Core calculation --- */
+      function calcFees(price, category, length, width, height, weight, plan, season) {
+        var sizeTier = getSizeTier(length, width, height, weight);
+        var referralFee = getReferralFee(category, price);
+        var fulfillmentFee = getFulfillmentFee(sizeTier, weight);
+        var storageFee = getStorageFee(length, width, height, season);
+        var closingFee = isMediaCategory(category) ? 1.80 : 0;
+        var planFee = plan === 'individual' ? 0.99 : 0;
+        var totalFees = referralFee + fulfillmentFee + storageFee + closingFee + planFee;
+        return {
+          sizeTier: sizeTier,
+          referralFee: referralFee,
+          fulfillmentFee: fulfillmentFee,
+          storageFee: storageFee,
+          closingFee: closingFee,
+          planFee: planFee,
+          totalFees: totalFees
+        };
+      }
+
+      /* --- Build fee items array --- */
+      function buildFeeItems(fees) {
+        var items = [];
+        items.push({name: 'Referral Fee', amount: fees.referralFee});
+        items.push({name: 'FBA Fulfillment', amount: fees.fulfillmentFee});
+        items.push({name: 'Monthly Storage', amount: fees.storageFee});
+        if (fees.closingFee > 0) items.push({name: 'Closing Fee', amount: fees.closingFee});
+        if (fees.planFee > 0) items.push({name: 'Per-Item Fee', amount: fees.planFee});
+        return items;
+      }
+
+      /* === Render Functions === */
+
+      function renderSummary(price, cost, fees) {
+        var netProfit = price - fees.totalFees - cost;
+        var margin = (netProfit / price) * 100;
+        var isProfit = netProfit >= 0;
+
+        var html = '';
+        html += '<div class="sfb-summary-card"><div class="sfb-card-label">Total Fees</div><div class="sfb-card-value">$' + fees.totalFees.toFixed(2) + '</div></div>';
+        html += '<div class="sfb-summary-card ' + (isProfit ? 'sfb-profit-positive' : 'sfb-profit-negative') + '"><div class="sfb-card-label">Net Profit</div><div class="sfb-card-value">' + (isProfit ? '' : '-') + '$' + Math.abs(netProfit).toFixed(2) + '</div></div>';
+        html += '<div class="sfb-summary-card ' + (isProfit ? 'sfb-profit-positive' : 'sfb-profit-negative') + '"><div class="sfb-card-label">Profit Margin</div><div class="sfb-card-value">' + margin.toFixed(1) + '%</div></div>';
+        document.getElementById('sfb-summary-grid').innerHTML = html;
+      }
+
+      function renderStackedBar(price, feeItems) {
+        var html = '<div class="sfb-section-title">Fee Proportion of Selling Price ($' + price.toFixed(2) + ')</div>';
+        html += '<div class="sfb-stacked-bar-wrapper">';
+        html += '<div class="sfb-stacked-bar-track">';
+
+        var totalFees = 0;
+        feeItems.forEach(function(item) { totalFees += item.amount; });
+        var profitPortion = Math.max(price - totalFees, 0);
+
+        for (var i = 0; i < feeItems.length; i++) {
+          var pct = (feeItems[i].amount / price) * 100;
+          var seg = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+          html += '<div class="sfb-stacked-segment" style="width:' + pct.toFixed(2) + '%;background:' + seg.bg + ';opacity:' + seg.opacity + ';" title="' + feeItems[i].name + ': $' + feeItems[i].amount.toFixed(2) + ' (' + pct.toFixed(1) + '%)"></div>';
+        }
+
+        /* Remaining / profit portion */
+        var profitPct = (profitPortion / price) * 100;
+        if (profitPct > 0) {
+          html += '<div class="sfb-stacked-segment" style="width:' + profitPct.toFixed(2) + '%;background:var(--border);opacity:0.5;" title="Remaining: $' + profitPortion.toFixed(2) + ' (' + profitPct.toFixed(1) + '%)"></div>';
+        }
+
+        html += '</div>';
+
+        /* Legend */
+        html += '<div class="sfb-stacked-legend">';
+        for (var j = 0; j < feeItems.length; j++) {
+          var seg2 = SEGMENT_COLORS[j % SEGMENT_COLORS.length];
+          html += '<div class="sfb-legend-item"><div class="sfb-legend-swatch" style="background:' + seg2.bg + ';opacity:' + seg2.opacity + ';"></div>' + feeItems[j].name + ' ($' + feeItems[j].amount.toFixed(2) + ')</div>';
+        }
+        html += '<div class="sfb-legend-item"><div class="sfb-legend-swatch" style="background:var(--border);opacity:0.5;"></div>Remaining ($' + profitPortion.toFixed(2) + ')</div>';
+        html += '</div>';
+        html += '</div>';
+
+        document.getElementById('sfb-stacked-bar-section').innerHTML = html;
+      }
+
+      function renderPieChart(price, cost, feeItems) {
+        var totalFees = 0;
+        feeItems.forEach(function(item) { totalFees += item.amount; });
+        var feePct = (totalFees / price) * 100;
+
+        /* Build conic-gradient stops */
+        var stops = [];
+        var cumPct = 0;
+        for (var i = 0; i < feeItems.length; i++) {
+          var pct = (feeItems[i].amount / price) * 100;
+          var seg = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+          /* Use rgba from heading fallback: we just apply opacity via color-mix */
+          var segColor = 'color-mix(in srgb, var(--heading) ' + (seg.opacity * 100) + '%, transparent)';
+          stops.push(segColor + ' ' + cumPct.toFixed(2) + '% ' + (cumPct + pct).toFixed(2) + '%');
+          cumPct += pct;
+        }
+        /* Remaining */
+        if (cumPct < 100) {
+          stops.push('var(--border) ' + cumPct.toFixed(2) + '% 100%');
+        }
+
+        var conicGrad = 'conic-gradient(' + stops.join(', ') + ')';
+
+        var html = '<div class="sfb-section-title">Fee Distribution Pie Chart</div>';
+        html += '<div class="sfb-pie-wrapper">';
+        html += '<div class="sfb-pie-chart" style="background:' + conicGrad + ';">';
+        html += '<div class="sfb-pie-center"><div class="sfb-pie-center-value">' + feePct.toFixed(1) + '%</div><div class="sfb-pie-center-label">Total Fees</div></div>';
+        html += '</div>';
+
+        /* Legend */
+        html += '<div class="sfb-pie-legend">';
+        for (var j = 0; j < feeItems.length; j++) {
+          var seg2 = SEGMENT_COLORS[j % SEGMENT_COLORS.length];
+          var itemPct = (feeItems[j].amount / price) * 100;
+          html += '<div class="sfb-pie-legend-row"><div class="sfb-pie-legend-left"><div class="sfb-pie-legend-swatch" style="background:var(--heading);opacity:' + seg2.opacity + ';"></div><span class="sfb-pie-legend-name">' + feeItems[j].name + '</span></div><span class="sfb-pie-legend-value">$' + feeItems[j].amount.toFixed(2) + ' (' + itemPct.toFixed(1) + '%)</span></div>';
+        }
+        var remainPct = Math.max(100 - feePct, 0);
+        var remainAmt = Math.max(price - totalFees, 0);
+        html += '<div class="sfb-pie-legend-row"><div class="sfb-pie-legend-left"><div class="sfb-pie-legend-swatch" style="background:var(--border);"></div><span class="sfb-pie-legend-name">Remaining</span></div><span class="sfb-pie-legend-value">$' + remainAmt.toFixed(2) + ' (' + remainPct.toFixed(1) + '%)</span></div>';
+        html += '</div>';
+        html += '</div>';
+
+        document.getElementById('sfb-pie-section').innerHTML = html;
+      }
+
+      function renderFeeTable(price, feeItems, fees) {
+        var html = '<div class="sfb-section-title">Fee Detail Table</div>';
+        html += '<table class="sfb-fee-table"><thead><tr><th>Fee Type</th><th>Amount</th><th>% of Price</th></tr></thead><tbody>';
+
+        for (var i = 0; i < feeItems.length; i++) {
+          var pct = (feeItems[i].amount / price) * 100;
+          html += '<tr><td>' + feeItems[i].name + '</td><td>$' + feeItems[i].amount.toFixed(2) + '</td><td>' + pct.toFixed(1) + '%</td></tr>';
+        }
+
+        var totalPct = (fees.totalFees / price) * 100;
+        html += '<tr class="sfb-total-row"><td>Total Fees</td><td>$' + fees.totalFees.toFixed(2) + '</td><td>' + totalPct.toFixed(1) + '%</td></tr>';
+        html += '</tbody></table>';
+
+        document.getElementById('sfb-table-section').innerHTML = html;
+      }
+
+      function renderBarChart(price, cost, feeItems, netProfit) {
+        var html = '<div class="sfb-section-title">Fee Breakdown vs. Selling Price</div>';
+        html += '<div class="sfb-bar-chart">';
+
+        var barClasses = ['sfb-fill-referral', 'sfb-fill-fulfillment', 'sfb-fill-storage', 'sfb-fill-closing', 'sfb-fill-plan'];
+        for (var i = 0; i < feeItems.length; i++) {
+          var pct = Math.min((feeItems[i].amount / price) * 100, 100);
+          html += '<div class="sfb-bar-row"><div class="sfb-bar-label">' + feeItems[i].name + '</div><div class="sfb-bar-track"><div class="sfb-bar-fill ' + barClasses[i % barClasses.length] + '" style="width:' + pct.toFixed(1) + '%"></div></div><div class="sfb-bar-amount">$' + feeItems[i].amount.toFixed(2) + '</div></div>';
+        }
+
+        if (cost > 0) {
+          var costPct = Math.min((cost / price) * 100, 100);
+          html += '<div class="sfb-bar-row"><div class="sfb-bar-label">Product Cost</div><div class="sfb-bar-track"><div class="sfb-bar-fill sfb-fill-plan" style="width:' + costPct.toFixed(1) + '%"></div></div><div class="sfb-bar-amount">$' + cost.toFixed(2) + '</div></div>';
+        }
+
+        var profitPct = Math.min((Math.abs(netProfit) / price) * 100, 100);
+        html += '<div class="sfb-bar-row"><div class="sfb-bar-label">Net Profit</div><div class="sfb-bar-track"><div class="sfb-bar-fill sfb-fill-profit" style="width:' + profitPct.toFixed(1) + '%"></div></div><div class="sfb-bar-amount">' + (netProfit >= 0 ? '' : '-') + '$' + Math.abs(netProfit).toFixed(2) + '</div></div>';
+
+        html += '</div>';
+        document.getElementById('sfb-bar-section').innerHTML = html;
+      }
+
+      /* --- What-if slider state --- */
+      var whatIfState = {};
+
+      function renderWhatIfSlider(origPrice, category, length, width, height, weight, plan, season, cost) {
+        whatIfState = {category: category, length: length, width: width, height: height, weight: weight, plan: plan, season: season, cost: cost};
+        var minPrice = Math.max(1, Math.floor(origPrice * 0.3));
+        var maxPrice = Math.ceil(origPrice * 3);
+
+        var html = '<div class="sfb-section-title">"What If" Price Slider</div>';
+        html += '<div class="sfb-whatif-wrapper">';
+        html += '<div class="sfb-whatif-slider-row">';
+        html += '<label for="sfb-whatif-range">Selling Price:</label>';
+        html += '<input type="range" id="sfb-whatif-range" min="' + minPrice + '" max="' + maxPrice + '" value="' + Math.round(origPrice) + '" step="1">';
+        html += '<span class="sfb-whatif-value" id="sfb-whatif-price">$' + origPrice.toFixed(0) + '</span>';
+        html += '</div>';
+        html += '<div class="sfb-whatif-results" id="sfb-whatif-results"></div>';
+        html += '</div>';
+
+        document.getElementById('sfb-whatif-section').innerHTML = html;
+
+        updateWhatIf(origPrice);
+
+        document.getElementById('sfb-whatif-range').addEventListener('input', function() {
+          var newPrice = parseFloat(this.value);
+          document.getElementById('sfb-whatif-price').textContent = '$' + newPrice.toFixed(0);
+          updateWhatIf(newPrice);
+        });
+      }
+
+      function updateWhatIf(price) {
+        var s = whatIfState;
+        var fees = calcFees(price, s.category, s.length, s.width, s.height, s.weight, s.plan, s.season);
+        var netProfit = price - fees.totalFees - s.cost;
+        var margin = (netProfit / price) * 100;
+        var feePct = (fees.totalFees / price) * 100;
+
+        var html = '';
+        html += '<div class="sfb-whatif-card"><div class="sfb-whatif-card-label">Total Fees</div><div class="sfb-whatif-card-value">$' + fees.totalFees.toFixed(2) + '</div></div>';
+        html += '<div class="sfb-whatif-card"><div class="sfb-whatif-card-label">Fee %</div><div class="sfb-whatif-card-value">' + feePct.toFixed(1) + '%</div></div>';
+        html += '<div class="sfb-whatif-card"><div class="sfb-whatif-card-label">Net Profit</div><div class="sfb-whatif-card-value">' + (netProfit >= 0 ? '' : '-') + '$' + Math.abs(netProfit).toFixed(2) + '</div></div>';
+        html += '<div class="sfb-whatif-card"><div class="sfb-whatif-card-label">Margin</div><div class="sfb-whatif-card-value">' + margin.toFixed(1) + '%</div></div>';
+
+        document.getElementById('sfb-whatif-results').innerHTML = html;
+      }
+
+      function renderPlanComparison(price, category, length, width, height, weight, season, cost) {
+        var proFees = calcFees(price, category, length, width, height, weight, 'professional', season);
+        var indFees = calcFees(price, category, length, width, height, weight, 'individual', season);
+        var proProfit = price - proFees.totalFees - cost;
+        var indProfit = price - indFees.totalFees - cost;
+
+        /* Breakeven: at what monthly volume is Pro cheaper? */
+        /* Pro: $39.99/mo subscription, no per-item. Ind: $0.99/item, no sub. */
+        /* Pro total = totalFees_pro * N + 39.99. Ind total = totalFees_ind * N. */
+        /* 39.99 = (indFees.planFee) * N => 39.99 / 0.99 = ~40.4 */
+        var breakeven = Math.ceil(39.99 / 0.99);
+
+        var html = '<div class="sfb-section-title">Professional vs. Individual Plan Comparison</div>';
+        html += '<div class="sfb-plan-grid">';
+
+        /* Professional card */
+        html += '<div class="sfb-plan-card">';
+        html += '<div class="sfb-plan-card-title">Professional Plan</div>';
+        html += '<div class="sfb-plan-card-price">$39.99/month subscription</div>';
+        html += '<ul class="sfb-plan-card-list">';
+        html += '<li>No per-item fee</li>';
+        html += '<li>Buy Box eligibility</li>';
+        html += '<li>Advertising &amp; promotions</li>';
+        html += '<li>Bulk listing tools</li>';
+        html += '<li>Advanced reports</li>';
+        html += '</ul>';
+        html += '<div class="sfb-plan-card-bottom"><div class="sfb-plan-card-bottom-label">Per-Unit Profit</div><div class="sfb-plan-card-bottom-value">' + (proProfit >= 0 ? '' : '-') + '$' + Math.abs(proProfit).toFixed(2) + '</div></div>';
+        html += '</div>';
+
+        /* Individual card */
+        html += '<div class="sfb-plan-card">';
+        html += '<div class="sfb-plan-card-title">Individual Plan</div>';
+        html += '<div class="sfb-plan-card-price">$0.99 per item sold</div>';
+        html += '<ul class="sfb-plan-card-list">';
+        html += '<li>$0.99 added per sale</li>';
+        html += '<li>No monthly subscription</li>';
+        html += '<li>Limited listing tools</li>';
+        html += '<li>No advertising access</li>';
+        html += '<li>No Buy Box</li>';
+        html += '</ul>';
+        html += '<div class="sfb-plan-card-bottom"><div class="sfb-plan-card-bottom-label">Per-Unit Profit</div><div class="sfb-plan-card-bottom-value">' + (indProfit >= 0 ? '' : '-') + '$' + Math.abs(indProfit).toFixed(2) + '</div></div>';
+        html += '</div>';
+
+        html += '</div>';
+
+        /* Verdict */
+        var savingsPerUnit = Math.abs(proProfit - indProfit);
+        html += '<div class="sfb-plan-verdict">';
+        html += 'The <strong>Professional plan</strong> saves <strong>$' + savingsPerUnit.toFixed(2) + ' per unit</strong> compared to Individual. ';
+        html += 'Breakeven point: <strong>' + breakeven + ' units/month</strong>. ';
+        html += 'If you sell more than ' + breakeven + ' items per month, Professional is the better choice. ';
+        html += 'At 100 units/month, you save <strong>$' + ((0.99 * 100 - 39.99)).toFixed(2) + '/month</strong> with Professional.';
+        html += '</div>';
+
+        document.getElementById('sfb-plan-compare').innerHTML = html;
+      }
+
+      /* === Main calculate === */
+      function calculate() {
+        var category = document.getElementById('sfb-category').value;
+        var price = parseFloat(document.getElementById('sfb-price').value);
+        var cost = parseFloat(document.getElementById('sfb-cost').value) || 0;
+        var length = parseFloat(document.getElementById('sfb-length').value) || 0;
+        var width = parseFloat(document.getElementById('sfb-width').value) || 0;
+        var height = parseFloat(document.getElementById('sfb-height').value) || 0;
+        var weight = parseFloat(document.getElementById('sfb-weight').value) || 0;
+
+        if (!price || price <= 0) {
+          if (window.showToast) window.showToast('Please enter a selling price.');
+          return;
+        }
+        if (length <= 0 || width <= 0 || height <= 0 || weight <= 0) {
+          if (window.showToast) window.showToast('Please enter product dimensions and weight.');
+          return;
+        }
+
+        var fees = calcFees(price, category, length, width, height, weight, currentPlan, currentSeason);
+        var feeItems = buildFeeItems(fees);
+        var netProfit = price - fees.totalFees - cost;
+
+        /* Size tier badge */
+        document.getElementById('sfb-tier-display').innerHTML =
+          '<div style="margin-bottom:16px;"><span style="color:var(--text-muted);font-size:var(--text-sm);">Size Tier:</span> <span class="sfb-badge">' + fees.sizeTier + '</span></div>';
+
+        /* Render all sections */
+        renderSummary(price, cost, fees);
+        renderStackedBar(price, feeItems);
+        renderPieChart(price, cost, feeItems);
+        renderFeeTable(price, feeItems, fees);
+        renderBarChart(price, cost, feeItems, netProfit);
+        renderWhatIfSlider(price, category, length, width, height, weight, currentPlan, currentSeason, cost);
+        renderPlanComparison(price, category, length, width, height, weight, currentSeason, cost);
+
+        document.getElementById('sfb-results').style.display = 'block';
+      }
+
+      document.getElementById('sfb-calc-btn').addEventListener('click', calculate);
+
+      document.querySelectorAll('#tool-area input[type="number"]').forEach(function(input) {
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') calculate();
+        });
+      });
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({slug:'amazon/seller-fee-breakdown',title:'Amazon Seller Fee Breakdown',description:'Visualize all Amazon seller fees with interactive charts and dynamic pricing slider.'});
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
