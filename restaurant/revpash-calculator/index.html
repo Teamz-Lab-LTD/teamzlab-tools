@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RevPASH Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate Revenue Per Available Seat Hour to optimize restaurant seating efficiency and compare peak vs off-peak performance. Free, private.">
+  <meta property="og:title" content="RevPASH Calculator — Restaurant Revenue Optimizer">
+  <meta property="og:description" content="Calculate Revenue Per Available Seat Hour to optimize restaurant seating and maximize revenue per seat.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/revpash-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="RevPASH Calculator — Restaurant Revenue Optimizer">
+  <meta name="twitter:description" content="Calculate Revenue Per Available Seat Hour to optimize restaurant seating and maximize revenue per seat.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/revpash-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .revpash-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .revpash-form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .revpash-form-group label { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+    .revpash-form-group input, .revpash-form-group select { padding: 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; width: 100%; box-sizing: border-box; }
+    .revpash-calc-btn { background: var(--heading); color: var(--bg); border: none; padding: 0.8rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; }
+    .revpash-calc-btn:hover { opacity: 0.9; }
+    .revpash-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+    .revpash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+    .revpash-card .rc-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .revpash-card .rc-value { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+    .revpash-card .rc-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .revpash-benchmark { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; margin-top: 1.5rem; }
+    .revpash-benchmark h4 { margin: 0 0 0.8rem 0; color: var(--heading); font-size: 1rem; }
+    .benchmark-bar { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.6rem; }
+    .benchmark-label { font-size: 0.85rem; color: var(--text); min-width: 120px; }
+    .benchmark-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; position: relative; }
+    .benchmark-fill { height: 100%; border-radius: 4px; background: var(--heading); }
+    .benchmark-range { font-size: 0.75rem; color: var(--text-muted); min-width: 60px; text-align: right; }
+    .revpash-marker { position: absolute; top: -6px; width: 3px; height: 20px; background: var(--accent); border-radius: 2px; }
+    .revpash-tips { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; margin-top: 1.5rem; }
+    .revpash-tips h4 { margin: 0 0 0.8rem 0; color: var(--heading); font-size: 1rem; }
+    .revpash-tips ul { list-style: none; padding: 0; margin: 0; }
+    .revpash-tips li { padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text); }
+    .revpash-tips li:last-child { border-bottom: none; }
+    .tip-icon { margin-right: 0.5rem; }
+
+    .hourly-section { margin-top: 1.5rem; }
+    .hourly-toggle { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; width: 100%; text-align: left; }
+    .hourly-toggle:hover { border-color: var(--heading); color: var(--heading); }
+    .hourly-rows { margin-top: 0.8rem; }
+    .hourly-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .hourly-row input { padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.9rem; width: 100%; box-sizing: border-box; }
+    .hourly-row-remove { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 0.3rem 0.6rem; }
+    .hourly-row-remove:hover { color: var(--heading); }
+    .hourly-add-btn { background: var(--surface); border: 2px dashed var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; width: 100%; margin-top: 0.5rem; }
+    .hourly-add-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .hourly-header { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.4rem; font-weight: 600; color: var(--text-muted); font-size: 0.8rem; }
+    .hourly-header span { padding: 0 0.3rem; }
+
+    .hourly-chart { margin-top: 1.5rem; }
+    .chart-bar-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .chart-label { font-size: 0.8rem; color: var(--text-muted); min-width: 70px; text-align: right; }
+    .chart-bar-track { flex: 1; height: 22px; background: var(--border); border-radius: 4px; position: relative; overflow: hidden; }
+    .chart-bar-fill { height: 100%; border-radius: 4px; background: var(--heading); transition: width 0.3s; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; }
+    .chart-bar-val { font-size: 0.7rem; font-weight: 600; color: var(--bg); white-space: nowrap; }
+    .chart-bar-fill.peak-bar { background: var(--accent); }
+    .chart-bar-fill.peak-bar .chart-bar-val { color: var(--accent-text); }
+
+    .peak-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .peak-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .peak-card .pk-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .peak-card .pk-value { font-size: 1.3rem; font-weight: 700; color: var(--heading); }
+    .peak-card .pk-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    @media (max-width: 600px) {
+      .revpash-form-grid { grid-template-columns: 1fr; }
+      .revpash-summary { grid-template-columns: 1fr 1fr; }
+      .hourly-row { grid-template-columns: 1fr 1fr auto; }
+      .peak-comparison { grid-template-columns: 1fr; }
+      .benchmark-bar { flex-wrap: wrap; }
+      .benchmark-label { min-width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "RevPASH Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is RevPASH?", "acceptedAnswer": {"@type": "Answer", "text": "RevPASH stands for Revenue Per Available Seat Hour. It measures how much revenue each seat in your restaurant generates per hour of operation. The formula is: RevPASH = Total Revenue / (Number of Seats x Hours Open)."}}, {"@type": "Question", "name": "What is a good RevPASH for a restaurant?", "acceptedAnswer": {"@type": "Answer", "text": "It depends on the segment. Fast casual restaurants typically achieve $5-$8, casual dining $3-$6, and fine dining $8-$15. Quick service and cafes range from $4-$10. Compare your number against your specific segment benchmark."}}, {"@type": "Question", "name": "How is RevPASH different from RevPAR?", "acceptedAnswer": {"@type": "Answer", "text": "RevPAR (Revenue Per Available Room) is the hotel industry equivalent. RevPASH adapts the same concept for restaurants by substituting seats for rooms and including operating hours to account for the time dimension of restaurant service."}}, {"@type": "Question", "name": "How can I improve my RevPASH?", "acceptedAnswer": {"@type": "Answer", "text": "Focus on three levers: increase average check size through upselling and menu engineering, reduce table turn times during peak hours with faster service, and drive traffic during off-peak hours with promotions and special menus."}}, {"@type": "Question", "name": "Should I calculate RevPASH daily, weekly, or monthly?", "acceptedAnswer": {"@type": "Answer", "text": "Daily RevPASH shows operational efficiency and hourly patterns. Weekly smooths out day-of-week variations. Monthly provides trend analysis. Use daily for tactical decisions and monthly for strategic planning."}}, {"@type": "Question", "name": "Does RevPASH account for takeout and delivery revenue?", "acceptedAnswer": {"@type": "Answer", "text": "Traditional RevPASH only counts dine-in revenue since it measures seat utilization. However, some operators calculate a modified RevPASH that includes all revenue streams to capture total space productivity."}}, {"@type": "Question", "name": "Why is hourly RevPASH breakdown useful?", "acceptedAnswer": {"@type": "Answer", "text": "Hourly analysis reveals peak and off-peak patterns. You can identify underperforming time slots where targeted promotions, adjusted staffing, or modified hours could significantly improve overall revenue."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "RevPASH Calculator", "description": "Calculate Revenue Per Available Seat Hour to optimize restaurant seating efficiency and maximize revenue.", "url": "https://tool.teamzlab.com/restaurant/revpash-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>RevPASH Calculator</h1>
+      <p class="tool-description">Calculate Revenue Per Available Seat Hour to measure how efficiently your restaurant generates revenue from every seat during each operating hour. Identify peak and off-peak performance, compare against industry benchmarks, and get actionable optimization tips.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <h3 style="color:var(--heading);margin-bottom:0.8rem;">Basic RevPASH Calculation</h3>
+      <div class="revpash-form-grid">
+        <div class="revpash-form-group">
+          <label for="totalRevenue">Total Revenue ($)</label>
+          <input type="number" id="totalRevenue" placeholder="e.g. 5000" min="0" step="0.01">
+        </div>
+        <div class="revpash-form-group">
+          <label for="totalSeats">Number of Seats</label>
+          <input type="number" id="totalSeats" placeholder="e.g. 60" min="1" step="1">
+        </div>
+        <div class="revpash-form-group">
+          <label for="hoursOpen">Hours Open per Day</label>
+          <input type="number" id="hoursOpen" placeholder="e.g. 10" min="0.5" step="0.5">
+        </div>
+      </div>
+
+      <div class="revpash-form-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="revpash-form-group">
+          <label for="restaurantType">Restaurant Type</label>
+          <select id="restaurantType">
+            <option value="casual">Casual Dining</option>
+            <option value="fast-casual">Fast Casual</option>
+            <option value="fine">Fine Dining</option>
+            <option value="qsr">Quick Service (QSR)</option>
+            <option value="cafe">Cafe / Coffee Shop</option>
+          </select>
+        </div>
+        <div class="revpash-form-group">
+          <label for="timePeriod">Time Period</label>
+          <select id="timePeriod">
+            <option value="day">Per Day</option>
+            <option value="week">Per Week</option>
+            <option value="month">Per Month</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hourly-section">
+        <button class="hourly-toggle" id="hourlyToggle">+ Add Hourly Breakdown (optional)</button>
+        <div id="hourlyPanel" style="display:none;">
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0.5rem 0;">Enter revenue for each time slot to see peak vs off-peak RevPASH.</p>
+          <div class="hourly-header">
+            <span>Time Slot</span>
+            <span>Revenue ($)</span>
+            <span></span>
+          </div>
+          <div id="hourlyRows">
+            <div class="hourly-row">
+              <input type="text" id="slot-label-0" placeholder="e.g. 11 AM - 12 PM" class="hr-label">
+              <input type="number" id="slot-rev-0" placeholder="Revenue" class="hr-rev" min="0" step="0.01">
+              <button class="hourly-row-remove" title="Remove">&times;</button>
+            </div>
+            <div class="hourly-row">
+              <input type="text" id="slot-label-1" placeholder="e.g. 12 PM - 1 PM" class="hr-label">
+              <input type="number" id="slot-rev-1" placeholder="Revenue" class="hr-rev" min="0" step="0.01">
+              <button class="hourly-row-remove" title="Remove">&times;</button>
+            </div>
+            <div class="hourly-row">
+              <input type="text" id="slot-label-2" placeholder="e.g. 1 PM - 2 PM" class="hr-label">
+              <input type="number" id="slot-rev-2" placeholder="Revenue" class="hr-rev" min="0" step="0.01">
+              <button class="hourly-row-remove" title="Remove">&times;</button>
+            </div>
+          </div>
+          <button class="hourly-add-btn" id="addSlot">+ Add Time Slot</button>
+        </div>
+      </div>
+
+      <button class="revpash-calc-btn" id="calcBtn" style="margin-top:1.5rem;">Calculate RevPASH</button>
+
+      <div id="revpashResults" style="display:none;">
+        <div class="revpash-summary" id="summaryCards"></div>
+        <div id="benchmarkSection"></div>
+        <div id="hourlyChart"></div>
+        <div id="peakComparison"></div>
+        <div id="tipsSection"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is RevPASH and Why It Matters</h2>
+      <p>RevPASH stands for Revenue Per Available Seat Hour, a key performance metric used by restaurant operators to measure how efficiently each seat generates revenue during operating hours. Unlike total revenue or covers per night, RevPASH accounts for both capacity and time, giving you a normalized view of your restaurant's earning power. A restaurant with 100 seats open for 12 hours has 1,200 available seat hours per day. If it earns $6,000 that day, its RevPASH is $5.00. This metric was originally developed in the hotel industry as RevPAR (Revenue Per Available Room) and adapted for foodservice by Cornell University researchers. It is now widely used by multi-unit operators, revenue managers, and restaurant consultants to benchmark performance across locations and dayparts.</p>
+
+      <h2>How to Calculate and Interpret RevPASH</h2>
+      <p>The formula is straightforward: RevPASH equals total revenue divided by the product of available seats and operating hours. For a weekly or monthly calculation, divide the period revenue by seats multiplied by total operating hours in that period. Industry benchmarks vary by segment. Fast casual restaurants typically achieve a RevPASH between $5 and $8 because of high turnover and moderate check sizes. Casual dining ranges from $3 to $6 due to longer dwell times. Fine dining often reaches $8 to $15 thanks to premium pricing, even with fewer turns. Quick service and cafes can range from $4 to $10 depending on volume. Comparing your RevPASH against these benchmarks reveals whether your restaurant is underperforming relative to peers and where the biggest opportunities lie.</p>
+
+      <h2>Strategies to Improve Your RevPASH</h2>
+      <p>There are three levers for improving RevPASH: increase revenue per guest, increase seat turnover, or optimize operating hours. During peak periods, focus on reducing table turn time through faster service, streamlined menus, and efficient payment processing. During off-peak hours, use promotions like happy hours, early bird specials, or prix fixe menus to drive traffic into empty seats. Consider flexible seating configurations that can accommodate different party sizes without wasting capacity. Some operators use reservation pacing systems that stagger bookings to maintain steady flow rather than overwhelming the kitchen. Analyzing RevPASH by hour helps you identify which time slots are underperforming and whether adjusting staffing, marketing, or menu offerings for those windows can unlock revenue. Even a $1 improvement in RevPASH across a 60-seat restaurant open 10 hours a day translates to an additional $600 in daily revenue or over $200,000 annually.</p>
+
+      <h2>RevPASH vs Other Restaurant Metrics</h2>
+      <p>RevPASH complements other key metrics like food cost percentage, labor cost percentage, and average check size. While food cost tells you about ingredient efficiency and labor cost measures staffing efficiency, RevPASH uniquely captures how well you monetize your physical space over time. A restaurant with excellent food cost control but low RevPASH may have empty tables during key hours. Conversely, a packed house with poor RevPASH could indicate pricing that is too low for the market. Use RevPASH alongside prime cost analysis and menu engineering to build a complete picture of your restaurant's financial health and identify the most impactful improvement opportunities.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'RevPASH Calculator'}];
+    var FAQS = [
+      {q:'What is RevPASH?',a:'RevPASH stands for Revenue Per Available Seat Hour. It measures how much revenue each seat in your restaurant generates per hour of operation. The formula is: RevPASH = Total Revenue / (Number of Seats x Hours Open).'},
+      {q:'What is a good RevPASH for a restaurant?',a:'It depends on the segment. Fast casual restaurants typically achieve $5-$8, casual dining $3-$6, and fine dining $8-$15. Quick service and cafes range from $4-$10. Compare your number against your specific segment benchmark.'},
+      {q:'How is RevPASH different from RevPAR?',a:'RevPAR (Revenue Per Available Room) is the hotel industry equivalent. RevPASH adapts the same concept for restaurants by substituting seats for rooms and including operating hours to account for the time dimension of restaurant service.'},
+      {q:'How can I improve my RevPASH?',a:'Focus on three levers: increase average check size through upselling and menu engineering, reduce table turn times during peak hours with faster service, and drive traffic during off-peak hours with promotions and special menus.'},
+      {q:'Should I calculate RevPASH daily, weekly, or monthly?',a:'Daily RevPASH shows operational efficiency and hourly patterns. Weekly smooths out day-of-week variations. Monthly provides trend analysis. Use daily for tactical decisions and monthly for strategic planning.'},
+      {q:'Does RevPASH account for takeout and delivery revenue?',a:'Traditional RevPASH only counts dine-in revenue since it measures seat utilization. However, some operators calculate a modified RevPASH that includes all revenue streams to capture total space productivity.'},
+      {q:'Why is hourly RevPASH breakdown useful?',a:'Hourly analysis reveals peak and off-peak patterns. You can identify underperforming time slots where targeted promotions, adjusted staffing, or modified hours could significantly improve overall revenue.'}
+    ];
+    var RELATED_TOOLS = [
+      {slug:'restaurant/food-cost-calculator',name:'Food Cost Calculator',description:'Calculate food cost percentage, ideal menu pricing, and profit margins per dish.'},
+      {slug:'restaurant/menu-engineering-calculator',name:'Menu Engineering Calculator',description:'Classify menu items into Stars, Puzzles, Plowhorses, and Dogs for menu optimization.'},
+      {slug:'restaurant/restaurant-break-even-calculator',name:'Restaurant Break-Even Calculator',description:'Calculate break-even revenue and customer targets for your restaurant.'},
+      {slug:'restaurant/labor-cost-calculator',name:'Labor Cost Calculator',description:'Calculate labor cost percentage and optimize staffing efficiency.'},
+      {slug:'restaurant/prime-cost-calculator',name:'Prime Cost Calculator',description:'Calculate prime cost (food + labor) to monitor your biggest expense categories.'},
+      {slug:'restaurant/menu-price-calculator',name:'Menu Price Calculator',description:'Set menu prices based on food cost, target margins, and market positioning.'}
+    ];
+
+    (function(){
+      var hourlyPanel = document.getElementById('hourlyPanel');
+      var hourlyToggle = document.getElementById('hourlyToggle');
+      var hourlyRows = document.getElementById('hourlyRows');
+      var addSlotBtn = document.getElementById('addSlot');
+      var calcBtn = document.getElementById('calcBtn');
+      var slotCount = 3;
+      var hourlyVisible = false;
+
+      var benchmarks = {
+        'casual': {name:'Casual Dining', min:3, max:6},
+        'fast-casual': {name:'Fast Casual', min:5, max:8},
+        'fine': {name:'Fine Dining', min:8, max:15},
+        'qsr': {name:'Quick Service', min:4, max:10},
+        'cafe': {name:'Cafe / Coffee Shop', min:3, max:7}
+      };
+
+      hourlyToggle.addEventListener('click', function(){
+        hourlyVisible = !hourlyVisible;
+        hourlyPanel.style.display = hourlyVisible ? 'block' : 'none';
+        hourlyToggle.textContent = hourlyVisible ? '- Hide Hourly Breakdown' : '+ Add Hourly Breakdown (optional)';
+      });
+
+      hourlyRows.querySelectorAll('.hourly-row-remove').forEach(function(btn){
+        btn.addEventListener('click', function(){ if(hourlyRows.children.length > 1) btn.closest('.hourly-row').remove(); });
+      });
+
+      addSlotBtn.addEventListener('click', function(){
+        var idx = slotCount++;
+        var row = document.createElement('div');
+        row.className = 'hourly-row';
+        row.innerHTML = '<input type="text" id="slot-label-'+idx+'" placeholder="e.g. 6 PM - 7 PM" class="hr-label">'
+          + '<input type="number" id="slot-rev-'+idx+'" placeholder="Revenue" class="hr-rev" min="0" step="0.01">'
+          + '<button class="hourly-row-remove" title="Remove">&times;</button>';
+        row.querySelector('.hourly-row-remove').addEventListener('click', function(){ if(hourlyRows.children.length > 1) row.remove(); });
+        hourlyRows.appendChild(row);
+      });
+
+      calcBtn.addEventListener('click', function(){
+        var totalRevenue = parseFloat(document.getElementById('totalRevenue').value);
+        var totalSeats = parseInt(document.getElementById('totalSeats').value, 10);
+        var hoursOpen = parseFloat(document.getElementById('hoursOpen').value);
+        var type = document.getElementById('restaurantType').value;
+        var period = document.getElementById('timePeriod').value;
+
+        if(isNaN(totalRevenue) || isNaN(totalSeats) || isNaN(hoursOpen) || totalRevenue < 0 || totalSeats < 1 || hoursOpen <= 0){
+          if(window.showToast) window.showToast('Please fill in all required fields with valid values.');
+          return;
+        }
+
+        var periodDays = period === 'week' ? 7 : period === 'month' ? 30 : 1;
+        var totalSeatHours = totalSeats * hoursOpen * periodDays;
+        var revpash = totalRevenue / totalSeatHours;
+        var revenuePerSeat = totalRevenue / totalSeats;
+        var revenuePerHour = totalRevenue / (hoursOpen * periodDays);
+        var dailyRevenue = totalRevenue / periodDays;
+
+        var bm = benchmarks[type];
+        var bmMid = (bm.min + bm.max) / 2;
+        var rating = '';
+        var ratingColor = '';
+        if(revpash >= bm.max) { rating = 'Excellent'; }
+        else if(revpash >= bmMid) { rating = 'Good'; }
+        else if(revpash >= bm.min) { rating = 'Average'; }
+        else { rating = 'Below Average'; }
+
+        var summaryHTML = ''
+          + '<div class="revpash-card"><div class="rc-label">RevPASH</div><div class="rc-value">$' + revpash.toFixed(2) + '</div><div class="rc-sub">per seat per hour</div></div>'
+          + '<div class="revpash-card"><div class="rc-label">Rating</div><div class="rc-value">' + rating + '</div><div class="rc-sub">vs ' + bm.name + ' benchmark</div></div>'
+          + '<div class="revpash-card"><div class="rc-label">Revenue / Seat</div><div class="rc-value">$' + revenuePerSeat.toFixed(2) + '</div><div class="rc-sub">per ' + period + '</div></div>'
+          + '<div class="revpash-card"><div class="rc-label">Revenue / Hour</div><div class="rc-value">$' + revenuePerHour.toFixed(2) + '</div><div class="rc-sub">average</div></div>'
+          + '<div class="revpash-card"><div class="rc-label">Total Seat Hours</div><div class="rc-value">' + totalSeatHours.toLocaleString() + '</div><div class="rc-sub">available capacity</div></div>'
+          + '<div class="revpash-card"><div class="rc-label">Daily Revenue</div><div class="rc-value">$' + dailyRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div><div class="rc-sub">average per day</div></div>';
+        document.getElementById('summaryCards').innerHTML = summaryHTML;
+
+        // Benchmark bars
+        var allTypes = ['fast-casual','casual','fine','qsr','cafe'];
+        var maxBm = 15;
+        var bmHTML = '<div class="revpash-benchmark"><h4>Industry Benchmarks</h4>';
+        allTypes.forEach(function(t){
+          var b = benchmarks[t];
+          var fillPct = (b.max / maxBm) * 100;
+          var startPct = (b.min / maxBm) * 100;
+          var isActive = (t === type);
+          var markerPct = Math.min((revpash / maxBm) * 100, 100);
+          bmHTML += '<div class="benchmark-bar">'
+            + '<span class="benchmark-label"' + (isActive ? ' style="font-weight:700;color:var(--heading);"' : '') + '>' + b.name + '</span>'
+            + '<div class="benchmark-track">'
+            + '<div class="benchmark-fill" style="width:' + fillPct + '%;margin-left:' + startPct + '%;width:' + (fillPct - startPct) + '%;"></div>'
+            + (isActive ? '<div class="revpash-marker" style="left:' + markerPct + '%;"></div>' : '')
+            + '</div>'
+            + '<span class="benchmark-range">$' + b.min + '-$' + b.max + '</span>'
+            + '</div>';
+        });
+        bmHTML += '</div>';
+        document.getElementById('benchmarkSection').innerHTML = bmHTML;
+
+        // Hourly breakdown
+        var chartHTML = '';
+        var peakHTML = '';
+        if(hourlyVisible){
+          var slots = [];
+          hourlyRows.querySelectorAll('.hourly-row').forEach(function(row){
+            var label = row.querySelector('.hr-label').value.trim() || 'Slot';
+            var rev = parseFloat(row.querySelector('.hr-rev').value);
+            if(!isNaN(rev) && rev >= 0){ slots.push({label: label, revenue: rev, revpash: rev / totalSeats}); }
+          });
+
+          if(slots.length > 0){
+            var maxSlotRevpash = Math.max.apply(null, slots.map(function(s){ return s.revpash; }));
+            var avgSlotRevpash = slots.reduce(function(sum, s){ return sum + s.revpash; }, 0) / slots.length;
+
+            chartHTML = '<div class="hourly-chart"><h4 style="color:var(--heading);margin:0 0 0.8rem 0;">RevPASH by Time Slot</h4>';
+            slots.forEach(function(s){
+              var pct = maxSlotRevpash > 0 ? (s.revpash / maxSlotRevpash) * 100 : 0;
+              var isPeak = s.revpash >= avgSlotRevpash * 1.2;
+              chartHTML += '<div class="chart-bar-row">'
+                + '<span class="chart-label">' + s.label + '</span>'
+                + '<div class="chart-bar-track"><div class="chart-bar-fill' + (isPeak ? ' peak-bar' : '') + '" style="width:' + Math.max(pct, 3) + '%;">'
+                + '<span class="chart-bar-val">$' + s.revpash.toFixed(2) + '</span></div></div>'
+                + '</div>';
+            });
+            chartHTML += '</div>';
+
+            // Peak vs off-peak
+            var peakSlots = slots.filter(function(s){ return s.revpash >= avgSlotRevpash; });
+            var offPeakSlots = slots.filter(function(s){ return s.revpash < avgSlotRevpash; });
+            var peakAvg = peakSlots.length > 0 ? peakSlots.reduce(function(sum, s){ return sum + s.revpash; }, 0) / peakSlots.length : 0;
+            var offPeakAvg = offPeakSlots.length > 0 ? offPeakSlots.reduce(function(sum, s){ return sum + s.revpash; }, 0) / offPeakSlots.length : 0;
+            var peakRevenue = peakSlots.reduce(function(sum, s){ return sum + s.revenue; }, 0);
+            var offPeakRevenue = offPeakSlots.reduce(function(sum, s){ return sum + s.revenue; }, 0);
+
+            peakHTML = '<div class="peak-comparison">'
+              + '<div class="peak-card"><div class="pk-label">Peak RevPASH</div><div class="pk-value">$' + peakAvg.toFixed(2) + '</div><div class="pk-sub">' + peakSlots.length + ' slot' + (peakSlots.length !== 1 ? 's' : '') + ' | $' + peakRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + ' revenue</div></div>'
+              + '<div class="peak-card"><div class="pk-label">Off-Peak RevPASH</div><div class="pk-value">$' + offPeakAvg.toFixed(2) + '</div><div class="pk-sub">' + offPeakSlots.length + ' slot' + (offPeakSlots.length !== 1 ? 's' : '') + ' | $' + offPeakRevenue.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + ' revenue</div></div>'
+              + '</div>';
+          }
+        }
+        document.getElementById('hourlyChart').innerHTML = chartHTML;
+        document.getElementById('peakComparison').innerHTML = peakHTML;
+
+        // Optimization tips
+        var tips = [];
+        if(revpash < bm.min){
+          tips.push('Your RevPASH is below the ' + bm.name + ' benchmark ($' + bm.min + '-$' + bm.max + '). Consider raising menu prices, increasing seat turnover, or driving more traffic during slow hours.');
+          tips.push('Evaluate whether you have too many seats for your current demand. Reducing seat count can paradoxically improve RevPASH by creating perceived scarcity.');
+        }
+        if(revpash >= bm.min && revpash < bmMid){
+          tips.push('Your RevPASH is in the lower range for ' + bm.name + '. Focus on upselling appetizers, desserts, and beverages to increase average check size.');
+          tips.push('Consider implementing a reservation system to better pace seating and reduce empty table gaps between parties.');
+        }
+        if(revpash >= bmMid && revpash < bm.max){
+          tips.push('Good RevPASH performance! To push into the top tier, analyze your busiest hours and replicate what works during slower periods.');
+          tips.push('Test premium menu additions or experience-based offerings (tasting menus, chef\'s table) to increase revenue per guest.');
+        }
+        if(revpash >= bm.max){
+          tips.push('Excellent RevPASH! You are operating at or above industry top performers. Focus on maintaining consistency and consider expanding capacity.');
+          tips.push('You may be near maximum utilization. If wait times are long, consider adding seats or opening for additional hours to capture unmet demand.');
+        }
+        tips.push('Track RevPASH weekly to spot trends. Seasonal dips may need proactive promotions, while sustained growth validates your strategy.');
+        if(hoursOpen > 12){
+          tips.push('With ' + hoursOpen + ' operating hours, ensure staffing levels match demand curves. Overstaffing during low-demand hours erodes the revenue advantage.');
+        }
+        if(totalSeats > 100){
+          tips.push('With ' + totalSeats + ' seats, consider zone-based RevPASH tracking. Some sections (patio, bar, main floor) may perform very differently.');
+        }
+
+        var tipsHTML = '<div class="revpash-tips"><h4>Optimization Suggestions</h4><ul>';
+        tips.forEach(function(tip){ tipsHTML += '<li><span class="tip-icon">&#9654;</span>' + tip + '</li>'; });
+        tipsHTML += '</ul></div>';
+        document.getElementById('tipsSection').innerHTML = tipsHTML;
+
+        document.getElementById('revpashResults').style.display = 'block';
+        document.getElementById('revpashResults').scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools !== 'undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/revpash-calculator',title:'RevPASH Calculator',description:'Calculate Revenue Per Available Seat Hour to optimize restaurant seating efficiency and maximize revenue.'});
+      }
+    });
+  </script>
+</body>
+</html>

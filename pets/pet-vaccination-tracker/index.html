@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pet Vaccination Tracker — Schedule — Teamz Lab Tools</title>
+  <meta name="description" content="Generate a personalized vaccination timeline for your dog or cat based on age and lifestyle. Free, private, with calendar reminders.">
+  <meta property="og:title" content="Pet Vaccination Tracker — Schedule">
+  <meta property="og:description" content="Generate a personalized vaccination timeline for your dog or cat based on age and lifestyle. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/pets/pet-vaccination-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/pets.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Pet Vaccination Tracker — Schedule">
+  <meta name="twitter:description" content="Generate a personalized vaccination timeline for your dog or cat based on age and lifestyle. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/pets/pet-vaccination-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .form-group{margin-bottom:1rem}
+    .form-group label{display:block;font-weight:600;color:var(--heading);margin-bottom:.4rem;font-size:.95rem}
+    .form-group input,.form-group select{width:100%;padding:.65rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:1rem;font-family:inherit}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .btn-calc{width:100%;padding:.75rem;background:var(--heading);color:var(--bg);border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:.5rem}
+    .btn-calc:hover{opacity:.9}
+    .result-area{margin-top:1.5rem;display:none}
+    .vax-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+    .vax-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+    .vax-stat .val{font-size:1.8rem;font-weight:800;color:var(--heading);line-height:1}
+    .vax-stat .lbl{font-size:.8rem;color:var(--text-muted);margin-top:.25rem}
+    .vax-stat.overdue-stat .val{color:var(--heading)}
+    .vax-timeline{margin-top:1rem}
+    .vax-group{margin-bottom:1.5rem}
+    .vax-group-title{font-size:1rem;font-weight:700;color:var(--heading);margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:2px solid var(--border)}
+    .vax-item{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem;border-radius:8px;margin-bottom:.5rem;background:var(--surface);border:1px solid var(--border)}
+    .vax-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;font-weight:700;margin-top:2px}
+    .vax-icon.completed{background:var(--heading);color:var(--bg)}
+    .vax-icon.upcoming{background:var(--surface);border:2px solid var(--border);color:var(--text-muted)}
+    .vax-icon.overdue{background:var(--surface);border:2px solid var(--heading);color:var(--heading)}
+    .vax-details{flex:1;min-width:0}
+    .vax-name{font-weight:600;color:var(--heading);font-size:.95rem}
+    .vax-desc{font-size:.8rem;color:var(--text-muted);margin-top:.15rem}
+    .vax-date{font-size:.8rem;color:var(--text-muted);margin-top:.2rem}
+    .vax-date strong{color:var(--heading)}
+    .vax-badge{display:inline-block;font-size:.7rem;font-weight:600;padding:.15rem .45rem;border-radius:4px;margin-left:.5rem}
+    .vax-badge.core{background:var(--surface);border:1px solid var(--heading);color:var(--heading)}
+    .vax-badge.lifestyle{background:var(--surface);border:1px solid var(--text-muted);color:var(--text-muted)}
+    .vax-badge.overdue-badge{background:var(--heading);color:var(--bg)}
+    .vax-actions{display:flex;gap:.5rem;margin-top:.35rem;flex-wrap:wrap}
+    .vax-cal-link{font-size:.75rem;color:var(--heading);text-decoration:underline;cursor:pointer;background:none;border:none;font-family:inherit;padding:0}
+    .vax-cal-link:hover{opacity:.8}
+    .action-btns{display:flex;gap:.75rem;margin-top:1.25rem;flex-wrap:wrap}
+    .btn-action{padding:.6rem 1.2rem;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--heading)}
+    .btn-action:hover{opacity:.85}
+    .lifestyle-note{margin-top:.75rem;padding:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:.85rem;color:var(--text)}
+    .lifestyle-note strong{color:var(--heading)}
+    @media(max-width:600px){
+      .form-row{grid-template-columns:1fr}
+      .vax-summary{grid-template-columns:1fr}
+      .vax-item{flex-direction:column;gap:.4rem}
+      .action-btns{flex-direction:column}
+      .btn-action{width:100%;text-align:center}
+      .tool-content h2{font-size:var(--text-lg)}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Pets", "item": "https://tool.teamzlab.com/pets/"}, {"@type": "ListItem", "position": 3, "name": "Pet Vaccination Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What are core vaccines for dogs?", "acceptedAnswer": {"@type": "Answer", "text": "Core vaccines for dogs include DHPP (distemper, hepatitis, parainfluenza, parvovirus) and rabies. These are recommended for all dogs regardless of lifestyle because the diseases are widespread and potentially fatal."}}, {"@type": "Question", "name": "What are core vaccines for cats?", "acceptedAnswer": {"@type": "Answer", "text": "Core vaccines for cats include FVRCP (feline viral rhinotracheitis, calicivirus, panleukopenia) and rabies. These protect against the most common and dangerous feline diseases."}}, {"@type": "Question", "name": "How often do pets need booster shots?", "acceptedAnswer": {"@type": "Answer", "text": "After the initial puppy or kitten series, pets need a booster at 1 year of age. After that, most core vaccines are given every 1 to 3 years depending on the vaccine type and your veterinarian's recommendation."}}, {"@type": "Question", "name": "What happens if my pet misses a vaccine?", "acceptedAnswer": {"@type": "Answer", "text": "If your pet misses a scheduled vaccine, contact your veterinarian. For puppies and kittens, the series may need to be restarted. For adults with lapsed boosters, a single dose usually restores immunity."}}, {"@type": "Question", "name": "Are there side effects from pet vaccines?", "acceptedAnswer": {"@type": "Answer", "text": "Mild side effects like slight fever, reduced appetite, or soreness at the injection site are normal and resolve within 1-2 days. Severe reactions like facial swelling or difficulty breathing are rare but require immediate veterinary attention."}}, {"@type": "Question", "name": "Does my indoor cat need vaccines?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Indoor cats should receive core vaccines (FVRCP and rabies). FeLV vaccine may not be necessary for strictly indoor adult cats, but kittens should receive it since their lifestyle may change."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Pet Vaccination Tracker — Schedule", "description": "Generate a personalized vaccination timeline for your dog or cat based on age and lifestyle.", "url": "https://tool.teamzlab.com/pets/pet-vaccination-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Pet Vaccination Schedule Tracker</h1>
+      <p class="tool-description">Generate a personalized vaccination timeline for your dog or cat based on birth date, age, and lifestyle. See completed, upcoming, and overdue vaccines at a glance.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="pet-type">Pet Type</label>
+          <select id="pet-type">
+            <option value="dog">Dog</option>
+            <option value="cat">Cat</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="pet-name">Pet Name</label>
+          <input type="text" id="pet-name" placeholder="e.g. Buddy">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="pet-dob">Date of Birth</label>
+          <input type="date" id="pet-dob">
+        </div>
+        <div class="form-group">
+          <label for="pet-lifestyle">Lifestyle</label>
+          <select id="pet-lifestyle">
+            <option value="indoor">Indoor Only</option>
+            <option value="indoor-outdoor" selected>Indoor-Outdoor</option>
+            <option value="outdoor">Outdoor</option>
+            <option value="boarding">Boarding / Daycare</option>
+            <option value="dogpark">Dog Park / Social</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="generateSchedule()">Generate Vaccination Schedule</button>
+      <div class="result-area" id="result"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Pet Vaccination Schedules Work</h2>
+      <p>Vaccinations are one of the most important things you can do for your pet's health. Puppies and kittens receive a series of core vaccines starting at 6 to 8 weeks of age, with boosters given every 3 to 4 weeks until they are 16 weeks old. This series builds immunity gradually as the protection from maternal antibodies fades. After the initial series, pets need booster shots at one year and then every one to three years depending on the vaccine and local regulations.</p>
+      <p>Core vaccines protect against diseases that are widespread, highly contagious, or potentially fatal. For dogs, the DHPP vaccine covers distemper, hepatitis, parainfluenza, and parvovirus. For cats, the FVRCP vaccine covers feline viral rhinotracheitis, calicivirus, and panleukopenia. Rabies vaccination is required by law in most jurisdictions for both dogs and cats.</p>
+      <h2>Lifestyle Vaccines for Dogs and Cats</h2>
+      <p>Beyond core vaccines, your veterinarian may recommend additional vaccines based on your pet's lifestyle and risk factors. Dogs that visit boarding facilities or dog parks benefit from the Bordetella vaccine, which protects against kennel cough. Dogs in tick-prone areas may need the Lyme disease vaccine. Leptospirosis vaccination is recommended for dogs that spend time outdoors near water or wildlife. Canine influenza vaccines are increasingly recommended for social dogs.</p>
+      <p>For cats, the feline leukemia virus (FeLV) vaccine is strongly recommended for any cat that goes outdoors or lives with FeLV-positive cats. Indoor-only cats with no exposure risk may not need this vaccine, but kittens should receive it regardless since their future lifestyle may change.</p>
+      <h2>Understanding Overdue Vaccines and Catch-Up Schedules</h2>
+      <p>If your pet has missed a vaccine or fallen behind schedule, consult your veterinarian about a catch-up plan. For puppies and kittens that missed early doses, the series may need to be restarted. For adult pets with lapsed boosters, a single booster dose is usually sufficient to restore immunity. Rabies vaccines have strict legal timelines, and a lapsed rabies vaccine may require revaccination as if the pet had never been vaccinated before.</p>
+      <h2>Tips for Managing Your Pet's Vaccine Schedule</h2>
+      <p>Keep a written or digital record of all vaccinations with dates and the veterinarian's name. Set calendar reminders for upcoming boosters so you never miss a dose. Bring your vaccination record to every vet visit, boarding facility, or grooming appointment. Watch for mild side effects after vaccination such as slight fever, reduced appetite, or soreness at the injection site, which typically resolve within a day or two. Contact your vet immediately if you notice swelling of the face, difficulty breathing, or persistent vomiting after vaccination.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS=[{name:'Home',url:'/'},{name:'Pets',url:'/pets/'},{name:'Pet Vaccination Tracker'}];
+    var FAQS=[
+      {q:'What are core vaccines for dogs?',a:'Core vaccines for dogs include DHPP (distemper, hepatitis, parainfluenza, parvovirus) and rabies. These are recommended for all dogs regardless of lifestyle because the diseases are widespread and potentially fatal.'},
+      {q:'What are core vaccines for cats?',a:'Core vaccines for cats include FVRCP (feline viral rhinotracheitis, calicivirus, panleukopenia) and rabies. These protect against the most common and dangerous feline diseases.'},
+      {q:'How often do pets need booster shots?',a:'After the initial puppy or kitten series, pets need a booster at 1 year of age. After that, most core vaccines are given every 1 to 3 years depending on the vaccine type and your veterinarian\'s recommendation.'},
+      {q:'What happens if my pet misses a vaccine?',a:'If your pet misses a scheduled vaccine, contact your veterinarian. For puppies and kittens, the series may need to be restarted. For adults with lapsed boosters, a single dose usually restores immunity.'},
+      {q:'Are there side effects from pet vaccines?',a:'Mild side effects like slight fever, reduced appetite, or soreness at the injection site are normal and resolve within 1-2 days. Severe reactions like facial swelling or difficulty breathing are rare but require immediate veterinary attention.'},
+      {q:'Does my indoor cat need vaccines?',a:'Yes. Indoor cats should receive core vaccines (FVRCP and rabies). FeLV vaccine may not be necessary for strictly indoor adult cats, but kittens should receive it since their lifestyle may change.'}
+    ];
+    var RELATED_TOOLS=[
+      {name:'Pet First Aid Guide',url:'/pets/pet-first-aid-guide/',desc:'Emergency care steps for pets'},
+      {name:'Dog Age Calculator',url:'/pets/dog-age-calculator/',desc:'Your dog\'s real age in human years'},
+      {name:'Cat Age Calculator',url:'/pets/cat-age-calculator/',desc:'Your cat\'s real age in human years'},
+      {name:'Pet Expense Calculator',url:'/pets/pet-expense-calculator/',desc:'Budget for vet visits and care'},
+      {name:'Pet Weight Tracker',url:'/pets/pet-weight-tracker/',desc:'Monitor your pet\'s health'},
+      {name:'Pet Food Calculator',url:'/pets/pet-food-calculator/',desc:'Daily food portions for pets'},
+      { slug: "pets/dog-body-condition-score", name: "Dog Body Condition Score Calculator", description: "Assess your dog\'s body condition using the veterinary 9-point BCS scale. Get bod" }
+    ];
+
+    /* ---- Vaccine Data ---- */
+    var DOG_CORE=[
+      {name:'DHPP (Distemper) #1',weeksMin:6,weeksMax:8,desc:'Distemper, Hepatitis, Parainfluenza, Parvovirus — first dose',type:'core'},
+      {name:'DHPP #2',weeksMin:10,weeksMax:12,desc:'Second dose of DHPP combination vaccine',type:'core'},
+      {name:'DHPP #3',weeksMin:14,weeksMax:16,desc:'Third and final puppy dose of DHPP',type:'core'},
+      {name:'Rabies',weeksMin:14,weeksMax:16,desc:'Required by law in most areas — first dose',type:'core'},
+      {name:'DHPP Booster (1 Year)',weeksMin:52,weeksMax:56,desc:'First annual DHPP booster',type:'core'},
+      {name:'Rabies Booster (1 Year)',weeksMin:52,weeksMax:56,desc:'First annual rabies booster',type:'core'},
+      {name:'DHPP Booster (2-3 Years)',weeksMin:156,weeksMax:160,desc:'DHPP booster every 1-3 years',type:'core'},
+      {name:'Rabies Booster (3 Years)',weeksMin:156,weeksMax:160,desc:'Rabies booster every 1-3 years',type:'core'}
+    ];
+    var DOG_LIFESTYLE={
+      boarding:[{name:'Bordetella (Kennel Cough)',weeksMin:8,weeksMax:10,desc:'Protects against kennel cough — required by most boarding facilities',type:'lifestyle'}],
+      outdoor:[{name:'Leptospirosis',weeksMin:12,weeksMax:14,desc:'Protects against bacterial infection from water/wildlife exposure',type:'lifestyle'}],
+      dogpark:[{name:'Canine Influenza (H3N2/H3N8)',weeksMin:10,weeksMax:12,desc:'Recommended for dogs in social settings — dog parks, daycare',type:'lifestyle'}],
+      'indoor-outdoor':[{name:'Leptospirosis',weeksMin:12,weeksMax:14,desc:'Recommended for dogs with any outdoor access',type:'lifestyle'}],
+      lyme:[{name:'Lyme Disease',weeksMin:12,weeksMax:14,desc:'Recommended for dogs in tick-endemic areas',type:'lifestyle'}]
+    };
+    var CAT_CORE=[
+      {name:'FVRCP #1',weeksMin:6,weeksMax:8,desc:'Feline Viral Rhinotracheitis, Calicivirus, Panleukopenia — first dose',type:'core'},
+      {name:'FVRCP #2',weeksMin:10,weeksMax:12,desc:'Second dose of FVRCP combination vaccine',type:'core'},
+      {name:'FVRCP #3',weeksMin:14,weeksMax:16,desc:'Third and final kitten dose of FVRCP',type:'core'},
+      {name:'Rabies',weeksMin:14,weeksMax:16,desc:'Required by law in most areas — first dose',type:'core'},
+      {name:'FVRCP Booster (1 Year)',weeksMin:52,weeksMax:56,desc:'First annual FVRCP booster',type:'core'},
+      {name:'Rabies Booster (1 Year)',weeksMin:52,weeksMax:56,desc:'First annual rabies booster',type:'core'},
+      {name:'FVRCP Booster (3 Years)',weeksMin:156,weeksMax:160,desc:'FVRCP booster every 3 years',type:'core'},
+      {name:'Rabies Booster (3 Years)',weeksMin:156,weeksMax:160,desc:'Rabies booster every 3 years',type:'core'}
+    ];
+    var CAT_LIFESTYLE={
+      outdoor:[{name:'FeLV (Feline Leukemia)',weeksMin:8,weeksMax:10,desc:'Strongly recommended for outdoor cats — protects against feline leukemia virus',type:'lifestyle'}],
+      'indoor-outdoor':[{name:'FeLV (Feline Leukemia)',weeksMin:8,weeksMax:10,desc:'Recommended for cats with any outdoor access',type:'lifestyle'}],
+      boarding:[{name:'FeLV (Feline Leukemia)',weeksMin:8,weeksMax:10,desc:'Recommended for cats in multi-cat environments',type:'lifestyle'}],
+      dogpark:[{name:'FeLV (Feline Leukemia)',weeksMin:8,weeksMax:10,desc:'Recommended for social cats',type:'lifestyle'}]
+    };
+
+    function addDays(d,n){var r=new Date(d);r.setDate(r.getDate()+n);return r;}
+    function fmtDate(d){return d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});}
+    function weeksBetween(a,b){return Math.floor((b-a)/(7*24*60*60*1000));}
+
+    function buildGoogleCalUrl(title,date,petName){
+      var d=new Date(date);
+      var start=d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      var end=start;
+      var details='Vaccination reminder for '+(petName||'your pet')+'. Contact your veterinarian to schedule this appointment.';
+      return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+
+        '&dates='+start+'/'+end+'&details='+encodeURIComponent(details);
+    }
+
+    function buildICS(title,date,petName){
+      var d=new Date(date);
+      var dtStr=d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      var ics='BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:'+dtStr+'\nDTEND:'+dtStr+
+        '\nSUMMARY:'+title+'\nDESCRIPTION:Vaccination reminder for '+(petName||'your pet')+
+        '\\nContact your vet to schedule.\nEND:VEVENT\nEND:VCALENDAR';
+      return ics;
+    }
+
+    function downloadICS(title,date,petName){
+      var ics=buildICS(title,date,petName);
+      var blob=new Blob([ics],{type:'text/calendar'});
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=url;a.download=title.replace(/[^a-zA-Z0-9]/g,'_')+'.ics';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if(window.showToast)window.showToast('Calendar file downloaded');
+    }
+
+    function generateSchedule(){
+      var type=document.getElementById('pet-type').value;
+      var petName=document.getElementById('pet-name').value.trim();
+      var dobStr=document.getElementById('pet-dob').value;
+      var lifestyle=document.getElementById('pet-lifestyle').value;
+      if(!dobStr){if(window.showToast)window.showToast('Please select a date of birth');return;}
+      var dob=new Date(dobStr+'T00:00:00');
+      var now=new Date();
+      if(dob>now){if(window.showToast)window.showToast('Date of birth cannot be in the future');return;}
+      var displayName=petName||('Your '+(type==='dog'?'Dog':'Cat'));
+
+      /* Build vaccine list */
+      var vaccines=(type==='dog'?DOG_CORE:CAT_CORE).slice();
+      var lifestyleVax=type==='dog'?DOG_LIFESTYLE:CAT_LIFESTYLE;
+      if(lifestyleVax[lifestyle]){
+        lifestyleVax[lifestyle].forEach(function(v){vaccines.push(v);});
+      }
+      /* For boarding dogs, also add bordetella booster and canine flu */
+      if(type==='dog'&&lifestyle==='boarding'){
+        if(DOG_LIFESTYLE.dogpark)DOG_LIFESTYLE.dogpark.forEach(function(v){vaccines.push(v);});
+      }
+      if(type==='dog'&&lifestyle==='dogpark'){
+        if(DOG_LIFESTYLE.boarding)DOG_LIFESTYLE.boarding.forEach(function(v){vaccines.push(v);});
+      }
+
+      /* Calculate dates and status */
+      var completed=0,upcoming=0,overdue=0;
+      var entries=[];
+      vaccines.forEach(function(v){
+        var dueDate=addDays(dob,v.weeksMin*7);
+        var dueDateMax=addDays(dob,v.weeksMax*7);
+        var status='upcoming';
+        if(now>=dueDateMax){
+          /* Past the window — if it's a puppy series, assume completed; if future booster, overdue */
+          if(v.weeksMin<=56){status='completed';completed++;}
+          else{status='overdue';overdue++;}
+        }else if(now>=dueDate){
+          status='upcoming';upcoming++;
+        }else{
+          status='upcoming';upcoming++;
+        }
+        entries.push({name:v.name,desc:v.desc,type:v.type,dueDate:dueDate,dueDateMax:dueDateMax,status:status});
+      });
+
+      /* Sort by date */
+      entries.sort(function(a,b){return a.dueDate-b.dueDate;});
+
+      /* Group by age period */
+      var groups={};
+      entries.forEach(function(e){
+        var weeksAge=weeksBetween(dob,e.dueDate);
+        var label;
+        if(weeksAge<9)label='6-8 Weeks';
+        else if(weeksAge<13)label='10-12 Weeks';
+        else if(weeksAge<17)label='14-16 Weeks';
+        else if(weeksAge<60)label='1 Year Boosters';
+        else label='Ongoing Boosters (Every 1-3 Years)';
+        if(!groups[label])groups[label]=[];
+        groups[label].push(e);
+      });
+
+      /* Render */
+      var html='<div class="vax-summary">';
+      html+='<div class="vax-stat"><div class="val">'+completed+'</div><div class="lbl">Completed</div></div>';
+      html+='<div class="vax-stat"><div class="val">'+upcoming+'</div><div class="lbl">Upcoming</div></div>';
+      html+='<div class="vax-stat overdue-stat"><div class="val">'+overdue+'</div><div class="lbl">Overdue</div></div>';
+      html+='</div>';
+
+      html+='<div class="vax-timeline">';
+      var groupOrder=['6-8 Weeks','10-12 Weeks','14-16 Weeks','1 Year Boosters','Ongoing Boosters (Every 1-3 Years)'];
+      groupOrder.forEach(function(gName){
+        if(!groups[gName])return;
+        html+='<div class="vax-group">';
+        html+='<div class="vax-group-title">'+gName+'</div>';
+        groups[gName].forEach(function(e,i){
+          html+='<div class="vax-item">';
+          var icon=e.status==='completed'?'&#10003;':e.status==='overdue'?'!':'&#8226;';
+          html+='<div class="vax-icon '+e.status+'">'+icon+'</div>';
+          html+='<div class="vax-details">';
+          html+='<div class="vax-name">'+e.name;
+          html+='<span class="vax-badge '+e.type+'">'+e.type.toUpperCase()+'</span>';
+          if(e.status==='overdue')html+='<span class="vax-badge overdue-badge">OVERDUE</span>';
+          html+='</div>';
+          html+='<div class="vax-desc">'+e.desc+'</div>';
+          html+='<div class="vax-date"><strong>Due:</strong> '+fmtDate(e.dueDate)+' — '+fmtDate(e.dueDateMax)+'</div>';
+          if(e.status==='upcoming'||e.status==='overdue'){
+            var calTitle=displayName+' — '+e.name;
+            html+='<div class="vax-actions">';
+            html+='<button class="vax-cal-link" onclick="window.open(\''+buildGoogleCalUrl(calTitle,e.dueDate,petName)+'\',\'_blank\')">Add to Google Calendar</button>';
+            html+='<button class="vax-cal-link" onclick="downloadICS(\''+calTitle.replace(/'/g,"\\'")+'\',\''+e.dueDate.toISOString()+'\',\''+petName.replace(/'/g,"\\'")+'\')">Download .ics</button>';
+            html+='</div>';
+          }
+          html+='</div></div>';
+        });
+        html+='</div>';
+      });
+      html+='</div>';
+
+      /* Lifestyle note */
+      var notes={
+        boarding:'Since '+displayName+' visits boarding or daycare, Bordetella and Canine Influenza vaccines are strongly recommended. Most facilities require proof of Bordetella vaccination.',
+        dogpark:'Since '+displayName+' visits dog parks, Bordetella and Canine Influenza vaccines help protect against diseases spread in social settings.',
+        outdoor:'Since '+displayName+' spends time outdoors, Leptospirosis vaccination is recommended to protect against bacteria found in water and soil.',
+        'indoor-outdoor':'Since '+displayName+' has both indoor and outdoor access, lifestyle vaccines provide extra protection against environmental risks.',
+        indoor:displayName+' is indoor only. Core vaccines are still essential. Discuss with your vet whether lifestyle vaccines are needed.'
+      };
+      if(notes[lifestyle]){
+        html+='<div class="lifestyle-note"><strong>Lifestyle Note:</strong> '+notes[lifestyle]+'</div>';
+      }
+
+      /* Action buttons */
+      html+='<div class="action-btns">';
+      html+='<button class="btn-action" onclick="printSchedule()">Print Schedule</button>';
+      html+='<button class="btn-action" onclick="copySchedule()">Copy as Text</button>';
+      html+='</div>';
+
+      document.getElementById('result').innerHTML=html;
+      document.getElementById('result').style.display='block';
+    }
+
+    function printSchedule(){
+      window.print();
+      if(window.showToast)window.showToast('Print dialog opened');
+    }
+
+    function copySchedule(){
+      var entries=document.querySelectorAll('#result .vax-item');
+      var lines=[];
+      var petName=document.getElementById('pet-name').value.trim()||'My Pet';
+      lines.push('Vaccination Schedule for '+petName);
+      lines.push('Generated: '+fmtDate(new Date()));
+      lines.push('---');
+      var groups=document.querySelectorAll('#result .vax-group');
+      groups.forEach(function(g){
+        var title=g.querySelector('.vax-group-title');
+        if(title)lines.push('\n'+title.textContent);
+        var items=g.querySelectorAll('.vax-item');
+        items.forEach(function(item){
+          var name=item.querySelector('.vax-name');
+          var date=item.querySelector('.vax-date');
+          var status=item.querySelector('.vax-icon');
+          var s=status&&status.classList.contains('completed')?'[Done]':status&&status.classList.contains('overdue')?'[OVERDUE]':'[Upcoming]';
+          lines.push(s+' '+(name?name.textContent.replace(/CORE|LIFESTYLE|OVERDUE/g,'').trim():'')+' — '+(date?date.textContent:''));
+        });
+      });
+      var text=lines.join('\n');
+      navigator.clipboard.writeText(text).then(function(){
+        if(window.showToast)window.showToast('Schedule copied to clipboard');
+      });
+    }
+
+    /* Set default DOB to ~8 weeks ago for demo */
+    document.addEventListener('DOMContentLoaded',function(){
+      var d=new Date();d.setDate(d.getDate()-56);
+      var iso=d.toISOString().split('T')[0];
+      document.getElementById('pet-dob').value=iso;
+
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'pets/pet-vaccination-tracker',title:'Pet Vaccination Tracker — Schedule',description:'Generate a personalized vaccination timeline for your dog or cat based on age and lifestyle.'});
+      }
+    });
+  </script>
+</body>
+</html>

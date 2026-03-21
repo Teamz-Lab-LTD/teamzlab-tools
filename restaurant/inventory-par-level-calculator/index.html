@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inventory Par Level Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate optimal par levels, reorder points, and max stock for restaurant inventory. Reduce waste and prevent stockouts. Free and private.">
+  <meta property="og:title" content="Inventory Par Level Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate optimal par levels and reorder points for restaurant inventory. Prevent stockouts and reduce waste.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/inventory-par-level-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Inventory Par Level Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate optimal par levels and reorder points for restaurant inventory. Prevent stockouts and reduce waste.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/inventory-par-level-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .par-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; align-items: end; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 0.3rem; color: var(--text); font-size: 0.85rem; }
+    .form-group input, .form-group select { width: 100%; padding: 0.6rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 0.9rem; box-sizing: border-box; }
+    .par-add-btn { background: var(--heading); color: var(--bg); border: none; padding: 0.7rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.8rem; }
+    .preset-section { margin-bottom: 1.5rem; }
+    .preset-section h3 { color: var(--heading); margin: 0 0 0.6rem; font-size: 0.95rem; }
+    .preset-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .preset-btn { padding: 0.4rem 0.9rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 0.85rem; transition: border-color 0.2s; }
+    .preset-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.8rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .stat-card .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+    .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); }
+    .par-table-wrap { overflow-x: auto; }
+    .par-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .par-table th { background: var(--surface); color: var(--heading); font-weight: 600; padding: 0.7rem 0.6rem; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+    .par-table td { padding: 0.6rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .par-table tr:hover { background: var(--surface); }
+    .status-badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .status-ok { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .status-low { background: var(--heading); color: var(--bg); }
+    .status-over { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .par-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .par-actions button { padding: 0.5rem 1.2rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+    .par-actions button:hover { border-color: var(--heading); color: var(--heading); }
+    .del-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+    .del-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .par-table { font-size: 0.8rem; }
+      .par-table th, .par-table td { padding: 0.4rem 0.3rem; }
+      .par-actions { flex-direction: column; }
+      .par-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "Inventory Par Level Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is a par level in restaurant inventory?", "acceptedAnswer": {"@type": "Answer", "text": "A par level is the minimum quantity of an item you must keep on hand to meet customer demand between deliveries. It accounts for daily usage, delivery frequency, and a safety buffer for unexpected demand spikes."}}, {"@type": "Question", "name": "How is the par level calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Par Level = (Average Daily Usage x Delivery Frequency) x (1 + Safety Stock %). For example, if you use 10 units per day, get deliveries every 3 days, and want 20% safety stock, your par level is 10 x 3 x 1.2 = 36 units."}}, {"@type": "Question", "name": "What is a reorder point?", "acceptedAnswer": {"@type": "Answer", "text": "The reorder point is the stock level at which you should place a new order. It is typically set at 50% of the par level, giving enough lead time for delivery to arrive before you run out."}}, {"@type": "Question", "name": "What safety stock percentage should I use?", "acceptedAnswer": {"@type": "Answer", "text": "It depends on the item. Perishable produce: 10-15%. High-demand proteins: 20-30%. Dry goods: 25-35%. Seasonal peak items: 30-40%. Start at 20% and adjust based on your actual experience."}}, {"@type": "Question", "name": "How often should I recalculate par levels?", "acceptedAnswer": {"@type": "Answer", "text": "Review par levels monthly and recalculate when you change your menu, enter a new season, or notice significant changes in daily covers or sales trends."}}, {"@type": "Question", "name": "Is my inventory data saved?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, all data is saved in your browser localStorage. Nothing is sent to any server. Your inventory data is completely private and stays on your device."}}, {"@type": "Question", "name": "What does overstocked mean?", "acceptedAnswer": {"@type": "Answer", "text": "An item is overstocked when current stock exceeds the maximum stock level (1.5x par level). This ties up cash and increases spoilage risk, especially for perishable items."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Inventory Par Level Calculator", "description": "Calculate optimal par levels, reorder points, and max stock for restaurant inventory.", "url": "https://tool.teamzlab.com/restaurant/inventory-par-level-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Inventory Par Level Calculator</h1>
+      <p class="tool-description">Calculate the ideal par level, reorder point, and maximum stock for every item in your restaurant inventory. Enter daily usage and delivery frequency to prevent stockouts and minimize waste. All calculations run locally in your browser.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="preset-section">
+        <h3>Quick Presets</h3>
+        <div class="preset-row">
+          <button class="preset-btn" data-name="Chicken Breast" data-usage="15" data-freq="3" data-unit="lbs">Chicken</button>
+          <button class="preset-btn" data-name="Ground Beef" data-usage="12" data-freq="3" data-unit="lbs">Beef</button>
+          <button class="preset-btn" data-name="Mixed Lettuce" data-usage="8" data-freq="2" data-unit="lbs">Produce</button>
+          <button class="preset-btn" data-name="Whole Milk" data-usage="5" data-freq="3" data-unit="gal">Dairy</button>
+          <button class="preset-btn" data-name="All-Purpose Flour" data-usage="4" data-freq="7" data-unit="lbs">Dry Goods</button>
+          <button class="preset-btn" data-name="Cooking Oil" data-usage="2" data-freq="7" data-unit="gal">Oil</button>
+          <button class="preset-btn" data-name="Fresh Salmon" data-usage="6" data-freq="2" data-unit="lbs">Seafood</button>
+          <button class="preset-btn" data-name="Cheddar Cheese" data-usage="3" data-freq="3" data-unit="lbs">Cheese</button>
+        </div>
+      </div>
+
+      <div class="par-form">
+        <h3 style="color:var(--heading);margin:0 0 0.8rem;">Add Inventory Item</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="parItemName">Item Name</label>
+            <input type="text" id="parItemName" placeholder="e.g. Chicken Breast">
+          </div>
+          <div class="form-group">
+            <label for="parDailyUsage">Avg Daily Usage</label>
+            <input type="number" id="parDailyUsage" min="0" step="0.1" placeholder="e.g. 15">
+          </div>
+          <div class="form-group">
+            <label for="parUnit">Unit</label>
+            <select id="parUnit">
+              <option value="lbs">lbs</option>
+              <option value="kg">kg</option>
+              <option value="oz">oz</option>
+              <option value="gal">gallons</option>
+              <option value="liters">liters</option>
+              <option value="cases">cases</option>
+              <option value="units">units</option>
+              <option value="dozen">dozen</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="parDeliveryFreq">Delivery Every (days)</label>
+            <input type="number" id="parDeliveryFreq" min="1" step="1" value="3" placeholder="e.g. 3">
+          </div>
+          <div class="form-group">
+            <label for="parSafetyStock">Safety Stock %</label>
+            <input type="number" id="parSafetyStock" min="0" max="100" step="5" value="20" placeholder="20">
+          </div>
+          <div class="form-group">
+            <label for="parCurrentStock">Current Stock <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+            <input type="number" id="parCurrentStock" min="0" step="0.1" placeholder="e.g. 25">
+          </div>
+        </div>
+        <button class="par-add-btn" id="parAddBtn">Add Item</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val" id="statTotal">0</div><div class="stat-label">Total Items</div></div>
+        <div class="stat-card"><div class="stat-val" id="statLow">0</div><div class="stat-label">Below Reorder</div></div>
+        <div class="stat-card"><div class="stat-val" id="statOk">0</div><div class="stat-label">Stocked OK</div></div>
+        <div class="stat-card"><div class="stat-val" id="statOver">0</div><div class="stat-label">Overstocked</div></div>
+      </div>
+
+      <div id="parResults">
+        <div class="empty-state">No items added yet. Use the presets above or add items manually to calculate par levels.</div>
+      </div>
+
+      <div class="par-actions" id="parActions" style="display:none;">
+        <button id="copyOrderBtn">Copy Order List</button>
+        <button id="copyAllBtn">Copy Full Report</button>
+        <button id="clearAllBtn">Clear All Items</button>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Are Par Levels in Restaurant Inventory</h2>
+      <p>Par level is the minimum amount of an inventory item that a restaurant must keep on hand to meet demand between deliveries. The par level formula accounts for average daily usage, delivery frequency, and a safety stock buffer to handle unexpected spikes in demand. Maintaining correct par levels is the foundation of effective restaurant inventory management because it prevents both stockouts that disappoint customers and overstocking that leads to spoilage and wasted money.</p>
+      <p>The basic par level formula is: Par Level equals Average Daily Usage multiplied by Delivery Frequency, then multiplied by one plus the Safety Stock percentage. For example, if you use 15 pounds of chicken per day and receive deliveries every 3 days with a 20 percent safety buffer, your par level is 15 times 3 times 1.2, which equals 54 pounds. This means you should always have at least 54 pounds of chicken in stock.</p>
+
+      <h2>How Reorder Points Prevent Stockouts</h2>
+      <p>The reorder point tells you exactly when to place a new order. It is typically set at 50 percent of the par level, meaning you should reorder when your stock drops to half the par amount. This gives you enough lead time for the delivery to arrive before you run out. For perishable items like seafood or fresh produce with shorter shelf lives, many restaurants set the reorder point higher at 60 to 70 percent to account for quality degradation. The maximum stock level, calculated at 1.5 times the par level, helps prevent over-ordering that ties up cash and increases waste risk.</p>
+
+      <h2>Setting Safety Stock for Different Item Categories</h2>
+      <p>The safety stock percentage should vary by item type and your restaurant's specific patterns. High-demand proteins like chicken and beef typically need 20 to 30 percent safety stock because running out means removing popular menu items. Produce with short shelf life should have lower safety stock around 10 to 15 percent since excess will spoil quickly. Dry goods and shelf-stable items can carry 25 to 35 percent safety stock because they do not expire quickly and buying in bulk often saves money. Seasonal items during peak periods may need 30 to 40 percent buffers. Review and adjust your par levels monthly based on actual usage patterns, seasonal menu changes, and any trends you notice in daily covers or catering orders.</p>
+
+      <h2>Tips for Effective Par Level Management</h2>
+      <p>Count inventory at the same time each day for consistency. Track actual usage versus predicted usage and adjust par levels quarterly. Coordinate with your chef when seasonal menu changes affect ingredient demand. Use the FIFO method to rotate stock and reduce waste. Consider reducing par levels for items with declining sales trends rather than continuing to order the same quantities out of habit. A well-maintained par level system can reduce food waste by 2 to 5 percent and lower food costs by several hundred dollars per month in a typical restaurant operation.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Inventory Par Level Calculator'}];
+    var FAQS = [
+      {q:'What is a par level in restaurant inventory?',a:'A par level is the minimum quantity of an item you must keep on hand to meet customer demand between deliveries. It accounts for daily usage, delivery frequency, and a safety buffer for unexpected demand spikes.'},
+      {q:'How is the par level calculated?',a:'Par Level = (Average Daily Usage x Delivery Frequency) x (1 + Safety Stock %). For example, if you use 10 units per day, get deliveries every 3 days, and want 20% safety stock, your par level is 10 x 3 x 1.2 = 36 units.'},
+      {q:'What is a reorder point?',a:'The reorder point is the stock level at which you should place a new order. It is typically set at 50% of the par level, giving enough lead time for delivery to arrive before you run out.'},
+      {q:'What safety stock percentage should I use?',a:'It depends on the item. Perishable produce: 10-15%. High-demand proteins: 20-30%. Dry goods: 25-35%. Seasonal peak items: 30-40%. Start at 20% and adjust based on your actual experience.'},
+      {q:'How often should I recalculate par levels?',a:'Review par levels monthly and recalculate when you change your menu, enter a new season, or notice significant changes in daily covers or sales trends.'},
+      {q:'Is my inventory data saved?',a:'Yes, all data is saved in your browser localStorage. Nothing is sent to any server. Your inventory data is completely private and stays on your device.'},
+      {q:'What does overstocked mean?',a:'An item is overstocked when current stock exceeds the maximum stock level (1.5x par level). This ties up cash and increases spoilage risk, especially for perishable items.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Pantry Inventory Tracker',url:'/restaurant/pantry-inventory-tracker/',desc:'Track pantry items with expiry alerts'},
+      {name:'Freezer Inventory Tracker',url:'/restaurant/freezer-inventory-tracker/',desc:'Manage freezer stock and rotation'},
+      {name:'Food Cost Calculator',url:'/restaurant/food-cost-calculator/',desc:'Calculate food cost percentages'},
+      {name:'Recipe Cost Calculator',url:'/restaurant/recipe-cost-calculator/',desc:'Break down recipe ingredient costs'},
+      {name:'Menu Engineering Calculator',url:'/restaurant/menu-engineering-calculator/',desc:'Analyze menu item profitability'},
+      {name:'Restaurant Break-Even Calculator',url:'/restaurant/restaurant-break-even-calculator/',desc:'Find your break-even point'}
+    ];
+
+    (function(){
+      var items = JSON.parse(localStorage.getItem('parLevelItems') || '[]');
+
+      function save() {
+        localStorage.setItem('parLevelItems', JSON.stringify(items));
+      }
+
+      function calcParLevel(dailyUsage, deliveryFreq, safetyPct) {
+        return (dailyUsage * deliveryFreq) * (1 + safetyPct / 100);
+      }
+
+      function getStatus(current, parLevel, maxStock) {
+        if (current === null || current === undefined || current === '') return {label:'No Data', cls:'status-ok'};
+        var c = parseFloat(current);
+        var reorder = parLevel * 0.5;
+        if (c <= reorder) return {label:'Reorder Now', cls:'status-low'};
+        if (c > maxStock) return {label:'Overstocked', cls:'status-over'};
+        return {label:'OK', cls:'status-ok'};
+      }
+
+      function render() {
+        var resultsDiv = document.getElementById('parResults');
+        var actionsDiv = document.getElementById('parActions');
+
+        if (items.length === 0) {
+          resultsDiv.innerHTML = '<div class="empty-state">No items added yet. Use the presets above or add items manually to calculate par levels.</div>';
+          actionsDiv.style.display = 'none';
+          updateStats();
+          return;
+        }
+
+        actionsDiv.style.display = 'flex';
+        var html = '<div class="par-table-wrap"><table class="par-table"><thead><tr>' +
+          '<th>Item</th><th>Daily Usage</th><th>Delivery (days)</th><th>Safety %</th>' +
+          '<th>Par Level</th><th>Reorder Point</th><th>Max Stock</th><th>Current</th><th>Status</th><th></th>' +
+          '</tr></thead><tbody>';
+
+        items.forEach(function(item, i) {
+          var par = calcParLevel(item.dailyUsage, item.deliveryFreq, item.safetyPct);
+          var reorder = par * 0.5;
+          var maxStock = par * 1.5;
+          var status = getStatus(item.currentStock, par, maxStock);
+
+          html += '<tr>' +
+            '<td style="font-weight:600;color:var(--heading);">' + escHtml(item.name) + ' <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;">(' + escHtml(item.unit) + ')</span></td>' +
+            '<td>' + item.dailyUsage + '</td>' +
+            '<td>' + item.deliveryFreq + '</td>' +
+            '<td>' + item.safetyPct + '%</td>' +
+            '<td style="font-weight:600;">' + par.toFixed(1) + '</td>' +
+            '<td>' + reorder.toFixed(1) + '</td>' +
+            '<td>' + maxStock.toFixed(1) + '</td>' +
+            '<td>' + (item.currentStock !== '' && item.currentStock !== null ? parseFloat(item.currentStock).toFixed(1) : '—') + '</td>' +
+            '<td><span class="status-badge ' + status.cls + '">' + status.label + '</span></td>' +
+            '<td><button class="del-btn" data-idx="' + i + '">&times;</button></td>' +
+            '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        resultsDiv.innerHTML = html;
+
+        resultsDiv.querySelectorAll('.del-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            items.splice(parseInt(btn.dataset.idx), 1);
+            save();
+            render();
+          });
+        });
+
+        updateStats();
+      }
+
+      function updateStats() {
+        var low = 0, ok = 0, over = 0;
+        items.forEach(function(item) {
+          var par = calcParLevel(item.dailyUsage, item.deliveryFreq, item.safetyPct);
+          var maxStock = par * 1.5;
+          var status = getStatus(item.currentStock, par, maxStock);
+          if (status.label === 'Reorder Now') low++;
+          else if (status.label === 'Overstocked') over++;
+          else ok++;
+        });
+        document.getElementById('statTotal').textContent = items.length;
+        document.getElementById('statLow').textContent = low;
+        document.getElementById('statOk').textContent = ok;
+        document.getElementById('statOver').textContent = over;
+      }
+
+      function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function addItem(name, dailyUsage, deliveryFreq, safetyPct, unit, currentStock) {
+        if (!name) { if (window.showToast) window.showToast('Please enter an item name.'); return; }
+        if (!dailyUsage || dailyUsage <= 0) { if (window.showToast) window.showToast('Please enter a valid daily usage.'); return; }
+        if (!deliveryFreq || deliveryFreq < 1) { if (window.showToast) window.showToast('Please enter a valid delivery frequency.'); return; }
+        items.push({
+          name: name,
+          dailyUsage: parseFloat(dailyUsage),
+          deliveryFreq: parseInt(deliveryFreq),
+          safetyPct: parseFloat(safetyPct) || 20,
+          unit: unit || 'units',
+          currentStock: currentStock !== '' && currentStock !== undefined ? currentStock : ''
+        });
+        save();
+        render();
+      }
+
+      function buildOrderText() {
+        var lines = ['REORDER LIST — ' + new Date().toLocaleDateString(), ''];
+        var hasOrders = false;
+        items.forEach(function(item) {
+          var par = calcParLevel(item.dailyUsage, item.deliveryFreq, item.safetyPct);
+          var reorder = par * 0.5;
+          if (item.currentStock !== '' && parseFloat(item.currentStock) <= reorder) {
+            var orderQty = par - parseFloat(item.currentStock);
+            lines.push(item.name + ': Order ' + orderQty.toFixed(1) + ' ' + item.unit + ' (current: ' + parseFloat(item.currentStock).toFixed(1) + ', par: ' + par.toFixed(1) + ')');
+            hasOrders = true;
+          }
+        });
+        if (!hasOrders) lines.push('All items are above reorder point. No orders needed.');
+        return lines.join('\n');
+      }
+
+      function buildFullReport() {
+        var lines = ['INVENTORY PAR LEVEL REPORT — ' + new Date().toLocaleDateString(), ''];
+        lines.push('Item | Daily Usage | Delivery | Safety | Par Level | Reorder Pt | Max Stock | Current | Status');
+        lines.push('-'.repeat(100));
+        items.forEach(function(item) {
+          var par = calcParLevel(item.dailyUsage, item.deliveryFreq, item.safetyPct);
+          var reorder = par * 0.5;
+          var maxStock = par * 1.5;
+          var status = getStatus(item.currentStock, par, maxStock);
+          var cur = item.currentStock !== '' && item.currentStock !== null ? parseFloat(item.currentStock).toFixed(1) : 'N/A';
+          lines.push(item.name + ' (' + item.unit + ') | ' + item.dailyUsage + ' | ' + item.deliveryFreq + 'd | ' + item.safetyPct + '% | ' + par.toFixed(1) + ' | ' + reorder.toFixed(1) + ' | ' + maxStock.toFixed(1) + ' | ' + cur + ' | ' + status.label);
+        });
+        lines.push('');
+        lines.push('Total items: ' + items.length);
+        return lines.join('\n');
+      }
+
+      // Add item button
+      document.getElementById('parAddBtn').addEventListener('click', function() {
+        addItem(
+          document.getElementById('parItemName').value.trim(),
+          document.getElementById('parDailyUsage').value,
+          document.getElementById('parDeliveryFreq').value,
+          document.getElementById('parSafetyStock').value,
+          document.getElementById('parUnit').value,
+          document.getElementById('parCurrentStock').value
+        );
+        document.getElementById('parItemName').value = '';
+        document.getElementById('parDailyUsage').value = '';
+        document.getElementById('parCurrentStock').value = '';
+      });
+
+      // Preset buttons
+      document.querySelectorAll('.preset-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.getElementById('parItemName').value = btn.dataset.name;
+          document.getElementById('parDailyUsage').value = btn.dataset.usage;
+          document.getElementById('parDeliveryFreq').value = btn.dataset.freq;
+          // Set unit
+          var unitSel = document.getElementById('parUnit');
+          for (var j = 0; j < unitSel.options.length; j++) {
+            if (unitSel.options[j].value === btn.dataset.unit) {
+              unitSel.selectedIndex = j;
+              break;
+            }
+          }
+          document.getElementById('parSafetyStock').value = '20';
+          document.getElementById('parCurrentStock').value = '';
+          if (window.showToast) window.showToast('Preset loaded — adjust values and click Add Item');
+        });
+      });
+
+      // Copy order list
+      document.getElementById('copyOrderBtn').addEventListener('click', function() {
+        var text = buildOrderText();
+        navigator.clipboard.writeText(text).then(function() {
+          if (window.showToast) window.showToast('Order list copied to clipboard');
+        });
+      });
+
+      // Copy full report
+      document.getElementById('copyAllBtn').addEventListener('click', function() {
+        var text = buildFullReport();
+        navigator.clipboard.writeText(text).then(function() {
+          if (window.showToast) window.showToast('Full report copied to clipboard');
+        });
+      });
+
+      // Clear all
+      document.getElementById('clearAllBtn').addEventListener('click', function() {
+        items = [];
+        save();
+        render();
+        if (window.showToast) window.showToast('All items cleared');
+      });
+
+      render();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof TeamzTools !== 'undefined') {
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/inventory-par-level-calculator',title:'Inventory Par Level Calculator',description:'Calculate optimal par levels, reorder points, and max stock for restaurant inventory.'});
+      }
+    });
+  </script>
+</body>
+</html>

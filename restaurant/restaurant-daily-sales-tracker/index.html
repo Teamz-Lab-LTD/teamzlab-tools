@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurant Daily Sales Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track daily restaurant sales, calculate weekly and monthly totals, and identify your best and worst revenue days. Free and private.">
+  <meta property="og:title" content="Restaurant Daily Sales Tracker">
+  <meta property="og:description" content="Track daily restaurant sales, calculate weekly and monthly totals, and identify your best and worst revenue days.">
+  <meta property="og:url" content="https://tool.teamzlab.com/restaurant/restaurant-daily-sales-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/restaurant.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Restaurant Daily Sales Tracker">
+  <meta name="twitter:description" content="Track daily restaurant sales, calculate weekly and monthly totals, and identify your best and worst revenue days.">
+  <link rel="canonical" href="https://tool.teamzlab.com/restaurant/restaurant-daily-sales-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sales-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .sales-form .full-width { grid-column: 1 / -1; }
+    .input-group { display: flex; flex-direction: column; }
+    .input-group label { font-weight: 600; margin-bottom: 0.4rem; color: var(--text); font-size: 0.9rem; }
+    .input-group input, .input-group textarea { padding: 0.7rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; box-sizing: border-box; }
+    .input-group textarea { resize: vertical; min-height: 60px; font-family: inherit; }
+    .btn-row { display: flex; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+    .add-entry-btn { background: var(--heading); color: var(--bg); border: none; padding: 0.8rem 2rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    .add-entry-btn:hover { opacity: 0.9; }
+    .secondary-btn { background: var(--surface); color: var(--heading); border: 1px solid var(--border); padding: 0.8rem 1.5rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    .secondary-btn:hover { border-color: var(--heading); }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; text-align: center; }
+    .summary-card .card-label { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .summary-card .card-value { font-size: 1.5rem; font-weight: 700; color: var(--heading); }
+    .summary-card .card-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .chart-section { margin: 1.5rem 0; }
+    .chart-section h3 { color: var(--heading); margin-bottom: 0.8rem; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 180px; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; overflow-x: auto; }
+    .bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 36px; }
+    .bar-fill { width: 100%; min-width: 24px; max-width: 48px; background: var(--heading); border-radius: 4px 4px 0 0; transition: height 0.3s ease; cursor: pointer; position: relative; }
+    .bar-fill:hover { opacity: 0.8; }
+    .bar-label { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.3rem; white-space: nowrap; }
+    .bar-amount { font-size: 0.6rem; color: var(--text-muted); margin-bottom: 2px; }
+    .entries-table-wrap { overflow-x: auto; margin-top: 1.5rem; }
+    .entries-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .entries-table th, .entries-table td { padding: 0.6rem 0.5rem; text-align: right; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+    .entries-table th { background: var(--surface); color: var(--heading); font-weight: 600; text-align: right; }
+    .entries-table th:first-child, .entries-table td:first-child { text-align: left; }
+    .entries-table .notes-col { max-width: 120px; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+    .delete-row-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; padding: 0.2rem 0.4rem; }
+    .delete-row-btn:hover { color: var(--heading); }
+    .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.95rem; }
+    .wow-badge { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 4px; margin-left: 0.3rem; }
+    .wow-up { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .wow-down { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    @media (max-width: 600px) {
+      .sales-form { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .summary-card .card-value { font-size: 1.2rem; }
+      .btn-row { flex-direction: column; }
+      .btn-row button { width: 100%; }
+      .bar-chart { height: 140px; }
+      .entries-table { font-size: 0.8rem; }
+      .entries-table th, .entries-table td { padding: 0.4rem 0.3rem; }
+      h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Restaurant", "item": "https://tool.teamzlab.com/restaurant/"}, {"@type": "ListItem", "position": 3, "name": "Daily Sales Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What data should I track for daily restaurant sales?", "acceptedAnswer": {"@type": "Answer", "text": "Track food sales, beverage sales, other revenue like catering or merchandise, and customer count. This gives you total revenue, revenue mix percentages, and average check size for each day."}}, {"@type": "Question", "name": "How is average check size calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Average check size equals total daily revenue divided by the number of customers served. For example, four thousand dollars in sales with one hundred customers equals a forty dollar average check."}}, {"@type": "Question", "name": "What is a good average check size for a restaurant?", "acceptedAnswer": {"@type": "Answer", "text": "It varies by concept. Fast casual averages twelve to eighteen dollars, casual dining twenty to forty dollars, and fine dining sixty dollars or more. Track your own trend over time rather than comparing to others."}}, {"@type": "Question", "name": "How do I calculate week-over-week sales change?", "acceptedAnswer": {"@type": "Answer", "text": "Subtract last week total from this week total, divide by last week total, then multiply by 100. A positive number means growth. This tracker calculates it automatically from your entries."}}, {"@type": "Question", "name": "Why should I track beverage sales separately?", "acceptedAnswer": {"@type": "Answer", "text": "Beverages typically have higher profit margins than food, often seventy to eighty percent. Tracking them separately helps you monitor your revenue mix and identify opportunities to boost high-margin sales."}}, {"@type": "Question", "name": "Is my restaurant sales data secure in this tracker?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All data is stored locally in your browser using localStorage. Nothing is sent to any server. You can export it as CSV anytime and clear all data with one click."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Restaurant Daily Sales Tracker", "description": "Track daily restaurant sales, calculate weekly and monthly totals, and identify best and worst revenue days.", "url": "https://tool.teamzlab.com/restaurant/restaurant-daily-sales-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Restaurant Daily Sales Tracker</h1>
+      <p class="tool-description">Log daily food, beverage, and other revenue. See weekly and monthly totals, average check size, best and worst days, and week-over-week trends. All data stays on your device.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <h3 style="color:var(--heading);margin-bottom:0.8rem;">Add Daily Entry</h3>
+      <div class="sales-form">
+        <div class="input-group">
+          <label for="entryDate">Date</label>
+          <input type="date" id="entryDate">
+        </div>
+        <div class="input-group">
+          <label for="customerCount">Customer Count</label>
+          <input type="number" id="customerCount" min="0" step="1" placeholder="e.g. 120">
+        </div>
+        <div class="input-group">
+          <label for="foodSales">Food Sales ($)</label>
+          <input type="number" id="foodSales" min="0" step="0.01" placeholder="e.g. 3200.00">
+        </div>
+        <div class="input-group">
+          <label for="beverageSales">Beverage Sales ($)</label>
+          <input type="number" id="beverageSales" min="0" step="0.01" placeholder="e.g. 850.00">
+        </div>
+        <div class="input-group">
+          <label for="otherRevenue">Other Revenue ($)</label>
+          <input type="number" id="otherRevenue" min="0" step="0.01" placeholder="e.g. 150.00">
+        </div>
+        <div class="input-group full-width">
+          <label for="entryNotes">Notes (optional)</label>
+          <textarea id="entryNotes" placeholder="e.g. Holiday rush, short-staffed, catering event"></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="add-entry-btn" id="addEntryBtn">Add Entry</button>
+        <button class="secondary-btn" id="exportCsvBtn">Export CSV</button>
+        <button class="secondary-btn" id="clearAllBtn">Clear All Data</button>
+      </div>
+
+      <div class="summary-grid" id="summaryGrid" style="display:none;">
+        <div class="summary-card">
+          <div class="card-label">Today's Total</div>
+          <div class="card-value" id="todayTotal">$0</div>
+          <div class="card-sub" id="todayCustomers">0 customers</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Weekly Average</div>
+          <div class="card-value" id="weeklyAvg">$0</div>
+          <div class="card-sub" id="wowChange">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Best Day</div>
+          <div class="card-value" id="bestDayVal">$0</div>
+          <div class="card-sub" id="bestDayDate">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Worst Day</div>
+          <div class="card-value" id="worstDayVal">$0</div>
+          <div class="card-sub" id="worstDayDate">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Running Week Total</div>
+          <div class="card-value" id="weekTotal">$0</div>
+          <div class="card-sub" id="weekDays">0 days</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Running Month Total</div>
+          <div class="card-value" id="monthTotal">$0</div>
+          <div class="card-sub" id="monthDays">0 days</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Daily Average</div>
+          <div class="card-value" id="dailyAvg">$0</div>
+          <div class="card-sub" id="dailyAvgSub">all entries</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-label">Avg Check Size</div>
+          <div class="card-value" id="avgCheck">$0</div>
+          <div class="card-sub" id="avgCheckSub">per customer</div>
+        </div>
+      </div>
+
+      <div class="chart-section" id="chartSection" style="display:none;">
+        <h3>Daily Sales (Last 14 Days)</h3>
+        <div class="bar-chart" id="barChart"></div>
+      </div>
+
+      <div class="entries-table-wrap">
+        <div id="emptyState" class="empty-state">No entries yet. Add your first daily sales entry above.</div>
+        <table class="entries-table" id="entriesTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Food</th>
+              <th>Bev</th>
+              <th>Other</th>
+              <th>Total</th>
+              <th>Guests</th>
+              <th>Avg Check</th>
+              <th class="notes-col">Notes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody"></tbody>
+        </table>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Why Track Daily Restaurant Sales</h2>
+      <p>Tracking daily sales is the foundation of restaurant financial management. Without consistent revenue tracking, you cannot identify trends, plan staffing, manage inventory, or forecast cash flow. A daily sales tracker gives you visibility into how much revenue your restaurant generates each day broken down by food, beverages, and other sources like catering or merchandise. This data helps you spot patterns like slow Mondays or strong Friday evenings so you can make smarter business decisions. Restaurants that track daily sales consistently are better positioned to control costs and improve profitability.</p>
+
+      <h2>How to Use the Daily Sales Tracker</h2>
+      <p>Enter each day's revenue figures into the form above. Record food sales, beverage sales, and any other revenue separately for a clear breakdown. Include your customer count to calculate average check size, one of the most important metrics in restaurant management. The tracker automatically calculates daily totals, running weekly and monthly totals, daily averages, and week-over-week percentage changes. Summary cards highlight your best and worst revenue days so you can investigate what drove the difference. The visual bar chart shows your last fourteen days at a glance.</p>
+
+      <h2>Key Restaurant Sales Metrics Explained</h2>
+      <p>Average check size is your total revenue divided by customer count. A rising average check means customers are spending more per visit, often through upselling or menu price adjustments. Week-over-week percentage change compares the current seven-day period against the previous seven days, revealing whether your revenue is growing or declining. Running weekly and monthly totals help you track progress toward revenue goals. Identifying your best and worst days lets you optimize staffing, promotions, and inventory ordering. All data stays private in your browser and can be exported as CSV for accounting or further analysis in spreadsheets.</p>
+
+      <h2>Tips for Maximizing Restaurant Revenue</h2>
+      <p>Use your daily sales data to identify low-traffic days and run targeted promotions to boost them. Compare beverage sales percentage to industry benchmarks of twenty to thirty percent of total revenue. Track customer counts alongside revenue to determine whether growth comes from more guests or higher spending per guest. Review weekly trends to adjust prep quantities and reduce food waste. Share weekly sales summaries with your management team to keep everyone aligned on performance. Consistent daily tracking turns raw numbers into actionable insights that drive restaurant profitability.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Restaurant',url:'/restaurant/'},{name:'Daily Sales Tracker'}];
+    var FAQS = [
+      {q:'What data should I track for daily restaurant sales?',a:'Track food sales, beverage sales, other revenue like catering or merchandise, and customer count. This gives you total revenue, revenue mix percentages, and average check size for each day.'},
+      {q:'How is average check size calculated?',a:'Average check size equals total daily revenue divided by the number of customers served. For example, four thousand dollars in sales with one hundred customers equals a forty dollar average check.'},
+      {q:'What is a good average check size for a restaurant?',a:'It varies by concept. Fast casual averages twelve to eighteen dollars, casual dining twenty to forty dollars, and fine dining sixty dollars or more. Track your own trend over time rather than comparing to others.'},
+      {q:'How do I calculate week-over-week sales change?',a:'Subtract last week total from this week total, divide by last week total, then multiply by 100. A positive number means growth. This tracker calculates it automatically from your entries.'},
+      {q:'Why should I track beverage sales separately?',a:'Beverages typically have higher profit margins than food, often seventy to eighty percent. Tracking them separately helps you monitor your revenue mix and identify opportunities to boost high-margin sales.'},
+      {q:'Is my restaurant sales data secure in this tracker?',a:'Yes. All data is stored locally in your browser using localStorage. Nothing is sent to any server. You can export it as CSV anytime and clear all data with one click.'}
+    ];
+    var RELATED_TOOLS = [
+      {slug:'restaurant/food-cost-calculator',name:'Food Cost Calculator',description:'Calculate food cost percentage and ideal menu pricing per dish'},
+      {slug:'restaurant/labor-cost-calculator',name:'Labor Cost Calculator',description:'Track labor costs and optimize staffing for profitability'},
+      {slug:'restaurant/restaurant-break-even-calculator',name:'Break-Even Calculator',description:'Calculate how much revenue you need to cover all costs'},
+      {slug:'restaurant/prime-cost-calculator',name:'Prime Cost Calculator',description:'Calculate prime cost ratio combining food and labor costs'},
+      {slug:'restaurant/table-turnover-calculator',name:'Table Turnover Calculator',description:'Measure table turns and optimize seating efficiency'},
+      {slug:'restaurant/revpash-calculator',name:'RevPASH Calculator',description:'Calculate revenue per available seat hour for your restaurant'}
+    ];
+
+    (function(){
+      var STORAGE_KEY = 'teamz_daily_sales_entries';
+      var entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+      var dateInput = document.getElementById('entryDate');
+      var today = new Date();
+      dateInput.value = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+      function saveEntries() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      }
+
+      function fmtMoney(n) {
+        return '$' + n.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+      }
+
+      function fmtMoneyDec(n) {
+        return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+      }
+
+      function getTotal(e) {
+        return (e.food || 0) + (e.bev || 0) + (e.other || 0);
+      }
+
+      function getWeekStart(dateStr) {
+        var d = new Date(dateStr + 'T00:00:00');
+        var day = d.getDay();
+        var diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        var ws = new Date(d);
+        ws.setDate(diff);
+        return ws.toISOString().slice(0,10);
+      }
+
+      function getMonthKey(dateStr) {
+        return dateStr.slice(0,7);
+      }
+
+      function renderAll() {
+        entries.sort(function(a,b){ return b.date.localeCompare(a.date); });
+        renderTable();
+        renderSummary();
+        renderChart();
+      }
+
+      function renderTable() {
+        var tbody = document.getElementById('entriesBody');
+        var table = document.getElementById('entriesTable');
+        var empty = document.getElementById('emptyState');
+        if (entries.length === 0) {
+          table.style.display = 'none';
+          empty.style.display = 'block';
+          return;
+        }
+        table.style.display = 'table';
+        empty.style.display = 'none';
+        tbody.innerHTML = '';
+        entries.forEach(function(e, idx) {
+          var total = getTotal(e);
+          var avgChk = e.customers > 0 ? (total / e.customers) : 0;
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td>' + e.date + '</td>' +
+            '<td>' + fmtMoney(e.food) + '</td>' +
+            '<td>' + fmtMoney(e.bev) + '</td>' +
+            '<td>' + fmtMoney(e.other) + '</td>' +
+            '<td><strong>' + fmtMoney(total) + '</strong></td>' +
+            '<td>' + (e.customers || 0) + '</td>' +
+            '<td>' + (e.customers > 0 ? fmtMoneyDec(avgChk) : '—') + '</td>' +
+            '<td class="notes-col" title="' + (e.notes || '').replace(/"/g, '&quot;') + '">' + (e.notes || '—') + '</td>' +
+            '<td><button class="delete-row-btn" data-idx="' + idx + '" title="Delete">&times;</button></td>';
+          tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('.delete-row-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var i = parseInt(this.getAttribute('data-idx'));
+            entries.splice(i, 1);
+            saveEntries();
+            renderAll();
+            if (window.showToast) window.showToast('Entry deleted');
+          });
+        });
+      }
+
+      function renderSummary() {
+        var grid = document.getElementById('summaryGrid');
+        if (entries.length === 0) { grid.style.display = 'none'; return; }
+        grid.style.display = 'grid';
+
+        var todayStr = dateInput.value || new Date().toISOString().slice(0,10);
+        var todayEntry = entries.find(function(e){ return e.date === todayStr; });
+        var todayTot = todayEntry ? getTotal(todayEntry) : 0;
+        document.getElementById('todayTotal').textContent = fmtMoney(todayTot);
+        document.getElementById('todayCustomers').textContent = todayEntry ? (todayEntry.customers || 0) + ' customers' : 'No entry today';
+
+        var allTotals = entries.map(function(e){ return {date: e.date, total: getTotal(e)}; });
+        allTotals.sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+        var best = allTotals.reduce(function(a,b){ return a.total >= b.total ? a : b; });
+        var worst = allTotals.reduce(function(a,b){ return a.total <= b.total ? a : b; });
+        document.getElementById('bestDayVal').textContent = fmtMoney(best.total);
+        document.getElementById('bestDayDate').textContent = best.date;
+        document.getElementById('worstDayVal').textContent = fmtMoney(worst.total);
+        document.getElementById('worstDayDate').textContent = worst.date;
+
+        var dailyAvg = allTotals.reduce(function(s,e){ return s + e.total; }, 0) / allTotals.length;
+        document.getElementById('dailyAvg').textContent = fmtMoney(Math.round(dailyAvg));
+        document.getElementById('dailyAvgSub').textContent = allTotals.length + ' entries';
+
+        var totalCustomers = entries.reduce(function(s,e){ return s + (e.customers || 0); }, 0);
+        var totalRev = entries.reduce(function(s,e){ return s + getTotal(e); }, 0);
+        var avgCheck = totalCustomers > 0 ? totalRev / totalCustomers : 0;
+        document.getElementById('avgCheck').textContent = fmtMoneyDec(avgCheck);
+        document.getElementById('avgCheckSub').textContent = totalCustomers + ' total customers';
+
+        var thisWeekStart = getWeekStart(todayStr);
+        var thisWeekEntries = entries.filter(function(e){ return getWeekStart(e.date) === thisWeekStart; });
+        var weekTot = thisWeekEntries.reduce(function(s,e){ return s + getTotal(e); }, 0);
+        document.getElementById('weekTotal').textContent = fmtMoney(weekTot);
+        document.getElementById('weekDays').textContent = thisWeekEntries.length + ' days this week';
+
+        var thisMonth = getMonthKey(todayStr);
+        var thisMonthEntries = entries.filter(function(e){ return getMonthKey(e.date) === thisMonth; });
+        var monthTot = thisMonthEntries.reduce(function(s,e){ return s + getTotal(e); }, 0);
+        document.getElementById('monthTotal').textContent = fmtMoney(monthTot);
+        document.getElementById('monthDays').textContent = thisMonthEntries.length + ' days this month';
+
+        var weekAvg = thisWeekEntries.length > 0 ? weekTot / thisWeekEntries.length : 0;
+        document.getElementById('weeklyAvg').textContent = fmtMoney(Math.round(weekAvg));
+
+        var prevWeekDate = new Date(thisWeekStart + 'T00:00:00');
+        prevWeekDate.setDate(prevWeekDate.getDate() - 7);
+        var prevWeekStart = prevWeekDate.toISOString().slice(0,10);
+        var prevWeekEntries = entries.filter(function(e){ return getWeekStart(e.date) === prevWeekStart; });
+        var prevWeekTot = prevWeekEntries.reduce(function(s,e){ return s + getTotal(e); }, 0);
+        var wowEl = document.getElementById('wowChange');
+        if (prevWeekTot > 0 && weekTot > 0) {
+          var wowPct = ((weekTot - prevWeekTot) / prevWeekTot * 100).toFixed(1);
+          var arrow = wowPct >= 0 ? '↑' : '↓';
+          var cls = wowPct >= 0 ? 'wow-up' : 'wow-down';
+          wowEl.innerHTML = '<span class="wow-badge ' + cls + '">' + arrow + ' ' + Math.abs(wowPct) + '% WoW</span>';
+        } else {
+          wowEl.textContent = 'Need 2 weeks of data';
+        }
+      }
+
+      function renderChart() {
+        var section = document.getElementById('chartSection');
+        var chart = document.getElementById('barChart');
+        if (entries.length === 0) { section.style.display = 'none'; return; }
+        section.style.display = 'block';
+        chart.innerHTML = '';
+
+        var sorted = entries.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+        var last14 = sorted.slice(-14);
+        var maxVal = Math.max.apply(null, last14.map(function(e){ return getTotal(e); }));
+        if (maxVal === 0) maxVal = 1;
+
+        last14.forEach(function(e) {
+          var total = getTotal(e);
+          var pct = (total / maxVal) * 100;
+          var col = document.createElement('div');
+          col.className = 'bar-col';
+          var shortDate = e.date.slice(5);
+          col.innerHTML = '<div class="bar-amount">' + fmtMoney(total) + '</div>' +
+            '<div class="bar-fill" style="height:' + Math.max(pct, 2) + '%" title="' + e.date + ': ' + fmtMoney(total) + '"></div>' +
+            '<div class="bar-label">' + shortDate + '</div>';
+          chart.appendChild(col);
+        });
+      }
+
+      document.getElementById('addEntryBtn').addEventListener('click', function() {
+        var date = document.getElementById('entryDate').value;
+        if (!date) { if (window.showToast) window.showToast('Please select a date'); return; }
+
+        var food = parseFloat(document.getElementById('foodSales').value) || 0;
+        var bev = parseFloat(document.getElementById('beverageSales').value) || 0;
+        var other = parseFloat(document.getElementById('otherRevenue').value) || 0;
+        var customers = parseInt(document.getElementById('customerCount').value) || 0;
+        var notes = document.getElementById('entryNotes').value.trim();
+
+        if (food === 0 && bev === 0 && other === 0) {
+          if (window.showToast) window.showToast('Enter at least one sales amount');
+          return;
+        }
+
+        var existing = entries.findIndex(function(e){ return e.date === date; });
+        if (existing >= 0) {
+          entries[existing] = {date:date, food:food, bev:bev, other:other, customers:customers, notes:notes};
+          if (window.showToast) window.showToast('Entry updated for ' + date);
+        } else {
+          entries.push({date:date, food:food, bev:bev, other:other, customers:customers, notes:notes});
+          if (window.showToast) window.showToast('Entry added for ' + date);
+        }
+
+        saveEntries();
+        renderAll();
+        document.getElementById('foodSales').value = '';
+        document.getElementById('beverageSales').value = '';
+        document.getElementById('otherRevenue').value = '';
+        document.getElementById('customerCount').value = '';
+        document.getElementById('entryNotes').value = '';
+      });
+
+      document.getElementById('exportCsvBtn').addEventListener('click', function() {
+        if (entries.length === 0) { if (window.showToast) window.showToast('No data to export'); return; }
+        var sorted = entries.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+        var csv = 'Date,Food Sales,Beverage Sales,Other Revenue,Total,Customer Count,Avg Check,Notes\n';
+        sorted.forEach(function(e) {
+          var total = getTotal(e);
+          var avgChk = e.customers > 0 ? (total / e.customers).toFixed(2) : '0';
+          var n = (e.notes || '').replace(/"/g, '""');
+          csv += e.date + ',' + e.food.toFixed(2) + ',' + e.bev.toFixed(2) + ',' + e.other.toFixed(2) + ',' + total.toFixed(2) + ',' + (e.customers || 0) + ',' + avgChk + ',"' + n + '"\n';
+        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(csv).then(function() {
+            if (window.showToast) window.showToast('CSV copied to clipboard');
+          });
+        } else {
+          var ta = document.createElement('textarea');
+          ta.value = csv;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          if (window.showToast) window.showToast('CSV copied to clipboard');
+        }
+      });
+
+      document.getElementById('clearAllBtn').addEventListener('click', function() {
+        if (!confirm('Delete all sales entries? This cannot be undone.')) return;
+        entries = [];
+        saveEntries();
+        renderAll();
+        if (window.showToast) window.showToast('All data cleared');
+      });
+
+      renderAll();
+    })();
+
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof TeamzTools!=='undefined'){
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+        TeamzTools.injectWebAppSchema({slug:'restaurant/restaurant-daily-sales-tracker',title:'Restaurant Daily Sales Tracker',description:'Track daily restaurant sales, calculate weekly and monthly totals, and identify best and worst revenue days.'});
+      }
+    });
+  </script>
+</body>
+</html>
