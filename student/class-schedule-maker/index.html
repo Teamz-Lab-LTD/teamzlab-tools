@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Schedule Maker — Teamz Lab Tools</title>
+  <meta name="description" content="Build your weekly class schedule and export it as a phone wallpaper PNG. Free, private, works offline — no signup needed.">
+  <meta property="og:title" content="Class Schedule Maker — Teamz Lab Tools">
+  <meta property="og:description" content="Build your weekly class schedule and export it as a phone wallpaper PNG. Free, private, works offline.">
+  <meta property="og:url" content="https://tool.teamzlab.com/student/class-schedule-maker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/student.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Class Schedule Maker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Build your weekly class schedule and export it as a phone wallpaper PNG.">
+  <link rel="canonical" href="https://tool.teamzlab.com/student/class-schedule-maker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .schedule-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .schedule-form .full-width {
+      grid-column: 1 / -1;
+    }
+    .schedule-form label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--heading);
+      font-size: var(--text-sm);
+    }
+    .schedule-form input,
+    .schedule-form select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .schedule-form input:focus,
+    .schedule-form select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .days-checkboxes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .days-checkboxes label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+      font-size: var(--text-sm);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .days-checkboxes input[type="checkbox"] {
+      width: auto;
+      accent-color: var(--accent);
+    }
+    .schedule-add-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 24px;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: var(--text-base);
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .schedule-add-btn:hover { opacity: 0.85; }
+    .schedule-edit-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 24px;
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: var(--text-base);
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .schedule-edit-btn:hover { opacity: 0.85; }
+    .class-list {
+      margin-top: 16px;
+    }
+    .class-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: var(--surface);
+    }
+    .class-list-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .class-color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .class-list-details {
+      min-width: 0;
+    }
+    .class-list-name {
+      font-weight: 600;
+      color: var(--heading);
+      font-size: var(--text-base);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .class-list-meta {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .class-list-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .class-list-actions button {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .class-list-actions button:hover {
+      border-color: var(--heading);
+      color: var(--heading);
+    }
+    .schedule-grid-wrapper {
+      margin-top: 24px;
+      overflow-x: auto;
+    }
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: 70px repeat(7, 1fr);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      min-width: 650px;
+      font-size: var(--text-sm);
+    }
+    .sg-header {
+      background: var(--heading);
+      color: var(--bg);
+      font-weight: 700;
+      text-align: center;
+      padding: 10px 4px;
+      font-size: var(--text-sm);
+    }
+    .sg-time {
+      background: var(--surface);
+      color: var(--text-muted);
+      font-weight: 500;
+      text-align: center;
+      padding: 6px 4px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .sg-cell {
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+      position: relative;
+      min-height: 38px;
+    }
+    .sg-block {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      border-radius: 5px;
+      padding: 3px 5px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent-text);
+      overflow: hidden;
+      line-height: 1.25;
+      z-index: 1;
+    }
+    .sg-block-room {
+      font-weight: 400;
+      font-size: 9px;
+      opacity: 0.8;
+    }
+    .schedule-export-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .schedule-export-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: var(--text-sm);
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .schedule-export-btn:hover { opacity: 0.85; }
+    .schedule-export-btn.secondary {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+    }
+    .schedule-empty-msg {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: var(--text-base);
+    }
+    @media (max-width: 600px) {
+      .schedule-form {
+        grid-template-columns: 1fr;
+      }
+      .schedule-form .full-width {
+        grid-column: 1;
+      }
+      .schedule-grid {
+        min-width: 550px;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .schedule-export-btns {
+        flex-direction: column;
+      }
+      .schedule-export-btn {
+        width: 100%;
+        justify-content: center;
+      }
+      .class-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .class-list-actions {
+        width: 100%;
+      }
+      .class-list-actions button {
+        flex: 1;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Student Tools", "item": "https://tool.teamzlab.com/student/"}, {"@type": "ListItem", "position": 3, "name": "Class Schedule Maker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I export my class schedule as a phone wallpaper?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the \"Phone Wallpaper (1080x1920)\" button to generate a portrait-oriented image sized perfectly for modern smartphone screens. The wallpaper features a dark background with your color-coded classes clearly displayed. Set it as your lock screen so your schedule is always one glance away without opening any app."}}, {"@type": "Question", "name": "How many classes can I add to my schedule?", "acceptedAnswer": {"@type": "Answer", "text": "There is no hard limit on the number of classes you can add. The schedule grid supports as many courses as your week has room for. Each class can span multiple days, so a course meeting Monday, Wednesday, and Friday counts as one entry with three days checked. The grid will display all entries without any restrictions."}}, {"@type": "Question", "name": "Can I save my schedule and edit it later?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your schedule is automatically saved to your browser's local storage every time you add, edit, or delete a class. When you return to this page, all your classes will be restored exactly as you left them. To start fresh, click the \"Clear All\" button. Note that clearing browser data will also remove your saved schedule."}}, {"@type": "Question", "name": "What time format does the schedule maker use?", "acceptedAnswer": {"@type": "Answer", "text": "The schedule grid displays times in 12-hour format (AM/PM) from 7 AM to 9 PM, covering the typical range of class hours for most universities. When entering times in the form, your browser's native time picker is used, which may show 12-hour or 24-hour format depending on your device settings. Both formats are supported internally."}}, {"@type": "Question", "name": "Can I share my schedule with classmates?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, in two ways. First, you can use the \"Copy Image\" button to copy your schedule to the clipboard and paste it directly into any messaging app like WhatsApp, iMessage, or Discord. Second, you can download the PNG file and share it as an attachment. The exported image includes all your class details, colors, and room numbers in a clean visual format."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Class Schedule Maker", "description": "Build your weekly class schedule and export it as a phone wallpaper PNG. Free, private, works offline.", "url": "https://tool.teamzlab.com/student//", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Class Schedule Maker</h1>
+      <p class="tool-description">Build your weekly class schedule visually and export it as a phone wallpaper or PNG image. Free, private, and works entirely in your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Add a Class</h2>
+      <div class="schedule-form">
+        <div>
+          <label for="class-name">Class / Course Name</label>
+          <input type="text" id="class-name" placeholder="e.g. Calculus II">
+        </div>
+        <div>
+          <label for="class-room">Room / Location (optional)</label>
+          <input type="text" id="class-room" placeholder="e.g. Hall B-204">
+        </div>
+        <div>
+          <label for="start-time">Start Time</label>
+          <input type="time" id="start-time" value="09:00">
+        </div>
+        <div>
+          <label for="end-time">End Time</label>
+          <input type="time" id="end-time" value="10:00">
+        </div>
+        <div>
+          <label for="class-color">Color</label>
+          <select id="class-color">
+            <option value="0">Color 1 (Blue)</option>
+            <option value="1">Color 2 (Red)</option>
+            <option value="2">Color 3 (Green)</option>
+            <option value="3">Color 4 (Yellow)</option>
+            <option value="4">Color 5 (Purple)</option>
+            <option value="5">Color 6 (Orange)</option>
+            <option value="6">Color 7 (Teal)</option>
+            <option value="7">Color 8 (Pink)</option>
+          </select>
+        </div>
+        <div class="full-width">
+          <label>Days of Week</label>
+          <div class="days-checkboxes">
+            <label><input type="checkbox" id="day-mon" value="Mon"> Mon</label>
+            <label><input type="checkbox" id="day-tue" value="Tue"> Tue</label>
+            <label><input type="checkbox" id="day-wed" value="Wed"> Wed</label>
+            <label><input type="checkbox" id="day-thu" value="Thu"> Thu</label>
+            <label><input type="checkbox" id="day-fri" value="Fri"> Fri</label>
+            <label><input type="checkbox" id="day-sat" value="Sat"> Sat</label>
+            <label><input type="checkbox" id="day-sun" value="Sun"> Sun</label>
+          </div>
+        </div>
+        <div class="full-width" style="display:flex;gap:10px;">
+          <button type="button" class="schedule-add-btn" id="add-class-btn">+ Add Class</button>
+          <button type="button" class="schedule-edit-btn" id="clear-all-btn">Clear All</button>
+        </div>
+      </div>
+
+      <div class="class-list" id="class-list"></div>
+
+      <div class="schedule-grid-wrapper">
+        <div id="schedule-grid"></div>
+      </div>
+
+      <div class="schedule-export-btns" id="export-btns" style="display:none;">
+        <button type="button" class="schedule-export-btn" id="download-png-btn">Download as PNG</button>
+        <button type="button" class="schedule-export-btn secondary" id="download-wallpaper-btn">Phone Wallpaper (1080x1920)</button>
+        <button type="button" class="schedule-export-btn secondary" id="copy-image-btn">Copy Image</button>
+      </div>
+
+      <canvas id="export-canvas" style="display:none;"></canvas>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Create Your Class Schedule</h2>
+      <p>Creating your weekly class schedule takes just a few steps. Start by typing your course or class name into the form above, then select the days it meets by checking the appropriate day boxes. Set your start and end times, optionally add a room or location, and pick a color to visually distinguish each class. Click "Add Class" and repeat for all your courses. The schedule grid updates instantly so you can see conflicts and gaps at a glance. Once you are satisfied, download your schedule as a PNG image or export it as a phone wallpaper that you can set as your lock screen for quick reference between classes.</p>
+
+      <h2>Why Use a Class Schedule Maker</h2>
+      <p>Keeping track of a complex class schedule across multiple days and locations is a challenge every student faces. Writing it down on paper works until you lose the paper. Storing it in a spreadsheet means opening an app every time you need to check. A visual schedule maker solves both problems by letting you build a clean, color-coded timetable that you can export as an image and keep on your phone. Having your schedule as your phone wallpaper means you never have to open an app or remember your room number. It is always one glance away on your lock screen, saving time and reducing stress during busy days on campus.</p>
+
+      <h2>Export Your Schedule as Phone Wallpaper</h2>
+      <p>The phone wallpaper export creates a 1080 by 1920 pixel image in portrait orientation, perfectly sized for modern smartphone screens. The wallpaper features a clean dark background with your schedule grid, class names, times, and room numbers clearly visible. Each class block uses the color you assigned, making it easy to scan at a glance. The image is generated entirely in your browser using a canvas element, so your schedule data never leaves your device. You can download the wallpaper directly or copy it to your clipboard to paste into messaging apps and share with classmates.</p>
+
+      <h2>Tips for Organizing Your Weekly Schedule</h2>
+      <p>Assign distinct colors to different subject areas so you can instantly identify which type of class is coming up. Group similar subjects on the same days when possible to create focused study blocks. Leave buffer time between back-to-back classes, especially if they are in different buildings. Use the room or location field to note not just the room number but also any materials you need to bring. Review your schedule at the start of each semester and update it whenever classes are rescheduled. Export a fresh wallpaper each time you make changes so your lock screen always reflects your current timetable. Sharing your schedule image with study partners and classmates helps coordinate group study sessions and project meetings.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var SLUG = 'class-schedule-maker';
+      var TITLE = 'Class Schedule Maker';
+      var DESCRIPTION = 'Build your weekly class schedule and export it as a phone wallpaper PNG. Free, private, works offline.';
+
+      var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      var HOURS_START = 7;
+      var HOURS_END = 21;
+      var CANVAS_COLORS = ['#5B8DEF', '#FF6B6B', '#51CF66', '#FCC419', '#CC5DE8', '#FF922B', '#20C997', '#F06595'];
+      var CSS_COLORS = [
+        'var(--accent)', 'var(--heading)', 'var(--text-muted)', 'var(--border)',
+        'var(--accent)', 'var(--heading)', 'var(--text-muted)', 'var(--border)'
+      ];
+
+      var classes = [];
+      var editIndex = -1;
+
+      // Load saved classes
+      try {
+        var saved = localStorage.getItem('schedule-classes');
+        if (saved) classes = JSON.parse(saved);
+      } catch (e) {}
+
+      function saveClasses() {
+        try { localStorage.setItem('schedule-classes', JSON.stringify(classes)); } catch (e) {}
+      }
+
+      function timeToMinutes(t) {
+        var parts = t.split(':');
+        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+      }
+
+      function formatTime12(t) {
+        var parts = t.split(':');
+        var h = parseInt(parts[0], 10);
+        var m = parts[1];
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        if (h === 0) h = 12;
+        else if (h > 12) h -= 12;
+        return h + ':' + m + ' ' + ampm;
+      }
+
+      function resetForm() {
+        document.getElementById('class-name').value = '';
+        document.getElementById('class-room').value = '';
+        document.getElementById('start-time').value = '09:00';
+        document.getElementById('end-time').value = '10:00';
+        document.getElementById('class-color').value = '0';
+        DAYS.forEach(function (d) {
+          document.getElementById('day-' + d.toLowerCase()).checked = false;
+        });
+        editIndex = -1;
+        document.getElementById('add-class-btn').textContent = '+ Add Class';
+      }
+
+      function renderClassList() {
+        var listEl = document.getElementById('class-list');
+        if (classes.length === 0) {
+          listEl.innerHTML = '';
+          document.getElementById('export-btns').style.display = 'none';
+          return;
+        }
+        document.getElementById('export-btns').style.display = 'flex';
+        var html = '';
+        classes.forEach(function (c, i) {
+          html += '<div class="class-list-item">';
+          html += '<div class="class-list-info">';
+          html += '<span class="class-color-dot" style="background:' + CANVAS_COLORS[c.color] + ';"></span>';
+          html += '<div class="class-list-details">';
+          html += '<div class="class-list-name">' + escapeHtml(c.name) + '</div>';
+          html += '<div class="class-list-meta">' + c.days.join(', ') + ' &middot; ' + formatTime12(c.start) + ' - ' + formatTime12(c.end);
+          if (c.room) html += ' &middot; ' + escapeHtml(c.room);
+          html += '</div></div></div>';
+          html += '<div class="class-list-actions">';
+          html += '<button data-edit="' + i + '">Edit</button>';
+          html += '<button data-delete="' + i + '">Delete</button>';
+          html += '</div></div>';
+        });
+        listEl.innerHTML = html;
+
+        listEl.querySelectorAll('[data-edit]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = parseInt(this.getAttribute('data-edit'), 10);
+            var c = classes[idx];
+            document.getElementById('class-name').value = c.name;
+            document.getElementById('class-room').value = c.room || '';
+            document.getElementById('start-time').value = c.start;
+            document.getElementById('end-time').value = c.end;
+            document.getElementById('class-color').value = String(c.color);
+            DAYS.forEach(function (d) {
+              document.getElementById('day-' + d.toLowerCase()).checked = c.days.indexOf(d) !== -1;
+            });
+            editIndex = idx;
+            document.getElementById('add-class-btn').textContent = 'Update Class';
+            document.getElementById('class-name').focus();
+          });
+        });
+
+        listEl.querySelectorAll('[data-delete]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var idx = parseInt(this.getAttribute('data-delete'), 10);
+            classes.splice(idx, 1);
+            saveClasses();
+            if (editIndex === idx) resetForm();
+            else if (editIndex > idx) editIndex--;
+            renderClassList();
+            renderGrid();
+          });
+        });
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+      }
+
+      function renderGrid() {
+        var grid = document.getElementById('schedule-grid');
+        if (classes.length === 0) {
+          grid.innerHTML = '<div class="schedule-empty-msg">Add classes above to see your schedule grid.</div>';
+          grid.className = '';
+          return;
+        }
+        grid.className = 'schedule-grid';
+        var html = '<div class="sg-header">Time</div>';
+        DAYS.forEach(function (d) { html += '<div class="sg-header">' + d + '</div>'; });
+
+        for (var h = HOURS_START; h < HOURS_END; h++) {
+          var label = (h > 12 ? h - 12 : h) + (h >= 12 ? ' PM' : ' AM');
+          html += '<div class="sg-time">' + label + '</div>';
+          DAYS.forEach(function (d, di) {
+            html += '<div class="sg-cell" data-day="' + di + '" data-hour="' + h + '"></div>';
+          });
+        }
+        grid.innerHTML = html;
+
+        // Place class blocks
+        classes.forEach(function (c) {
+          var startMin = timeToMinutes(c.start);
+          var endMin = timeToMinutes(c.end);
+          if (endMin <= startMin) return;
+          c.days.forEach(function (day) {
+            var di = DAYS.indexOf(day);
+            if (di === -1) return;
+            var startHour = Math.floor(startMin / 60);
+            if (startHour < HOURS_START || startHour >= HOURS_END) return;
+            var cell = grid.querySelector('[data-day="' + di + '"][data-hour="' + startHour + '"]');
+            if (!cell) return;
+            var cellHeight = cell.offsetHeight || 38;
+            var topOffset = ((startMin % 60) / 60) * cellHeight;
+            var duration = (endMin - startMin) / 60;
+            var blockHeight = duration * cellHeight;
+            var block = document.createElement('div');
+            block.className = 'sg-block';
+            block.style.top = topOffset + 'px';
+            block.style.height = blockHeight + 'px';
+            block.style.background = CANVAS_COLORS[c.color];
+            block.innerHTML = escapeHtml(c.name) + (c.room ? '<br><span class="sg-block-room">' + escapeHtml(c.room) + '</span>' : '');
+            cell.appendChild(block);
+          });
+        });
+      }
+
+      // Add / Update class
+      document.getElementById('add-class-btn').addEventListener('click', function () {
+        var name = document.getElementById('class-name').value.trim();
+        var room = document.getElementById('class-room').value.trim();
+        var start = document.getElementById('start-time').value;
+        var end = document.getElementById('end-time').value;
+        var color = parseInt(document.getElementById('class-color').value, 10);
+        var days = [];
+        DAYS.forEach(function (d) {
+          if (document.getElementById('day-' + d.toLowerCase()).checked) days.push(d);
+        });
+
+        if (!name) { if (window.showToast) window.showToast('Please enter a class name.'); return; }
+        if (days.length === 0) { if (window.showToast) window.showToast('Please select at least one day.'); return; }
+        if (!start || !end) { if (window.showToast) window.showToast('Please set start and end times.'); return; }
+        if (timeToMinutes(end) <= timeToMinutes(start)) { if (window.showToast) window.showToast('End time must be after start time.'); return; }
+
+        var entry = { name: name, room: room, start: start, end: end, color: color, days: days };
+
+        if (editIndex >= 0) {
+          classes[editIndex] = entry;
+        } else {
+          classes.push(entry);
+        }
+        saveClasses();
+        resetForm();
+        renderClassList();
+        renderGrid();
+        if (window.showToast) window.showToast(editIndex >= 0 ? 'Class updated.' : 'Class added.');
+      });
+
+      // Clear all
+      document.getElementById('clear-all-btn').addEventListener('click', function () {
+        classes = [];
+        saveClasses();
+        resetForm();
+        renderClassList();
+        renderGrid();
+        if (window.showToast) window.showToast('All classes cleared.');
+      });
+
+      // Canvas rendering
+      function renderCanvas(mode) {
+        var canvas = document.getElementById('export-canvas');
+        var isWallpaper = mode === 'wallpaper';
+        var W = isWallpaper ? 1080 : 1920;
+        var H = isWallpaper ? 1920 : 1080;
+        canvas.width = W;
+        canvas.height = H;
+        var ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, W, H);
+
+        // Title
+        var titleSize = isWallpaper ? 42 : 36;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '700 ' + titleSize + 'px Poppins, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('My Schedule', W / 2, isWallpaper ? 80 : 55);
+
+        // Grid area
+        var gridTop = isWallpaper ? 130 : 90;
+        var gridBottom = H - (isWallpaper ? 60 : 40);
+        var gridLeft = isWallpaper ? 90 : 120;
+        var gridRight = W - (isWallpaper ? 30 : 40);
+        var gridW = gridRight - gridLeft;
+        var gridH = gridBottom - gridTop;
+        var totalHours = HOURS_END - HOURS_START;
+        var rowH = gridH / totalHours;
+        var colW = gridW / 7;
+
+        // Day headers
+        var headerH = isWallpaper ? 36 : 32;
+        ctx.fillStyle = '#16213e';
+        ctx.fillRect(gridLeft, gridTop, gridW, headerH);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '600 ' + (isWallpaper ? 16 : 14) + 'px Poppins, sans-serif';
+        ctx.textAlign = 'center';
+        DAYS.forEach(function (d, i) {
+          ctx.fillText(d, gridLeft + colW * i + colW / 2, gridTop + headerH - 10);
+        });
+
+        var bodyTop = gridTop + headerH;
+        var bodyH = gridBottom - bodyTop;
+        var bodyRowH = bodyH / totalHours;
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        for (var h = 0; h <= totalHours; h++) {
+          var y = bodyTop + h * bodyRowH;
+          ctx.beginPath(); ctx.moveTo(gridLeft, y); ctx.lineTo(gridRight, y); ctx.stroke();
+        }
+        for (var c = 0; c <= 7; c++) {
+          var x = gridLeft + c * colW;
+          ctx.beginPath(); ctx.moveTo(x, gridTop); ctx.lineTo(x, gridBottom); ctx.stroke();
+        }
+
+        // Time labels
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '400 ' + (isWallpaper ? 12 : 11) + 'px Poppins, sans-serif';
+        ctx.textAlign = 'right';
+        for (var h = HOURS_START; h < HOURS_END; h++) {
+          var label = (h > 12 ? h - 12 : h) + (h >= 12 ? 'PM' : 'AM');
+          var y = bodyTop + (h - HOURS_START) * bodyRowH + bodyRowH / 2 + 4;
+          ctx.fillText(label, gridLeft - 8, y);
+        }
+
+        // Class blocks
+        classes.forEach(function (cls) {
+          var startMin = timeToMinutes(cls.start);
+          var endMin = timeToMinutes(cls.end);
+          if (endMin <= startMin) return;
+          cls.days.forEach(function (day) {
+            var di = DAYS.indexOf(day);
+            if (di === -1) return;
+            var startOffset = (startMin / 60 - HOURS_START) / totalHours;
+            var endOffset = (endMin / 60 - HOURS_START) / totalHours;
+            if (startOffset < 0 || startOffset >= 1) return;
+            var bx = gridLeft + di * colW + 3;
+            var by = bodyTop + startOffset * bodyH;
+            var bw = colW - 6;
+            var bh = (endOffset - startOffset) * bodyH;
+
+            // Rounded rect
+            var r = 6;
+            ctx.fillStyle = CANVAS_COLORS[cls.color];
+            ctx.beginPath();
+            ctx.moveTo(bx + r, by);
+            ctx.lineTo(bx + bw - r, by);
+            ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + r);
+            ctx.lineTo(bx + bw, by + bh - r);
+            ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh);
+            ctx.lineTo(bx + r, by + bh);
+            ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - r);
+            ctx.lineTo(bx, by + r);
+            ctx.quadraticCurveTo(bx, by, bx + r, by);
+            ctx.closePath();
+            ctx.fill();
+
+            // Class text
+            ctx.fillStyle = '#12151A';
+            var fontSize = isWallpaper ? 13 : 12;
+            ctx.font = '600 ' + fontSize + 'px Poppins, sans-serif';
+            ctx.textAlign = 'left';
+            var textX = bx + 6;
+            var textY = by + fontSize + 4;
+            ctx.fillText(cls.name.substring(0, 18), textX, textY);
+            if (cls.room && bh > fontSize * 2 + 8) {
+              ctx.font = '400 ' + (fontSize - 2) + 'px Poppins, sans-serif';
+              ctx.fillText(cls.room.substring(0, 15), textX, textY + fontSize + 2);
+            }
+          });
+        });
+
+        // Branding
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '400 ' + (isWallpaper ? 14 : 12) + 'px Poppins, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Made with Teamz Lab Tools', W / 2, H - (isWallpaper ? 20 : 15));
+
+        return canvas;
+      }
+
+      // Download PNG
+      document.getElementById('download-png-btn').addEventListener('click', function () {
+        if (classes.length === 0) { if (window.showToast) window.showToast('Add classes first.'); return; }
+        var canvas = renderCanvas('landscape');
+        var link = document.createElement('a');
+        link.download = 'class-schedule.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        if (window.showToast) window.showToast('Schedule downloaded as PNG.');
+      });
+
+      // Download wallpaper
+      document.getElementById('download-wallpaper-btn').addEventListener('click', function () {
+        if (classes.length === 0) { if (window.showToast) window.showToast('Add classes first.'); return; }
+        var canvas = renderCanvas('wallpaper');
+        var link = document.createElement('a');
+        link.download = 'class-schedule-wallpaper.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        if (window.showToast) window.showToast('Wallpaper downloaded (1080x1920).');
+      });
+
+      // Copy image
+      document.getElementById('copy-image-btn').addEventListener('click', function () {
+        if (classes.length === 0) { if (window.showToast) window.showToast('Add classes first.'); return; }
+        var canvas = renderCanvas('landscape');
+        canvas.toBlob(function (blob) {
+          if (!blob) { if (window.showToast) window.showToast('Could not generate image.'); return; }
+          try {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+              if (window.showToast) window.showToast('Schedule image copied to clipboard.');
+            }).catch(function () {
+              if (window.showToast) window.showToast('Copy failed. Try downloading instead.');
+            });
+          } catch (e) {
+            if (window.showToast) window.showToast('Copy not supported in this browser. Try downloading instead.');
+          }
+        }, 'image/png');
+      });
+
+      // Breadcrumbs
+      var breadcrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'Student Tools', url: '/student/' },
+        { name: 'Class Schedule Maker' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+      TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+      // FAQs
+      var faqs = [
+        {
+          q: 'Can I export my class schedule as a phone wallpaper?',
+          a: 'Yes. Click the "Phone Wallpaper (1080x1920)" button to generate a portrait-oriented image sized perfectly for modern smartphone screens. The wallpaper features a dark background with your color-coded classes clearly displayed. Set it as your lock screen so your schedule is always one glance away without opening any app.'
+        },
+        {
+          q: 'How many classes can I add to my schedule?',
+          a: 'There is no hard limit on the number of classes you can add. The schedule grid supports as many courses as your week has room for. Each class can span multiple days, so a course meeting Monday, Wednesday, and Friday counts as one entry with three days checked. The grid will display all entries without any restrictions.'
+        },
+        {
+          q: 'Can I save my schedule and edit it later?',
+          a: 'Yes. Your schedule is automatically saved to your browser\'s local storage every time you add, edit, or delete a class. When you return to this page, all your classes will be restored exactly as you left them. To start fresh, click the "Clear All" button. Note that clearing browser data will also remove your saved schedule.'
+        },
+        {
+          q: 'What time format does the schedule maker use?',
+          a: 'The schedule grid displays times in 12-hour format (AM/PM) from 7 AM to 9 PM, covering the typical range of class hours for most universities. When entering times in the form, your browser\'s native time picker is used, which may show 12-hour or 24-hour format depending on your device settings. Both formats are supported internally.'
+        },
+        {
+          q: 'Can I share my schedule with classmates?',
+          a: 'Yes, in two ways. First, you can use the "Copy Image" button to copy your schedule to the clipboard and paste it directly into any messaging app like WhatsApp, iMessage, or Discord. Second, you can download the PNG file and share it as an attachment. The exported image includes all your class details, colors, and room numbers in a clean visual format.'
+        }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      // Web App Schema
+      TeamzTools.injectWebAppSchema({
+        title: TITLE,
+        description: DESCRIPTION,
+        slug: 'student/' + SLUG
+      });
+
+      // Related Tools
+      TeamzTools.renderRelatedTools([
+        { slug: 'student/exam-countdown-planner', name: 'Exam Countdown Planner', description: 'Count down to exam dates with study planning tools.' },
+        { slug: 'student/assignment-deadline-planner', name: 'Assignment Deadline Planner', description: 'Plan assignment work across multiple deadlines.' },
+        { slug: 'student/study-hours-estimator', name: 'Study Hours Estimator', description: 'Estimate study hours needed for courses and exams.' },
+        { slug: 'student/attendance-percentage-calculator', name: 'Attendance Calculator', description: 'Calculate attendance percentage and class skip allowance.' },
+        { slug: 'student/exam-timer', name: 'Online Exam Timer', description: 'Free exam timer with countdown display and alerts.' },
+        { slug: 'student/flashcard-maker', name: 'Flashcard Maker', description: 'Create interactive flashcards for study sessions.' }
+      ]);
+
+      // Initial render
+      renderClassList();
+      renderGrid();
+    });
+  </script>
+</body>
+</html>
