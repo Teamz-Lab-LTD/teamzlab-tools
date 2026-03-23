@@ -265,6 +265,46 @@
         img.src = capturedImageData;
       };
 
+      window.ppCopyImg = function () {
+        if (!capturedImageData) return;
+        var selectEl = document.querySelector('[name="photo_standard"]');
+        var std = selectEl ? selectEl.value : 'us_2x2';
+        var spec = STANDARDS[std] || STANDARDS.us_2x2;
+        if (std === 'custom') {
+          var cwInput = document.querySelector('[name="custom_w"]');
+          var chInput = document.querySelector('[name="custom_h"]');
+          var cw = cwInput ? parseInt(cwInput.value) : 0;
+          var ch = chInput ? parseInt(chInput.value) : 0;
+          if (cw > 0 && ch > 0) { spec = { w: cw, h: ch }; }
+        }
+        var img = new Image();
+        img.onload = function () {
+          var canvas = document.createElement('canvas');
+          canvas.width = spec.w;
+          canvas.height = spec.h;
+          var ctx = canvas.getContext('2d');
+          var srcRatio = img.width / img.height;
+          var dstRatio = spec.w / spec.h;
+          var sx, sy, sw, sh;
+          if (srcRatio > dstRatio) { sh = img.height; sw = sh * dstRatio; sx = (img.width - sw) / 2; sy = 0; }
+          else { sw = img.width; sh = sw / dstRatio; sx = 0; sy = (img.height - sh) * 0.3; }
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, spec.w, spec.h);
+          canvas.toBlob(function(blob) {
+            if (!blob) return;
+            if (navigator.clipboard && navigator.clipboard.write) {
+              navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                if (window.showToast) window.showToast('Photo copied to clipboard.');
+              }).catch(function() {
+                if (window.showToast) window.showToast('Copy failed — try downloading instead.');
+              });
+            } else {
+              if (window.showToast) window.showToast('Copy not supported in this browser.');
+            }
+          }, 'image/png');
+        };
+        img.src = capturedImageData;
+      };
+
       window.ppRetake = function () {
         capturedImageData = null;
         var outputEl = document.getElementById('util-output');

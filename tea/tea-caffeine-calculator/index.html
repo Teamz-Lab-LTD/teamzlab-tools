@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tea Caffeine Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate caffeine in any tea type based on steep time, cup size, and infusions. Compare to coffee and FDA limits. Free and private.">
+  <meta property="og:title" content="Tea Caffeine Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate caffeine in any tea type based on steep time, cup size, and infusions. Compare to coffee and FDA limits.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tea/tea-caffeine-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tea.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tea Caffeine Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate caffeine in any tea type based on steep time, cup size, and infusions. Compare to coffee and FDA limits.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tea/tea-caffeine-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .tcaf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .tcaf-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .tcaf-field.full-width { grid-column: 1 / -1; }
+    .tcaf-field label { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .tcaf-field select,
+    .tcaf-field input[type="number"] { width: 100%; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-md); }
+    .tcaf-field select:focus,
+    .tcaf-field input:focus { outline: none; border-color: var(--heading); }
+
+    .tcaf-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+
+    .tcaf-result { margin-top: 1.5rem; display: none; }
+    .tcaf-result.visible { display: block; }
+
+    .tcaf-meter-section { margin-bottom: 1.5rem; }
+    .tcaf-meter-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
+    .tcaf-meter-total { font-size: var(--text-h2); font-weight: 800; color: var(--heading); }
+    .tcaf-meter-limit { font-size: var(--text-sm); color: var(--text-muted); }
+    .tcaf-meter-bar { height: 28px; border-radius: 8px; background: var(--border); overflow: hidden; position: relative; }
+    .tcaf-meter-fill { height: 100%; border-radius: 8px; transition: width 0.4s ease; min-width: 0; background: var(--heading); }
+    .tcaf-meter-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: var(--text-sm); font-weight: 700; color: var(--heading); }
+    .tcaf-zone-label { margin-top: 0.5rem; font-size: var(--text-sm); font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 6px; display: inline-block; }
+    .tcaf-zone-green { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .tcaf-zone-yellow { background: var(--surface); color: var(--heading); border: 1px solid var(--heading); }
+    .tcaf-zone-red { background: var(--heading); color: var(--bg); font-weight: 800; }
+
+    .tcaf-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .tcaf-summary-card { text-align: center; padding: 0.75rem; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); }
+    .tcaf-summary-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.15rem; }
+    .tcaf-summary-value { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+
+    .tcaf-compare { padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .tcaf-compare h3 { font-size: var(--text-lg); color: var(--heading); margin-bottom: 0.75rem; }
+    .tcaf-compare-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-md); color: var(--text); }
+    .tcaf-compare-item:last-child { border-bottom: none; }
+    .tcaf-compare-name { display: flex; align-items: center; gap: 0.5rem; }
+    .tcaf-compare-bar-wrap { flex: 1; margin: 0 1rem; height: 12px; border-radius: 6px; background: var(--border); overflow: hidden; }
+    .tcaf-compare-bar-fill { height: 100%; border-radius: 6px; background: var(--heading); transition: width 0.4s ease; }
+    .tcaf-compare-mg { font-weight: 700; color: var(--heading); white-space: nowrap; min-width: 60px; text-align: right; }
+
+    .tcaf-share-row { display: flex; gap: 0.75rem; margin-top: 1rem; }
+
+    @media (max-width: 600px) {
+      .tcaf-form { grid-template-columns: 1fr; padding: 1rem; }
+      .tcaf-actions { flex-direction: column; }
+      .tcaf-actions button { width: 100%; }
+      .tcaf-summary-grid { grid-template-columns: 1fr; }
+      .tcaf-share-row { flex-direction: column; }
+      .tcaf-share-row button { width: 100%; }
+      .tcaf-meter-total { font-size: var(--text-xl); }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tea Tools", "item": "https://tool.teamzlab.com/tea/"}, {"@type": "ListItem", "position": 3, "name": "Tea Caffeine Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much caffeine is in green tea?", "acceptedAnswer": {"@type": "Answer", "text": "Green tea contains 25 to 50 mg of caffeine per 8-ounce cup, depending on the variety and steeping time. Sencha and dragonwell tend toward the higher end, while bancha and genmaicha are lower. A 3-minute steep at 175 degrees Fahrenheit extracts about 35 mg on average."}}, {"@type": "Question", "name": "Does steeping tea longer increase caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, but not linearly. Most caffeine extracts within the first 3 minutes of steeping. After that, extraction slows dramatically following a logarithmic curve. A 10-minute steep has only marginally more caffeine than a 5-minute steep. Shorter steeps are an effective way to reduce caffeine intake."}}, {"@type": "Question", "name": "Which tea has the most caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "Among true teas, matcha has the most caffeine at 60 to 70 mg per serving because you consume the entire ground leaf. Black tea is next at 40 to 70 mg per cup, followed by oolong at 30 to 50 mg, pu-erh at 30 to 50 mg, green at 25 to 50 mg, and white at 15 to 30 mg. Herbal teas have zero caffeine."}}, {"@type": "Question", "name": "Is tea caffeine safer than coffee caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "The caffeine molecule is identical in tea and coffee. However, tea also contains L-theanine, an amino acid that promotes calm alertness and may moderate the jittery effects of caffeine. This is why many people experience a smoother energy boost from tea compared to the sharper spike from coffee. The total amount still matters for safety."}}, {"@type": "Question", "name": "How much caffeine is safe per day from tea?", "acceptedAnswer": {"@type": "Answer", "text": "The FDA recommends up to 400 mg of caffeine per day for healthy adults, regardless of the source. This equals roughly 6 to 10 cups of black tea or 8 to 16 cups of green tea, depending on strength. Pregnant women should limit intake to 200 mg per day. Individual tolerance varies based on body weight and sensitivity."}}, {"@type": "Question", "name": "Does the number of infusions affect total caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each subsequent infusion extracts less caffeine than the previous one. The first steep gets about 60 to 70 percent of available caffeine, the second gets 20 to 25 percent, and the third gets 10 to 15 percent. If you drink all infusions, your total caffeine is the sum across all steeps, which this calculator computes automatically."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Tea Caffeine Calculator", "description": "Calculate caffeine in any tea type based on steep time, cup size, and infusions.", "url": "https://tool.teamzlab.com/tea/tea-caffeine-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Tea Caffeine Calculator</h1>
+      <p class="tool-description">Calculate how much caffeine is in your tea based on type, cup size, steeping time, and number of infusions. Compare your daily intake to coffee, energy drinks, and the FDA-recommended 400 mg limit. Everything runs in your browser, completely private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="tcaf-form">
+        <div class="tcaf-field">
+          <label for="teaType">Tea Type</label>
+          <select id="teaType">
+            <option value="green">Green Tea (25-50 mg)</option>
+            <option value="black" selected>Black Tea (40-70 mg)</option>
+            <option value="white">White Tea (15-30 mg)</option>
+            <option value="oolong">Oolong Tea (30-50 mg)</option>
+            <option value="matcha">Matcha (60-70 mg/serving)</option>
+            <option value="herbal">Herbal Tea (0 mg)</option>
+            <option value="puerh">Pu-erh Tea (30-50 mg)</option>
+            <option value="yerba">Yerba Mate (40-60 mg)</option>
+          </select>
+        </div>
+
+        <div class="tcaf-field">
+          <label for="cupsPerDay">Cups per Day</label>
+          <input type="number" id="cupsPerDay" value="3" min="1" max="20" step="1">
+        </div>
+
+        <div class="tcaf-field">
+          <label for="cupSize">Cup Size</label>
+          <select id="cupSize">
+            <option value="150">150 ml (5 oz)</option>
+            <option value="237" selected>237 ml (8 oz)</option>
+            <option value="296">296 ml (10 oz)</option>
+            <option value="355">355 ml (12 oz)</option>
+            <option value="473">473 ml (16 oz)</option>
+          </select>
+        </div>
+
+        <div class="tcaf-field">
+          <label for="steepTime">Steeping Time (minutes)</label>
+          <input type="number" id="steepTime" value="3" min="0.5" max="15" step="0.5">
+        </div>
+
+        <div class="tcaf-field">
+          <label for="infusions">Number of Infusions</label>
+          <input type="number" id="infusions" value="1" min="1" max="10" step="1">
+        </div>
+
+        <div class="tcaf-field">
+          <label for="sizeUnit">Display Unit</label>
+          <select id="sizeUnit">
+            <option value="ml" selected>Milliliters (ml)</option>
+            <option value="oz">Ounces (oz)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tcaf-actions">
+        <button class="btn-primary" id="calculateBtn" type="button">Calculate Caffeine</button>
+        <button class="btn-secondary" id="clearBtn" type="button">Clear</button>
+      </div>
+
+      <!-- Results -->
+      <div class="tcaf-result" id="resultSection">
+        <!-- Daily Caffeine Meter -->
+        <div class="tcaf-meter-section">
+          <div class="tcaf-meter-header">
+            <span class="tcaf-meter-total" id="totalMg">0 mg</span>
+            <span class="tcaf-meter-limit">of 400 mg FDA limit</span>
+          </div>
+          <div class="tcaf-meter-bar">
+            <div class="tcaf-meter-fill" id="meterFill" style="width: 0%;"></div>
+            <span class="tcaf-meter-pct" id="meterPct">0%</span>
+          </div>
+          <span class="tcaf-zone-label tcaf-zone-green" id="zoneLabel">Safe Zone</span>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="tcaf-summary-grid">
+          <div class="tcaf-summary-card">
+            <div class="tcaf-summary-label">Caffeine per Cup</div>
+            <div class="tcaf-summary-value" id="perCupMg">0 mg</div>
+          </div>
+          <div class="tcaf-summary-card">
+            <div class="tcaf-summary-label">Total Daily Caffeine</div>
+            <div class="tcaf-summary-value" id="dailyMg">0 mg</div>
+          </div>
+          <div class="tcaf-summary-card">
+            <div class="tcaf-summary-label">FDA Limit Used</div>
+            <div class="tcaf-summary-value" id="limitPct">0%</div>
+          </div>
+          <div class="tcaf-summary-card">
+            <div class="tcaf-summary-label">Safety Assessment</div>
+            <div class="tcaf-summary-value" id="safetyLabel">—</div>
+          </div>
+        </div>
+
+        <!-- Comparison -->
+        <div class="tcaf-compare" id="compareSection">
+          <h3>Your Tea vs Common Drinks</h3>
+          <div id="compareItems"></div>
+        </div>
+
+        <div class="tcaf-share-row">
+          <button class="btn-primary" id="shareBtn" type="button">Share Result</button>
+          <button class="btn-secondary" id="copyBtn" type="button">Copy Summary</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Tea Caffeine Calculator Works</h2>
+      <p>This tea caffeine calculator estimates how much caffeine you consume from tea each day based on four key factors: tea type, cup size, steeping time, and number of infusions. Each tea variety has a distinct caffeine range determined by the plant cultivar, leaf maturity, and processing method. Black tea typically contains 40 to 70 mg per 8-ounce cup, while green tea ranges from 25 to 50 mg. The calculator uses a logarithmic steeping curve because caffeine extraction is not linear: most caffeine dissolves within the first 3 minutes, with diminishing returns after that. Longer steeps release more caffeine but at a decreasing rate.</p>
+
+      <p>Cup size matters significantly. A small 150 ml gaiwan produces far less caffeine per serving than a large 473 ml mug, even with the same tea. The calculator scales caffeine proportionally based on the standard 237 ml reference size. Multiple infusions are also factored in: each subsequent steep extracts roughly 50 to 70 percent of the previous infusion's caffeine, meaning your third steep has substantially less than the first.</p>
+
+      <h2>Tea Caffeine Compared to Coffee and Energy Drinks</h2>
+      <p>Tea generally contains less caffeine than coffee, but the gap varies widely depending on the type. A single cup of matcha contains 60 to 70 mg of caffeine, approaching a shot of espresso at 63 mg. Black tea at 40 to 70 mg per cup is moderate, while herbal teas like chamomile and rooibos contain zero caffeine. Yerba mate, while not a true tea, delivers 40 to 60 mg per serving, comparable to black tea.</p>
+
+      <p>Compared to energy drinks, tea is considerably lower in caffeine. A 16-ounce Monster has 160 mg and a Bang contains 300 mg, amounts that would require 3 to 6 cups of black tea to match. However, tea drinkers who consume 5 or more cups daily can easily reach 200 to 350 mg, approaching the FDA recommended maximum of 400 mg. This calculator helps you visualize exactly where your daily tea habit falls relative to that limit.</p>
+
+      <h2>Steeping Time and Caffeine Extraction</h2>
+      <p>The relationship between steeping time and caffeine extraction follows a logarithmic curve. In the first minute, roughly 50 to 60 percent of available caffeine dissolves into the water. By 3 minutes, about 80 percent has been extracted. After 5 minutes, extraction slows dramatically, with only marginal increases beyond that point. This is why a 10-minute steep does not contain twice the caffeine of a 5-minute steep. Water temperature also plays a role: hotter water extracts caffeine faster. Black and pu-erh teas brewed at near-boiling temperatures extract more caffeine per minute than green or white teas steeped at lower temperatures.</p>
+
+      <p>Multiple infusions follow a similar decay pattern. The first infusion extracts the most caffeine. The second infusion typically contains 50 to 70 percent of the first, and the third drops to 30 to 50 percent. Gongfu-style brewing with short, repeated steeps distributes caffeine more evenly across infusions compared to Western-style brewing with longer single steeps. This calculator accounts for all infusions when computing your total daily intake.</p>
+
+      <h2>Tips for Managing Tea Caffeine Intake</h2>
+      <p>If you want to reduce caffeine from tea without switching to herbal, try these strategies. First, shorten your steep time to 1 to 2 minutes, which can cut caffeine by 30 to 40 percent compared to a 5-minute steep. Second, use cooler water, especially for green and white teas, which extracts less caffeine. Third, try white tea, which has the lowest caffeine among true teas at 15 to 30 mg per cup. Fourth, discard the first short steep (a 30-second rinse) which removes a significant portion of surface caffeine. Fifth, limit your daily cups using this calculator to stay well within the 400 mg FDA guideline.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  var BREADCRUMBS = [
+    { name: 'Home', url: '/' },
+    { name: 'Tea Tools', url: '/tea/' },
+    { name: 'Tea Caffeine Calculator' }
+  ];
+
+  var FAQS = [
+    { q: 'How much caffeine is in green tea?', a: 'Green tea contains 25 to 50 mg of caffeine per 8-ounce cup, depending on the variety and steeping time. Sencha and dragonwell tend toward the higher end, while bancha and genmaicha are lower. A 3-minute steep at 175 degrees Fahrenheit extracts about 35 mg on average.' },
+    { q: 'Does steeping tea longer increase caffeine?', a: 'Yes, but not linearly. Most caffeine extracts within the first 3 minutes of steeping. After that, extraction slows dramatically following a logarithmic curve. A 10-minute steep has only marginally more caffeine than a 5-minute steep. Shorter steeps are an effective way to reduce caffeine intake.' },
+    { q: 'Which tea has the most caffeine?', a: 'Among true teas, matcha has the most caffeine at 60 to 70 mg per serving because you consume the entire ground leaf. Black tea is next at 40 to 70 mg per cup, followed by oolong at 30 to 50 mg, pu-erh at 30 to 50 mg, green at 25 to 50 mg, and white at 15 to 30 mg. Herbal teas have zero caffeine.' },
+    { q: 'Is tea caffeine safer than coffee caffeine?', a: 'The caffeine molecule is identical in tea and coffee. However, tea also contains L-theanine, an amino acid that promotes calm alertness and may moderate the jittery effects of caffeine. This is why many people experience a smoother energy boost from tea compared to the sharper spike from coffee. The total amount still matters for safety.' },
+    { q: 'How much caffeine is safe per day from tea?', a: 'The FDA recommends up to 400 mg of caffeine per day for healthy adults, regardless of the source. This equals roughly 6 to 10 cups of black tea or 8 to 16 cups of green tea, depending on strength. Pregnant women should limit intake to 200 mg per day. Individual tolerance varies based on body weight and sensitivity.' },
+    { q: 'Does the number of infusions affect total caffeine?', a: 'Yes. Each subsequent infusion extracts less caffeine than the previous one. The first steep gets about 60 to 70 percent of available caffeine, the second gets 20 to 25 percent, and the third gets 10 to 15 percent. If you drink all infusions, your total caffeine is the sum across all steeps, which this calculator computes automatically.' }
+  ];
+
+  var RELATED_TOOLS = [
+    { slug: 'tea/tea-steeping-timer', name: 'Tea Steeping Timer', description: 'Time your tea perfectly for every tea type.' },
+    { slug: 'tea/tea-to-water-ratio-calculator', name: 'Tea to Water Ratio Calculator', description: 'Get the perfect tea leaf to water ratio.' },
+    { slug: 'tea/matcha-ratio-calculator', name: 'Matcha Ratio Calculator', description: 'Calculate matcha powder to water ratios.' },
+    { slug: 'tea/tea-calorie-calculator', name: 'Tea Calorie Calculator', description: 'Count calories in any tea drink.' },
+    { slug: 'tea/tea-brewing-temperature-guide', name: 'Tea Brewing Temperature Guide', description: 'Find the ideal water temperature for every tea.' },
+    { slug: 'tea/herbal-tea-blend-builder', name: 'Herbal Tea Blend Builder', description: 'Create custom herbal tea blends.' }
+  ];
+
+  /* Tea caffeine data: [minMg, maxMg] per 237ml (8oz) at 3-min steep */
+  var TEA_DATA = {
+    green:  { name: 'Green Tea',  min: 25, max: 50, icon: '\uD83C\uDF75' },
+    black:  { name: 'Black Tea',  min: 40, max: 70, icon: '\uD83C\uDF75' },
+    white:  { name: 'White Tea',  min: 15, max: 30, icon: '\uD83C\uDF75' },
+    oolong: { name: 'Oolong Tea', min: 30, max: 50, icon: '\uD83C\uDF75' },
+    matcha: { name: 'Matcha',     min: 60, max: 70, icon: '\uD83C\uDF75' },
+    herbal: { name: 'Herbal Tea', min: 0,  max: 0,  icon: '\uD83C\uDF3F' },
+    puerh:  { name: 'Pu-erh Tea', min: 30, max: 50, icon: '\uD83C\uDF75' },
+    yerba:  { name: 'Yerba Mate', min: 40, max: 60, icon: '\uD83E\uDDC9' }
+  };
+
+  /* Reference drinks for comparison */
+  var COMPARE_DRINKS = [
+    { name: 'Drip Coffee (8 oz)', mg: 95, icon: '\u2615' },
+    { name: 'Espresso Shot', mg: 63, icon: '\u2615' },
+    { name: 'Red Bull (8.4 oz)', mg: 80, icon: '\u26A1' },
+    { name: 'Coca-Cola (12 oz)', mg: 34, icon: '\uD83E\uDD64' },
+    { name: 'Monster (16 oz)', mg: 160, icon: '\u26A1' }
+  ];
+
+  var FDA_LIMIT = 400;
+
+  /* Logarithmic steep time multiplier: 3 min = 1.0 baseline */
+  function steepMultiplier(minutes) {
+    if (minutes <= 0) return 0;
+    /* ln(minutes+1) / ln(4) normalizes 3 min to ~1.0 */
+    return Math.log(minutes + 1) / Math.log(4);
+  }
+
+  /* Caffeine for a single infusion */
+  function caffeinePerCup(teaKey, cupSizeMl, steepMinutes) {
+    var tea = TEA_DATA[teaKey];
+    if (!tea) return 0;
+    var baseMg = (tea.min + tea.max) / 2; /* midpoint at 237ml, 3-min steep */
+    var sizeScale = cupSizeMl / 237;
+    var steepScale = steepMultiplier(steepMinutes) / steepMultiplier(3);
+    return baseMg * sizeScale * steepScale;
+  }
+
+  /* Total caffeine across multiple infusions (decay per infusion) */
+  function totalWithInfusions(singleCupMg, infusions) {
+    if (infusions <= 1) return singleCupMg;
+    var total = singleCupMg;
+    var remaining = singleCupMg;
+    for (var i = 1; i < infusions; i++) {
+      remaining *= 0.55; /* ~55% of previous infusion */
+      total += remaining;
+    }
+    return total;
+  }
+
+  function getZone(total) {
+    var pct = (total / FDA_LIMIT) * 100;
+    if (pct <= 50) return { cls: 'tcaf-zone-green', label: 'Safe Zone' };
+    if (pct <= 100) return { cls: 'tcaf-zone-yellow', label: 'Moderate' };
+    return { cls: 'tcaf-zone-red', label: 'Over FDA Limit!' };
+  }
+
+  function getSafetyLabel(total) {
+    if (total <= 200) return 'Low';
+    if (total <= 300) return 'Moderate';
+    if (total <= 400) return 'High';
+    return 'Over Limit';
+  }
+
+  function calculate() {
+    var teaKey = document.getElementById('teaType').value;
+    var cups = parseInt(document.getElementById('cupsPerDay').value) || 1;
+    var cupSizeMl = parseInt(document.getElementById('cupSize').value) || 237;
+    var steepTime = parseFloat(document.getElementById('steepTime').value) || 3;
+    var infusions = parseInt(document.getElementById('infusions').value) || 1;
+
+    if (cups < 1) cups = 1;
+    if (steepTime < 0.5) steepTime = 0.5;
+    if (infusions < 1) infusions = 1;
+
+    var singleCupMg = caffeinePerCup(teaKey, cupSizeMl, steepTime);
+    var perCupTotal = totalWithInfusions(singleCupMg, infusions);
+    var dailyTotal = Math.round(perCupTotal * cups);
+    var perCupRound = Math.round(perCupTotal);
+
+    var pct = Math.min(Math.round((dailyTotal / FDA_LIMIT) * 100), 100);
+    var zone = getZone(dailyTotal);
+
+    /* Update meter */
+    document.getElementById('totalMg').textContent = dailyTotal + ' mg';
+    document.getElementById('meterFill').style.width = pct + '%';
+    document.getElementById('meterPct').textContent = Math.round((dailyTotal / FDA_LIMIT) * 100) + '%';
+    var zoneEl = document.getElementById('zoneLabel');
+    zoneEl.className = 'tcaf-zone-label ' + zone.cls;
+    zoneEl.textContent = zone.label;
+
+    /* Summary cards */
+    document.getElementById('perCupMg').textContent = perCupRound + ' mg';
+    document.getElementById('dailyMg').textContent = dailyTotal + ' mg';
+    document.getElementById('limitPct').textContent = Math.round((dailyTotal / FDA_LIMIT) * 100) + '%';
+    document.getElementById('safetyLabel').textContent = getSafetyLabel(dailyTotal);
+
+    /* Comparison chart */
+    var yourLabel = TEA_DATA[teaKey].name + ' (' + cups + ' cup' + (cups > 1 ? 's' : '') + ')';
+    var allDrinks = [{ name: yourLabel, mg: dailyTotal, icon: TEA_DATA[teaKey].icon }];
+    for (var i = 0; i < COMPARE_DRINKS.length; i++) {
+      allDrinks.push(COMPARE_DRINKS[i]);
+    }
+    var maxMg = 0;
+    for (var j = 0; j < allDrinks.length; j++) {
+      if (allDrinks[j].mg > maxMg) maxMg = allDrinks[j].mg;
+    }
+    if (maxMg === 0) maxMg = 1;
+
+    var compareHtml = '';
+    for (var k = 0; k < allDrinks.length; k++) {
+      var d = allDrinks[k];
+      var barPct = Math.round((d.mg / maxMg) * 100);
+      compareHtml += '<div class="tcaf-compare-item">';
+      compareHtml += '<span class="tcaf-compare-name">' + d.icon + ' ' + d.name + '</span>';
+      compareHtml += '<div class="tcaf-compare-bar-wrap"><div class="tcaf-compare-bar-fill" style="width:' + barPct + '%"></div></div>';
+      compareHtml += '<span class="tcaf-compare-mg">' + d.mg + ' mg</span>';
+      compareHtml += '</div>';
+    }
+    document.getElementById('compareItems').innerHTML = compareHtml;
+
+    /* Show results */
+    document.getElementById('resultSection').classList.add('visible');
+    window.showToast('Caffeine calculated!');
+  }
+
+  function getSummaryText() {
+    var teaKey = document.getElementById('teaType').value;
+    var cups = parseInt(document.getElementById('cupsPerDay').value) || 1;
+    var perCup = document.getElementById('perCupMg').textContent;
+    var daily = document.getElementById('dailyMg').textContent;
+    var limitUsed = document.getElementById('limitPct').textContent;
+    var safety = document.getElementById('safetyLabel').textContent;
+
+    return 'Tea Caffeine Calculator Result\n' +
+      'Tea: ' + TEA_DATA[teaKey].name + '\n' +
+      'Cups/day: ' + cups + '\n' +
+      'Caffeine per cup: ' + perCup + '\n' +
+      'Daily total: ' + daily + '\n' +
+      'FDA limit used: ' + limitUsed + '\n' +
+      'Safety: ' + safety + '\n' +
+      'Calculate yours: ' + window.location.href;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({
+      slug: 'tea/tea-caffeine-calculator',
+      title: 'Tea Caffeine Calculator',
+      description: 'Calculate caffeine in any tea type based on steep time, cup size, and infusions.'
+    });
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+    document.getElementById('calculateBtn').addEventListener('click', calculate);
+
+    document.getElementById('clearBtn').addEventListener('click', function() {
+      document.getElementById('teaType').value = 'black';
+      document.getElementById('cupsPerDay').value = '3';
+      document.getElementById('cupSize').value = '237';
+      document.getElementById('steepTime').value = '3';
+      document.getElementById('infusions').value = '1';
+      document.getElementById('sizeUnit').value = 'ml';
+      document.getElementById('resultSection').classList.remove('visible');
+      window.showToast('Cleared.');
+    });
+
+    document.getElementById('shareBtn').addEventListener('click', function() {
+      if (!document.getElementById('resultSection').classList.contains('visible')) {
+        window.showToast('Calculate first.');
+        return;
+      }
+      var text = getSummaryText();
+      if (navigator.share) {
+        navigator.share({ title: 'Tea Caffeine Calculator', text: text, url: window.location.href });
+      } else {
+        navigator.clipboard.writeText(text).then(function() {
+          window.showToast('Result copied to clipboard!');
+        });
+      }
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', function() {
+      if (!document.getElementById('resultSection').classList.contains('visible')) {
+        window.showToast('Calculate first.');
+        return;
+      }
+      navigator.clipboard.writeText(getSummaryText()).then(function() {
+        window.showToast('Summary copied to clipboard!');
+      });
+    });
+  });
+  </script>
+</body>
+</html>

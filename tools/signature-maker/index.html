@@ -272,7 +272,7 @@
     });
 
     downloadDrawBtn.addEventListener('click', function() {
-      if (!hasDrawn) { alert('Draw your signature first.'); return; }
+      if (!hasDrawn) { if (window.showToast) window.showToast('Draw your signature first.'); return; }
       canvas.toBlob(function(blob) {
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
@@ -282,6 +282,23 @@
         a.click();
         document.body.removeChild(a);
         setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+      }, 'image/png');
+    });
+
+    // Copy drawn signature
+    document.getElementById('copy-draw').addEventListener('click', function() {
+      if (!hasDrawn) { if (window.showToast) window.showToast('Draw your signature first.'); return; }
+      canvas.toBlob(function(blob) {
+        if (!blob) return;
+        if (navigator.clipboard && navigator.clipboard.write) {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+            if (window.showToast) window.showToast('Signature copied to clipboard.');
+          }).catch(function() {
+            if (window.showToast) window.showToast('Copy failed — try downloading instead.');
+          });
+        } else {
+          if (window.showToast) window.showToast('Copy not supported in this browser. Use download.');
+        }
       }, 'image/png');
     });
 
@@ -318,9 +335,9 @@
       updateTypedSig();
     });
 
-    downloadTypeBtn.addEventListener('click', function() {
+    function renderTypedCanvas(callback) {
       var name = typeNameInput.value.trim();
-      if (!name) { alert('Type your name first.'); return; }
+      if (!name) { if (window.showToast) window.showToast('Type your name first.'); return; }
       var font = typeFontSelect.value;
       var color = typeColorInput.value;
       var size = parseInt(typeSizeInput.value, 10);
@@ -335,23 +352,45 @@
       tmpCanvas.width = Math.ceil(textWidth + 40);
       tmpCanvas.height = Math.ceil(textHeight + 20);
 
-      // Transparent background (default)
       tmpCtx.clearRect(0, 0, tmpCanvas.width, tmpCanvas.height);
       tmpCtx.font = size + 'px ' + font;
       tmpCtx.fillStyle = color;
       tmpCtx.textBaseline = 'middle';
       tmpCtx.fillText(name, 20, tmpCanvas.height / 2);
+      callback(tmpCanvas);
+    }
 
-      tmpCanvas.toBlob(function(blob) {
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'signature-typed-' + Date.now() + '.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(function() { URL.revokeObjectURL(url); }, 100);
-      }, 'image/png');
+    downloadTypeBtn.addEventListener('click', function() {
+      renderTypedCanvas(function(tmpCanvas) {
+        tmpCanvas.toBlob(function(blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'signature-typed-' + Date.now() + '.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function() { URL.revokeObjectURL(url); }, 100);
+        }, 'image/png');
+      });
+    });
+
+    // Copy typed signature
+    document.getElementById('copy-type').addEventListener('click', function() {
+      renderTypedCanvas(function(tmpCanvas) {
+        tmpCanvas.toBlob(function(blob) {
+          if (!blob) return;
+          if (navigator.clipboard && navigator.clipboard.write) {
+            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+              if (window.showToast) window.showToast('Signature copied to clipboard.');
+            }).catch(function() {
+              if (window.showToast) window.showToast('Copy failed — try downloading instead.');
+            });
+          } else {
+            if (window.showToast) window.showToast('Copy not supported in this browser. Use download.');
+          }
+        }, 'image/png');
+      });
     });
 
     // ============ SCHEMA & SEO ============

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tea Collection Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track and organize your tea collection with tasting notes, ratings, and stats. Filter by type, export as JSON. Free, private, runs in your browser.">
+  <meta property="og:title" content="Tea Collection Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Track and organize your tea collection with tasting notes, ratings, and stats. Filter by type, export as JSON. Free, private, runs in your browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tea/tea-collection-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tea.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tea Collection Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track and organize your tea collection with tasting notes, ratings, and stats. Filter by type, export as JSON. Free, private, runs in your browser.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tea/tea-collection-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .tea-form { display: flex; flex-direction: column; gap: 1.25rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { outline: none; border-color: var(--accent); }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+
+    .star-rating { display: flex; gap: 0.25rem; flex-direction: row-reverse; justify-content: flex-end; }
+    .star-rating input { display: none; }
+    .star-rating label { cursor: pointer; font-size: 1.6rem; color: var(--border); transition: color 0.15s; line-height: 1; }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label { color: var(--heading); }
+
+    .calc-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+    .calc-actions .btn-primary,
+    .calc-actions .btn-secondary { flex: 1; }
+
+    .stats-dashboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+    .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+    .stat-card .stat-value { font-size: 1.15rem; font-weight: 700; color: var(--heading); }
+
+    .collection-controls { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .collection-controls input,
+    .collection-controls select { padding: 0.6rem 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .collection-controls input:focus,
+    .collection-controls select:focus { outline: none; border-color: var(--accent); }
+    .collection-controls input { flex: 1; min-width: 180px; }
+
+    .tea-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .tea-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; transition: border-color 0.2s; }
+    .tea-card:hover { border-color: var(--accent); }
+    .tea-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .tea-card-name { font-size: 1.1rem; font-weight: 700; color: var(--heading); margin: 0; }
+    .tea-card-type { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; background: var(--accent); color: var(--accent-text); }
+    .tea-card-meta { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .tea-card-stars { color: var(--heading); font-size: 1rem; margin-bottom: 0.4rem; }
+    .tea-card-notes { font-size: 0.85rem; color: var(--text); line-height: 1.5; margin-bottom: 0.75rem; word-break: break-word; }
+    .tea-card-details { display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .tea-card-actions { display: flex; gap: 0.5rem; }
+    .tea-card-actions button { padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 0.8rem; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+    .tea-card-actions button:hover { border-color: var(--accent); }
+    .tea-card-actions .tea-delete-btn:hover { border-color: var(--heading); color: var(--heading); }
+
+    .collection-empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .collection-empty .empty-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .collection-empty p { font-size: 1rem; }
+
+    .export-bar { display: flex; justify-content: flex-end; margin-top: 1rem; }
+
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .confirm-overlay.visible { display: flex; }
+    .confirm-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; max-width: 360px; width: 90%; text-align: center; }
+    .confirm-box p { color: var(--text); margin-bottom: 1rem; font-size: 1rem; }
+    .confirm-box .confirm-actions { display: flex; gap: 0.75rem; }
+    .confirm-box .confirm-actions button { flex: 1; padding: 0.6rem; border-radius: 8px; font-family: inherit; font-size: 0.95rem; cursor: pointer; font-weight: 600; border: none; }
+    .confirm-yes { background: var(--heading); color: var(--bg); }
+    .confirm-no { background: var(--surface); color: var(--text); border: 1px solid var(--border) !important; }
+
+    @media (max-width: 600px) {
+      .form-row, .form-row-3 { grid-template-columns: 1fr; }
+      .calc-actions { flex-direction: column; }
+      .calc-actions .btn-primary,
+      .calc-actions .btn-secondary { width: 100%; }
+      .stats-dashboard { grid-template-columns: repeat(2, 1fr); }
+      .tea-grid { grid-template-columns: 1fr; }
+      .collection-controls { flex-direction: column; }
+      .collection-controls input,
+      .collection-controls select { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tea Tools", "item": "https://tool.teamzlab.com/tea/"}, {"@type": "ListItem", "position": 3, "name": "Tea Collection Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where is my tea collection data stored?", "acceptedAnswer": {"@type": "Answer", "text": "All data is stored in your browser's localStorage. Nothing is sent to any server. Your collection stays completely private on your device."}}, {"@type": "Question", "name": "Can I export my tea collection?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Export as JSON button below the collection grid. This downloads a JSON file containing all your teas with every field — name, type, origin, date, amount, price, rating, and tasting notes."}}, {"@type": "Question", "name": "What happens if I clear my browser data?", "acceptedAnswer": {"@type": "Answer", "text": "Clearing browser data or localStorage will remove your tea collection. Export your collection regularly as a JSON backup to avoid losing data."}}, {"@type": "Question", "name": "Can I edit a tea after adding it?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each tea card has an Edit button that loads the entry back into the form. Make your changes and click Update Tea to save. The original entry is replaced with the updated version."}}, {"@type": "Question", "name": "How many teas can I track?", "acceptedAnswer": {"@type": "Answer", "text": "There is no artificial limit. localStorage typically allows 5 to 10 megabytes of data, which can hold thousands of tea entries comfortably."}}, {"@type": "Question", "name": "What tea types are supported?", "acceptedAnswer": {"@type": "Answer", "text": "The tracker includes Green, Black, White, Oolong, Herbal, Pu-erh, Rooibos, and Other. The Other option covers any tea type not in the predefined list."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Tea Collection Tracker", "description": "Track and organize your tea collection with tasting notes, ratings, and stats.", "url": "https://tool.teamzlab.com/tea/tea-collection-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Tea Collection Tracker</h1>
+      <p class="tool-description">Organize your entire tea collection in one place. Add teas with ratings, tasting notes, and origin details. View stats, filter by type, search your collection, and export everything as JSON. All data stays in your browser — nothing is sent to a server.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="tea-form" id="tea-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tea-name">Tea Name *</label>
+            <input type="text" id="tea-name" placeholder="e.g. Dragon Well Long Jing">
+          </div>
+          <div class="form-group">
+            <label for="tea-type">Type *</label>
+            <select id="tea-type">
+              <option value="">Select type...</option>
+              <option value="Green">Green</option>
+              <option value="Black">Black</option>
+              <option value="White">White</option>
+              <option value="Oolong">Oolong</option>
+              <option value="Herbal">Herbal</option>
+              <option value="Pu-erh">Pu-erh</option>
+              <option value="Rooibos">Rooibos</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tea-origin">Origin / Brand</label>
+            <input type="text" id="tea-origin" placeholder="e.g. Hangzhou, China">
+          </div>
+          <div class="form-group">
+            <label for="tea-date">Purchase Date</label>
+            <input type="date" id="tea-date">
+          </div>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label for="tea-amount">Amount (g)</label>
+            <input type="number" id="tea-amount" min="0" step="1" placeholder="100">
+          </div>
+          <div class="form-group">
+            <label for="tea-price">Price ($)</label>
+            <input type="number" id="tea-price" min="0" step="0.01" placeholder="15.00">
+          </div>
+          <div class="form-group">
+            <label for="tea-rating-group">Rating</label>
+            <div class="star-rating" id="tea-rating-group">
+              <input type="radio" id="tea-star5" name="tea-rating" value="5"><label for="tea-star5">&#9733;</label>
+              <input type="radio" id="tea-star4" name="tea-rating" value="4"><label for="tea-star4">&#9733;</label>
+              <input type="radio" id="tea-star3" name="tea-rating" value="3"><label for="tea-star3">&#9733;</label>
+              <input type="radio" id="tea-star2" name="tea-rating" value="2"><label for="tea-star2">&#9733;</label>
+              <input type="radio" id="tea-star1" name="tea-rating" value="1"><label for="tea-star1">&#9733;</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tea-notes">Tasting Notes</label>
+          <textarea id="tea-notes" placeholder="e.g. Smooth, nutty, slight sweetness with chestnut aroma..."></textarea>
+        </div>
+
+        <input type="hidden" id="tea-edit-id" value="">
+
+        <div class="calc-actions">
+          <button type="button" class="btn-primary" id="add-tea-btn">Add Tea</button>
+          <button type="button" class="btn-secondary" id="clear-form-btn">Clear</button>
+        </div>
+      </div>
+
+      <div id="stats-section" style="margin-top:1.5rem; display:none;">
+        <div class="stats-dashboard" id="stats-dashboard"></div>
+      </div>
+
+      <div id="collection-section" style="margin-top:1.5rem; display:none;">
+        <div class="collection-controls">
+          <input type="text" id="search-collection" placeholder="Search your collection...">
+          <select id="filter-type">
+            <option value="">All Types</option>
+            <option value="Green">Green</option>
+            <option value="Black">Black</option>
+            <option value="White">White</option>
+            <option value="Oolong">Oolong</option>
+            <option value="Herbal">Herbal</option>
+            <option value="Pu-erh">Pu-erh</option>
+            <option value="Rooibos">Rooibos</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="sort-by">
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="rating-desc">Highest Rated</option>
+            <option value="rating-asc">Lowest Rated</option>
+          </select>
+        </div>
+        <div class="tea-grid" id="tea-grid"></div>
+        <div class="export-bar">
+          <button type="button" class="btn-secondary" id="export-btn">Export as JSON</button>
+        </div>
+      </div>
+
+      <div class="collection-empty" id="empty-state">
+        <div class="empty-icon">&#127861;</div>
+        <p>Your tea collection is empty. Add your first tea above!</p>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Tea Collection Tracker Works</h2>
+      <p>This tool stores your entire tea inventory in your browser's local storage. Every tea you add gets saved with its name, type, origin, purchase date, weight, price, star rating, and your personal tasting notes. The dashboard updates automatically to show collection statistics — total teas owned, combined weight in grams, average rating across all entries, the most common tea type in your collection, and total amount spent.</p>
+      <p>You can search across tea names, origins, and tasting notes to find specific entries quickly. Filter by tea type to browse only green teas, oolongs, or any other category. Sort by name, rating, or date to organize the view. Every change is saved instantly and persists across browser sessions.</p>
+
+      <h2>Organizing Your Tea Collection</h2>
+      <p>A well-organized tea collection helps you know what you have, what needs restocking, and which teas you enjoy most. Start by adding each tea with accurate details — the origin field is especially useful for distinguishing between multiple green teas from different regions. Use the tasting notes field generously: describe the aroma, body, aftertaste, and any unique characteristics. Over time, these notes become invaluable for remembering which teas to reorder.</p>
+      <p>The rating system uses a simple one to five star scale. Rate teas immediately after tasting while the impression is fresh. Your average rating in the stats dashboard reveals whether you tend to buy teas you love or if many purchases disappoint — a signal to refine your sourcing. The type filter helps you discover if your collection is balanced or heavily weighted toward one category.</p>
+
+      <h2>Exporting and Backing Up Your Data</h2>
+      <p>Since all data lives in your browser, it is important to export regularly. The JSON export creates a complete backup of your collection that you can save to your computer, cloud storage, or share with fellow tea enthusiasts. The export includes every field for every tea entry. If you clear your browser data or switch devices, you can reference your export to rebuild your collection. For serious collectors with dozens or hundreds of teas, a monthly export habit ensures no tasting notes or ratings are ever lost.</p>
+
+      <h2>Tea Types and What Makes Each Special</h2>
+      <p>Green tea is unoxidized and ranges from grassy to nutty depending on origin. Black tea is fully oxidized with bold, malty, or fruity profiles. White tea is minimally processed with delicate floral notes. Oolong falls between green and black, offering complex layered flavors. Herbal teas are caffeine-free infusions made from flowers, roots, or herbs. Pu-erh is a fermented tea from Yunnan province with earthy, smooth character that improves with age. Rooibos is a South African plant with naturally sweet, caffeine-free properties. Tracking all these types in one place helps you appreciate the full spectrum of tea.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+      <p id="confirm-message">Delete this tea from your collection?</p>
+      <div class="confirm-actions">
+        <button type="button" class="confirm-no" id="confirm-no">Cancel</button>
+        <button type="button" class="confirm-yes" id="confirm-yes">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Tea Tools', url: '/tea/' },
+      { name: 'Tea Collection Tracker' }
+    ];
+
+    var FAQS = [
+      { q: 'Where is my tea collection data stored?', a: 'All data is stored in your browser\'s localStorage. Nothing is sent to any server. Your collection stays completely private on your device.' },
+      { q: 'Can I export my tea collection?', a: 'Yes. Click the Export as JSON button below the collection grid. This downloads a JSON file containing all your teas with every field — name, type, origin, date, amount, price, rating, and tasting notes.' },
+      { q: 'What happens if I clear my browser data?', a: 'Clearing browser data or localStorage will remove your tea collection. Export your collection regularly as a JSON backup to avoid losing data.' },
+      { q: 'Can I edit a tea after adding it?', a: 'Yes. Each tea card has an Edit button that loads the entry back into the form. Make your changes and click Update Tea to save. The original entry is replaced with the updated version.' },
+      { q: 'How many teas can I track?', a: 'There is no artificial limit. localStorage typically allows 5 to 10 megabytes of data, which can hold thousands of tea entries comfortably.' },
+      { q: 'What tea types are supported?', a: 'The tracker includes Green, Black, White, Oolong, Herbal, Pu-erh, Rooibos, and Other. The Other option covers any tea type not in the predefined list.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'tea/tea-steeping-timer', name: 'Tea Steeping Timer', description: 'Time your tea perfectly for every type.' },
+      { slug: 'tea/tea-caffeine-calculator', name: 'Tea Caffeine Calculator', description: 'Calculate caffeine in any tea type or blend.' },
+      { slug: 'tea/tea-to-water-ratio-calculator', name: 'Tea to Water Ratio Calculator', description: 'Perfect tea leaf to water ratio.' },
+      { slug: 'tea/matcha-ratio-calculator', name: 'Matcha Ratio Calculator', description: 'Matcha powder to water ratios.' },
+      { slug: 'tea/tea-calorie-calculator', name: 'Tea Calorie Calculator', description: 'Count calories in any tea drink.' },
+      { slug: 'tea/tea-brewing-temperature-guide', name: 'Tea Brewing Temperature Guide', description: 'Ideal water temperature for every tea.' }
+    ];
+
+    var STORAGE_KEY = 'teamz_tea_collection';
+    var deleteTargetId = null;
+
+    function getCollection() {
+      try {
+        var data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch (e) { return []; }
+    }
+
+    function saveCollection(collection) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(collection));
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    }
+
+    function getSelectedRating() {
+      var checked = document.querySelector('input[name="tea-rating"]:checked');
+      return checked ? parseInt(checked.value) : 0;
+    }
+
+    function setRating(val) {
+      document.querySelectorAll('input[name="tea-rating"]').forEach(function(r) { r.checked = false; });
+      if (val > 0) {
+        var el = document.getElementById('tea-star' + val);
+        if (el) el.checked = true;
+      }
+    }
+
+    function starsHTML(rating) {
+      var s = '';
+      for (var i = 1; i <= 5; i++) {
+        s += '<span style="color:' + (i <= rating ? 'var(--heading)' : 'var(--border)') + '">&#9733;</span>';
+      }
+      return s;
+    }
+
+    function escapeHTML(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function clearForm() {
+      document.getElementById('tea-name').value = '';
+      document.getElementById('tea-type').value = '';
+      document.getElementById('tea-origin').value = '';
+      document.getElementById('tea-date').value = '';
+      document.getElementById('tea-amount').value = '';
+      document.getElementById('tea-price').value = '';
+      document.getElementById('tea-notes').value = '';
+      document.getElementById('tea-edit-id').value = '';
+      setRating(0);
+      document.getElementById('add-tea-btn').textContent = 'Add Tea';
+    }
+
+    function addOrUpdateTea() {
+      var name = document.getElementById('tea-name').value.trim();
+      var type = document.getElementById('tea-type').value;
+      if (!name) { if (window.showToast) window.showToast('Please enter a tea name.'); return; }
+      if (!type) { if (window.showToast) window.showToast('Please select a tea type.'); return; }
+
+      var tea = {
+        id: document.getElementById('tea-edit-id').value || generateId(),
+        name: name,
+        type: type,
+        origin: document.getElementById('tea-origin').value.trim(),
+        date: document.getElementById('tea-date').value,
+        amount: parseFloat(document.getElementById('tea-amount').value) || 0,
+        price: parseFloat(document.getElementById('tea-price').value) || 0,
+        rating: getSelectedRating(),
+        notes: document.getElementById('tea-notes').value.trim(),
+        addedAt: Date.now()
+      };
+
+      var collection = getCollection();
+      var editId = document.getElementById('tea-edit-id').value;
+      if (editId) {
+        var idx = collection.findIndex(function(t) { return t.id === editId; });
+        if (idx !== -1) {
+          tea.addedAt = collection[idx].addedAt;
+          collection[idx] = tea;
+        }
+        if (window.showToast) window.showToast('Tea updated!');
+      } else {
+        collection.push(tea);
+        if (window.showToast) window.showToast('Tea added to collection!');
+      }
+
+      saveCollection(collection);
+      clearForm();
+      renderCollection();
+    }
+
+    function editTea(id) {
+      var collection = getCollection();
+      var tea = collection.find(function(t) { return t.id === id; });
+      if (!tea) return;
+
+      document.getElementById('tea-name').value = tea.name;
+      document.getElementById('tea-type').value = tea.type;
+      document.getElementById('tea-origin').value = tea.origin || '';
+      document.getElementById('tea-date').value = tea.date || '';
+      document.getElementById('tea-amount').value = tea.amount || '';
+      document.getElementById('tea-price').value = tea.price || '';
+      document.getElementById('tea-notes').value = tea.notes || '';
+      document.getElementById('tea-edit-id').value = tea.id;
+      setRating(tea.rating || 0);
+      document.getElementById('add-tea-btn').textContent = 'Update Tea';
+      document.getElementById('tea-name').focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showDeleteConfirm(id) {
+      deleteTargetId = id;
+      document.getElementById('confirm-overlay').classList.add('visible');
+    }
+
+    function hideDeleteConfirm() {
+      deleteTargetId = null;
+      document.getElementById('confirm-overlay').classList.remove('visible');
+    }
+
+    function confirmDelete() {
+      if (!deleteTargetId) return;
+      var collection = getCollection();
+      collection = collection.filter(function(t) { return t.id !== deleteTargetId; });
+      saveCollection(collection);
+      hideDeleteConfirm();
+      renderCollection();
+      if (window.showToast) window.showToast('Tea removed from collection.');
+    }
+
+    function getFilteredCollection() {
+      var collection = getCollection();
+      var search = document.getElementById('search-collection').value.toLowerCase().trim();
+      var filterType = document.getElementById('filter-type').value;
+      var sortBy = document.getElementById('sort-by').value;
+
+      if (filterType) {
+        collection = collection.filter(function(t) { return t.type === filterType; });
+      }
+      if (search) {
+        collection = collection.filter(function(t) {
+          return (t.name || '').toLowerCase().indexOf(search) !== -1 ||
+                 (t.origin || '').toLowerCase().indexOf(search) !== -1 ||
+                 (t.notes || '').toLowerCase().indexOf(search) !== -1;
+        });
+      }
+
+      collection.sort(function(a, b) {
+        switch (sortBy) {
+          case 'name-asc': return (a.name || '').localeCompare(b.name || '');
+          case 'name-desc': return (b.name || '').localeCompare(a.name || '');
+          case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+          case 'rating-asc': return (a.rating || 0) - (b.rating || 0);
+          case 'date-asc': return (a.addedAt || 0) - (b.addedAt || 0);
+          case 'date-desc':
+          default: return (b.addedAt || 0) - (a.addedAt || 0);
+        }
+      });
+
+      return collection;
+    }
+
+    function renderStats() {
+      var collection = getCollection();
+      if (collection.length === 0) {
+        document.getElementById('stats-section').style.display = 'none';
+        return;
+      }
+      document.getElementById('stats-section').style.display = 'block';
+
+      var totalWeight = 0, totalPrice = 0, totalRating = 0, ratedCount = 0;
+      var typeCounts = {};
+      collection.forEach(function(t) {
+        totalWeight += t.amount || 0;
+        totalPrice += t.price || 0;
+        if (t.rating > 0) { totalRating += t.rating; ratedCount++; }
+        typeCounts[t.type] = (typeCounts[t.type] || 0) + 1;
+      });
+
+      var avgRating = ratedCount > 0 ? (totalRating / ratedCount).toFixed(1) : '—';
+      var topType = '—';
+      var topCount = 0;
+      for (var type in typeCounts) {
+        if (typeCounts[type] > topCount) { topCount = typeCounts[type]; topType = type; }
+      }
+
+      var html = '';
+      html += '<div class="stat-card"><div class="stat-label">Total Teas</div><div class="stat-value">' + collection.length + '</div></div>';
+      html += '<div class="stat-card"><div class="stat-label">Total Weight</div><div class="stat-value">' + totalWeight + 'g</div></div>';
+      html += '<div class="stat-card"><div class="stat-label">Avg Rating</div><div class="stat-value">' + avgRating + ' / 5</div></div>';
+      html += '<div class="stat-card"><div class="stat-label">Top Type</div><div class="stat-value">' + topType + '</div></div>';
+      html += '<div class="stat-card"><div class="stat-label">Total Spent</div><div class="stat-value">$' + totalPrice.toFixed(2) + '</div></div>';
+
+      document.getElementById('stats-dashboard').innerHTML = html;
+    }
+
+    function renderCollection() {
+      renderStats();
+      var allCollection = getCollection();
+
+      if (allCollection.length === 0) {
+        document.getElementById('collection-section').style.display = 'none';
+        document.getElementById('empty-state').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('collection-section').style.display = 'block';
+      document.getElementById('empty-state').style.display = 'none';
+
+      var collection = getFilteredCollection();
+      var grid = document.getElementById('tea-grid');
+
+      if (collection.length === 0) {
+        grid.innerHTML = '<div class="collection-empty"><p>No teas match your search or filter.</p></div>';
+        return;
+      }
+
+      var html = '';
+      collection.forEach(function(t) {
+        var dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+        html += '<div class="tea-card">';
+        html += '<div class="tea-card-header"><h3 class="tea-card-name">' + escapeHTML(t.name) + '</h3><span class="tea-card-type">' + escapeHTML(t.type) + '</span></div>';
+        if (t.origin) html += '<div class="tea-card-meta">' + escapeHTML(t.origin) + '</div>';
+        if (t.rating > 0) html += '<div class="tea-card-stars">' + starsHTML(t.rating) + '</div>';
+        html += '<div class="tea-card-details">';
+        if (dateStr) html += '<span>' + dateStr + '</span>';
+        if (t.amount > 0) html += '<span>' + t.amount + 'g</span>';
+        if (t.price > 0) html += '<span>$' + t.price.toFixed(2) + '</span>';
+        html += '</div>';
+        if (t.notes) html += '<div class="tea-card-notes">' + escapeHTML(t.notes) + '</div>';
+        html += '<div class="tea-card-actions">';
+        html += '<button type="button" onclick="editTea(\'' + t.id + '\')">Edit</button>';
+        html += '<button type="button" class="tea-delete-btn" onclick="showDeleteConfirm(\'' + t.id + '\')">Delete</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+      grid.innerHTML = html;
+    }
+
+    function exportCollection() {
+      var collection = getCollection();
+      if (collection.length === 0) {
+        if (window.showToast) window.showToast('Nothing to export — add some teas first.');
+        return;
+      }
+      var blob = new Blob([JSON.stringify(collection, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'tea-collection-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('Collection exported!');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      /* Render existing collection */
+      renderCollection();
+
+      /* Add / Update tea */
+      document.getElementById('add-tea-btn').addEventListener('click', addOrUpdateTea);
+      document.getElementById('clear-form-btn').addEventListener('click', clearForm);
+
+      /* Collection controls */
+      document.getElementById('search-collection').addEventListener('input', renderCollection);
+      document.getElementById('filter-type').addEventListener('change', renderCollection);
+      document.getElementById('sort-by').addEventListener('change', renderCollection);
+
+      /* Export */
+      document.getElementById('export-btn').addEventListener('click', exportCollection);
+
+      /* Delete confirmation */
+      document.getElementById('confirm-yes').addEventListener('click', confirmDelete);
+      document.getElementById('confirm-no').addEventListener('click', hideDeleteConfirm);
+      document.getElementById('confirm-overlay').addEventListener('click', function(e) {
+        if (e.target === this) hideDeleteConfirm();
+      });
+
+      /* Breadcrumbs + schemas */
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'tea/tea-collection-tracker', title: 'Tea Collection Tracker', description: 'Track and organize your tea collection with tasting notes, ratings, and stats.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
