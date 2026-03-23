@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pan Size Converter — Teamz Lab Tools</title>
+  <meta name="description" content="Convert recipes between different pan sizes and shapes instantly. Calculate scaling factor, adjusted baking time, and temperature. Free and private.">
+  <meta property="og:title" content="Pan Size Converter — Teamz Lab Tools">
+  <meta property="og:description" content="Convert recipes between different pan sizes and shapes instantly. Calculate scaling factor, adjusted baking time, and temperature. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/baking/pan-size-converter/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/baking.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Pan Size Converter — Teamz Lab Tools">
+  <meta name="twitter:description" content="Convert recipes between different pan sizes and shapes instantly. Calculate scaling factor, adjusted baking time, and temperature. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/baking/pan-size-converter/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .pan-section { margin-bottom: 1.5rem; }
+    .pan-section h3 { margin: 0 0 0.75rem; color: var(--heading); font-size: 1rem; }
+    .pan-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .input-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .input-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .input-group input, .input-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--accent); }
+    .dim-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
+    .dim-row.two-col { grid-template-columns: 1fr 1fr; }
+    .calc-actions { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .calc-actions .btn-primary, .calc-actions .btn-secondary { flex: 1; }
+    .result-panel { display: none; }
+    .result-panel.visible { display: block; }
+    .result-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .rc { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
+    .rc .rc-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+    .rc .rc-value { font-size: 1.75rem; font-weight: 800; color: var(--heading); }
+    .rc .rc-unit { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.15rem; }
+    .detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .detail-panel h3 { margin: 0 0 1rem; color: var(--heading); font-size: 1.1rem; }
+    .detail-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .dl { color: var(--text-muted); font-size: 0.9rem; }
+    .detail-row .dv { color: var(--text); font-weight: 600; font-size: 0.9rem; }
+    .pan-visual { display: flex; align-items: flex-end; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .pan-visual .pan-box { text-align: center; }
+    .pan-visual .pan-shape { border: 3px solid var(--heading); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--heading); font-size: 0.85rem; margin: 0 auto 0.5rem; }
+    .pan-visual .pan-shape.is-round { border-radius: 50%; }
+    .pan-visual .pan-label { font-size: 0.8rem; color: var(--text-muted); }
+    .pan-visual .pan-arrow { font-size: 2rem; color: var(--heading); margin-bottom: 2rem; }
+    .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .quick-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; cursor: pointer; transition: border-color 0.2s; }
+    .quick-card:hover { border-color: var(--accent); }
+    .quick-card .qc-from { font-weight: 700; color: var(--heading); font-size: 0.95rem; }
+    .quick-card .qc-arrow { color: var(--text-muted); font-size: 0.85rem; margin: 0.25rem 0; }
+    .quick-card .qc-to { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .ref-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .ref-table th { background: var(--surface); color: var(--heading); font-weight: 700; padding: 0.75rem; text-align: left; border-bottom: 2px solid var(--border); }
+    .ref-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .ref-table tr:hover td { background: var(--surface); }
+    @media (max-width: 600px) {
+      .pan-form-grid { grid-template-columns: 1fr; }
+      .dim-row, .dim-row.two-col { grid-template-columns: 1fr; }
+      .result-cards { grid-template-columns: 1fr; }
+      .calc-actions { flex-direction: column; }
+      .calc-actions .btn-primary, .calc-actions .btn-secondary { width: 100%; }
+      .pan-visual { flex-direction: column; align-items: center; gap: 1rem; }
+      .pan-visual .pan-arrow { transform: rotate(90deg); margin-bottom: 0; }
+      .quick-grid { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .ref-table { font-size: 0.8rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Baking Tools", "item": "https://tool.teamzlab.com/baking/"}, {"@type": "ListItem", "position": 3, "name": "Pan Size Converter"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I use a 9-inch round pan instead of an 8-inch square?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, a 9-inch round pan and an 8-inch square pan have nearly identical volumes of about 8 cups each. You can swap them directly without changing ingredient amounts or baking time. This is the most common and easiest pan substitution in baking."}}, {"@type": "Question", "name": "How do I convert a 9x13 rectangle recipe to round pans?", "acceptedAnswer": {"@type": "Answer", "text": "A 9x13-inch rectangular pan holds about 14 cups of batter, which is roughly equal to two 9-inch round pans (8 cups each). Divide the batter evenly between the two rounds. Keep the same oven temperature and start checking about 5 minutes earlier since the layers are thinner."}}, {"@type": "Question", "name": "What happens if I use a pan that is too small?", "acceptedAnswer": {"@type": "Answer", "text": "If the pan is too small, the batter will be thicker than intended and may overflow in the oven. It will also take longer to bake through, and the outside may overbrown before the center is done. Always fill pans no more than two-thirds full and bake any excess in a separate small pan."}}, {"@type": "Question", "name": "Do I need to change the oven temperature when switching pan sizes?", "acceptedAnswer": {"@type": "Answer", "text": "For most pan swaps within a similar size range, the temperature stays the same. However, if you are moving to a much smaller or deeper pan, lower the temperature by 25 degrees Fahrenheit. For glass or dark metal pans, also reduce by 25 degrees since they absorb more heat than light-colored aluminum."}}, {"@type": "Question", "name": "How do I convert a round pan recipe to a Bundt pan?", "acceptedAnswer": {"@type": "Answer", "text": "A standard 10-inch Bundt pan holds about 12 cups, compared to 8 cups for a 9-inch round. You will need to increase your recipe by about 50 percent. Extend the baking time by 15 to 25 minutes and test with a long skewer since the center tube of a Bundt pan creates a thicker ring of batter."}}, {"@type": "Question", "name": "Can I use this converter for any type of baked good?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, this converter works for cakes, brownies, cornbread, quick breads, and most batter-based recipes. For yeast breads, the principles apply but proofing time may also need adjustment since a different pan shape affects how the dough rises. For pies and tarts, pan depth and shape matter more than volume alone."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Pan Size Converter", "description": "Convert recipes between different pan sizes and shapes with adjusted baking times.", "url": "https://tool.teamzlab.com/baking/pan-size-converter/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Pan Size Converter</h1>
+      <p class="tool-description">Convert baking recipes between different pan sizes and shapes. Get the exact scaling factor, adjusted ingredient amounts, and baking time so your cakes, brownies, and breads turn out perfectly in any pan you have on hand.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+
+      <h2 style="margin-bottom: 0.5rem; color: var(--heading);">Quick Conversions</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Click a common swap to auto-fill both pans.</p>
+      <div class="quick-grid" id="quick-grid">
+        <div class="quick-card" data-from="round,9,2" data-to="square,8,2">
+          <div class="qc-from">9&quot; Round</div>
+          <div class="qc-arrow">&rarr;</div>
+          <div class="qc-to">8&quot; Square</div>
+        </div>
+        <div class="quick-card" data-from="rectangle,13,9,2" data-to="round,9,2,2">
+          <div class="qc-from">9&times;13&quot; Rectangle</div>
+          <div class="qc-arrow">&rarr;</div>
+          <div class="qc-to">Two 9&quot; Rounds</div>
+        </div>
+        <div class="quick-card" data-from="round,9,2" data-to="round,8,2">
+          <div class="qc-from">9&quot; Round</div>
+          <div class="qc-arrow">&rarr;</div>
+          <div class="qc-to">8&quot; Round</div>
+        </div>
+        <div class="quick-card" data-from="round,8,2" data-to="loaf,9,5,3">
+          <div class="qc-from">8&quot; Round</div>
+          <div class="qc-arrow">&rarr;</div>
+          <div class="qc-to">9&times;5&quot; Loaf</div>
+        </div>
+        <div class="quick-card" data-from="round,9,2" data-to="bundt,10,3.5">
+          <div class="qc-from">9&quot; Round</div>
+          <div class="qc-arrow">&rarr;</div>
+          <div class="qc-to">10&quot; Bundt</div>
+        </div>
+        <div class="quick-card" data-from="rectangle,13,9,2" data-to="square,9,2">
+          <div class="qc-from">9&times;13&quot; Rectangle</div>
+          <div class="qc-arrow">&rarr;</div>
+          <div class="qc-to">9&quot; Square</div>
+        </div>
+      </div>
+
+      <div class="pan-section">
+        <h3>From Pan (Original Recipe)</h3>
+        <div class="pan-form-grid">
+          <div class="input-group">
+            <label for="from-shape">Shape</label>
+            <select id="from-shape">
+              <option value="round">Round</option>
+              <option value="square">Square</option>
+              <option value="rectangle">Rectangle</option>
+              <option value="bundt">Bundt</option>
+              <option value="loaf">Loaf</option>
+              <option value="springform">Springform</option>
+              <option value="muffin">Muffin (12-cup)</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="from-unit">Unit</label>
+            <select id="from-unit">
+              <option value="in">Inches</option>
+              <option value="cm">Centimeters</option>
+            </select>
+          </div>
+        </div>
+        <div class="dim-row two-col" id="from-dims">
+          <div class="input-group">
+            <label for="from-dim1" id="from-dim1-label">Diameter</label>
+            <input type="number" id="from-dim1" min="1" max="30" step="0.25" value="9">
+          </div>
+          <div class="input-group">
+            <label for="from-depth">Depth</label>
+            <input type="number" id="from-depth" min="0.5" max="10" step="0.25" value="2">
+          </div>
+          <div class="input-group" id="from-dim2-group" style="display:none;">
+            <label for="from-dim2" id="from-dim2-label">Width</label>
+            <input type="number" id="from-dim2" min="1" max="30" step="0.25" value="9">
+          </div>
+        </div>
+      </div>
+
+      <div class="pan-section">
+        <h3>To Pan (Your Pan)</h3>
+        <div class="pan-form-grid">
+          <div class="input-group">
+            <label for="to-shape">Shape</label>
+            <select id="to-shape">
+              <option value="round">Round</option>
+              <option value="square" selected>Square</option>
+              <option value="rectangle">Rectangle</option>
+              <option value="bundt">Bundt</option>
+              <option value="loaf">Loaf</option>
+              <option value="springform">Springform</option>
+              <option value="muffin">Muffin (12-cup)</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="to-unit">Unit</label>
+            <select id="to-unit">
+              <option value="in">Inches</option>
+              <option value="cm">Centimeters</option>
+            </select>
+          </div>
+        </div>
+        <div class="dim-row two-col" id="to-dims">
+          <div class="input-group">
+            <label for="to-dim1" id="to-dim1-label">Side Length</label>
+            <input type="number" id="to-dim1" min="1" max="30" step="0.25" value="8">
+          </div>
+          <div class="input-group">
+            <label for="to-depth">Depth</label>
+            <input type="number" id="to-depth" min="0.5" max="10" step="0.25" value="2">
+          </div>
+          <div class="input-group" id="to-dim2-group" style="display:none;">
+            <label for="to-dim2" id="to-dim2-label">Width</label>
+            <input type="number" id="to-dim2" min="1" max="30" step="0.25" value="9">
+          </div>
+        </div>
+      </div>
+
+      <div class="pan-form-grid" style="margin-bottom: 1.5rem;">
+        <div class="input-group">
+          <label for="orig-bake-time">Original Bake Time (minutes)</label>
+          <input type="number" id="orig-bake-time" min="1" max="300" step="1" value="30">
+        </div>
+        <div class="input-group">
+          <label for="orig-temp">Original Temp (&deg;F)</label>
+          <input type="number" id="orig-temp" min="200" max="500" step="5" value="350">
+        </div>
+      </div>
+
+      <div class="calc-actions">
+        <button type="button" class="btn-primary" id="convert-btn">Convert Pan Size</button>
+        <button type="button" class="btn-secondary" id="reset-btn">Reset</button>
+      </div>
+
+      <div class="result-panel" id="result-panel">
+        <div class="pan-visual" id="pan-visual"></div>
+        <div class="result-cards">
+          <div class="rc">
+            <div class="rc-label">Scaling Factor</div>
+            <div class="rc-value" id="res-factor">1.00</div>
+            <div class="rc-unit">multiply ingredients by</div>
+          </div>
+          <div class="rc">
+            <div class="rc-label">Adjusted Bake Time</div>
+            <div class="rc-value" id="res-time">30</div>
+            <div class="rc-unit" id="res-time-unit">minutes</div>
+          </div>
+          <div class="rc">
+            <div class="rc-label">Suggested Temp</div>
+            <div class="rc-value" id="res-temp">350</div>
+            <div class="rc-unit">&deg;F</div>
+          </div>
+        </div>
+        <div class="detail-panel">
+          <h3>Volume Comparison</h3>
+          <div class="detail-row">
+            <span class="dl">From Pan Volume</span>
+            <span class="dv" id="res-vol-from">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="dl">To Pan Volume</span>
+            <span class="dv" id="res-vol-to">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="dl">Volume Difference</span>
+            <span class="dv" id="res-vol-diff">—</span>
+          </div>
+          <div class="detail-row">
+            <span class="dl">Batter Fill Level</span>
+            <span class="dv" id="res-fill">—</span>
+          </div>
+        </div>
+        <div class="detail-panel">
+          <h3>Tips for This Conversion</h3>
+          <p id="res-tip" style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin: 0;"></p>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 2rem; color: var(--heading);">Common Pan Volumes Reference</h2>
+      <table class="ref-table">
+        <thead><tr><th>Pan</th><th>Dimensions</th><th>Volume (cups)</th></tr></thead>
+        <tbody>
+          <tr><td>Round</td><td>8&quot; &times; 2&quot;</td><td>6 cups</td></tr>
+          <tr><td>Round</td><td>9&quot; &times; 2&quot;</td><td>8 cups</td></tr>
+          <tr><td>Round</td><td>10&quot; &times; 2&quot;</td><td>10.5 cups</td></tr>
+          <tr><td>Square</td><td>8&quot; &times; 2&quot;</td><td>8 cups</td></tr>
+          <tr><td>Square</td><td>9&quot; &times; 2&quot;</td><td>10 cups</td></tr>
+          <tr><td>Rectangle</td><td>9&times;13&quot; &times; 2&quot;</td><td>14 cups</td></tr>
+          <tr><td>Loaf</td><td>9&times;5&quot; &times; 3&quot;</td><td>8 cups</td></tr>
+          <tr><td>Loaf</td><td>8.5&times;4.5&quot; &times; 2.5&quot;</td><td>6 cups</td></tr>
+          <tr><td>Bundt</td><td>10&quot; &times; 3.5&quot;</td><td>12 cups</td></tr>
+          <tr><td>Springform</td><td>9&quot; &times; 3&quot;</td><td>10 cups</td></tr>
+          <tr><td>Muffin (12-cup)</td><td>Standard</td><td>3.5 cups total</td></tr>
+        </tbody>
+      </table>
+
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Pan Size Converter Works</h2>
+      <p>This pan size converter calculates the volume of your original pan and your target pan using standard geometric formulas. Round pans use the cylinder formula (pi times radius squared times height), while square and rectangular pans use length times width times height. The ratio between the two volumes gives you a precise scaling factor. Multiply every ingredient in your recipe by this factor and you will have the correct amounts for the new pan. The converter also adjusts baking time and temperature because pan size directly affects how heat reaches the center of your batter.</p>
+      <p>Switching between pan shapes is one of the most common baking challenges. A recipe written for a 9-inch round cake pan might need to work in an 8-inch square pan or a 9-by-13-inch rectangle. Without the correct volume adjustment, you risk overfilling a smaller pan (causing overflow) or underfilling a larger one (producing a thin, dry result). This tool eliminates the guesswork by giving you exact scaling factors and practical tips for every conversion.</p>
+
+      <h2>Pan Size Conversions for Common Baking Swaps</h2>
+      <p>The most frequently used pan conversion is 9-inch round to 8-inch square. These two pans have nearly identical volumes (about 8 cups each), making them almost perfectly interchangeable without any recipe adjustment. A 9-by-13-inch rectangular pan holds roughly the same volume as two 9-inch round pans, which is why layer cake recipes often translate directly to sheet cake form.</p>
+      <p>Bundt pans hold significantly more batter than standard round pans. A 10-inch Bundt pan holds about 12 cups, equivalent to roughly 1.5 times a 9-inch round. When scaling up to a Bundt, you typically need to increase the recipe by 50 percent and extend baking time by 15 to 25 minutes because the thick ring shape takes longer to bake through. Loaf pans present a similar challenge because their tall, narrow shape means longer baking at a slightly lower temperature for even doneness.</p>
+
+      <h2>Adjusting Baking Time and Temperature</h2>
+      <p>When you scale to a larger pan, the batter layer becomes thinner, which means it bakes faster. As a general rule, reduce baking time by about 10 to 15 percent when moving to a significantly larger pan. Conversely, a smaller pan produces a thicker batter layer that needs more time in the oven, so add 10 to 15 percent to the original time. Always start checking for doneness about 5 minutes before the adjusted time and use the toothpick test rather than relying solely on time.</p>
+      <p>Temperature adjustments are less common but important for extreme size changes. If you are scaling down to a much smaller pan (like mini loaf pans), consider lowering the oven temperature by 25 degrees Fahrenheit to prevent the outside from overbrowning before the center is done. For very large or deep pans like tube pans, the standard temperature usually works fine, but covering with foil partway through baking can prevent overbrowning on top while the center catches up.</p>
+
+      <h2>Tips for Successful Pan Substitutions</h2>
+      <p>Always fill pans only two-thirds full to allow room for rising. If your scaled recipe produces more batter than the new pan can safely hold, bake the extra in a small ramekin or muffin tin alongside the main pan. Grease and flour the pan thoroughly when switching shapes, especially with Bundt pans where intricate designs can trap batter. Glass and dark metal pans absorb more heat than light-colored aluminum, so reduce the oven temperature by 25 degrees when using these materials. Let your baked goods cool in the pan for the recommended time before turning out to prevent sticking or breaking, which is especially important when using an unfamiliar pan shape.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Baking Tools', url: '/baking/' },
+      { name: 'Pan Size Converter' }
+    ];
+
+    var FAQS = [
+      { q: 'Can I use a 9-inch round pan instead of an 8-inch square?', a: 'Yes, a 9-inch round pan and an 8-inch square pan have nearly identical volumes of about 8 cups each. You can swap them directly without changing ingredient amounts or baking time. This is the most common and easiest pan substitution in baking.' },
+      { q: 'How do I convert a 9x13 rectangle recipe to round pans?', a: 'A 9x13-inch rectangular pan holds about 14 cups of batter, which is roughly equal to two 9-inch round pans (8 cups each). Divide the batter evenly between the two rounds. Keep the same oven temperature and start checking about 5 minutes earlier since the layers are thinner.' },
+      { q: 'What happens if I use a pan that is too small?', a: 'If the pan is too small, the batter will be thicker than intended and may overflow in the oven. It will also take longer to bake through, and the outside may overbrown before the center is done. Always fill pans no more than two-thirds full and bake any excess in a separate small pan.' },
+      { q: 'Do I need to change the oven temperature when switching pan sizes?', a: 'For most pan swaps within a similar size range, the temperature stays the same. However, if you are moving to a much smaller or deeper pan, lower the temperature by 25 degrees Fahrenheit. For glass or dark metal pans, also reduce by 25 degrees since they absorb more heat than light-colored aluminum.' },
+      { q: 'How do I convert a round pan recipe to a Bundt pan?', a: 'A standard 10-inch Bundt pan holds about 12 cups, compared to 8 cups for a 9-inch round. You will need to increase your recipe by about 50 percent. Extend the baking time by 15 to 25 minutes and test with a long skewer since the center tube of a Bundt pan creates a thicker ring of batter.' },
+      { q: 'Can I use this converter for any type of baked good?', a: 'Yes, this converter works for cakes, brownies, cornbread, quick breads, and most batter-based recipes. For yeast breads, the principles apply but proofing time may also need adjustment since a different pan shape affects how the dough rises. For pies and tarts, pan depth and shape matter more than volume alone.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'baking/baking-conversion-calculator', name: 'Baking Conversion Calculator', description: 'Convert between cups, grams, ounces, and tablespoons for baking.' },
+      { slug: 'baking/recipe-scaler-calculator', name: 'Recipe Scaler Calculator', description: 'Scale any recipe up or down with precise ingredient adjustments.' },
+      { slug: 'baking/baking-cost-calculator', name: 'Baking Cost Calculator', description: 'Calculate cost per batch, per serving, and profit margins.' },
+      { slug: 'baking/yeast-conversion-calculator', name: 'Yeast Conversion Calculator', description: 'Convert between active dry, instant, fresh yeast, and sourdough starter.' },
+      { slug: 'baking/sourdough-hydration-calculator', name: 'Sourdough Hydration Calculator', description: 'Calculate dough hydration percentage and adjust flour and water ratios.' },
+      { slug: 'baking/bread-proofing-timer', name: 'Bread Proofing Timer', description: 'Time your bread proofing with temperature-adjusted estimates.' }
+    ];
+
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'baking/pan-size-converter', title: 'Pan Size Converter', description: 'Convert recipes between different pan sizes and shapes with adjusted baking times.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+    /* ---- Volume calculation ---- */
+    var PI = Math.PI;
+
+    function toInches(val, unit) {
+      return unit === 'cm' ? val / 2.54 : val;
+    }
+
+    function calcVolume(shape, dim1, dim2, depth, unit) {
+      var d1 = toInches(dim1, unit);
+      var d2 = toInches(dim2, unit);
+      var h = toInches(depth, unit);
+      switch (shape) {
+        case 'round':
+        case 'springform':
+          return PI * Math.pow(d1 / 2, 2) * h;
+        case 'square':
+          return d1 * d1 * h;
+        case 'rectangle':
+        case 'loaf':
+          return d1 * d2 * h;
+        case 'bundt':
+          // Bundt: outer cylinder minus ~35% for center tube and fluting
+          return PI * Math.pow(d1 / 2, 2) * h * 0.65;
+        case 'muffin':
+          // Standard 12-cup muffin tin: each cup ~3.5oz, total ~42oz = ~77 cubic inches
+          return 77;
+        default:
+          return d1 * d1 * h;
+      }
+    }
+
+    function volToCups(cubicInches) {
+      return cubicInches / 14.4375; // 1 cup = 14.4375 cubic inches
+    }
+
+    function needsDim2(shape) {
+      return shape === 'rectangle' || shape === 'loaf';
+    }
+
+    function isMuffin(shape) {
+      return shape === 'muffin';
+    }
+
+    function getDimLabel(shape) {
+      if (shape === 'round' || shape === 'springform' || shape === 'bundt') return 'Diameter';
+      if (shape === 'square') return 'Side Length';
+      if (shape === 'rectangle' || shape === 'loaf') return 'Length';
+      return 'Size';
+    }
+
+    /* ---- Update form labels on shape change ---- */
+    function updateForm(prefix) {
+      var shape = document.getElementById(prefix + '-shape').value;
+      var dim1Label = document.getElementById(prefix + '-dim1-label');
+      var dim2Group = document.getElementById(prefix + '-dim2-group');
+      var dim1 = document.getElementById(prefix + '-dim1');
+      var depth = document.getElementById(prefix + '-depth');
+      var dimsRow = document.getElementById(prefix + '-dims');
+
+      dim1Label.textContent = getDimLabel(shape);
+
+      if (needsDim2(shape)) {
+        dim2Group.style.display = '';
+        dimsRow.classList.remove('two-col');
+      } else {
+        dim2Group.style.display = 'none';
+        dimsRow.classList.add('two-col');
+      }
+
+      if (isMuffin(shape)) {
+        dim1.disabled = true;
+        depth.disabled = true;
+        dim1.value = '';
+        depth.value = '';
+      } else {
+        dim1.disabled = false;
+        depth.disabled = false;
+        if (!dim1.value) dim1.value = '9';
+        if (!depth.value) depth.value = '2';
+      }
+    }
+
+    document.getElementById('from-shape').addEventListener('change', function() { updateForm('from'); });
+    document.getElementById('to-shape').addEventListener('change', function() { updateForm('to'); });
+
+    /* ---- Quick conversion cards ---- */
+    var quickCards = document.querySelectorAll('.quick-card');
+    quickCards.forEach(function(card) {
+      card.addEventListener('click', function() {
+        var fromData = card.getAttribute('data-from').split(',');
+        var toData = card.getAttribute('data-to').split(',');
+
+        document.getElementById('from-shape').value = fromData[0];
+        document.getElementById('from-unit').value = 'in';
+        updateForm('from');
+
+        if (fromData[0] === 'rectangle' || fromData[0] === 'loaf') {
+          document.getElementById('from-dim1').value = fromData[1];
+          document.getElementById('from-dim2').value = fromData[2];
+          document.getElementById('from-depth').value = fromData[3];
+        } else {
+          document.getElementById('from-dim1').value = fromData[1];
+          document.getElementById('from-depth').value = fromData[2];
+        }
+
+        document.getElementById('to-shape').value = toData[0];
+        document.getElementById('to-unit').value = 'in';
+        updateForm('to');
+
+        if (toData[0] === 'rectangle' || toData[0] === 'loaf') {
+          document.getElementById('to-dim1').value = toData[1];
+          document.getElementById('to-dim2').value = toData[2];
+          document.getElementById('to-depth').value = toData[3];
+        } else {
+          document.getElementById('to-dim1').value = toData[1];
+          document.getElementById('to-depth').value = toData[2];
+        }
+
+        convert();
+      });
+    });
+
+    /* ---- Pan shape visual ---- */
+    function renderVisual(fromShape, fromDim1, fromVol, toShape, toDim1, toVol) {
+      var container = document.getElementById('pan-visual');
+      var maxSize = 120;
+      var fromSize = Math.min(maxSize, Math.max(50, (fromDim1 / 14) * maxSize));
+      var toSize = Math.min(maxSize, Math.max(50, (toDim1 / 14) * maxSize));
+
+      var fromRound = (fromShape === 'round' || fromShape === 'springform' || fromShape === 'bundt');
+      var toRound = (toShape === 'round' || toShape === 'springform' || toShape === 'bundt');
+
+      var fromCups = volToCups(fromVol).toFixed(1);
+      var toCups = volToCups(toVol).toFixed(1);
+
+      container.innerHTML =
+        '<div class="pan-box"><div class="pan-shape' + (fromRound ? ' is-round' : '') + '" style="width:' + fromSize + 'px;height:' + fromSize + 'px;">' + fromCups + ' c</div><div class="pan-label">From Pan</div></div>' +
+        '<div class="pan-arrow">&rarr;</div>' +
+        '<div class="pan-box"><div class="pan-shape' + (toRound ? ' is-round' : '') + '" style="width:' + toSize + 'px;height:' + toSize + 'px;">' + toCups + ' c</div><div class="pan-label">To Pan</div></div>';
+    }
+
+    /* ---- Convert ---- */
+    function convert() {
+      var fromShape = document.getElementById('from-shape').value;
+      var fromUnit = document.getElementById('from-unit').value;
+      var fromDim1 = parseFloat(document.getElementById('from-dim1').value) || 0;
+      var fromDim2 = parseFloat(document.getElementById('from-dim2').value) || 0;
+      var fromDepth = parseFloat(document.getElementById('from-depth').value) || 0;
+
+      var toShape = document.getElementById('to-shape').value;
+      var toUnit = document.getElementById('to-unit').value;
+      var toDim1 = parseFloat(document.getElementById('to-dim1').value) || 0;
+      var toDim2 = parseFloat(document.getElementById('to-dim2').value) || 0;
+      var toDepth = parseFloat(document.getElementById('to-depth').value) || 0;
+
+      var origTime = parseInt(document.getElementById('orig-bake-time').value, 10) || 30;
+      var origTemp = parseInt(document.getElementById('orig-temp').value, 10) || 350;
+
+      if (!isMuffin(fromShape) && (fromDim1 <= 0 || fromDepth <= 0)) {
+        if (window.showToast) window.showToast('Please enter valid dimensions for the original pan.');
+        return;
+      }
+      if (!isMuffin(toShape) && (toDim1 <= 0 || toDepth <= 0)) {
+        if (window.showToast) window.showToast('Please enter valid dimensions for your pan.');
+        return;
+      }
+
+      var fromVol = calcVolume(fromShape, fromDim1, fromDim2, fromDepth, fromUnit);
+      var toVol = calcVolume(toShape, toDim1, toDim2, toDepth, toUnit);
+
+      if (fromVol <= 0 || toVol <= 0) {
+        if (window.showToast) window.showToast('Could not calculate volume. Check dimensions.');
+        return;
+      }
+
+      var factor = toVol / fromVol;
+      var fromCups = volToCups(fromVol);
+      var toCups = volToCups(toVol);
+
+      // Baking time adjustment
+      var timeAdj = origTime;
+      if (factor > 1.05) {
+        // Larger pan = thinner batter = less time
+        timeAdj = Math.round(origTime * (1 - (factor - 1) * 0.12));
+      } else if (factor < 0.95) {
+        // Smaller pan = thicker batter = more time
+        timeAdj = Math.round(origTime * (1 + (1 - factor) * 0.15));
+      }
+      timeAdj = Math.max(Math.round(origTime * 0.6), Math.min(Math.round(origTime * 1.5), timeAdj));
+
+      // Temperature adjustment
+      var tempAdj = origTemp;
+      if (factor < 0.5) {
+        tempAdj = origTemp - 25;
+      } else if (factor > 2) {
+        tempAdj = origTemp + 15;
+      }
+
+      // Fill level warning
+      var fillPct = (1 / factor) * 100;
+      var fillText;
+      if (factor >= 0.95 && factor <= 1.05) {
+        fillText = 'Perfect fit — same volume';
+      } else if (factor > 1.05) {
+        fillText = Math.round(fillPct) + '% full — batter will be thinner';
+      } else {
+        fillText = Math.round(fillPct) + '% full — may overflow! Use less batter.';
+      }
+
+      // Tip
+      var tip = '';
+      if (factor > 1.5) {
+        tip = 'Your new pan is significantly larger. The batter will spread thinner, so watch carefully for doneness starting several minutes early. The edges will cook faster than the center.';
+      } else if (factor < 0.6) {
+        tip = 'Your new pan is much smaller. Fill it only two-thirds full and bake the extra batter separately. Lower the temperature by 25\u00B0F to prevent overbrowning before the thick center is done.';
+      } else if (factor < 0.85) {
+        tip = 'Your new pan is smaller, so the batter will be thicker. Add a few extra minutes to the baking time and test the center with a toothpick before removing from the oven.';
+      } else if (factor > 1.15) {
+        tip = 'Your new pan is a bit larger. The thinner batter layer means it will bake faster. Start checking 3-5 minutes before the adjusted time.';
+      } else {
+        tip = 'These pans are very close in volume. You can use the same recipe amounts and baking time with minimal adjustment. Always do a toothpick test to confirm doneness.';
+      }
+
+      if (toShape === 'bundt') {
+        tip += ' Bundt pans need thorough greasing and flouring in every crevice. Let the cake cool in the pan for 10-15 minutes before inverting.';
+      }
+      if (toShape === 'loaf') {
+        tip += ' Loaf pans bake slowly in the center due to their depth. Tent with foil if the top browns too quickly.';
+      }
+
+      // Display results
+      document.getElementById('res-factor').textContent = factor.toFixed(2) + '\u00D7';
+      document.getElementById('res-time').textContent = timeAdj;
+      document.getElementById('res-temp').textContent = tempAdj;
+      document.getElementById('res-vol-from').textContent = fromCups.toFixed(1) + ' cups (' + fromVol.toFixed(1) + ' in\u00B3)';
+      document.getElementById('res-vol-to').textContent = toCups.toFixed(1) + ' cups (' + toVol.toFixed(1) + ' in\u00B3)';
+      var diffPct = ((factor - 1) * 100).toFixed(0);
+      document.getElementById('res-vol-diff').textContent = (factor >= 1 ? '+' : '') + diffPct + '%';
+      document.getElementById('res-fill').textContent = fillText;
+      document.getElementById('res-tip').textContent = tip;
+
+      renderVisual(fromShape, toInches(fromDim1, fromUnit), fromVol, toShape, toInches(toDim1, toUnit), toVol);
+
+      document.getElementById('result-panel').classList.add('visible');
+      document.getElementById('result-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('convert-btn').addEventListener('click', convert);
+
+    document.getElementById('reset-btn').addEventListener('click', function() {
+      document.getElementById('from-shape').value = 'round';
+      document.getElementById('from-unit').value = 'in';
+      document.getElementById('from-dim1').value = '9';
+      document.getElementById('from-dim2').value = '9';
+      document.getElementById('from-depth').value = '2';
+      document.getElementById('to-shape').value = 'square';
+      document.getElementById('to-unit').value = 'in';
+      document.getElementById('to-dim1').value = '8';
+      document.getElementById('to-dim2').value = '9';
+      document.getElementById('to-depth').value = '2';
+      document.getElementById('orig-bake-time').value = '30';
+      document.getElementById('orig-temp').value = '350';
+      updateForm('from');
+      updateForm('to');
+      document.getElementById('result-panel').classList.remove('visible');
+    });
+
+    // Initialize form state
+    updateForm('from');
+    updateForm('to');
+  });
+  </script>
+</body>
+</html>

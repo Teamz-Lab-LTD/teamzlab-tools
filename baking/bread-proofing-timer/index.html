@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bread Proofing Timer — Teamz Lab Tools</title>
+  <meta name="description" content="Time your bread proofing with temperature-adjusted bulk fermentation and final proof timers. Stretch and fold reminders, poke test guide. Free and private.">
+  <meta property="og:title" content="Bread Proofing Timer — Teamz Lab Tools">
+  <meta property="og:description" content="Time your bread proofing with temperature-adjusted bulk fermentation and final proof timers. Stretch and fold reminders, poke test guide. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/baking/bread-proofing-timer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/baking.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Bread Proofing Timer — Teamz Lab Tools">
+  <meta name="twitter:description" content="Time your bread proofing with temperature-adjusted bulk fermentation and final proof timers. Stretch and fold reminders, poke test guide. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/baking/bread-proofing-timer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .bread-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+    .bread-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 0.75rem 0.5rem; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.8rem; font-weight: 500; color: var(--text); font-family: inherit; }
+    .bread-btn:hover { border-color: var(--accent); }
+    .bread-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+    .bread-btn .bread-icon { font-size: 1.4rem; display: block; margin-bottom: 0.25rem; }
+    .proof-config { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .proof-input-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .proof-input-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .proof-input-group input, .proof-input-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .proof-input-group input:focus, .proof-input-group select:focus { outline: none; border-color: var(--accent); }
+    .proof-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .proof-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .proof-stat .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .proof-stat .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .proof-stat .stat-unit { font-size: 0.8rem; color: var(--text-muted); }
+    .stage-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .stage-tab { flex: 1; padding: 0.75rem; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; font-family: inherit; transition: all 0.2s; }
+    .stage-tab.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .stage-tab.completed { border-color: var(--text-muted); color: var(--text-muted); }
+    .timer-ring-wrap { display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem; }
+    .timer-ring { position: relative; width: 220px; height: 220px; }
+    .timer-ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .timer-ring-bg { fill: none; stroke: var(--border); stroke-width: 10; }
+    .timer-ring-fg { fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.3s ease; }
+    .timer-ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+    .timer-time { font-size: clamp(2.5rem, 8vw, 3.5rem); font-weight: 800; color: var(--heading); font-variant-numeric: tabular-nums; letter-spacing: 0.05em; line-height: 1.2; }
+    .timer-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .timer-controls { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; }
+    .timer-controls .btn-primary, .timer-controls .btn-secondary { min-width: 120px; }
+    .sound-toggle { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; justify-content: center; }
+    .sound-toggle label { font-size: 0.9rem; color: var(--text); cursor: pointer; }
+    .sound-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    .sf-reminder { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; text-align: center; display: none; }
+    .sf-reminder .sf-title { font-weight: 700; color: var(--heading); font-size: 1rem; margin-bottom: 0.25rem; }
+    .sf-reminder .sf-desc { font-size: 0.85rem; color: var(--text-muted); }
+    .sf-reminder.visible { display: block; }
+    .cold-retard-toggle { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; justify-content: center; }
+    .cold-retard-toggle label { font-size: 0.9rem; color: var(--text); cursor: pointer; }
+    .cold-retard-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    .cold-retard-config { display: none; margin-bottom: 1.5rem; }
+    .cold-retard-config.visible { display: block; }
+    .poke-test { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; }
+    .poke-test h3 { color: var(--heading); font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .poke-test p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin: 0 0 0.5rem 0; }
+    .poke-test p:last-child { margin-bottom: 0; }
+    .poke-indicator { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
+    .poke-item { flex: 1; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border); text-align: center; font-size: 0.8rem; }
+    .poke-item .poke-icon { font-size: 1.2rem; display: block; margin-bottom: 0.25rem; }
+    .poke-item .poke-label { font-weight: 600; color: var(--heading); font-size: 0.75rem; }
+    .poke-item .poke-desc { color: var(--text-muted); font-size: 0.7rem; }
+    .doubling-check { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; text-align: center; }
+    .doubling-check h3 { color: var(--heading); font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .doubling-bar { display: flex; align-items: center; gap: 0.75rem; justify-content: center; margin-top: 0.5rem; }
+    .doubling-visual { display: flex; gap: 0.25rem; }
+    .doubling-block { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); transition: background 0.3s; }
+    .doubling-block.filled { background: var(--accent); border-color: var(--accent); }
+    .doubling-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    .bread-tips { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; }
+    .bread-tips h3 { color: var(--heading); font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .bread-tips p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin: 0; }
+    .proof-history { margin-top: 1.5rem; }
+    .proof-history h3 { color: var(--heading); font-size: 1rem; margin-bottom: 0.75rem; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .history-item:last-child { border-bottom: none; }
+    .history-bread { font-weight: 600; color: var(--text); }
+    .history-meta { color: var(--text-muted); }
+    .history-empty { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
+    @media (max-width: 600px) {
+      .bread-grid { grid-template-columns: repeat(2, 1fr); }
+      .proof-config { grid-template-columns: 1fr; }
+      .proof-summary { grid-template-columns: 1fr; }
+      .timer-controls { flex-direction: column; align-items: center; }
+      .timer-controls .btn-primary, .timer-controls .btn-secondary { width: 100%; }
+      .timer-ring { width: 180px; height: 180px; }
+      .stage-tabs { flex-direction: column; }
+      .poke-indicator { flex-direction: column; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Baking Tools", "item": "https://tool.teamzlab.com/baking/"}, {"@type": "ListItem", "position": 3, "name": "Bread Proofing Timer"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What bread types does this proofing timer support?", "acceptedAnswer": {"@type": "Answer", "text": "The timer supports White bread, Sourdough, Whole wheat, Brioche, Pizza dough, Rolls, Bagels, and Focaccia. Each type has preset bulk fermentation and final proof times that adjust automatically based on your room temperature."}}, {"@type": "Question", "name": "How does temperature affect proofing time?", "acceptedAnswer": {"@type": "Answer", "text": "Warmer rooms speed up yeast activity while cooler rooms slow it down. At 75 degrees Fahrenheit yeast is most active. The timer uses a temperature coefficient to increase or decrease proofing time based on your actual room temperature. Every 10 degree change roughly doubles or halves the fermentation speed."}}, {"@type": "Question", "name": "What is the poke test for bread dough?", "acceptedAnswer": {"@type": "Answer", "text": "The poke test checks proofing readiness. Press a floured finger one inch into the dough. If it springs back immediately the dough needs more time. If it springs back slowly over 2 to 3 seconds the dough is perfectly proofed. If the indent stays the dough is over-proofed."}}, {"@type": "Question", "name": "What is cold retard or fridge proofing?", "acceptedAnswer": {"@type": "Answer", "text": "Cold retard means placing shaped dough in the refrigerator at 38 degrees Fahrenheit for 8 to 24 hours. This develops complex flavors through slow fermentation and makes scheduling easier. The dough can go straight from fridge to oven for baking."}}, {"@type": "Question", "name": "What are stretch and fold reminders?", "acceptedAnswer": {"@type": "Answer", "text": "During bulk fermentation the timer reminds you every 30 minutes to stretch and fold the dough. This technique replaces traditional kneading by gently pulling the dough from each side and folding it over itself. It builds gluten strength and creates an open airy crumb structure."}}, {"@type": "Question", "name": "How do I know when my dough has doubled in size?", "acceptedAnswer": {"@type": "Answer", "text": "Use the visual doubling indicator on this tool to track rise progress. Place dough in a clear straight-sided container and mark the starting level. When the dough reaches twice that height it has doubled. Most breads need to roughly double during bulk fermentation before shaping."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Bread Proofing Timer", "description": "Temperature-adjusted bread proofing timer with bulk fermentation, final proof, stretch and fold reminders, and poke test guide.", "url": "https://tool.teamzlab.com/baking/bread-proofing-timer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Bread Proofing Timer</h1>
+      <p class="tool-description">Time your bread proofing perfectly with temperature-adjusted bulk fermentation and final proof timers. Get stretch and fold reminders, poke test guidance, and cold retard options for every bread type.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <h2 style="margin-bottom: 1rem; color: var(--heading);">Select Bread Type</h2>
+      <div class="bread-grid" id="bread-grid">
+        <button class="bread-btn active" data-bread="white"><span class="bread-icon">&#127838;</span>White</button>
+        <button class="bread-btn" data-bread="sourdough"><span class="bread-icon">&#129776;</span>Sourdough</button>
+        <button class="bread-btn" data-bread="wholewheat"><span class="bread-icon">&#127806;</span>Whole Wheat</button>
+        <button class="bread-btn" data-bread="brioche"><span class="bread-icon">&#129385;</span>Brioche</button>
+        <button class="bread-btn" data-bread="pizza"><span class="bread-icon">&#127829;</span>Pizza Dough</button>
+        <button class="bread-btn" data-bread="rolls"><span class="bread-icon">&#127856;</span>Rolls</button>
+        <button class="bread-btn" data-bread="bagels"><span class="bread-icon">&#129366;</span>Bagels</button>
+        <button class="bread-btn" data-bread="focaccia"><span class="bread-icon">&#129747;</span>Focaccia</button>
+      </div>
+
+      <div class="proof-config">
+        <div class="proof-input-group">
+          <label for="room-temp">Room Temperature</label>
+          <input type="number" id="room-temp" value="75" min="40" max="120" step="1">
+        </div>
+        <div class="proof-input-group">
+          <label for="temp-unit">Temperature Unit</label>
+          <select id="temp-unit">
+            <option value="F" selected>Fahrenheit (&deg;F)</option>
+            <option value="C">Celsius (&deg;C)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="proof-summary" id="proof-summary">
+        <div class="proof-stat"><div class="stat-label">Bulk Ferment</div><div class="stat-value" id="display-bulk">2:00</div><div class="stat-unit">hours</div></div>
+        <div class="proof-stat"><div class="stat-label">Final Proof</div><div class="stat-value" id="display-final">1:00</div><div class="stat-unit">hours</div></div>
+        <div class="proof-stat"><div class="stat-label">Total Time</div><div class="stat-value" id="display-total">3:00</div><div class="stat-unit">hours</div></div>
+      </div>
+
+      <h2 style="margin-bottom: 1rem; color: var(--heading);">Proofing Stage</h2>
+      <div class="stage-tabs" id="stage-tabs">
+        <button class="stage-tab active" data-stage="bulk">&#9312; Bulk Ferment</button>
+        <button class="stage-tab" data-stage="final">&#9313; Final Proof</button>
+      </div>
+
+      <div class="timer-ring-wrap">
+        <div class="timer-ring">
+          <svg viewBox="0 0 220 220">
+            <circle class="timer-ring-bg" cx="110" cy="110" r="100"></circle>
+            <circle class="timer-ring-fg" id="timer-ring-fg" cx="110" cy="110" r="100" stroke-dasharray="628.32" stroke-dashoffset="0"></circle>
+          </svg>
+          <div class="timer-ring-center">
+            <div class="timer-time" id="timer-display">00:00:00</div>
+            <div class="timer-label" id="timer-status">Ready</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sound-toggle">
+        <input type="checkbox" id="sound-enabled" checked>
+        <label for="sound-enabled">&#128264; Sound notifications</label>
+      </div>
+
+      <div class="timer-controls">
+        <button class="btn-primary" id="btn-start">&#9654; Start</button>
+        <button class="btn-secondary" id="btn-pause" disabled>&#10074;&#10074; Pause</button>
+        <button class="btn-secondary" id="btn-reset" disabled>&#8635; Reset</button>
+      </div>
+
+      <div class="sf-reminder" id="sf-reminder">
+        <div class="sf-title">&#128170; Stretch &amp; Fold Time!</div>
+        <div class="sf-desc" id="sf-desc">Gently stretch and fold the dough from all 4 sides. This builds gluten strength.</div>
+      </div>
+
+      <div class="cold-retard-toggle">
+        <input type="checkbox" id="cold-retard">
+        <label for="cold-retard">&#10052; Cold retard (fridge proofing)</label>
+      </div>
+
+      <div class="cold-retard-config" id="cold-retard-config">
+        <div class="proof-config">
+          <div class="proof-input-group">
+            <label for="cold-hours">Fridge Time (hours)</label>
+            <input type="number" id="cold-hours" value="12" min="8" max="24" step="1">
+          </div>
+          <div class="proof-input-group">
+            <label for="cold-temp">Fridge Temp</label>
+            <input type="number" id="cold-temp" value="38" min="33" max="45" step="1" disabled>
+          </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem;">Cold retard replaces the final proof. Shape dough, place in fridge for 8-24 hours at 38&deg;F (3&deg;C), then bake directly from cold.</p>
+      </div>
+
+      <div class="doubling-check" id="doubling-check">
+        <h3>&#128200; Has the Dough Doubled?</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Estimate how much your dough has risen</p>
+        <div class="doubling-bar">
+          <div class="doubling-visual" id="doubling-visual">
+            <div class="doubling-block" data-level="1"></div>
+            <div class="doubling-block" data-level="2"></div>
+            <div class="doubling-block" data-level="3"></div>
+            <div class="doubling-block" data-level="4"></div>
+            <div class="doubling-block" data-level="5"></div>
+            <div class="doubling-block" data-level="6"></div>
+            <div class="doubling-block" data-level="7"></div>
+            <div class="doubling-block" data-level="8"></div>
+            <div class="doubling-block" data-level="9"></div>
+            <div class="doubling-block" data-level="10"></div>
+          </div>
+          <span class="doubling-label" id="doubling-label">0%</span>
+        </div>
+        <input type="range" id="doubling-range" min="0" max="100" value="0" step="10" style="width: 100%; margin-top: 0.75rem; accent-color: var(--accent);">
+      </div>
+
+      <div class="poke-test">
+        <h3>&#128073; The Poke Test</h3>
+        <p>Press a floured finger about 1 inch into the dough. The response tells you the proofing stage:</p>
+        <div class="poke-indicator">
+          <div class="poke-item">
+            <span class="poke-icon">&#9888;</span>
+            <div class="poke-label">Under-proofed</div>
+            <div class="poke-desc">Springs back immediately</div>
+          </div>
+          <div class="poke-item" style="border-color: var(--accent);">
+            <span class="poke-icon">&#9989;</span>
+            <div class="poke-label">Ready</div>
+            <div class="poke-desc">Springs back slowly</div>
+          </div>
+          <div class="poke-item">
+            <span class="poke-icon">&#9888;</span>
+            <div class="poke-label">Over-proofed</div>
+            <div class="poke-desc">Stays indented</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bread-tips" id="bread-tips">
+        <h3>Proofing Tips</h3>
+        <p id="tips-text">White bread proofs well at 75&deg;F. Cover the dough with plastic wrap or a damp towel. The dough should roughly double in size before shaping.</p>
+      </div>
+
+      <div class="proof-history" id="proof-history">
+        <h3>Recent Sessions</h3>
+        <div id="history-list"><p class="history-empty">No proofing sessions yet. Start your first timer!</p></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Bread Proofing Timer Works</h2>
+      <p>The bread proofing timer guides you through the two essential stages of bread making: bulk fermentation and final proofing. Select your bread type from the grid, and the tool loads optimized timing for each stage based on proven baking science. Enter your kitchen temperature, and the timer automatically adjusts: warmer rooms speed up fermentation while cooler rooms slow it down. This eliminates guesswork and prevents both under-proofed and over-proofed loaves.</p>
+      <p>During bulk fermentation, the timer triggers stretch and fold reminders every 30 minutes. These gentle folds build gluten structure without kneading and help distribute yeast evenly throughout the dough. When bulk fermentation completes, shape your dough and move to the final proof stage. A sound notification alerts you when each stage finishes so you never miss the optimal window.</p>
+
+      <h2>Bread Proofing Times by Type</h2>
+      <p>White bread typically needs 1.5 to 2 hours for bulk fermentation and 45 to 60 minutes for the final proof at 75 degrees Fahrenheit. Sourdough requires the longest time at 4 to 6 hours for bulk ferment due to the slower activity of wild yeast. Whole wheat ferments faster than white because the bran creates more enzymatic activity, usually finishing in 1.5 hours. Brioche and other enriched doughs proof more slowly because butter and sugar inhibit yeast activity, often requiring 2 to 3 hours per stage.</p>
+      <p>Pizza dough benefits from a cold retard in the refrigerator for 24 hours, developing complex flavors that a quick rise cannot achieve. Bagels use a short 1-hour bulk ferment followed by an overnight cold retard that gives them their characteristic chewy texture. Focaccia needs generous proofing time to develop its signature airy, open crumb with large irregular holes throughout.</p>
+
+      <h2>Temperature and Cold Retard Proofing</h2>
+      <p>Temperature is the single most important variable in bread proofing. At 75 to 80 degrees Fahrenheit, yeast is most active and produces carbon dioxide at peak rates. Below 65 degrees, fermentation slows significantly, which can be desirable for flavor development. Above 85 degrees, yeast produces off-flavors and the dough may over-proof before developing sufficient structure. This timer uses a proven formula to adjust timing based on your actual room temperature.</p>
+      <p>Cold retarding means placing shaped dough in the refrigerator at 38 degrees Fahrenheit for 8 to 24 hours. This technique dramatically improves flavor by allowing lactic acid bacteria to produce complex sour notes while yeast activity slows to a crawl. Professional bakeries use cold retard for nearly every bread variety. The dough can go straight from fridge to oven, and the cold temperature actually improves oven spring by keeping the outside cool while the interior heats rapidly.</p>
+
+      <h2>The Poke Test and Visual Cues</h2>
+      <p>The poke test is the most reliable way to judge proofing readiness. Press a lightly floured finger about one inch into the dough surface. If the indentation springs back immediately, the dough needs more time. If it springs back slowly over 2 to 3 seconds, the dough is perfectly proofed and ready for baking. If the indent stays without springing back at all, the dough is over-proofed and may need reshaping and a shorter second proof.</p>
+      <p>Visual cues also help: properly proofed dough should have roughly doubled in size and look puffy with a slightly domed top. The surface may show small bubbles just below the skin. Use the doubling indicator on this tool to track visual progress. Combined with the poke test, these signals give you confidence that your bread will have an open crumb, good oven spring, and the best possible texture.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Baking Tools', url: '/baking/' },
+      { name: 'Bread Proofing Timer' }
+    ];
+
+    var FAQS = [
+      { q: 'What bread types does this proofing timer support?', a: 'The timer supports White bread, Sourdough, Whole wheat, Brioche, Pizza dough, Rolls, Bagels, and Focaccia. Each type has preset bulk fermentation and final proof times that adjust automatically based on your room temperature.' },
+      { q: 'How does temperature affect proofing time?', a: 'Warmer rooms speed up yeast activity while cooler rooms slow it down. At 75 degrees Fahrenheit yeast is most active. The timer uses a temperature coefficient to increase or decrease proofing time based on your actual room temperature. Every 10 degree change roughly doubles or halves the fermentation speed.' },
+      { q: 'What is the poke test for bread dough?', a: 'The poke test checks proofing readiness. Press a floured finger one inch into the dough. If it springs back immediately the dough needs more time. If it springs back slowly over 2 to 3 seconds the dough is perfectly proofed. If the indent stays the dough is over-proofed.' },
+      { q: 'What is cold retard or fridge proofing?', a: 'Cold retard means placing shaped dough in the refrigerator at 38 degrees Fahrenheit for 8 to 24 hours. This develops complex flavors through slow fermentation and makes scheduling easier. The dough can go straight from fridge to oven for baking.' },
+      { q: 'What are stretch and fold reminders?', a: 'During bulk fermentation the timer reminds you every 30 minutes to stretch and fold the dough. This technique replaces traditional kneading by gently pulling the dough from each side and folding it over itself. It builds gluten strength and creates an open airy crumb structure.' },
+      { q: 'How do I know when my dough has doubled in size?', a: 'Use the visual doubling indicator on this tool to track rise progress. Place dough in a clear straight-sided container and mark the starting level. When the dough reaches twice that height it has doubled. Most breads need to roughly double during bulk fermentation before shaping.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: '/baking/sourdough-hydration-calculator/', name: 'Sourdough Hydration Calculator', description: 'Calculate dough hydration percentage and adjust flour and water ratios' },
+      { slug: '/baking/sourdough-starter-calculator/', name: 'Sourdough Starter Calculator', description: 'Plan your sourdough starter feeding schedule with ratios and timing' },
+      { slug: '/baking/yeast-conversion-calculator/', name: 'Yeast Conversion Calculator', description: 'Convert between active dry, instant, fresh yeast, and sourdough starter' },
+      { slug: '/baking/recipe-scaler-calculator/', name: 'Recipe Scaler Calculator', description: 'Scale any recipe up or down with precise ingredient adjustments' },
+      { slug: '/baking/baking-conversion-calculator/', name: 'Baking Conversion Calculator', description: 'Convert between cups, grams, ounces, and tablespoons for any ingredient' },
+      { slug: '/baking/pan-size-converter/', name: 'Pan Size Converter', description: 'Convert recipes between different pan sizes and shapes' }
+    ];
+
+    /* ── Bread type definitions ── */
+    /* bulkMin = bulk ferment in minutes at 75°F, finalMin = final proof in minutes at 75°F */
+    var BREADS = {
+      'white': {
+        name: 'White Bread', bulkMin: 120, finalMin: 60, sfIntervalMin: 30, sfCount: 3,
+        tips: 'White bread proofs well at 75\u00B0F. Cover the dough with plastic wrap or a damp towel. The dough should roughly double in size before shaping.'
+      },
+      'sourdough': {
+        name: 'Sourdough', bulkMin: 300, finalMin: 120, sfIntervalMin: 30, sfCount: 4,
+        tips: 'Sourdough relies on wild yeast and ferments slowly. Expect 4-6 hours for bulk ferment. Stretch and fold every 30 minutes for the first 2 hours. The dough is ready when it is puffy, jiggly, and has risen 50-75%.'
+      },
+      'wholewheat': {
+        name: 'Whole Wheat', bulkMin: 90, finalMin: 50, sfIntervalMin: 30, sfCount: 2,
+        tips: 'Whole wheat ferments faster due to bran enzyme activity. Watch closely to avoid over-proofing. The dough may not double fully but should look noticeably puffy and pass the poke test.'
+      },
+      'brioche': {
+        name: 'Brioche', bulkMin: 150, finalMin: 90, sfIntervalMin: 0, sfCount: 0,
+        tips: 'Brioche is enriched with butter and eggs, which slow yeast activity. Proof at a slightly warm temperature (78-80\u00B0F) but avoid melting the butter. The dough should be puffy and light when ready.'
+      },
+      'pizza': {
+        name: 'Pizza Dough', bulkMin: 120, finalMin: 30, sfIntervalMin: 30, sfCount: 2,
+        tips: 'Pizza dough benefits enormously from a cold retard. After bulk ferment, divide into balls and refrigerate for 24 hours. The cold ferment develops complex flavors and a more extensible, easier-to-stretch dough.'
+      },
+      'rolls': {
+        name: 'Dinner Rolls', bulkMin: 90, finalMin: 45, sfIntervalMin: 0, sfCount: 0,
+        tips: 'Rolls proof relatively quickly due to their small size. Watch for the dough to puff up noticeably in the pan. They should look light and pillowy before going into the oven.'
+      },
+      'bagels': {
+        name: 'Bagels', bulkMin: 60, finalMin: 20, sfIntervalMin: 0, sfCount: 0,
+        tips: 'Bagels use a short bulk ferment followed by shaping. For best results, cold retard shaped bagels overnight in the fridge. The next day, boil and bake directly from cold for the chewiest texture.'
+      },
+      'focaccia': {
+        name: 'Focaccia', bulkMin: 180, finalMin: 60, sfIntervalMin: 30, sfCount: 3,
+        tips: 'Focaccia needs generous proofing for its signature airy crumb. Use a high-hydration dough (75-80%). Stretch and fold during bulk, then let the final proof happen right in the oiled baking pan until bubbly and jiggly.'
+      }
+    };
+
+    /* ── State ── */
+    var currentBread = 'white';
+    var currentStage = 'bulk'; // 'bulk' or 'final'
+    var bulkCompleted = false;
+    var timerInterval = null;
+    var remainingSec = 0;
+    var totalSec = 0;
+    var isRunning = false;
+    var audioCtx = null;
+    var sfTimerInterval = null;
+    var sfElapsedSec = 0;
+    var sfNextReminder = 0;
+    var sfReminderCount = 0;
+    var CIRCUMFERENCE = 2 * Math.PI * 100;
+
+    function getBread() { return BREADS[currentBread]; }
+
+    /* Temperature adjustment: base is 75°F. Every 10°F change roughly halves/doubles time */
+    function getTempFactor() {
+      var tempVal = parseFloat(document.getElementById('room-temp').value) || 75;
+      var unit = document.getElementById('temp-unit').value;
+      var tempF = unit === 'C' ? (tempVal * 9 / 5) + 32 : tempVal;
+      var diff = tempF - 75;
+      return Math.pow(0.93, diff / 5);
+    }
+
+    function getAdjustedBulkSec() {
+      return Math.round(getBread().bulkMin * 60 * getTempFactor());
+    }
+
+    function getAdjustedFinalSec() {
+      return Math.round(getBread().finalMin * 60 * getTempFactor());
+    }
+
+    function formatHMS(sec) {
+      var h = Math.floor(sec / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      var s = sec % 60;
+      return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function formatHM(sec) {
+      var h = Math.floor(sec / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      if (h > 0) return h + ':' + (m < 10 ? '0' : '') + m;
+      return '0:' + (m < 10 ? '0' : '') + m;
+    }
+
+    function updateSummary() {
+      var bulkSec = getAdjustedBulkSec();
+      var finalSec = getAdjustedFinalSec();
+      document.getElementById('display-bulk').textContent = formatHM(bulkSec);
+      document.getElementById('display-final').textContent = formatHM(finalSec);
+      document.getElementById('display-total').textContent = formatHM(bulkSec + finalSec);
+      document.getElementById('tips-text').textContent = getBread().tips;
+    }
+
+    function updateRing() {
+      var ring = document.getElementById('timer-ring-fg');
+      var pct = totalSec > 0 ? remainingSec / totalSec : 1;
+      var offset = CIRCUMFERENCE * (1 - pct);
+      ring.setAttribute('stroke-dashoffset', offset);
+    }
+
+    function updateTimerDisplay() {
+      document.getElementById('timer-display').textContent = formatHMS(remainingSec);
+      updateRing();
+    }
+
+    function playBeep() {
+      if (!document.getElementById('sound-enabled').checked) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.5);
+      } catch (e) { /* silent fail */ }
+    }
+
+    function playDoubleBell() {
+      if (!document.getElementById('sound-enabled').checked) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.3].forEach(function(delay) {
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = 660;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.25, audioCtx.currentTime + delay);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + 0.4);
+          osc.start(audioCtx.currentTime + delay);
+          osc.stop(audioCtx.currentTime + delay + 0.4);
+        });
+      } catch (e) { /* silent fail */ }
+    }
+
+    function showSFReminder() {
+      sfReminderCount++;
+      var bread = getBread();
+      var el = document.getElementById('sf-reminder');
+      var desc = document.getElementById('sf-desc');
+      desc.textContent = 'Stretch & fold #' + sfReminderCount + ' of ' + bread.sfCount + ' \u2014 gently stretch and fold from all 4 sides.';
+      el.classList.add('visible');
+      playDoubleBell();
+      if (window.showToast) window.showToast('Stretch & fold time! (#' + sfReminderCount + ')');
+      setTimeout(function() { el.classList.remove('visible'); }, 10000);
+    }
+
+    function tick() {
+      remainingSec--;
+      updateTimerDisplay();
+
+      /* Stretch & fold check during bulk */
+      if (currentStage === 'bulk') {
+        sfElapsedSec++;
+        var bread = getBread();
+        if (bread.sfIntervalMin > 0 && sfReminderCount < bread.sfCount) {
+          if (sfElapsedSec >= sfNextReminder) {
+            showSFReminder();
+            sfNextReminder = sfElapsedSec + bread.sfIntervalMin * 60;
+          }
+        }
+      }
+
+      if (remainingSec <= 0) {
+        stopTimer();
+        playBeep();
+        saveSession();
+        if (currentStage === 'bulk') {
+          document.getElementById('timer-status').textContent = 'Bulk Done!';
+          bulkCompleted = true;
+          updateStageTabs();
+          if (window.showToast) window.showToast('Bulk fermentation complete! Time to shape your ' + getBread().name.toLowerCase() + '.');
+        } else {
+          document.getElementById('timer-status').textContent = 'Proofing Done!';
+          if (window.showToast) window.showToast('Final proof complete! Your ' + getBread().name.toLowerCase() + ' is ready for the oven.');
+        }
+      }
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+      if (remainingSec <= 0) {
+        if (currentStage === 'bulk') {
+          totalSec = getAdjustedBulkSec();
+        } else {
+          totalSec = getAdjustedFinalSec();
+        }
+        remainingSec = totalSec;
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      isRunning = true;
+      timerInterval = setInterval(tick, 1000);
+      document.getElementById('btn-start').disabled = true;
+      document.getElementById('btn-pause').disabled = false;
+      document.getElementById('btn-reset').disabled = false;
+      document.getElementById('timer-status').textContent = currentStage === 'bulk' ? 'Bulk fermenting...' : 'Final proofing...';
+
+      /* Init S&F tracking */
+      if (currentStage === 'bulk' && sfElapsedSec === 0) {
+        var bread = getBread();
+        sfReminderCount = 0;
+        sfNextReminder = bread.sfIntervalMin > 0 ? bread.sfIntervalMin * 60 : Infinity;
+      }
+    }
+
+    function pauseTimer() {
+      if (!isRunning) return;
+      isRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('btn-start').disabled = false;
+      document.getElementById('btn-pause').disabled = true;
+      document.getElementById('timer-status').textContent = 'Paused';
+    }
+
+    function stopTimer() {
+      isRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('btn-start').disabled = false;
+      document.getElementById('btn-pause').disabled = true;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      sfElapsedSec = 0;
+      sfReminderCount = 0;
+      sfNextReminder = 0;
+      if (currentStage === 'bulk') {
+        totalSec = getAdjustedBulkSec();
+      } else {
+        totalSec = getAdjustedFinalSec();
+      }
+      remainingSec = totalSec;
+      updateTimerDisplay();
+      document.getElementById('btn-reset').disabled = true;
+      document.getElementById('timer-status').textContent = 'Ready';
+      document.getElementById('sf-reminder').classList.remove('visible');
+    }
+
+    function switchStage(stage) {
+      if (isRunning) return;
+      currentStage = stage;
+      updateStageTabs();
+      resetTimer();
+    }
+
+    function updateStageTabs() {
+      var tabs = document.querySelectorAll('.stage-tab');
+      for (var i = 0; i < tabs.length; i++) {
+        var s = tabs[i].getAttribute('data-stage');
+        tabs[i].classList.remove('active', 'completed');
+        if (s === currentStage) tabs[i].classList.add('active');
+        else if (s === 'bulk' && bulkCompleted) tabs[i].classList.add('completed');
+      }
+    }
+
+    function saveSession() {
+      var history = JSON.parse(localStorage.getItem('breadProofHistory') || '[]');
+      history.unshift({
+        bread: getBread().name,
+        stage: currentStage === 'bulk' ? 'Bulk Ferment' : 'Final Proof',
+        time: formatHM(currentStage === 'bulk' ? getAdjustedBulkSec() : getAdjustedFinalSec()),
+        date: new Date().toLocaleDateString()
+      });
+      if (history.length > 5) history = history.slice(0, 5);
+      localStorage.setItem('breadProofHistory', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var history = JSON.parse(localStorage.getItem('breadProofHistory') || '[]');
+      var container = document.getElementById('history-list');
+      if (!history.length) {
+        container.innerHTML = '<p class="history-empty">No proofing sessions yet. Start your first timer!</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < history.length; i++) {
+        var h = history[i];
+        html += '<div class="history-item"><span class="history-bread">' + h.bread + '</span><span class="history-meta">' + h.stage + ' \u2014 ' + h.time + ' \u2014 ' + h.date + '</span></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function selectBread(bread) {
+      currentBread = bread;
+      currentStage = 'bulk';
+      bulkCompleted = false;
+      var btns = document.querySelectorAll('.bread-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-bread') === bread);
+      }
+      updateStageTabs();
+      resetTimer();
+      updateSummary();
+    }
+
+    function updateDoublingVisual() {
+      var val = parseInt(document.getElementById('doubling-range').value);
+      var blocks = document.querySelectorAll('.doubling-block');
+      var filled = Math.round(val / 10);
+      for (var i = 0; i < blocks.length; i++) {
+        blocks[i].classList.toggle('filled', i < filled);
+      }
+      document.getElementById('doubling-label').textContent = val + '%';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'baking/bread-proofing-timer', title: 'Bread Proofing Timer', description: 'Temperature-adjusted bread proofing timer with bulk fermentation, final proof, stretch and fold reminders, and poke test guide.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      /* Bread type buttons */
+      var breadBtns = document.querySelectorAll('.bread-btn');
+      for (var i = 0; i < breadBtns.length; i++) {
+        breadBtns[i].addEventListener('click', function() {
+          if (isRunning) return;
+          selectBread(this.getAttribute('data-bread'));
+        });
+      }
+
+      /* Stage tabs */
+      var stageTabs = document.querySelectorAll('.stage-tab');
+      for (var i = 0; i < stageTabs.length; i++) {
+        stageTabs[i].addEventListener('click', function() {
+          switchStage(this.getAttribute('data-stage'));
+        });
+      }
+
+      /* Timer controls */
+      document.getElementById('btn-start').addEventListener('click', startTimer);
+      document.getElementById('btn-pause').addEventListener('click', pauseTimer);
+      document.getElementById('btn-reset').addEventListener('click', function() { resetTimer(); });
+
+      /* Temp changes */
+      document.getElementById('room-temp').addEventListener('input', function() {
+        if (!isRunning) {
+          updateSummary();
+          resetTimer();
+        }
+      });
+      document.getElementById('temp-unit').addEventListener('change', function() {
+        var tempInput = document.getElementById('room-temp');
+        var val = parseFloat(tempInput.value);
+        if (this.value === 'C') {
+          tempInput.value = Math.round((val - 32) * 5 / 9);
+          tempInput.min = 5;
+          tempInput.max = 50;
+        } else {
+          tempInput.value = Math.round(val * 9 / 5 + 32);
+          tempInput.min = 40;
+          tempInput.max = 120;
+        }
+        if (!isRunning) {
+          updateSummary();
+          resetTimer();
+        }
+      });
+
+      /* Cold retard toggle */
+      document.getElementById('cold-retard').addEventListener('change', function() {
+        document.getElementById('cold-retard-config').classList.toggle('visible', this.checked);
+      });
+
+      /* Doubling range */
+      document.getElementById('doubling-range').addEventListener('input', updateDoublingVisual);
+
+      /* Init */
+      updateSummary();
+      resetTimer();
+      renderHistory();
+      updateDoublingVisual();
+    });
+  </script>
+</body>
+</html>

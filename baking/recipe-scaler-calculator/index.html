@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Scaler Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Scale any recipe up or down instantly with smart fraction display. Supports cups, grams, ounces, tablespoons. Free, private, works offline.">
+  <meta property="og:title" content="Recipe Scaler Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Scale any recipe up or down instantly with smart fraction display. Supports cups, grams, ounces, tablespoons. Free, private, works offline.">
+  <meta property="og:url" content="https://tool.teamzlab.com/baking/recipe-scaler-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/baking.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Recipe Scaler Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Scale any recipe up or down instantly with smart fraction display. Supports cups, grams, ounces, tablespoons. Free, private, works offline.">
+  <link rel="canonical" href="https://tool.teamzlab.com/baking/recipe-scaler-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .scale-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .scale-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 0.6rem 1.1rem; cursor: pointer; font-size: 0.95rem; font-weight: 600; color: var(--text); font-family: inherit; transition: all 0.2s; }
+    .scale-btn:hover { border-color: var(--accent); }
+    .scale-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .serving-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end; margin-bottom: 1.5rem; }
+    .input-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .input-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .input-group input, .input-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .input-group input:focus, .input-group select:focus { outline: none; border-color: var(--accent); }
+    .scale-factor-display { font-size: 0.9rem; color: var(--text-muted); padding-bottom: 0.75rem; font-weight: 500; }
+    .preset-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .preset-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.85rem; color: var(--text); font-family: inherit; transition: all 0.2s; }
+    .preset-btn:hover { border-color: var(--accent); }
+    .ingredient-list { margin-bottom: 1.5rem; }
+    .ingredient-row { display: grid; grid-template-columns: 2fr 1fr 1fr 36px; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .ingredient-row input, .ingredient-row select { padding: 0.6rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .ingredient-row input:focus, .ingredient-row select:focus { outline: none; border-color: var(--accent); }
+    .remove-btn { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: var(--text-muted); padding: 0.4rem; border-radius: 6px; transition: color 0.2s; }
+    .remove-btn:hover { color: var(--heading); }
+    .add-ingredient-btn { background: var(--surface); border: 2px dashed var(--border); border-radius: 8px; padding: 0.6rem 1rem; cursor: pointer; font-size: 0.9rem; color: var(--text-muted); font-family: inherit; width: 100%; transition: all 0.2s; margin-bottom: 1.5rem; }
+    .add-ingredient-btn:hover { border-color: var(--accent); color: var(--text); }
+    .calc-actions { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .calc-actions .btn-primary, .calc-actions .btn-secondary { flex: 1; }
+    .result-panel { display: none; }
+    .result-panel.visible { display: block; }
+    .scaled-recipe { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+    .scaled-recipe h3 { margin: 0 0 1rem; color: var(--heading); font-size: 1.1rem; }
+    .scaled-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .scaled-row:last-child { border-bottom: none; }
+    .scaled-name { color: var(--text); font-weight: 500; }
+    .scaled-amount { color: var(--heading); font-weight: 700; }
+    .copy-recipe-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; cursor: pointer; font-size: 0.9rem; color: var(--text); font-family: inherit; transition: all 0.2s; }
+    .copy-recipe-btn:hover { border-color: var(--accent); }
+    @media (max-width: 600px) {
+      .serving-row { grid-template-columns: 1fr 1fr; }
+      .scale-factor-display { grid-column: 1 / -1; }
+      .ingredient-row { grid-template-columns: 1fr 1fr 1fr 32px; }
+      .calc-actions { flex-direction: column; }
+      .calc-actions .btn-primary, .calc-actions .btn-secondary { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .scale-btns { gap: 0.4rem; }
+      .scale-btn { padding: 0.5rem 0.8rem; font-size: 0.85rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Baking Tools", "item": "https://tool.teamzlab.com/baking/"}, {"@type": "ListItem", "position": 3, "name": "Recipe Scaler Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I scale a recipe for more servings?", "acceptedAnswer": {"@type": "Answer", "text": "Enter the original number of servings and your desired servings. The calculator automatically computes the scale factor and adjusts every ingredient proportionally. You can also use the quick scale buttons to halve, double, or triple a recipe instantly."}}, {"@type": "Question", "name": "Does scaling affect baking time?", "acceptedAnswer": {"@type": "Answer", "text": "Scaling changes ingredient amounts but not baking temperature or time directly. A doubled cookie recipe bakes at the same temperature in two batches. Larger pans may need lower temperatures and longer baking times. Always use visual cues and a thermometer to check doneness."}}, {"@type": "Question", "name": "What are smart fractions?", "acceptedAnswer": {"@type": "Answer", "text": "Smart fractions convert decimal results into practical kitchen measurements like one-third cup or three-quarters teaspoon. This makes scaled recipes easier to measure without a digital scale, using standard measuring cups and spoons."}}, {"@type": "Question", "name": "Can I scale baking powder and baking soda proportionally?", "acceptedAnswer": {"@type": "Answer", "text": "For small adjustments like doubling, scale leaveners proportionally. For very large batches of three times or more, reduce baking powder and baking soda by about ten to fifteen percent to avoid an overly risen or metallic-tasting result."}}, {"@type": "Question", "name": "How do I add my own recipe?", "acceptedAnswer": {"@type": "Answer", "text": "Click the Add Ingredient button to create rows for each ingredient. Enter the name, original amount, and unit for each. You can start from a preset recipe and modify it, or build your ingredient list from scratch. The calculator saves your inputs automatically."}}, {"@type": "Question", "name": "Is this calculator accurate for all recipe types?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, the proportional math works for any recipe type. However, some recipes like bread and pastry benefit from baker's percentages. For most home baking including cookies, cakes, muffins, and quick breads, linear scaling works perfectly."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Recipe Scaler Calculator", "description": "Scale any recipe up or down with precise ingredient adjustments and smart fraction display.", "url": "https://tool.teamzlab.com/baking/recipe-scaler-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Recipe Scaler Calculator</h1>
+      <p class="tool-description">Scale any recipe up or down with precise ingredient adjustments. Enter your ingredients, choose a scale factor or set desired servings, and get perfectly proportioned amounts with smart fraction display. Great for doubling batches, halving recipes, or cooking for a crowd.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <h2 style="margin-bottom: 0.75rem; color: var(--heading);">Preset Recipes</h2>
+      <div class="preset-row" id="preset-row">
+        <button type="button" class="preset-btn" data-preset="cookies">&#127850; Chocolate Chip Cookies</button>
+        <button type="button" class="preset-btn" data-preset="banana-bread">&#127836; Banana Bread</button>
+        <button type="button" class="preset-btn" data-preset="pancakes">&#129374; Pancakes</button>
+        <button type="button" class="preset-btn" data-preset="pizza-dough">&#127829; Pizza Dough</button>
+        <button type="button" class="preset-btn" data-preset="brownies">&#127851; Brownies</button>
+      </div>
+
+      <h2 style="margin-bottom: 0.75rem; color: var(--heading);">Servings</h2>
+      <div class="serving-row">
+        <div class="input-group">
+          <label for="original-servings">Original Servings</label>
+          <input type="number" id="original-servings" min="1" max="999" value="12" step="1">
+        </div>
+        <div class="input-group">
+          <label for="desired-servings">Desired Servings</label>
+          <input type="number" id="desired-servings" min="1" max="999" value="12" step="1">
+        </div>
+        <div class="scale-factor-display" id="scale-factor-display">Scale: 1&times;</div>
+      </div>
+
+      <h2 style="margin-bottom: 0.75rem; color: var(--heading);">Quick Scale</h2>
+      <div class="scale-btns" id="scale-btns">
+        <button type="button" class="scale-btn" data-scale="0.5">&frac12;&times;</button>
+        <button type="button" class="scale-btn" data-scale="0.6667">&frac23;&times;</button>
+        <button type="button" class="scale-btn active" data-scale="1">1&times;</button>
+        <button type="button" class="scale-btn" data-scale="1.5">1&frac12;&times;</button>
+        <button type="button" class="scale-btn" data-scale="2">2&times;</button>
+        <button type="button" class="scale-btn" data-scale="3">3&times;</button>
+        <button type="button" class="scale-btn" data-scale="custom">Custom</button>
+      </div>
+
+      <h2 style="margin-bottom: 0.75rem; color: var(--heading);">Ingredients</h2>
+      <div class="ingredient-list" id="ingredient-list"></div>
+      <button type="button" class="add-ingredient-btn" id="add-ingredient-btn">+ Add Ingredient</button>
+
+      <div class="calc-actions">
+        <button type="button" class="btn-primary" id="scale-btn">Scale Recipe</button>
+        <button type="button" class="btn-secondary" id="clear-btn">Clear All</button>
+      </div>
+
+      <div class="result-panel" id="result-panel">
+        <div class="scaled-recipe" id="scaled-recipe">
+          <h3 id="scaled-title">Scaled Recipe</h3>
+          <div id="scaled-list"></div>
+        </div>
+        <button type="button" class="copy-recipe-btn" id="copy-btn">&#128203; Copy Scaled Recipe</button>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Recipe Scaler Calculator Works</h2>
+      <p>The recipe scaler calculator multiplies every ingredient in your recipe by a single scale factor. When you change the desired servings from 12 to 24, the calculator divides 24 by 12 to get a factor of 2, then doubles every ingredient amount. This proportional scaling preserves the balance of flavors, textures, and chemical reactions that make your recipe work. The tool supports all common baking units including cups, tablespoons, teaspoons, grams, ounces, and milliliters, so you can enter ingredients exactly as written in any recipe.</p>
+      <p>What makes this scaler especially useful for bakers is the smart fraction display. Instead of showing awkward decimals like 0.333 cups, it converts amounts to practical fractions like one-third cup. The calculator recognizes common fractions used in cooking — halves, thirds, quarters, and their multiples — making the scaled recipe immediately usable without mental math or rounding guesses.</p>
+
+      <h2>Recipe Scaling Tips for Better Results</h2>
+      <p>While most ingredients scale linearly, some need extra attention when doubling or halving recipes. Leavening agents like baking powder and baking soda should generally be scaled proportionally, but for very large batches (3x or more), reduce the leavener by about 10-15 percent to avoid an overly risen or metallic-tasting result. Salt and spices can also be reduced slightly in large batches since their flavors concentrate differently at scale.</p>
+      <p>Baking times and temperatures do not scale the same way as ingredients. A doubled cookie recipe still bakes at the same temperature, just in two batches. A doubled cake recipe baked in a larger pan may need a lower temperature and longer baking time. For bread recipes, yeast amounts can stay the same or increase slightly — doubling the flour does not always require doubling the yeast, especially for slow-rise methods.</p>
+
+      <h2>When to Scale Recipes Up or Down</h2>
+      <p>Scaling recipes is essential for home bakers who need to adjust for different occasions. Halving a recipe works well for smaller households or when testing a new recipe without committing to a full batch. Doubling or tripling is perfect for holiday baking, potlucks, or meal prepping. The preset recipes in this calculator give you a quick starting point for popular baked goods, and you can modify ingredients to match your specific recipe before scaling.</p>
+      <p>Professional bakers and small bakery owners use recipe scaling daily when adjusting production quantities. Converting a home recipe that makes 12 cookies into a commercial batch of 120 requires precise scaling to maintain consistency. This calculator handles that math instantly, letting you focus on technique rather than arithmetic. The copy feature makes it easy to save your scaled recipe for reference during baking.</p>
+
+      <h2>Understanding Fractions in Baking</h2>
+      <p>Baking relies heavily on fractional measurements, especially in recipes using cups and spoons. This calculator displays results as practical fractions whenever possible because that matches how measuring tools are labeled. Your measuring cup set likely includes one-quarter, one-third, one-half, and one-cup measures. When a scaled amount falls between standard fractions, the calculator rounds to the nearest practical measurement, ensuring you can measure accurately with standard kitchen tools without a digital scale.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Baking Tools', url: '/baking/' },
+      { name: 'Recipe Scaler Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'How do I scale a recipe for more servings?', a: 'Enter the original number of servings and your desired servings. The calculator automatically computes the scale factor and adjusts every ingredient proportionally. You can also use the quick scale buttons to halve, double, or triple a recipe instantly.' },
+      { q: 'Does scaling affect baking time?', a: 'Scaling changes ingredient amounts but not baking temperature or time directly. A doubled cookie recipe bakes at the same temperature in two batches. Larger pans may need lower temperatures and longer baking times. Always use visual cues and a thermometer to check doneness.' },
+      { q: 'What are smart fractions?', a: 'Smart fractions convert decimal results into practical kitchen measurements like one-third cup or three-quarters teaspoon. This makes scaled recipes easier to measure without a digital scale, using standard measuring cups and spoons.' },
+      { q: 'Can I scale baking powder and baking soda proportionally?', a: 'For small adjustments like doubling, scale leaveners proportionally. For very large batches of three times or more, reduce baking powder and baking soda by about ten to fifteen percent to avoid an overly risen or metallic-tasting result.' },
+      { q: 'How do I add my own recipe?', a: 'Click the Add Ingredient button to create rows for each ingredient. Enter the name, original amount, and unit for each. You can start from a preset recipe and modify it, or build your ingredient list from scratch. The calculator saves your inputs automatically.' },
+      { q: 'Is this calculator accurate for all recipe types?', a: 'Yes, the proportional math works for any recipe type. However, some recipes like bread and pastry benefit from baker\'s percentages. For most home baking including cookies, cakes, muffins, and quick breads, linear scaling works perfectly.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'baking/baking-conversion-calculator', name: 'Baking Conversion Calculator', description: 'Convert between cups, grams, ounces, and tablespoons for any baking ingredient.' },
+      { slug: 'baking/pan-size-converter', name: 'Pan Size Converter', description: 'Convert recipes between different pan sizes and shapes with adjusted baking times.' },
+      { slug: 'baking/sourdough-hydration-calculator', name: 'Sourdough Hydration Calculator', description: 'Calculate dough hydration percentage and adjust flour and water ratios.' },
+      { slug: 'baking/baking-cost-calculator', name: 'Baking Cost Calculator', description: 'Calculate the cost per batch, per serving, and profit margin for baked goods.' },
+      { slug: 'baking/egg-substitution-calculator', name: 'Egg Substitution Calculator', description: 'Find the best egg substitute for your recipe based on purpose and dietary needs.' },
+      { slug: 'baking/yeast-conversion-calculator', name: 'Yeast Conversion Calculator', description: 'Convert between active dry, instant, fresh yeast, and sourdough starter.' }
+    ];
+
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'baking/recipe-scaler-calculator', title: 'Recipe Scaler Calculator', description: 'Scale any recipe up or down with precise ingredient adjustments and smart fraction display.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+    /* ---- Preset recipes ---- */
+    var presets = {
+      'cookies': {
+        name: 'Chocolate Chip Cookies',
+        servings: 24,
+        ingredients: [
+          { name: 'All-Purpose Flour', amount: 2.25, unit: 'cups' },
+          { name: 'Butter (softened)', amount: 1, unit: 'cups' },
+          { name: 'Granulated Sugar', amount: 0.75, unit: 'cups' },
+          { name: 'Brown Sugar (packed)', amount: 0.75, unit: 'cups' },
+          { name: 'Eggs', amount: 2, unit: 'whole' },
+          { name: 'Vanilla Extract', amount: 1, unit: 'tsp' },
+          { name: 'Baking Soda', amount: 1, unit: 'tsp' },
+          { name: 'Salt', amount: 1, unit: 'tsp' },
+          { name: 'Chocolate Chips', amount: 2, unit: 'cups' }
+        ]
+      },
+      'banana-bread': {
+        name: 'Banana Bread',
+        servings: 10,
+        ingredients: [
+          { name: 'Ripe Bananas (mashed)', amount: 3, unit: 'whole' },
+          { name: 'All-Purpose Flour', amount: 1.5, unit: 'cups' },
+          { name: 'Granulated Sugar', amount: 0.75, unit: 'cups' },
+          { name: 'Butter (melted)', amount: 0.33, unit: 'cups' },
+          { name: 'Egg', amount: 1, unit: 'whole' },
+          { name: 'Baking Soda', amount: 1, unit: 'tsp' },
+          { name: 'Salt', amount: 0.25, unit: 'tsp' },
+          { name: 'Vanilla Extract', amount: 1, unit: 'tsp' }
+        ]
+      },
+      'pancakes': {
+        name: 'Pancakes',
+        servings: 8,
+        ingredients: [
+          { name: 'All-Purpose Flour', amount: 1.5, unit: 'cups' },
+          { name: 'Milk', amount: 1.25, unit: 'cups' },
+          { name: 'Egg', amount: 1, unit: 'whole' },
+          { name: 'Butter (melted)', amount: 3, unit: 'tbsp' },
+          { name: 'Granulated Sugar', amount: 2, unit: 'tbsp' },
+          { name: 'Baking Powder', amount: 2, unit: 'tsp' },
+          { name: 'Salt', amount: 0.5, unit: 'tsp' }
+        ]
+      },
+      'pizza-dough': {
+        name: 'Pizza Dough',
+        servings: 2,
+        ingredients: [
+          { name: 'Bread Flour', amount: 3, unit: 'cups' },
+          { name: 'Warm Water', amount: 1, unit: 'cups' },
+          { name: 'Olive Oil', amount: 2, unit: 'tbsp' },
+          { name: 'Instant Yeast', amount: 2.25, unit: 'tsp' },
+          { name: 'Sugar', amount: 1, unit: 'tsp' },
+          { name: 'Salt', amount: 1, unit: 'tsp' }
+        ]
+      },
+      'brownies': {
+        name: 'Brownies',
+        servings: 16,
+        ingredients: [
+          { name: 'Butter', amount: 0.5, unit: 'cups' },
+          { name: 'Granulated Sugar', amount: 1, unit: 'cups' },
+          { name: 'Eggs', amount: 2, unit: 'whole' },
+          { name: 'Vanilla Extract', amount: 1, unit: 'tsp' },
+          { name: 'Cocoa Powder', amount: 0.33, unit: 'cups' },
+          { name: 'All-Purpose Flour', amount: 0.5, unit: 'cups' },
+          { name: 'Salt', amount: 0.25, unit: 'tsp' },
+          { name: 'Baking Powder', amount: 0.25, unit: 'tsp' }
+        ]
+      }
+    };
+
+    /* ---- Fraction helpers ---- */
+    var fractionMap = [
+      { val: 0, str: '' },
+      { val: 1/8, str: '\u215B' },
+      { val: 1/4, str: '\u00BC' },
+      { val: 1/3, str: '\u2153' },
+      { val: 3/8, str: '\u215C' },
+      { val: 1/2, str: '\u00BD' },
+      { val: 5/8, str: '\u215D' },
+      { val: 2/3, str: '\u2154' },
+      { val: 3/4, str: '\u00BE' },
+      { val: 7/8, str: '\u215E' }
+    ];
+
+    function toFraction(num) {
+      if (num <= 0) return '0';
+      var whole = Math.floor(num);
+      var frac = num - whole;
+      if (frac < 0.05) return whole === 0 ? '< \u215B' : '' + whole;
+      var best = fractionMap[0];
+      var bestDiff = 999;
+      for (var i = 0; i < fractionMap.length; i++) {
+        var d = Math.abs(frac - fractionMap[i].val);
+        if (d < bestDiff) { bestDiff = d; best = fractionMap[i]; }
+      }
+      if (best.val === 0 && whole > 0) return '' + whole;
+      if (best.val >= 0.97) return '' + (whole + 1);
+      if (whole === 0) return best.str;
+      return whole + ' ' + best.str;
+    }
+
+    function formatAmount(amount, unit) {
+      if (amount <= 0) return '0';
+      /* For grams, ounces, ml — show decimals */
+      if (unit === 'g' || unit === 'oz' || unit === 'ml') {
+        if (amount >= 10) return Math.round(amount) + '';
+        return (Math.round(amount * 10) / 10) + '';
+      }
+      /* For whole items */
+      if (unit === 'whole') {
+        if (amount % 1 < 0.1 || amount % 1 > 0.9) return Math.round(amount) + '';
+        return toFraction(amount);
+      }
+      /* For cups, tbsp, tsp — use fractions */
+      return toFraction(amount);
+    }
+
+    /* ---- State ---- */
+    var ingredientIdCounter = 0;
+    var currentScale = 1;
+
+    /* ---- DOM ---- */
+    var ingredientList = document.getElementById('ingredient-list');
+    var originalServings = document.getElementById('original-servings');
+    var desiredServings = document.getElementById('desired-servings');
+    var scaleBtns = document.querySelectorAll('.scale-btn');
+    var scaleFactorDisplay = document.getElementById('scale-factor-display');
+
+    function addIngredientRow(name, amount, unit) {
+      ingredientIdCounter++;
+      var id = ingredientIdCounter;
+      var div = document.createElement('div');
+      div.className = 'ingredient-row';
+      div.setAttribute('data-id', id);
+      div.innerHTML = '<input type="text" id="ing-name-' + id + '" placeholder="Ingredient name" value="' + (name || '') + '">' +
+        '<input type="number" id="ing-amount-' + id + '" placeholder="Amount" min="0" step="any" value="' + (amount || '') + '">' +
+        '<select id="ing-unit-' + id + '">' +
+        '<option value="cups"' + (unit === 'cups' ? ' selected' : '') + '>cups</option>' +
+        '<option value="tbsp"' + (unit === 'tbsp' ? ' selected' : '') + '>tbsp</option>' +
+        '<option value="tsp"' + (unit === 'tsp' ? ' selected' : '') + '>tsp</option>' +
+        '<option value="g"' + (unit === 'g' ? ' selected' : '') + '>grams</option>' +
+        '<option value="oz"' + (unit === 'oz' ? ' selected' : '') + '>ounces</option>' +
+        '<option value="ml"' + (unit === 'ml' ? ' selected' : '') + '>ml</option>' +
+        '<option value="whole"' + (unit === 'whole' ? ' selected' : '') + '>whole</option>' +
+        '</select>' +
+        '<button type="button" class="remove-btn" title="Remove">&times;</button>';
+      ingredientList.appendChild(div);
+      div.querySelector('.remove-btn').addEventListener('click', function() {
+        div.remove();
+      });
+    }
+
+    function clearIngredients() {
+      ingredientList.innerHTML = '';
+      ingredientIdCounter = 0;
+    }
+
+    function getIngredients() {
+      var rows = ingredientList.querySelectorAll('.ingredient-row');
+      var items = [];
+      rows.forEach(function(row) {
+        var id = row.getAttribute('data-id');
+        var name = document.getElementById('ing-name-' + id).value.trim();
+        var amount = parseFloat(document.getElementById('ing-amount-' + id).value);
+        var unit = document.getElementById('ing-unit-' + id).value;
+        if (name && !isNaN(amount) && amount > 0) {
+          items.push({ name: name, amount: amount, unit: unit });
+        }
+      });
+      return items;
+    }
+
+    function loadPreset(key) {
+      var p = presets[key];
+      if (!p) return;
+      clearIngredients();
+      originalServings.value = p.servings;
+      desiredServings.value = p.servings;
+      currentScale = 1;
+      updateScaleDisplay();
+      p.ingredients.forEach(function(ing) {
+        addIngredientRow(ing.name, ing.amount, ing.unit);
+      });
+      setActiveScaleBtn(1);
+      document.getElementById('result-panel').classList.remove('visible');
+    }
+
+    /* ---- Preset buttons ---- */
+    document.querySelectorAll('.preset-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        loadPreset(btn.getAttribute('data-preset'));
+      });
+    });
+
+    /* ---- Add ingredient ---- */
+    document.getElementById('add-ingredient-btn').addEventListener('click', function() {
+      addIngredientRow('', '', 'cups');
+    });
+
+    /* ---- Scale buttons ---- */
+    function setActiveScaleBtn(scale) {
+      scaleBtns.forEach(function(b) {
+        var s = b.getAttribute('data-scale');
+        if (s === 'custom') {
+          b.classList.toggle('active', typeof scale === 'string' && scale === 'custom');
+        } else {
+          b.classList.toggle('active', Math.abs(parseFloat(s) - scale) < 0.001);
+        }
+      });
+    }
+
+    function updateScaleDisplay() {
+      var factor = currentScale;
+      scaleFactorDisplay.innerHTML = 'Scale: ' + (Math.round(factor * 1000) / 1000) + '&times;';
+    }
+
+    scaleBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var s = btn.getAttribute('data-scale');
+        if (s === 'custom') {
+          var input = prompt('Enter custom scale factor (e.g., 2.5):');
+          if (input === null) return;
+          var val = parseFloat(input);
+          if (isNaN(val) || val <= 0 || val > 100) {
+            if (window.showToast) window.showToast('Please enter a valid number between 0 and 100.');
+            return;
+          }
+          currentScale = val;
+          var orig = parseInt(originalServings.value, 10) || 1;
+          desiredServings.value = Math.round(orig * val);
+          setActiveScaleBtn('custom');
+        } else {
+          currentScale = parseFloat(s);
+          var orig = parseInt(originalServings.value, 10) || 1;
+          desiredServings.value = Math.round(orig * currentScale);
+          setActiveScaleBtn(currentScale);
+        }
+        updateScaleDisplay();
+      });
+    });
+
+    /* ---- Servings change updates scale ---- */
+    function onServingsChange() {
+      var orig = parseInt(originalServings.value, 10);
+      var desired = parseInt(desiredServings.value, 10);
+      if (orig > 0 && desired > 0) {
+        currentScale = desired / orig;
+        updateScaleDisplay();
+        setActiveScaleBtn(currentScale);
+      }
+    }
+    originalServings.addEventListener('input', onServingsChange);
+    desiredServings.addEventListener('input', onServingsChange);
+
+    /* ---- Scale calculation ---- */
+    function scaleRecipe() {
+      var ingredients = getIngredients();
+      if (ingredients.length === 0) {
+        if (window.showToast) window.showToast('Please add at least one ingredient with a name and amount.');
+        return;
+      }
+      var orig = parseInt(originalServings.value, 10);
+      var desired = parseInt(desiredServings.value, 10);
+      if (!orig || orig <= 0 || !desired || desired <= 0) {
+        if (window.showToast) window.showToast('Please enter valid serving numbers.');
+        return;
+      }
+      currentScale = desired / orig;
+      updateScaleDisplay();
+
+      var scaledList = document.getElementById('scaled-list');
+      scaledList.innerHTML = '';
+      var scaledTitle = document.getElementById('scaled-title');
+      scaledTitle.textContent = 'Scaled Recipe (' + desired + ' servings)';
+
+      ingredients.forEach(function(ing) {
+        var scaled = ing.amount * currentScale;
+        var display = formatAmount(scaled, ing.unit);
+        var unitLabel = ing.unit === 'whole' ? '' : ' ' + ing.unit;
+        var div = document.createElement('div');
+        div.className = 'scaled-row';
+        div.innerHTML = '<span class="scaled-name">' + ing.name + '</span><span class="scaled-amount">' + display + unitLabel + '</span>';
+        scaledList.appendChild(div);
+      });
+
+      document.getElementById('result-panel').classList.add('visible');
+      document.getElementById('result-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    document.getElementById('scale-btn').addEventListener('click', scaleRecipe);
+
+    /* ---- Copy ---- */
+    document.getElementById('copy-btn').addEventListener('click', function() {
+      var ingredients = getIngredients();
+      if (ingredients.length === 0) return;
+      var orig = parseInt(originalServings.value, 10) || 1;
+      var desired = parseInt(desiredServings.value, 10) || 1;
+      var factor = desired / orig;
+      var lines = ['Scaled Recipe (' + desired + ' servings)', ''];
+      ingredients.forEach(function(ing) {
+        var scaled = ing.amount * factor;
+        var display = formatAmount(scaled, ing.unit);
+        var unitLabel = ing.unit === 'whole' ? '' : ' ' + ing.unit;
+        lines.push(display + unitLabel + '  ' + ing.name);
+      });
+      navigator.clipboard.writeText(lines.join('\n')).then(function() {
+        if (window.showToast) window.showToast('Scaled recipe copied to clipboard!');
+      });
+    });
+
+    /* ---- Clear ---- */
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      clearIngredients();
+      originalServings.value = 12;
+      desiredServings.value = 12;
+      currentScale = 1;
+      updateScaleDisplay();
+      setActiveScaleBtn(1);
+      document.getElementById('result-panel').classList.remove('visible');
+      addIngredientRow('', '', 'cups');
+    });
+
+    /* ---- Enter key ---- */
+    document.getElementById('tool-calculator').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); scaleRecipe(); }
+    });
+
+    /* ---- Init with one empty row ---- */
+    addIngredientRow('', '', 'cups');
+  });
+  </script>
+</body>
+</html>

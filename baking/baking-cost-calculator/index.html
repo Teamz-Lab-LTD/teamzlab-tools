@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baking Cost Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate exact ingredient costs per batch and per serving for any recipe. Compare homemade vs store-bought prices and find your ideal selling price. Free.">
+  <meta property="og:title" content="Baking Cost Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Break down baking costs per batch and per serving. Add ingredients, overhead, and profit margin to price your baked goods.">
+  <meta property="og:url" content="https://tool.teamzlab.com/baking/baking-cost-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/baking.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Baking Cost Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Break down baking costs per batch and per serving with ingredient-level detail.">
+  <link rel="canonical" href="https://tool.teamzlab.com/baking/baking-cost-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .bc-form { padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .bc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .bc-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .bc-field.full-width { grid-column: 1 / -1; }
+    .bc-field label { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .bc-field input,
+    .bc-field select { width: 100%; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-md); box-sizing: border-box; }
+    .bc-field input:focus,
+    .bc-field select:focus { outline: none; border-color: var(--heading); }
+    .bc-field .bc-hint { font-size: var(--text-xs); color: var(--text-muted); }
+
+    .bc-section-title { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; margin-top: 1.25rem; }
+    .bc-section-title:first-child { margin-top: 0; }
+
+    .bc-ingredients-header { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 40px; gap: 0.5rem; padding: 0.5rem 0; font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .bc-ingredient-row { display: grid; grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 40px; gap: 0.5rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+    .bc-ingredient-row input,
+    .bc-ingredient-row select { padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: var(--text-sm); box-sizing: border-box; width: 100%; }
+    .bc-ingredient-row input:focus { outline: none; border-color: var(--heading); }
+    .bc-remove-btn { width: 32px; height: 32px; border: none; background: none; color: var(--text-muted); font-size: var(--text-lg); cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .bc-remove-btn:hover { background: var(--surface); color: var(--heading); }
+
+    .bc-quick-adds { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .bc-quick-btn { padding: 0.35rem 0.75rem; border: 1px solid var(--border); border-radius: 20px; background: var(--bg); color: var(--text); font-size: var(--text-xs); cursor: pointer; transition: all 0.2s; }
+    .bc-quick-btn:hover { border-color: var(--heading); color: var(--heading); }
+
+    .bc-actions { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+
+    .bc-results { display: none; margin-top: 1.5rem; }
+    .bc-results.visible { display: block; }
+
+    .bc-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .bc-summary-card { text-align: center; padding: 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+    .bc-summary-card .bc-card-label { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .bc-summary-card .bc-card-value { font-size: var(--text-xl); font-weight: 800; color: var(--heading); }
+
+    .bc-breakdown-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .bc-breakdown-table th,
+    .bc-breakdown-table td { padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
+    .bc-breakdown-table th { background: var(--surface); color: var(--heading); font-weight: 700; }
+    .bc-breakdown-table td { color: var(--text); }
+    .bc-breakdown-table tr:last-child td { border-bottom: none; }
+    .bc-breakdown-table .bc-total-row { font-weight: 700; color: var(--heading); background: var(--surface); }
+    .bc-breakdown-table td:last-child,
+    .bc-breakdown-table th:last-child { text-align: right; }
+
+    .bc-pricing-section { margin-bottom: 1.5rem; padding: 1.25rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+    .bc-pricing-section h3 { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .bc-pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    .bc-pricing-item { text-align: center; }
+    .bc-pricing-item .bc-pricing-label { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.25rem; }
+    .bc-pricing-item .bc-pricing-value { font-size: var(--text-lg); font-weight: 800; color: var(--heading); }
+
+    .bc-compare-section { margin-bottom: 1.5rem; }
+    .bc-compare-section h3 { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .bc-bar-wrap { display: flex; flex-direction: column; gap: 0.75rem; }
+    .bc-bar-row { display: flex; align-items: center; gap: 0.75rem; }
+    .bc-bar-label { width: 110px; font-size: var(--text-sm); font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .bc-bar-track { flex: 1; height: 32px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; }
+    .bc-bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 0.75rem; font-size: var(--text-sm); font-weight: 700; transition: width 0.5s ease; }
+    .bc-bar-fill.homemade { background: var(--accent); color: var(--accent-text); }
+    .bc-bar-fill.store { background: var(--heading); color: var(--bg); }
+    .bc-savings-badge { text-align: center; padding: 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); margin-top: 1rem; }
+    .bc-savings-badge .bc-savings-amount { font-size: var(--text-2xl); font-weight: 800; color: var(--heading); }
+    .bc-savings-badge .bc-savings-label { font-size: var(--text-sm); color: var(--text-muted); }
+
+    .bc-copy-section { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      .bc-form { padding: 1rem; }
+      .bc-row { grid-template-columns: 1fr; }
+      .bc-ingredients-header { display: none; }
+      .bc-ingredient-row { grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 0.75rem 0; }
+      .bc-ingredient-row input:first-child { grid-column: 1 / -1; }
+      .bc-remove-btn { grid-column: 1 / -1; justify-self: end; }
+      .bc-summary-grid { grid-template-columns: 1fr; }
+      .bc-pricing-grid { grid-template-columns: 1fr; }
+      .bc-bar-label { width: 80px; font-size: var(--text-xs); }
+      .bc-actions { flex-direction: column; }
+      .bc-actions .btn-primary,
+      .bc-actions .btn-secondary { width: 100%; }
+      .bc-copy-section { flex-direction: column; }
+      .bc-copy-section .btn-primary,
+      .bc-copy-section .btn-secondary { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Baking Tools", "item": "https://tool.teamzlab.com/baking/"}, {"@type": "ListItem", "position": 3, "name": "Baking Cost Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I calculate the cost of a single ingredient in my recipe?", "acceptedAnswer": {"@type": "Answer", "text": "Divide the package price by the package size to get the cost per unit (e.g. per ounce or per pound). Then multiply by the amount your recipe uses. For example, if flour costs $3.50 for 5 lbs and your recipe uses 2 lbs, the flour cost is $3.50 / 5 x 2 = $1.40."}}, {"@type": "Question", "name": "What profit margin should I use for selling baked goods?", "acceptedAnswer": {"@type": "Answer", "text": "Most home bakers aim for 50% to 100% profit margin. A 50% margin means you charge 1.5x your total cost. Specialty or decorated items can command higher margins of 100-200% because of the skill and time involved."}}, {"@type": "Question", "name": "Should I include my time as a cost?", "acceptedAnswer": {"@type": "Answer", "text": "If you are selling, absolutely. Your time has value. A common approach is to charge at least minimum wage for your area, though skilled decorators and pastry artists should charge more. For hobby baking at home, you can set the hourly rate to zero."}}, {"@type": "Question", "name": "How much does electricity cost per batch of baking?", "acceptedAnswer": {"@type": "Answer", "text": "A typical home oven costs about $0.30 to $0.75 per hour to run, depending on your electricity rate and oven type. A stand mixer adds a few cents. For most recipes, $0.50 per batch is a reasonable estimate."}}, {"@type": "Question", "name": "Is it cheaper to bake at home or buy from a store?", "acceptedAnswer": {"@type": "Answer", "text": "For most basic items like bread, cookies, muffins, and cakes, baking at home is significantly cheaper per serving. Store prices include labor, rent, packaging, and profit margins. However, small-batch specialty items with expensive ingredients may cost similar to store-bought."}}, {"@type": "Question", "name": "How do I account for eggs in cost calculations?", "acceptedAnswer": {"@type": "Answer", "text": "Eggs are sold by the dozen. To find the cost per egg, divide the carton price by 12. For example, $4.00 per dozen means each egg costs about $0.33. If your recipe uses 3 eggs, the egg cost is roughly $1.00."}}, {"@type": "Question", "name": "What is the most expensive ingredient in baking?", "acceptedAnswer": {"@type": "Answer", "text": "Pure vanilla extract, high-quality chocolate, nuts, and specialty flours like almond flour are typically the most expensive baking ingredients per unit. Butter can also be costly in butter-heavy recipes like croissants or pound cake."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Baking Cost Calculator", "description": "Calculate ingredient costs per batch and per serving for any baking recipe.", "url": "https://tool.teamzlab.com/baking/baking-cost-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Baking Cost Calculator</h1>
+      <p class="tool-description">Calculate the exact cost of every batch you bake. Add ingredients, overhead costs, and your desired profit margin to price your baked goods perfectly. Compare homemade versus store-bought and see where your money goes.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="bc-form">
+        <div class="bc-section-title">Recipe Settings</div>
+        <div class="bc-row">
+          <div class="bc-field">
+            <label for="bc-recipe-name">Recipe Name</label>
+            <input type="text" id="bc-recipe-name" placeholder="e.g. Chocolate Chip Cookies" value="">
+          </div>
+          <div class="bc-field">
+            <label for="bc-servings">Servings per Batch</label>
+            <input type="number" id="bc-servings" min="1" max="500" step="1" value="24">
+            <span class="bc-hint">e.g. 24 cookies, 12 cupcakes</span>
+          </div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-field">
+            <label for="bc-currency">Currency</label>
+            <select id="bc-currency">
+              <option value="$" selected>$ USD</option>
+              <option value="£">&pound; GBP</option>
+              <option value="&euro;">&euro; EUR</option>
+            </select>
+          </div>
+          <div class="bc-field">
+            <label for="bc-store-price">Store-Bought Price (per serving)</label>
+            <input type="number" id="bc-store-price" min="0" max="100" step="0.25" value="3.00">
+            <span class="bc-hint">Bakery/store price for comparison</span>
+          </div>
+        </div>
+
+        <div class="bc-section-title">Ingredients</div>
+        <p style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.75rem;">Quick add common ingredients or add your own below.</p>
+        <div class="bc-quick-adds" id="bc-quick-adds"></div>
+
+        <div class="bc-ingredients-header">
+          <span>Ingredient</span>
+          <span>Pkg Price</span>
+          <span>Pkg Size</span>
+          <span>Amount Used</span>
+          <span></span>
+        </div>
+        <div id="bc-ingredients-list"></div>
+
+        <button class="btn-secondary" id="bc-add-ingredient" style="margin-top: 0.75rem;">+ Add Ingredient</button>
+
+        <div class="bc-section-title">Overhead Costs (Optional)</div>
+        <div class="bc-row">
+          <div class="bc-field">
+            <label for="bc-electricity">Electricity Cost</label>
+            <input type="number" id="bc-electricity" min="0" max="50" step="0.10" value="0.50">
+            <span class="bc-hint">Per batch oven/mixer use</span>
+          </div>
+          <div class="bc-field">
+            <label for="bc-packaging">Packaging Cost</label>
+            <input type="number" id="bc-packaging" min="0" max="50" step="0.10" value="0">
+            <span class="bc-hint">Boxes, bags, labels per batch</span>
+          </div>
+        </div>
+        <div class="bc-row">
+          <div class="bc-field">
+            <label for="bc-time">Prep + Bake Time (minutes)</label>
+            <input type="number" id="bc-time" min="0" max="600" step="5" value="60">
+          </div>
+          <div class="bc-field">
+            <label for="bc-hourly-rate">Your Hourly Rate (optional)</label>
+            <input type="number" id="bc-hourly-rate" min="0" max="200" step="1" value="0">
+            <span class="bc-hint">Set to 0 to exclude labor</span>
+          </div>
+        </div>
+
+        <div class="bc-section-title">Pricing for Selling</div>
+        <div class="bc-row">
+          <div class="bc-field">
+            <label for="bc-profit-margin">Desired Profit Margin (%)</label>
+            <input type="number" id="bc-profit-margin" min="0" max="500" step="5" value="50">
+            <span class="bc-hint">50% is typical for home bakers</span>
+          </div>
+        </div>
+
+        <div class="bc-actions">
+          <button class="btn-primary" id="bc-calculate">Calculate Baking Cost</button>
+          <button class="btn-secondary" id="bc-clear">Clear All</button>
+        </div>
+      </div>
+
+      <div class="bc-results" id="bc-results">
+        <h2 style="margin-bottom: 1rem; color: var(--heading);">Cost Breakdown</h2>
+        <div class="bc-summary-grid" id="bc-summary-grid"></div>
+
+        <h3 style="font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem;">Ingredient Breakdown</h3>
+        <table class="bc-breakdown-table" id="bc-breakdown-table">
+          <thead>
+            <tr><th>Ingredient</th><th style="text-align:right;">Cost Used</th></tr>
+          </thead>
+          <tbody id="bc-breakdown-body"></tbody>
+        </table>
+
+        <div class="bc-pricing-section" id="bc-pricing-section">
+          <h3>Suggested Selling Prices</h3>
+          <div class="bc-pricing-grid" id="bc-pricing-grid"></div>
+        </div>
+
+        <div class="bc-compare-section" id="bc-compare-section">
+          <h3>Homemade vs Store-Bought (per serving)</h3>
+          <div class="bc-bar-wrap" id="bc-bars"></div>
+          <div class="bc-savings-badge" id="bc-savings-badge"></div>
+        </div>
+
+        <div class="bc-copy-section">
+          <button class="btn-primary" id="bc-copy-breakdown">Copy Cost Breakdown</button>
+          <button class="btn-secondary" id="bc-copy-link">Copy Share Link</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Baking Cost Calculator Works</h2>
+      <p>This baking cost calculator breaks down exactly how much each batch of baked goods costs to make. Add your ingredients with their package price and size, specify how much of each you use per recipe, and the calculator determines the exact cost per ingredient. It totals everything up and divides by your number of servings so you know the true cost per cookie, cupcake, loaf, or slice. Optional overhead costs for electricity, packaging, and your own labor time give you the full picture beyond just ingredients.</p>
+      <p>The profit margin feature is designed for anyone selling baked goods at farmers markets, online, or from a home bakery. Enter your desired margin and instantly see the price you should charge per serving and per batch to meet your income goal.</p>
+
+      <h2>Why Knowing Your Baking Costs Matters</h2>
+      <p>Many home bakers undercharge because they only think about flour and sugar costs while ignoring butter, vanilla, packaging, and time. A single batch of decorated sugar cookies can cost twelve to fifteen dollars in ingredients alone, yet many sellers charge just two dollars per cookie. Knowing your true cost per unit prevents you from losing money on every sale. It also helps hobby bakers compare the cost of homemade treats against store-bought alternatives. In many cases, baking from scratch is significantly cheaper per serving, especially for items like bread, muffins, and basic cakes. Premium items with expensive ingredients like real vanilla, high-quality chocolate, or specialty flours may cost more to make at home, but the quality difference often justifies it.</p>
+
+      <h2>Tips for Reducing Baking Costs</h2>
+      <p>Buy staple ingredients like flour, sugar, and butter in bulk from warehouse stores to lower your per-unit cost. Track seasonal sales on baking supplies and stock up when prices drop. Store dry ingredients properly in airtight containers to prevent waste. Substitute expensive ingredients where possible without sacrificing quality: for example, use cocoa powder instead of melting chocolate in brownies. When selling, factor in your time at a fair hourly rate and never undervalue your labor. Consider offering a smaller product size at a lower price point to attract more customers while maintaining healthy margins.</p>
+
+      <h2>Common Baking Ingredient Costs</h2>
+      <p>Ingredient prices vary by region and store, but typical US prices include all-purpose flour at around three to four dollars for a five-pound bag, granulated sugar at four dollars for four pounds, unsalted butter at five dollars per pound, a dozen large eggs for four dollars, whole milk at four dollars per gallon, and pure vanilla extract at eight to twelve dollars for a four-ounce bottle. Specialty ingredients like almond flour, cream cheese, and chocolate chips cost more but are used in smaller quantities. This calculator uses pre-filled prices based on average US retail costs, which you can adjust for your local market.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Baking Tools', url: '/baking/' },
+      { name: 'Baking Cost Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'How do I calculate the cost of a single ingredient in my recipe?', a: 'Divide the package price by the package size to get the cost per unit (e.g. per ounce or per pound). Then multiply by the amount your recipe uses. For example, if flour costs $3.50 for 5 lbs and your recipe uses 2 lbs, the flour cost is $3.50 / 5 x 2 = $1.40.' },
+      { q: 'What profit margin should I use for selling baked goods?', a: 'Most home bakers aim for 50% to 100% profit margin. A 50% margin means you charge 1.5x your total cost. Specialty or decorated items can command higher margins of 100-200% because of the skill and time involved.' },
+      { q: 'Should I include my time as a cost?', a: 'If you are selling, absolutely. Your time has value. A common approach is to charge at least minimum wage for your area, though skilled decorators and pastry artists should charge more. For hobby baking at home, you can set the hourly rate to zero.' },
+      { q: 'How much does electricity cost per batch of baking?', a: 'A typical home oven costs about $0.30 to $0.75 per hour to run, depending on your electricity rate and oven type. A stand mixer adds a few cents. For most recipes, $0.50 per batch is a reasonable estimate.' },
+      { q: 'Is it cheaper to bake at home or buy from a store?', a: 'For most basic items like bread, cookies, muffins, and cakes, baking at home is significantly cheaper per serving. Store prices include labor, rent, packaging, and profit margins. However, small-batch specialty items with expensive ingredients may cost similar to store-bought.' },
+      { q: 'How do I account for eggs in cost calculations?', a: 'Eggs are sold by the dozen. To find the cost per egg, divide the carton price by 12. For example, $4.00 per dozen means each egg costs about $0.33. If your recipe uses 3 eggs, the egg cost is roughly $1.00.' },
+      { q: 'What is the most expensive ingredient in baking?', a: 'Pure vanilla extract, high-quality chocolate, nuts, and specialty flours like almond flour are typically the most expensive baking ingredients per unit. Butter can also be costly in butter-heavy recipes like croissants or pound cake.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'baking/baking-conversion-calculator', name: 'Baking Conversion Calculator', description: 'Convert between cups, grams, ounces, and tablespoons for baking.' },
+      { slug: 'baking/recipe-scaler-calculator', name: 'Recipe Scaler Calculator', description: 'Scale any recipe up or down by servings or multiplier.' },
+      { slug: 'baking/sourdough-hydration-calculator', name: 'Sourdough Hydration Calculator', description: 'Calculate hydration percentage for sourdough bread recipes.' },
+      { slug: 'restaurant/food-cost-calculator', name: 'Food Cost Calculator', description: 'Calculate food cost percentage and menu pricing for restaurants.' },
+      { slug: 'restaurant/recipe-cost-calculator', name: 'Recipe Cost Calculator', description: 'Break down recipe costs for restaurant menu planning.' },
+      { slug: 'restaurant/meal-prep-cost-planner', name: 'Meal Prep Cost Planner', description: 'Plan weekly meals and calculate total grocery costs.' }
+    ];
+
+    var COMMON_INGREDIENTS = [
+      { name: 'All-Purpose Flour', pkgPrice: 3.50, pkgSize: 5, pkgUnit: 'lb', amount: 2.5, amountUnit: 'lb' },
+      { name: 'Granulated Sugar', pkgPrice: 4.00, pkgSize: 4, pkgUnit: 'lb', amount: 1, amountUnit: 'lb' },
+      { name: 'Unsalted Butter', pkgPrice: 5.00, pkgSize: 1, pkgUnit: 'lb', amount: 0.5, amountUnit: 'lb' },
+      { name: 'Eggs (dozen)', pkgPrice: 4.00, pkgSize: 12, pkgUnit: 'ct', amount: 3, amountUnit: 'ct' },
+      { name: 'Whole Milk', pkgPrice: 4.00, pkgSize: 128, pkgUnit: 'oz', amount: 8, amountUnit: 'oz' },
+      { name: 'Vanilla Extract', pkgPrice: 8.00, pkgSize: 4, pkgUnit: 'oz', amount: 0.5, amountUnit: 'oz' },
+      { name: 'Baking Powder', pkgPrice: 3.50, pkgSize: 8.1, pkgUnit: 'oz', amount: 0.5, amountUnit: 'oz' },
+      { name: 'Baking Soda', pkgPrice: 1.50, pkgSize: 16, pkgUnit: 'oz', amount: 0.25, amountUnit: 'oz' },
+      { name: 'Cocoa Powder', pkgPrice: 5.00, pkgSize: 8, pkgUnit: 'oz', amount: 3, amountUnit: 'oz' },
+      { name: 'Chocolate Chips', pkgPrice: 4.00, pkgSize: 12, pkgUnit: 'oz', amount: 12, amountUnit: 'oz' },
+      { name: 'Brown Sugar', pkgPrice: 3.50, pkgSize: 2, pkgUnit: 'lb', amount: 0.75, amountUnit: 'lb' },
+      { name: 'Heavy Cream', pkgPrice: 5.00, pkgSize: 16, pkgUnit: 'oz', amount: 8, amountUnit: 'oz' },
+      { name: 'Cream Cheese', pkgPrice: 3.50, pkgSize: 8, pkgUnit: 'oz', amount: 8, amountUnit: 'oz' },
+      { name: 'Powdered Sugar', pkgPrice: 3.00, pkgSize: 2, pkgUnit: 'lb', amount: 0.5, amountUnit: 'lb' },
+      { name: 'Salt', pkgPrice: 1.00, pkgSize: 26, pkgUnit: 'oz', amount: 0.25, amountUnit: 'oz' }
+    ];
+
+    var ingredients = [];
+    var ingredientCounter = 0;
+
+    function addIngredient(data) {
+      var id = ingredientCounter++;
+      var row = document.createElement('div');
+      row.className = 'bc-ingredient-row';
+      row.dataset.id = id;
+      row.innerHTML =
+        '<input type="text" id="bc-ing-name-' + id + '" placeholder="Ingredient name" value="' + (data ? data.name : '') + '">' +
+        '<input type="number" id="bc-ing-pkg-price-' + id + '" placeholder="Pkg price" min="0" step="0.01" value="' + (data ? data.pkgPrice : '') + '">' +
+        '<input type="number" id="bc-ing-pkg-size-' + id + '" placeholder="Pkg size" min="0" step="0.01" value="' + (data ? data.pkgSize : '') + '">' +
+        '<input type="number" id="bc-ing-amount-' + id + '" placeholder="Used" min="0" step="0.01" value="' + (data ? data.amount : '') + '">' +
+        '<button class="bc-remove-btn" title="Remove">&times;</button>';
+
+      row.querySelector('.bc-remove-btn').addEventListener('click', function() {
+        row.remove();
+        var idx = ingredients.indexOf(id);
+        if (idx > -1) ingredients.splice(idx, 1);
+      });
+
+      document.getElementById('bc-ingredients-list').appendChild(row);
+      ingredients.push(id);
+      return id;
+    }
+
+    function renderQuickAdds() {
+      var container = document.getElementById('bc-quick-adds');
+      var html = '';
+      COMMON_INGREDIENTS.forEach(function(ing, i) {
+        html += '<button class="bc-quick-btn" data-index="' + i + '">' + ing.name + '</button>';
+      });
+      container.innerHTML = html;
+      container.querySelectorAll('.bc-quick-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var ing = COMMON_INGREDIENTS[parseInt(btn.dataset.index)];
+          addIngredient({ name: ing.name, pkgPrice: ing.pkgPrice, pkgSize: ing.pkgSize, amount: ing.amount });
+        });
+      });
+    }
+
+    function formatMoney(amount, symbol) {
+      return symbol + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function calculate() {
+      var currency = document.getElementById('bc-currency').value;
+      var servings = parseInt(document.getElementById('bc-servings').value) || 1;
+      var storePrice = parseFloat(document.getElementById('bc-store-price').value) || 0;
+      var electricity = parseFloat(document.getElementById('bc-electricity').value) || 0;
+      var packaging = parseFloat(document.getElementById('bc-packaging').value) || 0;
+      var time = parseFloat(document.getElementById('bc-time').value) || 0;
+      var hourlyRate = parseFloat(document.getElementById('bc-hourly-rate').value) || 0;
+      var profitMargin = parseFloat(document.getElementById('bc-profit-margin').value) || 0;
+
+      var laborCost = hourlyRate > 0 ? (time / 60) * hourlyRate : 0;
+
+      var ingredientCosts = [];
+      var totalIngredientCost = 0;
+
+      ingredients.forEach(function(id) {
+        var nameEl = document.getElementById('bc-ing-name-' + id);
+        if (!nameEl) return;
+        var name = nameEl.value || 'Unnamed';
+        var pkgPrice = parseFloat(document.getElementById('bc-ing-pkg-price-' + id).value) || 0;
+        var pkgSize = parseFloat(document.getElementById('bc-ing-pkg-size-' + id).value) || 1;
+        var amount = parseFloat(document.getElementById('bc-ing-amount-' + id).value) || 0;
+
+        var costPerUnit = pkgPrice / pkgSize;
+        var costUsed = costPerUnit * amount;
+        totalIngredientCost += costUsed;
+        ingredientCosts.push({ name: name, cost: costUsed, pct: 0 });
+      });
+
+      ingredientCosts.forEach(function(item) {
+        item.pct = totalIngredientCost > 0 ? (item.cost / totalIngredientCost * 100) : 0;
+      });
+
+      var totalOverhead = electricity + packaging + laborCost;
+      var totalBatchCost = totalIngredientCost + totalOverhead;
+      var costPerServing = totalBatchCost / servings;
+      var sellingPricePerServing = costPerServing * (1 + profitMargin / 100);
+      var sellingPricePerBatch = sellingPricePerServing * servings;
+      var profitPerBatch = sellingPricePerBatch - totalBatchCost;
+
+      // Summary grid
+      var summaryHTML = '';
+      summaryHTML += '<div class="bc-summary-card"><div class="bc-card-label">Cost per Batch</div><div class="bc-card-value">' + formatMoney(totalBatchCost, currency) + '</div></div>';
+      summaryHTML += '<div class="bc-summary-card"><div class="bc-card-label">Cost per Serving</div><div class="bc-card-value">' + formatMoney(costPerServing, currency) + '</div></div>';
+      summaryHTML += '<div class="bc-summary-card"><div class="bc-card-label">Ingredients</div><div class="bc-card-value">' + formatMoney(totalIngredientCost, currency) + '</div></div>';
+      document.getElementById('bc-summary-grid').innerHTML = summaryHTML;
+
+      // Breakdown table
+      var breakdownHTML = '';
+      ingredientCosts.forEach(function(item) {
+        breakdownHTML += '<tr><td>' + item.name + ' <span style="color:var(--text-muted);font-size:var(--text-xs);">(' + item.pct.toFixed(1) + '%)</span></td><td>' + formatMoney(item.cost, currency) + '</td></tr>';
+      });
+      if (electricity > 0) {
+        breakdownHTML += '<tr><td>Electricity</td><td>' + formatMoney(electricity, currency) + '</td></tr>';
+      }
+      if (packaging > 0) {
+        breakdownHTML += '<tr><td>Packaging</td><td>' + formatMoney(packaging, currency) + '</td></tr>';
+      }
+      if (laborCost > 0) {
+        breakdownHTML += '<tr><td>Labor (' + time + ' min @ ' + formatMoney(hourlyRate, currency) + '/hr)</td><td>' + formatMoney(laborCost, currency) + '</td></tr>';
+      }
+      breakdownHTML += '<tr class="bc-total-row"><td>Total Batch Cost</td><td>' + formatMoney(totalBatchCost, currency) + '</td></tr>';
+      document.getElementById('bc-breakdown-body').innerHTML = breakdownHTML;
+
+      // Pricing section
+      var pricingHTML = '';
+      pricingHTML += '<div class="bc-pricing-item"><div class="bc-pricing-label">Sell per Serving</div><div class="bc-pricing-value">' + formatMoney(sellingPricePerServing, currency) + '</div></div>';
+      pricingHTML += '<div class="bc-pricing-item"><div class="bc-pricing-label">Sell per Batch</div><div class="bc-pricing-value">' + formatMoney(sellingPricePerBatch, currency) + '</div></div>';
+      pricingHTML += '<div class="bc-pricing-item"><div class="bc-pricing-label">Profit per Batch</div><div class="bc-pricing-value">' + formatMoney(profitPerBatch, currency) + '</div></div>';
+      document.getElementById('bc-pricing-grid').innerHTML = pricingHTML;
+
+      // Homemade vs store-bought comparison
+      if (storePrice > 0) {
+        var maxVal = Math.max(costPerServing, storePrice);
+        var homePct = (costPerServing / maxVal * 100).toFixed(1);
+        var storePct = (storePrice / maxVal * 100).toFixed(1);
+        var savings = storePrice - costPerServing;
+        var savingsPct = ((savings / storePrice) * 100).toFixed(0);
+
+        var barsHTML = '<div class="bc-bar-row"><span class="bc-bar-label">Homemade</span><div class="bc-bar-track"><div class="bc-bar-fill homemade" style="width:' + homePct + '%">' + formatMoney(costPerServing, currency) + '</div></div></div>';
+        barsHTML += '<div class="bc-bar-row"><span class="bc-bar-label">Store-Bought</span><div class="bc-bar-track"><div class="bc-bar-fill store" style="width:' + storePct + '%">' + formatMoney(storePrice, currency) + '</div></div></div>';
+        document.getElementById('bc-bars').innerHTML = barsHTML;
+
+        if (savings > 0) {
+          document.getElementById('bc-savings-badge').innerHTML = '<div class="bc-savings-label">You Save per Serving by Baking at Home</div><div class="bc-savings-amount">' + formatMoney(savings, currency) + ' (' + savingsPct + '%)</div>';
+        } else {
+          document.getElementById('bc-savings-badge').innerHTML = '<div class="bc-savings-label">Store-bought is cheaper by</div><div class="bc-savings-amount">' + formatMoney(Math.abs(savings), currency) + '</div>';
+        }
+        document.getElementById('bc-compare-section').style.display = 'block';
+      } else {
+        document.getElementById('bc-compare-section').style.display = 'none';
+      }
+
+      document.getElementById('bc-results').classList.add('visible');
+    }
+
+    function buildBreakdownText() {
+      var currency = document.getElementById('bc-currency').value;
+      var recipeName = document.getElementById('bc-recipe-name').value || 'Recipe';
+      var servings = parseInt(document.getElementById('bc-servings').value) || 1;
+
+      var lines = ['Baking Cost Breakdown: ' + recipeName, ''];
+      var totalIngCost = 0;
+
+      ingredients.forEach(function(id) {
+        var nameEl = document.getElementById('bc-ing-name-' + id);
+        if (!nameEl) return;
+        var name = nameEl.value || 'Unnamed';
+        var pkgPrice = parseFloat(document.getElementById('bc-ing-pkg-price-' + id).value) || 0;
+        var pkgSize = parseFloat(document.getElementById('bc-ing-pkg-size-' + id).value) || 1;
+        var amount = parseFloat(document.getElementById('bc-ing-amount-' + id).value) || 0;
+        var cost = (pkgPrice / pkgSize) * amount;
+        totalIngCost += cost;
+        lines.push(name + ': ' + formatMoney(cost, currency));
+      });
+
+      var electricity = parseFloat(document.getElementById('bc-electricity').value) || 0;
+      var packaging = parseFloat(document.getElementById('bc-packaging').value) || 0;
+      var time = parseFloat(document.getElementById('bc-time').value) || 0;
+      var hourlyRate = parseFloat(document.getElementById('bc-hourly-rate').value) || 0;
+      var laborCost = hourlyRate > 0 ? (time / 60) * hourlyRate : 0;
+      var totalBatch = totalIngCost + electricity + packaging + laborCost;
+
+      lines.push('');
+      if (electricity > 0) lines.push('Electricity: ' + formatMoney(electricity, currency));
+      if (packaging > 0) lines.push('Packaging: ' + formatMoney(packaging, currency));
+      if (laborCost > 0) lines.push('Labor: ' + formatMoney(laborCost, currency));
+      lines.push('');
+      lines.push('Total batch cost: ' + formatMoney(totalBatch, currency));
+      lines.push('Cost per serving: ' + formatMoney(totalBatch / servings, currency) + ' (' + servings + ' servings)');
+      lines.push('');
+      lines.push('Calculated at https://tool.teamzlab.com/baking/baking-cost-calculator/');
+
+      return lines.join('\n');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'baking/baking-cost-calculator', title: 'Baking Cost Calculator', description: 'Calculate ingredient costs per batch and per serving for any baking recipe.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      renderQuickAdds();
+
+      document.getElementById('bc-add-ingredient').addEventListener('click', function() {
+        addIngredient(null);
+      });
+
+      document.getElementById('bc-calculate').addEventListener('click', calculate);
+
+      document.getElementById('bc-clear').addEventListener('click', function() {
+        document.getElementById('bc-recipe-name').value = '';
+        document.getElementById('bc-servings').value = '24';
+        document.getElementById('bc-currency').value = '$';
+        document.getElementById('bc-store-price').value = '3.00';
+        document.getElementById('bc-electricity').value = '0.50';
+        document.getElementById('bc-packaging').value = '0';
+        document.getElementById('bc-time').value = '60';
+        document.getElementById('bc-hourly-rate').value = '0';
+        document.getElementById('bc-profit-margin').value = '50';
+        document.getElementById('bc-ingredients-list').innerHTML = '';
+        ingredients = [];
+        ingredientCounter = 0;
+        document.getElementById('bc-results').classList.remove('visible');
+      });
+
+      document.getElementById('bc-copy-breakdown').addEventListener('click', function() {
+        var text = buildBreakdownText();
+        navigator.clipboard.writeText(text).then(function() {
+          if (window.showToast) window.showToast('Cost breakdown copied to clipboard!');
+        });
+      });
+
+      document.getElementById('bc-copy-link').addEventListener('click', function() {
+        var url = 'https://tool.teamzlab.com/baking/baking-cost-calculator/';
+        navigator.clipboard.writeText(url).then(function() {
+          if (window.showToast) window.showToast('Share link copied!');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

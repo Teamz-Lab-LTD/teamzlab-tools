@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baking Conversion Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Convert baking ingredients between cups, grams, ounces, tablespoons, and more. Accurate density-based conversions for flour, sugar, butter, and 20+ ingredients. Free and private.">
+  <meta property="og:title" content="Baking Conversion Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Convert baking ingredients between cups, grams, ounces, tablespoons, and more. Accurate density-based conversions for flour, sugar, butter, and 20+ ingredients.">
+  <meta property="og:url" content="https://tool.teamzlab.com/baking/baking-conversion-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/baking.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Baking Conversion Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Convert baking ingredients between cups, grams, ounces, tablespoons, and more. Accurate density-based conversions for flour, sugar, butter, and 20+ ingredients.">
+  <link rel="canonical" href="https://tool.teamzlab.com/baking/baking-conversion-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ingredient-select { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.25rem; }
+    .ingredient-select label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .ingredient-select select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .ingredient-select select:focus { outline: none; border-color: var(--accent); }
+    .convert-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: end; margin-bottom: 1.25rem; }
+    .convert-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .convert-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .convert-group input, .convert-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .convert-group input:focus, .convert-group select:focus { outline: none; border-color: var(--accent); }
+    .swap-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 50%; width: 44px; height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: var(--text); transition: all 0.2s; margin-bottom: 0.35rem; }
+    .swap-btn:hover { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+    .quick-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .quick-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: var(--text); font-family: inherit; transition: all 0.2s; }
+    .quick-btn:hover { border-color: var(--accent); }
+    .quick-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+    .calc-actions { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .calc-actions .btn-primary, .calc-actions .btn-secondary { flex: 1; }
+    .result-panel { display: none; }
+    .result-panel.visible { display: block; }
+    .result-main { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; margin-bottom: 1.5rem; }
+    .result-main .result-value { font-size: 2.25rem; font-weight: 800; color: var(--heading); }
+    .result-main .result-label { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .result-main .result-equation { font-size: 1rem; color: var(--text-muted); margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+    .ref-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+    .ref-table th { text-align: left; padding: 0.6rem 0.75rem; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    .ref-table td { padding: 0.6rem 0.75rem; font-size: 0.9rem; color: var(--text); border-bottom: 1px solid var(--border); }
+    .ref-table tr:last-child td { border-bottom: none; }
+    .ref-table .ref-highlight { background: var(--surface); font-weight: 600; }
+    .ref-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; overflow-x: auto; }
+    .ref-wrap h3 { margin: 0 0 1rem; color: var(--heading); font-size: 1.1rem; }
+    @media (max-width: 600px) {
+      .convert-row { grid-template-columns: 1fr; }
+      .swap-btn { margin: 0 auto; transform: rotate(90deg); }
+      .calc-actions { flex-direction: column; }
+      .calc-actions .btn-primary, .calc-actions .btn-secondary { width: 100%; }
+      .quick-btns { justify-content: center; }
+      .result-main .result-value { font-size: 1.75rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Baking Tools", "item": "https://tool.teamzlab.com/baking/"}, {"@type": "ListItem", "position": 3, "name": "Baking Conversion Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How many grams is 1 cup of flour?", "acceptedAnswer": {"@type": "Answer", "text": "One cup of all-purpose flour weighs approximately 120 grams when measured using the spoon-and-level method. Bread flour is slightly heavier at 130 grams per cup, cake flour is lighter at 114 grams, and whole wheat flour weighs about 128 grams. The weight varies because each type of flour has a different grind size and protein content."}}, {"@type": "Question", "name": "Why do baking conversions differ by ingredient?", "acceptedAnswer": {"@type": "Answer", "text": "Each ingredient has a different density, meaning the same volume weighs differently. One cup of sugar weighs 200 grams while one cup of flour weighs only 120 grams because sugar granules are denser and pack more tightly. This calculator uses ingredient-specific densities for accurate conversions rather than a one-size-fits-all formula."}}, {"@type": "Question", "name": "Is it better to measure by weight or volume?", "acceptedAnswer": {"@type": "Answer", "text": "Measuring by weight using a digital scale is significantly more accurate for baking. Volume measurements like cups and tablespoons vary depending on how you scoop the ingredient. Two people measuring one cup of flour can get results that differ by 30 grams or more. Professional bakers always use weight measurements for consistency."}}, {"@type": "Question", "name": "How do I convert butter sticks to grams?", "acceptedAnswer": {"@type": "Answer", "text": "One standard US butter stick equals 113 grams, which is also half a cup or 8 tablespoons. Two sticks equal one cup or 227 grams. This calculator handles butter conversions automatically, including between sticks, cups, grams, ounces, tablespoons, and pounds."}}, {"@type": "Question", "name": "What is the difference between fluid ounces and weight ounces?", "acceptedAnswer": {"@type": "Answer", "text": "Fluid ounces measure volume while weight ounces measure mass. For water they are nearly equivalent, but for other ingredients they differ. One fluid ounce of honey weighs about 1.5 weight ounces because honey is denser than water. In baking recipes, ounces typically refer to weight ounces unless specified as fluid ounces."}}, {"@type": "Question", "name": "Can I use this calculator for metric to imperial conversions?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, this calculator converts between all common baking units including cups, tablespoons, teaspoons, grams, ounces, milliliters, pounds, and kilograms. It accounts for ingredient density when converting between volume and weight units, giving you accurate results for any baking ingredient."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Baking Conversion Calculator", "description": "Convert baking ingredients between cups, grams, ounces, tablespoons, and more with ingredient-specific density data.", "url": "https://tool.teamzlab.com/baking/baking-conversion-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Baking Conversion Calculator</h1>
+      <p class="tool-description">Convert baking ingredients between cups, grams, ounces, tablespoons, teaspoons, milliliters, pounds, and kilograms. Each ingredient uses its real density for accurate results — because 1 cup of flour weighs very differently from 1 cup of sugar.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="ingredient-select">
+        <label for="ingredient">Ingredient</label>
+        <select id="ingredient">
+          <optgroup label="Flour">
+            <option value="flour-ap">All-Purpose Flour</option>
+            <option value="flour-bread">Bread Flour</option>
+            <option value="flour-cake">Cake Flour</option>
+            <option value="flour-whole-wheat">Whole Wheat Flour</option>
+          </optgroup>
+          <optgroup label="Sugar">
+            <option value="sugar-white">White Sugar (Granulated)</option>
+            <option value="sugar-brown">Brown Sugar (Packed)</option>
+            <option value="sugar-powdered">Powdered Sugar (Confectioners)</option>
+          </optgroup>
+          <optgroup label="Dairy & Fats">
+            <option value="butter">Butter</option>
+            <option value="milk">Milk (Whole)</option>
+            <option value="cream-heavy">Heavy Cream</option>
+            <option value="oil-vegetable">Vegetable Oil</option>
+            <option value="sour-cream">Sour Cream</option>
+            <option value="yogurt">Yogurt</option>
+          </optgroup>
+          <optgroup label="Leavening & Spice">
+            <option value="baking-powder">Baking Powder</option>
+            <option value="baking-soda">Baking Soda</option>
+            <option value="salt">Salt (Table)</option>
+            <option value="cocoa-powder">Cocoa Powder</option>
+            <option value="cornstarch">Cornstarch</option>
+          </optgroup>
+          <optgroup label="Liquids">
+            <option value="honey">Honey</option>
+            <option value="maple-syrup">Maple Syrup</option>
+            <option value="water">Water</option>
+          </optgroup>
+          <optgroup label="Grains & Others">
+            <option value="oats-rolled">Rolled Oats</option>
+            <option value="rice-white">White Rice (Uncooked)</option>
+            <option value="almond-flour">Almond Flour</option>
+            <option value="coconut-flour">Coconut Flour</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="convert-row">
+        <div class="convert-group">
+          <label for="amount-from">Amount</label>
+          <input type="number" id="amount-from" min="0" step="any" value="1">
+          <label for="unit-from" style="margin-top:0.5rem;">From</label>
+          <select id="unit-from">
+            <option value="cup">Cups</option>
+            <option value="tbsp">Tablespoons</option>
+            <option value="tsp">Teaspoons</option>
+            <option value="g" selected>Grams</option>
+            <option value="oz">Ounces</option>
+            <option value="ml">Milliliters</option>
+            <option value="lb">Pounds</option>
+            <option value="kg">Kilograms</option>
+          </select>
+        </div>
+
+        <button type="button" class="swap-btn" id="swap-btn" title="Swap units">&#8646;</button>
+
+        <div class="convert-group">
+          <label for="amount-to">Result</label>
+          <input type="text" id="amount-to" readonly placeholder="—">
+          <label for="unit-to" style="margin-top:0.5rem;">To</label>
+          <select id="unit-to">
+            <option value="cup">Cups</option>
+            <option value="tbsp">Tablespoons</option>
+            <option value="tsp">Teaspoons</option>
+            <option value="g">Grams</option>
+            <option value="oz">Ounces</option>
+            <option value="ml">Milliliters</option>
+            <option value="lb">Pounds</option>
+            <option value="kg">Kilograms</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="quick-btns" id="quick-btns">
+        <button type="button" class="quick-btn" data-amount="1" data-unit="cup">1 cup</button>
+        <button type="button" class="quick-btn" data-amount="0.5" data-unit="cup">1/2 cup</button>
+        <button type="button" class="quick-btn" data-amount="0.25" data-unit="cup">1/4 cup</button>
+        <button type="button" class="quick-btn" data-amount="0.333" data-unit="cup">1/3 cup</button>
+        <button type="button" class="quick-btn" data-amount="1" data-unit="tbsp">1 tbsp</button>
+        <button type="button" class="quick-btn" data-amount="1" data-unit="tsp">1 tsp</button>
+      </div>
+
+      <div class="calc-actions">
+        <button type="button" class="btn-primary" id="convert-btn">Convert</button>
+        <button type="button" class="btn-secondary" id="reset-btn">Reset</button>
+      </div>
+
+      <div class="result-panel" id="result-panel">
+        <div class="result-main">
+          <div class="result-value" id="result-value">—</div>
+          <div class="result-label" id="result-label">converted amount</div>
+          <div class="result-equation" id="result-equation"></div>
+        </div>
+        <div class="ref-wrap">
+          <h3 id="ref-title">Reference Table</h3>
+          <table class="ref-table">
+            <thead>
+              <tr>
+                <th>Measurement</th>
+                <th>Grams</th>
+                <th>Ounces</th>
+              </tr>
+            </thead>
+            <tbody id="ref-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Baking Conversions Work</h2>
+      <p>Baking conversion is not as simple as using a single multiplier for every ingredient. Unlike water, where 1 cup always equals 240 milliliters, baking ingredients have different densities. One cup of all-purpose flour weighs about 120 grams, while one cup of granulated sugar weighs around 200 grams. Brown sugar packed into a cup weighs even more at 220 grams, and butter sits at approximately 227 grams per cup. Using generic volume-to-weight converters leads to inaccurate measurements that can ruin baked goods.</p>
+      <p>This calculator uses ingredient-specific density data sourced from King Arthur Baking, USDA, and professional pastry references. When you select an ingredient, it applies that exact conversion factor rather than a generic estimate. This matters most when baking bread, pastries, and delicate cakes where even a 10-gram difference in flour can change the texture significantly. Professional bakers always measure by weight for consistency, and this tool bridges the gap between volume-based recipes and precise weight measurements.</p>
+
+      <h2>Baking Conversions for Common Ingredients</h2>
+      <p>Flour is the most commonly converted ingredient because recipes from different countries use different measurement systems. American recipes use cups, while European and professional recipes use grams. All-purpose flour weighs about 120 grams per cup, bread flour is slightly heavier at 130 grams, and cake flour is lighter at 114 grams due to its finer texture. Whole wheat flour weighs around 128 grams per cup because of its coarser grind and bran content.</p>
+      <p>Sugar conversions are equally important. Granulated white sugar is denser than flour at 200 grams per cup. Brown sugar is measured packed, bringing it to 220 grams per cup. Powdered sugar is the lightest at 120 grams per cup because of all the air trapped between its fine particles. Liquid sweeteners like honey and maple syrup are measured by volume and weight differently than dry ingredients, which is why selecting the correct ingredient in this calculator gives you precise results every time.</p>
+
+      <h2>Tips for Accurate Baking Measurements</h2>
+      <p>The most reliable way to measure baking ingredients is by weight using a digital kitchen scale. A scale eliminates the variability of how tightly someone packs flour into a measuring cup. The spoon-and-level method — where you spoon flour into a cup and level it off with a knife — gives more consistent results than scooping directly from the bag, which compacts the flour and adds extra weight. If a recipe lists both volume and weight measurements, always use the weight for best results.</p>
+      <p>When converting between metric and imperial, remember that ounces in baking always mean weight ounces, not fluid ounces. Fluid ounces measure volume and are used for liquids like milk and water. One fluid ounce of water happens to weigh about one ounce, but this equivalence breaks down for other ingredients. Butter, for example, is denser than water, so 1 fluid ounce of melted butter weighs more than 1 ounce. This calculator handles these distinctions automatically based on the ingredient you select.</p>
+
+      <h2>Why Precision Matters in Baking</h2>
+      <p>Baking is fundamentally different from cooking because it relies on precise chemical reactions. The ratio of flour to liquid determines gluten development, the amount of sugar affects caramelization and moisture retention, and leavening agents need exact proportions to create the right amount of rise. Too much flour makes cakes dense, too little sugar prevents proper browning, and an extra half teaspoon of baking soda can leave a metallic taste. Converting measurements accurately is not just about convenience — it directly impacts whether your recipe succeeds or fails.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Baking Tools', url: '/baking/' },
+      { name: 'Baking Conversion Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'How many grams is 1 cup of flour?', a: 'One cup of all-purpose flour weighs approximately 120 grams when measured using the spoon-and-level method. Bread flour is slightly heavier at 130 grams per cup, cake flour is lighter at 114 grams, and whole wheat flour weighs about 128 grams. The weight varies because each type of flour has a different grind size and protein content.' },
+      { q: 'Why do baking conversions differ by ingredient?', a: 'Each ingredient has a different density, meaning the same volume weighs differently. One cup of sugar weighs 200 grams while one cup of flour weighs only 120 grams because sugar granules are denser and pack more tightly. This calculator uses ingredient-specific densities for accurate conversions rather than a one-size-fits-all formula.' },
+      { q: 'Is it better to measure by weight or volume?', a: 'Measuring by weight using a digital scale is significantly more accurate for baking. Volume measurements like cups and tablespoons vary depending on how you scoop the ingredient. Two people measuring one cup of flour can get results that differ by 30 grams or more. Professional bakers always use weight measurements for consistency.' },
+      { q: 'How do I convert butter sticks to grams?', a: 'One standard US butter stick equals 113 grams, which is also half a cup or 8 tablespoons. Two sticks equal one cup or 227 grams. This calculator handles butter conversions automatically, including between sticks, cups, grams, ounces, tablespoons, and pounds.' },
+      { q: 'What is the difference between fluid ounces and weight ounces?', a: 'Fluid ounces measure volume while weight ounces measure mass. For water they are nearly equivalent, but for other ingredients they differ. One fluid ounce of honey weighs about 1.5 weight ounces because honey is denser than water. In baking recipes, ounces typically refer to weight ounces unless specified as fluid ounces.' },
+      { q: 'Can I use this calculator for metric to imperial conversions?', a: 'Yes, this calculator converts between all common baking units including cups, tablespoons, teaspoons, grams, ounces, milliliters, pounds, and kilograms. It accounts for ingredient density when converting between volume and weight units, giving you accurate results for any baking ingredient.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'baking/recipe-scaler-calculator', name: 'Recipe Scaler Calculator', description: 'Scale any recipe up or down with precise ingredient adjustments.' },
+      { slug: 'baking/sourdough-hydration-calculator', name: 'Sourdough Hydration Calculator', description: 'Calculate dough hydration percentage and adjust flour and water ratios.' },
+      { slug: 'baking/pan-size-converter', name: 'Pan Size Converter', description: 'Convert recipes between different pan sizes and shapes.' },
+      { slug: 'baking/butter-measurement-converter', name: 'Butter Measurement Converter', description: 'Convert butter between sticks, cups, grams, ounces, and tablespoons.' },
+      { slug: 'baking/yeast-conversion-calculator', name: 'Yeast Conversion Calculator', description: 'Convert between active dry, instant, fresh yeast, and sourdough starter.' },
+      { slug: 'baking/baking-cost-calculator', name: 'Baking Cost Calculator', description: 'Calculate the cost per batch, per serving, and profit margin for baked goods.' }
+    ];
+
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'baking/baking-conversion-calculator', title: 'Baking Conversion Calculator', description: 'Convert baking ingredients between cups, grams, ounces, tablespoons, and more with ingredient-specific density data.' });
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+    /* ---- Ingredient density data (grams per cup) ---- */
+    var ingredients = {
+      'flour-ap':         { name: 'All-Purpose Flour',     gpCup: 120 },
+      'flour-bread':      { name: 'Bread Flour',           gpCup: 130 },
+      'flour-cake':       { name: 'Cake Flour',            gpCup: 114 },
+      'flour-whole-wheat':{ name: 'Whole Wheat Flour',     gpCup: 128 },
+      'sugar-white':      { name: 'White Sugar',           gpCup: 200 },
+      'sugar-brown':      { name: 'Brown Sugar (Packed)',  gpCup: 220 },
+      'sugar-powdered':   { name: 'Powdered Sugar',        gpCup: 120 },
+      'butter':           { name: 'Butter',                gpCup: 227 },
+      'milk':             { name: 'Milk (Whole)',           gpCup: 244 },
+      'cream-heavy':      { name: 'Heavy Cream',           gpCup: 238 },
+      'oil-vegetable':    { name: 'Vegetable Oil',         gpCup: 218 },
+      'sour-cream':       { name: 'Sour Cream',            gpCup: 230 },
+      'yogurt':           { name: 'Yogurt',                gpCup: 245 },
+      'baking-powder':    { name: 'Baking Powder',         gpCup: 230 },
+      'baking-soda':      { name: 'Baking Soda',           gpCup: 288 },
+      'salt':             { name: 'Salt (Table)',           gpCup: 288 },
+      'cocoa-powder':     { name: 'Cocoa Powder',          gpCup: 86  },
+      'cornstarch':       { name: 'Cornstarch',            gpCup: 128 },
+      'honey':            { name: 'Honey',                 gpCup: 340 },
+      'maple-syrup':      { name: 'Maple Syrup',           gpCup: 312 },
+      'water':            { name: 'Water',                 gpCup: 240 },
+      'oats-rolled':      { name: 'Rolled Oats',           gpCup: 90  },
+      'rice-white':       { name: 'White Rice (Uncooked)', gpCup: 185 },
+      'almond-flour':     { name: 'Almond Flour',          gpCup: 96  },
+      'coconut-flour':    { name: 'Coconut Flour',         gpCup: 112 }
+    };
+
+    /* Conversion constants */
+    var CUP_ML = 240;
+    var TBSP_ML = 15;
+    var TSP_ML = 5;
+    var OZ_G = 28.3495;
+    var LB_G = 453.592;
+    var KG_G = 1000;
+
+    /* ---- DOM refs ---- */
+    var ingredientEl = document.getElementById('ingredient');
+    var amountFrom = document.getElementById('amount-from');
+    var unitFrom = document.getElementById('unit-from');
+    var amountTo = document.getElementById('amount-to');
+    var unitTo = document.getElementById('unit-to');
+    var swapBtn = document.getElementById('swap-btn');
+    var convertBtn = document.getElementById('convert-btn');
+    var resetBtn = document.getElementById('reset-btn');
+    var resultPanel = document.getElementById('result-panel');
+    var quickBtns = document.querySelectorAll('.quick-btn');
+
+    /* ---- Helpers: convert any unit to grams ---- */
+    function toGrams(amount, unit, gpCup) {
+      switch (unit) {
+        case 'cup':  return amount * gpCup;
+        case 'tbsp': return amount * (gpCup / 16);
+        case 'tsp':  return amount * (gpCup / 48);
+        case 'g':    return amount;
+        case 'oz':   return amount * OZ_G;
+        case 'ml':   return amount * (gpCup / CUP_ML);
+        case 'lb':   return amount * LB_G;
+        case 'kg':   return amount * KG_G;
+        default:     return amount;
+      }
+    }
+
+    function fromGrams(grams, unit, gpCup) {
+      switch (unit) {
+        case 'cup':  return grams / gpCup;
+        case 'tbsp': return grams / (gpCup / 16);
+        case 'tsp':  return grams / (gpCup / 48);
+        case 'g':    return grams;
+        case 'oz':   return grams / OZ_G;
+        case 'ml':   return grams / (gpCup / CUP_ML);
+        case 'lb':   return grams / LB_G;
+        case 'kg':   return grams / KG_G;
+        default:     return grams;
+      }
+    }
+
+    function unitLabel(unit) {
+      var labels = { cup: 'cups', tbsp: 'tablespoons', tsp: 'teaspoons', g: 'grams', oz: 'ounces', ml: 'milliliters', lb: 'pounds', kg: 'kilograms' };
+      return labels[unit] || unit;
+    }
+
+    function formatNum(n) {
+      if (n === 0) return '0';
+      if (Math.abs(n) >= 100) return n.toFixed(1);
+      if (Math.abs(n) >= 10) return n.toFixed(2);
+      if (Math.abs(n) >= 1) return n.toFixed(2);
+      return n.toFixed(3);
+    }
+
+    /* ---- Convert ---- */
+    function convert() {
+      var ing = ingredients[ingredientEl.value];
+      if (!ing) return;
+
+      var amount = parseFloat(amountFrom.value);
+      if (isNaN(amount) || amount < 0) {
+        if (window.showToast) window.showToast('Please enter a valid amount.');
+        return;
+      }
+      if (amount === 0) {
+        amountTo.value = '0';
+        resultPanel.classList.add('visible');
+        document.getElementById('result-value').textContent = '0 ' + unitLabel(unitTo.value);
+        document.getElementById('result-label').textContent = ing.name;
+        document.getElementById('result-equation').textContent = '0 ' + unitLabel(unitFrom.value) + ' = 0 ' + unitLabel(unitTo.value);
+        buildRefTable(ing);
+        return;
+      }
+
+      var grams = toGrams(amount, unitFrom.value, ing.gpCup);
+      var result = fromGrams(grams, unitTo.value, ing.gpCup);
+
+      amountTo.value = formatNum(result);
+      document.getElementById('result-value').textContent = formatNum(result) + ' ' + unitLabel(unitTo.value);
+      document.getElementById('result-label').textContent = ing.name;
+      document.getElementById('result-equation').textContent = formatNum(amount) + ' ' + unitLabel(unitFrom.value) + ' = ' + formatNum(result) + ' ' + unitLabel(unitTo.value);
+
+      buildRefTable(ing);
+      resultPanel.classList.add('visible');
+      resultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    /* ---- Reference table ---- */
+    function buildRefTable(ing) {
+      var refTitle = document.getElementById('ref-title');
+      refTitle.textContent = ing.name + ' — Quick Reference';
+      var body = document.getElementById('ref-body');
+      var rows = [
+        { label: '1 cup', g: ing.gpCup, oz: ing.gpCup / OZ_G },
+        { label: '3/4 cup', g: ing.gpCup * 0.75, oz: (ing.gpCup * 0.75) / OZ_G },
+        { label: '2/3 cup', g: ing.gpCup * 0.667, oz: (ing.gpCup * 0.667) / OZ_G },
+        { label: '1/2 cup', g: ing.gpCup * 0.5, oz: (ing.gpCup * 0.5) / OZ_G },
+        { label: '1/3 cup', g: ing.gpCup * 0.333, oz: (ing.gpCup * 0.333) / OZ_G },
+        { label: '1/4 cup', g: ing.gpCup * 0.25, oz: (ing.gpCup * 0.25) / OZ_G },
+        { label: '1 tbsp', g: ing.gpCup / 16, oz: (ing.gpCup / 16) / OZ_G },
+        { label: '1 tsp', g: ing.gpCup / 48, oz: (ing.gpCup / 48) / OZ_G }
+      ];
+      var html = '';
+      rows.forEach(function(r) {
+        html += '<tr><td>' + r.label + '</td><td>' + r.g.toFixed(1) + ' g</td><td>' + r.oz.toFixed(2) + ' oz</td></tr>';
+      });
+      body.innerHTML = html;
+    }
+
+    /* ---- Event listeners ---- */
+    convertBtn.addEventListener('click', convert);
+
+    swapBtn.addEventListener('click', function() {
+      var tmpUnit = unitFrom.value;
+      unitFrom.value = unitTo.value;
+      unitTo.value = tmpUnit;
+      amountFrom.value = amountTo.value && amountTo.value !== '—' ? amountTo.value : amountFrom.value;
+      amountTo.value = '—';
+      convert();
+    });
+
+    quickBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        quickBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        amountFrom.value = btn.getAttribute('data-amount');
+        unitFrom.value = btn.getAttribute('data-unit');
+        convert();
+      });
+    });
+
+    resetBtn.addEventListener('click', function() {
+      ingredientEl.value = 'flour-ap';
+      amountFrom.value = '1';
+      unitFrom.value = 'g';
+      unitTo.value = 'cup';
+      amountTo.value = '—';
+      resultPanel.classList.remove('visible');
+      quickBtns.forEach(function(b) { b.classList.remove('active'); });
+    });
+
+    /* Auto-convert on input change */
+    amountFrom.addEventListener('input', function() {
+      if (resultPanel.classList.contains('visible')) convert();
+    });
+    ingredientEl.addEventListener('change', function() {
+      if (resultPanel.classList.contains('visible')) convert();
+    });
+    unitFrom.addEventListener('change', function() {
+      if (resultPanel.classList.contains('visible')) convert();
+    });
+    unitTo.addEventListener('change', function() {
+      if (resultPanel.classList.contains('visible')) convert();
+    });
+
+    /* Enter key */
+    document.getElementById('tool-calculator').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); convert(); }
+    });
+  });
+  </script>
+</body>
+</html>
