@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signature Stamp Maker — Teamz Lab Tools</title>
+  <meta name="description" content="Create rubber stamp designs from your signature or text privately in-browser. Choose shapes, colors, distress effects. Download transparent PNG free.">
+  <meta property="og:title" content="Signature Stamp Maker — Teamz Lab Tools">
+  <meta property="og:description" content="Create custom rubber stamp designs from signatures or text. Circle or rectangle shapes, distress effects. 100% browser-based, free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/signature-stamp-maker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Signature Stamp Maker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Create custom rubber stamp designs privately. Draw or type, choose shapes and distress. Download transparent PNG free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/signature-stamp-maker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-block; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem; }
+    .privacy-strip { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--text); text-align: center; margin-bottom: 1rem; }
+    .privacy-strip strong { color: var(--heading); }
+
+    .stamp-tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .stamp-tab { flex: 1; padding: 0.75rem; text-align: center; background: var(--surface); border: none; color: var(--text); font-family: var(--font, 'Poppins', sans-serif); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .stamp-tab.active { background: var(--heading); color: var(--bg); }
+    .stamp-tab:not(.active):hover { background: var(--border); }
+    .stamp-panel { display: none; }
+    .stamp-panel.active { display: block; }
+
+    .stamp-draw-wrap { position: relative; background: var(--bg); border: 2px dashed var(--border); border-radius: 12px; cursor: crosshair; touch-action: none; margin-bottom: 1rem; }
+    .stamp-draw-wrap canvas { display: block; width: 100%; border-radius: 10px; }
+    .stamp-draw-hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-muted); font-size: 0.9rem; pointer-events: none; transition: opacity 0.3s; }
+
+    .stamp-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .stamp-form-grid .tool-field { margin-bottom: 0; }
+
+    .stamp-color-presets { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; }
+    .stamp-color-preset { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; transition: transform 0.15s; }
+    .stamp-color-preset:hover { transform: scale(1.15); }
+    .stamp-color-preset.active { border-color: var(--heading); box-shadow: 0 0 0 2px var(--heading); }
+    .stamp-custom-color-input { width: 32px; height: 32px; padding: 0; border-radius: 50%; cursor: pointer; }
+
+    .stamp-preview-area { margin: 1.5rem 0; }
+    .stamp-canvas-container { position: relative; display: inline-block; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+    .stamp-checkerboard { background-image: linear-gradient(45deg, var(--border) 25%, transparent 25%), linear-gradient(-45deg, var(--border) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--border) 75%), linear-gradient(-45deg, transparent 75%, var(--border) 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; text-align: center; }
+    #stamp-preview { display: block; max-width: 100%; }
+
+    .stamp-draw-controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+    .stamp-draw-controls .tool-field { margin-bottom: 0; flex: 1; min-width: 100px; }
+
+    .stamp-slider-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .stamp-slider-row .tool-field { flex: 1; min-width: 140px; margin-bottom: 0; }
+    .stamp-slider-value { display: inline-block; min-width: 40px; text-align: right; font-weight: 600; color: var(--heading); font-size: 0.85rem; }
+
+    @media (max-width: 600px) {
+      .stamp-form-grid { grid-template-columns: 1fr; }
+      .stamp-slider-row { flex-direction: column; }
+      .stamp-draw-controls { flex-direction: column; }
+      .stamp-canvas-container { width: 100%; }
+      #stamp-preview { width: 100%; height: auto; }
+      .tool-actions { flex-direction: column; }
+      .tool-actions button { width: 100%; }
+      .tool-calculator h2 { font-size: var(--text-lg); }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is my signature data uploaded to any server?", "acceptedAnswer": {"@type": "Answer", "text": "No. This stamp maker runs 100% in your browser using the HTML5 Canvas API. Your signature drawings, text inputs, and generated stamp images never leave your device. Nothing is uploaded, stored, or tracked."}}, {"@type": "Question", "name": "Can I use the stamp on official documents?", "acceptedAnswer": {"@type": "Answer", "text": "The tool creates decorative stamp graphics. For legally binding stamps or notary seals, you should consult local regulations. The generated stamps are great for branding, watermarks, crafts, and design projects."}}, {"@type": "Question", "name": "What image format is the download?", "acceptedAnswer": {"@type": "Answer", "text": "Stamps are downloaded as transparent PNG files. The background is fully transparent, so you can overlay the stamp on any document, image, or design without a visible bounding box."}}, {"@type": "Question", "name": "Does the draw mode work on mobile and tablets?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The drawing canvas supports touch input and works on smartphones and tablets. Using a stylus on a tablet gives the most natural-looking signature. The interface adapts to smaller screens automatically."}}, {"@type": "Question", "name": "What does the distress slider do?", "acceptedAnswer": {"@type": "Answer", "text": "The distress slider randomly removes pixels from the stamp to simulate the worn, aged look of a real rubber stamp. A value of 0% gives a clean, crisp stamp. Values between 20-40% look realistic. Higher values create a heavily worn or faded appearance."}}, {"@type": "Question", "name": "Can I change the stamp color?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Choose from three presets — Classic Red, Blue Official, or Black Ink — or pick any custom color using the color picker. The selected color applies to all text, borders, and drawn signature elements in the stamp."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Signature Stamp Maker — Create Rubber Stamp Effects", "description": "Create custom rubber stamp designs from your signature or text. Choose shapes, colors, and distress effects. Download as transparent PNG. Free and private.", "url": "https://tool.teamzlab.com/tools/signature-stamp-maker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span class="privacy-badge">100% Private — Browser-Only, No Upload</span>
+      <h1>Signature Stamp Maker — Create Rubber Stamp Effects</h1>
+      <p class="tool-description">Turn your signature or text into a realistic rubber stamp design. Choose circle, rectangle, or rounded rectangle shapes with single, double, or ornate borders. Add distress texture, custom colors, and curved text. Download as transparent PNG. Everything runs in your browser — your data never leaves your device.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="privacy-strip"><strong>100% Private</strong> — Your stamp is created locally. Nothing is uploaded or tracked.</div>
+
+      <div class="stamp-tabs">
+        <button type="button" class="stamp-tab active" data-tab="type">Type Text</button>
+        <button type="button" class="stamp-tab" data-tab="draw">Draw Signature</button>
+      </div>
+
+      <!-- Type Panel -->
+      <div class="stamp-panel active" id="panel-type">
+        <div class="stamp-form-grid">
+          <div class="tool-field">
+            <label for="stamp-top-text" class="tool-label">Top Text (curved)</label>
+            <input type="text" id="stamp-top-text" class="tool-input" placeholder="OFFICIAL SEAL" maxlength="40">
+          </div>
+          <div class="tool-field">
+            <label for="stamp-bottom-text" class="tool-label">Bottom Text (curved)</label>
+            <input type="text" id="stamp-bottom-text" class="tool-input" placeholder="AUTHORIZED" maxlength="40">
+          </div>
+          <div class="tool-field">
+            <label for="stamp-center-text" class="tool-label">Center Text / Signature</label>
+            <input type="text" id="stamp-center-text" class="tool-input" placeholder="John Doe" maxlength="50">
+          </div>
+          <div class="tool-field">
+            <label for="stamp-font" class="tool-label">Font</label>
+            <select id="stamp-font" class="tool-select">
+              <option value="Poppins">Poppins</option>
+              <option value="Oswald">Oswald</option>
+              <option value="Playfair Display">Playfair Display</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Draw Panel -->
+      <div class="stamp-panel" id="panel-draw">
+        <p style="margin-bottom:0.5rem; color: var(--text-muted); font-size:0.85rem;">Draw your signature below. It will be placed in the stamp center.</p>
+        <div class="stamp-draw-wrap" id="draw-wrap">
+          <canvas id="draw-canvas" width="600" height="200"></canvas>
+          <div class="stamp-draw-hint" id="draw-hint">Draw your signature here</div>
+        </div>
+        <div class="stamp-draw-controls">
+          <div class="tool-field">
+            <label for="draw-pen-color" class="tool-label">Pen Color</label>
+            <input type="color" id="draw-pen-color" class="tool-input">
+          </div>
+          <div class="tool-field">
+            <label for="draw-pen-width" class="tool-label">Pen Width</label>
+            <input type="range" id="draw-pen-width" min="1" max="8" value="3" class="tool-input">
+          </div>
+          <div class="tool-field" style="flex:0 0 auto;">
+            <label class="tool-label">&nbsp;</label>
+            <button type="button" id="clear-draw" class="btn-pill-ghost tool-clear-btn">Clear Drawing</button>
+          </div>
+        </div>
+        <div class="stamp-form-grid">
+          <div class="tool-field">
+            <label for="stamp-top-text-draw" class="tool-label">Top Text (curved)</label>
+            <input type="text" id="stamp-top-text-draw" class="tool-input" placeholder="OFFICIAL SEAL" maxlength="40">
+          </div>
+          <div class="tool-field">
+            <label for="stamp-bottom-text-draw" class="tool-label">Bottom Text (curved)</label>
+            <input type="text" id="stamp-bottom-text-draw" class="tool-input" placeholder="AUTHORIZED" maxlength="40">
+          </div>
+        </div>
+      </div>
+
+      <!-- Common Options -->
+      <div class="stamp-form-grid">
+        <div class="tool-field">
+          <label for="stamp-shape" class="tool-label">Stamp Shape</label>
+          <select id="stamp-shape" class="tool-select">
+            <option value="circle">Circle</option>
+            <option value="rectangle">Rectangle</option>
+            <option value="rounded-rect">Rounded Rectangle</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label for="stamp-border-style" class="tool-label">Border Style</label>
+          <select id="stamp-border-style" class="tool-select">
+            <option value="single">Single</option>
+            <option value="double">Double</option>
+            <option value="ornate">Ornate</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tool-field">
+        <label class="tool-label">Stamp Color</label>
+        <div class="stamp-color-presets">
+          <button type="button" class="stamp-color-preset active" data-color="c0392b" title="Classic Red"></button>
+          <button type="button" class="stamp-color-preset" data-color="1a5276" title="Blue Official"></button>
+          <button type="button" class="stamp-color-preset" data-color="1c1c1c" title="Black Ink"></button>
+          <input type="color" id="stamp-custom-color" class="tool-input stamp-custom-color-input" title="Custom Color">
+        </div>
+      </div>
+
+      <div class="stamp-slider-row">
+        <div class="tool-field">
+          <label for="stamp-distress" class="tool-label">Distress / Aging <span class="stamp-slider-value" id="distress-val">30%</span></label>
+          <input type="range" id="stamp-distress" min="0" max="100" value="30" class="tool-input">
+        </div>
+        <div class="tool-field">
+          <label for="stamp-rotation" class="tool-label">Rotation <span class="stamp-slider-value" id="rotation-val">-5°</span></label>
+          <input type="range" id="stamp-rotation" min="-45" max="45" value="-5" class="tool-input">
+        </div>
+        <div class="tool-field">
+          <label for="stamp-size" class="tool-label">Size <span class="stamp-slider-value" id="size-val">400px</span></label>
+          <input type="range" id="stamp-size" min="200" max="800" value="400" step="50" class="tool-input">
+        </div>
+      </div>
+
+      <div class="tool-actions">
+        <button type="button" id="generate-stamp" class="btn-pill tool-calculate-btn">Generate Stamp</button>
+      </div>
+
+      <div class="stamp-preview-area" id="preview-area" style="display:none;">
+        <h2 style="margin-bottom:1rem;">Stamp Preview</h2>
+        <div class="stamp-canvas-container stamp-checkerboard">
+          <canvas id="stamp-preview" width="400" height="400"></canvas>
+        </div>
+        <div class="tool-actions" style="margin-top:1rem;">
+          <button type="button" id="download-stamp" class="btn-pill tool-calculate-btn">Download PNG</button>
+          <button type="button" id="copy-stamp" class="btn-pill-ghost tool-copy-btn">Copy Image</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Stamp Maker Works</h2>
+      <p>The Signature Stamp Maker uses the HTML5 Canvas API to render realistic rubber stamp effects entirely inside your browser. You type text or draw a signature, and the tool composites it into a stamp shape with curved text along the border, a decorative border style, and an optional distress texture that simulates wear and aging.</p>
+      <p>For circular stamps, top and bottom text are rendered along arc paths using trigonometric positioning. Each character is individually rotated and placed along the circumference, creating the classic curved text look found on official seals and notary stamps. The distress effect randomly removes pixels from the final image using canvas pixel manipulation, giving the stamp an authentic used appearance.</p>
+
+      <h2>Creative Uses for Signature Stamps</h2>
+      <p>Signature stamps are versatile design elements used across many fields. Businesses use them on invoices, contracts, and letterheads to add a professional seal of authenticity. Graphic designers incorporate stamp effects into logos, packaging labels, and vintage-themed branding materials. Teachers create custom approval stamps for grading papers, while crafters use stamp designs for scrapbooking and card making.</p>
+      <p>Digital creators can overlay stamp effects on social media graphics, watermark their work, or create branded elements for YouTube thumbnails and blog headers. The transparent PNG output makes it easy to layer stamps on any background in tools like Canva, Photoshop, or Google Slides.</p>
+
+      <h2>Tips for Professional-Looking Stamps</h2>
+      <p>Keep text short and uppercase for the curved border sections — long phrases get cramped on smaller stamps. Use a distress level between 20% and 40% for a realistic worn look without losing readability. The double border style adds formality suitable for business seals, while ornate borders work well for decorative or vintage designs.</p>
+      <p>For the best results, choose Classic Red for traditional rubber stamp aesthetics, Blue Official for corporate seals, or Black Ink for minimalist designs. Experiment with slight rotation angles between -5 and -15 degrees to mimic the natural imperfection of a hand-stamped impression. Export at larger sizes (600px+) if you plan to print the stamp.</p>
+
+      <h2>Privacy and Security</h2>
+      <p>This tool processes everything locally using JavaScript and the Canvas API. No signature data, text inputs, or generated images are ever sent to a server. Your stamp designs exist only in your browser memory and on your device after download. There are no accounts, no cookies tracking your usage, and no third-party analytics on your creations. The tool works fully offline once loaded.</p>
+    </section>
+
+    <div id="faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools/' },
+      { name: 'Signature Stamp Maker' }
+    ]);
+
+    var faqs = [
+      { q: 'Is my signature data uploaded to any server?', a: 'No. This stamp maker runs 100% in your browser using the HTML5 Canvas API. Your signature drawings, text inputs, and generated stamp images never leave your device. Nothing is uploaded, stored, or tracked.' },
+      { q: 'Can I use the stamp on official documents?', a: 'The tool creates decorative stamp graphics. For legally binding stamps or notary seals, you should consult local regulations. The generated stamps are great for branding, watermarks, crafts, and design projects.' },
+      { q: 'What image format is the download?', a: 'Stamps are downloaded as transparent PNG files. The background is fully transparent, so you can overlay the stamp on any document, image, or design without a visible bounding box.' },
+      { q: 'Does the draw mode work on mobile and tablets?', a: 'Yes. The drawing canvas supports touch input and works on smartphones and tablets. Using a stylus on a tablet gives the most natural-looking signature. The interface adapts to smaller screens automatically.' },
+      { q: 'What does the distress slider do?', a: 'The distress slider randomly removes pixels from the stamp to simulate the worn, aged look of a real rubber stamp. A value of 0% gives a clean, crisp stamp. Values between 20-40% look realistic. Higher values create a heavily worn or faded appearance.' },
+      { q: 'Can I change the stamp color?', a: 'Yes. Choose from three presets — Classic Red, Blue Official, or Black Ink — or pick any custom color using the color picker. The selected color applies to all text, borders, and drawn signature elements in the stamp.' }
+    ];
+
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.renderRelatedTools([
+      { slug: 'tools/signature-maker', name: 'Signature Maker', description: 'Draw or type digital signatures privately.' },
+      { slug: 'tools/signature-font-preview', name: 'Signature Font Preview', description: 'Preview your name in 15+ signature fonts.' },
+      { slug: 'tools/email-signature-generator', name: 'Email Signature Generator', description: 'Generate professional email signatures.' },
+      { slug: 'image/image-compressor', name: 'Image Compressor', description: 'Compress images privately in your browser.' },
+      { slug: 'design/logo-text-maker', name: 'Logo Text Maker', description: 'Create logo text with custom fonts.' },
+      { slug: 'tools/digital-business-card-maker', name: 'Business Card Maker', description: 'Create digital business cards privately.' }
+    ]);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'tools/signature-stamp-maker',
+      title: 'Signature Stamp Maker — Create Rubber Stamp Effects',
+      description: 'Create custom rubber stamp designs from your signature or text. Choose shapes, colors, and distress effects. Download as transparent PNG. Free and private.'
+    });
+
+    // ===== STATE =====
+    var defaultStampColor = [192,57,43].map(function(v){return v.toString(16).padStart(2,'0');}).join('');
+    var stampColor = '#' + defaultStampColor;
+    document.getElementById('draw-pen-color').value = stampColor;
+    document.getElementById('stamp-custom-color').value = stampColor;
+    var activeTab = 'type';
+    var drawStrokes = [];
+    var currentStroke = null;
+    var isDrawing = false;
+
+    // ===== TABS =====
+    var tabs = document.querySelectorAll('.stamp-tab');
+    var panels = document.querySelectorAll('.stamp-panel');
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        panels.forEach(function(p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        activeTab = tab.getAttribute('data-tab');
+        document.getElementById('panel-' + activeTab).classList.add('active');
+      });
+    });
+
+    // ===== COLOR PRESETS =====
+    var presets = document.querySelectorAll('.stamp-color-preset');
+    var customColorInput = document.getElementById('stamp-custom-color');
+    // Set preset background colors via JS (not inline styles)
+    presets.forEach(function(btn) {
+      btn.style.background = '#' + btn.getAttribute('data-color');
+    });
+    presets.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        presets.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        stampColor = '#' + btn.getAttribute('data-color');
+        customColorInput.value = stampColor;
+      });
+    });
+    customColorInput.addEventListener('input', function() {
+      stampColor = customColorInput.value;
+      presets.forEach(function(b) { b.classList.remove('active'); });
+    });
+
+    // ===== SLIDER LABELS =====
+    var distressSlider = document.getElementById('stamp-distress');
+    var rotationSlider = document.getElementById('stamp-rotation');
+    var sizeSlider = document.getElementById('stamp-size');
+    distressSlider.addEventListener('input', function() { document.getElementById('distress-val').textContent = distressSlider.value + '%'; });
+    rotationSlider.addEventListener('input', function() { document.getElementById('rotation-val').textContent = rotationSlider.value + '\u00B0'; });
+    sizeSlider.addEventListener('input', function() { document.getElementById('size-val').textContent = sizeSlider.value + 'px'; });
+
+    // ===== DRAWING CANVAS =====
+    var drawCanvas = document.getElementById('draw-canvas');
+    var drawCtx = drawCanvas.getContext('2d');
+    var drawHint = document.getElementById('draw-hint');
+
+    function getDrawPos(e) {
+      var rect = drawCanvas.getBoundingClientRect();
+      var scaleX = drawCanvas.width / rect.width;
+      var scaleY = drawCanvas.height / rect.height;
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      isDrawing = true;
+      drawHint.style.opacity = '0';
+      var pos = getDrawPos(e);
+      var color = document.getElementById('draw-pen-color').value;
+      var width = parseInt(document.getElementById('draw-pen-width').value);
+      currentStroke = { points: [pos], color: color, width: width };
+    }
+    function moveDraw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      var pos = getDrawPos(e);
+      currentStroke.points.push(pos);
+      redrawCanvas();
+    }
+    function endDraw(e) {
+      if (!isDrawing) return;
+      isDrawing = false;
+      if (currentStroke) { drawStrokes.push(currentStroke); currentStroke = null; }
+    }
+    function redrawCanvas() {
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      var allStrokes = drawStrokes.concat(currentStroke ? [currentStroke] : []);
+      allStrokes.forEach(function(stroke) {
+        if (stroke.points.length < 2) return;
+        drawCtx.beginPath();
+        drawCtx.strokeStyle = stroke.color;
+        drawCtx.lineWidth = stroke.width;
+        drawCtx.lineCap = 'round';
+        drawCtx.lineJoin = 'round';
+        drawCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (var i = 1; i < stroke.points.length; i++) {
+          drawCtx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        drawCtx.stroke();
+      });
+    }
+
+    drawCanvas.addEventListener('mousedown', startDraw);
+    drawCanvas.addEventListener('mousemove', moveDraw);
+    drawCanvas.addEventListener('mouseup', endDraw);
+    drawCanvas.addEventListener('mouseleave', endDraw);
+    drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
+    drawCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+    drawCanvas.addEventListener('touchend', endDraw);
+
+    document.getElementById('clear-draw').addEventListener('click', function() {
+      drawStrokes = [];
+      currentStroke = null;
+      isDrawing = false;
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+      drawHint.style.opacity = '1';
+    });
+
+    // ===== STAMP RENDERING =====
+    function drawCurvedText(ctx, text, cx, cy, radius, startAngle, isTop, fontSize, font) {
+      if (!text) return;
+      ctx.save();
+      ctx.font = 'bold ' + fontSize + 'px ' + font + ', sans-serif';
+      ctx.fillStyle = stampColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      var chars = text.split('');
+      var totalAngle = 0;
+      var charWidths = [];
+      for (var i = 0; i < chars.length; i++) {
+        var w = ctx.measureText(chars[i]).width;
+        charWidths.push(w);
+        totalAngle += w / radius;
+      }
+      // Add spacing between chars
+      var spacing = 0.02;
+      totalAngle += spacing * (chars.length - 1);
+
+      var angle;
+      if (isTop) {
+        angle = -Math.PI / 2 - totalAngle / 2;
+      } else {
+        angle = Math.PI / 2 + totalAngle / 2;
+      }
+
+      for (var j = 0; j < chars.length; j++) {
+        var halfChar = charWidths[j] / radius / 2;
+        if (isTop) {
+          angle += halfChar;
+        } else {
+          angle -= halfChar;
+        }
+        ctx.save();
+        ctx.translate(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
+        if (isTop) {
+          ctx.rotate(angle + Math.PI / 2);
+        } else {
+          ctx.rotate(angle - Math.PI / 2);
+        }
+        ctx.fillText(chars[j], 0, 0);
+        ctx.restore();
+
+        if (isTop) {
+          angle += halfChar + spacing;
+        } else {
+          angle -= halfChar + spacing;
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawBorder(ctx, shape, borderStyle, cx, cy, size, lineWidth) {
+      ctx.strokeStyle = stampColor;
+      ctx.lineWidth = lineWidth;
+
+      function strokeShape(s, offset) {
+        ctx.beginPath();
+        if (s === 'circle') {
+          ctx.arc(cx, cy, size / 2 - offset, 0, Math.PI * 2);
+        } else if (s === 'rectangle') {
+          var half = size / 2 - offset;
+          ctx.rect(cx - half, cy - half * 0.7, half * 2, half * 1.4);
+        } else {
+          var h2 = size / 2 - offset;
+          var r = 20;
+          ctx.roundRect(cx - h2, cy - h2 * 0.7, h2 * 2, h2 * 1.4, r);
+        }
+        ctx.stroke();
+      }
+
+      if (borderStyle === 'single') {
+        strokeShape(shape, lineWidth);
+      } else if (borderStyle === 'double') {
+        strokeShape(shape, lineWidth);
+        strokeShape(shape, lineWidth * 3.5);
+      } else {
+        // ornate: double border with dots between
+        strokeShape(shape, lineWidth);
+        strokeShape(shape, lineWidth * 4);
+        // draw dots between borders
+        ctx.fillStyle = stampColor;
+        var dotRadius = lineWidth * 0.6;
+        var gapRadius = size / 2 - lineWidth * 2.5;
+        if (shape === 'circle') {
+          for (var a = 0; a < Math.PI * 2; a += Math.PI / 18) {
+            ctx.beginPath();
+            ctx.arc(cx + gapRadius * Math.cos(a), cy + gapRadius * Math.sin(a), dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          // dots along rectangle/rounded-rect top and bottom edges
+          var halfW = size / 2 - lineWidth * 2.5;
+          var halfH = halfW * 0.7;
+          for (var dx = -halfW + 10; dx <= halfW - 10; dx += 14) {
+            ctx.beginPath();
+            ctx.arc(cx + dx, cy - halfH, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + dx, cy + halfH, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          for (var dy = -halfH + 10; dy <= halfH - 10; dy += 14) {
+            ctx.beginPath();
+            ctx.arc(cx - halfW, cy + dy, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + halfW, cy + dy, dotRadius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    }
+
+    function applyDistress(ctx, canvas, percent) {
+      if (percent <= 0) return;
+      var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var data = imageData.data;
+      var threshold = percent / 100;
+      // Use a noise pattern for more natural distress
+      for (var i = 3; i < data.length; i += 4) {
+        if (data[i] > 0) {
+          var x = ((i / 4) % canvas.width);
+          var y = Math.floor((i / 4) / canvas.width);
+          // Combine random with a pseudo-noise pattern
+          var noise = Math.sin(x * 0.5) * Math.cos(y * 0.7) * 0.5 + 0.5;
+          if (Math.random() * (0.5 + noise * 0.5) < threshold) {
+            data[i] = 0;
+          }
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    function generateStamp() {
+      var size = parseInt(sizeSlider.value);
+      var shape = document.getElementById('stamp-shape').value;
+      var borderStyle = document.getElementById('stamp-border-style').value;
+      var distress = parseInt(distressSlider.value);
+      var rotation = parseInt(rotationSlider.value);
+      var font = document.getElementById('stamp-font').value;
+
+      var canvas = document.getElementById('stamp-preview');
+      canvas.width = size;
+      canvas.height = size;
+      var ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, size, size);
+
+      var cx = size / 2;
+      var cy = size / 2;
+
+      // Apply rotation
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(rotation * Math.PI / 180);
+      ctx.translate(-cx, -cy);
+
+      var lineWidth = Math.max(2, size / 100);
+
+      // Draw border
+      drawBorder(ctx, shape, borderStyle, cx, cy, size, lineWidth);
+
+      // Determine text based on active tab
+      var topText, bottomText, centerText;
+      if (activeTab === 'type') {
+        topText = document.getElementById('stamp-top-text').value.toUpperCase();
+        bottomText = document.getElementById('stamp-bottom-text').value.toUpperCase();
+        centerText = document.getElementById('stamp-center-text').value;
+      } else {
+        topText = document.getElementById('stamp-top-text-draw').value.toUpperCase();
+        bottomText = document.getElementById('stamp-bottom-text-draw').value.toUpperCase();
+        centerText = '';
+      }
+
+      if (shape === 'circle') {
+        // Curved text along circle
+        var textRadius = size / 2 - lineWidth * (borderStyle === 'single' ? 3.5 : 6);
+        var fontSize = Math.max(12, size / 18);
+        drawCurvedText(ctx, topText, cx, cy, textRadius, 0, true, fontSize, font);
+        drawCurvedText(ctx, bottomText, cx, cy, textRadius, 0, false, fontSize, font);
+
+        // Horizontal line separators if we have top/bottom text
+        if (topText || bottomText) {
+          ctx.strokeStyle = stampColor;
+          ctx.lineWidth = lineWidth * 0.7;
+          var sepLen = size * 0.25;
+          var sepY1 = cy - size * 0.12;
+          var sepY2 = cy + size * 0.12;
+          if (topText) {
+            ctx.beginPath();
+            ctx.moveTo(cx - sepLen, sepY1);
+            ctx.lineTo(cx + sepLen, sepY1);
+            ctx.stroke();
+          }
+          if (bottomText) {
+            ctx.beginPath();
+            ctx.moveTo(cx - sepLen, sepY2);
+            ctx.lineTo(cx + sepLen, sepY2);
+            ctx.stroke();
+          }
+        }
+      } else {
+        // Straight text for rectangular stamps
+        var fontSize2 = Math.max(12, size / 16);
+        ctx.font = 'bold ' + fontSize2 + 'px ' + font + ', sans-serif';
+        ctx.fillStyle = stampColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        var halfH = (size / 2) * 0.7;
+        if (topText) {
+          ctx.fillText(topText, cx, cy - halfH * 0.55);
+        }
+        if (bottomText) {
+          ctx.fillText(bottomText, cx, cy + halfH * 0.55);
+        }
+
+        // Separator lines
+        if (topText || bottomText) {
+          ctx.strokeStyle = stampColor;
+          ctx.lineWidth = lineWidth * 0.7;
+          var lw = size * 0.35;
+          if (topText) {
+            var ly1 = cy - halfH * 0.25;
+            ctx.beginPath(); ctx.moveTo(cx - lw, ly1); ctx.lineTo(cx + lw, ly1); ctx.stroke();
+          }
+          if (bottomText) {
+            var ly2 = cy + halfH * 0.25;
+            ctx.beginPath(); ctx.moveTo(cx - lw, ly2); ctx.lineTo(cx + lw, ly2); ctx.stroke();
+          }
+        }
+      }
+
+      // Center content
+      if (activeTab === 'type' && centerText) {
+        var centerFontSize = Math.max(16, size / 10);
+        ctx.font = '700 ' + centerFontSize + 'px ' + font + ', sans-serif';
+        ctx.fillStyle = stampColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(centerText, cx, cy);
+      } else if (activeTab === 'draw' && drawStrokes.length > 0) {
+        // Place drawn signature in center
+        var tempCanvas = document.createElement('canvas');
+        tempCanvas.width = drawCanvas.width;
+        tempCanvas.height = drawCanvas.height;
+        var tempCtx = tempCanvas.getContext('2d');
+
+        // Redraw strokes in stamp color
+        drawStrokes.forEach(function(stroke) {
+          if (stroke.points.length < 2) return;
+          tempCtx.beginPath();
+          tempCtx.strokeStyle = stampColor;
+          tempCtx.lineWidth = stroke.width;
+          tempCtx.lineCap = 'round';
+          tempCtx.lineJoin = 'round';
+          tempCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (var i = 1; i < stroke.points.length; i++) {
+            tempCtx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          }
+          tempCtx.stroke();
+        });
+
+        // Find bounding box of drawn content
+        var imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        var minX = tempCanvas.width, minY = tempCanvas.height, maxX = 0, maxY = 0;
+        for (var pi = 0; pi < imgData.data.length; pi += 4) {
+          if (imgData.data[pi + 3] > 0) {
+            var px = (pi / 4) % tempCanvas.width;
+            var py = Math.floor((pi / 4) / tempCanvas.width);
+            if (px < minX) minX = px;
+            if (px > maxX) maxX = px;
+            if (py < minY) minY = py;
+            if (py > maxY) maxY = py;
+          }
+        }
+
+        if (maxX > minX && maxY > minY) {
+          var drawW = maxX - minX;
+          var drawH = maxY - minY;
+          var targetW = size * 0.45;
+          var targetH = size * 0.25;
+          var scale = Math.min(targetW / drawW, targetH / drawH);
+          var destW = drawW * scale;
+          var destH = drawH * scale;
+          ctx.drawImage(tempCanvas, minX, minY, drawW, drawH, cx - destW / 2, cy - destH / 2, destW, destH);
+        }
+      }
+
+      ctx.restore();
+
+      // Apply distress
+      applyDistress(ctx, canvas, distress);
+
+      document.getElementById('preview-area').style.display = 'block';
+    }
+
+    document.getElementById('generate-stamp').addEventListener('click', generateStamp);
+
+    // ===== DOWNLOAD =====
+    document.getElementById('download-stamp').addEventListener('click', function() {
+      var canvas = document.getElementById('stamp-preview');
+      var link = document.createElement('a');
+      link.download = 'signature-stamp.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      if (window.showToast) window.showToast('Stamp downloaded as PNG');
+    });
+
+    // ===== COPY IMAGE =====
+    document.getElementById('copy-stamp').addEventListener('click', function() {
+      var canvas = document.getElementById('stamp-preview');
+      canvas.toBlob(function(blob) {
+        if (!blob) { if (window.showToast) window.showToast('Failed to copy image'); return; }
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+            if (window.showToast) window.showToast('Stamp image copied to clipboard');
+          }).catch(function() {
+            if (window.showToast) window.showToast('Copy failed — try downloading instead');
+          });
+        } catch(err) {
+          if (window.showToast) window.showToast('Copy not supported in this browser — try downloading');
+        }
+      }, 'image/png');
+    });
+  });
+  </script>
+</body>
+</html>
