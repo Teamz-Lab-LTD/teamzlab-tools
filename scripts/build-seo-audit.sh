@@ -78,6 +78,13 @@ case "${1:-audit}" in
     --fix)
         python3 "$SCRIPT" fix
         ;;
+    --ph-search)
+        shift
+        python3 "$SCRIPT" ph-search "$@"
+        ;;
+    --ph-trending)
+        python3 "$SCRIPT" ph-trending
+        ;;
     --aso-suggest)
         shift
         python3 "$SCRIPT" aso-suggest "$@"

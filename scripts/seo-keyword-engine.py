@@ -9,7 +9,7 @@ SEO Modes (Web):
   audit          — Audit ALL tools for keyword placement issues
   suggest        — Keyword suggestions (Google Autocomplete)
   trends         — Google Trends analysis
-  validate-new   — Validate a new tool idea before building
+  validate-new   — Validate a new tool idea before building (includes Product Hunt)
   cannibalize    — Find keyword cannibalization
   report         — Full SEO report with scores
   fix            — Auto-fix keyword placement issues
@@ -17,6 +17,8 @@ SEO Modes (Web):
   batch-trends   — Trends for all hubs
   freshness      — Content freshness check
   viral          — Virality & share readiness
+  ph-search      — Search Product Hunt for competing products
+  ph-trending    — Show trending Product Hunt products (spot opportunities)
 
 ASO Modes (Mobile Apps):
   aso-suggest    — App Store + Play Store autocomplete suggestions
@@ -46,8 +48,13 @@ import time
 from collections import defaultdict, Counter
 from pathlib import Path
 
+import ssl
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_URL = "https://tool.teamzlab.com"
+PH_TOKEN_FILE = os.path.expanduser("~/.config/teamzlab/producthunt-token.txt")
+PH_API_URL = "https://api.producthunt.com/v2/api/graphql"
+SSL_CTX = ssl.create_default_context()
 
 # Directories to exclude from tool discovery
 EXCLUDE_DIRS = {
@@ -1189,10 +1196,270 @@ def run_fix(dry_run=True):
 
 # ─── FEATURE: AUTO-TRENDS FOR NEW TOOLS ──────────────────────────────
 
+# ─── PRODUCT HUNT API ────────────────────────────────────────────────
+
+def load_ph_token():
+    """Load Product Hunt developer token from file."""
+    if not os.path.exists(PH_TOKEN_FILE):
+        return None
+    with open(PH_TOKEN_FILE) as f:
+        return f.read().strip()
+
+
+def ph_graphql(query, token):
+    """Execute a Product Hunt GraphQL query."""
+    data = json.dumps({"query": query}).encode("utf-8")
+    req = urllib.request.Request(PH_API_URL, data=data, headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "User-Agent": "TeamzLabSEO/1.0"
+    })
+    try:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        return {"error": f"HTTP {e.code}: {body[:200]}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def fetch_ph_trending(token, count=20):
+    """Fetch trending products from Product Hunt (by votes)."""
+    query = f"""{{
+      posts(order: RANKING, first: {count}) {{
+        edges {{
+          node {{
+            name
+            tagline
+            votesCount
+            commentsCount
+            url
+            topics(first: 5) {{ edges {{ node {{ name }} }} }}
+          }}
+        }}
+      }}
+    }}"""
+    return ph_graphql(query, token)
+
+
+def fetch_ph_search(keyword, token, count=15):
+    """Search Product Hunt for products matching a keyword.
+    PH API doesn't have direct text search, so we fetch recent top posts
+    and filter client-side. Also searches by topic."""
+
+    results = []
+
+    # Strategy 1: Search by topic slug (e.g., "baking" -> topic "baking")
+    topic_slug = keyword.lower().replace(' ', '-')
+    query = f"""{{
+      topic(slug: "{topic_slug}") {{
+        name
+        postsCount
+        posts(first: {count}, order: VOTES) {{
+          edges {{
+            node {{
+              name
+              tagline
+              votesCount
+              commentsCount
+              url
+              topics(first: 5) {{ edges {{ node {{ name }} }} }}
+            }}
+          }}
+        }}
+      }}
+    }}"""
+    resp = ph_graphql(query, token)
+    if not resp.get("error") and resp.get("data", {}).get("topic"):
+        topic_data = resp["data"]["topic"]
+        edges = topic_data.get("posts", {}).get("edges", [])
+        for edge in edges:
+            node = edge["node"]
+            topics = [t["node"]["name"] for t in node.get("topics", {}).get("edges", [])]
+            results.append({
+                "name": node["name"],
+                "tagline": node["tagline"],
+                "votes": node["votesCount"],
+                "comments": node["commentsCount"],
+                "url": node["url"],
+                "topics": topics,
+                "match": "topic"
+            })
+
+    # Strategy 2: Fetch trending and filter by keyword in name/tagline
+    query2 = f"""{{
+      posts(order: VOTES, first: 50) {{
+        edges {{
+          node {{
+            name
+            tagline
+            votesCount
+            commentsCount
+            url
+            topics(first: 5) {{ edges {{ node {{ name }} }} }}
+          }}
+        }}
+      }}
+    }}"""
+    resp2 = ph_graphql(query2, token)
+    if not resp2.get("error") and resp2.get("data", {}).get("posts"):
+        kw_lower = keyword.lower()
+        kw_words = set(kw_lower.split())
+        for edge in resp2["data"]["posts"]["edges"]:
+            node = edge["node"]
+            text = f"{node['name']} {node['tagline']}".lower()
+            topics = [t["node"]["name"] for t in node.get("topics", {}).get("edges", [])]
+            topic_text = " ".join(topics).lower()
+            # Match if any keyword word appears in name/tagline/topics
+            if any(w in text or w in topic_text for w in kw_words):
+                # Avoid duplicates
+                if not any(r["name"] == node["name"] for r in results):
+                    results.append({
+                        "name": node["name"],
+                        "tagline": node["tagline"],
+                        "votes": node["votesCount"],
+                        "comments": node["commentsCount"],
+                        "url": node["url"],
+                        "topics": topics,
+                        "match": "keyword"
+                    })
+
+    # Sort by votes descending
+    results.sort(key=lambda x: -x["votes"])
+    return results
+
+
+def run_ph_search(keyword):
+    """Standalone Product Hunt search command."""
+    token = load_ph_token()
+    if not token:
+        print(f"\n  Product Hunt API token not found.")
+        print(f"  To set up:")
+        print(f"    1. Go to https://api.producthunt.com/v2/oauth/applications")
+        print(f"    2. Create an app → get Developer Token")
+        print(f"    3. Save it: mkdir -p ~/.config/teamzlab && echo 'YOUR_TOKEN' > {PH_TOKEN_FILE}")
+        return
+
+    print(f"\n{'='*60}")
+    print(f"  PRODUCT HUNT SEARCH: \"{keyword}\"")
+    print(f"{'='*60}\n")
+
+    results = fetch_ph_search(keyword, token)
+
+    if not results:
+        print(f"  No products found for \"{keyword}\"")
+        print(f"  This could mean:")
+        print(f"    -> Untapped niche (opportunity!)")
+        print(f"    -> Keyword too specific (try broader terms)")
+        return
+
+    print(f"  Found {len(results)} related products:\n")
+    for i, r in enumerate(results[:15], 1):
+        topics_str = ", ".join(r["topics"][:3]) if r["topics"] else "—"
+        print(f"  {i:2}. {r['name']}")
+        print(f"      {r['tagline']}")
+        print(f"      {r['votes']} upvotes | {r['comments']} comments | Topics: {topics_str}")
+        print(f"      {r['url']}")
+        print()
+
+    # Analysis
+    avg_votes = sum(r["votes"] for r in results) / len(results) if results else 0
+    top_votes = results[0]["votes"] if results else 0
+    all_topics = []
+    for r in results:
+        all_topics.extend(r["topics"])
+    topic_counts = Counter(all_topics).most_common(5)
+
+    print(f"  {'─'*50}")
+    print(f"  ANALYSIS:")
+    print(f"    Products found:    {len(results)}")
+    print(f"    Avg upvotes:       {avg_votes:.0f}")
+    print(f"    Top product:       {top_votes} upvotes")
+    print(f"    Common topics:     {', '.join(t[0] for t in topic_counts)}")
+    if avg_votes > 500:
+        print(f"    Market signal:     HOT — established market, high competition")
+    elif avg_votes > 100:
+        print(f"    Market signal:     WARM — validated demand, room for new tools")
+    elif results:
+        print(f"    Market signal:     COOL — early market, first-mover advantage")
+    else:
+        print(f"    Market signal:     COLD — untapped or non-existent market")
+    print(f"\n{'='*60}\n")
+
+
+def run_ph_trending():
+    """Show trending Product Hunt products."""
+    token = load_ph_token()
+    if not token:
+        print(f"\n  Product Hunt API token not found.")
+        print(f"  To set up:")
+        print(f"    1. Go to https://api.producthunt.com/v2/oauth/applications")
+        print(f"    2. Create an app → get Developer Token")
+        print(f"    3. Save it: mkdir -p ~/.config/teamzlab && echo 'YOUR_TOKEN' > {PH_TOKEN_FILE}")
+        return
+
+    print(f"\n{'='*60}")
+    print(f"  PRODUCT HUNT — TRENDING NOW")
+    print(f"{'='*60}\n")
+
+    resp = fetch_ph_trending(token, count=20)
+    if resp.get("error"):
+        print(f"  ERROR: {resp['error']}")
+        return
+
+    edges = resp.get("data", {}).get("posts", {}).get("edges", [])
+    if not edges:
+        print("  No trending products found.")
+        return
+
+    for i, edge in enumerate(edges, 1):
+        node = edge["node"]
+        topics = [t["node"]["name"] for t in node.get("topics", {}).get("edges", [])]
+        topics_str = ", ".join(topics[:3]) if topics else "—"
+        print(f"  {i:2}. {node['name']}  ({node['votesCount']} upvotes)")
+        print(f"      {node['tagline']}")
+        print(f"      Topics: {topics_str}")
+        print(f"      {node['url']}")
+        print()
+
+    # Spot opportunities
+    all_topics = []
+    for edge in edges:
+        for t in edge["node"].get("topics", {}).get("edges", []):
+            all_topics.append(t["node"]["name"])
+    topic_counts = Counter(all_topics).most_common(10)
+
+    print(f"  {'─'*50}")
+    print(f"  HOT TOPICS (build tools in these areas):")
+    for topic, count in topic_counts:
+        bar = "█" * count
+        print(f"    {topic:25s} {bar} ({count})")
+    print(f"\n{'='*60}\n")
+
+
+def ph_validate_signal(keyword, token):
+    """Get Product Hunt signal for validate-new. Returns (score_delta, summary)."""
+    results = fetch_ph_search(keyword, token, count=10)
+    if not results:
+        return 5, "No PH products found — untapped niche or too specific"
+
+    avg_votes = sum(r["votes"] for r in results) / len(results)
+    top_name = results[0]["name"]
+    top_votes = results[0]["votes"]
+
+    if avg_votes > 500:
+        return -5, f"HIGH competition on PH — {len(results)} products, top: {top_name} ({top_votes} votes)"
+    elif avg_votes > 100:
+        return 10, f"VALIDATED market — {len(results)} products, avg {avg_votes:.0f} votes. Room for a free tool"
+    else:
+        return 8, f"EARLY market — {len(results)} products, avg {avg_votes:.0f} votes. First-mover advantage"
+
+
 def run_validate_new_tool(keyword, geo=''):
     """
     Before building a new tool, validate it has search demand.
-    Runs: Google Trends + Autocomplete + Cannibalization check.
+    Runs: Google Trends + Autocomplete + Cannibalization check + Product Hunt.
     Returns a GO/CAUTION/STOP recommendation.
     """
     print(f"\n{'='*60}")
@@ -1201,9 +1468,11 @@ def run_validate_new_tool(keyword, geo=''):
 
     issues = []
     score = 0  # 0-100 viability score
+    ph_token = load_ph_token()
+    steps = "5" if ph_token else "4"
 
     # 1. Check Google Trends interest
-    print("  [1/4] Checking Google Trends demand...")
+    print(f"  [1/{steps}] Checking Google Trends demand...")
     data = fetch_trends_interest(keyword, geo=geo)
     interest = data.get('interest', [])
     if interest:
@@ -1251,7 +1520,7 @@ def run_validate_new_tool(keyword, geo=''):
         issues.append("No Google Trends data available")
 
     # 2. Check autocomplete (real searches)
-    print(f"\n  [2/4] Checking Google Autocomplete...")
+    print(f"\n  [2/{steps}] Checking Google Autocomplete...")
     suggestions = fetch_google_autocomplete(keyword)
     long_tails = [s for s in suggestions if is_long_tail(s)]
     print(f"    {len(suggestions)} autocomplete suggestions found")
@@ -1265,7 +1534,7 @@ def run_validate_new_tool(keyword, geo=''):
         issues.append("No autocomplete suggestions — very niche or new keyword")
 
     # 3. Check for cannibalization with existing tools
-    print(f"\n  [3/4] Checking cannibalization with existing tools...")
+    print(f"\n  [3/{steps}] Checking cannibalization with existing tools...")
     tools = find_all_tools()
     all_meta = [extract_metadata(fp) for fp in tools]
     all_meta = [m for m in all_meta if m]
@@ -1296,7 +1565,7 @@ def run_validate_new_tool(keyword, geo=''):
         print(f"    No cannibalization found — unique keyword!")
 
     # 4. Check search intent match
-    print(f"\n  [4/4] Analyzing search intent...")
+    print(f"\n  [4/{steps}] Analyzing search intent...")
     intent = classify_search_intent(keyword)
     print(f"    Intent: {intent}")
     if intent == 'transactional':
@@ -1316,6 +1585,18 @@ def run_validate_new_tool(keyword, geo=''):
         print(f"\n  RISING RELATED QUERIES (trend-jack these!):")
         for r in rising[:5]:
             print(f"    -> {r['query']}  ({r['value']})")
+
+    # 5. Product Hunt market signal (optional)
+    if ph_token:
+        print(f"\n  [5/{steps}] Checking Product Hunt market signal...")
+        ph_delta, ph_summary = ph_validate_signal(keyword, ph_token)
+        score += ph_delta
+        print(f"    {ph_summary}")
+        if ph_delta < 0:
+            issues.append(ph_summary)
+    else:
+        print(f"\n  [—] Product Hunt — SKIPPED (no token)")
+        print(f"    Set up: echo 'TOKEN' > {PH_TOKEN_FILE}")
 
     # Final recommendation
     score = min(score, 100)
@@ -2623,6 +2904,17 @@ def main():
             print('Usage: python3 seo-keyword-engine.py aso-compare "Name A" "Name B" [--country us]')
             sys.exit(1)
         run_aso_compare(keywords[0], keywords[1], country=country)
+
+    elif command == 'ph-search':
+        keywords = [a for a in sys.argv[2:] if not a.startswith('-')]
+        keywords = [k.strip('"\'') for k in keywords]
+        if not keywords:
+            print("Usage: python3 seo-keyword-engine.py ph-search \"keyword\"")
+            sys.exit(1)
+        run_ph_search(keywords[0])
+
+    elif command == 'ph-trending':
+        run_ph_trending()
 
     elif command == 'fix':
         dry_run = '--dry-run' in sys.argv
