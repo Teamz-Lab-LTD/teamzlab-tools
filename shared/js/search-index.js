@@ -220,7 +220,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Bike Tire Pressure Calculator',d:'Find optimal tire pressure for your weight, tire size and riding style. Road, mountain, gravel bikes. Free, no signup.',h:'/cycling/bike-tire-pressure-calculator/'},
   {t:'Cycling Calories Calculator',d:'Calculate calories burned cycling by distance, speed, weight and terrain. Free, private, instant results for any bike ride.',h:'/cycling/cycling-calories-calculator/'},
   {t:'E-Bike Range Calculator',d:'Estimate your electric bike range by battery size, weight, terrain and speed. Works for all e-bike brands. Free and private.',h:'/cycling/ebike-range-calculator/'},
-  {t:'Cycling & Bike Tools',d:'Free browser-based cycling calculators and bike tools. Size your bike, track calories, optimize tire pressure, plan commutes and more. No signup, 100%',h:'/cycling/'},
+  {t:'Cycling & Bike Tools',d:'Free cycling calculators and bike tools. Size your bike, track calories, optimize tire pressure and plan commutes. No signup, private.',h:'/cycling/'},
   {t:'Abfindung-Steuer-Rechner 2026',d:'Berechnen Sie die Steuer auf Ihre Abfindung 2026 mit Fünftelregelung. Netto-Abfindung, Steuervorteil und Vergleich. Kostenlos und privat.',h:'/de/abfindung-steuer-rechner/'},
   {t:'Basiselterngeld vs ElterngeldPlus Planer',d:'Vergleichen Sie Basiselterngeld und ElterngeldPlus direkt: Monatsbetrag, Bezugsdauer und Gesamtsumme. Kostenlose Berechnung.',h:'/de/basiselterngeld-vs-elterngeldplus-planer/'},
   {t:'Brutto-Netto-Rechner 2026',d:'Berechnen Sie Ihr Nettoeinkommen aus dem Bruttogehalt. Steuerklasse, Kirchensteuer und Sozialabgaben. Kostenlos und privat.',h:'/de/brutto-netto-rechner/'},
