@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coffee Grind Size Guide — Teamz Lab Tools</title>
+  <meta name="description" content="Find the right coffee grind size for your brew method. Interactive guide with grinder setting converter for Baratza, Fellow, 1Zpresso, and more. Free.">
+  <meta property="og:title" content="Coffee Grind Size Guide — Teamz Lab Tools">
+  <meta property="og:description" content="Find the right coffee grind size for your brew method. Interactive guide with grinder setting converter for Baratza, Fellow, 1Zpresso, and more. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/coffee/coffee-grind-size-guide/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/coffee.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coffee Grind Size Guide — Teamz Lab Tools">
+  <meta name="twitter:description" content="Find the right coffee grind size for your brew method. Interactive guide with grinder setting converter for Baratza, Fellow, 1Zpresso, and more. Free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/coffee/coffee-grind-size-guide/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .brew-method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-bottom: 1.5rem; }
+    .brew-method-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 0.85rem 0.5rem; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; font-weight: 500; color: var(--text); font-family: inherit; }
+    .brew-method-btn:hover { border-color: var(--accent); }
+    .brew-method-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+    .brew-method-btn .brew-icon { font-size: 1.4rem; display: block; margin-bottom: 0.25rem; }
+
+    .grind-result { display: none; margin-top: 1.5rem; }
+    .grind-result.visible { display: block; }
+
+    .grind-info-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .grind-info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
+    .grind-info-card .info-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+    .grind-info-card .info-value { font-size: 1.3rem; font-weight: 800; color: var(--heading); }
+    .grind-info-card .info-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    .grind-detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .grind-detail-panel h3 { margin: 0 0 1rem; color: var(--heading); font-size: 1.1rem; }
+    .detail-row { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row .detail-label { color: var(--text-muted); font-size: 0.9rem; }
+    .detail-row .detail-value { color: var(--text); font-weight: 600; font-size: 0.9rem; }
+
+    .grind-scale { margin-bottom: 1.5rem; }
+    .grind-scale h3 { margin: 0 0 0.75rem; color: var(--heading); font-size: 1.1rem; }
+    .scale-bar { display: flex; gap: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .scale-segment { flex: 1; padding: 0.75rem 0.25rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); border-right: 1px solid var(--border); font-size: 0.7rem; color: var(--text-muted); font-weight: 500; font-family: inherit; }
+    .scale-segment:last-child { border-right: none; }
+    .scale-segment:hover { background: var(--border); }
+    .scale-segment.active { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+    .scale-segment .seg-label { display: block; font-size: 0.65rem; margin-top: 0.2rem; }
+
+    .grinder-section { margin-top: 1.5rem; }
+    .grinder-section h2 { margin: 0 0 1rem; color: var(--heading); }
+    .grinder-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .grinder-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .grinder-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .grinder-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .grinder-group select:focus { outline: none; border-color: var(--accent); }
+
+    .grinder-result { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; display: none; }
+    .grinder-result.visible { display: block; }
+    .grinder-result h3 { margin: 0 0 0.5rem; color: var(--heading); font-size: 1rem; }
+    .grinder-setting { font-size: 1.75rem; font-weight: 800; color: var(--heading); margin-bottom: 0.25rem; }
+    .grinder-note { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+
+    .comparison-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.85rem; }
+    .comparison-table th { background: var(--surface); color: var(--heading); font-weight: 700; padding: 0.75rem 0.5rem; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+    .comparison-table td { padding: 0.65rem 0.5rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    .comparison-table tr:hover td { background: var(--surface); }
+    .comparison-table .highlight-row td { background: var(--surface); font-weight: 600; }
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+
+    @media (max-width: 600px) {
+      .brew-method-grid { grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+      .brew-method-btn { padding: 0.6rem 0.3rem; font-size: 0.75rem; }
+      .grind-info-cards { grid-template-columns: 1fr; }
+      .grinder-row { grid-template-columns: 1fr; }
+      .scale-segment { padding: 0.5rem 0.15rem; font-size: 0.6rem; }
+      .scale-segment .seg-label { font-size: 0.55rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .comparison-table { font-size: 0.75rem; }
+      .comparison-table th, .comparison-table td { padding: 0.5rem 0.35rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Coffee Tools", "item": "https://tool.teamzlab.com/coffee/"}, {"@type": "ListItem", "position": 3, "name": "Coffee Grind Size Guide"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What grind size should I use for pour over coffee?", "acceptedAnswer": {"@type": "Answer", "text": "Pour over coffee works best with a medium-fine grind, similar to the texture of table salt or sand. The particle size is typically 400–600 microns. This allows water to flow through the grounds at a steady rate, extracting balanced flavors in about 3 to 4 minutes."}}, {"@type": "Question", "name": "Why does my French press coffee taste bitter?", "acceptedAnswer": {"@type": "Answer", "text": "Bitter French press coffee usually means the grind is too fine. French press needs a coarse grind, like sea salt or coarse pepper (800–1000 microns). Fine grounds over-extract during the 4-minute steep and also slip through the mesh filter, creating sludge."}}, {"@type": "Question", "name": "How do I convert grinder settings between different brands?", "acceptedAnswer": {"@type": "Answer", "text": "Use the grinder setting converter above. Select your grinder brand and brew method to see the recommended setting range. Each grinder uses a different scale, so a \"15\" on a Baratza Encore is not the same as \"15\" on a Comandante C40. Our converter maps brew methods to specific setting ranges for each popular grinder."}}, {"@type": "Question", "name": "Can I use the same grind size for AeroPress and pour over?", "acceptedAnswer": {"@type": "Answer", "text": "They are close but not identical. AeroPress typically uses a slightly finer grind (medium-fine, 300–500 microns) compared to pour over (medium, 400–600 microns) because the AeroPress uses pressure and a shorter brew time. However, AeroPress is very versatile and works across a wide range of grind sizes depending on your recipe."}}, {"@type": "Question", "name": "What is the best grind size for cold brew?", "acceptedAnswer": {"@type": "Answer", "text": "Cold brew requires an extra coarse grind, similar to breadcrumbs or raw sugar (1000–1500 microns). Because cold water extracts much more slowly than hot water, the coarse grind prevents over-extraction during the 12 to 24 hour steep time."}}, {"@type": "Question", "name": "Does the type of burr grinder matter for grind consistency?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Flat burr grinders produce more uniform particle sizes, which is ideal for espresso and pour over. Conical burr grinders create a wider particle distribution but are often quieter and generate less heat. Both are vastly better than blade grinders for achieving consistent, repeatable grind sizes."}}, {"@type": "Question", "name": "How often should I clean my coffee grinder?", "acceptedAnswer": {"@type": "Answer", "text": "Clean your grinder every 2 to 4 weeks for regular home use. Old coffee oils oxidize and create stale, rancid flavors that contaminate fresh grounds. Use grinder cleaning tablets or disassemble and brush the burrs. Also purge a few grams of beans after cleaning to remove any tablet residue."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Coffee Grind Size Guide", "description": "Find the right grind size for any brew method.", "url": "https://tool.teamzlab.com/coffee/coffee-grind-size-guide/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Coffee Grind Size Guide</h1>
+      <p class="tool-description">Find the perfect grind size for any coffee brew method. Select your brewer to see the ideal grind, particle size in microns, brew time, water temperature, and recommended grinder settings for Baratza, Fellow, 1Zpresso, Comandante, and more.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <h2 style="margin-bottom: 1rem; color: var(--heading);">Select Your Brew Method</h2>
+
+      <div class="brew-method-grid" id="brew-method-grid">
+        <button type="button" class="brew-method-btn" data-method="turkish"><span class="brew-icon">&#9749;</span>Turkish</button>
+        <button type="button" class="brew-method-btn" data-method="espresso"><span class="brew-icon">&#9749;</span>Espresso</button>
+        <button type="button" class="brew-method-btn" data-method="moka"><span class="brew-icon">&#9749;</span>Moka Pot</button>
+        <button type="button" class="brew-method-btn" data-method="aeropress"><span class="brew-icon">&#9749;</span>AeroPress</button>
+        <button type="button" class="brew-method-btn" data-method="pourover"><span class="brew-icon">&#9749;</span>Pour Over</button>
+        <button type="button" class="brew-method-btn" data-method="chemex"><span class="brew-icon">&#9749;</span>Chemex</button>
+        <button type="button" class="brew-method-btn" data-method="drip"><span class="brew-icon">&#9749;</span>Drip</button>
+        <button type="button" class="brew-method-btn" data-method="frenchpress"><span class="brew-icon">&#9749;</span>French Press</button>
+        <button type="button" class="brew-method-btn" data-method="coldbrew"><span class="brew-icon">&#9749;</span>Cold Brew</button>
+      </div>
+
+      <div class="grind-result" id="grind-result">
+        <div class="grind-info-cards" id="grind-info-cards"></div>
+
+        <div class="grind-detail-panel" id="grind-detail-panel"></div>
+
+        <div class="grind-scale" id="grind-scale">
+          <h3>Grind Size Scale</h3>
+          <div class="scale-bar" id="scale-bar"></div>
+        </div>
+
+        <div class="grinder-section">
+          <h2 style="font-size: 1.15rem;">Grinder Setting Converter</h2>
+          <div class="grinder-row">
+            <div class="grinder-group">
+              <label for="grinder-brand">Grinder Brand</label>
+              <select id="grinder-brand">
+                <option value="baratza-encore">Baratza Encore</option>
+                <option value="baratza-virtuoso">Baratza Virtuoso+</option>
+                <option value="fellow-ode">Fellow Ode Gen 2</option>
+                <option value="fellow-opus">Fellow Opus</option>
+                <option value="1zpresso-jx">1Zpresso JX</option>
+                <option value="1zpresso-k">1Zpresso K-Max</option>
+                <option value="comandante-c40">Comandante C40</option>
+                <option value="timemore-c2">Timemore C2</option>
+                <option value="generic">Generic (1–40)</option>
+              </select>
+            </div>
+            <div class="grinder-group">
+              <label for="selected-method-display">Brew Method</label>
+              <select id="selected-method-display" disabled>
+                <option>Select a brew method above</option>
+              </select>
+            </div>
+          </div>
+          <div class="grinder-result" id="grinder-result"></div>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 2rem; margin-bottom: 1rem; color: var(--heading);">All Brew Methods Comparison</h2>
+      <div class="table-wrap">
+        <table class="comparison-table" id="comparison-table">
+          <thead>
+            <tr>
+              <th>Brew Method</th>
+              <th>Grind Size</th>
+              <th>Texture</th>
+              <th>Microns</th>
+              <th>Brew Time</th>
+              <th>Temp</th>
+            </tr>
+          </thead>
+          <tbody id="comparison-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Coffee Grind Size Affects Your Brew</h2>
+      <p>Grind size is arguably the most important variable in coffee brewing. It controls the surface area of coffee exposed to water, which directly affects extraction rate. Too fine a grind for your brew method leads to over-extraction, resulting in bitter, harsh flavors. Too coarse a grind causes under-extraction, producing a sour, weak, and watery cup. Each brewing method requires a specific grind size because of differences in contact time, water pressure, and filter type.</p>
+      <p>For immersion methods like French press and cold brew, water sits in contact with the grounds for minutes, so a coarse grind prevents over-extraction. Pressure-based methods like espresso force water through the grounds in seconds, requiring a very fine grind to extract enough flavor in that short time. Pour over and drip methods fall in between, needing a medium grind that allows water to flow through at a controlled rate.</p>
+
+      <h2>Understanding Grinder Settings Across Brands</h2>
+      <p>Every grinder uses a different numbering system, which makes it confusing when recipes say "medium-fine grind." A setting of 15 on a Baratza Encore produces a completely different particle size than 15 on a Comandante C40. This guide translates grind sizes across popular grinder brands so you can dial in the right setting regardless of which grinder you own. The recommended settings are starting points based on community consensus and manufacturer guidance. You should always adjust based on taste, as factors like bean origin, roast level, dose, and altitude affect extraction.</p>
+      <p>Burr grinders produce more consistent particle sizes than blade grinders. If you are using a blade grinder, pulse in short bursts and shake the grinder between pulses to improve consistency. For the best results, invest in a quality burr grinder, whether flat or conical, as consistent grind size is the foundation of repeatable, great-tasting coffee.</p>
+
+      <h2>Tips for Dialing In Your Grind</h2>
+      <p>Start with the recommended grind size for your brew method, then adjust based on taste. If your coffee tastes bitter or astringent, try going one step coarser. If it tastes sour, thin, or lacks sweetness, go one step finer. Make only one adjustment at a time and keep all other variables constant so you can isolate the effect of grind size. Many baristas use a refractometer to measure total dissolved solids, but your palate is the best judge for personal preference.</p>
+      <p>Freshly ground coffee loses flavor within minutes due to oxidation and off-gassing. Grind just before brewing for the best results. If you pre-grind, store grounds in an airtight container and use them within a day. Keeping your grinder clean is also essential as old coffee oils and fines build up over time and introduce stale flavors into your cup. Clean your burrs every two to four weeks for optimal performance.</p>
+
+      <h2>Grind Size and Water Temperature Pairing</h2>
+      <p>Water temperature works hand in hand with grind size to control extraction. Hotter water extracts faster, so finer grinds paired with cooler water can balance extraction for methods like AeroPress. Cold brew uses extra coarse grounds because the room-temperature or cold water needs 12 to 24 hours to extract sufficient flavor. Understanding the relationship between grind, time, and temperature is the key to mastering any brew method and consistently making excellent coffee at home.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Coffee Tools', url: '/coffee/' },
+      { name: 'Coffee Grind Size Guide' }
+    ];
+
+    var FAQS = [
+      { q: 'What grind size should I use for pour over coffee?', a: 'Pour over coffee works best with a medium-fine grind, similar to the texture of table salt or sand. The particle size is typically 400–600 microns. This allows water to flow through the grounds at a steady rate, extracting balanced flavors in about 3 to 4 minutes.' },
+      { q: 'Why does my French press coffee taste bitter?', a: 'Bitter French press coffee usually means the grind is too fine. French press needs a coarse grind, like sea salt or coarse pepper (800–1000 microns). Fine grounds over-extract during the 4-minute steep and also slip through the mesh filter, creating sludge.' },
+      { q: 'How do I convert grinder settings between different brands?', a: 'Use the grinder setting converter above. Select your grinder brand and brew method to see the recommended setting range. Each grinder uses a different scale, so a "15" on a Baratza Encore is not the same as "15" on a Comandante C40. Our converter maps brew methods to specific setting ranges for each popular grinder.' },
+      { q: 'Can I use the same grind size for AeroPress and pour over?', a: 'They are close but not identical. AeroPress typically uses a slightly finer grind (medium-fine, 300–500 microns) compared to pour over (medium, 400–600 microns) because the AeroPress uses pressure and a shorter brew time. However, AeroPress is very versatile and works across a wide range of grind sizes depending on your recipe.' },
+      { q: 'What is the best grind size for cold brew?', a: 'Cold brew requires an extra coarse grind, similar to breadcrumbs or raw sugar (1000–1500 microns). Because cold water extracts much more slowly than hot water, the coarse grind prevents over-extraction during the 12 to 24 hour steep time.' },
+      { q: 'Does the type of burr grinder matter for grind consistency?', a: 'Yes. Flat burr grinders produce more uniform particle sizes, which is ideal for espresso and pour over. Conical burr grinders create a wider particle distribution but are often quieter and generate less heat. Both are vastly better than blade grinders for achieving consistent, repeatable grind sizes.' },
+      { q: 'How often should I clean my coffee grinder?', a: 'Clean your grinder every 2 to 4 weeks for regular home use. Old coffee oils oxidize and create stale, rancid flavors that contaminate fresh grounds. Use grinder cleaning tablets or disassemble and brush the burrs. Also purge a few grams of beans after cleaning to remove any tablet residue.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'coffee/coffee-to-water-ratio-calculator', name: 'Coffee to Water Ratio Calculator', description: 'Perfect ratio for any brew method.' },
+      { slug: 'coffee/espresso-ratio-calculator', name: 'Espresso Ratio Calculator', description: 'Dial in espresso dose and yield.' },
+      { slug: 'coffee/coffee-brew-timer', name: 'Coffee Brew Timer', description: 'Step-by-step guided brew timer.' },
+      { slug: 'coffee/cold-brew-ratio-calculator', name: 'Cold Brew Ratio Calculator', description: 'Perfect cold brew ratio.' },
+      { slug: 'coffee/caffeine-intake-calculator', name: 'Caffeine Intake Calculator', description: 'Track daily caffeine intake.' },
+      { slug: 'coffee/coffee-freshness-calculator', name: 'Coffee Freshness Calculator', description: 'Check if your coffee beans are still fresh.' }
+    ];
+
+    /* ── Brew method data ── */
+    var BREW_DATA = {
+      turkish:     { name: 'Turkish', grind: 'Extra Fine', texture: 'Powder / flour', microns: '100–200', brewTime: '2–3 min', temp: '160–170°F (71–77°C)', scaleIndex: 0 },
+      espresso:    { name: 'Espresso', grind: 'Fine', texture: 'Table salt', microns: '200–350', brewTime: '25–30 sec', temp: '195–205°F (90–96°C)', scaleIndex: 1 },
+      moka:        { name: 'Moka Pot', grind: 'Fine–Medium Fine', texture: 'Table salt / sand', microns: '300–450', brewTime: '3–5 min', temp: '195–205°F (90–96°C)', scaleIndex: 2 },
+      aeropress:   { name: 'AeroPress', grind: 'Medium Fine', texture: 'Sand', microns: '300–500', brewTime: '1–3 min', temp: '175–205°F (80–96°C)', scaleIndex: 2 },
+      pourover:    { name: 'Pour Over', grind: 'Medium', texture: 'Sand / kosher salt', microns: '400–600', brewTime: '3–4 min', temp: '195–205°F (90–96°C)', scaleIndex: 3 },
+      chemex:      { name: 'Chemex', grind: 'Medium–Coarse', texture: 'Kosher salt', microns: '500–700', brewTime: '4–5 min', temp: '195–205°F (90–96°C)', scaleIndex: 4 },
+      drip:        { name: 'Drip / Auto', grind: 'Medium', texture: 'Sand / kosher salt', microns: '400–600', brewTime: '4–6 min', temp: '195–205°F (90–96°C)', scaleIndex: 3 },
+      frenchpress: { name: 'French Press', grind: 'Coarse', texture: 'Sea salt / coarse pepper', microns: '800–1000', brewTime: '4 min', temp: '195–205°F (90–96°C)', scaleIndex: 5 },
+      coldbrew:    { name: 'Cold Brew', grind: 'Extra Coarse', texture: 'Breadcrumbs / raw sugar', microns: '1000–1500', brewTime: '12–24 hrs', temp: 'Room temp / cold', scaleIndex: 6 }
+    };
+
+    var SCALE_LABELS = [
+      { label: 'Extra Fine', sub: 'Turkish' },
+      { label: 'Fine', sub: 'Espresso' },
+      { label: 'Med-Fine', sub: 'Moka/Aero' },
+      { label: 'Medium', sub: 'Pour Over' },
+      { label: 'Med-Coarse', sub: 'Chemex' },
+      { label: 'Coarse', sub: 'French Press' },
+      { label: 'Extra Coarse', sub: 'Cold Brew' }
+    ];
+
+    /* ── Grinder settings: [min, max] per scale index ── */
+    var GRINDER_DATA = {
+      'baratza-encore':    [[1,3],[5,8],[9,12],[13,18],[19,23],[24,30],[31,40]],
+      'baratza-virtuoso':  [[1,3],[5,8],[9,13],[14,20],[21,26],[27,33],[34,40]],
+      'fellow-ode':        [[1,1],[1,2],[2,3],[3,5],[5,7],[7,9],[9,11]],
+      'fellow-opus':       [[1,2],[2,4],[4,6],[6,9],[9,12],[12,15],[15,18]],
+      '1zpresso-jx':       [[6,10],[12,18],[20,26],[28,34],[36,40],[42,48],[50,60]],
+      '1zpresso-k':        [[10,20],[25,40],[45,60],[65,80],[85,100],[105,120],[125,150]],
+      'comandante-c40':    [[2,5],[8,12],[14,18],[20,24],[26,30],[32,36],[38,42]],
+      'timemore-c2':       [[3,6],[8,12],[13,17],[18,22],[23,27],[28,32],[33,38]],
+      'generic':           [[1,4],[5,10],[11,15],[16,22],[23,28],[29,34],[35,40]]
+    };
+
+    var GRINDER_NAMES = {
+      'baratza-encore': 'Baratza Encore',
+      'baratza-virtuoso': 'Baratza Virtuoso+',
+      'fellow-ode': 'Fellow Ode Gen 2',
+      'fellow-opus': 'Fellow Opus',
+      '1zpresso-jx': '1Zpresso JX',
+      '1zpresso-k': '1Zpresso K-Max',
+      'comandante-c40': 'Comandante C40',
+      'timemore-c2': 'Timemore C2',
+      'generic': 'Generic (1–40)'
+    };
+
+    var selectedMethod = null;
+
+    function selectMethod(method) {
+      selectedMethod = method;
+      var data = BREW_DATA[method];
+      if (!data) return;
+
+      /* Update buttons */
+      var btns = document.querySelectorAll('.brew-method-btn');
+      btns.forEach(function(b) { b.classList.toggle('active', b.getAttribute('data-method') === method); });
+
+      /* Info cards */
+      document.getElementById('grind-info-cards').innerHTML =
+        '<div class="grind-info-card"><div class="info-label">Grind Size</div><div class="info-value">' + data.grind + '</div><div class="info-sub">' + data.texture + '</div></div>' +
+        '<div class="grind-info-card"><div class="info-label">Particle Size</div><div class="info-value">' + data.microns + '</div><div class="info-sub">microns</div></div>' +
+        '<div class="grind-info-card"><div class="info-label">Brew Time</div><div class="info-value">' + data.brewTime + '</div></div>';
+
+      /* Detail panel */
+      document.getElementById('grind-detail-panel').innerHTML =
+        '<h3>' + data.name + ' — Brewing Details</h3>' +
+        '<div class="detail-row"><span class="detail-label">Grind Size</span><span class="detail-value">' + data.grind + '</span></div>' +
+        '<div class="detail-row"><span class="detail-label">Texture Reference</span><span class="detail-value">' + data.texture + '</span></div>' +
+        '<div class="detail-row"><span class="detail-label">Particle Size</span><span class="detail-value">' + data.microns + ' microns</span></div>' +
+        '<div class="detail-row"><span class="detail-label">Brew Time</span><span class="detail-value">' + data.brewTime + '</span></div>' +
+        '<div class="detail-row"><span class="detail-label">Water Temperature</span><span class="detail-value">' + data.temp + '</span></div>';
+
+      /* Scale bar */
+      buildScaleBar(data.scaleIndex);
+
+      /* Update method display select */
+      var sel = document.getElementById('selected-method-display');
+      sel.innerHTML = '<option>' + data.name + '</option>';
+
+      /* Show result */
+      document.getElementById('grind-result').classList.add('visible');
+
+      /* Update grinder */
+      updateGrinder();
+
+      /* Highlight comparison row */
+      highlightComparisonRow(method);
+    }
+
+    function buildScaleBar(activeIndex) {
+      var html = '';
+      for (var i = 0; i < SCALE_LABELS.length; i++) {
+        html += '<div class="scale-segment' + (i === activeIndex ? ' active' : '') + '" data-scale="' + i + '">' +
+          SCALE_LABELS[i].label + '<span class="seg-label">' + SCALE_LABELS[i].sub + '</span></div>';
+      }
+      document.getElementById('scale-bar').innerHTML = html;
+
+      /* Click on scale segments to select method */
+      var segs = document.querySelectorAll('.scale-segment');
+      segs.forEach(function(seg) {
+        seg.addEventListener('click', function() {
+          var idx = parseInt(this.getAttribute('data-scale'));
+          var methodMap = ['turkish','espresso','moka','pourover','chemex','frenchpress','coldbrew'];
+          selectMethod(methodMap[idx]);
+        });
+      });
+    }
+
+    function updateGrinder() {
+      if (!selectedMethod) return;
+      var data = BREW_DATA[selectedMethod];
+      var grinder = document.getElementById('grinder-brand').value;
+      var settings = GRINDER_DATA[grinder];
+      var range = settings[data.scaleIndex];
+      var grinderName = GRINDER_NAMES[grinder];
+
+      var resultEl = document.getElementById('grinder-result');
+      resultEl.classList.add('visible');
+      resultEl.innerHTML =
+        '<h3>' + grinderName + ' Setting for ' + data.name + '</h3>' +
+        '<div class="grinder-setting">' + range[0] + ' – ' + range[1] + '</div>' +
+        '<p class="grinder-note">Start at <strong>' + Math.round((range[0] + range[1]) / 2) + '</strong> and adjust to taste. Go finer if sour/weak, coarser if bitter/harsh. These are community-recommended starting points.</p>';
+    }
+
+    function buildComparisonTable() {
+      var tbody = document.getElementById('comparison-body');
+      var html = '';
+      var methods = ['turkish','espresso','moka','aeropress','pourover','chemex','drip','frenchpress','coldbrew'];
+      methods.forEach(function(m) {
+        var d = BREW_DATA[m];
+        html += '<tr data-method="' + m + '"><td>' + d.name + '</td><td>' + d.grind + '</td><td>' + d.texture + '</td><td>' + d.microns + '</td><td>' + d.brewTime + '</td><td>' + d.temp + '</td></tr>';
+      });
+      tbody.innerHTML = html;
+
+      /* Click rows to select */
+      var rows = tbody.querySelectorAll('tr');
+      rows.forEach(function(row) {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function() {
+          selectMethod(this.getAttribute('data-method'));
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
+    }
+
+    function highlightComparisonRow(method) {
+      var rows = document.querySelectorAll('#comparison-body tr');
+      rows.forEach(function(row) {
+        row.classList.toggle('highlight-row', row.getAttribute('data-method') === method);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'coffee/coffee-grind-size-guide', title: 'Coffee Grind Size Guide', description: 'Find the right grind size for any brew method.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      /* Brew method buttons */
+      var btns = document.querySelectorAll('.brew-method-btn');
+      btns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          selectMethod(this.getAttribute('data-method'));
+        });
+      });
+
+      /* Grinder change */
+      document.getElementById('grinder-brand').addEventListener('change', updateGrinder);
+
+      /* Build comparison table */
+      buildComparisonTable();
+
+      /* Default selection */
+      selectMethod('pourover');
+    });
+  </script>
+</body>
+</html>

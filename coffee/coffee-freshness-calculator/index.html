@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coffee Freshness Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Check if your coffee is still fresh. Enter roast date and storage method to see peak flavor window and expiration timeline. Free and private.">
+  <meta property="og:title" content="Coffee Freshness Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Check if your coffee is still fresh. Enter roast date and storage method to see peak flavor window and expiration timeline. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/coffee/coffee-freshness-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/coffee.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coffee Freshness Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Check if your coffee is still fresh. Enter roast date and storage method to see peak flavor window and expiration timeline. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/coffee/coffee-freshness-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .freshness-form { display: flex; flex-direction: column; gap: 1.25rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .form-group input,
+    .form-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .form-group input:focus,
+    .form-group select:focus { outline: none; border-color: var(--accent); }
+    .state-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .state-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 0.85rem; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.95rem; font-weight: 500; color: var(--text); font-family: inherit; }
+    .state-btn:hover { border-color: var(--accent); }
+    .state-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+    .state-btn .state-icon { font-size: 1.5rem; display: block; margin-bottom: 0.25rem; }
+    .calc-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+    .calc-actions .btn-primary,
+    .calc-actions .btn-secondary { flex: 1; }
+
+    .result-panel { display: none; margin-top: 1.5rem; }
+    .result-panel.visible { display: block; }
+
+    .status-banner { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .status-emoji { font-size: 2.5rem; line-height: 1; }
+    .status-info { flex: 1; }
+    .status-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
+    .status-title { font-size: 1.35rem; font-weight: 800; color: var(--heading); }
+    .status-subtitle { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    .timeline-bar-wrap { margin-bottom: 1.5rem; }
+    .timeline-bar-wrap h3 { margin: 0 0 0.75rem; color: var(--heading); font-size: 1rem; }
+    .timeline-bar { position: relative; height: 32px; border-radius: 16px; overflow: hidden; display: flex; }
+    .timeline-segment { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; color: var(--accent-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+    .timeline-marker { position: absolute; top: -6px; width: 3px; height: 44px; background: var(--heading); border-radius: 2px; z-index: 2; }
+    .timeline-marker::after { content: 'Today'; position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.65rem; font-weight: 700; color: var(--heading); white-space: nowrap; }
+    .timeline-labels { display: flex; justify-content: space-between; margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); }
+
+    .date-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .date-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+    .date-card .dc-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+    .date-card .dc-value { font-size: 1rem; font-weight: 700; color: var(--heading); }
+    .date-card .dc-days { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+
+    .freshness-tips { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .freshness-tips h3 { margin: 0 0 0.75rem; color: var(--heading); font-size: 1rem; }
+    .freshness-tips ul { margin: 0; padding-left: 1.25rem; }
+    .freshness-tips li { color: var(--text-muted); font-size: 0.9rem; line-height: 1.7; }
+
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      .date-cards { grid-template-columns: 1fr 1fr; }
+      .calc-actions { flex-direction: column; }
+      .calc-actions .btn-primary,
+      .calc-actions .btn-secondary { width: 100%; }
+      .status-banner { flex-direction: column; text-align: center; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .timeline-segment { font-size: 0.6rem; padding: 0 3px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Coffee Tools", "item": "https://tool.teamzlab.com/coffee/"}, {"@type": "ListItem", "position": 3, "name": "Coffee Freshness Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How long do coffee beans stay fresh after roasting?", "acceptedAnswer": {"@type": "Answer", "text": "Whole beans stored in a sealed bag with a one-way valve stay at peak flavor for about 7 to 21 days. In an airtight container they last up to 30 days. Vacuum sealed beans can stay fresh for 30 to 60 days. Pre-ground coffee loses freshness about twice as fast."}}, {"@type": "Question", "name": "What is coffee degassing and why does it matter?", "acceptedAnswer": {"@type": "Answer", "text": "Degassing is the release of carbon dioxide from freshly roasted beans during the first 2 to 4 days. Brewing before degassing completes — especially for espresso — can cause sour, uneven extraction with excessive crema. Let beans rest at least 3 days after roasting for best results."}}, {"@type": "Question", "name": "Can I freeze coffee beans to keep them fresh longer?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Freezing whole beans in an airtight or vacuum-sealed bag can preserve freshness for 3 to 6 months. Avoid freezing pre-ground coffee as ice crystals damage the exposed cell walls. Never refreeze beans after thawing."}}, {"@type": "Question", "name": "How can I tell if my coffee has gone stale?", "acceptedAnswer": {"@type": "Answer", "text": "Stale coffee has a flat or papery smell, produces no bloom when brewed (no bubbling from CO2), tastes bitter or hollow without sweetness, and may show sticky oily residue on the beans. It is safe to drink but the flavor is significantly degraded."}}, {"@type": "Question", "name": "Does the storage method really make a big difference?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. Coffee stored in an unsealed original bag goes stale in 5 to 10 days, while the same beans vacuum sealed can stay at peak flavor for up to 60 days. Proper storage can extend freshness by 5 to 10 times compared to leaving the bag open."}}, {"@type": "Question", "name": "Is this calculator accurate for all types of coffee?", "acceptedAnswer": {"@type": "Answer", "text": "The calculator uses widely accepted freshness windows based on coffee science research. Light and medium roasts may stay fresh slightly longer than dark roasts due to lower oil migration. The estimates work well for most specialty and commercial coffees."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Coffee Freshness Calculator", "description": "Check if your coffee beans are still fresh based on roast date and storage method.", "url": "https://tool.teamzlab.com/coffee/coffee-freshness-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Coffee Freshness Calculator</h1>
+      <p class="tool-description">Find out if your coffee beans or grounds are still at peak flavor. Enter the roast date and how you store them to get a full freshness timeline — from degassing through peak flavor to expiration. Everything runs in your browser, nothing is tracked.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="freshness-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="roast-date">Roast Date</label>
+            <input type="date" id="roast-date">
+          </div>
+          <div class="form-group">
+            <label for="storage-method">Storage Method</label>
+            <select id="storage-method">
+              <option value="unsealed">Original Bag (Unsealed)</option>
+              <option value="sealed" selected>Sealed Bag (with Valve)</option>
+              <option value="airtight">Airtight Container</option>
+              <option value="vacuum">Vacuum Sealed</option>
+              <option value="freezer">Freezer (Whole Bean Only)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Coffee State</label>
+          <div class="state-toggle" id="state-toggle">
+            <button type="button" class="state-btn active" data-state="whole"><span class="state-icon">&#9749;</span>Whole Bean</button>
+            <button type="button" class="state-btn" data-state="ground"><span class="state-icon">&#127809;</span>Pre-Ground</button>
+          </div>
+        </div>
+
+        <div class="calc-actions">
+          <button type="button" class="btn-primary" id="calculate-btn">Check Freshness</button>
+          <button type="button" class="btn-secondary" id="clear-btn">Reset</button>
+        </div>
+      </div>
+
+      <div class="result-panel" id="result-panel">
+        <div class="status-banner" id="status-banner">
+          <div class="status-emoji" id="status-emoji"></div>
+          <div class="status-info">
+            <div class="status-label">Current Status</div>
+            <div class="status-title" id="status-title"></div>
+            <div class="status-subtitle" id="status-subtitle"></div>
+          </div>
+        </div>
+
+        <div class="timeline-bar-wrap">
+          <h3>Freshness Timeline</h3>
+          <div class="timeline-bar" id="timeline-bar"></div>
+          <div class="timeline-labels">
+            <span>Roast Day</span>
+            <span id="timeline-end-label"></span>
+          </div>
+        </div>
+
+        <div class="date-cards" id="date-cards"></div>
+
+        <div class="freshness-tips" id="freshness-tips">
+          <h3>Tips to Extend Freshness</h3>
+          <ul id="tips-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Coffee Freshness Works</h2>
+      <p>Coffee beans begin a chemical countdown the moment they leave the roaster. During the first two to four days, carbon dioxide escapes rapidly in a process called degassing. This is essential — if you brew espresso with beans that haven't degassed, you'll get an uneven extraction with excessive crema and sour notes. After degassing, the beans enter their peak flavor window where aromatic compounds are at their most vibrant and balanced.</p>
+      <p>The length of this peak window depends heavily on how the coffee is stored and whether the beans are whole or pre-ground. Whole beans retain their freshness far longer because the inner cell structure stays intact, trapping volatile oils. Once ground, the surface area exposed to oxygen increases dramatically, accelerating staling by a factor of two or more.</p>
+
+      <h2>Storage Methods and Shelf Life</h2>
+      <p>An unsealed bag is the worst way to store roasted coffee — oxygen, moisture, and light attack the beans continuously, and flavor degrades within a week. A sealed bag with a one-way valve keeps oxygen out while allowing residual CO2 to escape, giving whole beans a comfortable two to three week peak window. Airtight containers extend this to about a month by creating a stable micro-environment. Vacuum sealing removes nearly all oxygen and can preserve peak flavor for one to two months.</p>
+      <p>Freezing whole beans is a proven method among specialty coffee professionals. When beans are sealed properly and frozen, enzymatic reactions and oxidation nearly halt, preserving freshness for three to six months. However, freezing ground coffee is less effective because ice crystals form in the exposed cell walls and accelerate degradation once thawed. Never refreeze beans after thawing — use them within a few days.</p>
+
+      <h2>Signs Your Coffee Has Gone Stale</h2>
+      <p>Stale coffee is safe to drink but unpleasant. Look for these signs: a flat or papery aroma instead of rich complexity, a lack of bloom when hot water hits the grounds (no bubbling means no CO2, meaning the beans are old), a bitter or hollow taste without sweetness or acidity, and oily residue on the surface of whole beans that has turned sticky rather than glossy. If your coffee exhibits these traits, it's past prime and you should consider replacing it.</p>
+      <p>This calculator takes your specific roast date, bean state, and storage method into account to give you accurate dates for peak flavor, staleness, and when it's time to discard. Use it every time you open a new bag to know exactly when to brew for the best cup.</p>
+
+      <h2>Best Practices for Coffee Storage</h2>
+      <p>Store coffee in a cool, dark place away from heat sources like stoves or windows. Keep beans whole until you're ready to brew — grind only what you need. If you buy in bulk, portion beans into weekly amounts and freeze the extras in airtight bags. Always let frozen beans come to room temperature before grinding to avoid condensation. Buy from roasters who print the roast date on the bag, not just a vague "best by" date months in the future.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Coffee Tools', url: '/coffee/' },
+      { name: 'Coffee Freshness Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'How long do coffee beans stay fresh after roasting?', a: 'Whole beans stored in a sealed bag with a one-way valve stay at peak flavor for about 7 to 21 days. In an airtight container they last up to 30 days. Vacuum sealed beans can stay fresh for 30 to 60 days. Pre-ground coffee loses freshness about twice as fast.' },
+      { q: 'What is coffee degassing and why does it matter?', a: 'Degassing is the release of carbon dioxide from freshly roasted beans during the first 2 to 4 days. Brewing before degassing completes — especially for espresso — can cause sour, uneven extraction with excessive crema. Let beans rest at least 3 days after roasting for best results.' },
+      { q: 'Can I freeze coffee beans to keep them fresh longer?', a: 'Yes. Freezing whole beans in an airtight or vacuum-sealed bag can preserve freshness for 3 to 6 months. Avoid freezing pre-ground coffee as ice crystals damage the exposed cell walls. Never refreeze beans after thawing.' },
+      { q: 'How can I tell if my coffee has gone stale?', a: 'Stale coffee has a flat or papery smell, produces no bloom when brewed (no bubbling from CO2), tastes bitter or hollow without sweetness, and may show sticky oily residue on the beans. It is safe to drink but the flavor is significantly degraded.' },
+      { q: 'Does the storage method really make a big difference?', a: 'Absolutely. Coffee stored in an unsealed original bag goes stale in 5 to 10 days, while the same beans vacuum sealed can stay at peak flavor for up to 60 days. Proper storage can extend freshness by 5 to 10 times compared to leaving the bag open.' },
+      { q: 'Is this calculator accurate for all types of coffee?', a: 'The calculator uses widely accepted freshness windows based on coffee science research. Light and medium roasts may stay fresh slightly longer than dark roasts due to lower oil migration. The estimates work well for most specialty and commercial coffees.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'coffee/coffee-to-water-ratio-calculator', name: 'Coffee to Water Ratio Calculator', description: 'Perfect ratio for any brew method.' },
+      { slug: 'coffee/coffee-grind-size-guide', name: 'Coffee Grind Size Guide', description: 'Find the right grind size for your brewer.' },
+      { slug: 'coffee/cold-brew-ratio-calculator', name: 'Cold Brew Ratio Calculator', description: 'Perfect cold brew coffee ratio.' },
+      { slug: 'coffee/caffeine-intake-calculator', name: 'Caffeine Intake Calculator', description: 'Track your daily caffeine consumption.' },
+      { slug: 'coffee/espresso-ratio-calculator', name: 'Espresso Ratio Calculator', description: 'Dial in espresso dose and yield.' },
+      { slug: 'coffee/latte-factor-calculator', name: 'Latte Factor Calculator', description: 'See how much you spend on coffee per year.' }
+    ];
+
+    /* Freshness windows in days: [peakStart, peakEnd, staleStart, discardStart] */
+    var FRESHNESS_DATA = {
+      whole: {
+        unsealed:  { degas: 2, peakEnd: 10,  staleEnd: 18,  discard: 25  },
+        sealed:    { degas: 3, peakEnd: 21,  staleEnd: 35,  discard: 50  },
+        airtight:  { degas: 3, peakEnd: 30,  staleEnd: 50,  discard: 70  },
+        vacuum:    { degas: 4, peakEnd: 60,  staleEnd: 90,  discard: 120 },
+        freezer:   { degas: 4, peakEnd: 180, staleEnd: 270, discard: 365 }
+      },
+      ground: {
+        unsealed:  { degas: 0, peakEnd: 5,   staleEnd: 9,   discard: 14  },
+        sealed:    { degas: 0, peakEnd: 10,  staleEnd: 18,  discard: 28  },
+        airtight:  { degas: 0, peakEnd: 15,  staleEnd: 25,  discard: 40  },
+        vacuum:    { degas: 0, peakEnd: 30,  staleEnd: 50,  discard: 70  },
+        freezer:   { degas: 0, peakEnd: 10,  staleEnd: 18,  discard: 28  }
+      }
+    };
+
+    var STORAGE_TIPS = {
+      unsealed: [
+        'Transfer beans to an airtight container immediately — an open bag loses freshness fast.',
+        'Keep the bag away from heat, light, and moisture.',
+        'Use the coffee within one week for best flavor.',
+        'Consider buying a vacuum canister for long-term storage.'
+      ],
+      sealed: [
+        'Keep the bag sealed between uses and squeeze out excess air.',
+        'Store in a cool, dark cupboard away from the stove.',
+        'Once opened, aim to use within 2 weeks for peak flavor.',
+        'The one-way valve lets CO2 out but keeps oxygen from entering.'
+      ],
+      airtight: [
+        'Great choice — airtight containers block oxygen effectively.',
+        'Keep the container in a dark, cool spot.',
+        'Open the container as infrequently as possible.',
+        'Fill the container as full as you can to minimize trapped air.'
+      ],
+      vacuum: [
+        'Vacuum sealing is one of the best methods for long-term storage.',
+        'Portion beans into weekly amounts before vacuum sealing.',
+        'Once opened, transfer to an airtight container and use within 2 weeks.',
+        'Store sealed bags in a cool, dark place for maximum shelf life.'
+      ],
+      freezer: [
+        'Freeze in airtight portions — never refreeze after thawing.',
+        'Let beans reach room temperature before grinding to avoid condensation.',
+        'Only freeze whole beans — ground coffee does not freeze well.',
+        'Use frozen beans within 6 months for best results.'
+      ]
+    };
+
+    function formatDate(d) {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function addDays(date, days) {
+      var d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function daysBetween(a, b) {
+      return Math.round((b - a) / (1000 * 60 * 60 * 24));
+    }
+
+    function getStatus(daysSinceRoast, data) {
+      if (daysSinceRoast < 0) return { phase: 'not-roasted', emoji: '&#128230;', title: 'Not Yet Roasted', subtitle: 'Roast date is in the future.', color: 'var(--text-muted)' };
+      if (daysSinceRoast <= data.degas) return { phase: 'degassing', emoji: '&#128168;', title: 'Degassing', subtitle: 'Let CO2 escape before brewing espresso.', color: 'var(--accent)' };
+      if (daysSinceRoast <= data.peakEnd) return { phase: 'peak', emoji: '&#9989;', title: 'Peak Freshness', subtitle: 'Brew now for the best flavor!', color: 'var(--accent)' };
+      if (daysSinceRoast <= data.staleEnd) return { phase: 'acceptable', emoji: '&#9888;&#65039;', title: 'Getting Stale', subtitle: 'Flavor is fading — use it soon.', color: 'var(--heading)' };
+      if (daysSinceRoast <= data.discard) return { phase: 'stale', emoji: '&#128546;', title: 'Past Prime', subtitle: 'Noticeably degraded — consider replacing.', color: 'var(--text-muted)' };
+      return { phase: 'expired', emoji: '&#128683;', title: 'Discard Recommended', subtitle: 'Well past expiration — time for a fresh bag.', color: 'var(--text-muted)' };
+    }
+
+    function calculate() {
+      var roastInput = document.getElementById('roast-date').value;
+      if (!roastInput) {
+        if (window.showToast) window.showToast('Please select a roast date.');
+        return;
+      }
+
+      var roastDate = new Date(roastInput + 'T00:00:00');
+      var today = new Date(); today.setHours(0,0,0,0);
+      var coffeeState = document.querySelector('.state-btn.active').getAttribute('data-state');
+      var storage = document.getElementById('storage-method').value;
+
+      /* Block freezer for ground */
+      if (coffeeState === 'ground' && storage === 'freezer') {
+        if (window.showToast) window.showToast('Freezer storage is not recommended for pre-ground coffee. Please choose another method.');
+        return;
+      }
+
+      var data = FRESHNESS_DATA[coffeeState][storage];
+      var daysSinceRoast = daysBetween(roastDate, today);
+      var status = getStatus(daysSinceRoast, data);
+
+      /* Status banner */
+      document.getElementById('status-emoji').innerHTML = status.emoji;
+      document.getElementById('status-title').textContent = status.title;
+      document.getElementById('status-subtitle').textContent = status.subtitle;
+
+      /* Date cards */
+      var cards = [
+        { label: 'Degas Done', days: data.degas, date: addDays(roastDate, data.degas) },
+        { label: 'Peak Ends', days: data.peakEnd, date: addDays(roastDate, data.peakEnd) },
+        { label: 'Getting Stale', days: data.staleEnd, date: addDays(roastDate, data.staleEnd) },
+        { label: 'Discard After', days: data.discard, date: addDays(roastDate, data.discard) }
+      ];
+      var cardsHTML = '';
+      cards.forEach(function(c) {
+        var daysLeft = daysBetween(today, c.date);
+        var daysText = daysLeft > 0 ? daysLeft + ' days away' : daysLeft === 0 ? 'Today' : Math.abs(daysLeft) + ' days ago';
+        cardsHTML += '<div class="date-card"><div class="dc-label">' + c.label + '</div><div class="dc-value">' + formatDate(c.date) + '</div><div class="dc-days">' + daysText + '</div></div>';
+      });
+      document.getElementById('date-cards').innerHTML = cardsHTML;
+
+      /* Timeline bar */
+      var totalDays = data.discard;
+      var segments = [
+        { label: 'Degas', end: data.degas, bg: 'var(--border)' },
+        { label: 'Peak', end: data.peakEnd, bg: 'var(--accent)' },
+        { label: 'Stale', end: data.staleEnd, bg: 'var(--heading)' },
+        { label: 'Expired', end: data.discard, bg: 'var(--text-muted)' }
+      ];
+      var barHTML = '';
+      var prevEnd = 0;
+      segments.forEach(function(seg) {
+        var width = ((seg.end - prevEnd) / totalDays * 100);
+        if (width > 0) {
+          var textColor = seg.bg === 'var(--accent)' ? 'var(--accent-text)' : 'var(--bg)';
+          barHTML += '<div class="timeline-segment" style="width:' + width + '%;background:' + seg.bg + ';color:' + textColor + ';">' + seg.label + '</div>';
+        }
+        prevEnd = seg.end;
+      });
+
+      /* Today marker */
+      var markerPct = Math.max(0, Math.min(100, (daysSinceRoast / totalDays) * 100));
+      barHTML += '<div class="timeline-marker" style="left:' + markerPct + '%;"></div>';
+
+      document.getElementById('timeline-bar').innerHTML = barHTML;
+      document.getElementById('timeline-end-label').textContent = 'Day ' + totalDays;
+
+      /* Tips */
+      var tips = STORAGE_TIPS[storage] || STORAGE_TIPS.sealed;
+      var tipsHTML = '';
+      tips.forEach(function(tip) { tipsHTML += '<li>' + tip + '</li>'; });
+      document.getElementById('tips-list').innerHTML = tipsHTML;
+
+      /* Show result */
+      document.getElementById('result-panel').classList.add('visible');
+    }
+
+    function clearForm() {
+      document.getElementById('roast-date').value = '';
+      document.getElementById('storage-method').selectedIndex = 1;
+      document.querySelectorAll('.state-btn').forEach(function(btn) { btn.classList.remove('active'); });
+      document.querySelector('.state-btn[data-state="whole"]').classList.add('active');
+      document.getElementById('result-panel').classList.remove('visible');
+      updateFreezerOption('whole');
+    }
+
+    function updateFreezerOption(state) {
+      var freezerOpt = document.querySelector('#storage-method option[value="freezer"]');
+      if (state === 'ground') {
+        freezerOpt.disabled = true;
+        freezerOpt.textContent = 'Freezer (Whole Bean Only)';
+        if (document.getElementById('storage-method').value === 'freezer') {
+          document.getElementById('storage-method').value = 'sealed';
+        }
+      } else {
+        freezerOpt.disabled = false;
+        freezerOpt.textContent = 'Freezer (Whole Bean Only)';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      /* Set default roast date to today */
+      var today = new Date();
+      var yyyy = today.getFullYear();
+      var mm = String(today.getMonth() + 1).padStart(2, '0');
+      var dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('roast-date').value = yyyy + '-' + mm + '-' + dd;
+
+      /* State toggle */
+      document.querySelectorAll('.state-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.state-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          updateFreezerOption(btn.getAttribute('data-state'));
+        });
+      });
+
+      /* Calculate button */
+      document.getElementById('calculate-btn').addEventListener('click', calculate);
+      document.getElementById('clear-btn').addEventListener('click', clearForm);
+
+      /* Breadcrumbs + schemas */
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'coffee/coffee-freshness-calculator', title: 'Coffee Freshness Calculator', description: 'Check if your coffee beans are still fresh based on roast date and storage method.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

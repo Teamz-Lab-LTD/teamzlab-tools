@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Latte Factor Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how much you spend on coffee per year and see what you could save. Compare cafe vs home brew costs with investment growth projections. Free.">
+  <meta property="og:title" content="Latte Factor Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="See how much you spend on coffee per year and what you could save by brewing at home.">
+  <meta property="og:url" content="https://tool.teamzlab.com/coffee/latte-factor-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/coffee.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Latte Factor Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="See how much you spend on coffee and what investing those savings could grow to.">
+  <link rel="canonical" href="https://tool.teamzlab.com/coffee/latte-factor-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .lf-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .lf-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .lf-field.full-width { grid-column: 1 / -1; }
+    .lf-field label { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .lf-field input[type="number"],
+    .lf-field select { width: 100%; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-md); }
+    .lf-field input:focus,
+    .lf-field select:focus { outline: none; border-color: var(--heading); }
+    .lf-field .lf-hint { font-size: var(--text-xs); color: var(--text-muted); }
+
+    .lf-actions { grid-column: 1 / -1; display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; }
+
+    .lf-results { display: none; margin-top: 1.5rem; }
+    .lf-results.visible { display: block; }
+
+    .lf-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .lf-summary-card { text-align: center; padding: 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+    .lf-summary-card .lf-card-label { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .lf-summary-card .lf-card-value { font-size: var(--text-xl); font-weight: 800; color: var(--heading); }
+
+    .lf-compare-section { margin-bottom: 1.5rem; }
+    .lf-compare-section h3 { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .lf-bar-wrap { display: flex; flex-direction: column; gap: 0.75rem; }
+    .lf-bar-row { display: flex; align-items: center; gap: 0.75rem; }
+    .lf-bar-label { width: 100px; font-size: var(--text-sm); font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .lf-bar-track { flex: 1; height: 32px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; position: relative; overflow: hidden; }
+    .lf-bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 0.75rem; font-size: var(--text-sm); font-weight: 700; transition: width 0.5s ease; }
+    .lf-bar-fill.cafe { background: var(--heading); color: var(--bg); }
+    .lf-bar-fill.home { background: var(--accent); color: var(--accent-text); }
+    .lf-savings-badge { text-align: center; padding: 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); margin-top: 1rem; }
+    .lf-savings-badge .lf-savings-amount { font-size: var(--text-2xl); font-weight: 800; color: var(--heading); }
+    .lf-savings-badge .lf-savings-label { font-size: var(--text-sm); color: var(--text-muted); }
+
+    .lf-investment-section { margin-bottom: 1.5rem; }
+    .lf-investment-section h3 { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .lf-invest-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+    .lf-invest-table th,
+    .lf-invest-table td { padding: 0.65rem 1rem; text-align: center; border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
+    .lf-invest-table th { background: var(--surface); color: var(--heading); font-weight: 700; }
+    .lf-invest-table td { color: var(--text); }
+    .lf-invest-table tr:last-child td { border-bottom: none; }
+    .lf-invest-table .lf-highlight { font-weight: 700; color: var(--heading); }
+
+    .lf-fun-section { margin-bottom: 1.5rem; }
+    .lf-fun-section h3 { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .lf-fun-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .lf-fun-card { text-align: center; padding: 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+    .lf-fun-card .lf-fun-emoji { font-size: 2rem; margin-bottom: 0.35rem; }
+    .lf-fun-card .lf-fun-count { font-size: var(--text-xl); font-weight: 800; color: var(--heading); }
+    .lf-fun-card .lf-fun-label { font-size: var(--text-xs); color: var(--text-muted); }
+
+    .lf-share-card { padding: 1.25rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); text-align: center; margin-top: 1.5rem; }
+    .lf-share-card .lf-share-text { font-size: var(--text-md); font-weight: 600; color: var(--heading); margin-bottom: 0.75rem; line-height: 1.5; }
+    .lf-share-card .lf-share-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 1rem; }
+    .lf-share-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      .lf-form { grid-template-columns: 1fr; padding: 1rem; }
+      .lf-actions { flex-direction: column; }
+      .lf-actions .btn-primary,
+      .lf-actions .btn-secondary { width: 100%; }
+      .lf-summary-grid { grid-template-columns: 1fr 1fr; }
+      .lf-fun-grid { grid-template-columns: 1fr; }
+      .lf-bar-label { width: 70px; font-size: var(--text-xs); }
+      .lf-invest-table th,
+      .lf-invest-table td { padding: 0.5rem 0.5rem; font-size: var(--text-xs); }
+      .lf-share-actions { flex-direction: column; }
+      .lf-share-actions .btn-primary,
+      .lf-share-actions .btn-secondary { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Coffee Tools", "item": "https://tool.teamzlab.com/coffee/"}, {"@type": "ListItem", "position": 3, "name": "Latte Factor Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the latte factor?", "acceptedAnswer": {"@type": "Answer", "text": "The latte factor is a personal finance concept showing how small daily expenses like coffee add up to large amounts over time. It was popularized by David Bach to illustrate the power of redirecting habitual spending toward savings and investments."}}, {"@type": "Question", "name": "How much does the average person spend on coffee per year?", "acceptedAnswer": {"@type": "Answer", "text": "At $5 per cup, five days a week, you spend about $1,300 per year. Heavy coffee drinkers buying two cups daily can spend over $2,600 annually on cafe coffee alone."}}, {"@type": "Question", "name": "How much does home brew coffee cost per cup?", "acceptedAnswer": {"@type": "Answer", "text": "Home-brewed coffee typically costs between $0.25 and $0.75 per cup depending on the beans and method. Even premium single-origin beans brewed at home cost a fraction of cafe prices."}}, {"@type": "Question", "name": "What return rate should I use for the investment projection?", "acceptedAnswer": {"@type": "Answer", "text": "Seven percent is a common benchmark representing the historical average annual return of the S&P 500 after inflation. Conservative investors might use 5%, while those in higher-growth portfolios might use 8-10%."}}, {"@type": "Question", "name": "Is the latte factor really worth worrying about?", "acceptedAnswer": {"@type": "Answer", "text": "It depends on your financial situation and goals. For someone earning six figures with no debt, a daily latte is a minor expense. For someone trying to build an emergency fund or pay off debt, redirecting $1,300+ per year can make a meaningful difference."}}, {"@type": "Question", "name": "Does this calculator account for inflation?", "acceptedAnswer": {"@type": "Answer", "text": "The default 7% return rate already accounts for inflation (the S&P 500 nominal return is roughly 10%, minus ~3% inflation). The savings and investment values shown are in today's purchasing power when using 7%."}}, {"@type": "Question", "name": "Can I use this for expenses other than coffee?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. The latte factor applies to any recurring small expense: daily takeout, subscription services, rideshares, vending machines, or impulse purchases. Enter any daily cost to see the long-term impact."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Latte Factor Calculator", "description": "Calculate coffee spending and investment growth of savings.", "url": "https://tool.teamzlab.com/coffee/latte-factor-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Latte Factor Calculator</h1>
+      <p class="tool-description">See how much your daily coffee habit really costs and what you could earn by investing the savings. Compare cafe prices to home brewing and watch compound interest work its magic.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="lf-form">
+        <div class="lf-field">
+          <label for="lf-price">Coffee Price per Cup</label>
+          <input type="number" id="lf-price" min="0.50" max="50" step="0.25" value="5.00">
+          <span class="lf-hint">Average cafe latte price</span>
+        </div>
+        <div class="lf-field">
+          <label for="lf-cups">Cups per Day</label>
+          <input type="number" id="lf-cups" min="1" max="20" step="1" value="1">
+        </div>
+        <div class="lf-field">
+          <label for="lf-days">Days per Week</label>
+          <select id="lf-days">
+            <option value="1">1 day</option>
+            <option value="2">2 days</option>
+            <option value="3">3 days</option>
+            <option value="4">4 days</option>
+            <option value="5" selected>5 days</option>
+            <option value="6">6 days</option>
+            <option value="7">7 days (every day)</option>
+          </select>
+        </div>
+        <div class="lf-field">
+          <label for="lf-home-cost">Home Brew Cost per Cup</label>
+          <input type="number" id="lf-home-cost" min="0" max="10" step="0.10" value="0.50">
+          <span class="lf-hint">Beans + water + filters at home</span>
+        </div>
+        <div class="lf-field">
+          <label for="lf-return">Annual Investment Return (%)</label>
+          <input type="number" id="lf-return" min="0" max="30" step="0.5" value="7">
+          <span class="lf-hint">S&amp;P 500 avg ~7% after inflation</span>
+        </div>
+        <div class="lf-field">
+          <label for="lf-currency">Currency</label>
+          <select id="lf-currency">
+            <option value="$" selected>$ USD</option>
+            <option value="€">€ EUR</option>
+            <option value="£">£ GBP</option>
+            <option value="¥">¥ JPY</option>
+            <option value="₹">₹ INR</option>
+            <option value="A$">A$ AUD</option>
+            <option value="C$">C$ CAD</option>
+          </select>
+        </div>
+        <div class="lf-actions">
+          <button class="btn-primary" id="lf-calculate">Calculate Coffee Spending</button>
+          <button class="btn-secondary" id="lf-clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="lf-results" id="lf-results">
+        <h2 style="margin-bottom: 1rem; color: var(--heading);">Your Coffee Spending</h2>
+        <div class="lf-summary-grid" id="lf-summary-grid"></div>
+
+        <div class="lf-compare-section">
+          <h3>Cafe vs Home Brew (Yearly)</h3>
+          <div class="lf-bar-wrap" id="lf-bars"></div>
+          <div class="lf-savings-badge" id="lf-savings-badge"></div>
+        </div>
+
+        <div class="lf-investment-section">
+          <h3>If You Invested the Savings</h3>
+          <table class="lf-invest-table" id="lf-invest-table">
+            <thead>
+              <tr><th>Years</th><th>Total Invested</th><th>Investment Value</th><th>Growth</th></tr>
+            </thead>
+            <tbody id="lf-invest-body"></tbody>
+          </table>
+        </div>
+
+        <div class="lf-fun-section">
+          <h3>Your Yearly Coffee Spending Could Buy</h3>
+          <div class="lf-fun-grid" id="lf-fun-grid"></div>
+        </div>
+
+        <div class="lf-share-card" id="lf-share-card"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is the Latte Factor?</h2>
+      <p>The Latte Factor is a concept popularized by financial author David Bach. It refers to the small, recurring expenses that add up to surprisingly large amounts over time. While it uses a daily latte as the example, the principle applies to any habitual spending: subscription services, vending machine snacks, ride-sharing instead of transit, or daily takeout lunches. The core insight is simple: redirecting even small daily amounts toward savings or investments can produce life-changing wealth over decades thanks to compound interest.</p>
+      <p>This calculator helps you put real numbers behind that idea. Enter your daily coffee cost and see exactly how much you spend per week, month, and year. Then compare that against brewing at home and see how investing the difference at a reasonable return rate could grow over 1 to 30 years.</p>
+
+      <h2>How the Latte Factor Calculator Works</h2>
+      <p>Start by entering the price you pay per cup at a cafe. The average specialty latte in the US costs between four and six dollars. Set how many cups you buy per day and how many days per week you purchase them. Next, enter what a home-brewed cup costs you, typically under a dollar when you factor in beans, water, and filters. Choose an expected annual investment return, with seven percent being a common benchmark for long-term stock market returns after inflation.</p>
+      <p>The calculator then shows your daily, weekly, monthly, and yearly cafe spending. It compares your cafe costs against home brew costs with a visual bar chart, reveals your yearly savings, and projects how those savings would grow if invested over various time horizons. Fun comparisons like iPhones and Netflix subscriptions help put the number into perspective.</p>
+
+      <h2>Why Small Savings Compound Into Big Wealth</h2>
+      <p>Compound interest is often called the eighth wonder of the world. When you invest your coffee savings each year and reinvest the returns, your money earns returns on its returns. A five-dollar daily latte habit five days a week costs over thirteen hundred dollars per year. Invested at seven percent for thirty years, that becomes over one hundred and thirty thousand dollars, far more than the roughly forty thousand you contributed. The earlier you start, the more dramatic the compounding effect becomes.</p>
+      <p>Of course, the latte factor is not about depriving yourself. It is about awareness. Once you see the numbers, you can decide which small pleasures are worth the cost and which ones you would rather redirect toward financial goals. Some people cut back to three cafe visits per week. Others switch to home brew entirely. The right balance depends on your income, goals, and what brings you joy.</p>
+
+      <h2>Tips to Reduce Your Coffee Spending</h2>
+      <p>Invest in a quality home brewing setup. A good pour-over dripper or French press costs under thirty dollars and produces cafe-quality coffee. Buy whole beans in bulk and grind fresh for the best flavor at the lowest per-cup cost. If you cannot give up the cafe experience entirely, try limiting visits to weekends or special occasions. Many workplaces offer free coffee that, with a little customization, can satisfy your daily caffeine fix without the expense. Track your coffee spending for one month using this calculator to establish a baseline, then set a realistic reduction target.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Coffee Tools', url: '/coffee/' },
+      { name: 'Latte Factor Calculator' }
+    ];
+
+    var FAQS = [
+      { q: 'What is the latte factor?', a: 'The latte factor is a personal finance concept showing how small daily expenses like coffee add up to large amounts over time. It was popularized by David Bach to illustrate the power of redirecting habitual spending toward savings and investments.' },
+      { q: 'How much does the average person spend on coffee per year?', a: 'At $5 per cup, five days a week, you spend about $1,300 per year. Heavy coffee drinkers buying two cups daily can spend over $2,600 annually on cafe coffee alone.' },
+      { q: 'How much does home brew coffee cost per cup?', a: 'Home-brewed coffee typically costs between $0.25 and $0.75 per cup depending on the beans and method. Even premium single-origin beans brewed at home cost a fraction of cafe prices.' },
+      { q: 'What return rate should I use for the investment projection?', a: 'Seven percent is a common benchmark representing the historical average annual return of the S&P 500 after inflation. Conservative investors might use 5%, while those in higher-growth portfolios might use 8-10%.' },
+      { q: 'Is the latte factor really worth worrying about?', a: 'It depends on your financial situation and goals. For someone earning six figures with no debt, a daily latte is a minor expense. For someone trying to build an emergency fund or pay off debt, redirecting $1,300+ per year can make a meaningful difference.' },
+      { q: 'Does this calculator account for inflation?', a: 'The default 7% return rate already accounts for inflation (the S&P 500 nominal return is roughly 10%, minus ~3% inflation). The savings and investment values shown are in today\'s purchasing power when using 7%.' },
+      { q: 'Can I use this for expenses other than coffee?', a: 'Absolutely. The latte factor applies to any recurring small expense: daily takeout, subscription services, rideshares, vending machines, or impulse purchases. Enter any daily cost to see the long-term impact.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'coffee/coffee-calorie-calculator', name: 'Coffee Calorie Calculator', description: 'Calculate calories and macros in your coffee drinks.' },
+      { slug: 'coffee/caffeine-intake-calculator', name: 'Caffeine Intake Calculator', description: 'Track daily caffeine consumption against safe limits.' },
+      { slug: 'coffee/coffee-to-water-ratio-calculator', name: 'Coffee to Water Ratio Calculator', description: 'Perfect ratio for any brew method.' },
+      { slug: 'coffee/cold-brew-ratio-calculator', name: 'Cold Brew Ratio Calculator', description: 'Get the perfect cold brew coffee ratio.' },
+      { slug: 'coffee/espresso-ratio-calculator', name: 'Espresso Ratio Calculator', description: 'Dial in your espresso dose and yield.' },
+      { slug: 'coffee/coffee-freshness-calculator', name: 'Coffee Freshness Calculator', description: 'Check if your coffee beans are still fresh.' }
+    ];
+
+    function formatMoney(amount, symbol) {
+      if (amount >= 1000000) return symbol + (amount / 1000000).toFixed(2) + 'M';
+      if (amount >= 100000) return symbol + (amount / 1000).toFixed(1) + 'K';
+      return symbol + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function calculate() {
+      var price = parseFloat(document.getElementById('lf-price').value) || 5;
+      var cups = parseInt(document.getElementById('lf-cups').value) || 1;
+      var days = parseInt(document.getElementById('lf-days').value) || 5;
+      var homeCost = parseFloat(document.getElementById('lf-home-cost').value) || 0.50;
+      var annualReturn = parseFloat(document.getElementById('lf-return').value) || 7;
+      var currency = document.getElementById('lf-currency').value;
+
+      var dailyCafe = price * cups;
+      var weeklyCafe = dailyCafe * days;
+      var monthlyCafe = weeklyCafe * (52 / 12);
+      var yearlyCafe = weeklyCafe * 52;
+
+      var dailyHome = homeCost * cups;
+      var weeklyHome = dailyHome * days;
+      var yearlyHome = weeklyHome * 52;
+
+      var yearlySavings = yearlyCafe - yearlyHome;
+
+      // Summary grid
+      var summaryHTML = '';
+      var summaryItems = [
+        { label: 'Daily', value: dailyCafe },
+        { label: 'Weekly', value: weeklyCafe },
+        { label: 'Monthly', value: monthlyCafe },
+        { label: 'Yearly', value: yearlyCafe }
+      ];
+      summaryItems.forEach(function(item) {
+        summaryHTML += '<div class="lf-summary-card"><div class="lf-card-label">' + item.label + '</div><div class="lf-card-value">' + formatMoney(item.value, currency) + '</div></div>';
+      });
+      document.getElementById('lf-summary-grid').innerHTML = summaryHTML;
+
+      // Bar comparison
+      var maxVal = Math.max(yearlyCafe, yearlyHome);
+      var cafePct = (yearlyCafe / maxVal * 100).toFixed(1);
+      var homePct = (yearlyHome / maxVal * 100).toFixed(1);
+      var barsHTML = '<div class="lf-bar-row"><span class="lf-bar-label">Cafe</span><div class="lf-bar-track"><div class="lf-bar-fill cafe" style="width:' + cafePct + '%">' + formatMoney(yearlyCafe, currency) + '</div></div></div>';
+      barsHTML += '<div class="lf-bar-row"><span class="lf-bar-label">Home Brew</span><div class="lf-bar-track"><div class="lf-bar-fill home" style="width:' + homePct + '%">' + formatMoney(yearlyHome, currency) + '</div></div></div>';
+      document.getElementById('lf-bars').innerHTML = barsHTML;
+
+      // Savings badge
+      document.getElementById('lf-savings-badge').innerHTML = '<div class="lf-savings-label">Yearly Savings by Brewing at Home</div><div class="lf-savings-amount">' + formatMoney(yearlySavings, currency) + '</div>';
+
+      // Investment table
+      var years = [1, 5, 10, 20, 30];
+      var rate = annualReturn / 100;
+      var investHTML = '';
+      years.forEach(function(y) {
+        var totalInvested = yearlySavings * y;
+        var futureValue = 0;
+        for (var i = 0; i < y; i++) {
+          futureValue = (futureValue + yearlySavings) * (1 + rate);
+        }
+        var growth = futureValue - totalInvested;
+        investHTML += '<tr><td>' + y + ' yr' + (y > 1 ? 's' : '') + '</td><td>' + formatMoney(totalInvested, currency) + '</td><td class="lf-highlight">' + formatMoney(futureValue, currency) + '</td><td>' + formatMoney(growth, currency) + '</td></tr>';
+      });
+      document.getElementById('lf-invest-body').innerHTML = investHTML;
+
+      // Fun comparisons
+      var iphonePrice = 1199;
+      var flightPrice = 600;
+      var netflixYearly = 191.88;
+      var funItems = [
+        { emoji: '\uD83D\uDCF1', count: Math.floor(yearlyCafe / iphonePrice), label: 'iPhones' },
+        { emoji: '\u2708\uFE0F', count: Math.floor(yearlyCafe / flightPrice), label: 'Flights to Paris' },
+        { emoji: '\uD83C\uDFAC', count: Math.floor(yearlyCafe / netflixYearly), label: 'Years of Netflix' }
+      ];
+      var funHTML = '';
+      funItems.forEach(function(item) {
+        funHTML += '<div class="lf-fun-card"><div class="lf-fun-emoji">' + item.emoji + '</div><div class="lf-fun-count">' + item.count + '</div><div class="lf-fun-label">' + item.label + '</div></div>';
+      });
+      document.getElementById('lf-fun-grid').innerHTML = funHTML;
+
+      // 10-year investment value for share card
+      var tenYearValue = 0;
+      for (var i = 0; i < 10; i++) {
+        tenYearValue = (tenYearValue + yearlySavings) * (1 + rate);
+      }
+
+      // Share card
+      var shareText = 'I spend ' + formatMoney(yearlyCafe, currency) + ' per year on coffee! That\'s ' + formatMoney(tenYearValue, currency) + ' over 10 years if invested.';
+      document.getElementById('lf-share-card').innerHTML = '<div class="lf-share-text">' + shareText + '</div><div class="lf-share-sub">Calculated with the Latte Factor Calculator</div><div class="lf-share-actions"><button class="btn-primary" id="lf-copy-result">Copy Result</button><button class="btn-secondary" id="lf-copy-link">Copy Share Link</button></div>';
+
+      document.getElementById('lf-copy-result').addEventListener('click', function() {
+        navigator.clipboard.writeText(shareText + ' \nhttps://tool.teamzlab.com/coffee/latte-factor-calculator/').then(function() {
+          if (window.showToast) window.showToast('Result copied to clipboard!');
+        });
+      });
+
+      document.getElementById('lf-copy-link').addEventListener('click', function() {
+        var params = new URLSearchParams({
+          price: price,
+          cups: cups,
+          days: days,
+          home: homeCost,
+          rate: annualReturn,
+          cur: currency
+        });
+        var url = 'https://tool.teamzlab.com/coffee/latte-factor-calculator/?' + params.toString();
+        navigator.clipboard.writeText(url).then(function() {
+          if (window.showToast) window.showToast('Share link copied!');
+        });
+      });
+
+      document.getElementById('lf-results').classList.add('visible');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'coffee/latte-factor-calculator', title: 'Latte Factor Calculator', description: 'Calculate coffee spending and investment growth of savings.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      document.getElementById('lf-calculate').addEventListener('click', calculate);
+
+      document.getElementById('lf-clear').addEventListener('click', function() {
+        document.getElementById('lf-price').value = '5.00';
+        document.getElementById('lf-cups').value = '1';
+        document.getElementById('lf-days').value = '5';
+        document.getElementById('lf-home-cost').value = '0.50';
+        document.getElementById('lf-return').value = '7';
+        document.getElementById('lf-currency').value = '$';
+        document.getElementById('lf-results').classList.remove('visible');
+      });
+
+      // Load from share link params
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('price')) {
+        if (params.get('price')) document.getElementById('lf-price').value = params.get('price');
+        if (params.get('cups')) document.getElementById('lf-cups').value = params.get('cups');
+        if (params.get('days')) document.getElementById('lf-days').value = params.get('days');
+        if (params.get('home')) document.getElementById('lf-home-cost').value = params.get('home');
+        if (params.get('rate')) document.getElementById('lf-return').value = params.get('rate');
+        if (params.get('cur')) document.getElementById('lf-currency').value = params.get('cur');
+        calculate();
+      }
+    });
+  </script>
+</body>
+</html>

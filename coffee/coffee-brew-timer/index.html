@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coffee Brew Timer — Teamz Lab Tools</title>
+  <meta name="description" content="Step-by-step coffee brew timer for pour over, French press, AeroPress, Chemex, and more. Guided phases with water amounts per pour. Free and private.">
+  <meta property="og:title" content="Coffee Brew Timer — Teamz Lab Tools">
+  <meta property="og:description" content="Step-by-step coffee brew timer for pour over, French press, AeroPress, Chemex, and more. Guided phases with water amounts per pour. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/coffee/coffee-brew-timer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/coffee.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Coffee Brew Timer — Teamz Lab Tools">
+  <meta name="twitter:description" content="Step-by-step coffee brew timer for pour over, French press, AeroPress, Chemex, and more. Guided phases with water amounts per pour. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/coffee/coffee-brew-timer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .method-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+    .method-btn { background: var(--surface); border: 2px solid var(--border); border-radius: 10px; padding: 0.75rem 0.5rem; text-align: center; cursor: pointer; transition: all 0.2s; font-size: 0.8rem; font-weight: 500; color: var(--text); font-family: inherit; }
+    .method-btn:hover { border-color: var(--accent); }
+    .method-btn.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 700; }
+    .method-btn .method-icon { font-size: 1.4rem; display: block; margin-bottom: 0.25rem; }
+    .brew-config { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .brew-input-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .brew-input-group label { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .brew-input-group input, .brew-input-group select { padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; }
+    .brew-input-group input:focus, .brew-input-group select:focus { outline: none; border-color: var(--accent); }
+    .brew-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .brew-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .brew-stat .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .brew-stat .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .brew-stat .stat-unit { font-size: 0.8rem; color: var(--text-muted); }
+    .timer-display { text-align: center; margin-bottom: 1.5rem; }
+    .timer-time { font-size: clamp(3rem, 10vw, 5rem); font-weight: 800; color: var(--heading); font-variant-numeric: tabular-nums; letter-spacing: 0.05em; line-height: 1.2; }
+    .timer-progress { width: 100%; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 0.75rem; }
+    .timer-progress-bar { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.3s ease; width: 0%; }
+    .timer-controls { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; }
+    .timer-controls .btn-primary, .timer-controls .btn-secondary { min-width: 120px; }
+    .steps-list { margin-bottom: 1.5rem; }
+    .brew-step { display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 2px solid var(--border); border-radius: 10px; margin-bottom: 0.5rem; background: var(--surface); transition: all 0.3s; }
+    .brew-step.active-step { border-color: var(--accent); background: var(--surface); }
+    .brew-step.completed-step { opacity: 0.5; }
+    .step-number { width: 32px; height: 32px; border-radius: 50%; background: var(--border); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; }
+    .brew-step.active-step .step-number { background: var(--accent); color: var(--accent-text); }
+    .brew-step.completed-step .step-number { background: var(--text-muted); color: var(--bg); }
+    .step-info { flex: 1; }
+    .step-name { font-weight: 700; color: var(--heading); font-size: 0.95rem; }
+    .step-detail { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.15rem; }
+    .step-time { font-weight: 700; color: var(--heading); font-size: 0.9rem; white-space: nowrap; }
+    .sound-toggle { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; justify-content: center; }
+    .sound-toggle label { font-size: 0.9rem; color: var(--text); cursor: pointer; }
+    .sound-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    .brew-history { margin-top: 1.5rem; }
+    .brew-history h3 { color: var(--heading); font-size: 1rem; margin-bottom: 0.75rem; }
+    .history-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .history-item:last-child { border-bottom: none; }
+    .history-method { font-weight: 600; color: var(--text); }
+    .history-meta { color: var(--text-muted); }
+    .history-empty { color: var(--text-muted); font-size: 0.85rem; font-style: italic; }
+    @media (max-width: 600px) {
+      .method-grid { grid-template-columns: repeat(3, 1fr); }
+      .brew-config { grid-template-columns: 1fr; }
+      .brew-summary { grid-template-columns: 1fr; }
+      .timer-controls { flex-direction: column; align-items: center; }
+      .timer-controls .btn-primary, .timer-controls .btn-secondary { width: 100%; }
+      .brew-step { padding: 0.75rem; gap: 0.75rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Coffee Tools", "item": "https://tool.teamzlab.com/coffee/"}, {"@type": "ListItem", "position": 3, "name": "Coffee Brew Timer"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What brew methods does this timer support?", "acceptedAnswer": {"@type": "Answer", "text": "The timer supports V60 Pour Over, Chemex, French Press, AeroPress (standard and inverted), Moka Pot, and Cold Brew. Each method has its own optimized step sequence with correct timing and water amounts."}}, {"@type": "Question", "name": "How does the timer adjust when I change the coffee amount?", "acceptedAnswer": {"@type": "Answer", "text": "Water amounts scale proportionally based on the method's default ratio. For example, V60 uses a 1:16 ratio. If you enter 15g of coffee instead of 20g, all water amounts reduce to 75% while keeping the same timing and step structure."}}, {"@type": "Question", "name": "What is the bloom phase and why does it matter?", "acceptedAnswer": {"@type": "Answer", "text": "Blooming means pouring a small amount of hot water (usually 2x the coffee weight) over the grounds and waiting 30 seconds. This releases CO2 trapped in freshly roasted beans, allowing water to extract flavors more evenly during the main pours."}}, {"@type": "Question", "name": "Can I use the timer without sound?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Uncheck the audio beep toggle and the timer will still guide you visually with highlighted steps and a progress bar. The beep uses your device speaker via AudioContext, so no files are downloaded."}}, {"@type": "Question", "name": "Does the timer save my brew history?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The last 5 brew sessions are saved in your browser's local storage, including the method used, coffee dose, and total brew time. History is private and never leaves your device."}}, {"@type": "Question", "name": "What water temperature should I use?", "acceptedAnswer": {"@type": "Answer", "text": "For light roasts, use 96 to 100 degrees Celsius. For medium roasts, 92 to 96 degrees works well. Dark roasts benefit from slightly cooler water at 88 to 92 degrees to reduce bitterness. The tool lets you log your temperature for reference."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Coffee Brew Timer", "description": "Step-by-step guided brew timer for any coffee method.", "url": "https://tool.teamzlab.com/coffee/coffee-brew-timer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Coffee Brew Timer</h1>
+      <p class="tool-description">Follow step-by-step guided brew phases with precise water amounts and timing for pour over, French press, AeroPress, Chemex, and more. Get consistent, delicious coffee every time with audio cues for each phase transition.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <h2 style="margin-bottom: 1rem; color: var(--heading);">Select Brew Method</h2>
+      <div class="method-grid" id="method-grid">
+        <button class="method-btn active" data-method="v60"><span class="method-icon">&#9749;</span>V60 Pour Over</button>
+        <button class="method-btn" data-method="chemex"><span class="method-icon">&#127861;</span>Chemex</button>
+        <button class="method-btn" data-method="french-press"><span class="method-icon">&#129483;</span>French Press</button>
+        <button class="method-btn" data-method="aeropress"><span class="method-icon">&#9968;</span>AeroPress</button>
+        <button class="method-btn" data-method="aeropress-inv"><span class="method-icon">&#128260;</span>AeroPress Inv.</button>
+        <button class="method-btn" data-method="moka"><span class="method-icon">&#127859;</span>Moka Pot</button>
+        <button class="method-btn" data-method="cold-brew"><span class="method-icon">&#129380;</span>Cold Brew</button>
+      </div>
+
+      <div class="brew-config">
+        <div class="brew-input-group">
+          <label for="coffee-amount">Coffee (grams)</label>
+          <input type="number" id="coffee-amount" value="20" min="5" max="100" step="1">
+        </div>
+        <div class="brew-input-group">
+          <label for="water-temp">Water Temp (&deg;C)</label>
+          <input type="number" id="water-temp" value="96" min="0" max="100" step="1">
+        </div>
+      </div>
+
+      <div class="brew-summary" id="brew-summary">
+        <div class="brew-stat"><div class="stat-label">Total Water</div><div class="stat-value" id="total-water">320</div><div class="stat-unit">ml</div></div>
+        <div class="brew-stat"><div class="stat-label">Brew Time</div><div class="stat-value" id="total-time">3:00</div><div class="stat-unit">min</div></div>
+        <div class="brew-stat"><div class="stat-label">Ratio</div><div class="stat-value" id="brew-ratio">1:16</div><div class="stat-unit">coffee:water</div></div>
+      </div>
+
+      <div class="timer-display">
+        <div class="timer-time" id="timer-display">00:00</div>
+        <div class="timer-progress"><div class="timer-progress-bar" id="progress-bar"></div></div>
+      </div>
+
+      <div class="sound-toggle">
+        <input type="checkbox" id="sound-enabled" checked>
+        <label for="sound-enabled">&#128264; Audio beep on step change</label>
+      </div>
+
+      <div class="timer-controls">
+        <button class="btn-primary" id="btn-start">&#9654; Start</button>
+        <button class="btn-secondary" id="btn-pause" disabled>&#10074;&#10074; Pause</button>
+        <button class="btn-secondary" id="btn-reset" disabled>&#8635; Reset</button>
+      </div>
+
+      <div class="steps-list" id="steps-list"></div>
+
+      <div class="brew-history" id="brew-history">
+        <h3>Recent Brews</h3>
+        <div id="history-list"><p class="history-empty">No brews yet. Start your first timer!</p></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Coffee Brew Timer Works</h2>
+      <p>The coffee brew timer guides you through each phase of your chosen brewing method with precise timing and water amounts. Select a method, enter your coffee dose, and press start. The timer walks you through bloom, pours, steeping, and drawdown phases with audio cues so you can focus on pouring instead of watching a clock. Water amounts scale proportionally when you adjust the coffee dose, keeping the ratio consistent for repeatable results.</p>
+      <p>Each brew method has a unique set of steps optimized for flavor extraction. Pour over methods like V60 and Chemex use multiple pours to control extraction rate, while immersion methods like French press and AeroPress steep the grounds for a set period before pressing. The timer tracks your elapsed time and highlights the current step so you always know what to do next.</p>
+
+      <h2>Brew Methods and When to Use Them</h2>
+      <p>Pour over (V60) produces a clean, bright cup that highlights single-origin flavors. Chemex uses a thicker filter for an even cleaner body. French press is forgiving and produces a full-bodied cup with natural oils. AeroPress is versatile and fast, great for travel or quick single cups. The inverted AeroPress method gives you more control over steep time. Moka pot delivers a strong, espresso-like concentrate on your stovetop. Cold brew is steeped overnight in cold water for a smooth, low-acid concentrate perfect for iced drinks.</p>
+      <p>Water temperature also matters. Light roasts benefit from hotter water (96-100 degrees Celsius) to extract complex flavors, while dark roasts do well with slightly cooler water (88-92 degrees) to avoid bitterness. The tool lets you log your temperature alongside each brew so you can refine your recipe over time.</p>
+
+      <h2>Tips for Better Coffee Brewing</h2>
+      <p>Freshly ground coffee makes the biggest difference in cup quality. Grind just before brewing and match your grind size to your method: medium-fine for V60, medium-coarse for Chemex, coarse for French press, and fine for AeroPress. Use a kitchen scale to measure both coffee and water by weight for consistent results every session.</p>
+      <p>The bloom phase is critical for pour over methods. Pouring a small amount of hot water over freshly ground coffee releases trapped carbon dioxide gas. This degassing allows water to extract flavors evenly during the remaining pours. If your coffee does not bloom much, the beans may be stale. Fresh beans roasted within two to four weeks will produce a visible, bubbly bloom.</p>
+      <p>Keep a brew journal or use the history feature on this tool to track which methods and doses produce your favorite cups. Small adjustments to dose, grind, or water temperature can dramatically change the flavor profile. Consistency is the key to great coffee at home.</p>
+
+      <h2>Coffee Brew Timer vs Manual Timing</h2>
+      <p>Manual timing with a phone stopwatch requires you to remember each step, the water amount for each pour, and when to transition. This tool eliminates guesswork by displaying the current step, target water level, and time remaining. The audio beep lets you watch your kettle and grounds instead of a screen. Over time, the guided process helps you internalize the rhythm of each method so brewing becomes second nature.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Coffee Tools', url: '/coffee/' },
+      { name: 'Coffee Brew Timer' }
+    ];
+
+    var FAQS = [
+      { q: 'What brew methods does this timer support?', a: 'The timer supports V60 Pour Over, Chemex, French Press, AeroPress (standard and inverted), Moka Pot, and Cold Brew. Each method has its own optimized step sequence with correct timing and water amounts.' },
+      { q: 'How does the timer adjust when I change the coffee amount?', a: 'Water amounts scale proportionally based on the method\'s default ratio. For example, V60 uses a 1:16 ratio. If you enter 15g of coffee instead of 20g, all water amounts reduce to 75% while keeping the same timing and step structure.' },
+      { q: 'What is the bloom phase and why does it matter?', a: 'Blooming means pouring a small amount of hot water (usually 2x the coffee weight) over the grounds and waiting 30 seconds. This releases CO2 trapped in freshly roasted beans, allowing water to extract flavors more evenly during the main pours.' },
+      { q: 'Can I use the timer without sound?', a: 'Yes. Uncheck the audio beep toggle and the timer will still guide you visually with highlighted steps and a progress bar. The beep uses your device speaker via AudioContext, so no files are downloaded.' },
+      { q: 'Does the timer save my brew history?', a: 'Yes. The last 5 brew sessions are saved in your browser\'s local storage, including the method used, coffee dose, and total brew time. History is private and never leaves your device.' },
+      { q: 'What water temperature should I use?', a: 'For light roasts, use 96 to 100 degrees Celsius. For medium roasts, 92 to 96 degrees works well. Dark roasts benefit from slightly cooler water at 88 to 92 degrees to reduce bitterness. The tool lets you log your temperature for reference.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'coffee/coffee-to-water-ratio-calculator', name: 'Coffee to Water Ratio Calculator', description: 'Calculate the perfect coffee to water ratio for any brew method.' },
+      { slug: 'coffee/coffee-grind-size-guide', name: 'Coffee Grind Size Guide', description: 'Find the ideal grind size for your brewer.' },
+      { slug: 'coffee/espresso-ratio-calculator', name: 'Espresso Ratio Calculator', description: 'Dial in your espresso dose and yield.' },
+      { slug: 'coffee/cold-brew-ratio-calculator', name: 'Cold Brew Ratio Calculator', description: 'Get the perfect cold brew concentrate ratio.' },
+      { slug: 'coffee/caffeine-intake-calculator', name: 'Caffeine Intake Calculator', description: 'Track your daily caffeine consumption.' },
+      { slug: 'coffee/coffee-freshness-calculator', name: 'Coffee Freshness Calculator', description: 'Check if your coffee beans are still fresh.' }
+    ];
+
+    /* ── Brew method definitions ── */
+    var METHODS = {
+      'v60': {
+        name: 'V60 Pour Over', ratio: 16, totalTimeSec: 180, tempDefault: 96,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 16);
+          return [
+            { name: 'Bloom', detail: 'Pour ' + Math.round(coffee * 2) + 'ml, stir gently', waterTarget: Math.round(coffee * 2), durationSec: 30 },
+            { name: 'First Pour', detail: 'Pour to ' + Math.round(w * 0.47) + 'ml in slow circles', waterTarget: Math.round(w * 0.47), durationSec: 30 },
+            { name: 'Second Pour', detail: 'Pour to ' + Math.round(w * 0.78) + 'ml', waterTarget: Math.round(w * 0.78), durationSec: 30 },
+            { name: 'Final Pour', detail: 'Pour to ' + w + 'ml total', waterTarget: w, durationSec: 30 },
+            { name: 'Drawdown', detail: 'Wait for complete drawdown', waterTarget: w, durationSec: 60 }
+          ];
+        }
+      },
+      'chemex': {
+        name: 'Chemex', ratio: 15, totalTimeSec: 240, tempDefault: 96,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 15);
+          return [
+            { name: 'Bloom', detail: 'Pour ' + Math.round(coffee * 2.5) + 'ml, wait', waterTarget: Math.round(coffee * 2.5), durationSec: 45 },
+            { name: 'First Pour', detail: 'Pour to ' + Math.round(w * 0.5) + 'ml slowly', waterTarget: Math.round(w * 0.5), durationSec: 45 },
+            { name: 'Second Pour', detail: 'Pour to ' + Math.round(w * 0.8) + 'ml', waterTarget: Math.round(w * 0.8), durationSec: 45 },
+            { name: 'Final Pour', detail: 'Pour to ' + w + 'ml total', waterTarget: w, durationSec: 30 },
+            { name: 'Drawdown', detail: 'Wait for complete drawdown', waterTarget: w, durationSec: 75 }
+          ];
+        }
+      },
+      'french-press': {
+        name: 'French Press', ratio: 15, totalTimeSec: 270, tempDefault: 94,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 15);
+          return [
+            { name: 'Add Water', detail: 'Pour all ' + w + 'ml over grounds', waterTarget: w, durationSec: 15 },
+            { name: 'Steep', detail: 'Place lid on, do not press yet', waterTarget: w, durationSec: 210 },
+            { name: 'Break Crust', detail: 'Stir the surface crust gently', waterTarget: w, durationSec: 15 },
+            { name: 'Press', detail: 'Press plunger down slowly', waterTarget: w, durationSec: 30 }
+          ];
+        }
+      },
+      'aeropress': {
+        name: 'AeroPress Standard', ratio: 14, totalTimeSec: 120, tempDefault: 92,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 14);
+          return [
+            { name: 'Add Water', detail: 'Pour ' + w + 'ml quickly', waterTarget: w, durationSec: 10 },
+            { name: 'Stir', detail: 'Stir 3 times back and forth', waterTarget: w, durationSec: 10 },
+            { name: 'Steep', detail: 'Wait with cap on', waterTarget: w, durationSec: 60 },
+            { name: 'Press', detail: 'Press slowly over 30 seconds', waterTarget: w, durationSec: 40 }
+          ];
+        }
+      },
+      'aeropress-inv': {
+        name: 'AeroPress Inverted', ratio: 14, totalTimeSec: 150, tempDefault: 90,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 14);
+          return [
+            { name: 'Add Coffee', detail: 'Add grounds to inverted chamber', waterTarget: 0, durationSec: 10 },
+            { name: 'Add Water', detail: 'Pour ' + w + 'ml, start timer', waterTarget: w, durationSec: 15 },
+            { name: 'Stir', detail: 'Stir gently 5 times', waterTarget: w, durationSec: 10 },
+            { name: 'Steep', detail: 'Cap with filter, wait', waterTarget: w, durationSec: 75 },
+            { name: 'Flip & Press', detail: 'Flip onto mug, press slowly', waterTarget: w, durationSec: 40 }
+          ];
+        }
+      },
+      'moka': {
+        name: 'Moka Pot', ratio: 10, totalTimeSec: 180, tempDefault: 100,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 10);
+          return [
+            { name: 'Fill Water', detail: 'Add ' + w + 'ml hot water to base', waterTarget: w, durationSec: 15 },
+            { name: 'Add Coffee', detail: 'Fill basket with grounds, level off', waterTarget: w, durationSec: 15 },
+            { name: 'Assemble & Heat', detail: 'Put on medium-low heat', waterTarget: w, durationSec: 120 },
+            { name: 'Remove', detail: 'Remove when hissing starts', waterTarget: w, durationSec: 30 }
+          ];
+        }
+      },
+      'cold-brew': {
+        name: 'Cold Brew', ratio: 8, totalTimeSec: 720, tempDefault: 0,
+        steps: function(coffee) {
+          var w = Math.round(coffee * 8);
+          return [
+            { name: 'Add Coffee', detail: 'Add coarse grounds to jar', waterTarget: 0, durationSec: 15 },
+            { name: 'Add Water', detail: 'Pour ' + w + 'ml cold water', waterTarget: w, durationSec: 15 },
+            { name: 'Stir', detail: 'Stir to saturate all grounds', waterTarget: w, durationSec: 15 },
+            { name: 'Steep', detail: 'Refrigerate 12-24 hours (timer shows 10 min preview)', waterTarget: w, durationSec: 600 },
+            { name: 'Filter', detail: 'Strain through fine mesh or filter', waterTarget: w, durationSec: 75 }
+          ];
+        }
+      }
+    };
+
+    /* ── State ── */
+    var currentMethod = 'v60';
+    var timerInterval = null;
+    var elapsedSec = 0;
+    var isRunning = false;
+    var audioCtx = null;
+
+    function getMethod() { return METHODS[currentMethod]; }
+    function getCoffee() { return parseFloat(document.getElementById('coffee-amount').value) || 20; }
+
+    function getSteps() { return getMethod().steps(getCoffee()); }
+
+    function formatTime(sec) {
+      var m = Math.floor(sec / 60);
+      var s = sec % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function getTotalDuration() {
+      var steps = getSteps();
+      var total = 0;
+      for (var i = 0; i < steps.length; i++) total += steps[i].durationSec;
+      return total;
+    }
+
+    function updateSummary() {
+      var method = getMethod();
+      var coffee = getCoffee();
+      var w = Math.round(coffee * method.ratio);
+      document.getElementById('total-water').textContent = w;
+      document.getElementById('total-time').textContent = formatTime(getTotalDuration());
+      document.getElementById('brew-ratio').textContent = '1:' + method.ratio;
+      document.getElementById('water-temp').value = method.tempDefault;
+    }
+
+    function renderSteps() {
+      var steps = getSteps();
+      var html = '';
+      var cumTime = 0;
+      for (var i = 0; i < steps.length; i++) {
+        var s = steps[i];
+        cumTime += s.durationSec;
+        html += '<div class="brew-step" id="step-' + i + '">' +
+          '<div class="step-number">' + (i + 1) + '</div>' +
+          '<div class="step-info"><div class="step-name">' + s.name + '</div><div class="step-detail">' + s.detail + '</div></div>' +
+          '<div class="step-time">' + formatTime(s.durationSec) + '</div></div>';
+      }
+      document.getElementById('steps-list').innerHTML = html;
+    }
+
+    function getCurrentStepIndex() {
+      var steps = getSteps();
+      var acc = 0;
+      for (var i = 0; i < steps.length; i++) {
+        acc += steps[i].durationSec;
+        if (elapsedSec < acc) return i;
+      }
+      return steps.length - 1;
+    }
+
+    function highlightStep() {
+      var steps = getSteps();
+      var idx = getCurrentStepIndex();
+      for (var i = 0; i < steps.length; i++) {
+        var el = document.getElementById('step-' + i);
+        if (!el) continue;
+        el.classList.remove('active-step', 'completed-step');
+        if (i < idx) el.classList.add('completed-step');
+        else if (i === idx) el.classList.add('active-step');
+      }
+    }
+
+    function updateTimer() {
+      document.getElementById('timer-display').textContent = formatTime(elapsedSec);
+      var total = getTotalDuration();
+      var pct = Math.min((elapsedSec / total) * 100, 100);
+      document.getElementById('progress-bar').style.width = pct + '%';
+      highlightStep();
+    }
+
+    function playBeep() {
+      if (!document.getElementById('sound-enabled').checked) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (e) { /* silent fail */ }
+    }
+
+    function tick() {
+      var prevStep = getCurrentStepIndex();
+      elapsedSec++;
+      var total = getTotalDuration();
+      var newStep = getCurrentStepIndex();
+
+      if (newStep !== prevStep) playBeep();
+
+      updateTimer();
+
+      if (elapsedSec >= total) {
+        stopTimer();
+        playBeep();
+        saveBrew();
+        if (window.showToast) window.showToast('Brew complete! Enjoy your coffee.');
+      }
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+      // Resume AudioContext on user gesture
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      isRunning = true;
+      timerInterval = setInterval(tick, 1000);
+      document.getElementById('btn-start').disabled = true;
+      document.getElementById('btn-pause').disabled = false;
+      document.getElementById('btn-reset').disabled = false;
+    }
+
+    function pauseTimer() {
+      if (!isRunning) return;
+      isRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('btn-start').disabled = false;
+      document.getElementById('btn-pause').disabled = true;
+    }
+
+    function stopTimer() {
+      isRunning = false;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      document.getElementById('btn-start').disabled = false;
+      document.getElementById('btn-pause').disabled = true;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      elapsedSec = 0;
+      updateTimer();
+      document.getElementById('btn-reset').disabled = true;
+      renderSteps();
+    }
+
+    function saveBrew() {
+      var history = JSON.parse(localStorage.getItem('brewTimerHistory') || '[]');
+      history.unshift({
+        method: getMethod().name,
+        coffee: getCoffee(),
+        water: Math.round(getCoffee() * getMethod().ratio),
+        time: formatTime(elapsedSec),
+        date: new Date().toLocaleDateString()
+      });
+      if (history.length > 5) history = history.slice(0, 5);
+      localStorage.setItem('brewTimerHistory', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var history = JSON.parse(localStorage.getItem('brewTimerHistory') || '[]');
+      var container = document.getElementById('history-list');
+      if (!history.length) {
+        container.innerHTML = '<p class="history-empty">No brews yet. Start your first timer!</p>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < history.length; i++) {
+        var h = history[i];
+        html += '<div class="history-item"><span class="history-method">' + h.method + '</span><span class="history-meta">' + h.coffee + 'g / ' + h.water + 'ml — ' + h.time + ' — ' + h.date + '</span></div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function selectMethod(method) {
+      currentMethod = method;
+      var btns = document.querySelectorAll('.method-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-method') === method);
+      }
+      resetTimer();
+      updateSummary();
+      renderSteps();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'coffee/coffee-brew-timer', title: 'Coffee Brew Timer', description: 'Step-by-step guided brew timer for any coffee method.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      /* Method buttons */
+      var btns = document.querySelectorAll('.method-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].addEventListener('click', function() {
+          selectMethod(this.getAttribute('data-method'));
+        });
+      }
+
+      /* Controls */
+      document.getElementById('btn-start').addEventListener('click', startTimer);
+      document.getElementById('btn-pause').addEventListener('click', pauseTimer);
+      document.getElementById('btn-reset').addEventListener('click', resetTimer);
+
+      /* Coffee amount change */
+      document.getElementById('coffee-amount').addEventListener('change', function() {
+        if (isRunning) return;
+        updateSummary();
+        renderSteps();
+      });
+      document.getElementById('coffee-amount').addEventListener('input', function() {
+        if (isRunning) return;
+        updateSummary();
+        renderSteps();
+      });
+
+      /* Init */
+      updateSummary();
+      renderSteps();
+      renderHistory();
+      updateTimer();
+    });
+  </script>
+</body>
+</html>

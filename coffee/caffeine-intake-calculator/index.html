@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caffeine Intake Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Track your daily caffeine intake from coffee, tea, energy drinks, and soda. Check against FDA safe limits with pregnancy mode. Free and private.">
+  <meta property="og:title" content="Caffeine Intake Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Track daily caffeine intake from coffee, tea, energy drinks. Check against FDA safe limits with pregnancy mode. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/coffee/caffeine-intake-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/coffee.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Caffeine Intake Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track daily caffeine intake from coffee, tea, energy drinks. Check against FDA safe limits with pregnancy mode.">
+  <link rel="canonical" href="https://tool.teamzlab.com/coffee/caffeine-intake-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .caff-form { display: grid; grid-template-columns: 1fr; gap: 1.25rem; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+    .caff-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .caff-field label { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .caff-field select,
+    .caff-field input[type="text"],
+    .caff-field input[type="number"] { width: 100%; padding: 0.65rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-md); }
+    .caff-field select:focus,
+    .caff-field input:focus { outline: none; border-color: var(--heading); }
+
+    .caff-add-row { display: grid; grid-template-columns: 1fr auto auto; gap: 0.75rem; align-items: end; }
+    .caff-add-row .caff-field { flex: 1; }
+
+    .caff-pregnancy-toggle { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0; }
+    .caff-pregnancy-toggle label { font-size: var(--text-md); font-weight: 600; color: var(--heading); cursor: pointer; }
+    .caff-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .caff-switch input { opacity: 0; width: 0; height: 0; }
+    .caff-switch-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: var(--border); border-radius: 26px; transition: 0.3s; }
+    .caff-switch-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: var(--bg); border-radius: 50%; transition: 0.3s; }
+    .caff-switch input:checked + .caff-switch-slider { background: var(--heading); }
+    .caff-switch input:checked + .caff-switch-slider:before { transform: translateX(22px); }
+
+    .caff-limit-label { font-size: var(--text-sm); color: var(--text-muted); margin-left: auto; }
+
+    .caff-progress-section { margin-top: 1.5rem; }
+    .caff-progress-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
+    .caff-progress-total { font-size: var(--text-h2); font-weight: 800; color: var(--heading); }
+    .caff-progress-limit { font-size: var(--text-sm); color: var(--text-muted); }
+    .caff-progress-bar { height: 28px; border-radius: 8px; background: var(--border); overflow: hidden; position: relative; }
+    .caff-progress-fill { height: 100%; border-radius: 8px; transition: width 0.4s ease, background 0.4s ease; min-width: 0; }
+    .caff-progress-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: var(--text-sm); font-weight: 700; color: var(--heading); }
+    .caff-zone-label { margin-top: 0.5rem; font-size: var(--text-sm); font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 6px; display: inline-block; }
+    .caff-zone-green { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .caff-zone-yellow { background: var(--surface); color: var(--heading); border: 1px solid var(--heading); }
+    .caff-zone-orange { background: var(--heading); color: var(--bg); }
+    .caff-zone-red { background: var(--heading); color: var(--bg); font-weight: 800; }
+
+    .caff-drink-list { margin-top: 1.25rem; }
+    .caff-drink-list h3 { font-size: var(--text-lg); color: var(--heading); margin-bottom: 0.75rem; }
+    .caff-drink-item { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-md); color: var(--text); }
+    .caff-drink-item:last-child { border-bottom: none; }
+    .caff-drink-info { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
+    .caff-drink-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .caff-drink-name { font-weight: 500; }
+    .caff-drink-qty { font-size: var(--text-sm); color: var(--text-muted); }
+    .caff-drink-mg { font-weight: 700; color: var(--heading); white-space: nowrap; margin: 0 0.75rem; }
+    .caff-drink-remove { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted); cursor: pointer; font-size: 1rem; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: border-color 0.2s; }
+    .caff-drink-remove:hover { border-color: var(--heading); color: var(--heading); }
+
+    .caff-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-size: var(--text-md); }
+
+    .caff-custom-section { display: none; margin-top: 1rem; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .caff-custom-section.visible { display: block; }
+    .caff-custom-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: end; }
+
+    .caff-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+    .caff-summary { margin-top: 1.5rem; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; display: none; }
+    .caff-summary.visible { display: block; }
+    .caff-summary h3 { font-size: var(--text-lg); color: var(--heading); margin-bottom: 0.75rem; }
+    .caff-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .caff-summary-card { text-align: center; padding: 0.75rem; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); }
+    .caff-summary-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.15rem; }
+    .caff-summary-value { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+
+    .caff-share-row { display: flex; gap: 0.75rem; margin-top: 1rem; }
+
+    @media (max-width: 600px) {
+      .caff-form { padding: 1rem; }
+      .caff-add-row { grid-template-columns: 1fr; }
+      .caff-custom-row { grid-template-columns: 1fr; }
+      .caff-actions { flex-direction: column; }
+      .caff-actions button { width: 100%; }
+      .caff-share-row { flex-direction: column; }
+      .caff-share-row button { width: 100%; }
+      .caff-summary-grid { grid-template-columns: 1fr; }
+      .caff-progress-total { font-size: var(--text-xl); }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Coffee Tools", "item": "https://tool.teamzlab.com/coffee/"}, {"@type": "ListItem", "position": 3, "name": "Caffeine Intake Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much caffeine is safe per day?", "acceptedAnswer": {"@type": "Answer", "text": "The FDA recommends up to 400 mg of caffeine per day for healthy adults. This is roughly equivalent to four 8-ounce cups of brewed coffee or about 10 cans of cola. Individual tolerance varies based on body weight, medications, and sensitivity. Some people experience side effects at much lower doses."}}, {"@type": "Question", "name": "How much caffeine is safe during pregnancy?", "acceptedAnswer": {"@type": "Answer", "text": "The American College of Obstetricians and Gynecologists recommends limiting caffeine to 200 mg per day during pregnancy. Higher intake has been associated with increased risk of miscarriage and low birth weight. Toggle pregnancy mode in this calculator to use the 200 mg limit automatically."}}, {"@type": "Question", "name": "Which drink has the most caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "Among common beverages, Bang energy drink has the highest caffeine at 300 mg per 16-ounce can. Cold brew coffee is also very high at around 200 mg per 16-ounce serving. Drip coffee averages 95 mg per 8-ounce cup. Espresso has 63 mg per shot but is consumed in smaller volumes."}}, {"@type": "Question", "name": "Does decaf coffee have caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, decaf coffee still contains 2 to 15 mg of caffeine per 8-ounce cup. The decaffeination process removes about 97 percent of the caffeine but not all of it. If you are highly sensitive to caffeine or strictly limiting intake during pregnancy, this amount should still be tracked."}}, {"@type": "Question", "name": "What are symptoms of too much caffeine?", "acceptedAnswer": {"@type": "Answer", "text": "Consuming more than 400 mg of caffeine can cause restlessness, anxiety, insomnia, digestive issues, rapid heartbeat, muscle tremors, and headaches. Very high doses above 1,200 mg can cause seizures. If you regularly experience these symptoms, use this calculator to identify which beverages are pushing you over the limit."}}, {"@type": "Question", "name": "How long does caffeine stay in your system?", "acceptedAnswer": {"@type": "Answer", "text": "Caffeine has a half-life of about 5 to 6 hours in most adults, meaning half the caffeine from your morning coffee is still in your system by mid-afternoon. It can take 10 to 12 hours for caffeine to fully clear. Factors like age, liver function, pregnancy, and medications can extend this significantly."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Caffeine Intake Calculator", "description": "Track daily caffeine intake against safe limits.", "url": "https://tool.teamzlab.com/coffee/caffeine-intake-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Caffeine Intake Calculator</h1>
+      <p class="tool-description">Track your daily caffeine intake from coffee, tea, energy drinks, and more. Add multiple beverages and see a running total compared to the FDA-recommended safe limit. Toggle pregnancy mode for a lower threshold. Everything runs in your browser, completely private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="caff-form">
+        <div class="caff-pregnancy-toggle">
+          <label class="caff-switch">
+            <input type="checkbox" id="pregnancyMode">
+            <span class="caff-switch-slider"></span>
+          </label>
+          <label for="pregnancyMode">Pregnancy Mode</label>
+          <span class="caff-limit-label" id="limitLabel">Limit: 400 mg (FDA)</span>
+        </div>
+
+        <div class="caff-add-row">
+          <div class="caff-field">
+            <label for="drinkSelect">Select Drink</label>
+            <select id="drinkSelect">
+              <optgroup label="Coffee">
+                <option value="espresso">Espresso Shot (63 mg)</option>
+                <option value="drip" selected>Drip Coffee 8 oz (95 mg)</option>
+                <option value="coldbrew">Cold Brew 16 oz (200 mg)</option>
+                <option value="instant">Instant Coffee 8 oz (63 mg)</option>
+              </optgroup>
+              <optgroup label="Tea">
+                <option value="greentea">Green Tea 8 oz (28 mg)</option>
+                <option value="blacktea">Black Tea 8 oz (47 mg)</option>
+                <option value="matcha">Matcha 8 oz (70 mg)</option>
+              </optgroup>
+              <optgroup label="Energy Drinks">
+                <option value="redbull">Red Bull 8.4 oz (80 mg)</option>
+                <option value="monster">Monster 16 oz (160 mg)</option>
+                <option value="bang">Bang 16 oz (300 mg)</option>
+              </optgroup>
+              <optgroup label="Soda">
+                <option value="cocacola">Coca-Cola 12 oz (34 mg)</option>
+                <option value="dietcoke">Diet Coke 12 oz (46 mg)</option>
+                <option value="mountaindew">Mountain Dew 12 oz (54 mg)</option>
+              </optgroup>
+              <optgroup label="Other">
+                <option value="darkchocolate">Dark Chocolate 1 oz (12 mg)</option>
+                <option value="custom">-- Add Custom Drink --</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="caff-field">
+            <label for="drinkQty">Qty</label>
+            <input type="number" id="drinkQty" value="1" min="1" max="20" step="1" style="width: 70px;">
+          </div>
+          <div class="caff-field">
+            <label>&nbsp;</label>
+            <button class="btn-primary" id="addDrinkBtn" type="button">Add</button>
+          </div>
+        </div>
+
+        <div class="caff-custom-section" id="customSection">
+          <div class="caff-custom-row">
+            <div class="caff-field">
+              <label for="customName">Drink Name</label>
+              <input type="text" id="customName" placeholder="e.g. Yerba Mate">
+            </div>
+            <div class="caff-field">
+              <label for="customMg">Caffeine (mg)</label>
+              <input type="number" id="customMg" placeholder="e.g. 85" min="0" max="1000" step="1">
+            </div>
+            <div class="caff-field">
+              <label>&nbsp;</label>
+              <button class="btn-secondary" id="addCustomBtn" type="button">Add Custom</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="caff-progress-section" id="progressSection">
+        <div class="caff-progress-header">
+          <span class="caff-progress-total" id="totalMg">0 mg</span>
+          <span class="caff-progress-limit" id="progressLimit">of 400 mg limit</span>
+        </div>
+        <div class="caff-progress-bar">
+          <div class="caff-progress-fill" id="progressFill" style="width: 0%;"></div>
+          <span class="caff-progress-pct" id="progressPct">0%</span>
+        </div>
+        <span class="caff-zone-label caff-zone-green" id="zoneLabel">Safe Zone</span>
+      </div>
+
+      <!-- Drink list -->
+      <div class="caff-drink-list" id="drinkList">
+        <h3>Your Drinks Today</h3>
+        <div id="drinkItems">
+          <div class="caff-empty">No drinks added yet. Select a beverage above and click Add.</div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="caff-summary" id="summarySection">
+        <h3>Daily Summary</h3>
+        <div class="caff-summary-grid">
+          <div class="caff-summary-card">
+            <div class="caff-summary-label">Total Caffeine</div>
+            <div class="caff-summary-value" id="summaryTotal">0 mg</div>
+          </div>
+          <div class="caff-summary-card">
+            <div class="caff-summary-label">Drinks Logged</div>
+            <div class="caff-summary-value" id="summaryCount">0</div>
+          </div>
+          <div class="caff-summary-card">
+            <div class="caff-summary-label">Limit Used</div>
+            <div class="caff-summary-value" id="summaryPct">0%</div>
+          </div>
+          <div class="caff-summary-card">
+            <div class="caff-summary-label">Remaining</div>
+            <div class="caff-summary-value" id="summaryRemaining">400 mg</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="caff-actions">
+        <button class="btn-secondary" id="clearAllBtn" type="button">Clear All</button>
+      </div>
+
+      <div class="caff-share-row">
+        <button class="btn-primary" id="shareBtn" type="button">Share Result</button>
+        <button class="btn-secondary" id="copyBtn" type="button">Copy Summary</button>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Caffeine Intake Calculator Works</h2>
+      <p>This caffeine intake calculator helps you track every caffeinated beverage you consume throughout the day. Select from a database of popular drinks including espresso, drip coffee, cold brew, green tea, black tea, matcha, energy drinks like Red Bull and Monster, and sodas like Coca-Cola and Mountain Dew. Each drink comes preloaded with its average caffeine content based on USDA and manufacturer data. Add multiple drinks with custom quantities to build your full daily log. The calculator shows a running total with a visual progress bar that updates in real time.</p>
+
+      <p>The FDA recommends a maximum daily caffeine intake of 400 mg for healthy adults. That is roughly equivalent to four 8-ounce cups of brewed coffee. Exceeding this amount can cause restlessness, insomnia, headaches, dizziness, and rapid heartbeat. The calculator color-codes your intake into four zones: green for safe (under 200 mg), yellow for moderate (200 to 300 mg), orange for high (300 to 400 mg), and red for over the limit (above 400 mg). This makes it easy to see at a glance whether you should skip that afternoon latte.</p>
+
+      <h2>Caffeine and Pregnancy Safety</h2>
+      <p>Pregnant and breastfeeding women should limit caffeine intake to 200 mg per day, according to the American College of Obstetricians and Gynecologists. Studies have linked higher caffeine consumption during pregnancy to increased risk of miscarriage and low birth weight. Toggle the pregnancy mode switch in this calculator to automatically lower the safe limit from 400 mg to 200 mg. The progress bar and zone indicators adjust accordingly, giving you a clear picture of where you stand relative to the recommended limit for expectant mothers.</p>
+
+      <p>Common sources of caffeine during pregnancy that people overlook include chocolate, certain medications, and decaf coffee (which still contains 2 to 15 mg per cup). Green tea is often assumed to be caffeine-free, but an 8-ounce cup contains about 28 mg. Tracking all sources with this calculator helps ensure you stay within the recommended range without having to do mental math throughout the day.</p>
+
+      <h2>Caffeine Content in Common Drinks</h2>
+      <p>Caffeine content varies significantly between beverages. A single shot of espresso contains about 63 mg, while a 16-ounce cold brew can pack 200 mg or more. Energy drinks are among the highest sources: a 16-ounce can of Bang contains 300 mg, nearly the entire daily limit for pregnant women in a single serving. On the lower end, a 12-ounce can of Coca-Cola has just 34 mg, and an ounce of dark chocolate contains about 12 mg. Understanding these differences is key to managing your intake effectively. If you have a favorite drink not in the database, use the custom drink option to add it with its specific caffeine content from the label or manufacturer website.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  var BREADCRUMBS = [
+    { name: 'Home', url: '/' },
+    { name: 'Coffee Tools', url: '/coffee/' },
+    { name: 'Caffeine Intake Calculator' }
+  ];
+
+  var FAQS = [
+    { q: 'How much caffeine is safe per day?', a: 'The FDA recommends up to 400 mg of caffeine per day for healthy adults. This is roughly equivalent to four 8-ounce cups of brewed coffee or about 10 cans of cola. Individual tolerance varies based on body weight, medications, and sensitivity. Some people experience side effects at much lower doses.' },
+    { q: 'How much caffeine is safe during pregnancy?', a: 'The American College of Obstetricians and Gynecologists recommends limiting caffeine to 200 mg per day during pregnancy. Higher intake has been associated with increased risk of miscarriage and low birth weight. Toggle pregnancy mode in this calculator to use the 200 mg limit automatically.' },
+    { q: 'Which drink has the most caffeine?', a: 'Among common beverages, Bang energy drink has the highest caffeine at 300 mg per 16-ounce can. Cold brew coffee is also very high at around 200 mg per 16-ounce serving. Drip coffee averages 95 mg per 8-ounce cup. Espresso has 63 mg per shot but is consumed in smaller volumes.' },
+    { q: 'Does decaf coffee have caffeine?', a: 'Yes, decaf coffee still contains 2 to 15 mg of caffeine per 8-ounce cup. The decaffeination process removes about 97 percent of the caffeine but not all of it. If you are highly sensitive to caffeine or strictly limiting intake during pregnancy, this amount should still be tracked.' },
+    { q: 'What are symptoms of too much caffeine?', a: 'Consuming more than 400 mg of caffeine can cause restlessness, anxiety, insomnia, digestive issues, rapid heartbeat, muscle tremors, and headaches. Very high doses above 1,200 mg can cause seizures. If you regularly experience these symptoms, use this calculator to identify which beverages are pushing you over the limit.' },
+    { q: 'How long does caffeine stay in your system?', a: 'Caffeine has a half-life of about 5 to 6 hours in most adults, meaning half the caffeine from your morning coffee is still in your system by mid-afternoon. It can take 10 to 12 hours for caffeine to fully clear. Factors like age, liver function, pregnancy, and medications can extend this significantly.' }
+  ];
+
+  var RELATED_TOOLS = [
+    { slug: 'coffee/caffeine-half-life-calculator', name: 'Caffeine Half-Life Calculator', description: 'See when caffeine leaves your system.' },
+    { slug: 'coffee/coffee-to-water-ratio-calculator', name: 'Coffee to Water Ratio Calculator', description: 'Calculate the perfect ratio for any brew method.' },
+    { slug: 'coffee/coffee-calorie-calculator', name: 'Coffee Calorie Calculator', description: 'Calculate calories in your coffee drinks.' },
+    { slug: 'coffee/cold-brew-ratio-calculator', name: 'Cold Brew Ratio Calculator', description: 'Calculate the perfect cold brew concentrate ratio.' },
+    { slug: 'coffee/latte-factor-calculator', name: 'Latte Factor Calculator', description: 'See how much you spend on coffee per year.' },
+    { slug: 'coffee/coffee-freshness-calculator', name: 'Coffee Freshness Calculator', description: 'Check if your coffee beans are still fresh.' }
+  ];
+
+  /* Drink database */
+  var DRINKS = {
+    espresso:       { name: 'Espresso Shot',       mg: 63,  icon: '\u2615' },
+    drip:           { name: 'Drip Coffee 8 oz',     mg: 95,  icon: '\u2615' },
+    coldbrew:       { name: 'Cold Brew 16 oz',      mg: 200, icon: '\u2615' },
+    instant:        { name: 'Instant Coffee 8 oz',  mg: 63,  icon: '\u2615' },
+    greentea:       { name: 'Green Tea 8 oz',       mg: 28,  icon: '\uD83C\uDF75' },
+    blacktea:       { name: 'Black Tea 8 oz',       mg: 47,  icon: '\uD83C\uDF75' },
+    matcha:         { name: 'Matcha 8 oz',          mg: 70,  icon: '\uD83C\uDF75' },
+    redbull:        { name: 'Red Bull 8.4 oz',      mg: 80,  icon: '\u26A1' },
+    monster:        { name: 'Monster 16 oz',        mg: 160, icon: '\u26A1' },
+    bang:           { name: 'Bang 16 oz',           mg: 300, icon: '\u26A1' },
+    cocacola:       { name: 'Coca-Cola 12 oz',      mg: 34,  icon: '\uD83E\uDD64' },
+    dietcoke:       { name: 'Diet Coke 12 oz',      mg: 46,  icon: '\uD83E\uDD64' },
+    mountaindew:    { name: 'Mountain Dew 12 oz',   mg: 54,  icon: '\uD83E\uDD64' },
+    darkchocolate:  { name: 'Dark Chocolate 1 oz',  mg: 12,  icon: '\uD83C\uDF6B' }
+  };
+
+  var userDrinks = [];
+  var customIdCounter = 0;
+
+  function getLimit() {
+    return document.getElementById('pregnancyMode').checked ? 200 : 400;
+  }
+
+  function getTotalMg() {
+    var total = 0;
+    for (var i = 0; i < userDrinks.length; i++) {
+      total += userDrinks[i].mg * userDrinks[i].qty;
+    }
+    return total;
+  }
+
+  function getZone(total, limit) {
+    var pct = (total / limit) * 100;
+    if (pct <= 50) return { cls: 'caff-zone-green', label: 'Safe Zone', barColor: 'var(--border)' };
+    if (pct <= 75) return { cls: 'caff-zone-yellow', label: 'Moderate', barColor: 'var(--heading)' };
+    if (pct <= 100) return { cls: 'caff-zone-orange', label: 'High', barColor: 'var(--heading)' };
+    return { cls: 'caff-zone-red', label: 'Over Limit!', barColor: 'var(--heading)' };
+  }
+
+  function renderProgress() {
+    var total = getTotalMg();
+    var limit = getLimit();
+    var pct = Math.min(Math.round((total / limit) * 100), 100);
+    var zone = getZone(total, limit);
+    var remaining = Math.max(0, limit - total);
+
+    document.getElementById('totalMg').textContent = total + ' mg';
+    document.getElementById('progressLimit').textContent = 'of ' + limit + ' mg limit';
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressFill').style.background = zone.barColor;
+    document.getElementById('progressPct').textContent = pct + '%';
+
+    var zoneEl = document.getElementById('zoneLabel');
+    zoneEl.className = 'caff-zone-label ' + zone.cls;
+    zoneEl.textContent = zone.label;
+
+    document.getElementById('limitLabel').textContent = 'Limit: ' + limit + ' mg' + (limit === 200 ? ' (Pregnancy)' : ' (FDA)');
+
+    /* Summary */
+    var summaryEl = document.getElementById('summarySection');
+    if (userDrinks.length > 0) {
+      summaryEl.classList.add('visible');
+      document.getElementById('summaryTotal').textContent = total + ' mg';
+      document.getElementById('summaryCount').textContent = userDrinks.length;
+      document.getElementById('summaryPct').textContent = Math.round((total / limit) * 100) + '%';
+      document.getElementById('summaryRemaining').textContent = remaining + ' mg';
+    } else {
+      summaryEl.classList.remove('visible');
+    }
+  }
+
+  function renderDrinkList() {
+    var container = document.getElementById('drinkItems');
+    if (userDrinks.length === 0) {
+      container.innerHTML = '<div class="caff-empty">No drinks added yet. Select a beverage above and click Add.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < userDrinks.length; i++) {
+      var d = userDrinks[i];
+      var totalDrinkMg = d.mg * d.qty;
+      html += '<div class="caff-drink-item" data-index="' + i + '">';
+      html += '<div class="caff-drink-info">';
+      html += '<span class="caff-drink-icon">' + d.icon + '</span>';
+      html += '<span class="caff-drink-name">' + escapeHtml(d.name) + '</span>';
+      if (d.qty > 1) html += '<span class="caff-drink-qty">&times; ' + d.qty + '</span>';
+      html += '</div>';
+      html += '<span class="caff-drink-mg">' + totalDrinkMg + ' mg</span>';
+      html += '<button class="caff-drink-remove" data-index="' + i + '" title="Remove" type="button">&times;</button>';
+      html += '</div>';
+    }
+    container.innerHTML = html;
+
+    /* Wire remove buttons */
+    var removeButtons = container.querySelectorAll('.caff-drink-remove');
+    for (var j = 0; j < removeButtons.length; j++) {
+      removeButtons[j].addEventListener('click', function() {
+        var idx = parseInt(this.getAttribute('data-index'));
+        userDrinks.splice(idx, 1);
+        renderDrinkList();
+        renderProgress();
+      });
+    }
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  function addDrink(key, qty) {
+    if (DRINKS[key]) {
+      userDrinks.push({ name: DRINKS[key].name, mg: DRINKS[key].mg, icon: DRINKS[key].icon, qty: qty });
+    }
+    renderDrinkList();
+    renderProgress();
+  }
+
+  function addCustomDrink(name, mg, qty) {
+    userDrinks.push({ name: name, mg: mg, icon: '\uD83D\uDCCB', qty: qty });
+    renderDrinkList();
+    renderProgress();
+  }
+
+  function getSummaryText() {
+    var total = getTotalMg();
+    var limit = getLimit();
+    var pct = Math.round((total / limit) * 100);
+    var mode = limit === 200 ? ' (Pregnancy mode)' : '';
+    var text = 'My daily caffeine intake: ' + total + ' mg / ' + limit + ' mg' + mode + ' (' + pct + '% of limit)\n';
+    for (var i = 0; i < userDrinks.length; i++) {
+      var d = userDrinks[i];
+      text += '- ' + d.name + (d.qty > 1 ? ' x' + d.qty : '') + ': ' + (d.mg * d.qty) + ' mg\n';
+    }
+    return text;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({
+      slug: 'coffee/caffeine-intake-calculator',
+      title: 'Caffeine Intake Calculator',
+      description: 'Track daily caffeine intake against safe limits.'
+    });
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+    /* Show/hide custom drink section */
+    var drinkSelect = document.getElementById('drinkSelect');
+    var customSection = document.getElementById('customSection');
+    drinkSelect.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customSection.classList.add('visible');
+      } else {
+        customSection.classList.remove('visible');
+      }
+    });
+
+    /* Add drink button */
+    document.getElementById('addDrinkBtn').addEventListener('click', function() {
+      var key = drinkSelect.value;
+      var qty = parseInt(document.getElementById('drinkQty').value) || 1;
+      if (qty < 1) qty = 1;
+      if (key === 'custom') {
+        window.showToast('Use the Add Custom button below to add a custom drink.');
+        return;
+      }
+      addDrink(key, qty);
+      document.getElementById('drinkQty').value = '1';
+      window.showToast(DRINKS[key].name + ' added!');
+    });
+
+    /* Add custom drink button */
+    document.getElementById('addCustomBtn').addEventListener('click', function() {
+      var name = document.getElementById('customName').value.trim();
+      var mg = parseInt(document.getElementById('customMg').value);
+      var qty = parseInt(document.getElementById('drinkQty').value) || 1;
+      if (!name) { window.showToast('Please enter a drink name.'); return; }
+      if (!mg || mg <= 0) { window.showToast('Please enter a valid caffeine amount in mg.'); return; }
+      if (qty < 1) qty = 1;
+      addCustomDrink(name, mg, qty);
+      document.getElementById('customName').value = '';
+      document.getElementById('customMg').value = '';
+      document.getElementById('drinkQty').value = '1';
+      customSection.classList.remove('visible');
+      drinkSelect.value = 'drip';
+      window.showToast(name + ' added!');
+    });
+
+    /* Pregnancy mode toggle */
+    document.getElementById('pregnancyMode').addEventListener('change', function() {
+      renderProgress();
+      var mode = this.checked ? 'Pregnancy mode (200 mg limit)' : 'Standard mode (400 mg limit)';
+      window.showToast(mode);
+    });
+
+    /* Clear all */
+    document.getElementById('clearAllBtn').addEventListener('click', function() {
+      userDrinks = [];
+      renderDrinkList();
+      renderProgress();
+      window.showToast('All drinks cleared.');
+    });
+
+    /* Share */
+    document.getElementById('shareBtn').addEventListener('click', function() {
+      if (userDrinks.length === 0) { window.showToast('Add some drinks first.'); return; }
+      var text = getSummaryText();
+      if (navigator.share) {
+        navigator.share({ title: 'Caffeine Intake Calculator', text: text, url: window.location.href });
+      } else {
+        navigator.clipboard.writeText(text + '\n' + window.location.href).then(function() {
+          window.showToast('Result copied to clipboard!');
+        });
+      }
+    });
+
+    /* Copy */
+    document.getElementById('copyBtn').addEventListener('click', function() {
+      if (userDrinks.length === 0) { window.showToast('Add some drinks first.'); return; }
+      navigator.clipboard.writeText(getSummaryText()).then(function() {
+        window.showToast('Summary copied to clipboard!');
+      });
+    });
+
+    /* Initial render */
+    renderProgress();
+  });
+  </script>
+</body>
+</html>
