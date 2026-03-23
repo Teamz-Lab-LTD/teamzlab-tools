@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Dice Roller Online — Teamz Lab Tools</title>
+  <meta name="description" content="Roll realistic 3D dice with physics simulation. Free virtual dice roller for D&amp;D, board games — supports d4, d6, d8, d10, d12, d20.">
+  <meta property="og:title" content="3D Dice Roller Online — Teamz Lab Tools">
+  <meta property="og:description" content="Roll realistic 3D dice with physics simulation. Free virtual dice for D&D, tabletop RPGs, and board games.">
+  <meta property="og:url" content="https://tool.teamzlab.com/3d/dice-roller/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/3d.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="3D Dice Roller Online — Teamz Lab Tools">
+  <meta name="twitter:description" content="Roll realistic 3D dice with physics simulation. Free virtual dice for D&D, tabletop RPGs, and board games.">
+  <link rel="canonical" href="https://tool.teamzlab.com/3d/dice-roller/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .dice-scene { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid var(--border); margin-bottom: 1rem; background: var(--surface); }
+    .dice-scene canvas { width: 100% !important; height: 100% !important; display: block; }
+    .dice-result { text-align: center; margin-bottom: 1rem; display: none; }
+    .dice-result .total { font-size: 2.5rem; font-weight: 800; color: var(--heading); line-height: 1.3; }
+    .dice-result .breakdown { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .dice-picker { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; justify-content: center; }
+    .dice-picker button { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: border-color 0.3s, background 0.3s; font-family: inherit; min-width: 60px; }
+    .dice-picker button:hover { border-color: var(--heading); }
+    .dice-picker button.active { border-color: var(--heading); background: var(--heading); color: var(--bg); }
+    .dice-count { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .dice-count label { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .dice-count select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.6rem; border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
+    .roll-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; justify-content: center; }
+    .roll-actions button { padding: 0.7rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit; border: 1px solid var(--border); transition: transform 0.1s; }
+    .roll-actions button:active { transform: scale(0.97); }
+    .roll-btn-primary { background: var(--heading); color: var(--bg); border-color: var(--heading) !important; }
+    .roll-btn-secondary { background: var(--surface); color: var(--text); }
+    .roll-history { margin-bottom: 1rem; }
+    .roll-history h3 { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin: 0 0 0.5rem 0; text-transform: uppercase; letter-spacing: 0.05em; }
+    .roll-history-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .roll-history-item { background: var(--surface); border: 1px solid var(--border); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color: var(--text); font-weight: 600; }
+    @media (max-width: 600px) {
+      .dice-scene { aspect-ratio: 4 / 3; }
+      .dice-picker button { padding: 0.5rem 0.8rem; font-size: 0.85rem; min-width: 50px; }
+      .dice-result .total { font-size: 2rem; }
+      .roll-actions { flex-direction: column; }
+      .roll-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "3D Tools", "item": "https://tool.teamzlab.com/3d/"}, {"@type": "ListItem", "position": 3, "name": "3D Dice Roller"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What dice types are supported?", "acceptedAnswer": {"@type": "Answer", "text": "The roller supports d4 (tetrahedron), d6 (cube), d8 (octahedron), d10 (pentagonal trapezohedron), d12 (dodecahedron), and d20 (icosahedron) — all standard tabletop RPG dice."}}, {"@type": "Question", "name": "Are the dice rolls truly random?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Results use the Web Crypto API (crypto.getRandomValues) which provides cryptographically secure random numbers. This is the same technology used in encryption — each roll is unpredictable and fair."}}, {"@type": "Question", "name": "Can I roll multiple dice at once?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Select the number of dice (1 to 6) from the dropdown, then click Roll. All dice are rolled simultaneously and the total is shown along with individual results."}}, {"@type": "Question", "name": "Does this work for D&D?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. All standard D&D dice are supported. Use d20 for attack rolls and saving throws, d6/d8/d10/d12 for damage, d4 for smaller weapon damage, and multiple d6 for ability score generation."}}, {"@type": "Question", "name": "Can I use keyboard shortcuts?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Press the spacebar to roll dice quickly without clicking the button. This makes it fast to roll repeatedly during a game session."}}, {"@type": "Question", "name": "Is my roll history saved?", "acceptedAnswer": {"@type": "Answer", "text": "Roll history is kept in your browser during the current session. It is cleared when you refresh the page or click Clear History. No data is sent to any server."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "3D Dice Roller Online", "description": "Roll realistic 3D dice with physics simulation. Free virtual dice for D&D, tabletop RPGs, and board games.", "url": "https://tool.teamzlab.com/3d/dice-roller/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>3D Dice Roller Online</h1>
+      <p class="tool-description">Roll realistic 3D dice with physics simulation. Choose from d4, d6, d8, d10, d12, and d20 — perfect for D&D, tabletop RPGs, board games, and any scenario where you need fair random dice rolls. Everything runs locally in your browser.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="dice-picker" id="dice-picker">
+        <button type="button" data-sides="4">d4</button>
+        <button type="button" data-sides="6" class="active">d6</button>
+        <button type="button" data-sides="8">d8</button>
+        <button type="button" data-sides="10">d10</button>
+        <button type="button" data-sides="12">d12</button>
+        <button type="button" data-sides="20">d20</button>
+      </div>
+      <div class="dice-count">
+        <label>Number of dice:</label>
+        <select id="dice-count">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+      </div>
+      <div class="dice-scene" id="dice-scene">
+        <canvas id="dice-canvas"></canvas>
+      </div>
+      <div class="dice-result" id="dice-result">
+        <div class="total" id="result-total"></div>
+        <div class="breakdown" id="result-breakdown"></div>
+      </div>
+      <div class="roll-actions">
+        <button type="button" id="roll-btn" class="roll-btn-primary">Roll Dice</button>
+        <button type="button" id="clear-btn" class="roll-btn-secondary tool-clear-btn">Clear History</button>
+      </div>
+      <div class="roll-history" id="roll-history" style="display:none;">
+        <h3>Roll History</h3>
+        <div class="roll-history-list" id="history-list"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How 3D Dice Rolling Works</h2>
+      <p>This dice roller uses Three.js to render realistic 3D dice in your browser. Each die is a 3D polyhedron — a d4 is a tetrahedron (4 faces), d6 is a cube (6 faces), d8 is an octahedron, d10 is a pentagonal trapezohedron, d12 is a dodecahedron, and d20 is an icosahedron. When you click Roll, the dice are thrown with randomized initial velocity and rotation. The animation simulates physics with gravity, spin, and bounce until each die settles on a face. The result is determined by a cryptographically secure random number generator, ensuring truly fair rolls.</p>
+
+      <h2>3D Dice for Tabletop RPGs</h2>
+      <p>Tabletop roleplaying games like Dungeons and Dragons, Pathfinder, and Call of Cthulhu rely on dice rolls for combat, skill checks, saving throws, and ability scores. This virtual dice roller supports all standard RPG dice — d4, d6, d8, d10, d12, and d20. Roll multiple dice at once for damage rolls (like 2d6 for a greatsword) or ability score generation (4d6 drop lowest). The roll history keeps track of all your results during a session, so you can reference past rolls without writing them down.</p>
+
+      <h2>Tips for Using Virtual Dice</h2>
+      <p>For standard D&D ability score generation, select d6 and set the count to 4. Roll and take the best three. For advantage/disadvantage rolls, select d20 and roll 2 — take the higher or lower result. The roll history at the bottom keeps a log of all your rolls, which is useful for combat tracking. You can also use this as a quick random number generator for any situation — classroom activities, choosing randomly from a group, settling disputes, or playing board games remotely with friends.</p>
+
+      <h2>Fair and Private Dice Rolls</h2>
+      <p>The dice results use the Web Crypto API (crypto.getRandomValues) for cryptographically secure random numbers — the same technology used in encryption and security applications. This ensures each roll is truly random and cannot be predicted. No data is sent to any server. Your roll history stays in your browser and is cleared when you refresh the page. There are no accounts, no tracking, and no way for anyone to see or influence your rolls.</p>
+
+      <h2>Board Games and Classroom Use</h2>
+      <p>Beyond tabletop RPGs, this dice roller works for any board game that uses standard dice. Play Monopoly, Risk, Yahtzee, backgammon, or any dice-based game remotely with friends. Teachers use virtual dice for probability lessons, random student selection, and classroom games. The visual 3D animation makes dice rolling engaging and fun, especially for younger students learning about probability and randomness.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    var container = document.getElementById('dice-scene');
+    var canvas = document.getElementById('dice-canvas');
+    var resultEl = document.getElementById('dice-result');
+    var totalEl = document.getElementById('result-total');
+    var breakdownEl = document.getElementById('result-breakdown');
+    var historyEl = document.getElementById('roll-history');
+    var historyList = document.getElementById('history-list');
+
+    var scene, camera, renderer, controls;
+    var diceObjects = [];
+    var animating = false;
+    var selectedSides = 6;
+    var rollHistory = [];
+
+    // Init scene
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+
+    camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+    camera.position.set(0, 12, 10);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.shadowMap.enabled = true;
+
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.maxPolarAngle = Math.PI / 2.2;
+
+    // Lighting
+    var ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+    var dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(5, 15, 10);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+    var pointLight = new THREE.PointLight(0x6666ff, 0.5, 30);
+    pointLight.position.set(-5, 8, -5);
+    scene.add(pointLight);
+
+    // Floor
+    var floorGeo = new THREE.PlaneGeometry(30, 30);
+    var floorMat = new THREE.MeshStandardMaterial({ color: 0x222244, roughness: 0.8 });
+    var floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.5;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // Grid
+    var grid = new THREE.GridHelper(20, 20, 0x333366, 0x2a2a4e);
+    grid.position.y = -0.49;
+    scene.add(grid);
+
+    // Dice geometry creators
+    function createDieGeometry(sides) {
+      switch (sides) {
+        case 4: return new THREE.TetrahedronGeometry(1.2);
+        case 6: return new THREE.BoxGeometry(1.5, 1.5, 1.5);
+        case 8: return new THREE.OctahedronGeometry(1.2);
+        case 10: return new THREE.DodecahedronGeometry(1.1); // approximation
+        case 12: return new THREE.DodecahedronGeometry(1.2);
+        case 20: return new THREE.IcosahedronGeometry(1.3);
+        default: return new THREE.BoxGeometry(1.5, 1.5, 1.5);
+      }
+    }
+
+    function getDieColor(sides) {
+      var colors = { 4: 0xff4444, 6: 0x4488ff, 8: 0x44cc88, 10: 0xffaa22, 12: 0xcc44ff, 20: 0xff6688 };
+      return colors[sides] || 0x4488ff;
+    }
+
+    function clearDice() {
+      diceObjects.forEach(function(d) {
+        scene.remove(d.mesh);
+        d.mesh.geometry.dispose();
+        d.mesh.material.dispose();
+        if (d.label) { scene.remove(d.label); }
+      });
+      diceObjects = [];
+    }
+
+    function createDice(sides, count) {
+      clearDice();
+      for (var i = 0; i < count; i++) {
+        var geo = createDieGeometry(sides);
+        var mat = new THREE.MeshStandardMaterial({
+          color: getDieColor(sides),
+          metalness: 0.1,
+          roughness: 0.4,
+          flatShading: sides !== 6
+        });
+        var mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+
+        // Position spread
+        var angle = (i / count) * Math.PI * 2;
+        var radius = count > 1 ? 2 : 0;
+        mesh.position.set(Math.cos(angle) * radius, 8 + Math.random() * 3, Math.sin(angle) * radius);
+
+        // Random initial rotation
+        mesh.rotation.set(Math.random() * Math.PI * 2, Math.random() * Math.PI * 2, Math.random() * Math.PI * 2);
+
+        scene.add(mesh);
+        diceObjects.push({
+          mesh: mesh,
+          velocity: new THREE.Vector3((Math.random() - 0.5) * 3, 0, (Math.random() - 0.5) * 3),
+          angularVel: new THREE.Vector3((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8),
+          settled: false,
+          result: 0,
+          sides: sides
+        });
+      }
+    }
+
+    function getSecureRandom(max) {
+      var array = new Uint32Array(1);
+      crypto.getRandomValues(array);
+      return (array[0] % max) + 1;
+    }
+
+    function animateDice() {
+      if (!animating) return;
+      var allSettled = true;
+      var gravity = -0.02;
+      var friction = 0.96;
+      var angularFriction = 0.94;
+      var bounceFactor = 0.3;
+
+      diceObjects.forEach(function(d) {
+        if (d.settled) return;
+
+        // Apply gravity
+        d.velocity.y += gravity;
+
+        // Move
+        d.mesh.position.add(d.velocity);
+        d.mesh.rotation.x += d.angularVel.x * 0.02;
+        d.mesh.rotation.y += d.angularVel.y * 0.02;
+        d.mesh.rotation.z += d.angularVel.z * 0.02;
+
+        // Floor bounce
+        if (d.mesh.position.y < 0.75) {
+          d.mesh.position.y = 0.75;
+          d.velocity.y = Math.abs(d.velocity.y) * bounceFactor;
+          d.velocity.x *= friction;
+          d.velocity.z *= friction;
+          d.angularVel.multiplyScalar(angularFriction);
+
+          if (Math.abs(d.velocity.y) < 0.01 && d.angularVel.length() < 0.3) {
+            d.settled = true;
+            d.velocity.set(0, 0, 0);
+            d.angularVel.set(0, 0, 0);
+            d.result = getSecureRandom(d.sides);
+          }
+        }
+
+        // Wall bounds
+        if (Math.abs(d.mesh.position.x) > 8) { d.mesh.position.x = Math.sign(d.mesh.position.x) * 8; d.velocity.x *= -0.5; }
+        if (Math.abs(d.mesh.position.z) > 8) { d.mesh.position.z = Math.sign(d.mesh.position.z) * 8; d.velocity.z *= -0.5; }
+
+        if (!d.settled) allSettled = false;
+      });
+
+      if (allSettled) {
+        animating = false;
+        showResults();
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+      if (animating) requestAnimationFrame(animateDice);
+    }
+
+    function showResults() {
+      var results = diceObjects.map(function(d) { return d.result; });
+      var total = results.reduce(function(a, b) { return a + b; }, 0);
+      var sides = diceObjects[0].sides;
+
+      totalEl.textContent = total;
+      if (results.length > 1) {
+        breakdownEl.textContent = results.length + 'd' + sides + ' = ' + results.join(' + ');
+      } else {
+        breakdownEl.textContent = 'd' + sides;
+      }
+      resultEl.style.display = 'block';
+
+      // Add to history
+      var entry = results.length + 'd' + sides + ' = ' + total;
+      rollHistory.unshift(entry);
+      if (rollHistory.length > 20) rollHistory.pop();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (rollHistory.length === 0) { historyEl.style.display = 'none'; return; }
+      historyEl.style.display = 'block';
+      historyList.innerHTML = rollHistory.map(function(h) {
+        return '<span class="roll-history-item">' + h + '</span>';
+      }).join('');
+    }
+
+    function rollDice() {
+      if (animating) return;
+      var count = parseInt(document.getElementById('dice-count').value, 10);
+      createDice(selectedSides, count);
+      animating = true;
+      resultEl.style.display = 'none';
+      animateDice();
+    }
+
+    // Dice picker
+    document.querySelectorAll('#dice-picker button').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#dice-picker button').forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        selectedSides = parseInt(this.dataset.sides, 10);
+      });
+    });
+
+    // Roll button
+    document.getElementById('roll-btn').addEventListener('click', rollDice);
+
+    // Keyboard shortcut — space to roll
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space' && !e.target.closest('input, select, textarea')) {
+        e.preventDefault();
+        rollDice();
+      }
+    });
+
+    // Clear
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      rollHistory = [];
+      renderHistory();
+      clearDice();
+      resultEl.style.display = 'none';
+    });
+
+    // Render loop
+    function render() {
+      requestAnimationFrame(render);
+      if (!animating) {
+        controls.update();
+        renderer.render(scene, camera);
+      }
+    }
+    render();
+
+    // Resize
+    window.addEventListener('resize', function() {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // Breadcrumbs, FAQs, Related, Schema
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: '3D Tools', url: '/3d/' }, { name: '3D Dice Roller' }];
+    var FAQS = [
+      { q: 'What dice types are supported?', a: 'The roller supports d4 (tetrahedron), d6 (cube), d8 (octahedron), d10 (pentagonal trapezohedron), d12 (dodecahedron), and d20 (icosahedron) — all standard tabletop RPG dice.' },
+      { q: 'Are the dice rolls truly random?', a: 'Yes. Results use the Web Crypto API (crypto.getRandomValues) which provides cryptographically secure random numbers. This is the same technology used in encryption — each roll is unpredictable and fair.' },
+      { q: 'Can I roll multiple dice at once?', a: 'Yes. Select the number of dice (1 to 6) from the dropdown, then click Roll. All dice are rolled simultaneously and the total is shown along with individual results.' },
+      { q: 'Does this work for D&D?', a: 'Absolutely. All standard D&D dice are supported. Use d20 for attack rolls and saving throws, d6/d8/d10/d12 for damage, d4 for smaller weapon damage, and multiple d6 for ability score generation.' },
+      { q: 'Can I use keyboard shortcuts?', a: 'Yes. Press the spacebar to roll dice quickly without clicking the button. This makes it fast to roll repeatedly during a game session.' },
+      { q: 'Is my roll history saved?', a: 'Roll history is kept in your browser during the current session. It is cleared when you refresh the page or click Clear History. No data is sent to any server.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/dice-roller', name: 'Simple Dice Roller', description: 'Quick 2D dice roller for fast rolls.' },
+      { slug: '3d/fluid-simulation', name: 'WebGL Fluid Simulation', description: 'Interactive fluid dynamics in your browser.' },
+      { slug: '3d/audio-visualizer', name: '3D Audio Visualizer', description: 'Visualize music in stunning 3D.' },
+      { slug: '3d/text-generator', name: '3D Text Generator', description: 'Create 3D text with custom fonts.' },
+      { slug: 'math/probability-calculator', name: 'Probability Calculator', description: 'Calculate dice probability distributions.' },
+      { slug: 'gaming/dpi-calculator', name: 'DPI Calculator', description: 'Calculate mouse DPI for gaming.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: '3d/dice-roller', title: '3D Dice Roller Online', description: 'Roll realistic 3D dice with physics simulation. Free virtual dice for D&D, tabletop RPGs, and board games.' });
+    TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  </script>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Model Viewer Online Free — Teamz Lab Tools</title>
+  <meta name="description" content="View 3D models instantly in your browser. Upload GLB, OBJ, FBX, STL files — rotate, zoom, inspect. Free, private, no signup required.">
+  <meta property="og:title" content="3D Model Viewer Online Free — Teamz Lab Tools">
+  <meta property="og:description" content="View 3D models in your browser. Upload GLB, OBJ, FBX, STL — rotate, zoom, inspect. Free, private, no signup.">
+  <meta property="og:url" content="https://tool.teamzlab.com/3d/model-viewer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/3d.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="3D Model Viewer Online Free — Teamz Lab Tools">
+  <meta name="twitter:description" content="View 3D models in your browser. Upload GLB, OBJ, FBX, STL — rotate, zoom, inspect. Free, private, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/3d/model-viewer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .privacy-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.75rem; margin-bottom: 1rem; }
+    .format-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .format-badge { display: inline-block; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+    .upload-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: border-color 0.3s, background 0.3s; margin-bottom: 1rem; }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--heading); background: var(--surface); }
+    .upload-zone p { margin: 0.5rem 0; color: var(--text-muted); font-size: 0.9rem; }
+    .upload-zone .upload-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    input[type="file"] { display: none; }
+    .viewer-container { width: 100%; aspect-ratio: 4 / 3; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; position: relative; display: none; margin-bottom: 1rem; }
+    .viewer-container canvas { width: 100% !important; height: 100% !important; display: block; }
+    .viewer-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .viewer-toolbar button { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: border-color 0.3s, background 0.3s; font-family: inherit; }
+    .viewer-toolbar button:hover { border-color: var(--heading); }
+    .viewer-toolbar button.active { border-color: var(--heading); background: var(--heading); color: var(--bg); }
+    .model-stats { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: none; }
+    .model-stats h3 { font-size: 0.95rem; margin: 0 0 0.75rem 0; color: var(--heading); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.5rem; }
+    .stat-item { display: flex; flex-direction: column; }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .stat-value { font-size: 1rem; font-weight: 700; color: var(--text); }
+    .loading-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--surface); z-index: 10; font-weight: 600; color: var(--text-muted); font-size: 0.95rem; }
+    .bg-options { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+    .bg-options button { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .bg-options button.active { border-color: var(--heading); background: var(--heading); color: var(--bg); }
+    @media (max-width: 600px) {
+      .viewer-toolbar { flex-wrap: wrap; }
+      .viewer-toolbar button { flex: 1 1 auto; text-align: center; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "3D Tools", "item": "https://tool.teamzlab.com/3d/"}, {"@type": "ListItem", "position": 3, "name": "3D Model Viewer"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What 3D file formats are supported?", "acceptedAnswer": {"@type": "Answer", "text": "The viewer supports GLB, GLTF, OBJ, STL, FBX, 3DS, and PLY files. This covers the most common formats used in 3D printing, game development, CAD, animation, and 3D scanning."}}, {"@type": "Question", "name": "Is my file uploaded to any server?", "acceptedAnswer": {"@type": "Answer", "text": "No. Your file is processed entirely in your browser using the FileReader API and Three.js. No data is transmitted to any server. You can verify by checking the Network tab in your browser developer tools."}}, {"@type": "Question", "name": "How is this different from Sketchfab?", "acceptedAnswer": {"@type": "Answer", "text": "Sketchfab requires an account, uploads your files to their servers, and has storage limits. This tool requires no signup, processes files locally for complete privacy, and has no file size limits. It is a free, privacy-first alternative."}}, {"@type": "Question", "name": "Can I take screenshots of my model?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click Screenshot to download the current view as a PNG, or Copy Image to copy it to your clipboard for pasting into documents, chat, or design tools."}}, {"@type": "Question", "name": "What do the model statistics show?", "acceptedAnswer": {"@type": "Answer", "text": "After loading a model, you see format type, file size, vertex count, face count, number of meshes, and bounding box dimensions (width, height, depth). These metrics help assess complexity, export accuracy, and printing requirements."}}, {"@type": "Question", "name": "Does it work offline?", "acceptedAnswer": {"@type": "Answer", "text": "After the page loads, you can disconnect from the internet and continue viewing models. The Three.js library is cached by your browser. File reading and rendering are entirely local operations."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "3D Model Viewer Online Free", "description": "View 3D models in your browser. Upload GLB, OBJ, FBX, STL — rotate, zoom, inspect. Free, private, no signup.", "url": "https://tool.teamzlab.com/3d/model-viewer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <div class="format-badges">
+        <span class="format-badge">GLB</span>
+        <span class="format-badge">GLTF</span>
+        <span class="format-badge">OBJ</span>
+        <span class="format-badge">STL</span>
+        <span class="format-badge">FBX</span>
+        <span class="format-badge">3DS</span>
+        <span class="format-badge">PLY</span>
+      </div>
+      <span class="privacy-badge">&#128274; File Never Leaves Your Browser</span>
+      <h1>3D Model Viewer Online Free</h1>
+      <p class="tool-description">Upload any 3D model file and view it instantly in your browser. Supports GLB, GLTF, OBJ, STL, FBX, 3DS, and PLY formats. Rotate, zoom, toggle wireframe, change backgrounds, and take screenshots. Your file never leaves your device — a free alternative to Sketchfab with zero signup.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">&#128230;</div>
+        <p><strong>Click to upload or drag & drop a 3D file</strong></p>
+        <p>GLB, GLTF, OBJ, STL, FBX, 3DS, PLY</p>
+      </div>
+      <input type="file" id="file-input" accept=".glb,.gltf,.obj,.stl,.fbx,.3ds,.ply">
+      <div class="viewer-container" id="viewer-container">
+        <div class="loading-overlay" id="loading-overlay">Loading model...</div>
+      </div>
+      <div class="bg-options" id="bg-options" style="display:none;">
+        <button type="button" class="active" data-bg="dark">Dark</button>
+        <button type="button" data-bg="light">Light</button>
+        <button type="button" data-bg="gradient">Gradient</button>
+        <button type="button" data-bg="neutral">Neutral</button>
+      </div>
+      <div class="viewer-toolbar" id="viewer-toolbar" style="display:none;">
+        <button type="button" id="wireframe-btn">Wireframe</button>
+        <button type="button" id="normals-btn">Normals</button>
+        <button type="button" id="reset-view-btn">Reset View</button>
+        <button type="button" id="screenshot-btn">Screenshot</button>
+        <button type="button" id="copy-image-btn">Copy Image</button>
+        <button type="button" id="clear-btn" class="tool-clear-btn">Clear</button>
+      </div>
+      <div class="model-stats" id="model-stats">
+        <h3>Model Info</h3>
+        <div class="stats-grid">
+          <div class="stat-item"><span class="stat-label">Format</span><span class="stat-value" id="stat-format">—</span></div>
+          <div class="stat-item"><span class="stat-label">File Size</span><span class="stat-value" id="stat-size">—</span></div>
+          <div class="stat-item"><span class="stat-label">Vertices</span><span class="stat-value" id="stat-vertices">—</span></div>
+          <div class="stat-item"><span class="stat-label">Faces</span><span class="stat-value" id="stat-faces">—</span></div>
+          <div class="stat-item"><span class="stat-label">Width</span><span class="stat-value" id="stat-width">—</span></div>
+          <div class="stat-item"><span class="stat-label">Height</span><span class="stat-value" id="stat-height">—</span></div>
+          <div class="stat-item"><span class="stat-label">Depth</span><span class="stat-value" id="stat-depth">—</span></div>
+          <div class="stat-item"><span class="stat-label">Meshes</span><span class="stat-value" id="stat-meshes">—</span></div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Free Alternative to Sketchfab — No Signup</h2>
+      <p>Unlike Sketchfab and other online 3D viewers that require accounts, upload limits, and store your files on their servers, this tool processes everything locally in your browser. Your 3D model is read using the FileReader API and rendered with Three.js — no data is ever transmitted to any server. This makes it safe to preview confidential CAD models, proprietary game assets, architectural designs, and any other sensitive 3D files without worrying about data privacy or upload limits.</p>
+
+      <h2>Supported 3D File Formats</h2>
+      <p>This viewer supports seven popular 3D file formats. GLB and GLTF are modern web-optimized formats that include geometry, materials, textures, and animations — often called the JPEG of 3D. OBJ is a universal format supported by virtually every 3D application. STL is the standard for 3D printing. FBX is widely used in game development and animation pipelines. 3DS is a legacy format from 3ds Max. PLY (Polygon File Format) is common in 3D scanning and photogrammetry. Each format is handled by a dedicated Three.js loader for maximum compatibility.</p>
+
+      <h2>How to Use the 3D Viewer</h2>
+      <p>Click the upload area or drag and drop your 3D file. The viewer automatically detects the format and uses the appropriate loader. Once loaded, the camera frames the model automatically. Left-click drag to rotate, scroll to zoom, right-click drag to pan. The toolbar provides wireframe mode to inspect mesh topology, normal visualization to check surface orientation, background color options for better contrast, screenshot and copy-to-clipboard functionality. Model statistics show vertex count, face count, bounding box dimensions, file size, and mesh count.</p>
+
+      <h2>Use Cases for 3D Model Viewing</h2>
+      <p>3D printing enthusiasts preview STL files before slicing. Game developers inspect GLB and FBX assets before importing into engines. Product designers review CAD exports. Architects verify building models. Students explore 3D files from online repositories. Engineers check exported meshes for errors. Photogrammetry professionals inspect PLY scans. Whatever your use case, this viewer gives you a fast, private way to check any 3D file without installing software.</p>
+
+      <h2>Model Statistics and Analysis</h2>
+      <p>After loading a model, detailed statistics are displayed: vertex count, face count, number of meshes, file size, and bounding box dimensions (width, height, depth). These metrics help assess model complexity for performance optimization, verify export accuracy, estimate 3D print time and material usage, and check that models meet polygon budgets for game engines. High vertex counts may indicate models that need decimation, while unusual bounding box dimensions can reveal scaling issues in the export pipeline.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    import { TDSLoader } from 'three/addons/loaders/TDSLoader.js';
+    import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+
+    var scene, camera, renderer, controls, currentModel;
+    var defaultCameraPos = new THREE.Vector3();
+    var defaultTarget = new THREE.Vector3();
+    var wireframeMode = false;
+    var normalsHelper = null;
+
+    var containerEl = document.getElementById('viewer-container');
+    var loadingEl = document.getElementById('loading-overlay');
+    var toolbarEl = document.getElementById('viewer-toolbar');
+    var bgOptions = document.getElementById('bg-options');
+    var statsEl = document.getElementById('model-stats');
+    var uploadZone = document.getElementById('upload-zone');
+    var fileInput = document.getElementById('file-input');
+
+    var bgColors = { dark: 0x1a1a2e, light: 0xe8e8e8, gradient: 0x2a2a4a, neutral: 0x404050 };
+    var currentBg = 'dark';
+
+    function initScene() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(bgColors[currentBg]);
+
+      camera = new THREE.PerspectiveCamera(45, containerEl.clientWidth / containerEl.clientHeight, 0.01, 10000);
+      camera.position.set(3, 3, 3);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(containerEl.clientWidth, containerEl.clientHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      containerEl.appendChild(renderer.domElement);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      var dir1 = new THREE.DirectionalLight(0xffffff, 1.0);
+      dir1.position.set(5, 10, 7);
+      scene.add(dir1);
+      var dir2 = new THREE.DirectionalLight(0xffffff, 0.4);
+      dir2.position.set(-5, -3, -5);
+      scene.add(dir2);
+
+      var grid = new THREE.GridHelper(20, 20, 0x444466, 0x333355);
+      scene.add(grid);
+
+      animate();
+      window.addEventListener('resize', function() {
+        if (!renderer) return;
+        camera.aspect = containerEl.clientWidth / containerEl.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(containerEl.clientWidth, containerEl.clientHeight);
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function clearModel() {
+      if (normalsHelper) { scene.remove(normalsHelper); normalsHelper = null; }
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel.traverse(function(child) {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach(function(m) { m.dispose(); });
+            else child.material.dispose();
+          }
+        });
+        currentModel = null;
+      }
+    }
+
+    function fitCameraToModel(object) {
+      var box = new THREE.Box3().setFromObject(object);
+      var size = box.getSize(new THREE.Vector3());
+      var center = box.getCenter(new THREE.Vector3());
+      var maxDim = Math.max(size.x, size.y, size.z);
+      var fov = camera.fov * (Math.PI / 180);
+      var dist = (maxDim / 2) / Math.tan(fov / 2) * 1.6;
+      camera.position.set(center.x + dist * 0.5, center.y + dist * 0.4, center.z + dist * 0.7);
+      camera.lookAt(center);
+      controls.target.copy(center);
+      controls.update();
+      camera.near = maxDim * 0.001;
+      camera.far = maxDim * 100;
+      camera.updateProjectionMatrix();
+      defaultCameraPos.copy(camera.position);
+      defaultTarget.copy(controls.target);
+    }
+
+    function updateStats(object, format, fileSize) {
+      var vertices = 0, faces = 0, meshes = 0;
+      object.traverse(function(child) {
+        if (child.isMesh && child.geometry) {
+          meshes++;
+          var geo = child.geometry;
+          if (geo.index) { vertices += geo.attributes.position.count; faces += geo.index.count / 3; }
+          else if (geo.attributes.position) { vertices += geo.attributes.position.count; faces += geo.attributes.position.count / 3; }
+        }
+      });
+      var box = new THREE.Box3().setFromObject(object);
+      var size = box.getSize(new THREE.Vector3());
+      document.getElementById('stat-format').textContent = format.toUpperCase();
+      document.getElementById('stat-size').textContent = fileSize < 1024 * 1024 ? (fileSize / 1024).toFixed(1) + ' KB' : (fileSize / 1024 / 1024).toFixed(2) + ' MB';
+      document.getElementById('stat-vertices').textContent = vertices.toLocaleString();
+      document.getElementById('stat-faces').textContent = Math.round(faces).toLocaleString();
+      document.getElementById('stat-width').textContent = size.x.toFixed(2);
+      document.getElementById('stat-height').textContent = size.y.toFixed(2);
+      document.getElementById('stat-depth').textContent = size.z.toFixed(2);
+      document.getElementById('stat-meshes').textContent = meshes.toString();
+      statsEl.style.display = 'block';
+    }
+
+    function applyDefaultMaterial(object) {
+      object.traverse(function(child) {
+        if (child.isMesh) {
+          if (!child.material || (child.material.type === 'MeshBasicMaterial' && !child.material.map)) {
+            child.material = new THREE.MeshStandardMaterial({ color: 0x8888cc, metalness: 0.3, roughness: 0.6 });
+          }
+          child.material.side = THREE.DoubleSide;
+        }
+      });
+    }
+
+    function addModel(object, format, fileSize) {
+      applyDefaultMaterial(object);
+      currentModel = object;
+      scene.add(object);
+      fitCameraToModel(object);
+      updateStats(object, format, fileSize);
+      loadingEl.style.display = 'none';
+    }
+
+    function loadFile(file) {
+      var ext = file.name.split('.').pop().toLowerCase();
+      var supported = ['stl', 'obj', 'gltf', 'glb', 'fbx', '3ds', 'ply'];
+      if (!supported.includes(ext)) {
+        if (window.showToast) window.showToast('Unsupported format. Supported: GLB, GLTF, OBJ, STL, FBX, 3DS, PLY');
+        return;
+      }
+
+      if (!renderer) initScene();
+      containerEl.style.display = 'block';
+      loadingEl.style.display = 'flex';
+      toolbarEl.style.display = 'flex';
+      bgOptions.style.display = 'flex';
+      uploadZone.style.display = 'none';
+      wireframeMode = false;
+      document.getElementById('wireframe-btn').classList.remove('active');
+      document.getElementById('normals-btn').classList.remove('active');
+      clearModel();
+
+      var reader = new FileReader();
+      var fileSize = file.size;
+
+      if (ext === 'stl') {
+        reader.onload = function(e) {
+          try {
+            var geo = new STLLoader().parse(e.target.result);
+            geo.computeVertexNormals();
+            var mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x8888cc, metalness: 0.3, roughness: 0.6, side: THREE.DoubleSide }));
+            addModel(mesh, 'stl', fileSize);
+          } catch (err) { loadingEl.textContent = 'Error: ' + err.message; }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'obj') {
+        reader.onload = function(e) {
+          try { addModel(new OBJLoader().parse(e.target.result), 'obj', fileSize); }
+          catch (err) { loadingEl.textContent = 'Error: ' + err.message; }
+        };
+        reader.readAsText(file);
+      } else if (ext === 'gltf' || ext === 'glb') {
+        reader.onload = function(e) {
+          try {
+            new GLTFLoader().parse(e.target.result, '', function(gltf) {
+              addModel(gltf.scene, ext, fileSize);
+            }, function(err) { loadingEl.textContent = 'Error: ' + (err.message || err); });
+          } catch (err) { loadingEl.textContent = 'Error: ' + err.message; }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'fbx') {
+        reader.onload = function(e) {
+          try { addModel(new FBXLoader().parse(e.target.result), 'fbx', fileSize); }
+          catch (err) { loadingEl.textContent = 'Error: ' + err.message; }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === '3ds') {
+        reader.onload = function(e) {
+          try { addModel(new TDSLoader().parse(e.target.result), '3ds', fileSize); }
+          catch (err) { loadingEl.textContent = 'Error: ' + err.message; }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'ply') {
+        reader.onload = function(e) {
+          try {
+            var geo = new PLYLoader().parse(e.target.result);
+            geo.computeVertexNormals();
+            var mat = new THREE.MeshStandardMaterial({ color: 0x8888cc, metalness: 0.3, roughness: 0.6, side: THREE.DoubleSide, vertexColors: geo.hasAttribute('color') });
+            addModel(new THREE.Mesh(geo, mat), 'ply', fileSize);
+          } catch (err) { loadingEl.textContent = 'Error: ' + err.message; }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    // File handling
+    uploadZone.addEventListener('click', function() { fileInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('drag-over'); });
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault(); uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) loadFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function() { if (fileInput.files.length > 0) loadFile(fileInput.files[0]); });
+
+    // Background options
+    document.querySelectorAll('#bg-options button').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('#bg-options button').forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        currentBg = this.dataset.bg;
+        if (scene) scene.background = new THREE.Color(bgColors[currentBg]);
+      });
+    });
+
+    // Wireframe
+    document.getElementById('wireframe-btn').addEventListener('click', function() {
+      wireframeMode = !wireframeMode;
+      this.classList.toggle('active', wireframeMode);
+      if (currentModel) {
+        currentModel.traverse(function(child) {
+          if (child.isMesh && child.material) {
+            if (Array.isArray(child.material)) child.material.forEach(function(m) { m.wireframe = wireframeMode; });
+            else child.material.wireframe = wireframeMode;
+          }
+        });
+      }
+    });
+
+    // Normals
+    document.getElementById('normals-btn').addEventListener('click', function() {
+      if (normalsHelper) {
+        scene.remove(normalsHelper);
+        normalsHelper = null;
+        this.classList.remove('active');
+      } else if (currentModel) {
+        this.classList.add('active');
+        currentModel.traverse(function(child) {
+          if (child.isMesh && !normalsHelper) {
+            import('three/addons/helpers/VertexNormalsHelper.js').then(function(mod) {
+              normalsHelper = new mod.VertexNormalsHelper(child, 0.2, 0x44ff44);
+              scene.add(normalsHelper);
+            });
+          }
+        });
+      }
+    });
+
+    // Reset view
+    document.getElementById('reset-view-btn').addEventListener('click', function() {
+      if (currentModel) { camera.position.copy(defaultCameraPos); controls.target.copy(defaultTarget); controls.update(); }
+    });
+
+    // Screenshot
+    document.getElementById('screenshot-btn').addEventListener('click', function() {
+      if (!renderer) return;
+      renderer.render(scene, camera);
+      renderer.domElement.toBlob(function(blob) {
+        var link = document.createElement('a');
+        link.download = '3d-model-screenshot.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        if (window.showToast) window.showToast('Screenshot downloaded!');
+      });
+    });
+
+    // Copy image
+    document.getElementById('copy-image-btn').addEventListener('click', function() {
+      if (!renderer) return;
+      renderer.render(scene, camera);
+      renderer.domElement.toBlob(function(blob) {
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+          if (window.showToast) window.showToast('Image copied to clipboard!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Copy failed — try Screenshot instead.');
+        });
+      });
+    });
+
+    // Clear
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      clearModel();
+      containerEl.style.display = 'none';
+      toolbarEl.style.display = 'none';
+      bgOptions.style.display = 'none';
+      statsEl.style.display = 'none';
+      uploadZone.style.display = 'block';
+      fileInput.value = '';
+    });
+
+    // Breadcrumbs, FAQs, Related, Schema
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: '3D Tools', url: '/3d/' }, { name: '3D Model Viewer' }];
+    var FAQS = [
+      { q: 'What 3D file formats are supported?', a: 'The viewer supports GLB, GLTF, OBJ, STL, FBX, 3DS, and PLY files. This covers the most common formats used in 3D printing, game development, CAD, animation, and 3D scanning.' },
+      { q: 'Is my file uploaded to any server?', a: 'No. Your file is processed entirely in your browser using the FileReader API and Three.js. No data is transmitted to any server. You can verify by checking the Network tab in your browser developer tools.' },
+      { q: 'How is this different from Sketchfab?', a: 'Sketchfab requires an account, uploads your files to their servers, and has storage limits. This tool requires no signup, processes files locally for complete privacy, and has no file size limits. It is a free, privacy-first alternative.' },
+      { q: 'Can I take screenshots of my model?', a: 'Yes. Click Screenshot to download the current view as a PNG, or Copy Image to copy it to your clipboard for pasting into documents, chat, or design tools.' },
+      { q: 'What do the model statistics show?', a: 'After loading a model, you see format type, file size, vertex count, face count, number of meshes, and bounding box dimensions (width, height, depth). These metrics help assess complexity, export accuracy, and printing requirements.' },
+      { q: 'Does it work offline?', a: 'After the page loads, you can disconnect from the internet and continue viewing models. The Three.js library is cached by your browser. File reading and rendering are entirely local operations.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: '3d/stl-viewer', name: 'STL Viewer', description: 'Dedicated STL file viewer with advanced options.' },
+      { slug: '3d/stl-to-obj-converter', name: 'STL to OBJ Converter', description: 'Convert STL files to OBJ format.' },
+      { slug: '3d/fluid-simulation', name: 'WebGL Fluid Simulation', description: 'Interactive fluid dynamics in your browser.' },
+      { slug: '3d/audio-visualizer', name: '3D Audio Visualizer', description: 'Visualize music in stunning 3D.' },
+      { slug: '3d/dice-roller', name: '3D Dice Roller', description: 'Roll realistic 3D dice with physics.' },
+      { slug: '3d/printing-cost-calculator', name: '3D Printing Cost Calculator', description: 'Estimate 3D printing costs.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: '3d/model-viewer', title: '3D Model Viewer Online Free', description: 'View 3D models in your browser. Upload GLB, OBJ, FBX, STL — rotate, zoom, inspect. Free, private, no signup.' });
+    TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  </script>
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL Fluid Simulation — Teamz Lab Tools</title>
+  <meta name="description" content="Play with mesmerizing fluid dynamics in your browser. Free interactive WebGL simulation — touch, drag, and create colorful patterns privately.">
+  <meta property="og:title" content="WebGL Fluid Simulation — Teamz Lab Tools">
+  <meta property="og:description" content="Interactive fluid dynamics simulation in your browser. Touch, drag, and create mesmerizing colorful patterns — free, private, no signup.">
+  <meta property="og:url" content="https://tool.teamzlab.com/3d/fluid-simulation/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/3d.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="WebGL Fluid Simulation — Teamz Lab Tools">
+  <meta name="twitter:description" content="Interactive fluid dynamics simulation in your browser. Touch, drag, and create mesmerizing colorful patterns — free, private, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/3d/fluid-simulation/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sim-container { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; position: relative; border: 1px solid var(--border); margin-bottom: 1rem; cursor: crosshair; touch-action: none; }
+    .sim-container canvas { width: 100% !important; height: 100% !important; display: block; }
+    .sim-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; align-items: center; }
+    .sim-controls label { font-size: 0.85rem; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 0.4rem; }
+    .sim-controls input[type="range"] { width: 100px; accent-color: var(--heading); }
+    .sim-controls select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.6rem; border-radius: 8px; font-family: inherit; font-size: 0.85rem; }
+    .sim-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .sim-toolbar button { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: border-color 0.3s; font-family: inherit; }
+    .sim-toolbar button:hover { border-color: var(--heading); }
+    .sim-hint { font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-bottom: 0.75rem; }
+    @media (max-width: 600px) {
+      .sim-container { aspect-ratio: 4 / 3; }
+      .sim-controls { gap: 0.5rem; }
+      .sim-controls input[type="range"] { width: 80px; }
+      .sim-toolbar { flex-direction: column; }
+      .sim-toolbar button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "3D Tools", "item": "https://tool.teamzlab.com/3d/"}, {"@type": "ListItem", "position": 3, "name": "Fluid Simulation"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is WebGL fluid simulation?", "acceptedAnswer": {"@type": "Answer", "text": "WebGL fluid simulation is a real-time visualization of fluid dynamics running entirely in your browser using GPU shaders. It solves the Navier-Stokes equations to simulate how fluids move, mix, and dissipate when you interact with the canvas."}}, {"@type": "Question", "name": "Does it work on mobile devices?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The simulation supports touch input and works on most modern smartphones and tablets. Multi-touch is supported — use multiple fingers to create multiple fluid streams simultaneously."}}, {"@type": "Question", "name": "Is any data sent to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. The entire simulation runs locally on your GPU using WebGL shaders. No data is transmitted anywhere. You can even disconnect from the internet after loading the page."}}, {"@type": "Question", "name": "What do the controls do?", "acceptedAnswer": {"@type": "Answer", "text": "Viscosity controls how thick the fluid feels — higher values make it spread slower. Pressure affects how the fluid pushes against itself. Curl adds swirling vortex effects. Splat Radius controls how large each color injection is."}}, {"@type": "Question", "name": "Can I save my fluid art?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Screenshot button to download the current canvas as a PNG image. The image captures exactly what you see on screen at full resolution."}}, {"@type": "Question", "name": "What browsers support this?", "acceptedAnswer": {"@type": "Answer", "text": "Any browser with WebGL support — Chrome, Firefox, Safari, Edge, and most mobile browsers. The simulation uses half-float textures when available for better quality, with automatic fallback for older devices."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "WebGL Fluid Simulation", "description": "Interactive fluid dynamics simulation in your browser. Touch, drag, and create mesmerizing colorful patterns — free, private, no signup.", "url": "https://tool.teamzlab.com/3d/fluid-simulation/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>WebGL Fluid Simulation</h1>
+      <p class="tool-description">Click, drag, or touch the canvas to create mesmerizing fluid patterns. Adjust viscosity, pressure, and color modes to explore fluid dynamics — everything runs in your browser using WebGL shaders.</p>
+    </section>
+    <section class="tool-calculator">
+      <p class="sim-hint">Click and drag on the canvas to create fluid motion</p>
+      <div class="sim-container" id="sim-container">
+        <canvas id="fluid-canvas"></canvas>
+      </div>
+      <div class="sim-controls">
+        <label>Viscosity <input type="range" id="viscosity" min="0" max="100" value="30"></label>
+        <label>Pressure <input type="range" id="pressure" min="0" max="100" value="80"></label>
+        <label>Curl <input type="range" id="curl" min="0" max="100" value="30"></label>
+        <label>Splat Radius <input type="range" id="splat-radius" min="10" max="100" value="40"></label>
+        <label>Color
+          <select id="color-mode">
+            <option value="rainbow">Rainbow</option>
+            <option value="fire">Fire</option>
+            <option value="ocean">Ocean</option>
+            <option value="neon">Neon</option>
+            <option value="monochrome">Monochrome</option>
+          </select>
+        </label>
+      </div>
+      <div class="sim-toolbar">
+        <button type="button" id="pause-btn">Pause</button>
+        <button type="button" id="random-splats-btn">Random Splats</button>
+        <button type="button" id="screenshot-btn">Screenshot</button>
+        <button type="button" id="clear-btn" class="tool-clear-btn">Clear</button>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Fluid Simulation Works</h2>
+      <p>This fluid simulation solves the Navier-Stokes equations in real time using WebGL fragment shaders running on your GPU. The simulation uses a grid-based approach where each pixel represents a point in a velocity field. When you click and drag, you inject velocity and color dye into the field. The simulation then advects (moves) the dye along the velocity field, applies diffusion to simulate viscosity, and uses a pressure solver to ensure the fluid remains incompressible. The curl parameter adds vorticity confinement, creating swirling patterns that make the fluid look more natural and visually striking.</p>
+
+      <h2>Fluid Dynamics for Creative Projects</h2>
+      <p>Interactive fluid simulations have become a popular tool for creative coding, generative art, and interactive web design. Designers use fluid effects as dynamic backgrounds, loading animations, and interactive hero sections on websites. Artists create mesmerizing abstract compositions by layering colors and adjusting physical parameters. The combination of mathematical precision and organic beauty makes fluid simulation one of the most visually captivating applications of GPU computing in the browser. Every interaction produces unique, unrepeatable patterns — making each session a creative experience.</p>
+
+      <h2>Tips for Best Visual Effects</h2>
+      <p>For dramatic swirling effects, increase the curl parameter while keeping viscosity low. This creates tight vortices that spin and merge. For smooth, paint-like spreading, increase viscosity and reduce curl. The fire color mode works best with fast, short strokes, while ocean mode shines with slow, sweeping movements. Try the Random Splats button to seed the canvas with multiple color sources, then gently drag through them to create complex mixing patterns. For screenshots, let the simulation settle for a moment after your last interaction — the natural dissipation creates beautiful gradient transitions.</p>
+
+      <h2>WebGL Performance and Compatibility</h2>
+      <p>This simulation runs entirely on your device using WebGL shaders, with no server processing. It works on any modern browser that supports WebGL — including Chrome, Firefox, Safari, and Edge on both desktop and mobile devices. On mobile, touch and multi-touch interactions create fluid motion naturally. Performance depends on your GPU — most devices handle the simulation smoothly at 60 frames per second. The simulation uses half-float textures when available for better precision, with automatic fallback to standard textures on older hardware.</p>
+
+      <h2>Privacy and Offline Use</h2>
+      <p>No data leaves your browser — the entire simulation runs locally using GPU shaders. You can disconnect from the internet after loading the page and continue playing with the fluid. Screenshots are generated locally as PNG images and download directly to your device. There are no analytics tracking your interactions with the canvas, no cookies stored, and no account required. This is a pure client-side WebGL application.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    var canvas = document.getElementById('fluid-canvas');
+    var container = document.getElementById('sim-container');
+
+    // Resize canvas to container
+    function resizeCanvas() {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) {
+      container.innerHTML = '<p style="padding:2rem;text-align:center;color:var(--text-muted);">WebGL is not supported in your browser. Please try Chrome, Firefox, or Edge.</p>';
+      return;
+    }
+
+    // Extensions
+    var halfFloat = gl.getExtension('OES_texture_half_float');
+    var halfFloatLinear = gl.getExtension('OES_texture_half_float_linear');
+    var floatExt = gl.getExtension('OES_texture_float');
+    var floatLinear = gl.getExtension('OES_texture_float_linear');
+
+    var texType = (halfFloat && halfFloatLinear) ? halfFloat.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
+
+    // Simulation parameters
+    var config = {
+      SIM_RESOLUTION: 128,
+      DYE_RESOLUTION: 512,
+      DENSITY_DISSIPATION: 0.995,
+      VELOCITY_DISSIPATION: 0.995,
+      PRESSURE_ITERATIONS: 20,
+      CURL: 30,
+      SPLAT_RADIUS: 0.004,
+      VISCOSITY: 0.3,
+      PRESSURE: 0.8,
+      colorMode: 'rainbow'
+    };
+
+    // Compile shader
+    function compileShader(type, source) {
+      var shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+
+    function createProgram(vertSrc, fragSrc) {
+      var vert = compileShader(gl.VERTEX_SHADER, vertSrc);
+      var frag = compileShader(gl.FRAGMENT_SHADER, fragSrc);
+      var prog = gl.createProgram();
+      gl.attachShader(prog, vert);
+      gl.attachShader(prog, frag);
+      gl.linkProgram(prog);
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(prog));
+        return null;
+      }
+      return prog;
+    }
+
+    // Base vertex shader
+    var baseVertexShader = 'attribute vec2 aPosition; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform vec2 texelSize; void main(){ vUv = aPosition * 0.5 + 0.5; vL = vUv - vec2(texelSize.x, 0.0); vR = vUv + vec2(texelSize.x, 0.0); vT = vUv + vec2(0.0, texelSize.y); vB = vUv - vec2(0.0, texelSize.y); gl_Position = vec4(aPosition, 0.0, 1.0); }';
+
+    // Fragment shaders
+    var displayShader = 'precision mediump float; varying vec2 vUv; uniform sampler2D uTexture; void main(){ vec3 c = texture2D(uTexture, vUv).rgb; float a = max(c.r, max(c.g, c.b)); gl_FragColor = vec4(c, a); }';
+
+    var splatShader = 'precision highp float; varying vec2 vUv; uniform sampler2D uTarget; uniform float aspectRatio; uniform vec3 color; uniform vec2 point; uniform float radius; void main(){ vec2 p = vUv - point; p.x *= aspectRatio; vec3 splat = exp(-dot(p,p) / radius) * color; vec3 base = texture2D(uTarget, vUv).xyz; gl_FragColor = vec4(base + splat, 1.0); }';
+
+    var advectionShader = 'precision highp float; varying vec2 vUv; uniform sampler2D uVelocity; uniform sampler2D uSource; uniform vec2 texelSize; uniform float dt; uniform float dissipation; void main(){ vec2 coord = vUv - dt * texture2D(uVelocity, vUv).xy * texelSize; gl_FragColor = dissipation * texture2D(uSource, coord); gl_FragColor.a = 1.0; }';
+
+    var divergenceShader = 'precision mediump float; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform sampler2D uVelocity; void main(){ float L = texture2D(uVelocity, vL).x; float R = texture2D(uVelocity, vR).x; float T = texture2D(uVelocity, vT).y; float B = texture2D(uVelocity, vB).y; float div = 0.5 * (R - L + T - B); gl_FragColor = vec4(div, 0.0, 0.0, 1.0); }';
+
+    var pressureShader = 'precision mediump float; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform sampler2D uPressure; uniform sampler2D uDivergence; void main(){ float L = texture2D(uPressure, vL).x; float R = texture2D(uPressure, vR).x; float T = texture2D(uPressure, vT).x; float B = texture2D(uPressure, vB).x; float divergence = texture2D(uDivergence, vUv).x; float pressure = (L + R + B + T - divergence) * 0.25; gl_FragColor = vec4(pressure, 0.0, 0.0, 1.0); }';
+
+    var gradientSubtractShader = 'precision mediump float; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform sampler2D uPressure; uniform sampler2D uVelocity; void main(){ float L = texture2D(uPressure, vL).x; float R = texture2D(uPressure, vR).x; float T = texture2D(uPressure, vT).x; float B = texture2D(uPressure, vB).x; vec2 velocity = texture2D(uVelocity, vUv).xy; velocity.xy -= vec2(R - L, T - B); gl_FragColor = vec4(velocity, 0.0, 1.0); }';
+
+    var curlShader = 'precision mediump float; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform sampler2D uVelocity; void main(){ float L = texture2D(uVelocity, vL).y; float R = texture2D(uVelocity, vR).y; float T = texture2D(uVelocity, vT).x; float B = texture2D(uVelocity, vB).x; float vorticity = R - L - T + B; gl_FragColor = vec4(0.5 * vorticity, 0.0, 0.0, 1.0); }';
+
+    var vorticityShader = 'precision highp float; varying vec2 vUv; varying vec2 vL; varying vec2 vR; varying vec2 vT; varying vec2 vB; uniform sampler2D uVelocity; uniform sampler2D uCurl; uniform float curl; uniform float dt; void main(){ float L = texture2D(uCurl, vL).x; float R = texture2D(uCurl, vR).x; float T = texture2D(uCurl, vT).x; float B = texture2D(uCurl, vB).x; float C = texture2D(uCurl, vUv).x; vec2 force = 0.5 * vec2(abs(T) - abs(B), abs(R) - abs(L)); force /= length(force) + 0.0001; force *= curl * C; force.y *= -1.0; vec2 vel = texture2D(uVelocity, vUv).xy; gl_FragColor = vec4(vel + force * dt, 0.0, 1.0); }';
+
+    var clearShader = 'precision mediump float; varying vec2 vUv; uniform sampler2D uTexture; uniform float value; void main(){ gl_FragColor = value * texture2D(uTexture, vUv); }';
+
+    // Create programs
+    var programs = {};
+    programs.display = createProgram(baseVertexShader, displayShader);
+    programs.splat = createProgram(baseVertexShader, splatShader);
+    programs.advection = createProgram(baseVertexShader, advectionShader);
+    programs.divergence = createProgram(baseVertexShader, divergenceShader);
+    programs.pressure = createProgram(baseVertexShader, pressureShader);
+    programs.gradientSubtract = createProgram(baseVertexShader, gradientSubtractShader);
+    programs.curl = createProgram(baseVertexShader, curlShader);
+    programs.vorticity = createProgram(baseVertexShader, vorticityShader);
+    programs.clear = createProgram(baseVertexShader, clearShader);
+
+    // Get uniform locations cache
+    var uniforms = {};
+    Object.keys(programs).forEach(function(key) {
+      uniforms[key] = {};
+    });
+
+    function getUniform(prog, name) {
+      var key = prog + '_' + name;
+      if (!uniforms[key]) {
+        uniforms[key] = gl.getUniformLocation(programs[prog], name);
+      }
+      return uniforms[key];
+    }
+
+    // Fullscreen quad
+    var quadBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
+    var quadIndex = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, quadIndex);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
+
+    function blit(target) {
+      if (target) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+        gl.viewport(0, 0, target.width, target.height);
+      } else {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, quadIndex);
+      var aPos = gl.getAttribLocation(programs.display, 'aPosition');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    }
+
+    function blitProgram(prog, target) {
+      gl.useProgram(programs[prog]);
+      if (target) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+        gl.viewport(0, 0, target.width, target.height);
+      } else {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, quadIndex);
+      var aPos = gl.getAttribLocation(programs[prog], 'aPosition');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+      gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+    }
+
+    // Create framebuffer objects
+    function createFBO(w, h, internalFormat, format, type, filter) {
+      gl.activeTexture(gl.TEXTURE0);
+      var texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, w, h, 0, format, type, null);
+
+      var fbo = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+      return { texture: texture, fbo: fbo, width: w, height: h };
+    }
+
+    function createDoubleFBO(w, h, internalFormat, format, type, filter) {
+      var fbo1 = createFBO(w, h, internalFormat, format, type, filter);
+      var fbo2 = createFBO(w, h, internalFormat, format, type, filter);
+      return {
+        width: w, height: h,
+        read: fbo1, write: fbo2,
+        swap: function() { var temp = this.read; this.read = this.write; this.write = temp; }
+      };
+    }
+
+    // Resolution helpers
+    function getResolution(resolution) {
+      var aspectRatio = gl.drawingBufferWidth / gl.drawingBufferHeight;
+      if (aspectRatio < 1) aspectRatio = 1.0 / aspectRatio;
+      var max = Math.round(resolution * aspectRatio);
+      var min = resolution;
+      if (gl.drawingBufferWidth > gl.drawingBufferHeight) return { width: max, height: min };
+      return { width: min, height: max };
+    }
+
+    // Initialize FBOs
+    var simRes = getResolution(config.SIM_RESOLUTION);
+    var dyeRes = getResolution(config.DYE_RESOLUTION);
+
+    var velocity = createDoubleFBO(simRes.width, simRes.height, gl.RGBA, gl.RGBA, texType, gl.LINEAR);
+    var dye = createDoubleFBO(dyeRes.width, dyeRes.height, gl.RGBA, gl.RGBA, texType, gl.LINEAR);
+    var divergenceFBO = createFBO(simRes.width, simRes.height, gl.RGBA, gl.RGBA, texType, gl.NEAREST);
+    var curlFBO = createFBO(simRes.width, simRes.height, gl.RGBA, gl.RGBA, texType, gl.NEAREST);
+    var pressureFBO = createDoubleFBO(simRes.width, simRes.height, gl.RGBA, gl.RGBA, texType, gl.NEAREST);
+
+    // Color generation
+    function HSVtoRGB(h, s, v) {
+      var i = Math.floor(h * 6);
+      var f = h * 6 - i;
+      var p = v * (1 - s);
+      var q = v * (1 - f * s);
+      var t = v * (1 - (1 - f) * s);
+      var r, g, b;
+      switch (i % 6) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
+      }
+      return { r: r, g: g, b: b };
+    }
+
+    function generateColor() {
+      var mode = config.colorMode;
+      var c;
+      if (mode === 'fire') {
+        c = HSVtoRGB(Math.random() * 0.1, 0.8 + Math.random() * 0.2, 0.9 + Math.random() * 0.1);
+      } else if (mode === 'ocean') {
+        c = HSVtoRGB(0.5 + Math.random() * 0.15, 0.6 + Math.random() * 0.4, 0.7 + Math.random() * 0.3);
+      } else if (mode === 'neon') {
+        var hues = [0.83, 0.33, 0.0, 0.16, 0.5];
+        c = HSVtoRGB(hues[Math.floor(Math.random() * hues.length)], 1.0, 1.0);
+      } else if (mode === 'monochrome') {
+        var v = 0.5 + Math.random() * 0.5;
+        c = { r: v, g: v, b: v };
+      } else {
+        c = HSVtoRGB(Math.random(), 1.0, 1.0);
+      }
+      return { r: c.r * 0.15, g: c.g * 0.15, b: c.b * 0.15 };
+    }
+
+    // Splat function
+    function splat(x, y, dx, dy, color) {
+      gl.useProgram(programs.splat);
+      gl.uniform1i(gl.getUniformLocation(programs.splat, 'uTarget'), 0);
+      gl.uniform1f(gl.getUniformLocation(programs.splat, 'aspectRatio'), canvas.width / canvas.height);
+      gl.uniform2f(gl.getUniformLocation(programs.splat, 'point'), x, y);
+      gl.uniform3f(gl.getUniformLocation(programs.splat, 'color'), dx, dy, 0.0);
+      gl.uniform1f(gl.getUniformLocation(programs.splat, 'radius'), config.SPLAT_RADIUS);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      blitProgram('splat', velocity.write);
+      velocity.swap();
+
+      gl.uniform3f(gl.getUniformLocation(programs.splat, 'color'), color.r, color.g, color.b);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, dye.read.texture);
+      blitProgram('splat', dye.write);
+      dye.swap();
+    }
+
+    function randomSplats() {
+      for (var i = 0; i < 8; i++) {
+        var color = generateColor();
+        color.r *= 10; color.g *= 10; color.b *= 10;
+        var x = Math.random();
+        var y = Math.random();
+        var dx = (Math.random() - 0.5) * 1000;
+        var dy = (Math.random() - 0.5) * 1000;
+        splat(x, y, dx, dy, color);
+      }
+    }
+
+    // Pause state
+    var paused = false;
+
+    // Simulation step
+    var lastTime = Date.now();
+    function step() {
+      if (paused) { requestAnimationFrame(step); return; }
+      var now = Date.now();
+      var dt = Math.min((now - lastTime) / 1000, 0.016666);
+      lastTime = now;
+
+      // Resize check
+      if (canvas.width !== container.clientWidth || canvas.height !== container.clientHeight) {
+        resizeCanvas();
+      }
+
+      var simTexelX = 1.0 / simRes.width;
+      var simTexelY = 1.0 / simRes.height;
+      var dyeTexelX = 1.0 / dyeRes.width;
+      var dyeTexelY = 1.0 / dyeRes.height;
+
+      // Curl
+      gl.useProgram(programs.curl);
+      gl.uniform2f(gl.getUniformLocation(programs.curl, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.curl, 'uVelocity'), 0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      blitProgram('curl', curlFBO);
+
+      // Vorticity
+      gl.useProgram(programs.vorticity);
+      gl.uniform2f(gl.getUniformLocation(programs.vorticity, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.vorticity, 'uVelocity'), 0);
+      gl.uniform1i(gl.getUniformLocation(programs.vorticity, 'uCurl'), 1);
+      gl.uniform1f(gl.getUniformLocation(programs.vorticity, 'curl'), config.CURL);
+      gl.uniform1f(gl.getUniformLocation(programs.vorticity, 'dt'), dt);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, curlFBO.texture);
+      blitProgram('vorticity', velocity.write);
+      velocity.swap();
+
+      // Divergence
+      gl.useProgram(programs.divergence);
+      gl.uniform2f(gl.getUniformLocation(programs.divergence, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.divergence, 'uVelocity'), 0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      blitProgram('divergence', divergenceFBO);
+
+      // Clear pressure
+      gl.useProgram(programs.clear);
+      gl.uniform2f(gl.getUniformLocation(programs.clear, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.clear, 'uTexture'), 0);
+      gl.uniform1f(gl.getUniformLocation(programs.clear, 'value'), config.PRESSURE);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, pressureFBO.read.texture);
+      blitProgram('clear', pressureFBO.write);
+      pressureFBO.swap();
+
+      // Pressure solve
+      gl.useProgram(programs.pressure);
+      gl.uniform2f(gl.getUniformLocation(programs.pressure, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.pressure, 'uDivergence'), 1);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, divergenceFBO.texture);
+      for (var i = 0; i < config.PRESSURE_ITERATIONS; i++) {
+        gl.uniform1i(gl.getUniformLocation(programs.pressure, 'uPressure'), 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, pressureFBO.read.texture);
+        blitProgram('pressure', pressureFBO.write);
+        pressureFBO.swap();
+      }
+
+      // Gradient subtract
+      gl.useProgram(programs.gradientSubtract);
+      gl.uniform2f(gl.getUniformLocation(programs.gradientSubtract, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.gradientSubtract, 'uPressure'), 0);
+      gl.uniform1i(gl.getUniformLocation(programs.gradientSubtract, 'uVelocity'), 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, pressureFBO.read.texture);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      blitProgram('gradientSubtract', velocity.write);
+      velocity.swap();
+
+      // Advect velocity
+      gl.useProgram(programs.advection);
+      gl.uniform2f(gl.getUniformLocation(programs.advection, 'texelSize'), simTexelX, simTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.advection, 'uVelocity'), 0);
+      gl.uniform1i(gl.getUniformLocation(programs.advection, 'uSource'), 0);
+      gl.uniform1f(gl.getUniformLocation(programs.advection, 'dt'), dt);
+      gl.uniform1f(gl.getUniformLocation(programs.advection, 'dissipation'), config.VELOCITY_DISSIPATION);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      blitProgram('advection', velocity.write);
+      velocity.swap();
+
+      // Advect dye
+      gl.uniform2f(gl.getUniformLocation(programs.advection, 'texelSize'), dyeTexelX, dyeTexelY);
+      gl.uniform1i(gl.getUniformLocation(programs.advection, 'uVelocity'), 0);
+      gl.uniform1i(gl.getUniformLocation(programs.advection, 'uSource'), 1);
+      gl.uniform1f(gl.getUniformLocation(programs.advection, 'dissipation'), config.DENSITY_DISSIPATION);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, velocity.read.texture);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, dye.read.texture);
+      blitProgram('advection', dye.write);
+      dye.swap();
+
+      // Display
+      gl.useProgram(programs.display);
+      gl.uniform2f(gl.getUniformLocation(programs.display, 'texelSize'), 1.0 / gl.drawingBufferWidth, 1.0 / gl.drawingBufferHeight);
+      gl.uniform1i(gl.getUniformLocation(programs.display, 'uTexture'), 0);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, dye.read.texture);
+      blitProgram('display', null);
+
+      requestAnimationFrame(step);
+    }
+
+    // Mouse / touch interaction
+    var pointers = [];
+
+    function getPointer(id) {
+      for (var i = 0; i < pointers.length; i++) {
+        if (pointers[i].id === id) return pointers[i];
+      }
+      var p = { id: id, x: 0, y: 0, dx: 0, dy: 0, down: false, moved: false, color: generateColor() };
+      pointers.push(p);
+      return p;
+    }
+
+    function updatePointerPos(pointer, posX, posY) {
+      var rect = canvas.getBoundingClientRect();
+      var x = (posX - rect.left) / rect.width;
+      var y = 1.0 - (posY - rect.top) / rect.height;
+      pointer.dx = (x - pointer.x) * 5000;
+      pointer.dy = (y - pointer.y) * 5000;
+      pointer.x = x;
+      pointer.y = y;
+      pointer.moved = Math.abs(pointer.dx) > 0 || Math.abs(pointer.dy) > 0;
+    }
+
+    canvas.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var p = getPointer(-1);
+      p.down = true;
+      p.color = generateColor();
+      updatePointerPos(p, e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+      var p = getPointer(-1);
+      if (!p.down) return;
+      updatePointerPos(p, e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mouseup', function() {
+      var p = getPointer(-1);
+      p.down = false;
+    });
+
+    canvas.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        var p = getPointer(t.identifier);
+        p.down = true;
+        p.color = generateColor();
+        updatePointerPos(p, t.clientX, t.clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var t = e.changedTouches[i];
+        var p = getPointer(t.identifier);
+        updatePointerPos(p, t.clientX, t.clientY);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', function(e) {
+      for (var i = 0; i < e.changedTouches.length; i++) {
+        var p = getPointer(e.changedTouches[i].identifier);
+        p.down = false;
+      }
+    });
+
+    // Apply pointer splats each frame
+    var origStep = step;
+    step = function() {
+      for (var i = 0; i < pointers.length; i++) {
+        var p = pointers[i];
+        if (p.down && p.moved) {
+          p.color = generateColor();
+          splat(p.x, p.y, p.dx, p.dy, { r: p.color.r * 10, g: p.color.g * 10, b: p.color.b * 10 });
+          p.moved = false;
+        }
+      }
+
+      origStep();
+    };
+
+    // Controls
+    document.getElementById('viscosity').addEventListener('input', function() {
+      config.VELOCITY_DISSIPATION = 1.0 - (this.value / 100) * 0.02;
+    });
+    document.getElementById('pressure').addEventListener('input', function() {
+      config.PRESSURE = this.value / 100;
+    });
+    document.getElementById('curl').addEventListener('input', function() {
+      config.CURL = this.value;
+    });
+    document.getElementById('splat-radius').addEventListener('input', function() {
+      config.SPLAT_RADIUS = this.value / 10000;
+    });
+    document.getElementById('color-mode').addEventListener('change', function() {
+      config.colorMode = this.value;
+    });
+
+    document.getElementById('pause-btn').addEventListener('click', function() {
+      paused = !paused;
+      this.textContent = paused ? 'Resume' : 'Pause';
+      if (!paused) lastTime = Date.now();
+    });
+
+    document.getElementById('random-splats-btn').addEventListener('click', function() {
+      randomSplats();
+    });
+
+    document.getElementById('screenshot-btn').addEventListener('click', function() {
+      canvas.toBlob(function(blob) {
+        var link = document.createElement('a');
+        link.download = 'fluid-simulation.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+        if (window.showToast) window.showToast('Screenshot downloaded!');
+      });
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', function() {
+      // Clear all FBOs
+      var simR = getResolution(config.SIM_RESOLUTION);
+      var dyeR = getResolution(config.DYE_RESOLUTION);
+      velocity = createDoubleFBO(simR.width, simR.height, gl.RGBA, gl.RGBA, texType, gl.LINEAR);
+      dye = createDoubleFBO(dyeR.width, dyeR.height, gl.RGBA, gl.RGBA, texType, gl.LINEAR);
+      pressureFBO = createDoubleFBO(simR.width, simR.height, gl.RGBA, gl.RGBA, texType, gl.NEAREST);
+    });
+
+    // Start
+    randomSplats();
+    step();
+
+    // Breadcrumbs, FAQs, Related, Schema
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: '3D Tools', url: '/3d/' }, { name: 'Fluid Simulation' }];
+    var FAQS = [
+      { q: 'What is WebGL fluid simulation?', a: 'WebGL fluid simulation is a real-time visualization of fluid dynamics running entirely in your browser using GPU shaders. It solves the Navier-Stokes equations to simulate how fluids move, mix, and dissipate when you interact with the canvas.' },
+      { q: 'Does it work on mobile devices?', a: 'Yes. The simulation supports touch input and works on most modern smartphones and tablets. Multi-touch is supported — use multiple fingers to create multiple fluid streams simultaneously.' },
+      { q: 'Is any data sent to a server?', a: 'No. The entire simulation runs locally on your GPU using WebGL shaders. No data is transmitted anywhere. You can even disconnect from the internet after loading the page.' },
+      { q: 'What do the controls do?', a: 'Viscosity controls how thick the fluid feels — higher values make it spread slower. Pressure affects how the fluid pushes against itself. Curl adds swirling vortex effects. Splat Radius controls how large each color injection is.' },
+      { q: 'Can I save my fluid art?', a: 'Yes. Click the Screenshot button to download the current canvas as a PNG image. The image captures exactly what you see on screen at full resolution.' },
+      { q: 'What browsers support this?', a: 'Any browser with WebGL support — Chrome, Firefox, Safari, Edge, and most mobile browsers. The simulation uses half-float textures when available for better quality, with automatic fallback for older devices.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: '3d/stl-viewer', name: '3D Model Viewer', description: 'View STL, OBJ, and GLTF 3D models in your browser.' },
+      { slug: '3d/text-generator', name: '3D Text Generator', description: 'Create 3D text with custom fonts and colors.' },
+      { slug: '3d/product-mockup-generator', name: '3D Product Mockup', description: 'Generate product mockups in 3D.' },
+      { slug: '3d/stl-to-obj-converter', name: 'STL to OBJ Converter', description: 'Convert 3D model formats in your browser.' },
+      { slug: '3d/printing-cost-calculator', name: '3D Printing Cost Calculator', description: 'Estimate material and time costs for 3D prints.' },
+      { slug: 'design/color-palette-generator', name: 'Color Palette Generator', description: 'Generate beautiful color palettes for your projects.' }
+    ];
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: '3d/fluid-simulation', title: 'WebGL Fluid Simulation', description: 'Interactive fluid dynamics simulation in your browser. Touch, drag, and create mesmerizing colorful patterns — free, private, no signup.' });
+    TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  })();
+  </script>
+</body>
+</html>

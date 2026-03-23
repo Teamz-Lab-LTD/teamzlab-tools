@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Filter Gallery — 30+ Effects — Teamz Lab Tools</title>
+  <meta name="description" content="Apply 30+ Instagram-style photo filters online free. Vintage, retro, noir, sepia and more effects. No signup, no watermark. Private and instant.">
+  <meta property="og:title" content="Photo Filter Gallery — 30+ Effects — Teamz Lab Tools">
+  <meta property="og:description" content="Apply 30+ Instagram-style photo filters online free. Vintage, retro, noir, sepia and more. No signup, no watermark.">
+  <meta property="og:url" content="https://tool.teamzlab.com/image/photo-filter-gallery/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/image.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Photo Filter Gallery — 30+ Effects — Teamz Lab Tools">
+  <meta name="twitter:description" content="Apply 30+ Instagram-style photo filters online free. No signup, no watermark. Private and instant.">
+  <link rel="canonical" href="https://tool.teamzlab.com/image/photo-filter-gallery/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .filter-upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--surface);
+      margin-bottom: 20px;
+    }
+    .filter-upload-zone:hover,
+    .filter-upload-zone.drag-over {
+      border-color: var(--heading);
+      background: var(--bg);
+    }
+    .filter-upload-zone svg {
+      width: 48px;
+      height: 48px;
+      stroke: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .filter-upload-zone p {
+      color: var(--text-muted);
+      margin: 4px 0;
+    }
+    .filter-upload-zone .upload-cta {
+      color: var(--heading);
+      font-weight: 600;
+    }
+    #filterFileInput {
+      display: none;
+    }
+
+    .filter-workspace {
+      display: none;
+    }
+    .filter-workspace.active {
+      display: block;
+    }
+
+    .filter-preview-main {
+      position: relative;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--surface);
+      text-align: center;
+    }
+    .filter-preview-main canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .compare-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--heading);
+      color: var(--bg);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: var(--text-xs);
+      opacity: 0.85;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .filter-preview-main:active .compare-hint {
+      opacity: 0;
+    }
+
+    .filter-active-name {
+      text-align: center;
+      font-weight: 600;
+      color: var(--heading);
+      font-size: var(--text-lg);
+      margin-bottom: 12px;
+    }
+
+    .filter-intensity-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 0 4px;
+    }
+    .filter-intensity-row label {
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      min-width: 70px;
+    }
+    .filter-intensity-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--heading);
+    }
+    .filter-intensity-row .intensity-val {
+      font-weight: 600;
+      color: var(--heading);
+      min-width: 40px;
+      text-align: right;
+    }
+
+    .filter-grid-title {
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: 10px;
+      font-size: var(--text-base);
+    }
+    .filter-category-label {
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      margin: 16px 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .filter-thumb {
+      cursor: pointer;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: border-color 0.2s, transform 0.15s;
+      background: var(--surface);
+    }
+    .filter-thumb:hover {
+      transform: scale(1.04);
+    }
+    .filter-thumb.selected {
+      border-color: var(--heading);
+    }
+    .filter-thumb canvas {
+      width: 100%;
+      aspect-ratio: 1;
+      display: block;
+      object-fit: cover;
+    }
+    .filter-thumb-label {
+      text-align: center;
+      font-size: 11px;
+      padding: 4px 2px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    .filter-actions button {
+      flex: 1;
+      min-width: 140px;
+    }
+    .filter-new-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: var(--text-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--heading);
+      transition: background 0.2s;
+    }
+    .filter-new-btn:hover {
+      background: var(--bg);
+    }
+
+    @media (max-width: 600px) {
+      .filter-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .filter-upload-zone {
+        padding: 28px 16px;
+      }
+      .filter-actions {
+        flex-direction: column;
+      }
+      .filter-actions button {
+        width: 100%;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .filter-thumb-label {
+        font-size: 10px;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Image Tools", "item": "https://tool.teamzlab.com/image/"}, {"@type": "ListItem", "position": 3, "name": "Photo Filter Gallery"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Are these photo filters really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, all 30+ filters are completely free with no signup, no watermark, and no limits on usage."}}, {"@type": "Question", "name": "Do my photos get uploaded to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. All filter processing happens locally in your browser using the HTML5 Canvas API. Your photos never leave your device."}}, {"@type": "Question", "name": "Can I adjust filter intensity?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, use the intensity slider to blend between 0% (original) and 100% (full filter effect) for the perfect look."}}, {"@type": "Question", "name": "What types of filters are available?", "acceptedAnswer": {"@type": "Answer", "text": "We offer vintage, retro, warm, cool, noir, artistic, color pop, and black & white filter categories — over 30 effects total."}}, {"@type": "Question", "name": "Can I use this on mobile?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely. The tool is fully responsive and works on any smartphone, tablet, or desktop browser."}}, {"@type": "Question", "name": "How do I compare before and after?", "acceptedAnswer": {"@type": "Answer", "text": "Click and hold on the preview image to see the original photo. Release to see the filtered version."}}, {"@type": "Question", "name": "What image formats are supported?", "acceptedAnswer": {"@type": "Answer", "text": "You can upload PNG, JPG, WEBP, and most other browser-supported image formats. Downloads are saved as PNG for maximum quality."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Photo Filter Gallery — 30+ Effects", "description": "Apply 30+ Instagram-style photo filters online free. No signup, no watermark.", "url": "https://tool.teamzlab.com/image/photo-filter-gallery/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Photo Filter Gallery — 30+ Effects</h1>
+      <p class="tool-description">Apply stunning Instagram-style filters to any photo instantly. Choose from 30+ effects including vintage, retro, noir, warm, cool, and artistic styles. Everything runs in your browser — your photos never leave your device.</p>
+    </section>
+    <section class="tool-calculator">
+
+      <div id="filterUploadZone" class="filter-upload-zone">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z"/></svg>
+        <p class="upload-cta">Click to upload or drag and drop</p>
+        <p>PNG, JPG, WEBP — max 20 MB</p>
+        <input type="file" id="filterFileInput" accept="image/*">
+      </div>
+
+      <div id="filterWorkspace" class="filter-workspace">
+        <div class="filter-active-name" id="filterActiveName">Original</div>
+        <div class="filter-preview-main" id="filterPreviewMain">
+          <canvas id="filterMainCanvas"></canvas>
+          <div class="compare-hint">Hold to see original</div>
+        </div>
+
+        <div class="filter-intensity-row">
+          <label for="filterIntensity">Intensity</label>
+          <input type="range" id="filterIntensity" min="0" max="100" value="100">
+          <span class="intensity-val" id="filterIntensityVal">100%</span>
+        </div>
+
+        <div class="filter-grid-title">Choose a Filter</div>
+
+        <div class="filter-category-label">Classic</div>
+        <div class="filter-grid" id="gridClassic"></div>
+
+        <div class="filter-category-label">Warm Tones</div>
+        <div class="filter-grid" id="gridWarm"></div>
+
+        <div class="filter-category-label">Cool Tones</div>
+        <div class="filter-grid" id="gridCool"></div>
+
+        <div class="filter-category-label">Vintage</div>
+        <div class="filter-grid" id="gridVintage"></div>
+
+        <div class="filter-category-label">Artistic</div>
+        <div class="filter-grid" id="gridArtistic"></div>
+
+        <div class="filter-category-label">Color Pop</div>
+        <div class="filter-grid" id="gridColorPop"></div>
+
+        <div class="filter-category-label">Black &amp; White</div>
+        <div class="filter-grid" id="gridBW"></div>
+
+        <div class="filter-actions">
+          <button class="btn-primary" id="filterDownloadBtn">Download PNG</button>
+          <button class="btn-secondary" id="filterCopyBtn">Copy Image</button>
+          <button class="filter-new-btn" id="filterNewBtn">New Photo</button>
+        </div>
+      </div>
+
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Photo Filters Work</h2>
+      <p>Photo filters transform images by adjusting the red, green, and blue color channels of every pixel. Each filter applies a unique combination of mathematical operations — shifting color curves, adjusting brightness and contrast, blending tones, or adding overlays like vignette darkening at the edges. For example, a sepia filter mixes specific proportions of the three color channels to produce warm brown tones reminiscent of aged photographs. A vintage filter might reduce overall saturation, lower contrast, and add a subtle warm color cast to recreate the look of old film stock. Because every filter runs entirely in your browser using the HTML5 Canvas API, no image data ever leaves your device. The tool reads your photo into a canvas element, accesses the raw pixel array through getImageData, processes each pixel, and writes the result back with putImageData. This approach is fast, private, and works on any modern browser without plugins or extensions.</p>
+
+      <h2>Popular Filter Styles Explained</h2>
+      <p>Warm-tone filters like Golden Hour, Sunset, and Autumn boost red and yellow channels while slightly reducing blue, creating a cozy and inviting aesthetic popular for food photography, portraits, and travel shots. Cool-tone filters such as Arctic, Moonlight, and Ocean do the opposite — they emphasize blue and slightly suppress red to produce a calm, moody, or cinematic atmosphere ideal for landscapes and urban photography. Vintage and retro filters combine lower contrast, slight color shifts, and faded shadows to mimic the imperfect charm of analog film. The 1977 and Polaroid filters draw direct inspiration from specific film eras. Noir and dramatic filters push contrast to extremes, often converting to grayscale first and then applying curve adjustments for deep blacks and bright highlights that emphasize texture and shape.</p>
+
+      <h2>Best Filters for Social Media</h2>
+      <p>The right filter can dramatically increase engagement on social media platforms. For Instagram, warm and slightly saturated filters like Vivid and Golden Hour consistently perform well because they make images feel bright and inviting. For LinkedIn professional headshots, subtle filters like Soft Focus or a gentle brightness boost look polished without appearing over-processed. Food photography benefits from warm tones and increased saturation, while travel photos often look best with the Dramatic or High Contrast filters that bring out architectural details and landscape depth. The intensity slider lets you dial in the exact strength — social media experts recommend keeping filter intensity between 50 and 80 percent for the most natural-looking results. A filter that is too strong can make images look artificial, while a subtle application enhances the photo without overwhelming it.</p>
+
+      <h2>Tips for Choosing the Right Filter</h2>
+      <p>Start by considering the mood you want to convey. Warm filters create feelings of comfort and nostalgia, cool filters evoke calm and mystery, and high-contrast filters add drama and intensity. Match the filter to your subject: portraits generally look best with warm or soft filters, landscapes with dramatic or vivid ones, and street photography with noir or retro styles. Use the compare mode by holding down on the preview to see your original photo — this helps you judge whether the filter enhances or distracts from the composition. Experiment with the intensity slider to find the sweet spot where the filter adds character without losing the natural qualities of your photo. If you plan to print the image, choose more subtle filters since strong color shifts can look different on paper than on screen.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    /* ── Breadcrumbs & Schema ── */
+    var breadcrumbs = [{name:'Home',url:'/'},{name:'Image Tools',url:'/image/'},{name:'Photo Filter Gallery'}];
+    TeamzTools.renderBreadcrumbs(breadcrumbs);
+    TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+    var faqs = [
+      {q:'Are these photo filters really free?', a:'Yes, all 30+ filters are completely free with no signup, no watermark, and no limits on usage.'},
+      {q:'Do my photos get uploaded to a server?', a:'No. All filter processing happens locally in your browser using the HTML5 Canvas API. Your photos never leave your device.'},
+      {q:'Can I adjust filter intensity?', a:'Yes, use the intensity slider to blend between 0% (original) and 100% (full filter effect) for the perfect look.'},
+      {q:'What types of filters are available?', a:'We offer vintage, retro, warm, cool, noir, artistic, color pop, and black & white filter categories — over 30 effects total.'},
+      {q:'Can I use this on mobile?', a:'Absolutely. The tool is fully responsive and works on any smartphone, tablet, or desktop browser.'},
+      {q:'How do I compare before and after?', a:'Click and hold on the preview image to see the original photo. Release to see the filtered version.'},
+      {q:'What image formats are supported?', a:'You can upload PNG, JPG, WEBP, and most other browser-supported image formats. Downloads are saved as PNG for maximum quality.'}
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'image/photo-filter-gallery',
+      title: 'Photo Filter Gallery — 30+ Effects',
+      description: 'Apply 30+ Instagram-style photo filters online free. No signup, no watermark.'
+    });
+
+    TeamzTools.renderRelatedTools([
+      {slug:'/image/grayscale-converter/', name:'Grayscale Converter', description:'Convert any image to black and white.'},
+      {slug:'/image/image-compressor/', name:'Image Compressor', description:'Compress images without losing quality.'},
+      {slug:'/image/blur-image/', name:'Blur Image', description:'Add blur effects to any image online.'},
+      {slug:'/image/image-cropper/', name:'Image Cropper', description:'Crop images to any size or aspect ratio.'},
+      {slug:'/image/thumbnail-maker/', name:'Thumbnail Maker', description:'Create thumbnails for YouTube and social media.'},
+      {slug:'/design/background-remover/', name:'Background Remover', description:'Remove backgrounds from images instantly.'}
+    ]);
+
+    /* ── State ── */
+    var originalImageData = null;   // full-size ImageData of uploaded photo
+    var originalCanvas = document.createElement('canvas');
+    var mainCanvas = document.getElementById('filterMainCanvas');
+    var mainCtx = mainCanvas.getContext('2d', {willReadFrequently: true});
+    var currentFilter = 'original';
+    var intensity = 100;
+    var imgWidth = 0, imgHeight = 0;
+    var THUMB = 120;
+
+    /* ── Filter Definitions ── */
+    function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
+
+    var filters = {
+      /* Classic */
+      original:    {name:'Original',     cat:'Classic',   fn: function(d){}},
+      grayscale:   {name:'Grayscale',    cat:'Classic',   fn: function(d){ for(var i=0;i<d.length;i+=4){var g=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; d[i]=d[i+1]=d[i+2]=g;}}},
+      sepia:       {name:'Sepia',        cat:'Classic',   fn: function(d){ for(var i=0;i<d.length;i+=4){var r=d[i],g=d[i+1],b=d[i+2]; d[i]=clamp(r*.393+g*.769+b*.189); d[i+1]=clamp(r*.349+g*.686+b*.168); d[i+2]=clamp(r*.272+g*.534+b*.131);}}},
+      invert:      {name:'Invert',       cat:'Classic',   fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=255-d[i]; d[i+1]=255-d[i+1]; d[i+2]=255-d[i+2];}}},
+      brighten:    {name:'Bright+',      cat:'Classic',   fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]+30); d[i+1]=clamp(d[i+1]+30); d[i+2]=clamp(d[i+2]+30);}}},
+      darken:      {name:'Bright-',      cat:'Classic',   fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]-30); d[i+1]=clamp(d[i+1]-30); d[i+2]=clamp(d[i+2]-30);}}},
+
+      /* Warm Tones */
+      warm:        {name:'Warm',         cat:'Warm',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]+20); d[i+2]=clamp(d[i+2]-15);}}},
+      sunset:      {name:'Sunset',       cat:'Warm',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]+35); d[i+1]=clamp(d[i+1]+10); d[i+2]=clamp(d[i+2]-25);}}},
+      goldenHour:  {name:'Golden Hour',  cat:'Warm',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]+25); d[i+1]=clamp(d[i+1]+15); d[i+2]=clamp(d[i+2]-30);}}},
+      autumn:      {name:'Autumn',       cat:'Warm',      fn: function(d){ for(var i=0;i<d.length;i+=4){var r=d[i],g=d[i+1],b=d[i+2]; d[i]=clamp(r*1.1+15); d[i+1]=clamp(g*0.9); d[i+2]=clamp(b*0.7);}}},
+      desert:      {name:'Desert',       cat:'Warm',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*1.15+10); d[i+1]=clamp(d[i+1]*0.95+5); d[i+2]=clamp(d[i+2]*0.75);}}},
+
+      /* Cool Tones */
+      cool:        {name:'Cool',         cat:'Cool',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]-15); d[i+2]=clamp(d[i+2]+20);}}},
+      arctic:      {name:'Arctic',       cat:'Cool',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]-10); d[i+1]=clamp(d[i+1]+5); d[i+2]=clamp(d[i+2]+35);}}},
+      moonlight:   {name:'Moonlight',    cat:'Cool',      fn: function(d){ for(var i=0;i<d.length;i+=4){var g=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; d[i]=clamp(g*0.8+20); d[i+1]=clamp(g*0.85+25); d[i+2]=clamp(g+40);}}},
+      ocean:       {name:'Ocean',        cat:'Cool',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*0.75); d[i+1]=clamp(d[i+1]*0.95+10); d[i+2]=clamp(d[i+2]*1.15+15);}}},
+      ice:         {name:'Ice',          cat:'Cool',      fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*0.85+20); d[i+1]=clamp(d[i+1]*0.95+20); d[i+2]=clamp(d[i+2]+30);}}},
+
+      /* Vintage */
+      retro:       {name:'Retro',        cat:'Vintage',   fn: function(d){ for(var i=0;i<d.length;i+=4){var r=d[i],g=d[i+1],b=d[i+2]; var avg=(r+g+b)/3; d[i]=clamp(avg*0.6+r*0.4+15); d[i+1]=clamp(avg*0.5+g*0.5+5); d[i+2]=clamp(avg*0.5+b*0.5-10);}}},
+      film:        {name:'Film',         cat:'Vintage',   fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*0.9+20); d[i+1]=clamp(d[i+1]*0.85+15); d[i+2]=clamp(d[i+2]*0.8+10); if(d[i+2]<60) d[i+2]=clamp(d[i+2]+15);}}},
+      polaroid:    {name:'Polaroid',     cat:'Vintage',   fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*1.05+10); d[i+1]=clamp(d[i+1]*1.02+10); d[i+2]=clamp(d[i+2]*0.9+15); var c=128; d[i]=clamp((d[i]-c)*0.85+c); d[i+1]=clamp((d[i+1]-c)*0.85+c); d[i+2]=clamp((d[i+2]-c)*0.85+c);}}},
+      faded:       {name:'Faded',        cat:'Vintage',   fn: function(d){ for(var i=0;i<d.length;i+=4){var c=128; d[i]=clamp((d[i]-c)*0.7+c+10); d[i+1]=clamp((d[i+1]-c)*0.7+c+5); d[i+2]=clamp((d[i+2]-c)*0.7+c);}}},
+      lomo:        {name:'Lomo',         cat:'Vintage',   fn: function(d){ for(var i=0;i<d.length;i+=4){var c=128; d[i]=clamp((d[i]-c)*1.4+c+10); d[i+1]=clamp((d[i+1]-c)*1.3+c); d[i+2]=clamp((d[i+2]-c)*1.2+c-10);}}},
+      v1977:       {name:'1977',         cat:'Vintage',   fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*1.1+25); d[i+1]=clamp(d[i+1]*0.95+10); d[i+2]=clamp(d[i+2]*0.85+20); var c=128; d[i]=clamp((d[i]-c)*0.9+c); d[i+1]=clamp((d[i+1]-c)*0.9+c); d[i+2]=clamp((d[i+2]-c)*0.9+c);}}},
+
+      /* Artistic */
+      highContrast:{name:'High Contrast',cat:'Artistic',  fn: function(d){ for(var i=0;i<d.length;i+=4){var c=128; d[i]=clamp((d[i]-c)*1.5+c); d[i+1]=clamp((d[i+1]-c)*1.5+c); d[i+2]=clamp((d[i+2]-c)*1.5+c);}}},
+      noir:        {name:'Noir',         cat:'Artistic',  fn: function(d){ for(var i=0;i<d.length;i+=4){var g=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; var c=128; g=clamp((g-c)*1.6+c); d[i]=clamp(g+5); d[i+1]=g; d[i+2]=g;}}},
+      dramatic:    {name:'Dramatic',     cat:'Artistic',  fn: function(d){ for(var i=0;i<d.length;i+=4){var c=128; d[i]=clamp((d[i]-c)*1.35+c+5); d[i+1]=clamp((d[i+1]-c)*1.35+c); d[i+2]=clamp((d[i+2]-c)*1.35+c-5); d[i]=clamp(d[i]*1.05); d[i+1]=clamp(d[i+1]*0.95);}}},
+      softFocus:   {name:'Soft Focus',   cat:'Artistic',  fn: function(d){ for(var i=0;i<d.length;i+=4){var c=128; d[i]=clamp((d[i]-c)*0.8+c+8); d[i+1]=clamp((d[i+1]-c)*0.8+c+8); d[i+2]=clamp((d[i+2]-c)*0.8+c+8);}}},
+      pencilEdge:  {name:'Emboss',       cat:'Artistic',  fn: function(d){ /* done via convolution after pixel copy */ }},
+
+      /* Color Pop */
+      saturated:   {name:'Saturated',    cat:'ColorPop',  fn: function(d){ for(var i=0;i<d.length;i+=4){var avg=(d[i]+d[i+1]+d[i+2])/3; d[i]=clamp(avg+(d[i]-avg)*1.6); d[i+1]=clamp(avg+(d[i+1]-avg)*1.6); d[i+2]=clamp(avg+(d[i+2]-avg)*1.6);}}},
+      vivid:       {name:'Vivid',        cat:'ColorPop',  fn: function(d){ for(var i=0;i<d.length;i+=4){var avg=(d[i]+d[i+1]+d[i+2])/3; d[i]=clamp(avg+(d[i]-avg)*1.8+5); d[i+1]=clamp(avg+(d[i+1]-avg)*1.8+5); d[i+2]=clamp(avg+(d[i+2]-avg)*1.8+5); var c=128; d[i]=clamp((d[i]-c)*1.15+c); d[i+1]=clamp((d[i+1]-c)*1.15+c); d[i+2]=clamp((d[i+2]-c)*1.15+c);}}},
+      neon:        {name:'Neon',         cat:'ColorPop',  fn: function(d){ for(var i=0;i<d.length;i+=4){var avg=(d[i]+d[i+1]+d[i+2])/3; d[i]=clamp(avg+(d[i]-avg)*2.2); d[i+1]=clamp(avg+(d[i+1]-avg)*2.2); d[i+2]=clamp(avg+(d[i+2]-avg)*2.2); var c=128; d[i]=clamp((d[i]-c)*1.3+c); d[i+1]=clamp((d[i+1]-c)*1.3+c); d[i+2]=clamp((d[i+2]-c)*1.3+c);}}},
+      pastel:      {name:'Pastel',       cat:'ColorPop',  fn: function(d){ for(var i=0;i<d.length;i+=4){d[i]=clamp(d[i]*0.7+75); d[i+1]=clamp(d[i+1]*0.7+75); d[i+2]=clamp(d[i+2]*0.7+75);}}},
+      muted:       {name:'Muted',        cat:'ColorPop',  fn: function(d){ for(var i=0;i<d.length;i+=4){var avg=(d[i]+d[i+1]+d[i+2])/3; d[i]=clamp(avg+(d[i]-avg)*0.5); d[i+1]=clamp(avg+(d[i+1]-avg)*0.5); d[i+2]=clamp(avg+(d[i+2]-avg)*0.5);}}},
+
+      /* B&W Variants */
+      classicBW:   {name:'Classic B&W',  cat:'BW',        fn: function(d){ for(var i=0;i<d.length;i+=4){var g=(d[i]+d[i+1]+d[i+2])/3; d[i]=d[i+1]=d[i+2]=g;}}},
+      highKey:     {name:'High Key',     cat:'BW',        fn: function(d){ for(var i=0;i<d.length;i+=4){var g=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; g=clamp(g*1.2+30); d[i]=d[i+1]=d[i+2]=g;}}},
+      lowKey:      {name:'Low Key',      cat:'BW',        fn: function(d){ for(var i=0;i<d.length;i+=4){var g=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; g=clamp(g*0.7-10); d[i]=d[i+1]=d[i+2]=g;}}},
+      silver:      {name:'Silver',       cat:'BW',        fn: function(d){ for(var i=0;i<d.length;i+=4){var g=0.2126*d[i]+0.7152*d[i+1]+0.0722*d[i+2]; d[i]=clamp(g+8); d[i+1]=clamp(g+5); d[i+2]=clamp(g+12);}}}
+    };
+
+    /* Vignette helper — applied as post-process on certain filters or standalone */
+    function applyVignette(ctx, w, h, strength) {
+      var cx = w / 2, cy = h / 2;
+      var maxDist = Math.sqrt(cx * cx + cy * cy);
+      var imgData = ctx.getImageData(0, 0, w, h);
+      var d = imgData.data;
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var dx = x - cx, dy = y - cy;
+          var dist = Math.sqrt(dx * dx + dy * dy) / maxDist;
+          var factor = 1 - dist * dist * strength;
+          if (factor < 0) factor = 0;
+          var idx = (y * w + x) * 4;
+          d[idx] = d[idx] * factor;
+          d[idx + 1] = d[idx + 1] * factor;
+          d[idx + 2] = d[idx + 2] * factor;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    /* Add vignette as its own filter */
+    filters.vignette = {name:'Vignette', cat:'Artistic', fn: function(d){}, post: function(ctx, w, h){ applyVignette(ctx, w, h, 0.8); }};
+
+    /* Emboss convolution kernel */
+    filters.pencilEdge.post = function(ctx, w, h) {
+      var src = ctx.getImageData(0, 0, w, h);
+      var dst = ctx.createImageData(w, h);
+      var sd = src.data, dd = dst.data;
+      var kernel = [-2,-1,0,-1,1,1,0,1,2];
+      for (var y = 1; y < h - 1; y++) {
+        for (var x = 1; x < w - 1; x++) {
+          for (var c = 0; c < 3; c++) {
+            var sum = 0;
+            for (var ky = -1; ky <= 1; ky++) {
+              for (var kx = -1; kx <= 1; kx++) {
+                var idx = ((y + ky) * w + (x + kx)) * 4 + c;
+                sum += sd[idx] * kernel[(ky + 1) * 3 + (kx + 1)];
+              }
+            }
+            dd[(y * w + x) * 4 + c] = clamp(sum + 128);
+          }
+          dd[(y * w + x) * 4 + 3] = 255;
+        }
+      }
+      ctx.putImageData(dst, 0, 0);
+    };
+
+    /* Lomo also gets vignette */
+    var lomoBase = filters.lomo.fn;
+    filters.lomo.post = function(ctx, w, h){ applyVignette(ctx, w, h, 0.6); };
+
+    /* Category → grid container map */
+    var catMap = {
+      'Classic':'gridClassic','Warm':'gridWarm','Cool':'gridCool',
+      'Vintage':'gridVintage','Artistic':'gridArtistic',
+      'ColorPop':'gridColorPop','BW':'gridBW'
+    };
+
+    /* ── Image Loading ── */
+    var uploadZone = document.getElementById('filterUploadZone');
+    var fileInput = document.getElementById('filterFileInput');
+    var workspace = document.getElementById('filterWorkspace');
+
+    uploadZone.addEventListener('click', function() { fileInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('drag-over'); });
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', function() {
+      if (fileInput.files.length) loadFile(fileInput.files[0]);
+    });
+
+    function loadFile(file) {
+      if (!file.type.startsWith('image/')) { if (window.showToast) window.showToast('Please upload an image file.'); return; }
+      if (file.size > 20 * 1024 * 1024) { if (window.showToast) window.showToast('File too large. Max 20 MB.'); return; }
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          /* Limit to 2000px for performance */
+          var maxDim = 2000;
+          var w = img.width, h = img.height;
+          if (w > maxDim || h > maxDim) {
+            var ratio = Math.min(maxDim / w, maxDim / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          imgWidth = w;
+          imgHeight = h;
+          originalCanvas.width = w;
+          originalCanvas.height = h;
+          var octx = originalCanvas.getContext('2d', {willReadFrequently: true});
+          octx.drawImage(img, 0, 0, w, h);
+          originalImageData = octx.getImageData(0, 0, w, h);
+
+          mainCanvas.width = w;
+          mainCanvas.height = h;
+          mainCtx.putImageData(originalImageData, 0, 0);
+
+          uploadZone.style.display = 'none';
+          workspace.classList.add('active');
+          currentFilter = 'original';
+          intensity = 100;
+          document.getElementById('filterIntensity').value = 100;
+          document.getElementById('filterIntensityVal').textContent = '100%';
+          document.getElementById('filterActiveName').textContent = 'Original';
+          buildThumbnails();
+          highlightThumb('original');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* ── Thumbnail Grid ── */
+    function buildThumbnails() {
+      Object.keys(catMap).forEach(function(cat) {
+        document.getElementById(catMap[cat]).innerHTML = '';
+      });
+
+      var thumbSize = THUMB;
+      /* Create a small source for thumbnails */
+      var sw = thumbSize, sh = thumbSize;
+      /* Crop center square from original */
+      var cropSize = Math.min(imgWidth, imgHeight);
+      var sx = (imgWidth - cropSize) / 2;
+      var sy = (imgHeight - cropSize) / 2;
+
+      var srcCanvas = document.createElement('canvas');
+      srcCanvas.width = sw;
+      srcCanvas.height = sh;
+      var sctx = srcCanvas.getContext('2d', {willReadFrequently: true});
+      sctx.drawImage(originalCanvas, sx, sy, cropSize, cropSize, 0, 0, sw, sh);
+      var srcData = sctx.getImageData(0, 0, sw, sh);
+
+      var keys = Object.keys(filters);
+      keys.forEach(function(key) {
+        var f = filters[key];
+        var gridId = catMap[f.cat];
+        if (!gridId) return;
+
+        var tc = document.createElement('canvas');
+        tc.width = sw;
+        tc.height = sh;
+        var tctx = tc.getContext('2d', {willReadFrequently: true});
+
+        /* Copy source data */
+        var td = new ImageData(new Uint8ClampedArray(srcData.data), sw, sh);
+        f.fn(td.data);
+        tctx.putImageData(td, 0, 0);
+        if (f.post) f.post(tctx, sw, sh);
+
+        var wrapper = document.createElement('div');
+        wrapper.className = 'filter-thumb';
+        wrapper.dataset.filter = key;
+        wrapper.appendChild(tc);
+
+        var label = document.createElement('div');
+        label.className = 'filter-thumb-label';
+        label.textContent = f.name;
+        wrapper.appendChild(label);
+
+        wrapper.addEventListener('click', function() {
+          currentFilter = key;
+          applyCurrentFilter();
+          highlightThumb(key);
+          document.getElementById('filterActiveName').textContent = f.name;
+        });
+
+        document.getElementById(gridId).appendChild(wrapper);
+      });
+    }
+
+    function highlightThumb(key) {
+      document.querySelectorAll('.filter-thumb').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.filter === key);
+      });
+    }
+
+    /* ── Apply Filter to Main Canvas ── */
+    function applyCurrentFilter() {
+      if (!originalImageData) return;
+      var f = filters[currentFilter];
+      if (!f) return;
+
+      var w = imgWidth, h = imgHeight;
+
+      if (currentFilter === 'original' && intensity === 100) {
+        mainCtx.putImageData(originalImageData, 0, 0);
+        return;
+      }
+
+      /* Apply filter to a copy */
+      var filtered = new ImageData(new Uint8ClampedArray(originalImageData.data), w, h);
+      f.fn(filtered.data);
+      mainCtx.putImageData(filtered, 0, 0);
+      if (f.post) f.post(mainCtx, w, h);
+
+      /* Blend with original based on intensity */
+      if (intensity < 100) {
+        var blended = mainCtx.getImageData(0, 0, w, h);
+        var bd = blended.data;
+        var od = originalImageData.data;
+        var t = intensity / 100;
+        var t1 = 1 - t;
+        for (var i = 0; i < bd.length; i += 4) {
+          bd[i]   = od[i]   * t1 + bd[i]   * t;
+          bd[i+1] = od[i+1] * t1 + bd[i+1] * t;
+          bd[i+2] = od[i+2] * t1 + bd[i+2] * t;
+        }
+        mainCtx.putImageData(blended, 0, 0);
+      }
+    }
+
+    /* ── Intensity Slider ── */
+    var slider = document.getElementById('filterIntensity');
+    var sliderVal = document.getElementById('filterIntensityVal');
+    slider.addEventListener('input', function() {
+      intensity = parseInt(slider.value, 10);
+      sliderVal.textContent = intensity + '%';
+      applyCurrentFilter();
+    });
+
+    /* ── Compare Mode (hold to see original) ── */
+    var previewMain = document.getElementById('filterPreviewMain');
+    previewMain.addEventListener('mousedown', function(e) {
+      if (originalImageData) mainCtx.putImageData(originalImageData, 0, 0);
+    });
+    previewMain.addEventListener('mouseup', function() { applyCurrentFilter(); });
+    previewMain.addEventListener('mouseleave', function() { applyCurrentFilter(); });
+    previewMain.addEventListener('touchstart', function(e) {
+      if (originalImageData) mainCtx.putImageData(originalImageData, 0, 0);
+    }, {passive: true});
+    previewMain.addEventListener('touchend', function() { applyCurrentFilter(); });
+
+    /* ── Download ── */
+    document.getElementById('filterDownloadBtn').addEventListener('click', function() {
+      if (!originalImageData) return;
+      var link = document.createElement('a');
+      link.download = 'photo-filter-' + currentFilter + '.png';
+      link.href = mainCanvas.toDataURL('image/png');
+      link.click();
+      if (window.showToast) window.showToast('Image downloaded!');
+    });
+
+    /* ── Copy Image ── */
+    document.getElementById('filterCopyBtn').addEventListener('click', function() {
+      if (!originalImageData) return;
+      mainCanvas.toBlob(function(blob) {
+        if (!blob) { if (window.showToast) window.showToast('Copy failed.'); return; }
+        try {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(function() {
+            if (window.showToast) window.showToast('Image copied to clipboard!');
+          }).catch(function() {
+            if (window.showToast) window.showToast('Copy failed. Try downloading instead.');
+          });
+        } catch(e) {
+          if (window.showToast) window.showToast('Copy not supported in this browser. Try downloading.');
+        }
+      }, 'image/png');
+    });
+
+    /* ── New Photo ── */
+    document.getElementById('filterNewBtn').addEventListener('click', function() {
+      workspace.classList.remove('active');
+      uploadZone.style.display = '';
+      fileInput.value = '';
+      originalImageData = null;
+      currentFilter = 'original';
+    });
+
+  });
+  </script>
+</body>
+</html>
