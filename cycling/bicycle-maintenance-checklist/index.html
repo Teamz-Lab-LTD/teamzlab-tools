@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bicycle Maintenance Checklist — Teamz Lab Tools</title>
+  <meta name="description" content="Interactive bike maintenance tracker with daily, weekly, monthly schedules. Track chain, brakes, tires and more. Free, private.">
+  <meta property="og:title" content="Bicycle Maintenance Checklist — Teamz Lab Tools">
+  <meta property="og:description" content="Interactive bike maintenance tracker with daily, weekly, monthly schedules. Track chain, brakes, tires and more. Free, private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/cycling/bicycle-maintenance-checklist/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Bicycle Maintenance Checklist — Teamz Lab Tools">
+  <meta name="twitter:description" content="Interactive bike maintenance tracker with daily, weekly, monthly schedules. Track chain, brakes, tires and more. Free, private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/cycling/bicycle-maintenance-checklist/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* Tab navigation */
+    .maint-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-bottom: 1.5rem;
+    }
+    .maint-tab {
+      padding: .5rem 1.1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 500;
+      transition: all .2s;
+      font-family: inherit;
+    }
+    .maint-tab:hover {
+      border-color: var(--heading);
+      color: var(--heading);
+    }
+    .maint-tab.maint-tab-active {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+
+    /* Overall progress */
+    .maint-overall-progress {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .maint-overall-label {
+      font-size: .85rem;
+      color: var(--text-muted);
+      margin-bottom: .4rem;
+    }
+    .maint-overall-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: .6rem;
+    }
+    .maint-progress-bar {
+      width: 100%;
+      height: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .maint-progress-fill {
+      height: 100%;
+      background: var(--heading);
+      border-radius: 5px;
+      transition: width .3s ease;
+    }
+
+    /* Tab panel */
+    .maint-panel {
+      display: none;
+    }
+    .maint-panel.maint-panel-active {
+      display: block;
+    }
+
+    /* Section header with per-section progress */
+    .maint-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .maint-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .maint-section-pct {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+    .maint-section-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .maint-section-fill {
+      height: 100%;
+      background: var(--heading);
+      border-radius: 3px;
+      transition: width .3s ease;
+    }
+
+    /* Checklist items */
+    .maint-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      padding: .6rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .maint-item:last-child {
+      border-bottom: none;
+    }
+    .maint-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--heading);
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .maint-item-body {
+      flex: 1;
+    }
+    .maint-item-label {
+      color: var(--text);
+      cursor: pointer;
+      font-size: .95rem;
+      display: block;
+      line-height: 1.4;
+    }
+    .maint-item.maint-done .maint-item-label {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .maint-item-date {
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-top: .15rem;
+      display: none;
+    }
+    .maint-item.maint-done .maint-item-date {
+      display: block;
+    }
+
+    /* Action buttons */
+    .maint-actions {
+      display: flex;
+      gap: .75rem;
+      margin-top: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .maint-btn-primary {
+      padding: .6rem 1.4rem;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: .9rem;
+      font-family: inherit;
+      transition: opacity .2s;
+    }
+    .maint-btn-primary:hover {
+      opacity: .85;
+    }
+    .maint-btn-secondary {
+      padding: .6rem 1.4rem;
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: .9rem;
+      font-family: inherit;
+      transition: border-color .2s;
+    }
+    .maint-btn-secondary:hover {
+      border-color: var(--heading);
+    }
+
+    /* Print styles */
+    @media print {
+      .maint-tabs, .maint-actions, .ad-slot,
+      .tool-hero, .site-header, .site-footer,
+      #breadcrumbs, #tool-faqs, #related-tools, .tool-content {
+        display: none !important;
+      }
+      .maint-panel { display: block !important; }
+      .maint-item input[type="checkbox"] {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 600px) {
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+      .maint-tabs {
+        gap: .4rem;
+      }
+      .maint-tab {
+        font-size: .82rem;
+        padding: .45rem .9rem;
+      }
+      .maint-overall-value {
+        font-size: 1.25rem;
+      }
+      .maint-actions {
+        flex-direction: column;
+      }
+      .maint-btn-primary,
+      .maint-btn-secondary {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Cycling & Bike Tools", "item": "https://tool.teamzlab.com/cycling/"}, {"@type": "ListItem", "position": 3, "name": "Bicycle Maintenance Checklist"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How often should I service my bicycle?", "acceptedAnswer": {"@type": "Answer", "text": "You should do a quick safety check before every ride (30 seconds). Clean and lube the chain weekly or after every 2-3 wet rides. Perform a thorough inspection monthly including brake pads, cables, and spoke tension. Every 6 months, have a comprehensive service done — or more frequently if you ride daily or in harsh conditions."}}, {"@type": "Question", "name": "How do I know when my bike chain needs replacing?", "acceptedAnswer": {"@type": "Answer", "text": "Use a chain wear indicator tool. Replace the chain when it reaches 0.75% stretch for 11-12 speed drivetrains, or 1.0% for 8-10 speed. A worn chain accelerates wear on the cassette and chainring, which are much more expensive to replace. Checking chain wear monthly can save you significant money."}}, {"@type": "Question", "name": "What is the most important bike maintenance task?", "acceptedAnswer": {"@type": "Answer", "text": "Keeping your chain clean and properly lubricated is the single most impactful maintenance task. A dirty or dry chain causes rapid wear on every component it contacts — cassette, chainrings, and derailleur pulleys. A quick wipe-down and re-lube after every few rides dramatically extends drivetrain life."}}, {"@type": "Question", "name": "How often should I clean my bike chain?", "acceptedAnswer": {"@type": "Answer", "text": "Clean your chain every 100-200 miles in dry conditions, or after every wet or muddy ride. Use a degreaser to remove old lubricant and grit, then dry the chain before applying fresh lube. Allow lube to penetrate for a few minutes, then wipe off the excess — only the lube inside the chain links does the work."}}, {"@type": "Question", "name": "Can I do bike maintenance myself or do I need a shop?", "acceptedAnswer": {"@type": "Answer", "text": "Most routine maintenance is beginner-friendly: cleaning, lubing, adjusting brakes and derailleurs, and fixing flats. With basic tools and YouTube tutorials, most cyclists can handle 80% of their own maintenance. For complex jobs like overhauling hubs, bottom bracket replacement, or wheel truing, a professional mechanic is recommended if you are not confident."}}, {"@type": "Question", "name": "What tools do I need for basic bike maintenance?", "acceptedAnswer": {"@type": "Answer", "text": "A starter toolkit should include: a set of hex keys (Allen keys) in 2-8mm, a chain checker tool, chain lube and degreaser, a floor pump with a pressure gauge, tire levers and spare inner tubes, a cable cutter, a torque wrench (especially for carbon components), and cleaning brushes. This covers 90% of routine maintenance tasks."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Bicycle Maintenance Checklist — Teamz Lab Tools", "description": "Interactive bike maintenance tracker with daily, weekly, monthly and seasonal schedules.", "url": "https://tool.teamzlab.com/cycling/bicycle-maintenance-checklist/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Bicycle Maintenance Checklist</h1>
+      <p class="tool-description">Stay on top of bike care with scheduled checklists for pre-ride, weekly, monthly, and seasonal maintenance. Check off tasks, track completion dates, and keep your bike running safely.</p>
+    </section>
+
+    <section class="tool-calculator" id="tool-area">
+
+      <!-- Overall progress -->
+      <div class="maint-overall-progress">
+        <div class="maint-overall-label">Overall progress across all schedules</div>
+        <div class="maint-overall-value" id="overallValue">0 / 0 tasks completed</div>
+        <div class="maint-progress-bar">
+          <div class="maint-progress-fill" id="overallFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Tab buttons -->
+      <div class="maint-tabs" role="tablist">
+        <button class="maint-tab maint-tab-active" data-tab="preride" role="tab" aria-selected="true" id="tab-preride">Pre-Ride (Daily)</button>
+        <button class="maint-tab" data-tab="weekly" role="tab" aria-selected="false" id="tab-weekly">Weekly</button>
+        <button class="maint-tab" data-tab="monthly" role="tab" aria-selected="false" id="tab-monthly">Monthly</button>
+        <button class="maint-tab" data-tab="seasonal" role="tab" aria-selected="false" id="tab-seasonal">Seasonal</button>
+      </div>
+
+      <!-- PRE-RIDE PANEL -->
+      <div class="maint-panel maint-panel-active" id="panel-preride" role="tabpanel" aria-labelledby="tab-preride">
+        <div class="maint-section-header">
+          <span class="maint-section-title">Pre-Ride Safety Checks</span>
+          <span class="maint-section-pct" id="pct-preride">0%</span>
+        </div>
+        <div class="maint-section-bar">
+          <div class="maint-section-fill" id="bar-preride" style="width:0%"></div>
+        </div>
+        <div id="list-preride"></div>
+        <div class="maint-actions">
+          <button class="maint-btn-secondary" onclick="resetSection('preride')">Reset Pre-Ride</button>
+          <button class="maint-btn-primary" onclick="window.print()">Print Checklist</button>
+        </div>
+      </div>
+
+      <!-- WEEKLY PANEL -->
+      <div class="maint-panel" id="panel-weekly" role="tabpanel" aria-labelledby="tab-weekly">
+        <div class="maint-section-header">
+          <span class="maint-section-title">Weekly Maintenance Tasks</span>
+          <span class="maint-section-pct" id="pct-weekly">0%</span>
+        </div>
+        <div class="maint-section-bar">
+          <div class="maint-section-fill" id="bar-weekly" style="width:0%"></div>
+        </div>
+        <div id="list-weekly"></div>
+        <div class="maint-actions">
+          <button class="maint-btn-secondary" onclick="resetSection('weekly')">Reset Weekly</button>
+          <button class="maint-btn-primary" onclick="window.print()">Print Checklist</button>
+        </div>
+      </div>
+
+      <!-- MONTHLY PANEL -->
+      <div class="maint-panel" id="panel-monthly" role="tabpanel" aria-labelledby="tab-monthly">
+        <div class="maint-section-header">
+          <span class="maint-section-title">Monthly Deep Maintenance</span>
+          <span class="maint-section-pct" id="pct-monthly">0%</span>
+        </div>
+        <div class="maint-section-bar">
+          <div class="maint-section-fill" id="bar-monthly" style="width:0%"></div>
+        </div>
+        <div id="list-monthly"></div>
+        <div class="maint-actions">
+          <button class="maint-btn-secondary" onclick="resetSection('monthly')">Reset Monthly</button>
+          <button class="maint-btn-primary" onclick="window.print()">Print Checklist</button>
+        </div>
+      </div>
+
+      <!-- SEASONAL PANEL -->
+      <div class="maint-panel" id="panel-seasonal" role="tabpanel" aria-labelledby="tab-seasonal">
+        <div class="maint-section-header">
+          <span class="maint-section-title">Seasonal Service (Every 6 Months)</span>
+          <span class="maint-section-pct" id="pct-seasonal">0%</span>
+        </div>
+        <div class="maint-section-bar">
+          <div class="maint-section-fill" id="bar-seasonal" style="width:0%"></div>
+        </div>
+        <div id="list-seasonal"></div>
+        <div class="maint-actions">
+          <button class="maint-btn-secondary" onclick="resetSection('seasonal')">Reset Seasonal</button>
+          <button class="maint-btn-primary" onclick="window.print()">Print Checklist</button>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Daily Bike Check (30 Seconds)</h2>
+      <p>A quick pre-ride inspection takes less than 30 seconds and can prevent accidents, costly damage, and mid-ride breakdowns. Before every ride, squeeze both brake levers — they should feel firm and stop well before reaching the handlebar. Check that your tires look and feel properly inflated. Spin each wheel quickly to confirm they are seated straight in the dropouts and that quick-release skewers or thru-axles are snug. Give the chain a visual glance — it should look shiny with lube, not brown and dry. If you ride in traffic or at night, verify that your lights are charged and working. This simple habit is the foundation of safe cycling.</p>
+
+      <h2>Weekly Maintenance Tasks</h2>
+      <p>A weekly routine keeps your drivetrain clean and your bike shifting smoothly. The most important weekly task is chain care: wipe the chain with a dry rag to remove surface grime, then apply a thin layer of lubricant and let it penetrate before wiping off the excess. Run a visual check on your tire tread for wear, cuts, or embedded glass. Squeeze brake pads against the rim or rotor to gauge remaining material — most pads have a wear indicator groove. Spin each wheel and sight along it from behind to check for wobbles indicating a loose spoke or developing buckle. Check that brake cables are not fraying and that derailleur cables have no kinks. Tighten any bolts that feel loose, paying particular attention to stem, handlebar, and seat post clamps.</p>
+
+      <h2>Monthly Deep Maintenance</h2>
+      <p>A monthly deep clean extends the life of every component on your bicycle and lets you inspect parts that daily riding obscures with grime. Start by washing the frame and drivetrain with a gentle bike wash, then degrease the chain, cassette, and chainrings thoroughly. After cleaning and drying, check your chain with a chain wear indicator — replace at 0.75% stretch on 11-12 speed drivetrains to protect the cassette. Inspect brake and derailleur cables for fraying or kinking; hydraulic lines should show no signs of weeping fluid. Check the headset by holding the front brake and rocking the bike forward — any clunking indicates play that needs adjustment. Grip the crank arms and push laterally to check the bottom bracket for play. Check spoke tension by squeezing pairs of spokes — any that feel dramatically looser than others need attention. Apply grease or oil to all pivot points including brake levers and derailleurs.</p>
+
+      <h2>Seasonal Bike Service Guide</h2>
+      <p>A full seasonal service every six months — or annually for recreational riders — ensures your bicycle remains reliable and safe for the coming season. Start by evaluating the entire drivetrain: if the chain shows wear, measure cassette and chainring teeth for hooking (shark-fin shape) indicating replacement is due. Hub bearings should be overhauled or at least checked for rough rolling or play. Remove the headset and inspect the bearings and races for pitting or corrosion, repacking with fresh grease before reassembly. Remove and inspect the bottom bracket — cup-and-cone styles benefit from a regrease while cartridge types are simply replaced if rough. Replace all brake pads if the wear indicators have been reached, and install new cable and housing throughout the bike for crisp shifting and braking. Rewrap handlebars with fresh tape. Most importantly, inspect the entire frame carefully for cracks, particularly at tube junctions and around welds. If you are not confident completing seasonal service yourself, schedule a professional tune-up — a shop overhaul typically costs less than one broken component.</p>
+
+      <h2>When to Visit a Bike Shop</h2>
+      <p>While most routine maintenance is DIY-friendly, certain jobs warrant a professional mechanic. Wheel truing beyond minor corrections requires a professional truing stand for accurate results. Hydraulic brake bleeding — especially on SRAM or Shimano systems — requires specific mineral oil or DOT fluid and precision to avoid contamination. Press-fit bottom bracket installation requires a proper tool to avoid frame damage. Any time you notice frame cracks, unusual noises you cannot diagnose, or a sudden change in handling, take the bike to a shop immediately. Many shops offer a free quick-look to diagnose serious issues. Building a relationship with your local bike shop also gives you access to trade pricing on parts and expert advice tailored to your riding style and conditions.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      {name:'Home', url:'/'},
+      {name:'Cycling & Bike Tools', url:'/cycling/'},
+      {name:'Bicycle Maintenance Checklist'}
+    ];
+
+    var FAQS = [
+      {q:'How often should I service my bicycle?', a:'You should do a quick safety check before every ride (30 seconds). Clean and lube the chain weekly or after every 2-3 wet rides. Perform a thorough inspection monthly including brake pads, cables, and spoke tension. Every 6 months, have a comprehensive service done — or more frequently if you ride daily or in harsh conditions.'},
+      {q:'How do I know when my bike chain needs replacing?', a:'Use a chain wear indicator tool. Replace the chain when it reaches 0.75% stretch for 11-12 speed drivetrains, or 1.0% for 8-10 speed. A worn chain accelerates wear on the cassette and chainring, which are much more expensive to replace. Checking chain wear monthly can save you significant money.'},
+      {q:'What is the most important bike maintenance task?', a:'Keeping your chain clean and properly lubricated is the single most impactful maintenance task. A dirty or dry chain causes rapid wear on every component it contacts — cassette, chainrings, and derailleur pulleys. A quick wipe-down and re-lube after every few rides dramatically extends drivetrain life.'},
+      {q:'How often should I clean my bike chain?', a:'Clean your chain every 100-200 miles in dry conditions, or after every wet or muddy ride. Use a degreaser to remove old lubricant and grit, then dry the chain before applying fresh lube. Allow lube to penetrate for a few minutes, then wipe off the excess — only the lube inside the chain links does the work.'},
+      {q:'Can I do bike maintenance myself or do I need a shop?', a:'Most routine maintenance is beginner-friendly: cleaning, lubing, adjusting brakes and derailleurs, and fixing flats. With basic tools and YouTube tutorials, most cyclists can handle 80% of their own maintenance. For complex jobs like overhauling hubs, bottom bracket replacement, or wheel truing, a professional mechanic is recommended if you are not confident.'},
+      {q:'What tools do I need for basic bike maintenance?', a:'A starter toolkit should include: a set of hex keys (Allen keys) in 2-8mm, a chain checker tool, chain lube and degreaser, a floor pump with a pressure gauge, tire levers and spare inner tubes, a cable cutter, a torque wrench (especially for carbon components), and cleaning brushes. This covers 90% of routine maintenance tasks.'}
+    ];
+
+    var RELATED_TOOLS = [
+      {slug:'/cycling/bike-tire-pressure-calculator/', name:'Bike Tire Pressure Calculator', description:'Find the right pressure for your tires'},
+      {slug:'/cycling/bike-size-calculator/', name:'Bike Size Calculator', description:'Make sure your bike fits you properly'},
+      {slug:'/cycling/cycling-calories-calculator/', name:'Cycling Calories Calculator', description:'Track calories burned on your rides'},
+      {slug:'/cycling/ebike-range-calculator/', name:'E-Bike Range Calculator', description:'E-bike battery and range estimation'},
+      {slug:'/cycling/bike-commute-savings-calculator/', name:'Bike Commute Savings Calculator', description:'Calculate savings from bike commuting'},
+      {slug:'/outdoor/camping-checklist/', name:'Camping Checklist', description:'Pack smart for your next outdoor trip'}
+    ];
+
+    // Checklist data
+    var SECTIONS = {
+      preride: {
+        label: 'Pre-Ride',
+        items: [
+          {id:'pr-tire-pressure', label:'Check tire pressure'},
+          {id:'pr-brake-feel', label:'Squeeze brake levers — firm feel?'},
+          {id:'pr-axle-tight', label:'Quick-release / thru-axle tight?'},
+          {id:'pr-chain-lube', label:'Chain looks clean and lubed?'},
+          {id:'pr-lights', label:'Lights working? (if commuting)'},
+          {id:'pr-helmet', label:'Helmet in good condition?'}
+        ]
+      },
+      weekly: {
+        label: 'Weekly',
+        items: [
+          {id:'wk-chain-clean', label:'Clean chain and re-lube'},
+          {id:'wk-tire-tread', label:'Check tire tread for wear / embedded debris'},
+          {id:'wk-brake-pads', label:'Check brake pad wear'},
+          {id:'wk-wheel-true', label:'Check wheel trueness (spin test)'},
+          {id:'wk-bolts', label:'Tighten any loose bolts'},
+          {id:'wk-derailleur', label:'Check derailleur alignment'}
+        ]
+      },
+      monthly: {
+        label: 'Monthly',
+        items: [
+          {id:'mo-deep-clean', label:'Deep clean entire bike (frame, drivetrain, wheels)'},
+          {id:'mo-brake-cables', label:'Inspect brake cables / hydraulic lines'},
+          {id:'mo-headset', label:'Check headset for play'},
+          {id:'mo-bb', label:'Check bottom bracket for creaks'},
+          {id:'mo-chain-stretch', label:'Inspect chain stretch (replace at 0.75% wear)'},
+          {id:'mo-spokes', label:'Check spoke tension'},
+          {id:'mo-pivots', label:'Lubricate pivot points'},
+          {id:'mo-bar-tape', label:'Inspect handlebar tape / grips'}
+        ]
+      },
+      seasonal: {
+        label: 'Seasonal',
+        items: [
+          {id:'se-drivetrain', label:'Full drivetrain replacement check (chain, cassette, chainring)'},
+          {id:'se-hubs', label:'Overhaul hubs (bearings)'},
+          {id:'se-headset', label:'Overhaul headset'},
+          {id:'se-bb', label:'Overhaul bottom bracket'},
+          {id:'se-brake-pads', label:'Replace brake pads if worn'},
+          {id:'se-cables', label:'Replace cables and housing'},
+          {id:'se-bar-tape', label:'Replace handlebar tape / grips'},
+          {id:'se-frame', label:'Check frame for cracks'},
+          {id:'se-tune', label:'Professional tune-up recommended'}
+        ]
+      }
+    };
+
+    var LS_PREFIX = 'bike-maint-';
+
+    // Load saved state from localStorage
+    function loadState(itemId) {
+      var raw = localStorage.getItem(LS_PREFIX + itemId);
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch(e) { return null; }
+    }
+
+    // Save state to localStorage
+    function saveState(itemId, checked) {
+      var data = {
+        checked: checked,
+        date: checked ? new Date().toISOString() : null
+      };
+      localStorage.setItem(LS_PREFIX + itemId, JSON.stringify(data));
+    }
+
+    // Remove state from localStorage
+    function clearState(itemId) {
+      localStorage.removeItem(LS_PREFIX + itemId);
+    }
+
+    // Format ISO date string to readable
+    function formatDate(isoStr) {
+      if (!isoStr) return '';
+      var d = new Date(isoStr);
+      return 'Completed ' + d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+    }
+
+    // Render a section's checklist
+    function renderSection(sectionKey) {
+      var section = SECTIONS[sectionKey];
+      var container = document.getElementById('list-' + sectionKey);
+      container.innerHTML = '';
+      var total = section.items.length;
+      var done = 0;
+
+      section.items.forEach(function(item, idx) {
+        var state = loadState(item.id);
+        var isChecked = state && state.checked;
+        if (isChecked) done++;
+
+        var row = document.createElement('div');
+        row.className = 'maint-item' + (isChecked ? ' maint-done' : '');
+        row.id = 'row-' + item.id;
+
+        var cbId = 'cb-' + item.id;
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = cbId;
+        cb.checked = isChecked;
+        cb.addEventListener('change', function() {
+          saveState(item.id, cb.checked);
+          renderSection(sectionKey);
+          updateOverall();
+          if (cb.checked && window.showToast) {
+            window.showToast('Task marked complete!');
+          }
+        });
+
+        var body = document.createElement('div');
+        body.className = 'maint-item-body';
+
+        var lbl = document.createElement('label');
+        lbl.htmlFor = cbId;
+        lbl.className = 'maint-item-label';
+        lbl.textContent = item.label;
+
+        var dateEl = document.createElement('div');
+        dateEl.className = 'maint-item-date';
+        dateEl.textContent = (state && state.date) ? formatDate(state.date) : '';
+
+        body.appendChild(lbl);
+        body.appendChild(dateEl);
+        row.appendChild(cb);
+        row.appendChild(body);
+        container.appendChild(row);
+      });
+
+      // Update section progress bar
+      var pct = total > 0 ? Math.round(done / total * 100) : 0;
+      var pctEl = document.getElementById('pct-' + sectionKey);
+      var barEl = document.getElementById('bar-' + sectionKey);
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (barEl) barEl.style.width = pct + '%';
+
+      return {done: done, total: total};
+    }
+
+    // Update overall progress
+    function updateOverall() {
+      var totalDone = 0, totalAll = 0;
+      Object.keys(SECTIONS).forEach(function(key) {
+        var s = SECTIONS[key];
+        s.items.forEach(function(item) {
+          var state = loadState(item.id);
+          totalAll++;
+          if (state && state.checked) totalDone++;
+        });
+      });
+      var pct = totalAll > 0 ? Math.round(totalDone / totalAll * 100) : 0;
+      document.getElementById('overallValue').textContent = totalDone + ' / ' + totalAll + ' tasks completed (' + pct + '%)';
+      document.getElementById('overallFill').style.width = pct + '%';
+    }
+
+    // Reset a section
+    function resetSection(sectionKey) {
+      var section = SECTIONS[sectionKey];
+      section.items.forEach(function(item) {
+        clearState(item.id);
+      });
+      renderSection(sectionKey);
+      updateOverall();
+      if (window.showToast) window.showToast('Section reset.');
+    }
+
+    // Tab switching
+    function switchTab(tabKey) {
+      // Deactivate all tabs and panels
+      document.querySelectorAll('.maint-tab').forEach(function(btn) {
+        btn.classList.remove('maint-tab-active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.maint-panel').forEach(function(panel) {
+        panel.classList.remove('maint-panel-active');
+      });
+      // Activate selected
+      var activeTab = document.querySelector('[data-tab="' + tabKey + '"]');
+      var activePanel = document.getElementById('panel-' + tabKey);
+      if (activeTab) {
+        activeTab.classList.add('maint-tab-active');
+        activeTab.setAttribute('aria-selected', 'true');
+      }
+      if (activePanel) {
+        activePanel.classList.add('maint-panel-active');
+      }
+      renderSection(tabKey);
+    }
+
+    // Init
+    document.querySelectorAll('.maint-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        switchTab(btn.dataset.tab);
+      });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Render all sections (for progress calculations) then re-render active
+      Object.keys(SECTIONS).forEach(function(key) {
+        renderSection(key);
+      });
+      updateOverall();
+
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'cycling/bicycle-maintenance-checklist',
+        title: 'Bicycle Maintenance Checklist — Teamz Lab Tools',
+        description: 'Interactive bike maintenance tracker with daily, weekly, monthly and seasonal schedules.'
+      });
+    });
+  </script>
+</body>
+</html>
