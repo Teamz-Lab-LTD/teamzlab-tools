@@ -1071,7 +1071,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Tea Tools',d:'Free browser-based tea tools: steeping timer, caffeine calculator, matcha ratio, tea to water ratio, and more.',h:'/tea/'},
   {t:'Matcha Latte Calorie Calculator',d:'Calculate calories, protein, fat, and carbs in your matcha latte. Choose milk, sweetener, and size. Compare to Starbucks. Free and private.',h:'/tea/matcha-latte-calorie-calculator/'},
   {t:'Matcha Ratio Calculator',d:'Calculate the perfect matcha to water ratio for usucha, koicha, lattes, and iced matcha. Servings, caffeine, and whisking tips. Free and private.',h:'/tea/matcha-ratio-calculator/'},
-  {t:'Tea Brewing Temperature Guide',d:'Find the ideal brewing temperature for any tea type. Interactive guide with steep time, leaf amount, and tips for green, black, white, oolong, and mor',h:'/tea/tea-brewing-temperature-guide/'},
+  {t:'Tea Brewing Temperature Guide',d:'Find the ideal brewing temperature for any tea type. Interactive guide with steep time, leaf amount, and tips for green, black, white, and oolong. Fre',h:'/tea/tea-brewing-temperature-guide/'},
   {t:'Tea Caffeine Calculator',d:'Calculate caffeine in any tea type based on steep time, cup size, and infusions. Compare to coffee and FDA limits. Free and private.',h:'/tea/tea-caffeine-calculator/'},
   {t:'Tea Calorie Calculator',d:'Calculate calories in any tea drink including milk tea, boba, chai latte, and matcha. Break down add-ons, compare daily intake. Free and private.',h:'/tea/tea-calorie-calculator/'},
   {t:'Tea Collection Tracker',d:'Track and organize your tea collection with tasting notes, ratings, and stats. Filter by type, export as JSON. Free, private, runs in your browser.',h:'/tea/tea-collection-tracker/'},

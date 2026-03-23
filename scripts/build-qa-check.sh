@@ -90,7 +90,21 @@ done < "$TMPFILE"
 echo "  $NO_SCHEMA tools missing WebApplication schema"
 echo ""
 
-echo "[6/7] Finding smallest tools (likely stubs or low quality)..."
+NO_COPY_HANDLER=0
+echo "[6/8] Checking for broken Copy Image buttons..."
+while IFS= read -r f; do
+  if grep -qi 'Copy Image' "$f" 2>/dev/null; then
+    if ! grep -q 'ClipboardItem' "$f" 2>/dev/null; then
+      echo -e "  ${RED}BROKEN COPY IMAGE:${NC} $f"
+      NO_COPY_HANDLER=$((NO_COPY_HANDLER + 1))
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+done < "$TMPFILE"
+echo "  $NO_COPY_HANDLER tools with broken Copy Image buttons"
+echo ""
+
+echo "[7/8] Finding smallest tools (likely stubs or low quality)..."
 echo "  Bottom 30 smallest tools:"
 while IFS= read -r f; do
   SIZE=$(wc -c < "$f" | tr -d ' ')
@@ -101,7 +115,7 @@ done < "$TMPFILE" | sort -n | head -30 | while read -r size path; do
 done
 echo ""
 
-echo "[7/7] Finding largest tools (most complete)..."
+echo "[8/8] Finding largest tools (most complete)..."
 echo "  Top 10 largest tools:"
 while IFS= read -r f; do
   SIZE=$(wc -c < "$f" | tr -d ' ')
@@ -120,6 +134,7 @@ printf "  Low content (<150w): %s%d%s\n" "$YEL" "$LOW_CONTENT" "$NC"
 printf "  Missing FAQs: %s%d%s\n" "$YEL" "$NO_FAQS" "$NC"
 printf "  Missing related tools: %s%d%s\n" "$YEL" "$NO_RELATED" "$NC"
 printf "  Missing WebApp schema: %s%d%s\n" "$YEL" "$NO_SCHEMA" "$NC"
+printf "  Broken Copy Image: %s%d%s\n" "$RED" "$NO_COPY_HANDLER" "$NC"
 echo "============================================"
 
 rm -f "$TMPFILE"

@@ -199,9 +199,7 @@
             });
           }
 
-          var downloadBtn = document.getElementById('badge-download');
-          if (downloadBtn) {
-            downloadBtn.addEventListener('click', function() {
+          function renderBadgeCanvas(callback) {
               var badgeEl = outputEl.querySelector('.badge-print-area');
               if (!badgeEl) return;
               var canvas = document.createElement('canvas');
@@ -228,7 +226,7 @@
 
               var nfs = isLanyard ? 28 : (values.badge_size === 'large' ? 22 : 18);
               ctx.font = '800 ' + nfs + 'px Poppins, Arial, sans-serif';
-              ctx.fillStyle = 'var(--heading)';
+              ctx.fillStyle = '#222222';
               ctx.textAlign = 'center';
               ctx.fillText(name.trim(), size.w / 2, yPos + nfs * 0.35);
               yPos += nfs + 5;
@@ -246,7 +244,25 @@
                 yPos += 18;
               }
 
-              function finishDownload() {
+              if (includeQr) {
+                var qrImg = new Image();
+                qrImg.crossOrigin = 'anonymous';
+                qrImg.onload = function() {
+                  var qrS = isLanyard ? 120 : 80;
+                  ctx.drawImage(qrImg, (size.w - qrS) / 2, yPos + 5, qrS, qrS);
+                  callback(canvas);
+                };
+                qrImg.onerror = function() { callback(canvas); };
+                qrImg.src = qrUrl;
+              } else {
+                callback(canvas);
+              }
+          }
+
+          var downloadBtn = document.getElementById('badge-download');
+          if (downloadBtn) {
+            downloadBtn.addEventListener('click', function() {
+              renderBadgeCanvas(function(canvas) {
                 canvas.toBlob(function(blob) {
                   if (!blob) return;
                   var url = URL.createObjectURL(blob);
@@ -258,21 +274,27 @@
                   document.body.removeChild(a);
                   setTimeout(function() { URL.revokeObjectURL(url); }, 100);
                 });
-              }
+              });
+            });
+          }
 
-              if (includeQr) {
-                var qrImg = new Image();
-                qrImg.crossOrigin = 'anonymous';
-                qrImg.onload = function() {
-                  var qrS = isLanyard ? 120 : 80;
-                  ctx.drawImage(qrImg, (size.w - qrS) / 2, yPos + 5, qrS, qrS);
-                  finishDownload();
-                };
-                qrImg.onerror = function() { finishDownload(); };
-                qrImg.src = qrUrl;
-              } else {
-                finishDownload();
-              }
+          var copyImgBtn = document.getElementById('badge-copy-img');
+          if (copyImgBtn) {
+            copyImgBtn.addEventListener('click', function() {
+              renderBadgeCanvas(function(canvas) {
+                canvas.toBlob(function(blob) {
+                  if (!blob) return;
+                  if (navigator.clipboard && navigator.clipboard.write) {
+                    navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                      if (window.showToast) window.showToast('Badge copied to clipboard.');
+                    }).catch(function() {
+                      if (window.showToast) window.showToast('Copy failed — try downloading instead.');
+                    });
+                  } else {
+                    if (window.showToast) window.showToast('Copy not supported in this browser.');
+                  }
+                }, 'image/png');
+              });
             });
           }
         }
