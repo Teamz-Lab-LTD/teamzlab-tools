@@ -2,7 +2,7 @@
 # Rebuild sitemap.xml from all tool pages
 # Run after adding/removing any tool: ./build-sitemap.sh
 
-SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")" && pwd)"
 BASE="$(dirname "$SCRIPTS")"
 
 # Helper: get lastmod date from git history for a file

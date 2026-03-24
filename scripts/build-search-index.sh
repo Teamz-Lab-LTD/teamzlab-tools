@@ -3,7 +3,7 @@
 # Run after ANY change: ./build-search-index.sh
 # Also runs automatically via pre-commit hook
 
-SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")" && pwd)"
 BASE="$(dirname "$SCRIPTS")"
 OUTPUT="$BASE/shared/js/search-index.js"
 

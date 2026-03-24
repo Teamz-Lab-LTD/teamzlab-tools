@@ -27,7 +27,7 @@
 #   ./build-seo-audit.sh --aso-compare "Name A" "Name B"            # Compare app names
 # ────────────────────────────────────────────────────────────────────
 
-SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")" && pwd)"
 BASE="$(dirname "$SCRIPTS")"
 SCRIPT="$SCRIPTS/seo-keyword-engine.py"
 

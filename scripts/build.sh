@@ -3,7 +3,7 @@
 # Usage: ./build.sh
 # This prevents all common mistakes by auto-fixing everything
 
-SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")")" && pwd)"
 BASE="$(dirname "$SCRIPTS")"
 ERRORS=0
 
