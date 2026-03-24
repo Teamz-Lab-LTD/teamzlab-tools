@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lean Body Mass Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your lean body mass free using Boer, James, and Hume formulas. Track muscle vs fat composition — private, no signup required.">
+  <meta property="og:title" content="Lean Body Mass Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your lean body mass using Boer, James, and Hume formulas. Track muscle vs fat composition — free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/lean-body-mass-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Lean Body Mass Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate your lean body mass using Boer, James, and Hume formulas. Track muscle vs fat composition — free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/lean-body-mass-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .result-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; }
+    .result-card { padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .result-card .label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 0.25rem; }
+    .result-card .value { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .result-card .unit { font-size: 0.85rem; color: var(--text-muted); }
+    .result-card.highlight { border-color: var(--heading); }
+    .unit-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; max-width: 200px; }
+    .unit-btn { flex: 1; padding: 0.4rem 0.75rem; border: none; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; font-family: inherit; }
+    .unit-btn.active { background: var(--heading); color: var(--bg); }
+    .lbm-bar-container { margin-top: 1.5rem; }
+    .lbm-bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 0.5rem; }
+    .lbm-bar { height: 32px; border-radius: 8px; overflow: hidden; display: flex; border: 1px solid var(--border); }
+    .lbm-bar-lean { background: var(--heading); height: 100%; transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--bg); }
+    .lbm-bar-fat { background: var(--surface); height: 100%; transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+    .formula-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    .formula-table th, .formula-table td { padding: 0.75rem; text-align: center; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .formula-table th { font-weight: 600; color: var(--heading); background: var(--surface); }
+    .formula-table td { color: var(--text); }
+    .ffmi-section { margin-top: 1.5rem; padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .ffmi-section h3 { margin: 0 0 0.75rem; color: var(--heading); font-size: 1rem; }
+    .ffmi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .ffmi-row .ffmi-label { font-size: 0.85rem; color: var(--text-muted); }
+    .ffmi-row .ffmi-value { font-size: 1.1rem; font-weight: 700; color: var(--heading); }
+    .ffmi-bar { height: 12px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); position: relative; margin-top: 0.5rem; }
+    .ffmi-fill { height: 100%; border-radius: 6px; background: var(--heading); transition: width 0.5s ease; }
+    .ffmi-marker { position: absolute; top: -6px; width: 2px; height: 24px; background: var(--text); }
+    .ffmi-limit-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; text-align: right; }
+    .protein-section { margin-top: 1.5rem; padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .protein-section h3 { margin: 0 0 0.75rem; color: var(--heading); font-size: 1rem; }
+    .protein-range { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+    .protein-item { text-align: center; }
+    .protein-item .protein-val { font-size: 1.1rem; font-weight: 700; color: var(--heading); }
+    .protein-item .protein-label { font-size: 0.75rem; color: var(--text-muted); }
+    @media (max-width: 600px) {
+      .result-cards { grid-template-columns: 1fr; }
+      .tool-calculator h2 { font-size: var(--text-lg); }
+      .formula-table { font-size: 0.75rem; }
+      .formula-table th, .formula-table td { padding: 0.5rem 0.35rem; }
+      .protein-range { grid-template-columns: 1fr; }
+      .ffmi-row { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Health Tools", "item": "https://tool.teamzlab.com/health/"}, {"@type": "ListItem", "position": 3, "name": "Lean Body Mass Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is lean body mass?", "acceptedAnswer": {"@type": "Answer", "text": "Lean body mass (LBM) is the total weight of everything in your body except fat. It includes muscles, bones, organs, water, and connective tissue. LBM is a more useful measure than total body weight for assessing fitness and metabolic health."}}, {"@type": "Question", "name": "Which LBM formula is the most accurate?", "acceptedAnswer": {"@type": "Answer", "text": "The Boer formula is generally considered the most accurate for estimating lean body mass from height and weight alone. However, the most accurate method is the direct calculation using a known body fat percentage from DEXA scans, hydrostatic weighing, or skinfold calipers."}}, {"@type": "Question", "name": "What is a normal lean body mass percentage?", "acceptedAnswer": {"@type": "Answer", "text": "For men, lean body mass typically ranges from 70-90% of total weight. For women, it ranges from 60-85%. Athletes and highly muscular individuals tend to have higher LBM percentages, while sedentary individuals tend to have lower percentages."}}, {"@type": "Question", "name": "What is FFMI and why does it matter?", "acceptedAnswer": {"@type": "Answer", "text": "Fat-Free Mass Index (FFMI) normalizes lean body mass relative to height, similar to BMI for total weight. FFMI helps evaluate muscularity independent of body size. The natural limit is approximately 25 for males and 22 for females — values above these typically indicate enhanced performance."}}, {"@type": "Question", "name": "How much protein should I eat based on LBM?", "acceptedAnswer": {"@type": "Answer", "text": "Research recommends 1.6 to 2.2 grams of protein per kilogram of lean body mass per day for muscle building and preservation. Using LBM instead of total weight gives more accurate protein targets, especially for people with higher body fat percentages."}}, {"@type": "Question", "name": "Is my data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All calculations run entirely in your browser using JavaScript. No personal health data is sent to any server or stored anywhere except your device."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Lean Body Mass Calculator", "description": "Calculate lean body mass using Boer, James, and Hume formulas.", "url": "https://tool.teamzlab.com/health/lean-body-mass-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Lean Body Mass Calculator</h1>
+      <p class="tool-description">Calculate your lean body mass (LBM) using Boer, James, and Hume formulas. See your muscle vs fat split, Fat-Free Mass Index (FFMI), and protein recommendations. All calculations run in your browser — 100% private.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="tool-field">
+        <label class="tool-label">Units</label>
+        <div class="unit-toggle">
+          <button type="button" class="unit-btn active" id="unit-metric">Metric</button>
+          <button type="button" class="unit-btn" id="unit-imperial">Imperial</button>
+        </div>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-field">
+          <label class="tool-label" for="gender">Gender</label>
+          <select id="gender" class="tool-select">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="weight" id="weight-label">Weight (kg)</label>
+          <input type="number" id="weight" class="tool-input" placeholder="70" min="20" max="300" step="0.1">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="height" id="height-label">Height (cm)</label>
+          <input type="number" id="height" class="tool-input" placeholder="175" min="50" max="250" step="0.1">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="bodyfat">Body Fat % (optional)</label>
+          <input type="number" id="bodyfat" class="tool-input" placeholder="e.g. 15" min="1" max="70" step="0.1">
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="calculate-btn" class="btn-pill tool-calculate-btn">Calculate LBM</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+      <div id="result" style="display:none;">
+        <h2>Your Lean Body Mass Results</h2>
+        <div class="result-cards">
+          <div class="result-card highlight"><div class="label">Lean Body Mass</div><div class="value" id="lbm-val">—</div><div class="unit" id="lbm-unit">kg</div></div>
+          <div class="result-card"><div class="label">Fat Mass</div><div class="value" id="fat-val">—</div><div class="unit" id="fat-unit">kg</div></div>
+          <div class="result-card"><div class="label">Body Fat %</div><div class="value" id="bf-val">—</div><div class="unit">estimated</div></div>
+        </div>
+        <div class="lbm-bar-container">
+          <div class="lbm-bar-label">
+            <span id="bar-lean-label">Lean Mass: —</span>
+            <span id="bar-fat-label">Fat Mass: —</span>
+          </div>
+          <div class="lbm-bar">
+            <div class="lbm-bar-lean" id="bar-lean" style="width:70%;">70%</div>
+            <div class="lbm-bar-fat" id="bar-fat" style="width:30%;">30%</div>
+          </div>
+        </div>
+        <h3 style="margin-top:1.5rem; color:var(--heading);">Formula Comparison</h3>
+        <table class="formula-table">
+          <thead>
+            <tr><th>Formula</th><th>LBM</th><th>Fat Mass</th><th>Body Fat %</th></tr>
+          </thead>
+          <tbody id="formula-tbody"></tbody>
+        </table>
+        <div class="ffmi-section">
+          <h3>Fat-Free Mass Index (FFMI)</h3>
+          <div class="ffmi-row"><span class="ffmi-label">Your FFMI</span><span class="ffmi-value" id="ffmi-val">—</span></div>
+          <div class="ffmi-row"><span class="ffmi-label">Normalized FFMI</span><span class="ffmi-value" id="ffmi-norm">—</span></div>
+          <div class="ffmi-bar">
+            <div class="ffmi-fill" id="ffmi-fill" style="width:0%;"></div>
+            <div class="ffmi-marker" id="ffmi-limit" style="left:0%;"></div>
+          </div>
+          <div class="ffmi-limit-label" id="ffmi-limit-text">Natural limit: ~25 (male) / ~22 (female)</div>
+          <div class="ffmi-row" style="margin-top:0.5rem;"><span class="ffmi-label" id="ffmi-interp">—</span></div>
+        </div>
+        <div class="protein-section">
+          <h3>Protein Recommendation (based on LBM)</h3>
+          <div class="protein-range">
+            <div class="protein-item"><div class="protein-val" id="protein-low">—</div><div class="protein-label">Maintenance (1.6 g/kg LBM)</div></div>
+            <div class="protein-item"><div class="protein-val" id="protein-high">—</div><div class="protein-label">Muscle Building (2.2 g/kg LBM)</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is Lean Body Mass?</h2>
+      <p>Lean body mass (LBM) is the total weight of everything in your body except fat — including muscles, bones, organs, water, and connective tissue. Unlike body weight alone, LBM gives you a clearer picture of your physical composition. Two people can weigh the same but have vastly different amounts of muscle and fat. Tracking LBM helps athletes monitor muscle gains, dieters ensure they are losing fat rather than muscle, and healthcare professionals assess nutritional status. LBM is typically 60-90% of total body weight depending on gender, fitness level, and body fat percentage.</p>
+
+      <h2>LBM Calculation Formulas Compared</h2>
+      <p>This calculator uses three widely-cited formulas to estimate lean body mass from height and weight. The <strong>Boer formula</strong> (1984) is considered the most accurate for general populations and is commonly used in clinical pharmacology for drug dosing. The <strong>James formula</strong> (1981) was developed from large population studies and works well for people of average build. The <strong>Hume formula</strong> (1966) was one of the earliest predictive equations and remains a useful reference point. When body fat percentage is known, the direct calculation (weight minus fat mass) is the most accurate method. Comparing all formulas helps identify a reliable range for your lean mass.</p>
+      <div class="formula-box">
+        <h3>Boer Formula</h3>
+        <p><strong>Male:</strong> LBM = 0.407 x W + 0.267 x H - 19.2</p>
+        <p><strong>Female:</strong> LBM = 0.252 x W + 0.473 x H - 48.3</p>
+        <h3>James Formula</h3>
+        <p><strong>Male:</strong> LBM = 1.1 x W - 128 x (W/H)^2</p>
+        <p><strong>Female:</strong> LBM = 1.07 x W - 148 x (W/H)^2</p>
+        <h3>Hume Formula</h3>
+        <p><strong>Male:</strong> LBM = 0.32810 x W + 0.33929 x H - 29.5336</p>
+        <p><strong>Female:</strong> LBM = 0.29569 x W + 0.41813 x H - 43.2933</p>
+        <p>(W = weight in kg, H = height in cm)</p>
+      </div>
+
+      <h2>Fat-Free Mass Index (FFMI) Explained</h2>
+      <p>The Fat-Free Mass Index (FFMI) normalizes lean body mass relative to height, similar to how BMI normalizes total weight. FFMI is calculated as LBM divided by height squared (in meters). A normalized FFMI adds a height correction factor: FFMI + 6.1 x (1.8 - height in meters). For males, the natural FFMI limit is approximately 25 — values above this typically indicate anabolic steroid use. For females, the natural limit is around 22. FFMI is widely used in sports science to evaluate muscularity independent of body size and to set realistic training goals.</p>
+
+      <h2>Why Lean Body Mass Matters for Fitness</h2>
+      <p>Lean body mass is a better indicator of metabolic health than total weight. Muscle tissue is metabolically active — it burns more calories at rest than fat tissue. People with higher LBM have higher basal metabolic rates, making weight maintenance easier. For athletes, tracking LBM over time confirms whether training is building muscle or if weight changes are due to fat gain or water retention. During a caloric deficit, monitoring LBM ensures you are preserving muscle while losing fat. Medical professionals also use LBM for more accurate drug dosing, since many medications distribute primarily through lean tissue.</p>
+
+      <h2>Using LBM for Nutrition Planning</h2>
+      <p>Protein requirements are best calculated based on lean body mass rather than total body weight. Research recommends 1.6 to 2.2 grams of protein per kilogram of LBM per day for muscle building and preservation. Using LBM avoids overestimating protein needs in people with higher body fat. For example, a 100 kg person at 30% body fat has 70 kg LBM and needs 112-154 grams of protein daily — much less than the 160-220 grams suggested by total weight calculations. This approach is more practical for meal planning and avoids excessive protein intake that provides no additional muscle-building benefit.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var isMetric = true;
+
+      document.getElementById('unit-metric').addEventListener('click', function() {
+        isMetric = true;
+        this.classList.add('active');
+        document.getElementById('unit-imperial').classList.remove('active');
+        document.getElementById('weight-label').textContent = 'Weight (kg)';
+        document.getElementById('height-label').textContent = 'Height (cm)';
+      });
+      document.getElementById('unit-imperial').addEventListener('click', function() {
+        isMetric = false;
+        this.classList.add('active');
+        document.getElementById('unit-metric').classList.remove('active');
+        document.getElementById('weight-label').textContent = 'Weight (lbs)';
+        document.getElementById('height-label').textContent = 'Height (inches)';
+      });
+
+      function calcBoer(w, h, gender) {
+        if (gender === 'male') return 0.407 * w + 0.267 * h - 19.2;
+        return 0.252 * w + 0.473 * h - 48.3;
+      }
+      function calcJames(w, h, gender) {
+        if (gender === 'male') return 1.1 * w - 128 * Math.pow(w / h, 2);
+        return 1.07 * w - 148 * Math.pow(w / h, 2);
+      }
+      function calcHume(w, h, gender) {
+        if (gender === 'male') return 0.32810 * w + 0.33929 * h - 29.5336;
+        return 0.29569 * w + 0.41813 * h - 43.2933;
+      }
+
+      function getFFMIInterpretation(ffmi, gender) {
+        if (gender === 'male') {
+          if (ffmi < 18) return 'Below average muscularity';
+          if (ffmi < 20) return 'Average muscularity';
+          if (ffmi < 22) return 'Above average — consistent training';
+          if (ffmi < 25) return 'Excellent — advanced lifter';
+          return 'Exceptional — near or above natural limit';
+        } else {
+          if (ffmi < 14) return 'Below average muscularity';
+          if (ffmi < 17) return 'Average muscularity';
+          if (ffmi < 19) return 'Above average — consistent training';
+          if (ffmi < 22) return 'Excellent — advanced lifter';
+          return 'Exceptional — near or above natural limit';
+        }
+      }
+
+      document.getElementById('calculate-btn').addEventListener('click', function() {
+        var gender = document.getElementById('gender').value;
+        var weight = parseFloat(document.getElementById('weight').value);
+        var height = parseFloat(document.getElementById('height').value);
+        var bodyfat = parseFloat(document.getElementById('bodyfat').value);
+
+        if (!weight || !height) {
+          if (window.showToast) window.showToast('Please enter your weight and height.');
+          return;
+        }
+
+        var weightKg = isMetric ? weight : weight * 0.453592;
+        var heightCm = isMetric ? height : height * 2.54;
+        var heightM = heightCm / 100;
+
+        var boer = calcBoer(weightKg, heightCm, gender);
+        var james = calcJames(weightKg, heightCm, gender);
+        var hume = calcHume(weightKg, heightCm, gender);
+
+        var hasBF = !isNaN(bodyfat) && bodyfat > 0 && bodyfat < 100;
+        var directLBM = hasBF ? weightKg * (1 - bodyfat / 100) : null;
+
+        var avgLBM = hasBF ? directLBM : (boer + james + hume) / 3;
+        var fatMass = weightKg - avgLBM;
+        var bfPercent = hasBF ? bodyfat : (fatMass / weightKg) * 100;
+
+        var displayUnit = isMetric ? 'kg' : 'lbs';
+        var displayFactor = isMetric ? 1 : 2.20462;
+
+        document.getElementById('lbm-val').textContent = (avgLBM * displayFactor).toFixed(1);
+        document.getElementById('lbm-unit').textContent = displayUnit;
+        document.getElementById('fat-val').textContent = (fatMass * displayFactor).toFixed(1);
+        document.getElementById('fat-unit').textContent = displayUnit;
+        document.getElementById('bf-val').textContent = bfPercent.toFixed(1) + '%';
+
+        var leanPct = ((avgLBM / weightKg) * 100).toFixed(0);
+        var fatPct = (100 - leanPct);
+        document.getElementById('bar-lean').style.width = leanPct + '%';
+        document.getElementById('bar-lean').textContent = leanPct + '% lean';
+        document.getElementById('bar-fat').style.width = fatPct + '%';
+        document.getElementById('bar-fat').textContent = fatPct + '% fat';
+        document.getElementById('bar-lean-label').textContent = 'Lean Mass: ' + (avgLBM * displayFactor).toFixed(1) + ' ' + displayUnit;
+        document.getElementById('bar-fat-label').textContent = 'Fat Mass: ' + (fatMass * displayFactor).toFixed(1) + ' ' + displayUnit;
+
+        var rows = [];
+        if (hasBF) {
+          rows.push({ name: 'Direct (BF%)', lbm: directLBM });
+        }
+        rows.push({ name: 'Boer', lbm: boer });
+        rows.push({ name: 'James', lbm: james });
+        rows.push({ name: 'Hume', lbm: hume });
+
+        var tbody = '';
+        rows.forEach(function(r) {
+          var fm = weightKg - r.lbm;
+          var bf = (fm / weightKg * 100).toFixed(1);
+          tbody += '<tr><td style="font-weight:600;">' + r.name + '</td>' +
+            '<td>' + (r.lbm * displayFactor).toFixed(1) + ' ' + displayUnit + '</td>' +
+            '<td>' + (fm * displayFactor).toFixed(1) + ' ' + displayUnit + '</td>' +
+            '<td>' + bf + '%</td></tr>';
+        });
+        document.getElementById('formula-tbody').innerHTML = tbody;
+
+        var ffmi = avgLBM / (heightM * heightM);
+        var ffmiNorm = ffmi + 6.1 * (1.8 - heightM);
+        var naturalLimit = gender === 'male' ? 25 : 22;
+        var ffmiPct = Math.min((ffmi / 30) * 100, 100);
+        var limitPct = (naturalLimit / 30) * 100;
+
+        document.getElementById('ffmi-val').textContent = ffmi.toFixed(1);
+        document.getElementById('ffmi-norm').textContent = ffmiNorm.toFixed(1);
+        document.getElementById('ffmi-fill').style.width = ffmiPct + '%';
+        document.getElementById('ffmi-limit').style.left = limitPct + '%';
+        document.getElementById('ffmi-limit-text').textContent = 'Natural limit: ~' + naturalLimit + ' (' + gender + ')';
+        document.getElementById('ffmi-interp').textContent = getFFMIInterpretation(ffmi, gender);
+
+        var protLow = (avgLBM * 1.6).toFixed(0);
+        var protHigh = (avgLBM * 2.2).toFixed(0);
+        document.getElementById('protein-low').textContent = protLow + ' g/day';
+        document.getElementById('protein-high').textContent = protHigh + ' g/day';
+
+        document.getElementById('result').style.display = 'block';
+      });
+
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('weight').value = '';
+        document.getElementById('height').value = '';
+        document.getElementById('bodyfat').value = '';
+        document.getElementById('gender').selectedIndex = 0;
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Health Tools', url: '/health/' }, { name: 'Lean Body Mass Calculator' }];
+      var FAQS = [
+        { q: 'What is lean body mass?', a: 'Lean body mass (LBM) is the total weight of everything in your body except fat. It includes muscles, bones, organs, water, and connective tissue. LBM is a more useful measure than total body weight for assessing fitness and metabolic health.' },
+        { q: 'Which LBM formula is the most accurate?', a: 'The Boer formula is generally considered the most accurate for estimating lean body mass from height and weight alone. However, the most accurate method is the direct calculation using a known body fat percentage from DEXA scans, hydrostatic weighing, or skinfold calipers.' },
+        { q: 'What is a normal lean body mass percentage?', a: 'For men, lean body mass typically ranges from 70-90% of total weight. For women, it ranges from 60-85%. Athletes and highly muscular individuals tend to have higher LBM percentages, while sedentary individuals tend to have lower percentages.' },
+        { q: 'What is FFMI and why does it matter?', a: 'Fat-Free Mass Index (FFMI) normalizes lean body mass relative to height, similar to BMI for total weight. FFMI helps evaluate muscularity independent of body size. The natural limit is approximately 25 for males and 22 for females — values above these typically indicate enhanced performance.' },
+        { q: 'How much protein should I eat based on LBM?', a: 'Research recommends 1.6 to 2.2 grams of protein per kilogram of lean body mass per day for muscle building and preservation. Using LBM instead of total weight gives more accurate protein targets, especially for people with higher body fat percentages.' },
+        { q: 'Is my data private?', a: 'Yes. All calculations run entirely in your browser using JavaScript. No personal health data is sent to any server or stored anywhere except your device.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: '/health/body-fat-calculator/', name: 'Body Fat Calculator', description: 'Calculate your body fat percentage using multiple methods' },
+        { slug: '/health/protein-intake-calculator/', name: 'Protein Intake Calculator', description: 'Calculate daily protein needs based on lean body mass' },
+        { slug: '/health/bmi-health-checker/', name: 'BMI Health Checker', description: 'Check your Body Mass Index with health risk assessment' },
+        { slug: '/health/body-type-calculator/', name: 'Body Type Calculator', description: 'Discover your body type — ectomorph, mesomorph, or endomorph' },
+        { slug: '/health/tdee-calculator/', name: 'TDEE Calculator', description: 'Calculate your Total Daily Energy Expenditure' },
+        { slug: '/health/macro-calculator/', name: 'Macro Calculator', description: 'Calculate your daily macronutrient targets' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS); TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'health/lean-body-mass-calculator', title: 'Lean Body Mass Calculator', description: 'Calculate lean body mass using Boer, James, and Hume formulas.' });
+      TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
