@@ -1262,6 +1262,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'GIF Maker — Create Animated GIFs Privately in Your Browser',d:'Create animated GIFs from your images privately in your browser. Upload frames, set delay and loop count, then download. No server upload. Free tool.',h:'/tools/gif-maker/'},
   {t:'Habit Streak Tracker',d:'Track your daily habits and build streaks privately. No account needed. All data stays on your device. See current and longest streaks. Free tool.',h:'/tools/habit-streak-tracker/'},
   {t:'Habit Tracker',d:'Track your daily habits with streaks and progress. Add custom habits, check them off daily, and build consistency. Free, private, works offline.',h:'/tools/habit-tracker/'},
+  {t:'Image to PDF Converter — Free Online, No Upload',d:'Convert JPG, PNG, or WebP images to PDF instantly in your browser. Combine multiple images into one PDF. Free, private, no upload to any server.',h:'/tools/image-to-pdf/'},
   {t:'Incident Report Generator',d:'Generate a free, professional incident report for workplace accidents, near misses, and safety hazards. Formatted template with print and download.',h:'/tools/incident-report-template/'},
   {t:'Digital Card & Sharing Tools',d:'Free digital card tools — vCard generator, QR business card, email signature maker, WiFi sharing card, link-in-bio generator, and NFC calculator.',h:'/tools/'},
   {t:'Job Application Tracker',d:'Track your job applications privately. No sign-up required. Monitor application status, interviews, and response rates. All data stays on your device.',h:'/tools/job-application-tracker/'},
