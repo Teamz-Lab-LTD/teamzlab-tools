@@ -595,6 +595,9 @@ var TOOL_SEARCH_INDEX = [
   {t:'Scope Creep Cost Calculator',d:'Calculate the hidden cost of scope creep on your project. See extra hours, overrun percentage, effective rate drop, and lost revenue instantly.',h:'/freelance/scope-creep-cost-calculator/'},
   {t:'Utilization Rate Calculator',d:'Calculate employee or freelancer utilization rate from billable vs total hours. Free tool for agencies and consultancies.',h:'/freelance/utilization-rate-calculator/'},
   {t:'VAT Calculator',d:'Add or remove VAT from any price instantly. Calculate net price, VAT amount, and gross price with common VAT rates. Free online tool.',h:'/freelance/vat-calculator/'},
+  {t:'Free Word Puzzle Games Online',d:'Play free word puzzle games online — word groups, word guess, letter hive, crossword, and word search. No login, no paywall. Private and unlimited.',h:'/games/'},
+  {t:'Letter Hive — Free Word Puzzle',d:'Play Letter Hive free word puzzle. Form words from 7 letters in a honeycomb — center letter required. Find pangrams, climb ranks. Daily puzzle and p',h:'/games/letter-hive/'},
+  {t:'Word Groups Puzzle',d:'Sort 16 words into 4 secret categories. Find hidden connections between words before you run out of guesses. Daily puzzle plus unlimited practice mode',h:'/games/word-groups-puzzle/'},
   {t:'Click Speed Test (CPS Test)',d:'Test your clicking speed in clicks per second. Choose 1s, 5s, 10s, or 30s modes. Track your best CPS score and share results. Free and private.',h:'/gaming/click-speed-test/'},
   {t:'Crosshair Generator Online',d:'Design custom crosshairs for Valorant, CS2, and more. Adjust size, color, gap, and thickness. Export as PNG or copy game codes. Free and private.',h:'/gaming/crosshair-generator/'},
   {t:'DPI Calculator for Gaming',d:'Calculate and optimize your mouse DPI for gaming. Find the perfect DPI based on sensitivity preferences and screen resolution. Free and private.',h:'/gaming/dpi-calculator/'},
@@ -853,6 +856,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Estate Tax Calculator',d:'Calculate federal and state estate taxes, inheritance taxes, and probate fees. See your net inheritance after all taxes and costs. Free, private.',h:'/legal/estate-tax-calculator/'},
   {t:'Legal & Court Calculators',d:'Free legal calculators — child support, alimony, personal injury settlement, divorce cost, traffic fines, and more. 100% private, no signup required',h:'/legal/'},
   {t:'Know Your Rights Guide',d:'Interactive guide to your legal rights during traffic stops, police encounters, workplace issues, and tenant disputes. Free, private, works offline.',h:'/legal/know-your-rights/'},
+  {t:'Free NDA Template Generator',d:'Generate a free non-disclosure agreement in seconds. Choose mutual or unilateral NDA, customize clauses, and download as PDF. No signup required.',h:'/legal/nda-generator/'},
   {t:'Personal Injury Settlement Calculator',d:'Estimate your personal injury settlement using the multiplier method. Enter medical bills, lost wages, and pain level for a free, private estimate.',h:'/legal/personal-injury-calculator/'},
   {t:'Traffic Ticket Calculator',d:'Calculate the true cost of a traffic ticket — fines, court fees, points, and insurance increases over 3-5 years. See the real financial impact. Free',h:'/legal/traffic-ticket-calculator/'},
   {t:'تقدير مبلغ الدعم الاجتماعي المباشر — المغرب',d:'قدّر مبلغ الدعم الاجتماعي المباشر الشهري لأسرتك في المغرب. أدخل عدد الأطفال وحالت�',h:'/ma/asd-family-amount-estimator/'},
@@ -1399,6 +1403,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Free Payslip Generator Online',d:'Create professional payslips instantly with earnings, deductions, and net salary. Download as PNG or PDF. Free, private, no signup required.',h:'/work/payslip-generator/'},
   {t:'Probation Period Calculator',d:'Calculate your probation end date. Enter your start date and probation duration to find when probation ends. Free online tool, 100% private.',h:'/work/probation-period-calculator/'},
   {t:'PTO Accrual Calculator',d:'Calculate your PTO accrual rate and available balance based on annual PTO days, accrual period, and days employed. Free instant tool.',h:'/work/pto-accrual-calculator/'},
+  {t:'Free Receipt Generator — Create Receipts Online',d:'Create professional receipts instantly in your browser. Add items, tax, discounts, logo, and download as PDF or image. Free, private, no signup needed',h:'/work/receipt-generator/'},
   {t:'Salary Hike Calculator',d:'Calculate your new salary after a percentage hike. See hike amount, monthly and annual increases instantly. Free salary raise calculator.',h:'/work/salary-hike-calculator/'},
   {t:'Salary Per Day Calculator',d:'Calculate salary per day calculator — convert your monthly or annual salary into daily and hourly rate. Ideal for freelancers and leave encashment.',h:'/work/salary-per-day-calculator/'},
   {t:'Salary Per Hour Calculator',d:'Convert your monthly or annual salary to an hourly rate. Free calculator for employees and contractors.',h:'/work/salary-per-hour-calculator/'},
