@@ -1110,6 +1110,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'VAB Ersättning Kalkylator',d:'Beräkna din VAB-ersättning (vård av sjukt barn). Se hur mycket du får per dag och vad du förlorar i lön med vår gratiskalkylator.',h:'/se/vab-ersattning-kalkylator/'},
   {t:'SEO Tools',d:'Free online SEO tools — validate Open Graph tags, preview social share cards, audit meta tags, and optimize your site for search engines.',h:'/seo/'},
   {t:'OG Image Preview & Validator',d:'Preview how your Open Graph tags look on Twitter, Facebook, LinkedIn, WhatsApp, and Discord — validate og:image size and completeness. Free tool.',h:'/seo/og-image-preview-validator/'},
+  {t:'Schema Markup Generator — JSON-LD Structured Data',d:'Generate JSON-LD structured data for Google rich results. Create FAQ, Article, Product, LocalBusiness, and more schema types. Free, instant, copy-read',h:'/seo/schema-markup-generator/'},
   {t:'Singapore Tools',d:'Free Singapore tools — Shared Parental Leave planner and SPL split calculator for new parents in 2026.',h:'/sg/'},
   {t:'Shared Parental Leave Planner Singapore 2026',d:'Plan your shared parental leave in Singapore for 2026. Calculate maternity, paternity, and SPL schedules with return-to-work dates and leave split opt',h:'/sg/shared-parental-leave-planner/'},
   {t:'SPL Split Planner &mdash; How to Share Parental Leave Singapore',d:'Plan the optimal split of Shared Parental Leave between parents in Singapore. Compare income impact and get recommendations based on salary difference',h:'/sg/spl-split-planner/'},
