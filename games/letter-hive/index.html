@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Letter Hive Word Puzzle Game — Teamz Lab Tools</title>
+  <meta name="description" content="Play Letter Hive free word puzzle. Form words from 7 honeycomb letters — center letter required. Find pangrams, climb ranks. Daily and practice modes.">
+  <meta property="og:title" content="Letter Hive Word Puzzle Game — Teamz Lab Tools">
+  <meta property="og:description" content="Form words from 7 honeycomb letters. Center letter required. Find pangrams, climb ranks from Beginner to Queen Bee. Free daily puzzle and practice mode.">
+  <meta property="og:url" content="https://tool.teamzlab.com/games/letter-hive/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/games.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Letter Hive Word Puzzle Game — Teamz Lab Tools">
+  <meta name="twitter:description" content="Form words from 7 honeycomb letters. Center letter required. Find pangrams, climb ranks. Free daily puzzle and practice.">
+  <link rel="canonical" href="https://tool.teamzlab.com/games/letter-hive/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* --- Mode Tabs --- */
+    .mode-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; justify-content: center; }
+    .mode-tab { padding: 0.6rem 1.4rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: 2px solid var(--border); background: var(--surface); color: var(--heading); font-family: inherit; transition: all 0.2s; }
+    .mode-tab.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+
+    /* --- Rank Bar --- */
+    .rank-section { text-align: center; margin-bottom: 1rem; }
+    .rank-label { font-size: 1.1rem; font-weight: 700; color: var(--heading); }
+    .rank-score { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .rank-bar-wrap { position: relative; height: 8px; background: var(--border); border-radius: 4px; margin: 0.75rem 0; }
+    .rank-bar-fill { height: 100%; background: var(--heading); border-radius: 4px; transition: width 0.4s ease; min-width: 2px; }
+    .rank-bar-dots { display: flex; justify-content: space-between; position: absolute; top: -4px; left: 0; right: 0; height: 16px; pointer-events: none; }
+    .rank-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); margin-top: 5px; }
+    .rank-dot.reached { background: var(--heading); }
+    .rank-names { display: flex; justify-content: space-between; font-size: 0.6rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* --- Input Display --- */
+    .input-display { text-align: center; min-height: 2.5rem; margin-bottom: 1rem; }
+    .input-word { font-size: 1.8rem; font-weight: 800; letter-spacing: 3px; color: var(--heading); text-transform: uppercase; }
+    .input-word .center-letter { color: var(--heading); text-decoration: underline; text-underline-offset: 4px; }
+
+    /* --- Message Toast --- */
+    .game-message { text-align: center; min-height: 1.5rem; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.95rem; color: var(--text-muted); transition: opacity 0.3s; }
+    .game-message.success { color: var(--heading); }
+    .game-message.error { color: var(--text-muted); }
+    .game-message.pangram { color: var(--heading); font-size: 1.1rem; }
+
+    /* --- Honeycomb --- */
+    .honeycomb-wrap { display: flex; justify-content: center; align-items: center; margin: 1rem 0 1.5rem; }
+    .honeycomb { position: relative; width: 210px; height: 230px; }
+    .hex-btn { position: absolute; width: 70px; height: 76px; cursor: pointer; border: none; background: none; padding: 0; transition: transform 0.1s; }
+    .hex-btn:active { transform: scale(0.92); }
+    .hex-btn svg { width: 70px; height: 76px; }
+    .hex-btn .hex-shape { fill: var(--surface); stroke: var(--border); stroke-width: 2; transition: fill 0.15s; }
+    .hex-btn.center .hex-shape { fill: var(--heading); stroke: var(--heading); }
+    .hex-btn .hex-letter { font-size: 22px; font-weight: 800; fill: var(--heading); font-family: 'Poppins', sans-serif; }
+    .hex-btn.center .hex-letter { fill: var(--bg); }
+    .hex-btn:hover .hex-shape { fill: var(--border); }
+    .hex-btn.center:hover .hex-shape { fill: var(--heading); opacity: 0.85; }
+
+    /* Hex positions — honeycomb layout */
+    .hex-pos-0 { left: 70px; top: 0; }       /* top */
+    .hex-pos-1 { left: 132px; top: 39px; }   /* top-right */
+    .hex-pos-2 { left: 132px; top: 115px; }  /* bottom-right */
+    .hex-pos-3 { left: 70px; top: 154px; }   /* bottom */
+    .hex-pos-4 { left: 8px; top: 115px; }    /* bottom-left */
+    .hex-pos-5 { left: 8px; top: 39px; }     /* top-left */
+    .hex-center { left: 70px; top: 77px; }   /* center */
+
+    /* --- Action Buttons --- */
+    .action-btns { display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .action-btn { padding: 0.65rem 1.3rem; border-radius: 50px; font-weight: 700; font-size: 0.85rem; cursor: pointer; border: 2px solid var(--border); background: var(--surface); color: var(--heading); font-family: inherit; transition: all 0.2s; }
+    .action-btn:hover { border-color: var(--heading); }
+    .action-btn.primary { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .action-btn.hint { border-color: var(--text-muted); font-style: italic; }
+    .action-btn.hint:hover { border-color: var(--heading); }
+
+    /* --- Hint Display --- */
+    .hint-display { text-align: center; min-height: 1.5rem; margin-bottom: 0.75rem; padding: 0.5rem; font-size: 0.9rem; color: var(--text-muted); font-style: italic; transition: opacity 0.3s; }
+    .hint-display.visible { color: var(--heading); font-weight: 600; font-style: normal; }
+
+    /* --- Found Words --- */
+    .found-section { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    .found-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 0.5rem 0; }
+    .found-header h3 { margin: 0; font-size: 1rem; color: var(--heading); }
+    .found-toggle { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    .found-words { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+    .found-word { padding: 0.3rem 0.7rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; color: var(--text); text-transform: capitalize; }
+    .found-word.pangram-word { border-color: var(--heading); font-weight: 800; color: var(--heading); }
+
+    /* --- Stats Modal --- */
+    .stats-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+    .stats-overlay.open { display: flex; }
+    .stats-modal { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .stats-modal h2 { margin: 0 0 1rem; color: var(--heading); font-size: 1.3rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; margin-bottom: 1.5rem; }
+    .stat-item { }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--heading); }
+    .stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .stats-close { width: 100%; padding: 0.7rem; border-radius: 10px; background: var(--heading); color: var(--bg); border: none; font-weight: 700; font-size: 0.95rem; cursor: pointer; font-family: inherit; margin-top: 0.5rem; }
+    .stats-rank-list { margin: 0.75rem 0; }
+    .stats-rank-row { display: flex; justify-content: space-between; padding: 0.3rem 0; font-size: 0.85rem; color: var(--text); border-bottom: 1px solid var(--border); }
+    .stats-rank-row .rk-name { font-weight: 600; }
+    .stats-rank-row .rk-val { color: var(--text-muted); }
+
+    /* --- Animations --- */
+    @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+    .pop-in { animation: popIn 0.3s ease; }
+    .shake { animation: shake 0.4s ease; }
+    .word-pop { animation: popIn 0.25s ease; }
+
+    /* --- Yesterday section --- */
+    .yesterday-section { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+    .yesterday-section summary { cursor: pointer; font-weight: 700; color: var(--heading); font-size: 0.95rem; padding: 0.5rem 0; }
+    .yesterday-words { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .yesterday-word { padding: 0.2rem 0.6rem; border-radius: 14px; font-size: 0.8rem; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); }
+    .yesterday-word.found { color: var(--heading); font-weight: 700; border-color: var(--heading); }
+    .yesterday-word.missed { opacity: 0.5; }
+
+    @media (max-width: 600px) {
+      .tool-calculator h2 { font-size: var(--text-lg); }
+      .honeycomb { transform: scale(0.9); }
+      .input-word { font-size: 1.5rem; }
+      .action-btns { gap: 0.5rem; }
+      .action-btn { padding: 0.55rem 1rem; font-size: 0.8rem; }
+      .rank-names { font-size: 0.5rem; }
+      .mode-tabs { flex-direction: column; align-items: center; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Word Puzzle Games", "item": "https://tool.teamzlab.com/games/"}, {"@type": "ListItem", "position": 3, "name": "Letter Hive"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the center letter work in Letter Hive?", "acceptedAnswer": {"@type": "Answer", "text": "The center letter must appear at least once in every word you submit. Words without the center letter are rejected. This mechanic limits the possible words and creates a focused puzzle."}}, {"@type": "Question", "name": "Can I reuse the same letter more than once?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each of the 7 letters can be used as many times as you want in a single word. For example, if S is in your puzzle, you can spell SASS."}}, {"@type": "Question", "name": "What is a pangram and how is it scored?", "acceptedAnswer": {"@type": "Answer", "text": "A pangram is a word that uses all 7 letters at least once. Pangrams earn their word length in points plus a 7-point bonus. Every puzzle has at least one pangram."}}, {"@type": "Question", "name": "How does the rank system work?", "acceptedAnswer": {"@type": "Answer", "text": "Your rank is based on the percentage of the maximum possible score. Ranks progress through Beginner (0%), Good (2%), Moving Up (5%), Nice (8%), Great (15%), Amazing (25%), Genius (40%), and Queen Bee (100% — every word found)."}}, {"@type": "Question", "name": "Is the daily puzzle the same for everyone?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The daily puzzle is determined by the current date, so all players get the same letters and word list. Your progress is saved automatically and you can return later to continue."}}, {"@type": "Question", "name": "How is practice mode different from the daily puzzle?", "acceptedAnswer": {"@type": "Answer", "text": "Practice mode gives you a randomly selected puzzle each time you start. Your practice stats are tracked separately from daily stats, so your daily streak is not affected."}}, {"@type": "Question", "name": "Does Letter Hive work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Once the page loads, the entire game runs in your browser with no internet connection required. Your progress and stats are saved to your device."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Letter Hive", "description": "Free word puzzle game. Form words from 7 honeycomb letters with center letter required.", "url": "https://tool.teamzlab.com/games/letter-hive/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Letter Hive — Free Word Puzzle</h1>
+      <p class="tool-description">Form words from 7 honeycomb letters. The center letter must appear in every word. Words must be 4 or more letters long, and each letter can be reused. Find the pangram to earn bonus points and climb the ranks from Beginner to Queen Bee. Play the daily puzzle or switch to practice mode for unlimited games.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="mode-tabs">
+        <button type="button" class="mode-tab active" id="mode-daily">Daily Puzzle</button>
+        <button type="button" class="mode-tab" id="mode-practice">Practice</button>
+        <button type="button" class="mode-tab" id="mode-stats">Stats</button>
+      </div>
+
+      <div class="rank-section">
+        <div class="rank-label" id="rank-label">Beginner</div>
+        <div class="rank-score" id="rank-score">0 points</div>
+        <div class="rank-bar-wrap">
+          <div class="rank-bar-fill" id="rank-bar" style="width:0%"></div>
+          <div class="rank-bar-dots" id="rank-dots"></div>
+        </div>
+        <div class="rank-names" id="rank-names"></div>
+      </div>
+
+      <div class="input-display">
+        <div class="input-word" id="input-word"></div>
+      </div>
+      <div class="game-message" id="game-message">&nbsp;</div>
+
+      <div class="honeycomb-wrap">
+        <div class="honeycomb" id="honeycomb"></div>
+      </div>
+
+      <div class="action-btns">
+        <button type="button" class="action-btn" id="btn-delete">Delete</button>
+        <button type="button" class="action-btn" id="btn-shuffle">Shuffle</button>
+        <button type="button" class="action-btn primary" id="btn-enter">Enter</button>
+        <button type="button" class="action-btn hint" id="btn-hint">Smart Hint</button>
+      </div>
+      <div class="hint-display" id="hint-display"></div>
+
+      <div class="found-section">
+        <div class="found-header" id="found-header">
+          <h3>Found Words: <span id="found-count">0</span></h3>
+          <span class="found-toggle" id="found-toggle">Show</span>
+        </div>
+        <div class="found-words" id="found-words" style="display:none;"></div>
+      </div>
+
+      <div class="yesterday-section" id="yesterday-section" style="display:none;">
+        <details>
+          <summary>Yesterday's Answers</summary>
+          <div class="yesterday-words" id="yesterday-words"></div>
+        </details>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Letter Hive Works</h2>
+      <p>Letter Hive presents you with seven letters arranged in a honeycomb pattern. One letter sits in the center — this is the required letter that must appear in every word you form. Your goal is to find as many valid English words as possible using these seven letters. Each letter can be used more than once in a single word, so a puzzle with the letter "S" in the center could yield words like "SASS" or "ASSESS." Words must be at least four letters long, and proper nouns, hyphenated words, and obscure terms are excluded.</p>
+      <p>Every puzzle includes at least one pangram — a word that uses all seven letters at least once. Pangrams are the crown jewels of each puzzle, earning you bonus points on top of the word length score. Finding all pangrams is a hallmark of a skilled player and helps you reach the highest ranks faster.</p>
+
+      <h2>Scoring and Rank System</h2>
+      <p>Scoring in Letter Hive rewards longer words. Four-letter words earn 1 point each. Any word with five or more letters earns points equal to its length — so a six-letter word earns 6 points. Pangrams receive a 7-point bonus on top of their length score, making them especially valuable. Your rank is determined by what percentage of the maximum possible score you have earned. The ranks progress through eight levels: Beginner, Good, Moving Up, Nice, Great, Amazing, Genius, and the coveted Queen Bee — which requires finding every single valid word in the puzzle.</p>
+
+      <h2>Daily Puzzle vs Practice Mode</h2>
+      <p>The daily puzzle changes every day at midnight and is the same for all players — perfect for comparing your progress with friends. Your daily progress is saved automatically, so you can close the tab and return later without losing your found words. Practice mode generates a random puzzle each time, giving you unlimited opportunities to sharpen your vocabulary. Practice mode stats are tracked separately so your daily streak stays clean.</p>
+
+      <h2>Tips for Finding More Words</h2>
+      <p>Start with common prefixes and suffixes — think "UN-", "RE-", "-ING", "-TION", "-NESS." Try every vowel-consonant combination systematically. Use the shuffle button to rearrange the outer letters — a fresh visual arrangement often helps you spot words you missed. Do not forget that letters can repeat, so words like "ASSESS" or "BANANA" are fair game if the letters are in your hive. If you are stuck, step away and come back later — your progress is saved.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+
+    <!-- Stats Modal -->
+    <div class="stats-overlay" id="stats-overlay">
+      <div class="stats-modal">
+        <h2>Your Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-item"><div class="stat-value" id="stat-played">0</div><div class="stat-label">Played</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-genius">0</div><div class="stat-label">Genius+</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-qb">0</div><div class="stat-label">Queen Bee</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-pangrams">0</div><div class="stat-label">Pangrams</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-words">0</div><div class="stat-label">Words</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">Streak</div></div>
+        </div>
+        <h3 style="color:var(--heading);font-size:0.95rem;margin:0 0 0.5rem;">Rank Thresholds</h3>
+        <div class="stats-rank-list" id="stats-rank-list"></div>
+        <button type="button" class="stats-close" id="stats-close">Close</button>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    /* ========== PUZZLE DATA (203 puzzles) ========== */
+    var PUZZLES = [
+      {center:"A",letters:["P","N","G","R","I","T"],words:["AGAIN","AGING","AIRING","AIRTING","ANTI","APART","APING","ATAP","ATTAIN","GAIN","GAIT","GAITING","GIANT","GRAIN","GRANT","GRATING","NAIRA","PAINT","PAIR","PAIRING","PANG","PANT","PARA","PARTAKING","PARTING","PATINA","PIRATING","PRAT","RAGA","RAIN","RAINING","RAITA","RANG","RANI","RANT","RANTING","RATING","TAINT","TAIPAN","TAPIR","TAPING","TARN","TIARA","TRAINING","TRAIT"],pangrams:["PARTING","RATING","TRAINING"]},
+      {center:"E",letters:["R","S","T","A","L","N"],words:["ALERT","ALTER","ANTEATER","EARNEST","EASTERN","EATER","ELDER","ENTERS","ETERNAL","LAPSE","LASER","LATER","LATERAL","LATEST","LEARN","LEARNER","LEANER","LESSEN","LEST","NEAREST","NEATER","NESTLE","RANEE","REAL","RENAL","RENT","RENTAL","RESALE","RESET","REST","SALE","SANER","SEAL","SENSE","SERENE","SETTLE","SLEET","SNARE","STALE","STEAL","STEEL","STEER","STERN","TALE","TEASE","TEASER","TENSE","TREE"],pangrams:["ETERNAL","EASTERN"]},
+      {center:"O",letters:["C","M","P","U","T","E"],words:["COME","COMET","COMPETE","COMPOSE","COMPUTE","COPE","EMOTE","MOPE","MOOT","MOTTO","MOTET","MOUNT","OUTCOME","OUTPACE","POCO","POEM","POET","POKE","TEMPO","TOPMOST","TOOT","TOPE","COMPOST","COMPOTE","COOP","COOPT","COUPE"],pangrams:["COMPUTE","COMPOTE"]},
+      {center:"I",letters:["D","S","C","L","A","M"],words:["ACID","ACIDS","CLAD","CLAIM","CLAIMS","CLAM","CLAMS","CLASSIC","DISC","DISMAL","DIAL","DIALS","DISMISS","MAID","MAIDS","MASTIC","MIDIS","MILD","MILDS","SCALD","SLID","SLIM","AMID","SAID","SAIL","SILD"],pangrams:["DISMAL","CLAIMS"]},
+      {center:"U",letters:["B","N","D","L","E","F"],words:["BUNDLE","BUNGLE","BLUE","BLUED","BLUFF","BLUNDER","BULL","BUND","DUEL","DUFF","DULL","DUNE","FOUL","FOUND","FUEL","FULL","FUND","FUNNEL","LUBE","LULL","LUNE","NUDE","NULL","UNBUNDLE","UNDUE","UNFED","UNFOLD","BUFFED","DULLED","FUELED","FUMBLE","FUMBLED","FUDGE","BUDGE","UNDER"],pangrams:["BUNDLE","FUMBLED"]},
+      {center:"S",letters:["T","A","R","E","D","I"],words:["SAID","STAID","STAIRS","STARE","STARED","STARTED","SATIRE","SISTER","SATED","SEATED","SERIES","SIDE","SIDED","SIRED","SITAR","SITE","SITED","STAIR","STAR","STEAD","STEED","STEER","STRIDE","DAISES","DIREST","DISASTER","RAISES","RESIST","RESTED","RESIDE","DESIST","STRESSED"],pangrams:["DISASTER"]},
+      {center:"R",letters:["A","T","E","W","O","K"],words:["RATER","RARE","RATE","RAKE","ROAR","ROTE","TAKER","TARE","TORE","TREK","TREE","TOWER","WART","WARE","WATER","WORE","WORK","WORKER","WORT","WREAK","WROTE","REWORK","RETAKE","RETOOK","ARTWORK"],pangrams:["REWORK","ARTWORK"]},
+      {center:"L",letters:["O","W","F","A","S","T"],words:["ALLOW","ALSO","ALTO","ATOLL","FALL","FALLS","FLAT","FLAW","FLAWS","FLOAT","FLOATS","FLOW","FLOWS","FOAL","FOALS","FOLLOW","FOLLOWS","FOWL","FOWLS","LAST","LOAF","LOAFS","LOFT","LOFTS","LOST","LOTS","LOWLY","SALT","SLAT","SLOT","SLOW","SLOWLY","SOFT","SOFTLY","STALL","TALL","TALLOW","TOLL","TOLLS","WALLS"],pangrams:["FOLLOWS","TALLOW"]},
+      {center:"H",letters:["A","T","C","E","R","S"],words:["HASH","HASTE","HATCH","HATCHER","HATE","HATER","HATERS","HATH","HEAR","HEART","HEARTS","HEAT","HEATH","HEATHER","HERS","RASH","REACH","SHATTER","SHARE","SHEAR","SHEET","STRETCH","TEACH","TEACHER","THATCH","THATCHER","THAT","THESE","THREAT","THRASH","THREE","THRESH"],pangrams:["THATCHER","STRETCH"]},
+      {center:"N",letters:["E","G","I","R","D","A"],words:["ANGER","DANGER","DARNING","DEAN","DEIGN","DINE","DINER","DINING","DRAIN","DRAINING","EARNING","ENGINE","ENGRAIN","ENDING","GAIN","GAINED","GANDER","GARDEN","GRAIN","GRAND","GRIN","GRIND","GRINDING","INNER","NINE","REIGN","REIN","REINING","REND","RENDING","RING","RIND"],pangrams:["DRAINING","ENGRAINED"]},
+      {center:"T",letters:["H","I","N","G","S","L"],words:["TIGHTEN","TIGHT","TIGHTS","TILTS","TILT","THING","THINGS","THIN","THIS","THINS","STING","STINT","SLIGHT","SIGHTING","SITTING","HITTING","HINTING","LISTING","LIGHT","LIGHTING","LIGHTNING","LILT","LILTING","NIGHTS","NIGHTLY","NIGHT","GLINT","GIST","GILT","SLIGHTING"],pangrams:["LIGHTING","SLIGHTING"]},
+      {center:"A",letters:["B","L","E","T","S","M"],words:["ABLE","ABATE","ABASE","BALE","BALES","BASAL","BEAM","BEAST","BLAST","BLEAT","EAST","LAMB","LAMBS","LAME","LAST","LATE","MALE","MALES","MALT","MALTS","MAST","MATE","MATES","MEAL","MEALS","MESA","METAL","METALS","SALT","SAME","SAMBA","SABLE","SLAM","SLAT","STAB","STABLE","STALE","STALEMATE","STEAL","STEAM","TABLE","TABLES","TALE","TALES","TAME","TEAM","TEAMS"],pangrams:["STABLE","STALEMATE"]},
+      {center:"E",letters:["D","V","I","L","R","O"],words:["DELIVER","DERIVE","DERIVED","DEVOID","DIRE","DIVER","DIVE","DRIVER","DROVE","ELDER","ERODE","EVER","EVIL","EVILDOER","LEVER","LIVE","LIVED","LIVER","LORE","LOVE","LOVED","LOVER","ORDER","OVER","REDO","RELIVE","REVEL","REVILE","REVILED","RIDE","RIDER","RILE","RILED","RIVE","RIVER","RODE","ROLE","VEIL","VIED","VILE","VOID"],pangrams:["DELIVER","EVILDOER"]},
+      {center:"O",letters:["R","N","W","D","I","G"],words:["DOING","DONG","DONOR","DOOR","DROWN","DROWNING","GOON","GOOD","GORING","GROIN","GROUND","GROWING","GROWN","INDOOR","IRON","IRONING","NOON","ONION","ORIGIN","OWING","RING","RONDO","ROOTING","ROWING","WINDOW","WINDING","WOOD","WORDING","WORKING","WORD","WORN","WRONG","WRONGDOING","WRONGING"],pangrams:["WRONGDOING","DROWNING"]},
+      {center:"I",letters:["N","G","H","T","F","L"],words:["FIGHT","FIGHTING","FILTH","FINING","FINISH","FIST","FITTING","FLIGHT","FLING","FLIT","FLINT","GIFT","GILT","GIST","GLINT","GRIT","HINT","HINTING","HITTING","ICING","INFIGHT","LIGHTING","LIFTING","LIGHT","LILT","LILTING","LINT","NIGHT","THIN","THING","TIGHT","TILT","TILTING","TILING"],pangrams:["FIGHTING","LIGHTING"]},
+      {center:"A",letters:["R","C","H","E","S","D"],words:["ACHE","ACHED","ACHES","ARCHED","ARCHES","ACRE","ACRES","ARCH","CACHE","CASED","CEDAR","CHASED","CHASER","CRASH","CRASHED","DARE","DARES","DASH","DASHED","EACH","EARS","ERASED","FARE","HARE","HARES","HARSH","RACED","RACES","RASH","REACH","REACHED","SCARE","SACRED","SCARED","SHADE","SHADED","SHARE","SHARED"],pangrams:["CRASHED","ARCHED"]},
+      {center:"E",letters:["W","A","K","R","B","D"],words:["AWARE","AWAKE","BAKED","BAKER","BARED","BARKED","BEAKED","BEARD","BRAKE","BRAKED","BREAD","BREAK","BREAKER","BREED","BREWED","BREWER","CREEK","DARED","DARKER","DEALER","DEBARK","DEBARKED","DRAKE","NAKED","RAKED","READER","REMAKE","REWARD","WAKED","WEAKER","WEAR"],pangrams:["DEBARKED","BREAKER"]},
+      {center:"O",letters:["L","V","I","N","G","S"],words:["LOSING","LOGGING","LONG","LONGS","LOVING","LONGING","LONGINGS","OGLING","ONGOING","SOILING","SOLVING","SOIL","SOLO","SONG","SONGS","SOON","VISION","VOICING","CLOSING","COIL","COILS","COIN","COINS","COOLING","GOING","GOINGS","GOLF","GOLFING","OILING","NOON"],pangrams:["SOLVING","LOVING"]},
+      {center:"T",letters:["R","A","I","N","G","E"],words:["EATING","GENERATING","GRATING","INTEGRATE","INGRATE","ITERATING","RATING","RANTING","RATTING","TEARING","TANG","TANGLE","TANGERINE","TARGET","TART","TERRAIN","TIGER","TINT","TIRE","TRAIT","TREAT","TREATING","TRIAGE","TRAIN","TRAINING"],pangrams:["INTEGRATE","ITERATING","GENERATING"]},
+      {center:"S",letters:["P","I","N","E","D","A"],words:["INSIDE","ASIDE","DESPISE","DISEASE","DISPENSE","PAINS","PANDAS","PANES","PASSED","PENS","SPEND","SPINE","SPIES","SNIDE","SNIPS","SANDS","SANE","SEDAN","SEPIA","SINE","SINNED","SIPPED","SNAPPED","SPAN","SPANS","SPADE","SPADES","SPANNED"],pangrams:["DESPISED","DISPENSE"]},
+      {center:"U",letters:["S","T","I","N","G","R"],words:["GUSTING","GUTTING","GUST","GUTS","RUNS","RUNG","RUNGS","RUIN","RUINS","RUSTING","RUTS","RUST","STUNG","STUN","STRUNG","SUING","SUNG","SUIT","SUITS","SUITING","TURN","TURNS","TUNING","TUNG","UNIT","UNITS","UNSTRING","UNTIRING","USING"],pangrams:["RUSTING","GUSTING"]},
+      {center:"A",letters:["F","L","O","W","E","R"],words:["AFLOAT","ALLOW","AWARE","EARL","FARE","FLAIR","FLAW","FLEA","FLOAT","FLORA","FLORAL","FLOW","FLOWER","FOAL","FOWL","FRAIL","LEAF","LOAF","ORAL","RAFT","RATE","REAL","REFLOW","RELAY","SAFE","SALE","SOLAR","VALE","WAFER","WALE","WALL","WARE","WARFARE","WEAR"],pangrams:["FLOWER","WARFARE"]},
+      {center:"D",letters:["R","A","I","N","E","G"],words:["DAGGER","DANGER","DARNED","DARNING","DEGRADING","DEIGN","DENIED","DERANGE","DERANGED","DINE","DINED","DINER","DING","DINNER","DIRE","DRAG","DRAGGED","DRAIN","DRAINED","DRAINING","DREAD","DRIED","GRADED","GRIND","RAIDED","RAINED"],pangrams:["DRAINING","DEGRADING"]},
+      {center:"M",letters:["A","R","K","E","T","S"],words:["MAKE","MAKER","MAKERS","MAKES","MARKET","MARKETS","MARKS","MASK","MASTER","MATE","MATES","MATTER","MATTERS","MAST","MEAT","MEATS","MESA","MARE","MARES","MARK","MART","SEAM","STEAM","STREAM","TRAM","TRAMS","REMAKE","REMARK","REMARKS"],pangrams:["MARKETS","REMARKS"]},
+      {center:"I",letters:["T","O","N","A","C","L"],words:["ACTION","ANTIC","ATTIC","CITATION","CLINICAL","COIL","COIN","COLONIAL","ICON","ICONIC","COALITION","ITALIC","LACTIC","LION","LINT","LITANY","LOCATION","LOGIC","NAIL","NOTION","OPTICAL","TACTIC","TACTICAL","TAIL","TIDAL","TILT","TONIC","TOPICAL","TITAN","TOIL","TRIAL","UNTIL"],pangrams:["TACTICAL","COALITION"]},
+      {center:"E",letters:["X","P","L","O","R","S"],words:["ELDER","EXPLORE","EXPLORER","EXPLORERS","EXPOSE","EXPELS","EXPRESS","LEPER","LEPERS","LORE","LOOSE","LOSER","LOSE","ELOPE","ELOPES","PEELS","PEEL","POSE","POSER","PROSE","REPEL","REPELS","ROLE","ROLES","ROPE","ROPES","SLEEP","SLOPE","SORE","SPORE","SPREE","STEER","STEEP"],pangrams:["EXPLORE","EXPLORERS"]},
+      {center:"A",letters:["N","D","W","I","S","H"],words:["AWASH","DASH","DAWNS","DANISH","DISH","HAND","HANDS","HANDSAW","HASH","NAIAD","NASAL","SANDAL","SAND","SANDING","SHADING","SHIN","WAND","WANDS","WASH","WADING","SWAIN","SWAN","SWANS","SAID","SNAG","STAIN","SHAWL","SHAWLS","SWASH","SWAT","STAND"],pangrams:["HANDSAW"]},
+      {center:"O",letters:["U","T","S","H","R","E"],words:["OUTHOUSE","HOUSE","HOURS","HORSE","HOSE","HOST","OUSTER","OTHER","OTHERS","OTTER","OTTERS","OUTER","SHORE","SHOUT","SHOUTER","SHUTTER","SORT","STORE","STOREHOUSE","STOUT","STOUTER","THOSE","TORE","TOSS","TOUR","TOURS","TROUT","TROTH","TROTS","ROUSE","ROUTE","ROUTES","ROSTER"],pangrams:["OUTHOUSE","STOUTER"]},
+      {center:"C",letters:["A","R","E","T","I","V"],words:["ACTIVE","ARCHIVE","ATTIC","CAVE","CIVIC","CRATE","CREATIVE","CRITICAL","CURVE","DIRECT","EVICT","LACE","RACE","REACTIVE","RECITE","RICE","TRACE","VICE","CAVIAR","CIRCA","CATER","CARRIER","CART","CARE","CARVE"],pangrams:["CREATIVE","REACTIVE"]},
+      {center:"G",letters:["A","R","I","N","T","E"],words:["AGING","AGEING","AGGREGATE","GAITER","GANG","GARAGE","GATE","GATHER","GATHERING","GATING","GEAR","GENERATE","GIANT","GINGER","GRATE","GRATIN","GRATING","GREAT","GREEN","GREETING","GRIN","GRIT","IGNITE","IGNITER","ENGAGE","ENRAGE","RANGE","RAGING","REIGN","RING","RINGING","TIGER"],pangrams:["GENERATING","GATHERING"]},
+      {center:"L",letters:["I","N","K","E","D","S"],words:["KINDLED","KINDLE","KINDLES","KNEEL","KNEELS","LIKED","LIKES","LINE","LINED","LINES","LINK","LINKED","LINKS","SKILL","SKILLED","SKILLS","SLIDE","SLID","SLED","SLEEK","SILK","SILKEN","SINK","SINGLED","KILLED","KILLS","DILL","DILLS","DISLIKE","ELKS","IDLE","IDLES","ISLE"],pangrams:["KINDLED","SKILLED"]},
+      {center:"W",letters:["I","N","D","O","E","R"],words:["WIDEN","WIDER","WIDOW","WIND","WINDER","WINDOW","WINDOWED","WINE","WINED","WINNER","WINNING","WIRE","WIRED","WISER","WONDER","WONDERED","WONDERING","WORD","WORDED","WORDING","WORE","WORK","WORKED","WORKER","WORN","WOVEN","WREN","WRITE","WRONG","WROTE"],pangrams:["WINDOWED","WONDERING"]},
+      {center:"T",letters:["O","U","R","N","A","M"],words:["AMOUNT","ATONE","ATOM","AUNT","MOUNT","MOAT","MOOT","MUTANT","MUTTON","ONTO","OUTRAN","OUTRUN","ROOT","ROUT","ROUTE","ROTOR","RUNT","STOUT","TAUNT","TAUT","TORN","TARN","TATTOO","TOOT","TOUR","TOURNAMENT","TOUT","TROUT","TRUANT","TUNA","TURN","TURNOUT","TUTOR","UNTO"],pangrams:["TOURNAMENT","TURNOUT"]},
+      {center:"P",letters:["A","R","E","S","I","T"],words:["PAPER","PAPERS","PAIRS","PART","PARTS","PASTE","PASTIME","PATTER","PATTERN","PETRI","PIPE","PIPES","PIPER","PIRATE","PIRATES","PISTE","PRAISE","PRATE","PRIEST","REPAIR","REPAST","REPEAT","RIPE","SATIRE","SEPIA","SPARE","SPIRE","SPIRIT","SPIT","STRIPE","STRIPES","TAPE","TAPER","TRIP","TRIPS","TRIPE"],pangrams:["PIRATES","STRIPES"]},
+      {center:"B",letters:["A","R","E","I","K","N"],words:["BAKE","BAKER","BAKERS","BANK","BANKER","BANKERS","BARE","BARK","BARN","BEAN","BEAR","BIKE","BIKER","BIKERS","BRAIN","BRAKE","BRAN","BREAK","BREAKER","BRICK","BRINE","BRINK","BLANK","BLANKER","REBIND"],pangrams:["BREAKER","BLANKER"]},
+      {center:"F",letters:["L","O","A","T","I","N"],words:["FAIL","FAINT","FAITH","FALL","FINAL","FINALIST","FLAT","FLAUNT","FLING","FLIT","FLOAT","INFLATION","FONT","FOOL","FOOT","FAIN","FOAL","FOCAL","FOIL","FOLD","FOLIATION","INFO","LIFT","LOFT","FIAT","FLINT","OFFAL","FOUNT"],pangrams:["INFLATION","FOLIATION"]},
+      {center:"V",letters:["A","L","U","E","S","R"],words:["VALUE","VALUES","VALVE","VALVES","VASE","VASES","VAULT","VEAL","VEER","VEERS","VERSE","SALVE","SALVER","SAVE","SAVER","SERVE","SERVER","SEVERE","SEVERAL","SLAVE","SLEEVE","SOLVE","SOLVER","STARVE","SUAVE","REVUE","REVUES","REVISE","REVIVE"],pangrams:["SEVERAL"]},
+      {center:"A",letters:["Z","I","N","G","P","L"],words:["AGING","ALIGNING","AMAZING","ANALYZING","APING","GAZING","GAIN","GALA","GANG","GAPING","GLAZING","PLAIN","PLAN","PLANNING","PLAZA","NAPPING","NAGGING","NAIL","NAILING","PAGING","PALING","PANG","PANIC","PANTING","LAPPING","LAGGING","LAIN","PLANING","PLAYING","PIAZZA","ZIGZAG"],pangrams:["AMAZING","ANALYZING","GLAZING"]},
+      {center:"E",letters:["M","N","T","A","L","I"],words:["AILMENT","ELIMINATE","EMAIL","EMIT","ENTAIL","EMANATE","LAMINATE","MENTAL","MENTALITY","ELEMENT","ENTITLE","ENABLE","LAMENT","LEAN","LINE","LINEAGE","LISTEN","MANE","MANTLE","MEANTIME","METAL","MILE","MINE","MINUTE","MITTEN","NAME","TITLE","TIMELINE"],pangrams:["ELIMINATE","MENTALITY"]},
+      {center:"O",letters:["R","C","K","E","T","S"],words:["COOK","COOKER","COOKERS","CORK","CORKER","CORSET","COST","CROCK","CROOK","DOCK","DOCKER","LOCK","LOCKER","MOCK","MOCKER","POCKET","POKER","ROCK","ROCKER","ROCKET","ROCKETS","ROSTER","SCORE","SCORER","SHOCK","SOCK","SOCKET","STOCK","STOCKER","STORE","STORK","STROKE","STROKES","TOOK"],pangrams:["ROCKETS","STOCKERS"]},
+      {center:"D",letters:["U","M","P","I","N","G"],words:["DIMMING","DIPPING","DUMP","DUMPING","DUNNING","DUNG","DUPING","IMPOUND","MUDDING","PUDDING","DUMPLING","PADDING","DIVING","DRUID","GRIND","GRINDING","GUILD","MINDING","NUDGING"],pangrams:["DUMPLING"]},
+      {center:"H",letters:["O","U","S","I","N","G"],words:["HIGH","HINGING","HISSING","HOGGING","HONING","HOOTING","HORN","HOSE","HOSING","HOUND","HOUR","HOUSE","HOUSING","HUGGING","HUSHING","SHINING","SHIN","SHOO","SHOOTING","SHORING","SHORN","SHOUT","SHOUTING","SHOWING","SHUNNING","SHUSHING"],pangrams:["HOUSING","SHOUTING"]},
+      {center:"A",letters:["D","V","E","N","T","U"],words:["ADVENT","ADVANCE","ADVANTAGE","ADVENTURE","ADVENTURED","AVENUE","DATE","DATED","DAUNTED","DEVIANT","DEVIATE","EATEN","EVADE","EVACUATE","EVENT","NAVIGATE","NATIVE","NEAT","TANNED","TUNDRA","UNDATED","UPDATE","UPDATED","VANE","VAUNT","VAUNTED","VENDETTA"],pangrams:["ADVENTURE","ADVENTURED"]},
+      {center:"I",letters:["S","T","R","A","N","G"],words:["AGAINST","ARISING","ARTISTIC","INSIST","INTRINSIC","IRIS","SATIN","STAIR","STAIRS","STARING","STIRRING","STRING","STRAINING","GRATIN","GRAIN","GRAINS","GRATING","GRIST","GRIT","RAISIN","RAISING","RATING","RATION","RING","RINSING","RISING","SITTING","STAIN","STRAIN","TRANSIT"],pangrams:["STRAINING"]},
+      {center:"E",letters:["C","H","A","N","G","I"],words:["ACHE","ACHIEVE","AGING","AGEING","ANGEL","BEACHING","CAGE","CANE","CHANGE","CHIN","EACH","ENGAGE","ENGINE","ENHANCE","EXCHANGE","GENE","GENIE","HENCE","ICING","MACHINE","NICHE","NICE","NIECE","REIGN","RICE","TEACH","TEACHING"],pangrams:["EXCHANGE","TEACHING"]},
+      {center:"U",letters:["R","N","T","I","G","S"],words:["GRUNT","GRUNTS","GUST","GUSTING","GUTS","GUNS","NURSING","NUTS","RUIN","RUINS","RUNG","RUNGS","RUNT","RUNTS","RUST","RUSTING","RUTS","RUTTING","STRUNG","STUNG","STUN","STUNNING","SUING","SUIT","SUITS","SUNG","TURN","TURNING","TURNS","TUNING","UNIT","UNITS","UNTIRING","USING"],pangrams:["RUSTING","TURNING"]},
+      {center:"O",letters:["B","A","R","N","S","T"],words:["BARON","BARONS","BOAR","BOARS","BOAT","BOATS","BORN","BOOR","BOOT","BOOTS","BOON","BOONS","CARBON","PATRON","ROBOT","ROBOTS","ROAST","ROAN","SONAR","SNOB","SNOBS","SNOOT","SNORT","SORT","TORN","TORSO","TROTS"],pangrams:["BARONS","ROBOTS"]},
+      {center:"K",letters:["I","N","G","S","T","A"],words:["ASKING","GASKET","KING","KINGS","KINK","KINKS","KITE","KITES","KITING","KNACK","KNACKS","KNIT","KNITS","KNITTING","KNIGHT","KNIGHTS","SKATING","SKIING","SKIN","SKINNING","SKINT","SKIT","SKITS","STAKING","STINKING","TAKING","TASKING","THINKING"],pangrams:["SKATING","STINKING"]},
+      {center:"M",letters:["O","N","E","Y","S","T"],words:["MOMENT","MOMENTS","MONEY","MONEYS","MONOTONE","MONOTONY","MONSTER","MONTHLY","MOSEY","MOST","MOSTLY","MOTET","MOTETS","MOTTOS","MOOSE","MESSY","MODEST","MONTE","MOSSY","MOON","MOONS","MOOT","SYSTEM"],pangrams:["MONOTONE"]},
+      {center:"A",letters:["T","I","O","N","S","L"],words:["ALIT","ALSO","ANALYST","ANIMATION","ANOINT","ANTS","ATLAS","ATONAL","INSTALL","INSTALLATION","INSTANT","IOTA","ISOLATION","NATIONAL","NAIL","NAILS","NASAL","OASIS","SAIL","SAINT","SALT","SALTS","SALON","SLAIN","SLANT","SOIL","STAIN","STALLION","TALON","TALONS","TANS","TOAST"],pangrams:["NATIONAL","INSTALLATION"]},
+      {center:"E",letters:["S","T","R","A","N","G"],words:["AGENT","AGENTS","ANGER","ANGERS","ARRANGE","ARRANGES","EAGER","EARNEST","EASTERN","EATER","EATERS","ENGRAVE","ENRAGE","ENTER","ENTERS","ESTATE","ESTRANGE","GENERATE","GENERATES","GENRE","GENRES","GREASE","GREAT","GREATER","NEAREST","NEATER","RANGE","RANGES","REGENERATE","RENT","RESET","STAGE","STARE","STEER","STERN","STRANGE","STRANGER","TEENAGER","TENSE","TREE","TREES"],pangrams:["ESTRANGE","STRANGER"]},
+      {center:"R",letters:["E","S","T","A","U","N"],words:["ERASER","EARNEST","EASTERN","ENTER","ENSURE","EATER","NATURE","NATURES","NEARER","RANT","RANTS","RARE","RAREST","RATE","RATES","REST","RETURN","RETURNS","RERUN","RERUNS","RUSE","RUNT","RUNTS","RUSTLE","RUTS","SATURATE","SNARE","STAR","STARE","STARTER","STERN","SURE","SURER","TERN","TERSE","TREASURE","TREE","TRUER","TRUST","TRUANT","TURNER","TURNERS","TURNS","UNSURE"],pangrams:["TREASURE"]},
+      {center:"A",letters:["S","H","O","W","E","R"],words:["ASHORE","AWARE","AWASH","HARSH","HOARSE","RASH","ROAR","ROARS","SASH","SAWHORSE","SHARE","SHARES","SHAW","SHAWL","SHEAR","SHORE","SHOWER","SHOWERS","SOAR","SWEAR","SWEARS","WARE","WARES","WASH","WASHER","WASHERS","WEAR","WEARS"],pangrams:["SHOWERS","SAWHORSE"]},
+      {center:"N",letters:["O","V","E","R","T","I"],words:["ENVIRON","INNER","INERT","INTENT","INTERN","INTERVENTION","INVENT","INVENTOR","INVERSION","INVERT","INVITE","IRON","NERVE","NINETY","NITROGEN","NONE","NOON","NORM","NOTE","NOTION","NOUN","NOVEL","NOVICE","REIN","RENOWN","RENT","RENOVATION","VENT","VENISON","VINE","VEIN"],pangrams:["INVENTION","INVERSION"]},
+      {center:"L",letters:["A","T","E","R","S","I"],words:["AISLE","ALERT","ALERTS","ALTER","ALTERS","DETAIL","DETAILS","EARLIEST","INSTALL","ISLE","LAIRS","LASER","LAST","LATER","LATEST","LATERAL","LETTER","LETTERS","LIST","LITTER","LITTERS","LITERAL","LITERALS","LITERATE","REALIST","RETAIL","RETAILS","RILE","RILES","SAIL","SATELLITE","SETTLE","SETTLER","SILT","SLEET","STALE","STALER","STEAL","STEEL","STERILE","STILE","TALE","TALES","TALL","TALLER","TALLEST","TILE","TILES","TITLE","TITLES","TRAIL","TRAILS","TRELLIS"],pangrams:["LITERALS","LITERATE","EARLIEST"]},
+      {center:"O",letters:["N","E","Y","M","H","S"],words:["BONE","BONES","CONE","CONES","COME","COMES","DOME","DOMES","DONE","GONE","GOOSE","HOME","HOMES","HOMEY","HONEY","HONEYS","HONE","HONES","HOSE","LONE","MONEY","MONEYS","MONKEY","MONKEYS","MOOSE","MOON","MOONS","NOSE","NONE","OMEN","OMENS","SOME","SOMEONE","STONE","STONES","TONE","TONES","ZONE","ZONES"],pangrams:["MONKEYS"]},
+      {center:"T",letters:["E","R","O","N","I","C"],words:["CONTORT","CONTRACT","CORRECT","CORRECTION","CORNET","CRITERION","CRITTER","DETECTOR","DIRECTION","DIRECT","DIRECTOR","DOCTRINE","ERECT","ERECTION","INTERSECT","INTRICATE","NOTICE","ORIENT","PROTECT","PROTECTION","RESTRICT","RETIRE","RETORT","RHETORIC","TONIC","TOPIC","TRITE","TROPIC"],pangrams:["CORRECTION","PROTECTION","DIRECTION"]},
+      {center:"S",letters:["U","M","P","L","A","I"],words:["IMPULSE","IMPULSES","AMPS","CAMPUS","CAPSULE","CLASPS","CLUMPS","COMPASS","IMPASSE","IMPALAS","LAMPS","MALLS","MASS","MAULS","MISSAL","PAILS","PALMS","PLUS","PLUMPS","PSALM","PSALMS","PULSATE","PULSE","SALAMI","SALAMIS","SAMBA","SCAMP","SIMPLE","SIMPLES","SLAMS","SLAPS","SLUMP","SLUMPS","SPASM","SPILL","SPILLS","SPLASH","STAMP","STUMPS","SUMP","SUMPS","SUPPLY"],pangrams:["IMPULSE","IMPULSES"]},
+      {center:"A",letters:["R","M","I","N","G","L"],words:["ALARM","ALARMING","AIMING","AIRING","ALIGN","ALIGNING","ARMING","CLAIMING","GAMING","GAIN","GAINING","GRAIL","GRAIN","GRIM","GRINNING","IMAGING","LAIR","LAIN","LAMING","LIRA","MAIL","MAILING","MAIN","MALIGN","MALIGNING","MARGIN","MARGINAL","MARINA","MINING","NAIL","NAILING","RAIN","RAINING","RAILING","RAIL","RANG"],pangrams:["ALARMING","MALIGNING","MARGINAL"]},
+      {center:"E",letters:["B","L","O","W","I","N"],words:["BELIEVE","BELOW","BILE","BONE","BOWEL","BOWL","ELBOW","ELBOWING","ENABLE","ENNOBLE","LINE","LOBE","LONE","NOBLE","NOEL","NOVEL","OLIVE","ONLINE","TOWEL","WILE","WINE","WOVE","WOVEN"],pangrams:["ELBOWING","BOWLINE"]},
+      {center:"T",letters:["R","A","I","S","E","N"],words:["ARTISAN","ATTAIN","ATTAINS","CERTAIN","ENTERTAIN","ENTIRE","ENTRIES","NASTIER","NITRATE","NITRATES","RANT","RANTS","RETAIN","RETAINS","RETINA","SAINT","SATIRE","SATIN","STAIN","STAINER","STERN","STINT","STRAIN","STRAINER","TRANSIT","TITAN","TIRES","TRAINS","TRAIT","TRAITS","TREE"],pangrams:["NITRATES","STRAINER"]},
+      {center:"G",letters:["A","L","E","R","I","N"],words:["ALIGNING","AGING","AGEING","ALLERGEN","ANGLING","EAGLE","ENGAGING","ENLARGE","ENLARGING","GLARE","GLARING","GLEANING","GLEN","GRAIN","GRAIL","GRIN","GRILLE","GALE","GANG","GARGLE","GENERAL","GENRE","GINGER","GIRL","GLEAN","GLEANER","LAGER","LARGER","LINGER","LINGERIE","OGLE","REGAL","REIGN","RINGING"],pangrams:["ENLARGING","LINGERIE"]},
+      {center:"P",letters:["O","S","T","E","R","A"],words:["APOSTLE","OPERAS","OPERATE","OPERATES","PAPER","PAPERS","PARE","PARES","PARSE","PART","PARTS","PASTE","PASTEL","PATROL","PATRON","PEAR","PEARS","PEST","PETROL","POET","POETS","PORT","PORTS","POSE","POSTER","POSTERS","POST","POTS","PRAISE","PROSE","PROTEST","SPARE","SPORT","SPORE","STEP","STOP","STOPPER","STRAP","STRIPE","TARP","TAPE","TAPES","TEMPO","TRAPS","TROPE","TROPES"],pangrams:["OPERATES","POSTERS"]},
+      {center:"A",letters:["U","T","O","M","E","D"],words:["AMOUNTED","ATOM","AUTO","AUTOMATE","AUTOMATED","DATA","DATE","DATED","DATUM","DEMO","DOME","DOTE","DOTED","EMULATE","MADE","MATE","MATED","MATTE","MOAT","MOATED","MUTED","MUTATED","OUTDATED","TAMED","TOAD","TOMATO","UPDATE","UPDATED"],pangrams:["AUTOMATED","OUTDATED"]},
+      {center:"I",letters:["N","G","H","T","E","R"],words:["ENTIRE","HIGHER","IGNITE","IGNITER","INERT","INHERIT","INHERITING","INNER","INTER","NIGHTTIME","REIN","REINING","RIGHT","RING","RINGING","THINKER","THINKING","THINNER","TIGER","TIGHTEN","TIGHTENER","TIGHTENING","TIRING","TRIGGER","TRIGGERING"],pangrams:["TIGHTENER","INHERITING"]},
+      /* --- NEW PUZZLES (66-210) --- */
+      {center:"A",letters:["B","L","N","D","E","K"],words:["ABLE","BADE","BAKE","BAKED","BALD","BALE","BALED","BALK","BALKED","BAND","BANE","BANED","BANK","BANKED","BEAD","BEAK","BEAKED","BEAN","BLADE","BLAND","BLANK","BLANKED","BLEAK","DALE","DANK","DEAL","DEAN","KNEAD","LAKE","LAKED","LANE","LANK","LEAD","LEAK","LEAN","MAKE","NAKED","ANKLE","KNEEL"],pangrams:["BLANKED"]},
+      {center:"R",letters:["O","S","T","E","M","N"],words:["MENTOR","MENTORS","METRO","MONSTER","MORE","MORES","MOROSE","MORSE","NORM","NORMS","NOSE","NOTER","OMEN","ONES","ONSET","RESORT","REST","RESTORE","ROOST","ROSTER","ROTTEN","SENSOR","SERMON","SNORE","SNORT","STERN","STONE","STONER","STORE","STORM","TENOR","TENORS","TERM","TERMS","TONER","TORE","TORN","TREMOR","TREMORS"],pangrams:["MENTORS","MONSTER"]},
+      {center:"E",letters:["S","P","A","R","K","D"],words:["ASKED","DARE","DARED","DARES","DARK","DARKER","DRAPE","DRAPED","DRAPES","DRESS","EASE","EASED","ERASED","PAGED","PARED","PARSE","PARSED","PEAKED","PEAR","PEARS","RAKED","RAPED","REARED","REPASSED","RESPADE","SEARED","SPARE","SPARED","SPEAK","SPEAKER","SPEAR","SPEARED","SPREAD","STREAKED"],pangrams:["SPEAKER","RESPADE"]},
+      {center:"I",letters:["C","R","A","T","N","E"],words:["ANTIC","CERTAIN","CITE","CITED","CRANE","CREATE","CRITERIA","ERRATIC","INCITE","INERT","INNER","INTER","IRATE","INTRICATE","IRRITATE","NACRE","NARC","NICE","NICER","RAIN","REIN","RETAIN","RICE","TIER","TINE","TIRE","TINIER","TRAIN","TRAIT","TRICE"],pangrams:["INTRICATE"]},
+      {center:"O",letters:["M","P","L","A","T","E"],words:["ATOP","ELOPE","ELOPED","EMOTE","EMOTED","POLE","MOLE","MOPE","MOAT","MODAL","MOLD","MOTEL","MOTET","MOTOR","MOLT","MOLTED","OPAL","PLOP","PLOT","POEM","POET","POLE","POLLED","POMELO","POOL","TEMPO","TOAD","TOLD","TOLL","TOME","TOOL","TOPPLE","TOTAL"],pangrams:["POMELO"]},
+      {center:"S",letters:["T","R","A","I","N","E"],words:["ARTISAN","ASSERT","ASSIST","NASTIER","NAÏVETÉ","RAISE","RAISES","RAISIN","RESIN","RESIST","RINSE","RISEN","SAINT","SATIN","SATIRE","SIREN","SISTER","STAIN","STAINER","STAIRS","STARE","STERN","STRAIN","STRAINER","STRESS","TEASE","TENSER","TINIEST","TRAINS"],pangrams:["STRAINER"]},
+      {center:"D",letters:["E","S","I","G","N","A"],words:["ADDED","AGED","AIDED","ASIDE","DAIS","DAISES","DANGER","DESIGN","DESIGNED","DESIGNER","DIAGNOSED","DINE","DINED","DINES","DISENGAGE","DISENGAGED","DING","DISEASE","DISEASED","EDGED","GADDING","GIDDY","GRADED","IDEAS","INSIDE","SANDED","SIDED"],pangrams:["DISENGAGED","DESIGNED"]},
+      {center:"T",letters:["A","L","E","R","S","I"],words:["ALERT","ALERTS","ALTER","ALTERS","ARTIST","ARTISTE","ATTEST","DETAIL","DETAILS","EARLIEST","ELITIST","INSTALL","LATER","LATEST","LATERAL","LETTER","LETTERS","LIST","LITTER","LITTERS","LITERAL","REALIST","RETAIL","SETTLE","SETTLER","STALE","STALER","STEAL","STERILE","STARTER","TALLER","TALLEST","TILE","TILES","TITLE","TITLES","TRAIL","TRAILS","TRELLIS","TATTERS","TATTER","STILETTO"],pangrams:["EARLIEST","LITERALS"]},
+      {center:"N",letters:["I","G","H","T","E","S"],words:["ENGINE","ENGINES","ENSIGN","ENSIGHT","GINSENG","HEIGHTEN","INGESTING","INSIGHT","INTENSE","NEIGH","NEST","NESTING","NIGHT","NIGHTIE","NIGHTIES","NIGHTS","NINE","NINES","NINETEEN","NINTH","SENSING","SENTINEL","SHINING","SIGHTING","SIGNET","SINGING","SINGE","SINNING","TENSING","THINNESS"],pangrams:["NIGHTIES","SIGHTING"]},
+      {center:"A",letters:["C","R","E","T","I","V"],words:["ACTIVE","ARCHIVE","ATTRACT","ATTRACTIVE","ATTIC","CAVE","CIVIC","CRATE","CREATIVE","REACTIVE","RACE","RACETRACK","RICE","TRACE","VICE","CAVIAR","CIRCA","CATER","CARRIER","CART","CARE","CARVE","ITERATE","IRATE"],pangrams:["CREATIVE","REACTIVE","ATTRACTIVE"]},
+      {center:"E",letters:["N","R","G","Y","S","T"],words:["ENERGY","ENTRY","ENTER","ENTERS","GENTRY","GREEN","GREENS","GREET","GREY","NERVY","NEST","NERVE","RENTER","RENTERS","RENT","RENTS","RESENT","REST","SENT","SERENE","SERENITY","SETTER","STEER","STERN","STERNER","SWEET","TEEN","TEENS","TENSE","TENSER","TERN","TERNS","TREES","TRENDY","TWENTY"],pangrams:["SERENITY"]},
+      {center:"O",letters:["R","P","H","A","N","E"],words:["APRON","EARPHONE","HARPOON","HERO","HERON","HOPE","HOPER","HORN","PHONE","PORE","PORN","POOR","PRONE","PROOF","ROAN","ROPE","ORPHAN","OPERON","NOPE","NOON","NOOSE","NORTH","PERSONA","PRONTO","PRONG"],pangrams:["EARPHONE","HARPOON"]},
+      {center:"L",letters:["E","A","R","N","I","G"],words:["ALIEN","ALIGN","AISLE","ANGEL","ANGLE","ANGLER","EAGLE","EAGLING","EARRING","ENLARGE","ENLARGING","GALLERY","GARGLE","GENERAL","GENRE","GIRL","GLARE","GLARING","GLEANER","GRAIN","GRILLE","LAGER","LARGER","LIAR","LIEN","LINE","LINEAR","LINER","LINGER","LINGERIE","NAILING","RAILING","REGAL","REIGN","RENAL","RILL"],pangrams:["ENLARGING","LINGERIE"]},
+      {center:"M",letters:["A","S","T","E","R","I"],words:["MASTER","MASTERS","MASTERY","MAST","MASTS","MATE","MATES","MATTER","MATTERS","MATTE","MERIT","MERITS","MISER","MIST","MISTER","MITERS","MITRE","MARES","MARE","MART","MARITAL","MARS","MASS","MASSIVE","SEAM","STEAM","STREAM","TRAM","TRAMS","SMART","SMEAR","SMARTER"],pangrams:["MASTERY","SMARTIE"]},
+      {center:"U",letters:["B","C","K","L","E","S"],words:["BUCKLE","BUCKLES","BULK","BULKS","BUCKS","BUCK","CLUBS","CLUE","CLUES","CLUCK","CLUCKS","CUBE","CUBES","CUES","LUCK","LUCKLESS","LUCKS","LUBE","LUBES","SKULL","SKULLS","SLUE","SLUB","SLUBS","STUCK","SUCK","SUCKLE","SUCKLES","SULK","SULKS","TUCK","TUCKS"],pangrams:["BUCKLES","SUCKLES"]},
+      {center:"A",letters:["P","L","N","E","T","S"],words:["ANAL","ANTLER","APPEAL","ATONE","NATAL","NASAL","NATAL","PANT","PANEL","PANELS","PANE","PANES","PLAN","PLANE","PLANES","PLANET","PLANETS","PLANT","PLANTS","PLANTAL","PLATE","PLATES","PLEASE","SALT","SLANT","SLAP","SNAP","SPAN","SPANGLE","STALE","STALL","STEAL","TALE","TALES","TANGLE","TANGLES"],pangrams:["PLANETS"]},
+      {center:"R",letters:["E","I","D","N","S","G"],words:["DIRE","DINER","DINERS","DIRGE","DIRGES","DRESS","GREED","GRIDS","GRIND","GRINDER","GRINDERS","GRINDS","GRIN","GRINS","INSIDERS","IRED","REDIS","REIGN","REIGNS","REIN","REINS","REND","RENDER","RENDERS","RENDS","RIDE","RIDER","RIDERS","RIDES","RIDGE","RIDGES","RIGGER","RING","RINGER","RINGS","RINSE","RINSED"],pangrams:["GRINDERS","REDESIGN"]},
+      {center:"E",letters:["F","L","O","W","R","S"],words:["EFORE","ELSE","FEWER","FOES","FORE","FOREST","FORESEE","FOWLER","FREE","FREELY","FRESHER","LEER","LESSER","LEVER","LOOSE","LOSER","LOSE","LOVER","LOWER","LOWERS","ORES","OVER","REFER","REFERS","REEF","REEL","REELS","ROLE","ROLES","ROSE","SELF","SERVE","SEWER","SHORE","SLEEVE","SLOWER","SOLE","SORE","STEER","STOLE","SWORE","TOWER","TOWEL","VOWEL","WORE","WORSE"],pangrams:["FLOWERS"]},
+      {center:"T",letters:["H","O","R","N","E","S"],words:["HORNET","HORNETS","NORTH","NORTHEAST","NORTHERN","NOSE","NOTES","NOTER","OTHERS","OTTER","OTTERS","RETORT","RESORT","ROTTEN","SHORTEN","SHORT","SHORTER","SHORTEST","SNORT","SNOT","SNOOTY","STERN","STONE","STONER","STORE","STOREY","STORK","STORM","TENOR","TENORS","TEST","TESTER","THEN","THERE","THESE","THIN","THOSE","THORN","THORNS","THREAT","THREE","THRONE","THORN","TOOTH","TOOTHY","TORRENT"],pangrams:["HORNETS","NORTHERN"]},
+      {center:"A",letters:["M","P","L","I","N","E"],words:["AILMENT","AMPLE","AIRPLANE","ALPINE","AMEN","AMINE","ANIMAL","ANIMATE","APPEAL","APPLIANCE","EXPLAIN","IMPLANT","IMPALE","LAME","LAMP","MAIN","MANE","MANGLE","MAPLE","MEAL","MEAN","MINE","NAIL","NAME","PANEL","PANE","PINE","PLAIN","PLANE","PLAN","PLEA","ALIEN","ALIGN","EMAIL","LAIN","LANE","LEAN","LINE","MAIL","MALE","MANTLE"],pangrams:["AIRPLANE","IMPLANT"]},
+      {center:"I",letters:["O","N","S","T","E","R"],words:["EROTIC","INSERT","INTERIOR","INVEST","IRON","IRONIC","IRONS","SENIOR","SIREN","SISTER","SNORE","SOONER","SONIC","SNOBBIER","STERN","STIR","STONE","STONER","STORE","STORIES","STONE","TIRE","TIRES","TINIEST","TINIER","TONIC","TONICS","TRIO","TRIOS","NOIR","NOISES","NOISE"],pangrams:["INTERIOR","STONIEST"]},
+      {center:"D",letters:["A","N","C","E","L","S"],words:["DANCE","DANCED","DANCES","DALE","DALES","DEALS","DEAN","DEANS","DECAL","DECALS","DESCEND","DESCENDED","CLAD","CLEANED","LACED","LAND","LANDS","LANCED","LEAD","LEADS","LEADEN","LEASED","LEND","LENDS","SADDLE","SANDED","SCALED","SCANDAL","SCALD","SCANNED","SLED"],pangrams:["DANCED","SCANDAL"]},
+      {center:"G",letters:["O","L","D","E","N","S"],words:["DOGES","DOGS","DONG","DONGS","GELDS","GLENS","GNOLLS","GODS","GOES","GOLD","GOLDEN","GOLDENS","GOLDS","GONE","GONG","GONGS","GOOD","GOODS","GOOSE","GOOSED","LONG","LONGED","LONGES","LODGE","LODGES","OGLE","OGLED","OGLES","SLOG","SLOGGED","SNOG","SNOGGED","SONG","SONGS"],pangrams:["GOLDENS"]},
+      {center:"H",letters:["E","A","R","T","S","I"],words:["HAIR","HAIRS","HASH","HASTE","HASHER","HATE","HATER","HATERS","HATH","HEAR","HEART","HEARTS","HEARTH","HEAT","HEATH","HEATHER","HEATHS","HEIR","HEIRS","HERS","HIRE","HIRES","RASH","SHATTER","SHARE","SHEAR","SHIRT","THIRST","THIRSTIER","THREE","THRESH","THRESHES"],pangrams:["HEATHERS","THIRSTIER"]},
+      {center:"W",letters:["A","R","N","I","T","E"],words:["WARN","WANE","WANT","WART","WARE","WARM","WARRANT","WATER","WAITER","WAIT","WANE","WART","WINE","WINDER","WINER","WINTER","WIRE","WIRED","WISER","WREN","WRIT","WRITE","WRITER","WRITTEN","WRIT","WANT","INWARD","AWARE","WARRANT","REWRITE","REWRITTEN","TWINE","TWIN","TWINER"],pangrams:["REWRITTEN"]},
+      {center:"E",letters:["V","O","L","U","T","I"],words:["ELITE","ELUTE","EVOLVE","EVIL","EVOKE","EVICT","LIVE","LUTE","OLIVE","OVULE","OTIVE","TILE","TOIL","UTTER","VEIL","VETO","VILE","VIOLET","VIVID","VOICE","VOILE","VOLUME","VOTE","VOLATILE","VOLUTE","OUTLIVE","EVOLUTE","REVOLVE","REVOLUTE"],pangrams:["EVOLUTE","REVOLUTE"]},
+      {center:"S",letters:["H","O","R","T","E","N"],words:["HONEST","HORSE","HOSE","HOST","HORNS","NOSE","NORTH","NOSE","NOTES","ONSET","RESORT","REST","ROSTER","SENSOR","SERMON","SHONE","SHORE","SHORTEN","SHORT","SHORTER","SHORTEST","SNORE","SNORT","STERN","STONE","STONER","STORE","STOREY","THOSE","TOSS","TORSO"],pangrams:["SHORTEST","SHORTENS"]},
+      {center:"A",letters:["B","R","I","G","H","T"],words:["ARIGHT","BAIT","BATH","BRAG","BRIGHT","GARB","GAIT","GARTH","GRAB","GRAPH","GRIT","HAIR","HABIT","HATH","IRATE","RABBIT","RAFT","RAGA","RAIN","RABIT","RATH","RIGA","RIGHT","THAT","TIARA","TRAIT","ABRIGHT","AIRTIGHT"],pangrams:["AIRTIGHT"]},
+      {center:"N",letters:["E","W","S","P","A","R"],words:["ANSWER","EARN","EARNS","FAWN","NEWS","PANE","PANES","PAWN","PAWNS","PEAN","PENS","RANEW","RENEW","RENEWS","SANE","SANER","SEWN","SNAP","SNARE","SPAN","SPAWN","SPAWNER","SPANNER","SPEAR","SWAN","SWEAR","WANE","WANES","WARN","WARNS","WEAN","WEANS","WREN","WRENS"],pangrams:["SPAWNER","SPANNER"]},
+      {center:"O",letters:["C","L","A","T","I","N"],words:["ACTION","ANTICOL","ATOLL","COAL","COALITION","COIL","COIN","COLONIAL","COOL","COTTON","ICON","LOOT","LOCATION","LOTION","NOTION","NOON","ONTO","OPTICAL","OLIO","ONION","ALTO","COLON","COTTON","TOTAL","TOLL","TOOL","TONIC","TOPICAL"],pangrams:["COALITION","LOCATION"]},
+      {center:"E",letters:["D","C","A","R","S","N"],words:["ACRE","ACRES","ARCED","CANE","CANED","CANES","CEDAR","CEDARS","CRANE","CRANED","CRANES","DANCE","DANCER","DANCERS","DANCES","DARE","DARES","DEAN","DEANS","DEAR","DEARS","DRAPE","EARNED","ERASED","LACED","RACED","RANEE","SACRED","SEARED","SNARE","SNARED","SCARE","SCARED","STANCE"],pangrams:["DANCERS","CRANED"]},
+      {center:"T",letters:["A","B","L","E","S","I"],words:["ATTEST","ATTESTS","BASALT","BATTLE","BATTLES","BEAST","BLEAT","BLEATS","BLAST","DETAIL","DETAILS","ELITIST","INSTALL","LATEST","LITTLE","LIST","LISTEN","LATTE","LATTES","SATELLITE","SETTLE","STILTS","STABLE","STALE","STEAL","TABLET","TABLETS","TASTE","TITLE","TITLES","TATTLE","TATTLES"],pangrams:["SATELLITE","TABLETS"]},
+      {center:"I",letters:["M","P","O","R","T","S"],words:["IMPORT","IMPORTS","IMPOST","MIST","MOIST","MRIS","OPTIMIST","PRIM","PRISM","PRIOR","PROMPT","PROSIT","RIMS","RIOTS","SPIT","SPIRIT","SPIRITS","SPLIT","SPORT","STORM","STIR","STRIP","STRIPS","TIMOR","TIPS","TRIM","TRIMS","TRIO","TRIOS","TRIP","TRIPS"],pangrams:["IMPORTS","OPTIMIST"]},
+      {center:"A",letters:["W","N","D","E","R","S"],words:["ANSWER","ANSWERED","AWARE","AWARD","AWARDS","DAWN","DAWNS","DEAN","DEANS","DEAR","DEARS","DRAW","DRAWS","DRAWN","DREAD","DREAM","EARN","EARNS","NEAR","NEARS","SAND","SANDER","SNARE","SNARED","SPARE","SWEAR","WANDER","WANDERS","WANED","WARDEN","WARDENS","WARN","WARNED","WARNS"],pangrams:["WANDERS","ANSWERED"]},
+      {center:"R",letters:["O","U","N","D","E","S"],words:["DOUR","DRONE","DRONES","ENDURE","ENDURES","ERODE","ERODES","NURSE","ROUND","ROUNDS","ROUNDER","ROUNDERS","ROUSE","ROUSED","RUDE","RUDER","RUNE","RUNES","SNORE","SNORED","SNOOPER","SORE","SORER","SOUR","SOUNDER","SUNDERER","UNDER","UNSORED"],pangrams:["ROUNDERS","UNSOURED"]},
+      {center:"E",letters:["N","T","A","R","S","I"],words:["ANISE","ARISE","ARTISTE","ATTIRE","ENTRIES","ENTIRE","ENTIRES","INERT","INSERT","INSANE","INTENSE","IRATE","NASTIER","NEATER","NEAREST","NINE","NINES","RAINIER","RAISIN","RESIST","RETAIN","RETAINS","RETINA","SATIRE","SIREN","SNARE","STARE","TEASE","TENSER","TINIER","TRAINER","TRAINERS","TREE","TREES"],pangrams:["TRAINERS","NASTIER"]},
+      {center:"O",letters:["W","N","D","E","R","S"],words:["DONOR","DONORS","DOORS","DOWNER","DOWNERS","DRONE","DRONES","DROWN","DROWNS","ENDOW","ENDOWS","ERODE","OWNER","OWNERS","PONDER","RENOWN","RENOWNS","RODEO","ROOST","RONDO","SNORE","SNORED","SNOOD","SNOOP","SWORD","SWORN","WONDER","WONDERS","WOOD","WOODS","WOOER","WORN","WORSE"],pangrams:["WONDERS","DOWNERS"]},
+      {center:"L",letters:["A","T","I","N","G","S"],words:["AILING","ALIGN","ALIGNS","ALIST","LASTING","LISTING","SALTING","SAILING","SIGNAL","SIGNALING","SLAIN","SLANG","SLANT","SLANTING","SLATING","SLING","STALLING","STALING","INSTALLING","TAILING","TAILING","TALL","TANGLES","TILING","TILING","LASTING","LASING"],pangrams:["SIGNALING","INSTALLING"]},
+      {center:"A",letters:["C","H","R","O","N","I"],words:["ANCHOR","ARCHAIC","ARCHAION","CHAIN","CHAIR","RANCH","ANARCH","ARCH","ARCHING","CAIRN","CHAR","CHIN","CHINA","CHOIR","CORN","CRANE","HAIR","HARM","HARP","HORN","INCH","IRON","NARC","NARCO","RAIN","RANCH","RANCHION","RICH","ROACH"],pangrams:["ANARCH","RANCHION"]},
+      {center:"T",letters:["E","R","A","S","N","I"],words:["ARTISAN","ARTIST","ATTAINS","CERTAIN","ENTERTAIN","ENTRIES","ENTIRE","INERT","INSERT","NASTIER","NITRATE","NITRATES","RANT","RANTS","RAREST","RESIST","REST","RETAIN","RETAINS","RETINA","SAINT","SATIRE","SATIN","STAIN","STAINER","STERN","STINT","STRAIN","STRAINER","TAINT","TEEN","TENSE","TERRAIN","TITAN","TINIER","TRAIN","TRAINS","TRAIT","TRAITS","TREE","TRITE","TRISTE"],pangrams:["STRAINER","NITRATES"]},
+      {center:"E",letters:["P","A","R","K","S","L"],words:["DRAPE","DRAPES","EARL","EARLS","EASE","ERASE","ERASED","LAPSE","LAPSED","LEAKER","LEAKERS","LEAPERS","LEASE","LEASED","PALER","PALES","PARSLEY","PEARLS","PEEL","PEELS","PLEASE","PLEASED","REAP","REAPS","REPEAL","REPEALS","RESEAL","SALE","SEAL","SEALED","SEALER","SLEEK","SLEEP","SLEEPER","SPARE","SPEAR","SPREE","STALE","STALER","STEAL","STEALER"],pangrams:["SPEAKER","SLEEPWALKER"]},
+      {center:"I",letters:["D","E","S","G","N","R"],words:["DESIRE","DESIGNER","DESIGNS","DINER","DINERS","DIRE","DIRGE","DIRGES","INSIDER","INSIDERS","RESIDE","RESIDES","RESIGN","RESIGNS","RIDER","RIDERS","RIDGE","RIDGES","RIGID","RIND","RINDS","RING","RINGER","RINGERS","RINGS","RINSE","RINSED","SIREN","SIRENS","SINGER","SINGERS","SNIDE","SNIDER"],pangrams:["DESIGNER","REDESIGN"]},
+      {center:"A",letters:["S","T","O","N","E","R"],words:["ARSON","AROSE","ASSERT","ASSORT","ATONE","ATONES","EARN","EARNS","EASTERN","ERASE","NARRATE","NARROW","OATER","ORNATE","RANT","RANTS","REASON","ROAST","SANER","SATEEN","SENATOR","SNARE","SONAR","STARE","STARE","STONE","STONER","STORE","TENANT","TEASPOON","TOAST","TOASTER","TSAR"],pangrams:["SENATOR","ORNATE"]},
+      {center:"U",letters:["M","B","R","E","L","A"],words:["ALBUM","BLUR","BLUE","BLUER","BULGE","LUMBER","LURE","MAUL","MUFFLE","MURAL","RULE","RULER","RUMBLE","UMBRELLA","UMBER","UNABLE","UNREAL","UNREEL","BULL","BURBLE","BUBBLE","BUMBLE","BUMBLER","RUMBA","TUBULAR","TUMBLE","TUMBLER"],pangrams:["UMBRELLA","TUMBLER"]},
+      {center:"E",letters:["N","R","G","A","D","I"],words:["AGER","AGREE","AGREED","AGGRIEVED","ANGER","ANGERED","DANGER","DAGGER","DARE","DARER","DEAR","DEARER","DERANGE","DERANGED","DIAPER","DIRE","DIRER","DRAIN","DRAINAGE","EARNED","ENGAGE","ENGAGED","ENGINEER","ERRAND","GANDER","GARDENER","GRAIN","GRAINED","GRANDE","RANGED","RANGER","RAINED","READER","REIGNED","RENDER"],pangrams:["DRAINAGE","GARDENER"]},
+      {center:"T",letters:["R","I","P","L","E","S"],words:["EPISTLE","FILTER","FILTERS","LITTER","LITTERS","LITTLER","PERSIST","PISTOL","RIPEST","RIPPLE","RIPPLES","SITTER","SLIPPEST","SLITTER","SPIDER","SPIRIT","SPIRITED","SPIT","SPITTER","SPLIT","SPLITTER","STIR","STIPPLE","STIPLE","STRIPE","STRIPES","TILLER","TILLERS","TIPS","TITLE","TITLES","TRIPLE","TRIPLES","TRIPLET","TRIPLETS"],pangrams:["SPLITTER","TRIPLETS"]},
+      {center:"O",letters:["R","G","A","N","I","C"],words:["ACORN","CARGO","CIGAR","COIN","COIR","CONGA","CORN","CORGI","CRAYON","GARCON","GROAN","ICON","IRON","IRONIC","NARCO","NOIR","NOON","ORIGIN","ORGANIC","ORGAN","RACING","RANCOR","RING","ROARING","ROBIN","CORN","CORNING"],pangrams:["ORGANIC"]},
+      {center:"S",letters:["W","I","N","G","E","R"],words:["SINGER","SINGERS","SEWING","SINEW","SIREN","SIRENS","SINGER","SWING","SWINGER","SWINGERS","RINGS","RINSE","RINSING","WIRES","WISER","WINGS","WINNERS","GRINDS","GRINS","SHRINES","SNEER","SNEERING","SWINE"],pangrams:["SWINGERS"]},
+      {center:"A",letters:["M","N","I","G","E","T"],words:["AGATE","AGING","AGITATE","AGITATE","AMEN","AMINE","ANIMATE","ENIGMA","GAME","GAMING","GATE","IMAGE","IMAGINE","MAGNET","MAGNATE","MAGE","MAIN","MAINTAIN","MANAGE","MANE","MANGA","MEAT","MEETING","MIGRATE","MINE","MINING","NAME","NAMING","TAMING","TEAMMATE","TENANT","MAGGOT"],pangrams:["MAGNATE","IMAGINATE"]},
+      {center:"R",letters:["E","A","T","H","S","I"],words:["ARISE","RATHER","RARE","RARER","RAREST","RATE","RATES","RASH","RASHER","REPAIR","REPAIRER","REST","RETIRE","RETIRES","RESHAPE","RISE","RISER","ROSTER","SHARE","SHARER","SHIRT","SHIRE","STAIR","STAIRS","STARE","STARTER","STREAM","TEAR","TEARS","THEIR","THEIRS","THIRST","THIRSTIER","TIRE","TIRES","TRASHER","TRIER"],pangrams:["THIRSTIER"]},
+      {center:"E",letters:["A","N","T","S","W","R"],words:["ANSWER","ANSWERS","AWARE","EARN","EARNS","EARNEST","EASTERN","ENTER","ENTERS","EATEN","NEAREST","NEARER","NEST","NEWT","NEWER","RENEW","RENEWS","RENT","RENTS","RESENT","REST","SANEST","SANER","SEAT","SENT","SEWER","SEWN","SNARE","STEER","STERN","SWEAR","SWEET","SWEATER","TEEN","TENSE","TENSER","TREE","TREES","WEST","WESTERN","WREN","WRENS"],pangrams:["WESTERN","SWEATER"]},
+      {center:"I",letters:["P","A","N","T","E","R"],words:["IMPRINT","INAPT","INCITE","INERT","INERTIA","INPUT","INQUIRE","INTERIP","PAINT","PAINTER","PAIR","PARENT","PARTI","PATIENT","PATTERN","PINE","PIRATE","PINT","RAISIN","RAIN","REPRINT","RETAIN","RIPEN","SPIRIT","SPIT","SPRINT","SPRIT","TAINT","TERRAIN","TINIER","TRAIN","TRAIT","TRIP","TRIPLE"],pangrams:["PAINTER","IMPRINT"]},
+      {center:"O",letters:["F","R","T","U","N","E"],words:["FOOT","FONT","FORTUNE","FORTUNES","FOUR","FOURTEEN","FRONT","FRONTER","FORTE","FORT","FORGO","FORETUN","FOUNT","FROWN","FUTON","NORTH","NOON","NORM","NOTE","NOTER","ONTO","OTTER","OUTER","OUTRUN","PROOF","ROOF","ROOT","ROOST","ROTTEN","ROUND","ROUTE","ROTOR","SNOOT","TOOT","TORN","TOUR","TROOP","TROUT","TUTOR","UNTO"],pangrams:["FORTUNE","FORTUNES"]},
+      {center:"L",letters:["E","A","D","S","N","R"],words:["ALDER","ALDERS","DALE","DALES","DEAL","DEALER","DEALERS","DEALS","DEAN","DEANS","EASEL","ELDER","ELDERS","ISLAND","LANDER","LANDERS","LANDS","LANE","LANES","LEAD","LEADER","LEADERS","LEADS","LEAN","LEANS","LEARN","LEARNED","LEARNS","LEND","LENDER","LENDERS","LENDS","REEL","REELS","RESEAL","SADDLE","SADDLER","SALE","SANDAL","SEAL","SEALED","SLANDER"],pangrams:["SLANDERS","LANDERS"]},
+      {center:"T",letters:["U","N","I","F","E","R"],words:["FRUIT","FRUITER","FURNITURE","FITTER","FLATTER","FLUTTER","FUNNIER","FUTURE","INTER","INERT","INFER","INFERTILE","INTRUDE","NEUTER","NUTTER","RIFT","RIFF","RITE","ROUTINE","RUNT","TINE","TIRE","TRIFLE","TRIM","TRIUNE","TRUE","TRUER","TUNER","TURN","TURNIP","TURRET","UNFETTER","UNIT","UNITE","UNFIT","UNTIE"],pangrams:["FURNITURE"]},
+      {center:"A",letters:["S","K","E","T","R","N"],words:["ANKLE","ANKLES","ARENAS","BASKET","BASKETS","BREAK","BREAKS","EATEN","EARN","EARNS","KNEES","LAKEST","LEASE","MAKER","MAKERS","NASTY","NEAR","NEAREST","RAKE","RAKES","RANSOM","RANT","RANTS","SAKE","SANER","SANK","SATIN","SKATE","SKATER","SNAKE","SNARE","SNEAK","STANK","STEAK","TAKEN","TAKER","TANKS","TASK","TASKS","TSAR"],pangrams:["SKATERS"]},
+      {center:"E",letters:["R","L","A","T","I","N"],words:["AILMENT","ALIEN","ALTER","ALERT","ENTAIL","ENTIRE","ENTITLE","ETERNAL","INTER","INERT","IRATE","ITERATE","LAMENT","LATER","LATERAL","LEARN","LEARNER","LIEN","LINE","LINEAR","LINER","LITTER","LITERAL","LITERATE","NAIL","NEATER","NEUTRALIZE","RAIL","RANT","RATTLE","REAL","RENAL","RENT","RENTAL","RETAIL","RETAIN","RETINA","STALE","STERILE","TRAIL","TRAIN","TREE","TRELLIS"],pangrams:["LITERATE","ETERNAL"]},
+      {center:"O",letters:["V","E","R","S","A","T"],words:["AROSE","ATOP","AVERT","COVER","COVERT","DROVE","GROVE","HOVER","OVER","OVERT","PROVE","ROVE","ROVER","REVOTE","REVOKE","SCORE","SORE","STORE","STOVE","SWORE","TOWER","TOWER","TORE","TROVE","VEST","VOTE","VOTER","VOTERS","VOTES","VORTEX","WORSE"],pangrams:["OVERATE"]},
+      {center:"N",letters:["T","I","G","A","L","E"],words:["ALIEN","ALIGN","ANGEL","ANGLE","ANGLING","ANTIGEN","ENGINE","EATING","ELEGANT","ENTAIL","ENTANGLE","GALLANT","GANTLET","GENTLE","GIANT","GIGGLE","GLEAN","IGNITE","INANE","INNATE","INTENT","LAMENT","LANE","LEAN","LENT","LINE","LINEN","NAIL","NINE","TANGENT","TANGLE","TENANT","TINGLE","TINGLING"],pangrams:["ENTANGLE","TINGLING"]},
+      {center:"S",letters:["A","R","E","D","I","G"],words:["ASIDE","AGREES","ADDRESSED","DAIS","DISEASE","DISEASED","DISREGARD","DRESS","DRESSED","EDGIER","EDDIES","GRADESS","GRASSED","IDEAS","RAIDS","RAISE","RAISED","RAISER","RESIDE","RESIDES","RIDGES","SIGHS","SIEGE","SIRED"],pangrams:["DISREGARDS"]},
+      {center:"T",letters:["I","N","K","E","R","S"],words:["KNITTER","KNITTERS","KNITWEAR","RISKIEST","SITTER","SINISTER","SKIRT","STINT","STINK","STINKER","STINKIEST","STRIKER","THINKER","THINKERS","THINK","THINKS","TINKER","TINKERER","TINKERS","TINTER","TRINKET","TRINKETS","TRICK","TRICKIEST","TRUNK"],pangrams:["TINKERERS","TRINKETS"]},
+      {center:"E",letters:["H","A","R","T","S","I"],words:["ARISE","ASHIER","ARTISTE","EARTH","EARTHIER","EATER","EITHER","HAIR","HASTE","HASTIER","HATE","HATER","HATERS","HEAR","HEART","HEATER","HEIR","HEIRS","HESITATE","HIRE","HIRES","RAISE","RATHER","REHIRE","RETIRE","SATIRE","SHARE","SHATTER","SHEAR","SHEARER","SHIRT","STEER","STARE","SWEAR","TEAR","THEIR","THEIRS","THESE","THRESH","THREE","TREE"],pangrams:["EARTHIER","HEATHERS"]},
+      {center:"A",letters:["L","U","N","C","H","E"],words:["ACHE","ANGEL","ANNEAL","BALANCE","CANAL","CANALE","CANCEL","CANE","CLAN","CLANE","CLEAN","CLEANER","EACH","EAGLE","ENHANCE","HAUL","HEAL","LANCE","LACE","LANE","LAUNCH","LEAN","LUNCH","NASAL","NAVEL","NUCLEI","RANCH","UNCLE","UNCLEAN","ANNUAL"],pangrams:["LAUNCH","UNCLEAN"]},
+      {center:"R",letters:["A","N","G","E","L","I"],words:["ANGER","ANGLER","ARRANGE","ARRANGER","EARRING","ENLARGE","ENRAGE","GAINER","GARAGE","GARGLE","GEAR","GINGER","GLARE","GRAIN","GRAIL","GRIN","LAGER","LARGER","LINGER","LINGERER","LINER","NAILER","RAILING","RAIN","RANGE","RANGER","REAL","REGAL","REIGN","REIN","RENAL","RING","RINGER","RINGLEADER"],pangrams:["RINGLEADER","ENLARGING"]},
+      {center:"O",letters:["U","N","D","E","R","S"],words:["DONOR","DONORS","ENDORSE","ENDURE","ENDURES","ERODE","ERODES","ODDER","ORDER","ORDERS","OUTDOOR","OUTDOORS","OUNCE","UNDER","UNDO","UNDONE","UNSOLD","UNSORE","USURP","ROUND","ROUNDS","ROUNDER","ROUSE","ROUSED","SNORE","SNORED","SOUNDER","SOUR","SOURED","SOURER","SUNROOF","UNDERPOOR"],pangrams:["ROUNDERS","ENDORSED"]},
+      {center:"T",letters:["A","R","I","S","O","N"],words:["ARTISAN","ARTIST","RATION","RATIONS","ROAST","ROTATION","ROTATIONS","SAINT","SATIN","SATIR","SNORT","STATION","STATIONS","STAIR","STAIRS","STAIN","STRAIN","TOAST","TOASTER","TORN","TORSO","TOSS","TRAIN","TRAINS","TRAIT","TRAITS","TRANSIT","TRANSITS","TITAN","TITANS"],pangrams:["ROTATIONS","TRANSITS"]},
+      {center:"E",letters:["B","A","K","R","S","T"],words:["BAREST","BASKET","BASKETS","BASTE","BASTER","BATTER","BEAKER","BEAKERS","BEAST","BEATER","BEATERS","BREAK","BREAKER","BREAKERS","BREAKS","BREAST","BREASTWORK","BREAKFAST","EATER","EATERS","RAKE","RAKES","RAREST","REBATE","REBATES","RETAKE","RETAKES","SAKE","SKATE","SKATER","STARE","STEAK","STEAKER","STREAK","TAKER","TAKERS","TEASE","TEASER"],pangrams:["BREAKERS","BREAKFAST"]},
+      {center:"I",letters:["L","A","N","E","G","S"],words:["AILING","AISLE","ALIEN","ALIENS","ALIGN","ALIGNS","AILING","ENSIGN","GENIUS","GENIAL","GINSENG","INSANE","ISLE","LAIN","LINE","LINES","LINGER","LINGERS","NAÏVE","NAIL","NAILS","NINE","NINES","SAILING","SIGNAL","SIGNALING","SIGNING","SINGLING","SLAIN","SLING","SNAIL"],pangrams:["SIGNALING"]},
+      {center:"A",letters:["B","R","E","W","I","N"],words:["AIRWEB","AWARE","BANE","BANNER","BARE","BARN","BEAN","BEAR","BRAIN","BRAN","BREW","BRAWN","BRINE","EARN","INANE","INBORN","INNER","INWARD","IRON","IRATE","NEAR","RAIN","RAINBOW","REIN","WANE","WARDEN","WARN","WEAN","WEAR","WINE","WIRE","WREN","AIRBORNE"],pangrams:["RAINBOW","AIRBORNE"]},
+      {center:"U",letters:["N","D","E","R","S","T"],words:["DUST","DUNE","DUNES","DUNST","DURING","ENDURE","ENDURES","ENSURE","ENSURED","NURSE","NURSED","NUDGE","RUDE","RUDER","RUNE","RUNES","RUNT","RUNTS","RUSE","RUST","RUSTED","STUD","STUN","STUNNED","STUNG","SURE","SURER","TURN","TURNED","TURNS","UNDER","UNDERSTUDY","UNDO","UNDONE","UNSURE","UNTIED","UNUSED"],pangrams:["UNDERSTUDY"]},
+      {center:"E",letters:["G","R","A","D","N","I"],words:["AGREED","ANGER","ANGERED","ARRANGE","ARRANGED","DANGER","DARE","DARED","DARER","DEAR","DEARER","DEGRADE","DEGRADED","DERANGE","DERANGED","DIAPER","DIRE","DRAIN","DRAINAGE","EARNED","ENDEAR","ENGAGE","ENGAGED","ENGENDER","ENGINEER","ERRAND","GANDER","GARDEN","GARDENER","GRADE","GRADED","GRANDER","GRANITE","GRAINED","RANGED","RANGER","READER","REGARD","RENDER","RIND"],pangrams:["GARDENER","DEGRADING"]},
+      {center:"O",letters:["L","A","T","I","N","C"],words:["ACTION","ATOLL","COALITION","COIL","COIN","COLONIAL","COOL","COTTON","ICON","LOOT","LOTION","LOCATION","NOTIONAL","NOON","NOTION","ONTO","OPTICAL","TACO","TALON","TONIC","TOLL","TOOL","TOPICAL","TOTAL","TYPICAL"],pangrams:["COALITION","LOCATION"]},
+      {center:"S",letters:["T","A","R","E","K","N"],words:["EASTERN","EARNEST","NEST","RESET","REST","SAKE","SANER","SANEST","SANK","SATIN","SKATE","SKATER","SKATERS","SNAKE","SNARE","SNEAK","SNEAKER","STANK","STARK","STEAK","STREAK","STEAKS","TASK","TASKS","TEASE","TEASER","TENSE","TSAR","TSARS"],pangrams:["SNEAKERS","SKATERS"]},
+      {center:"T",letters:["O","W","N","E","R","S"],words:["ENTER","ENTERS","NEST","NEST","NOTE","NOTER","NOTES","ONSET","OTHER","OTHERS","OTTER","OTTERS","OWNER","OWNERS","RESORT","REST","RESTORE","ROSTER","ROTTEN","SENT","SETTER","SNORT","SNOT","STERN","STONE","STONER","STORE","STORM","STOREY","STORK","SWEET","TOWER","TOWERS","TOWN","TOWNS","TOSS","WREN","WRENS","WORST","WESTERN"],pangrams:["WESTERN","TOWERS"]},
+      {center:"A",letters:["L","I","G","H","T","S"],words:["ALIGHT","ALIGHTS","GAIT","GAITS","GALA","GALAS","GALLANT","GASH","GIST","GLASS","HAIL","HAILS","HALT","HALTS","HASH","HAST","LAST","LASH","LATH","LIGHT","LIGHTS","LIST","SAIL","SALT","SASH","SHAG","SHALL","SIGHT","SIGNAL","SLAT","SLIGHT","STAG","STALL","TAIL","TAILS","TALL","THIGH","THIS"],pangrams:["ALIGHTS","SLIGHTA"]},
+      {center:"R",letters:["O","T","A","L","E","N"],words:["ALTER","ALERT","ANGLER","ANTLER","ARTERIAL","EARL","EARNER","EATER","ENROLL","ENTER","ETERNAL","LATER","LATERAL","LEARNER","LONER","LOANER","NARRATOR","NEAR","NEARER","NOON","NOONER","NOR","ORAL","ORNATE","RARE","RARER","RATE","RATTLE","REAL","RENT","RENTAL","RETORT","ROOT","ROTOR","TONER","TORN","TOWER","TRAIL","TREE","TROLL"],pangrams:["ETERNAL","ORNATE"]},
+      {center:"E",letters:["S","T","A","M","P","L"],words:["AMPLE","AMPLES","ELEMENT","EMANATE","MAPLE","MAPLES","MEAL","MEALS","MEAT","MEATS","METAL","METALS","PASTE","PASTEL","PELLET","PELLETS","PEST","PLEAT","PLEATS","PLEASE","SAMPLE","SAMPLES","SEAL","SEAM","SEPARATE","SIMPLE","SLEET","SMELT","STALE","STALEMATE","STAMP","STEAL","STEAM","STEEL","STEEP","STEM","STEP","TALE","TALES","TAME","TAPE","TAPES","TEAM","TEAMS","TEASE","TEMPLE","TEMPLES"],pangrams:["STALEMATE","TEMPLES"]},
+      {center:"I",letters:["N","G","E","R","S","T"],words:["ENGINES","ENTIRE","IGNITE","IGNITES","INERT","INGREDIENT","INGREDIENTS","INSERT","INSIST","INSISTING","INTER","INTEREST","REIN","REINS","RESISTING","RING","RINGER","RINGERS","RINGS","RINSE","RINSING","SIGNER","SIGNET","SINGER","SINISTER","SIREN","STINGER","STING","STIR","STRING","STRINGENT","TIGER","TINIER","TIRING","TRIGGER","TWINING"],pangrams:["STRINGENT","INGREDIENTS"]},
+      {center:"A",letters:["D","R","E","W","S","N"],words:["ANSWER","ANSWERED","ANSWERS","AWARD","AWARDS","DARN","DARNS","DAWN","DAWNS","DEAN","DEANS","DEAR","DEARS","DRAW","DRAWN","DRAWS","DREAD","EARN","EARNED","EARNS","NEAR","NEARED","NEARS","SAND","SANDER","SANE","SANER","SNARE","SNARED","SWEAR","WANDER","WANDERER","WANDERERS","WANDERS","WANE","WANED","WARDEN","WARDENS","WARN","WARNED","WARNS","WEAN","WEANED","WEANS"],pangrams:["WANDERERS","ANSWERED"]},
+      {center:"O",letters:["P","L","A","I","N","T"],words:["APPOINT","ATOP","COALITION","LOTION","LOCATION","NATIONAL","NOTION","ONTO","OPTIONAL","OPTIC","OPTICAL","OPTION","PATROL","PILOT","PLANTATION","PLOP","PLOT","POINT","POLL","POLO","POOL","PORTION","POSTAL","POTION","TALON","TOOT","TOOL","TOPICAL","TOTAL","TROPICAL"],pangrams:["PLANTATION","OPTIONAL"]},
+      {center:"E",letters:["D","S","I","G","N","R"],words:["DESIGN","DESIGNER","DESIGNERS","DESIRE","DESIRES","DINER","DINERS","DIRGE","DIRGES","DRESS","ELDER","ENDING","ENDINGS","ENGINEER","ENGINEERS","ENSIGN","ENSURE","GENRE","GENRES","INSIDER","INSIDERS","REDESIGN","REIGN","REIGNS","REIN","REINS","RENDER","RENDERS","RESIDE","RESIDES","RESIGN","RESIGNS","RIDGE","RIDGES","RINSE","RINSED","SIREN","SIRENS","SNIDE","SNIDER"],pangrams:["DESIGNERS","REDESIGN"]},
+      {center:"T",letters:["O","P","I","N","E","S"],words:["DEPOSIT","INSPECT","INSIST","INSTEAD","INTENT","INTONE","INTONES","INVEST","NOISE","ONSET","OPTICS","OPTION","OPTIONS","PISTON","POINT","POINTS","POLITE","POSIT","POTION","POTIONS","SNOOT","SNOT","SPIT","SPLIT","SPITE","STINT","STOIC","STONE","STINT","TENNIS","TENSE","TIPS","TONIC","TONICS","TOPIC","TOPICS","TOSS"],pangrams:["DEPOSITS","OPTIONS"]},
+      {center:"A",letters:["R","G","E","T","S","N"],words:["AGENT","AGENTS","ANGER","ANGERS","ARRANGE","ARRANGES","EARNEST","EASTERN","ENGRAVE","ENRAGE","GARAGE","GARNET","GARNETS","GRANT","GRANTS","GREASE","GREAT","GREATER","NEAREST","NEATER","ORANGE","ORNATE","RANGE","RANGES","RANT","RANTS","REGENERATE","SAGE","SANER","STAGE","STAGGER","STARE","STRANGE","STRANGER","TARGET","TEENAGE","TEENAGER"],pangrams:["STRANGER","GARNETS"]},
+      {center:"I",letters:["P","A","N","E","R","T"],words:["INHERIT","ENTIRE","IMPRINT","INAPT","INERT","INERTIA","INPUT","PAINT","PAINTER","PAINTERS","PAIR","PARENT","PARTI","PATIENT","PATTERN","PINE","PIRATE","PINT","PRINT","PRINTER","RAIN","REPRINT","RETAIN","RIPEN","SPRINT","SPIT","SPIRIT","TERRAIN","TINIER","TRAIN","TRAIT","TRIP","TRIPLE","TRIPE"],pangrams:["PAINTERS","IMPRINT"]},
+      {center:"O",letters:["R","E","S","T","A","N"],words:["AROSE","ARSON","ATONE","ATONES","EARN","EARNS","EASTERN","NARRATOR","NOOSE","NOON","NOONEST","NOTE","NOTER","NOTES","ORATE","ORNATE","REASON","RESORT","ROAST","ROSTER","ROTATE","ROTTEN","SENSOR","SERMON","SNORE","SNORT","SONAR","STONE","STONER","STORE","STOREY","TONER","TONERS","TORE","TORN","TORSO"],pangrams:["ORNATE","SENATOR"]},
+      {center:"L",letters:["E","A","R","N","I","G"],words:["ALIEN","ALIGN","AISLE","ANGEL","ANGLE","ANGLER","EAGLE","EARRING","ENLARGE","ENLARGING","GALLERY","GARGLE","GENERAL","GENRE","GIRL","GLARE","GLARING","GLEANER","GRAIN","GRAIL","GRILLE","LAGER","LARGER","LIAR","LIEN","LINE","LINEAR","LINER","LINGER","LINGERIE","NAILING","RAILING","REGAL","REIGN","RENAL","RILL"],pangrams:["ENLARGING","LINGERIE"]},
+      {center:"S",letters:["T","A","N","I","G","E"],words:["AGAINST","AGITATES","ANGIEST","ASSIGN","ASSIST","EAST","EATING","EASING","ENSIGN","ESTATE","GAINSAY","GASSING","GENESIS","GIANT","GIANTS","GNATS","INSIST","INSANE","SENSING","SETTING","SIGHTING","SIGNETS","SINGING","SITTING","STAIN","STAINING","STAGING","STATING","TASTING","TEASE","TEASING","TENSING"],pangrams:["ASSISTING","STAINING"]},
+      {center:"E",letters:["R","A","T","H","S","I"],words:["AERIE","ARISE","ARTISTE","ASHIER","EARTHS","EARTHIER","EATER","EITHER","HAIR","HASTE","HASTIER","HATE","HATER","HATERS","HEAR","HEART","HEATER","HEIR","HEIRS","HESITATE","HIRE","HIRES","RAISE","RATHER","REHIRE","RETIRE","SATIRE","SHARE","SHATTER","SHEAR","SHEARER","SHIRT","STARE","SWEAR","TEAR","THEIR","THESE","THRESH","THREE","TREE"],pangrams:["EARTHIER","THIRSTIER"]},
+      {center:"A",letters:["R","T","I","C","L","E"],words:["ACRE","ALERT","ALTER","ARTICLE","ARTICLES","ATTIC","ATTRACT","CALLER","CARE","CART","CATTLE","CIRCA","CLATTER","CLEAR","CLEARER","CRATE","CREATE","DETAIL","EARL","IRATE","LACE","LATER","LATERAL","LATTE","LETTER","LITTER","LITERAL","LITERATE","RACE","RAIL","RATTLE","REAL","RECITAL","RETAIL","TRACE","TRAIL","TRELLIS"],pangrams:["ARTICLES","LITERATE"]},
+      {center:"U",letters:["T","R","E","A","N","S"],words:["AUNT","AUNTS","EARNEST","ENSURE","ENSURED","NATURE","NATURES","NEUTER","NURSE","NURSED","RANT","RANTS","RUNT","RUNTS","RUSE","RUST","RUSTED","RUTS","SATURATE","SAUNTER","SNARE","STUN","STUNNER","SURE","SURER","SUTURE","TENURE","TREASURE","TRUE","TRUER","TRUANT","TRUST","TURN","TURNED","TURNER","TURNERS","TURNS","UNSURE","VENTURE","VENTURES"],pangrams:["VENTURES","TREASURE"]},
+      {center:"O",letters:["R","A","N","G","E","S"],words:["AROSE","ENRAGE","ENRAGES","GARNER","GARNERS","GOOSE","GROAN","GROANS","GROOVE","GROOVES","GROPER","NOOSE","ORANGE","ORANGES","ORGAN","ORGANS","OOZE","RANGE","RANGES","RANGER","RANGERS","REASON","REASONS","ROAR","ROARS","ROAN","SAGE","SONAR","SNORE","SNORER"],pangrams:["ORANGES","RANGERS"]},
+      {center:"T",letters:["H","E","A","R","S","I"],words:["ARTIST","ARTISTE","ATTEST","EARTH","EARTHIER","EATER","EITHER","HAIRIEST","HASTE","HASTIER","HATE","HATER","HATERS","HEAR","HEART","HEATER","HEIR","HEIRS","ITERATE","RATHER","SATIRE","SHATTER","SHARE","SHEAR","SHIRT","STAIR","STAIRS","STARE","STRUT","STARTLE","TASTE","TASTER","TEAR","THEIR","THEIRS","THESE","THIRST","THREE","TREAT"],pangrams:["EARTHIEST","HAIRIEST"]},
+      {center:"E",letters:["L","A","M","P","S","T"],words:["AMPLE","AMPLES","EASEL","ELEMENT","EMANATE","EXAMPLE","EXAMPLES","MAPLE","MAPLES","MEAL","MEALS","MEAT","MEATS","METAL","METALS","PASTE","PASTEL","PELLET","PELLETS","PEST","PLEAT","PLEATS","PLEASE","SAMPLE","SEAL","SEAM","SLEET","SMELT","STALE","STALEMATE","STAMP","STEAL","STEAM","STEEL","STEEP","STEM","STEP","TALE","TALES","TAME","TAPE","TAPES","TEAM","TEAMS","TEASE","TEMPLE","TEMPLES"],pangrams:["STALEMATE","EXAMPLES"]},
+      {center:"A",letters:["N","G","R","E","D","I"],words:["ANGER","DANGER","DAGGER","DARNED","DARNING","DEGRADING","DEIGN","DENIED","DERANGE","DERANGED","DINE","DINED","DINER","DING","DINNER","DIRE","DRAG","DRAGGED","DRAIN","DRAINED","DRAINING","DREAD","DRIED","ENGAGE","ENGAGED","ERRAND","GANDER","GARDEN","GARDENER","GRAIN","GRAINED","GRAND","GRANDER","GRIND","RAID","RAIDED","RAIN","RAINED","RAINING","RANGE","RANGED","RANGER","READING"],pangrams:["DRAINING","GARDENER"]},
+      {center:"R",letters:["E","S","P","A","K","T"],words:["DRAPER","EXPERT","KEEPER","PACKER","PARSER","PATTER","PRESTO","RAREST","REAPER","REAPERS","REPEAT","REPEATER","REPEATS","REPORT","RESPECT","REST","RESTER","RETAKE","RETAKES","SPARK","SPARE","SPEAKER","SPEAR","STREAK","STREAKER","STREP","TAPER","TAPERS","TEASPORK","TRAPPER","TRAPPERS","TREKKER"],pangrams:["STREAKER","SPEAKERS"]},
+      {center:"I",letters:["O","N","S","T","E","R"],words:["EROTIC","EROSION","INSERT","INTERIOR","IRON","IRONIC","IRONS","NOISE","NOISES","NOIR","ONSITE","ORIENT","ORIENTS","SENIOR","SENIORS","SIREN","SIRENS","SISTER","SONIC","STERN","STIR","STONE","STONER","STORIES","TIRE","TIRES","TINIER","TONIC","TONICS","TRIO","TRIOS"],pangrams:["INTERIOR","IRONIEST"]},
+      {center:"E",letters:["N","A","R","G","D","I"],words:["AGEING","AGREED","ANGER","ANGERED","ARRANGE","ARRANGED","DANGER","DARE","DARED","DEAR","DEGRADE","DEGRADED","DERANGE","DERANGED","DIRE","DRAIN","DRAINAGE","EARNED","ENDEAR","ENGAGE","ENGAGED","ENGENDER","ENGINEER","ERRAND","GANDER","GARDEN","GARDENER","GRADE","GRADED","GRAINED","GRANDE","GRANDER","GRANITE","RAINED","RANGE","RANGED","RANGER","READER","REGARD","RENDER"],pangrams:["GARDENER","DRAINAGE"]},
+      {center:"A",letters:["C","K","E","R","S","T"],words:["ACRE","ACRES","CAKE","CAKES","CARE","CARES","CART","CARTS","CASE","CASK","CAST","CASTER","CRATE","CRATES","CREAK","DARK","DARKER","DRAKE","EARMARK","EAST","KNACK","KNACKER","LAKE","MAKE","MAKER","MAKERS","RAKE","RAKES","RACE","RACES","SACK","SAKE","SCARE","SKATE","SKATER","SLACK","SNAKE","SNARE","STACKER","STAKE","STARE","STEAK","TACK","TAKE","TAKER","TASK"],pangrams:["STACKERS","KNACKER"]},
+      {center:"O",letters:["U","N","D","E","R","L"],words:["DONOR","DRONE","DUNE","ENDURE","ENROLL","ERODE","LOUDER","LONER","LORE","LOUD","LOUNDER","LURE","NODE","NOODLE","NOON","NUDE","ODER","OLDER","ORDER","OUNCE","UNDER","UNDO","UNDONE","ROUND","ROUNDER","ROLE","RODE","ROGUE","RONDE","RONDO","RULE","RULED","RULER","SNORE","SNORED","SOLDER","SOLE","SORE","SOUR","SOUNDER","TOUR","TOURED"],pangrams:["ROUNDER","ENROLLED"]},
+      {center:"N",letters:["A","R","T","I","S","E"],words:["ANTLERS","CERTAIN","EARN","EARNS","EARNEST","EASTERN","ENTERTAIN","ENTIRE","INANE","INERT","INNER","INSANE","INSERT","INTENSE","INTERN","INTERNS","NASTIER","NEAR","NEAREST","NINE","NINES","RAIN","RAINS","RANT","RANTS","REIN","REINS","RENT","RENTS","RETAIN","RETAINS","RETINA","SAINT","SANE","SANER","SATIN","SINISTER","STRAIN","TENANT","TENANTS","TERRAIN","TRAIN","TRAINS","VEIN"],pangrams:["ENTERTAINERS"]},
+      {center:"T",letters:["A","N","E","R","S","W"],words:["ANSWER","ANEW","ARREST","ASSERT","EAST","EASTERN","EARNEST","ENTER","ENTERS","NEST","NEWEST","RENT","RENTS","RESENT","REST","SENT","SETTER","STARE","START","STARTER","STERN","STERNER","SWEAR","SWEATER","SWEET","TANNER","TARN","TART","TASTE","TASTER","TEAR","TEARS","TENSE","TENSER","TERN","TEST","TESTER","TREE","TREES","TRUST","TWEET","WART","WARTS","WATER","WEST","WESTERN","WREST"],pangrams:["SWEATER","WESTERN"]},
+      {center:"I",letters:["D","E","S","A","G","N"],words:["ADVISE","AGING","AGEING","AIDE","AIDES","ASIDE","DESIGN","DESIGNER","DIAGNOSE","DISEASE","ENSIGN","GENIUS","IDEAS","INSANE","INSIDE","NAIVEST","RAISING","RESIGN","RESIGNS","RIDGES","SIDING","SIEGE","SIGNAL","SIGNING","SINGING","SINGED","SNIDE","SNIDER"],pangrams:["DESIGNER","DIAGNOSE"]},
+      {center:"A",letters:["L","M","O","N","D","S"],words:["ALMOND","ALMONDS","ALSO","ADORN","AMASS","ATOM","CLAN","CLAD","CLAM","CLAMS","DAMSON","DOLMAN","DOMAIN","DOLL","DOLLARS","LAND","LANDS","LOAD","LOADS","LOAM","MALT","MODAL","MOLD","MOLDS","MONAD","NASAL","NODAL","NOMAD","NOMADS","ORAL","SALON","SALMON","SAND","SANDAL","SLALOM","SLAM","STAND","MODAL"],pangrams:["ALMONDS","SANDAL"]},
+      {center:"E",letters:["R","S","T","I","N","G"],words:["ENSIGN","ENGINES","ENTIRE","GENIE","GENIES","GINSENG","IGNITE","IGNITES","INSERT","INTEGER","INTEGERS","INTEREST","NERVE","NERVES","NESTING","RESENT","RESET","RESIGN","RESIGNS","RING","RINGER","RINGERS","RINGS","RINSE","RINSING","SERIES","SIREN","SIRENS","SINGER","SINGERS","SINISTER","STEER","STINGER","STING","STERN","STERNER","STRING","STRINGENT","TENSER","TIGER","TIGERS","TRIGGER"],pangrams:["STRINGENT","INTEGERS"]},
+      {center:"O",letters:["M","A","N","I","C","L"],words:["ANIMAL","CLAIM","COAL","COIL","COIN","COLONIAL","COMMA","COMMON","ICON","IONIC","LOOM","LOOMING","MAIL","MAIN","MALIGN","MANIA","MANIC","MANOR","MOON","MOANING","MOAN","MOIL","MOLAR","NOMINAL","NOON","ONION","OLIO","AMINO","NOMINAL","OMINOUS"],pangrams:["COLONIAL","NOMINAL"]},
+      {center:"T",letters:["A","R","E","S","I","N"],words:["ARTISAN","ARTISTE","ATTAIN","ATTAINS","CERTAIN","ENTERTAIN","ENTIRE","ENTRIES","INSERT","NASTIER","NITRATE","NITRATES","RANT","RANTS","RAREST","RESIST","RETAIN","RETAINS","RETINA","SAINT","SATIRE","SATIN","STAIN","STAINER","STERN","STINT","STRAIN","STRAINER","TRANSIT","TERRAIN","TITAN","TINIER","TRAIN","TRAINS","TRAIT","TRAITS","TREE","TRITE"],pangrams:["STRAINER","NITRATES"]},
+      {center:"E",letters:["R","A","L","P","S","T"],words:["ALERT","ALERTS","ALTER","ALTERS","AMPLE","AMPLES","DRAPE","DRAPES","EARL","EARLS","EATER","LAPSE","LAPSED","LASER","LATER","LATEST","LATERAL","LEAPER","LEAPERS","LEASE","PALER","PALES","PASTEL","PEARL","PEARLS","PEEL","PEELS","PLASTER","PLEASE","PLEAT","PLEATS","RATTLE","REAL","REPEAL","RESEAL","SALE","SEAL","SEAL","SLEET","SPARE","SPEAR","STALE","STALER","STEAL","STEEP","STEP","TALE","TALES","TAPER","TEASE","TRAP","TRAPS"],pangrams:["PLASTERS","PEARLEST"]},
+      {center:"A",letters:["R","I","V","E","T","S"],words:["ARRIVE","ARRIVES","ARTIST","ARTISTE","ASSERT","ATTIC","AVERTS","AVERT","CRAVE","IRATE","IRRITATE","ITERATE","RAISE","RATE","RAVE","RAVES","REVIS","RIVET","RIVETS","SATIRE","SAVE","SAVER","STAIR","STAIRS","STARE","STARVE","TASTE","TASTER","TEAR","TIARA","TRAIT","TRAITS","VASE","VAST","VASTER","VISTA"],pangrams:["STARVE","RIVETS"]},
+      {center:"N",letters:["O","U","T","I","R","E"],words:["ENVIRON","INERT","INTENT","INTER","INTERN","INERT","INURE","IRON","NEURON","NOON","NOTION","NOUN","NURSE","NUTRITION","ORIENT","OUNCE","OUTEN","REIN","RENOWN","RENT","REUNION","ROTTEN","ROUTINE","RUIN","RUNE","RUNT","TENOR","TENON","TERN","TONNE","TORN","TOUR","TRAIN","TRIUNE","TUNE","TUNER","TURN","TURNE","UNION","UNIT","UNITE","UNTIE","URINE"],pangrams:["NUTRITION","ROUTINE"]},
+      {center:"S",letters:["E","A","R","T","H","N"],words:["ASSERT","EARNEST","EASTERN","EARTH","EARTHS","ERASE","HARNESS","HARVEST","HASTE","HASTEN","HASTENS","HEARTS","HEARS","HEARTEN","NEAREST","NEST","NESTS","RASH","RASHEST","RESENT","REST","RESTS","SANEST","SASH","SHATTER","SHARE","SHARES","SHATTER","SHEAR","SHEARS","SNARE","SNARES","STARE","STARES","STERN","STRESS","TARNISH","TEAR","TEARS","TENSE","THANES","THRASH","THESE","THRESH"],pangrams:["HARNESS","THRASH"]},
+      {center:"O",letters:["W","E","R","S","T","N"],words:["DONOR","DONORS","DOWNER","DOWNERS","DRONE","DRONES","ENTER","ENTERS","ERODE","NOSE","NOTE","NOTER","NOTES","ONSET","OTHER","OTHERS","OTTER","OTTERS","OWNER","OWNERS","RENOWN","RESORT","REST","RESTORE","ROSTER","ROTTEN","ROWEL","SENT","SNORE","SNORED","SNORT","STONE","STONER","STORE","STORM","STORK","SWORN","TOWER","TOWERS","TOWN","TOWNS","TORE","TORN","TORSO","TOSS","WREN","WRENS","WORSE","WORST"],pangrams:["TOWERS","DOWNERS"]},
+      {center:"L",letters:["A","R","E","T","I","S"],words:["AISLE","ALERT","ALERTS","ALTER","ALTERS","DETAIL","DETAILS","EARLIEST","INSTALL","ISLE","LAIRS","LASER","LAST","LATER","LATEST","LATERAL","LETTER","LETTERS","LIST","LITTER","LITTERS","LITERAL","LITERALS","LITERATE","REALIST","RETAIL","RETAILS","RILE","RILES","SAIL","SETTLE","SETTLER","SILT","SLEET","STALE","STALER","STEAL","STEEL","STERILE","STILE","TALE","TALES","TALL","TALLER","TALLEST","TILE","TILES","TITLE","TITLES","TRAIL","TRAILS","TRELLIS"],pangrams:["LITERATE","EARLIEST"]},
+      {center:"A",letters:["G","R","E","T","S","N"],words:["AGENT","AGENTS","ANGER","ANGERS","ARRANGE","ARRANGES","EARNEST","EASTERN","ENGRAVE","ENRAGE","GARAGE","GARNET","GARNETS","GRANT","GRANTS","GREASE","GREAT","GREATER","NEAREST","NEATER","ORANGE","ORNATE","RANGE","RANGES","RANT","RANTS","SAGE","SANER","STAGE","STAGGER","STARE","STRANGE","STRANGER","TARGET","TEENAGE","TEENAGER"],pangrams:["STRANGER","GARNETS"]},
+      {center:"E",letters:["W","O","R","S","T","N"],words:["ENTER","ENTERS","ERODE","NOSE","NEWER","NEWEST","NOTE","NOTER","NOTES","ONSET","OTHER","OTHERS","OTTER","OTTERS","OWNER","OWNERS","RENEW","RENEWS","RESORT","REST","RESTORE","ROSTER","ROTTEN","SENT","SEWN","SNORE","SNORED","SNORT","STERN","STERNER","STONE","STONER","STORE","SWEET","TOWER","TOWERS","TREE","TREES","TERSE","WEST","WESTERN","WREN","WRENS","WORSE"],pangrams:["WESTERN","TOWERS"]},
+      {center:"T",letters:["R","A","I","S","E","L"],words:["AISLE","ALERT","ALTER","ALTERS","ARTIST","ARTISTE","ATTEST","DETAIL","DETAILS","EARLIEST","INSTALL","LATER","LATEST","LATERAL","LETTER","LETTERS","LIST","LITTER","LITTERS","LITERAL","LITERALS","LITERATE","REALIST","RETAIL","SETTLE","SETTLER","STALE","STALER","STEAL","STERILE","TASTE","TASTER","TILE","TILES","TITLE","TITLES","TRAIL","TRAILS","TRELLIS","TRITE","TATTERS","TATTER"],pangrams:["EARLIEST","LITERATE"]},
+      {center:"R",letters:["E","A","L","I","G","N"],words:["ALIEN","ANGER","ANGLER","ARRANGE","ARRANGER","EARRING","ENLARGE","ENRAGE","GAINER","GARGLE","GEAR","GINGER","GLARE","GRAIN","GRAIL","GRILL","GRILLE","GRIN","LAGER","LARGER","LIEN","LINGER","LINER","NAILER","RAILING","RAIN","RANGE","RANGER","REAL","REGAL","REIGN","REIN","RENAL","RILL","RING","RINGER"],pangrams:["ENLARGING","ARRANGER"]},
+      {center:"I",letters:["M","A","T","E","R","S"],words:["ARTISTE","EMIT","IMITATE","IMITATES","IRATE","MERIT","MERITS","MISER","MIST","MISTER","MITERS","MITRE","RAISE","RESIST","SATIRE","SMITE","SMITER","SPIRIT","STIR","STREAM","STRIPE","STRIPES","TIMER","TIMERS","TIRE","TIRES","TINIER","TRAIT","TRAITS","TRIM","TRIMS","TRIS"],pangrams:["IMITATES","SMARTIE"]},
+      {center:"O",letters:["R","C","K","E","T","S"],words:["COCK","COOK","COOKER","COOKERS","CORK","CORKER","CORSET","COST","CROCK","CROOK","DOCK","DOCKER","LOCK","LOCKER","MOCK","MOCKER","POCKET","POKER","ROCK","ROCKER","ROCKET","ROCKETS","ROSTER","SCORE","SCORER","SHOCK","SOCK","SOCKET","STOCK","STOCKER","STORE","STORK","STROKE","STROKES","TOOK","TOSS"],pangrams:["ROCKETS","STOCKERS"]},
+      {center:"A",letters:["B","R","I","G","H","T"],words:["ARIGHT","BAIT","BATH","BRAG","BRIGHT","GARB","GAIT","GRAB","GRAPH","GRIT","HAIR","HABIT","HARP","IRATE","RABBIT","RAFT","RAGA","RAIN","RATH","RICH","RIGHT","THAT","TIARA","TRAIT","BIRTH","GIRTH"],pangrams:["AIRTIGHT"]},
+      {center:"E",letters:["S","P","A","R","K","D"],words:["ASKED","DARE","DARED","DARES","DARK","DARKER","DRAPE","DRAPED","DRAPES","DRESS","EASE","EASED","ERASED","PARED","PARSE","PARSED","PEAKED","PEAR","PEARS","RAKED","READER","REPASS","SEARED","SPARE","SPARED","SPEAK","SPEAKER","SPEAR","SPEARED","SPREAD","STREAKED"],pangrams:["SPEAKER"]},
+      {center:"N",letters:["A","I","G","H","T","E"],words:["AGAIN","AGEING","AGING","ANGEL","EATING","ENGINE","ENTANGLE","GAINING","GAITING","GATE","GIANT","GNASHING","HEATING","HEIGHTEN","IGNITE","INANE","INNATE","INTENT","KNIGHT","LEANING","MEANING","NEIGH","NIGHT","NIGHTIE","NINE","NINETEEN","NINTH","TANGLE","TENANT","THING","THINNING","TIGHTEN"],pangrams:["NIGHTIE","TIGHTENING"]},
+      {center:"S",letters:["P","A","R","K","E","T"],words:["BASKET","BASKET","BLAST","BRAKE","BRAKES","BREAK","BREAKS","BREAKFAST","CREAK","CREAKS","EAST","EATERS","PARKS","PARSE","PARTS","PASTE","PESTER","RAKES","REPASS","REST","SAKE","SANK","SCARE","SKATE","SKATER","SKATERS","SPARK","SPARKS","SPARE","SPEAR","STARE","STARK","STEAK","STEAKS","STREAK","STREAKS","TASK","TASKS","TEASE"],pangrams:["STREAKS","SKATERS"]},
+      {center:"A",letters:["L","E","R","N","I","G"],words:["ALIEN","ALIGN","AISLE","ANGER","ANGLER","ANGEL","ANGLE","EAGLE","EARRING","ENLARGE","ENLARGING","GAIN","GALE","GARGLE","GENERAL","GENRE","GIRL","GLARE","GLARING","GLEANER","GRAIN","GRAIL","GRILL","GRILLE","GRIN","LAGER","LARGER","LIAR","LIEN","LINE","LINEAR","LINER","LINGER","NAIL","NAILING","RAIL","RAILING","RAIN","RANGE","REAL","REGAL","REIGN","RENAL"],pangrams:["ENLARGING"]},
+      {center:"T",letters:["E","R","O","N","I","S"],words:["CONTORT","EROTIC","INSERT","INTERIOR","IRON","IRONIC","IRONS","NITRATE","NOISE","NOIR","ORIENT","ORIENTS","RESORT","REST","RETIRE","RETORT","ROOSTER","ROOT","ROTTEN","SENIOR","SIREN","SISTER","SNORE","SNORT","SONIC","STERN","STIR","STONE","STONER","STORE","STORIES","TIRE","TIRES","TONIC","TONICS","TRIO","TRIOS","TRITE"],pangrams:["INTERIOR"]},
+      {center:"E",letters:["S","T","A","R","N","I"],words:["ANISE","ARISE","ARTISTE","ATTIRE","ENTRIES","ENTIRE","INERT","INSERT","INSANE","INTENSE","IRATE","NASTIER","NEATER","NEAREST","NINE","NINES","RAISIN","RESIST","RETAIN","RETAINS","RETINA","SATIRE","SIREN","SNARE","STARE","TEASE","TENSER","TINIER","TRAINER","TRAINERS","TREE","TREES"],pangrams:["TRAINERS","NASTIER"]},
+      {center:"O",letters:["R","T","A","L","E","N"],words:["ALONE","ALTAR","ALTER","ATOLL","ATONE","EARL","EATER","ENROLL","ENTER","ETERNAL","LATER","LATERAL","LEARNER","LONER","LOANER","NOON","NOONER","NOTE","NOTER","ORAL","ORNATE","ORATE","RARE","RATE","RATTLE","REAL","RENT","RENTAL","ROOT","ROTOR","ROLE","TONER","TOLL","TORE","TORN","TOWER","TRAIL","TREE","TROLL"],pangrams:["ORNATE","ETERNAL"]},
+      {center:"A",letters:["S","W","E","R","N","T"],words:["ANSWER","ANSWERED","ANSWERS","ANEW","AWARE","EARN","EARNS","EARNEST","EASTERN","ENTER","ENTERS","NEAT","NEAREST","NEST","NEWER","RENT","RENTS","RESENT","REST","SANE","SANER","SANEST","SEAT","SENT","SEWN","SNARE","STARE","SWEAR","SWEATER","TARN","TARS","TASTE","TEAR","TEARS","TENSE","TERN","TREE","TREES","WANE","WARN","WARNS","WART","WARTS","WATER","WEAR","WEARS","WEAN","WREN","WRENS","WEST","WESTERN"],pangrams:["SWEATER","WESTERN"]},
+      {center:"I",letters:["N","G","R","E","S","T"],words:["ENGINES","ENSIGN","ENTIRE","GENIE","GENIES","GINSENG","IGNITE","IGNITES","INSERT","INTEGER","INTEGERS","INTEREST","INERT","NERVE","NESTING","RESIGN","RESIGNS","RING","RINGER","RINGERS","RINGS","RINSE","RINSING","SERIES","SIREN","SIRENS","SINGER","SINGERS","SINISTER","STEER","STINGER","STING","STERN","STRING","STRINGENT","TENSER","TIGER","TIGERS","TIRING","TRIGGER"],pangrams:["STRINGENT","INTEGERS"]},
+      {center:"U",letters:["N","D","E","R","T","S"],words:["DUST","DUNE","DUNES","ENDURE","ENDURES","ENSURE","ENSURED","NURSE","NURSED","RUDE","RUDER","RUNE","RUNES","RUNT","RUNTS","RUSE","RUST","RUSTED","STUD","STUN","STUNNED","STUNG","SURE","SURER","TURN","TURNED","TURNS","UNDER","UNDO","UNDONE","UNSURE","UNTIED","UNUSED","USHER"],pangrams:["UNDERSTUDY","RETURNED"]},
+      {center:"O",letters:["N","E","R","S","T","A"],words:["AROSE","ARSON","ATONE","ATONES","EARN","EARNS","EASTERN","NOON","NOOSE","NOTE","NOTER","NOTES","OATER","ONSET","ORATE","ORNATE","REASON","RESORT","ROAST","ROSTER","ROTATE","ROTTEN","SENSOR","SERMON","SNORE","SNORT","SONAR","STONE","STONER","STORE","STOREY","TENOR","TENORS","TONER","TONERS","TORE","TORN","TORSO","TOAST","TOASTER"],pangrams:["ORNATE","SENATOR"]},
+      {center:"L",letters:["E","S","T","A","R","I"],words:["AISLE","ALERT","ALERTS","ALTER","ALTERS","DETAIL","DETAILS","EARLIEST","INSTALL","ISLE","LAIRS","LASER","LAST","LATER","LATEST","LATERAL","LETTER","LETTERS","LIST","LITTER","LITTERS","LITERAL","LITERATE","REALIST","RETAIL","RETAILS","RILE","RILES","SAIL","SETTLE","SETTLER","SILT","SLEET","STALE","STALER","STEAL","STEEL","STERILE","STILE","TALE","TALES","TALL","TALLER","TILE","TILES","TITLE","TITLES","TRAIL","TRAILS","TRELLIS"],pangrams:["LITERATE","EARLIEST"]},
+      {center:"M",letters:["A","R","I","N","E","S"],words:["MAIM","MAIN","MAINS","MAINSTREAM","MANNER","MANNERS","MARE","MARES","MARINE","MARINES","MARSH","MASS","MASSIVE","MASTER","MEAN","MEANS","MESA","MINE","MINER","MINERS","MINES","MIRE","MISER","MISS","MISNOMER","MARE","MARS"],pangrams:["MARINES","MAINSTREAM"]},
+      {center:"D",letters:["E","S","I","G","N","R"],words:["DESIGN","DESIGNER","DESIGNERS","DESIRE","DESIRES","DINE","DINER","DINERS","DIRE","DIRGE","DIRGES","DRESS","DRIED","DRIES","GREED","GRIDS","GRIND","GRINDER","GRINDERS","GRINDS","INSIDE","INSIDER","INSIDERS","RESIDE","RESIDES","RIDGE","RIDGES","RIGID","RIND","RINDS","SIDED"],pangrams:["DESIGNERS","GRINDERS"]},
+      {center:"A",letters:["P","R","I","N","T","E"],words:["APART","APPARENT","ATTAIN","CAPTAIN","CERTAIN","EARN","ENTERTAIN","IRATE","IRRITATE","PAINT","PAINTER","PAINTERS","PAIR","PARENT","PARTING","PATTERN","PINE","PIRATE","PRINT","PRINTER","RAIN","RAINING","RANT","RANTING","RAPIER","RATING","REAPPOINT","REPARTEE","RETAIN","TERRAIN","TRAIN","TRAIT","TRAP"],pangrams:["PAINTERS","ENTERTAIN"]},
+      {center:"E",letters:["R","A","T","H","S","N"],words:["ANTLER","ANTLERS","EARN","EARNS","EARNEST","EARTH","EARTHEN","EASTERN","EATER","EATERS","ENTER","ENTERS","ERASER","HARNESS","HASTEN","HEARTEN","NEAREST","NEATER","NEST","RANEE","RENT","RENTS","RESENT","REST","SANEST","SANER","SHATTER","SHARE","SHATTER","SHEAR","SNARE","STARE","STERN","TENSER","TERN","THESE","THRASH","THREE","TREE","TREES"],pangrams:["EARTHEN","HEARSTEN"]},
+      {center:"O",letters:["R","A","N","G","E","S"],words:["AROSE","ENRAGE","ENRAGES","GARNER","GARNERS","GOOSE","GROAN","GROANS","GROOVE","GROOVES","NOOSE","ORANGE","ORANGES","ORGAN","ORGANS","RANGE","RANGES","RANGER","RANGERS","REASON","REASONS","ROAR","ROARS","ROAN","SAGE","SONAR","SNORE","SNORER","GORE","GONER","GONERS"],pangrams:["ORANGES","RANGERS"]},
+      {center:"T",letters:["R","A","I","N","G","E"],words:["EATING","GAIT","GAITER","GATING","GENERATE","GENERATING","GIANT","GRATING","GREAT","INGRATE","INTEGRATE","ITERATING","RATING","RANTING","RATTING","TANG","TANGLE","TANGERINE","TARGET","TART","TEARING","TERRAIN","TIGER","TINT","TIRE","TRAIT","TREAT","TREATING","TRIAGE","TRAIN","TRAINING"],pangrams:["GENERATING","INTEGRATE"]},
+      {center:"S",letters:["O","N","E","R","T","A"],words:["ARSON","ASSERT","ASSORT","ATONES","EASTERN","EARNEST","NEAREST","NOSE","NOTES","ONSET","ORNATE","REASON","REASONS","RESORT","REST","ROSTER","ROAST","SENSOR","SERMON","SNORE","SNORT","SONAR","STONE","STONER","STORE","STOREY","STERN","TENSE","TENOR","TENORS","TOAST","TOASTER","TOSS","TORSO"],pangrams:["SENATORS","ASSORTED"]},
+    ];
+
+    /* ========== RANK SYSTEM ========== */
+    var RANKS = [
+      { name: 'Beginner',  pct: 0 },
+      { name: 'Good',      pct: 2 },
+      { name: 'Moving Up', pct: 5 },
+      { name: 'Nice',      pct: 8 },
+      { name: 'Great',     pct: 15 },
+      { name: 'Amazing',   pct: 25 },
+      { name: 'Genius',    pct: 40 },
+      { name: 'Queen Bee', pct: 100 }
+    ];
+
+    /* ========== STATE ========== */
+    var currentPuzzle = null;
+    var currentInput = '';
+    var foundWords = [];
+    var score = 0;
+    var maxScore = 0;
+    var isDaily = true;
+    var wordsVisible = false;
+    var messageTimeout = null;
+
+    /* ========== LOCAL STORAGE ========== */
+    var STORAGE_KEY = 'letterhive_';
+
+    function getTodayKey() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function getYesterdayKey() {
+      var d = new Date();
+      d.setDate(d.getDate() - 1);
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    function saveProgress() {
+      var key = isDaily ? STORAGE_KEY + 'daily_' + getTodayKey() : STORAGE_KEY + 'practice';
+      var data = { foundWords: foundWords, score: score, puzzleIndex: currentPuzzle._index };
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+    }
+
+    function loadProgress() {
+      var key = isDaily ? STORAGE_KEY + 'daily_' + getTodayKey() : STORAGE_KEY + 'practice';
+      try {
+        var data = JSON.parse(localStorage.getItem(key));
+        if (data && data.puzzleIndex === currentPuzzle._index) {
+          foundWords = data.foundWords || [];
+          score = data.score || 0;
+          return true;
+        }
+      } catch(e) {}
+      return false;
+    }
+
+    function saveStats(isQB) {
+      try {
+        var stats = JSON.parse(localStorage.getItem(STORAGE_KEY + 'stats') || '{}');
+        stats.played = (stats.played || 0) + 1;
+        stats.totalWords = (stats.totalWords || 0) + foundWords.length;
+        stats.totalPangrams = (stats.totalPangrams || 0) + foundWords.filter(function(w) { return isPangram(w); }).length;
+        if (getRankIndex() >= 6) stats.genius = (stats.genius || 0) + 1;
+        if (isQB) stats.queenBee = (stats.queenBee || 0) + 1;
+
+        // streak
+        var lastDate = stats.lastPlayDate || '';
+        var today = getTodayKey();
+        if (lastDate === today) {
+          // already counted
+        } else {
+          var yesterday = getYesterdayKey();
+          if (lastDate === yesterday) {
+            stats.streak = (stats.streak || 0) + 1;
+          } else {
+            stats.streak = 1;
+          }
+          stats.lastPlayDate = today;
+        }
+
+        localStorage.setItem(STORAGE_KEY + 'stats', JSON.stringify(stats));
+      } catch(e) {}
+    }
+
+    function getStats() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY + 'stats') || '{}');
+      } catch(e) { return {}; }
+    }
+
+    /* ========== PUZZLE SELECTION ========== */
+    function getDailyPuzzleIndex() {
+      var d = new Date();
+      var seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+      return seed % PUZZLES.length;
+    }
+
+    function getRandomPuzzleIndex() {
+      return Math.floor(Math.random() * PUZZLES.length);
+    }
+
+    function loadPuzzle(index) {
+      var p = PUZZLES[index];
+      currentPuzzle = {
+        center: p.center.toUpperCase(),
+        letters: p.letters.map(function(l) { return l.toUpperCase(); }),
+        words: p.words.map(function(w) { return w.toUpperCase(); }),
+        pangrams: p.pangrams.map(function(w) { return w.toUpperCase(); }),
+        _index: index
+      };
+      // deduplicate words
+      currentPuzzle.words = currentPuzzle.words.filter(function(w, i, arr) { return arr.indexOf(w) === i; });
+      currentPuzzle.pangrams = currentPuzzle.pangrams.filter(function(w, i, arr) { return arr.indexOf(w) === i; });
+
+      // calc max score
+      maxScore = 0;
+      currentPuzzle.words.forEach(function(w) {
+        maxScore += calcWordScore(w);
+      });
+
+      foundWords = [];
+      score = 0;
+      currentInput = '';
+      geniusCongratulated = false;
+
+      if (!loadProgress()) {
+        foundWords = [];
+        score = 0;
+      }
+
+      // If loaded progress already at genius, don't re-congratulate
+      if (getRankIndex() >= 6) geniusCongratulated = true;
+
+      renderAll();
+    }
+
+    /* ========== SCORING ========== */
+    function calcWordScore(word) {
+      var s = 0;
+      if (word.length === 4) s = 1;
+      else s = word.length;
+      if (isPangram(word)) s += 7;
+      return s;
+    }
+
+    function isPangram(word) {
+      return currentPuzzle.pangrams.indexOf(word.toUpperCase()) !== -1;
+    }
+
+    function getRankIndex() {
+      if (maxScore === 0) return 0;
+      var pct = (score / maxScore) * 100;
+      var idx = 0;
+      for (var i = RANKS.length - 1; i >= 0; i--) {
+        if (pct >= RANKS[i].pct) { idx = i; break; }
+      }
+      return idx;
+    }
+
+    function getRank() {
+      return RANKS[getRankIndex()];
+    }
+
+    /* ========== RENDERING ========== */
+    function renderHoneycomb() {
+      var hc = document.getElementById('honeycomb');
+      hc.innerHTML = '';
+
+      var allLetters = currentPuzzle.letters.slice();
+      var hexSVG = '<svg viewBox="0 0 70 76"><polygon class="hex-shape" points="35,2 66,20 66,56 35,74 4,56 4,20"/><text class="hex-letter" x="35" y="46" text-anchor="middle">LETTER</text></svg>';
+
+      // outer letters
+      allLetters.forEach(function(letter, i) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'hex-btn hex-pos-' + i;
+        btn.innerHTML = hexSVG.replace('LETTER', letter);
+        btn.setAttribute('data-letter', letter);
+        btn.setAttribute('aria-label', 'Letter ' + letter);
+        btn.addEventListener('click', function() { addLetter(letter); });
+        hc.appendChild(btn);
+      });
+
+      // center letter
+      var centerBtn = document.createElement('button');
+      centerBtn.type = 'button';
+      centerBtn.className = 'hex-btn hex-center center';
+      centerBtn.innerHTML = hexSVG.replace('LETTER', currentPuzzle.center);
+      centerBtn.setAttribute('data-letter', currentPuzzle.center);
+      centerBtn.setAttribute('aria-label', 'Center letter ' + currentPuzzle.center);
+      centerBtn.addEventListener('click', function() { addLetter(currentPuzzle.center); });
+      hc.appendChild(centerBtn);
+    }
+
+    function renderRankBar() {
+      var pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
+      document.getElementById('rank-label').textContent = getRank().name;
+      document.getElementById('rank-score').textContent = score + ' point' + (score !== 1 ? 's' : '');
+
+      // bar fill: map to next rank percentage
+      var rankIdx = getRankIndex();
+      var barPct;
+      if (rankIdx >= RANKS.length - 1) {
+        barPct = 100;
+      } else {
+        var low = RANKS[rankIdx].pct;
+        var high = RANKS[rankIdx + 1].pct;
+        barPct = ((rankIdx / (RANKS.length - 1)) + ((pct - low) / (high - low)) / (RANKS.length - 1)) * 100;
+      }
+      document.getElementById('rank-bar').style.width = Math.min(barPct, 100) + '%';
+
+      // dots
+      var dotsHTML = '';
+      var namesHTML = '';
+      RANKS.forEach(function(r, i) {
+        var reached = getRankIndex() >= i;
+        dotsHTML += '<span class="rank-dot' + (reached ? ' reached' : '') + '"></span>';
+        namesHTML += '<span>' + (i === 0 ? 'B' : i === RANKS.length-1 ? 'QB' : r.name.charAt(0)) + '</span>';
+      });
+      document.getElementById('rank-dots').innerHTML = dotsHTML;
+      document.getElementById('rank-names').innerHTML = namesHTML;
+    }
+
+    function renderInput() {
+      var el = document.getElementById('input-word');
+      if (!currentInput) { el.innerHTML = '&nbsp;'; return; }
+      var html = '';
+      for (var i = 0; i < currentInput.length; i++) {
+        var ch = currentInput.charAt(i);
+        if (ch === currentPuzzle.center) {
+          html += '<span class="center-letter">' + ch + '</span>';
+        } else {
+          html += ch;
+        }
+      }
+      el.innerHTML = html;
+    }
+
+    function renderFoundWords() {
+      var el = document.getElementById('found-words');
+      var sorted = foundWords.slice().sort();
+      el.innerHTML = '';
+      sorted.forEach(function(w) {
+        var span = document.createElement('span');
+        span.className = 'found-word' + (isPangram(w) ? ' pangram-word' : '');
+        span.textContent = w.toLowerCase();
+        el.appendChild(span);
+      });
+      document.getElementById('found-count').textContent = foundWords.length;
+    }
+
+    function renderAll() {
+      renderHoneycomb();
+      renderRankBar();
+      renderInput();
+      renderFoundWords();
+      renderYesterday();
+    }
+
+    function renderYesterday() {
+      if (!isDaily) {
+        document.getElementById('yesterday-section').style.display = 'none';
+        return;
+      }
+      var yesterdayKey = getYesterdayKey();
+      try {
+        var data = JSON.parse(localStorage.getItem(STORAGE_KEY + 'daily_' + yesterdayKey));
+        if (data && typeof data.puzzleIndex === 'number') {
+          var p = PUZZLES[data.puzzleIndex];
+          if (!p) { document.getElementById('yesterday-section').style.display = 'none'; return; }
+          var allWords = p.words.map(function(w) { return w.toUpperCase(); });
+          allWords = allWords.filter(function(w, i, arr) { return arr.indexOf(w) === i; });
+          var yesterdayFound = (data.foundWords || []).map(function(w) { return w.toUpperCase(); });
+          var el = document.getElementById('yesterday-words');
+          el.innerHTML = '';
+          allWords.sort().forEach(function(w) {
+            var span = document.createElement('span');
+            var wasFound = yesterdayFound.indexOf(w) !== -1;
+            span.className = 'yesterday-word ' + (wasFound ? 'found' : 'missed');
+            span.textContent = w.toLowerCase();
+            el.appendChild(span);
+          });
+          document.getElementById('yesterday-section').style.display = 'block';
+        } else {
+          document.getElementById('yesterday-section').style.display = 'none';
+        }
+      } catch(e) {
+        document.getElementById('yesterday-section').style.display = 'none';
+      }
+    }
+
+    /* ========== GAME ACTIONS ========== */
+    function addLetter(letter) {
+      currentInput += letter;
+      renderInput();
+      var el = document.getElementById('input-word');
+      el.classList.remove('pop-in');
+      void el.offsetWidth;
+      el.classList.add('pop-in');
+    }
+
+    function deleteLetter() {
+      if (currentInput.length > 0) {
+        currentInput = currentInput.slice(0, -1);
+        renderInput();
+      }
+    }
+
+    function shuffleLetters() {
+      // Fisher-Yates shuffle on outer letters only
+      var arr = currentPuzzle.letters.slice();
+      for (var i = arr.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = arr[i]; arr[i] = arr[j]; arr[j] = temp;
+      }
+      currentPuzzle.letters = arr;
+      renderHoneycomb();
+    }
+
+    function showMessage(text, type) {
+      var el = document.getElementById('game-message');
+      el.textContent = text;
+      el.className = 'game-message ' + (type || '');
+      if (messageTimeout) clearTimeout(messageTimeout);
+      messageTimeout = setTimeout(function() {
+        el.innerHTML = '&nbsp;';
+        el.className = 'game-message';
+      }, 2000);
+    }
+
+    function submitWord() {
+      var word = currentInput.toUpperCase();
+      currentInput = '';
+      renderInput();
+
+      if (word.length < 4) {
+        showMessage('Too short — need 4+ letters', 'error');
+        shakeInput();
+        return;
+      }
+
+      if (word.indexOf(currentPuzzle.center) === -1) {
+        showMessage('Must use center letter: ' + currentPuzzle.center, 'error');
+        shakeInput();
+        return;
+      }
+
+      // check all letters are valid
+      var validLetters = currentPuzzle.letters.concat([currentPuzzle.center]);
+      for (var i = 0; i < word.length; i++) {
+        if (validLetters.indexOf(word.charAt(i)) === -1) {
+          showMessage('Invalid letter: ' + word.charAt(i), 'error');
+          shakeInput();
+          return;
+        }
+      }
+
+      if (foundWords.indexOf(word) !== -1) {
+        showMessage('Already found!', 'error');
+        shakeInput();
+        return;
+      }
+
+      if (currentPuzzle.words.indexOf(word) === -1) {
+        showMessage('Not in word list', 'error');
+        shakeInput();
+        return;
+      }
+
+      // Valid word!
+      var wordScore = calcWordScore(word);
+      score += wordScore;
+      foundWords.push(word);
+      saveProgress();
+
+      if (isPangram(word)) {
+        showMessage('Pangram! +' + wordScore + ' points', 'pangram');
+      } else if (word.length === 4) {
+        showMessage('Nice! +1 point', 'success');
+      } else {
+        showMessage('Great! +' + wordScore + ' points', 'success');
+      }
+
+      renderRankBar();
+      renderFoundWords();
+
+      // check genius rank
+      checkGeniusCongrats();
+
+      // check queen bee
+      if (foundWords.length === currentPuzzle.words.length) {
+        showMessage('Queen Bee! You found every word!', 'pangram');
+        saveStats(true);
+      }
+    }
+
+    function shakeInput() {
+      var el = document.getElementById('input-word');
+      el.classList.remove('shake');
+      void el.offsetWidth;
+      el.classList.add('shake');
+    }
+
+    /* ========== KEYBOARD ========== */
+    document.addEventListener('keydown', function(e) {
+      if (document.getElementById('stats-overlay').classList.contains('open')) {
+        if (e.key === 'Escape') closeStats();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitWord();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        deleteLetter();
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        var letter = e.key.toUpperCase();
+        var validLetters = currentPuzzle.letters.concat([currentPuzzle.center]);
+        if (validLetters.indexOf(letter) !== -1) {
+          addLetter(letter);
+        } else {
+          showMessage('Letter not in puzzle', 'error');
+          shakeInput();
+        }
+      }
+    });
+
+    /* ========== BUTTON HANDLERS ========== */
+    document.getElementById('btn-delete').addEventListener('click', deleteLetter);
+    document.getElementById('btn-shuffle').addEventListener('click', shuffleLetters);
+    document.getElementById('btn-enter').addEventListener('click', submitWord);
+
+    /* ========== SMART HINT (AI-powered) ========== */
+    var hintCooldown = false;
+    var aiReady = false;
+    var geniusCongratulated = false;
+
+    /* AI warm-up: wait 3s AFTER game is loaded, then pre-download model */
+    setTimeout(function() {
+      if (typeof TeamzAI !== 'undefined') {
+        TeamzAI.init().then(function() {
+          aiReady = true;
+          if (!TeamzAI.chromeAI.prompt) {
+            TeamzAI.getPipeline('text2text-generation', 'Xenova/flan-t5-base', {
+              onStatus: function() {},
+              onProgress: function() {}
+            }).catch(function() {});
+          }
+        }).catch(function() {});
+      }
+    }, 3000);
+
+    function getUnfoundWords() {
+      return currentPuzzle.words.filter(function(w) {
+        return foundWords.indexOf(w) === -1;
+      });
+    }
+
+    function fallbackHint(word) {
+      var prefix = word.substring(0, 2).toLowerCase();
+      return 'Starts with "' + prefix + '..." (' + word.length + ' letters)';
+    }
+
+    document.getElementById('btn-hint').addEventListener('click', function() {
+      if (hintCooldown) return;
+      var unfound = getUnfoundWords();
+      if (unfound.length === 0) {
+        showMessage('You found every word!', 'pangram');
+        return;
+      }
+
+      var randomWord = unfound[Math.floor(Math.random() * unfound.length)];
+      var hintEl = document.getElementById('hint-display');
+      hintEl.textContent = 'Thinking...';
+      hintEl.className = 'hint-display';
+      hintCooldown = true;
+
+      var hintBtn = document.getElementById('btn-hint');
+      hintBtn.style.opacity = '0.5';
+
+      if (aiReady && typeof TeamzAI !== 'undefined') {
+        TeamzAI.generate({
+          chromePrompt: 'Give a one-sentence dictionary-style clue for the word "' + randomWord.toLowerCase() + '" without using the word itself or any of its root letters. Format: "Think of a word meaning [definition] (' + randomWord.length + ' letters)"',
+          chromeSystemPrompt: 'You are a word puzzle hint generator. Give concise dictionary-style clues. Never reveal the word itself.',
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Give a one-word synonym or short definition for: ' + randomWord.toLowerCase(),
+          transformersOptions: { max_new_tokens: 50 },
+          fallback: function() { return fallbackHint(randomWord); },
+          onStatus: function() {},
+          onProgress: function() {},
+          qualityCheck: function(text) {
+            var lower = text.toLowerCase();
+            // reject if AI reveals the actual word
+            return lower.indexOf(randomWord.toLowerCase()) === -1 && text.length > 5;
+          }
+        }).then(function(result) {
+          var hintText = result.text;
+          if (result.source === 'transformers' || result.source === 'chrome-ai') {
+            // Wrap AI result with letter count
+            if (hintText.indexOf('(' + randomWord.length) === -1) {
+              hintText = hintText.replace(/\.?\s*$/, '') + ' (' + randomWord.length + ' letters)';
+            }
+          }
+          hintEl.textContent = hintText;
+          hintEl.className = 'hint-display visible';
+        }).catch(function() {
+          hintEl.textContent = fallbackHint(randomWord);
+          hintEl.className = 'hint-display visible';
+        }).finally(function() {
+          hintCooldown = false;
+          hintBtn.style.opacity = '1';
+        });
+      } else {
+        // No AI available, use fallback
+        hintEl.textContent = fallbackHint(randomWord);
+        hintEl.className = 'hint-display visible';
+        hintCooldown = false;
+        hintBtn.style.opacity = '1';
+      }
+
+      // Auto-clear hint after 8 seconds
+      setTimeout(function() {
+        hintEl.textContent = '';
+        hintEl.className = 'hint-display';
+      }, 8000);
+    });
+
+    /* ========== GENIUS CONGRATULATION (AI background) ========== */
+    function checkGeniusCongrats() {
+      if (geniusCongratulated) return;
+      if (getRankIndex() < 6) return; // not Genius yet
+      geniusCongratulated = true;
+
+      if (aiReady && typeof TeamzAI !== 'undefined') {
+        TeamzAI.generate({
+          chromePrompt: 'Write a short, enthusiastic congratulatory message (1-2 sentences) for someone who reached Genius rank in a word puzzle game. Be creative and fun. Do not use emojis.',
+          chromeSystemPrompt: 'You write short celebratory messages for game achievements.',
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Write a congratulations message for reaching genius rank in a word game.',
+          transformersOptions: { max_new_tokens: 60 },
+          fallback: function() { return 'Genius rank achieved -- outstanding vocabulary skills!'; },
+          onStatus: function() {},
+          onProgress: function() {},
+          qualityCheck: function(text) { return text.length > 10; }
+        }).then(function(result) {
+          if (window.showToast) {
+            window.showToast(result.text);
+          }
+        }).catch(function() {
+          if (window.showToast) {
+            window.showToast('Genius rank achieved -- outstanding vocabulary skills!');
+          }
+        });
+      } else {
+        if (window.showToast) {
+          window.showToast('Genius rank achieved -- outstanding vocabulary skills!');
+        }
+      }
+    }
+
+    document.getElementById('found-header').addEventListener('click', function() {
+      wordsVisible = !wordsVisible;
+      document.getElementById('found-words').style.display = wordsVisible ? 'flex' : 'none';
+      document.getElementById('found-toggle').textContent = wordsVisible ? 'Hide' : 'Show';
+    });
+
+    /* ========== MODE TABS ========== */
+    document.getElementById('mode-daily').addEventListener('click', function() {
+      if (isDaily) return;
+      isDaily = true;
+      setActiveTab('mode-daily');
+      loadPuzzle(getDailyPuzzleIndex());
+    });
+
+    document.getElementById('mode-practice').addEventListener('click', function() {
+      isDaily = false;
+      setActiveTab('mode-practice');
+      loadPuzzle(getRandomPuzzleIndex());
+    });
+
+    document.getElementById('mode-stats').addEventListener('click', function() {
+      openStats();
+    });
+
+    function setActiveTab(id) {
+      document.querySelectorAll('.mode-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.getElementById(id).classList.add('active');
+    }
+
+    /* ========== STATS MODAL ========== */
+    function openStats() {
+      var stats = getStats();
+      document.getElementById('stat-played').textContent = stats.played || 0;
+      document.getElementById('stat-genius').textContent = stats.genius || 0;
+      document.getElementById('stat-qb').textContent = stats.queenBee || 0;
+      document.getElementById('stat-pangrams').textContent = stats.totalPangrams || 0;
+      document.getElementById('stat-words').textContent = stats.totalWords || 0;
+      document.getElementById('stat-streak').textContent = stats.streak || 0;
+
+      // rank thresholds
+      var list = document.getElementById('stats-rank-list');
+      list.innerHTML = '';
+      RANKS.forEach(function(r) {
+        var pts = Math.ceil(maxScore * r.pct / 100);
+        var row = document.createElement('div');
+        row.className = 'stats-rank-row';
+        row.innerHTML = '<span class="rk-name">' + r.name + '</span><span class="rk-val">' + pts + ' pts (' + r.pct + '%)</span>';
+        list.appendChild(row);
+      });
+
+      document.getElementById('stats-overlay').classList.add('open');
+    }
+
+    function closeStats() {
+      document.getElementById('stats-overlay').classList.remove('open');
+    }
+
+    document.getElementById('stats-close').addEventListener('click', closeStats);
+    document.getElementById('stats-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeStats();
+    });
+
+    /* ========== INIT ========== */
+    isDaily = true;
+    loadPuzzle(getDailyPuzzleIndex());
+
+    /* ========== SEO / SCHEMA ========== */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Word Puzzle Games', url: '/games/' },
+      { name: 'Letter Hive' }
+    ];
+
+    var FAQS = [
+      { q: 'How does the center letter work in Letter Hive?', a: 'The center letter must appear at least once in every word you submit. Words without the center letter are rejected. This mechanic limits the possible words and creates a focused puzzle.' },
+      { q: 'Can I reuse the same letter more than once?', a: 'Yes. Each of the 7 letters can be used as many times as you want in a single word. For example, if S is in your puzzle, you can spell SASS.' },
+      { q: 'What is a pangram and how is it scored?', a: 'A pangram is a word that uses all 7 letters at least once. Pangrams earn their word length in points plus a 7-point bonus. Every puzzle has at least one pangram.' },
+      { q: 'How does the rank system work?', a: 'Your rank is based on the percentage of the maximum possible score. Ranks progress through Beginner (0%), Good (2%), Moving Up (5%), Nice (8%), Great (15%), Amazing (25%), Genius (40%), and Queen Bee (100% — every word found).' },
+      { q: 'Is the daily puzzle the same for everyone?', a: 'Yes. The daily puzzle is determined by the current date, so all players get the same letters and word list. Your progress is saved automatically and you can return later to continue.' },
+      { q: 'How is practice mode different from the daily puzzle?', a: 'Practice mode gives you a randomly selected puzzle each time you start. Your practice stats are tracked separately from daily stats, so your daily streak is not affected.' },
+      { q: 'Does Letter Hive work offline?', a: 'Yes. Once the page loads, the entire game runs in your browser with no internet connection required. Your progress and stats are saved to your device.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'games/word-groups-puzzle', name: 'Word Groups Puzzle', description: 'Sort 16 words into 4 secret categories.' },
+      { slug: 'games/word-guess', name: 'Word Guess', description: 'Guess the 5-letter word in 6 tries.' },
+      { slug: 'games/daily-word-grid', name: 'Daily Word Grid', description: 'Solve a 5x5 mini crossword daily.' },
+      { slug: 'games/thread-words', name: 'Thread Words', description: 'Find themed words hidden in a letter grid.' },
+      { slug: 'tools/typing-speed-test', name: 'Typing Speed Test', description: 'Test your words per minute.' },
+      { slug: 'tools/reaction-time-test', name: 'Reaction Time Test', description: 'Measure your reaction speed.' }
+    ];
+
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+    TeamzTools.injectFAQSchema(FAQS);
+    TeamzTools.injectWebAppSchema({ slug: 'games/letter-hive', title: 'Letter Hive', description: 'Free word puzzle game. Form words from 7 honeycomb letters with center letter required.' });
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+  });
+  </script>
+</body>
+</html>

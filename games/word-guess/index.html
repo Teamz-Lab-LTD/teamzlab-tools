@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Guess Game — Free Daily Puzzle — Teamz Lab Tools</title>
+  <meta name="description" content="Guess the 5-letter word in 6 tries with color-coded clues. Play the daily puzzle or unlimited practice mode. Free, private, no login required.">
+  <meta property="og:title" content="Word Guess Game — Free Daily Puzzle — Teamz Lab Tools">
+  <meta property="og:description" content="Guess the 5-letter word in 6 tries with color-coded clues. Play daily or unlimited mode. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/games/word-guess/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/games.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Word Guess Game — Free Daily Puzzle — Teamz Lab Tools">
+  <meta name="twitter:description" content="Guess the 5-letter word in 6 tries. Daily puzzle + unlimited practice. Free, private, no login.">
+  <link rel="canonical" href="https://tool.teamzlab.com/games/word-guess/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .wg-game { max-width: 500px; margin: 0 auto; user-select: none; }
+    .wg-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; gap: 0.5rem; flex-wrap: wrap; }
+    .wg-header h2 { margin: 0; font-size: var(--text-lg); font-weight: 800; }
+    .wg-controls { display: flex; gap: 0.5rem; align-items: center; }
+    .wg-toggle-group { display: flex; gap: 0.25rem; }
+    .wg-toggle { padding: 0.35rem 0.65rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-muted); font-size: 0.75rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .wg-toggle.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .wg-toggle:hover:not(.active) { border-color: var(--heading); color: var(--heading); }
+    .wg-icon-btn { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: all 0.2s; }
+    .wg-icon-btn:hover { border-color: var(--heading); color: var(--heading); }
+
+    /* Board */
+    .wg-board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 6px; margin: 0.75rem auto; max-width: 340px; }
+    .wg-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .wg-tile { width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: clamp(1.5rem, 5vw, 2rem); font-weight: 800; text-transform: uppercase; border: 2px solid var(--border); border-radius: 4px; background: transparent; color: var(--heading); transition: transform 0.1s; font-family: inherit; }
+    .wg-tile.filled { border-color: var(--text-muted); animation: wg-pop 0.08s ease; }
+    .wg-tile.correct { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .wg-tile.present { background: var(--surface); color: var(--heading); border: 3px solid var(--heading); font-weight: 800; }
+    .wg-tile.absent { background: var(--bg); color: var(--text-muted); border-color: var(--border); opacity: 0.7; }
+    .wg-tile.flip { animation: wg-flip 0.5s ease forwards; }
+    @keyframes wg-flip {
+      0% { transform: rotateX(0); }
+      50% { transform: rotateX(90deg); }
+      100% { transform: rotateX(0); }
+    }
+    @keyframes wg-pop { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    @keyframes wg-shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 50%, 90% { transform: translateX(-4px); }
+      30%, 70% { transform: translateX(4px); }
+    }
+    .wg-row.shake { animation: wg-shake 0.4s ease; }
+    @keyframes wg-bounce {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-20px); }
+      60% { transform: translateY(-10px); }
+    }
+    .wg-tile.bounce { animation: wg-bounce 0.6s ease; }
+
+    /* Keyboard */
+    .wg-keyboard { margin-top: 0.75rem; }
+    .wg-kb-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 4px; }
+    .wg-key { height: 52px; min-width: 30px; padding: 0 6px; border: none; border-radius: 4px; background: var(--surface); color: var(--text); font-size: 0.85rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s; text-transform: uppercase; display: flex; align-items: center; justify-content: center; flex: 1; max-width: 44px; }
+    .wg-key:hover { opacity: 0.85; }
+    .wg-key.wide { min-width: 56px; max-width: 65px; font-size: 0.7rem; }
+    .wg-key.correct { background: var(--heading); color: var(--bg); }
+    .wg-key.present { background: var(--surface); color: var(--heading); border: 2px solid var(--heading); font-weight: 800; }
+    .wg-key.absent { background: var(--bg); color: var(--text-muted); opacity: 0.5; }
+
+    /* Message */
+    .wg-message { text-align: center; min-height: 2rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; color: var(--heading); }
+
+    /* Modal */
+    .wg-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .wg-modal-overlay.show { display: flex; }
+    .wg-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; max-width: 380px; width: 90%; max-height: 90vh; overflow-y: auto; position: relative; }
+    .wg-modal h3 { margin: 0 0 1rem; font-size: var(--text-lg); color: var(--heading); text-align: center; }
+    .wg-modal-close { position: absolute; top: 0.75rem; right: 0.75rem; background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+
+    /* Stats */
+    .wg-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; text-align: center; margin-bottom: 1rem; }
+    .wg-stat-val { font-size: 1.6rem; font-weight: 800; color: var(--heading); }
+    .wg-stat-label { font-size: 0.65rem; color: var(--text-muted); }
+    .wg-dist { margin: 0.75rem 0; }
+    .wg-dist-row { display: flex; align-items: center; gap: 0.4rem; margin: 3px 0; font-size: 0.8rem; font-weight: 600; }
+    .wg-dist-num { width: 12px; text-align: right; color: var(--text-muted); }
+    .wg-dist-bar { height: 20px; min-width: 20px; background: var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: flex-end; padding: 0 6px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); transition: width 0.5s; }
+    .wg-dist-bar.highlight { background: var(--heading); color: var(--bg); }
+
+    /* Buttons in modal */
+    .wg-modal-actions { display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: center; flex-wrap: wrap; }
+    .wg-btn { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .wg-btn-primary { background: var(--heading); color: var(--bg); }
+    .wg-btn-secondary { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+
+    /* Hard mode label */
+    .wg-hard-label { font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 0.25rem; }
+
+    /* AI Insight Card */
+    .wg-ai-insight { max-width: 500px; margin: 1.25rem auto 0; padding: 1.25rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); display: none; }
+    .wg-ai-insight.show { display: block; animation: wg-fade-in 0.4s ease; }
+    @keyframes wg-fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .wg-ai-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 0.2rem 0.6rem; margin-bottom: 0.75rem; }
+    .wg-ai-badge svg { width: 12px; height: 12px; }
+    .wg-ai-word-title { font-size: 1.3rem; font-weight: 800; color: var(--heading); text-transform: uppercase; margin-bottom: 0.25rem; letter-spacing: 0.05em; }
+    .wg-ai-section { margin-top: 0.75rem; }
+    .wg-ai-section-title { font-size: 0.78rem; font-weight: 700; color: var(--heading); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+    .wg-ai-section p { font-size: 0.88rem; color: var(--text); line-height: 1.6; margin: 0; }
+    .wg-ai-suggestions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
+    .wg-ai-chip { padding: 0.25rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: var(--heading); background: var(--bg); text-transform: uppercase; letter-spacing: 0.03em; }
+    .wg-ai-loading { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem 0; }
+    .wg-ai-loading .wg-spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--heading); border-radius: 50%; animation: wg-spin 0.6s linear infinite; }
+    @keyframes wg-spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .wg-board { max-width: 300px; gap: 5px; }
+      .wg-row { gap: 5px; }
+      .wg-tile { font-size: clamp(1.3rem, 6vw, 1.7rem); }
+      .wg-key { height: 46px; font-size: 0.78rem; }
+      .wg-key.wide { min-width: 48px; font-size: 0.65rem; }
+      .wg-header { flex-direction: column; align-items: flex-start; }
+      .tool-calculator h2 { font-size: var(--text-lg); }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .wg-ai-insight { padding: 1rem; }
+      .wg-ai-word-title { font-size: 1.1rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Word Puzzle Games", "item": "https://tool.teamzlab.com/games/"}, {"@type": "ListItem", "position": 3, "name": "Word Guess"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does Word Guess choose the daily word?", "acceptedAnswer": {"@type": "Answer", "text": "The daily word is selected using a date-based algorithm so that every player gets the same word on the same day. The word changes at midnight in your local time zone."}}, {"@type": "Question", "name": "What happens if I guess a word that is not in the dictionary?", "acceptedAnswer": {"@type": "Answer", "text": "The game only accepts valid 5-letter English words. If your guess is not in the word list, the row will shake and you will see a message saying \"Not in word list.\" Your attempt is not counted."}}, {"@type": "Question", "name": "What is hard mode and how does it work?", "acceptedAnswer": {"@type": "Answer", "text": "Hard mode requires you to use all clues from previous guesses. Any letter confirmed as correct must stay in the same position, and any letter confirmed as present must be included somewhere in your next guess."}}, {"@type": "Question", "name": "Are my statistics saved between sessions?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your statistics including games played, win percentage, current streak, max streak, and guess distribution are saved in your browser local storage and persist between visits."}}, {"@type": "Question", "name": "Can I play more than one game per day?", "acceptedAnswer": {"@type": "Answer", "text": "In daily mode, you get one puzzle per day. Switch to unlimited mode using the toggle at the top to play as many random puzzles as you want without affecting your daily streak."}}, {"@type": "Question", "name": "How do I share my results without revealing the answer?", "acceptedAnswer": {"@type": "Answer", "text": "After completing a game, click the Share button in the statistics popup. It copies a grid of squares representing your guesses to your clipboard without showing any letters."}}, {"@type": "Question", "name": "Does Word Guess work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Once the page is loaded, the entire game runs in your browser. No internet connection is needed to play. Your progress and stats are saved locally."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Word Guess Game", "description": "Guess the 5-letter word in 6 tries with color-coded clues. Daily puzzle and unlimited practice mode.", "url": "https://tool.teamzlab.com/games/word-guess/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Word Guess Game</h1>
+      <p class="tool-description">Guess the hidden 5-letter word in 6 attempts. Each guess reveals which letters are correct, misplaced, or not in the word. Play the daily puzzle or switch to unlimited practice mode. Free, private, no login required.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="wg-game" id="wg-game">
+        <div class="wg-header">
+          <div class="wg-toggle-group">
+            <button type="button" class="wg-toggle active" id="wg-mode-daily">Daily</button>
+            <button type="button" class="wg-toggle" id="wg-mode-unlimited">Unlimited</button>
+          </div>
+          <div class="wg-controls">
+            <button type="button" class="wg-toggle" id="wg-hard-toggle">Hard</button>
+            <button type="button" class="wg-icon-btn" id="wg-stats-btn" title="Statistics">&#x1F4CA;</button>
+            <button type="button" class="wg-icon-btn" id="wg-help-btn" title="How to play">?</button>
+          </div>
+        </div>
+        <div class="wg-message" id="wg-message"></div>
+        <div class="wg-board" id="wg-board"></div>
+        <div class="wg-keyboard" id="wg-keyboard"></div>
+        <div class="wg-ai-insight" id="wg-ai-insight"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How to Play Word Guess</h2>
+      <p>Word Guess challenges you to figure out a hidden 5-letter word within six attempts. Type any valid English word and press Enter to submit your guess. After each guess, every letter tile flips to reveal a clue. A filled tile means the letter is in the correct spot. A tile with a bold border means the letter is in the word but in the wrong position. A dimmed tile means the letter is not in the word at all. Use these clues to narrow down the answer with each subsequent guess. The on-screen keyboard also updates so you can track which letters you have already tried.</p>
+
+      <h2>Daily Puzzle vs Unlimited Mode</h2>
+      <p>In daily mode, everyone gets the same word each day. You get one attempt per day, and your streak tracks how many consecutive days you solve the puzzle. Switch to unlimited mode to practice as much as you want with a random word each round. Unlimited mode is perfect for sharpening your strategy without waiting for the next daily puzzle. Hard mode requires you to use all confirmed clues in every subsequent guess, adding an extra layer of challenge for experienced players.</p>
+
+      <h2>Tips and Strategy for Word Guess</h2>
+      <p>Start with a word that has common vowels and consonants. Words like CRANE, SLATE, or AUDIO cover frequently used letters. Pay attention to letter frequency in English. E, A, R, O, T, L, I, S, and N are the most common letters. After your first guess, use the revealed clues to eliminate possibilities. Avoid repeating letters you know are absent. In hard mode, you must reuse every correctly placed letter and include every confirmed letter in your next guess. Tracking consonant clusters and common endings like -TION, -IGHT, or -OUND helps when you are stuck. Most importantly, think before you type. Rushing leads to wasted guesses.</p>
+
+      <h2>Share Your Results</h2>
+      <p>After completing a game, you can share your result as a text grid showing your path to the answer without revealing the word. The share button copies a pattern of squares to your clipboard that you can paste anywhere. Compare your performance with friends and see who solved it in fewer guesses. Your statistics including games played, win percentage, current streak, and guess distribution are saved locally in your browser and persist between sessions.</p>
+    </section>
+    <div id="related-tools"></div>
+    <div id="faqs"></div>
+  </main>
+
+  <!-- Stats Modal -->
+  <div class="wg-modal-overlay" id="wg-stats-modal">
+    <div class="wg-modal">
+      <button type="button" class="wg-modal-close" id="wg-stats-close">&times;</button>
+      <h3>Statistics</h3>
+      <div class="wg-stats-grid" id="wg-stats-grid"></div>
+      <h3>Guess Distribution</h3>
+      <div class="wg-dist" id="wg-dist"></div>
+      <div class="wg-modal-actions" id="wg-stats-actions"></div>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="wg-modal-overlay" id="wg-help-modal">
+    <div class="wg-modal">
+      <button type="button" class="wg-modal-close" id="wg-help-close">&times;</button>
+      <h3>How to Play</h3>
+      <p style="font-size:0.9rem;color:var(--text);line-height:1.6;">Guess the word in 6 tries. Each guess must be a valid 5-letter word. After each guess, the tiles change to show how close you are.</p>
+      <div style="margin:1rem 0;">
+        <div style="display:flex;gap:6px;margin:0.5rem 0;">
+          <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:4px;background:var(--heading);color:var(--bg);font-size:1.1rem;">W</div>
+          <span style="display:flex;align-items:center;font-size:0.85rem;color:var(--text);">Correct letter, correct spot</span>
+        </div>
+        <div style="display:flex;gap:6px;margin:0.5rem 0;">
+          <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:4px;background:var(--surface);color:var(--heading);border:3px solid var(--heading);font-size:1.1rem;">O</div>
+          <span style="display:flex;align-items:center;font-size:0.85rem;color:var(--text);">Correct letter, wrong spot</span>
+        </div>
+        <div style="display:flex;gap:6px;margin:0.5rem 0;">
+          <div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;border-radius:4px;background:var(--bg);color:var(--text-muted);border:2px solid var(--border);opacity:0.7;font-size:1.1rem;">R</div>
+          <span style="display:flex;align-items:center;font-size:0.85rem;color:var(--text);">Letter not in the word</span>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;color:var(--text-muted);"><strong>Daily mode:</strong> Same word for everyone, one puzzle per day.<br><strong>Unlimited mode:</strong> Random words, play as many as you want.<br><strong>Hard mode:</strong> Must use all revealed hints in subsequent guesses.</p>
+      <div class="wg-modal-actions"><button type="button" class="wg-btn wg-btn-primary" id="wg-help-ok">Got it</button></div>
+    </div>
+  </div>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    // ==================== WORD LISTS ====================
+    // Answer words: common, well-known 5-letter words (curated for fairness)
+    var ANSWERS = [
+      'about','above','abuse','ached','aches','acids','acres','acted','acute','added','admit','adopt','adult','after','again',
+      'agent','agile','aging','agony','agree','ahead','aided','aimed','aisle','alarm','album','alert','algae','alibi','alien',
+      'align','alike','alive','alley','allot','allow','alloy','alone','along','alpha','altar','alter','amaze','amber','amble',
+      'amend','ample','angel','anger','angle','angry','anime','ankle','annex','annoy','anvil','apart','aphid','apple','apply',
+      'arena','argue','arise','armor','aroma','arose','array','arrow','arson','aside','asked','asset','atlas','atone','attic',
+      'audio','audit','avail','avoid','await','awake','award','aware','awful','axiom','azure','bacon','badge','badly','bagel',
+      'baker','balmy','banal','bands','banjo','banks','baron','based','basic','basin','basis','batch','beach','beard','beast',
+      'began','begin','being','below','bench','berry','bible','bicep','bills','bingo','birch','birth','black','blade','blame',
+      'bland','blank','blast','blaze','bleak','bleed','blend','bless','blimp','blind','bliss','blitz','block','bloke','blond',
+      'blood','bloom','blown','blues','bluff','blunt','blurb','blurt','blush','board','boast','bolts','bombs','bonds','bonus',
+      'boost','booth','bound','boxer','brace','braid','brain','brand','brass','brave','bread','break','breed','brick','bride',
+      'brief','bring','brink','brisk','broad','broil','broke','brood','brook','broom','broth','brown','brunt','brush','buddy',
+      'budge','buggy','bugle','build','built','bulge','bulky','bully','bumps','bumpy','bunch','bunny','burst','buyer','cabin',
+      'cable','cache','cadet','camel','cameo','candy','canoe','canon','cargo','carol','carry','carve','catch','cater','cause',
+      'cease','cedar','chain','chair','chalk','champ','chant','chaos','charm','chart','chase','cheap','cheat','check','cheek',
+      'cheer','chess','chest','chick','chief','child','chili','chill','chime','chimp','china','chips','chirp','chive','choir',
+      'choke','chord','chore','chose','chunk','churn','chute','cider','cigar','cinch','circa','civic','civil','claim','clamp',
+      'clang','clash','clasp','class','clean','clear','clerk','click','cliff','climb','cling','cloak','clock','clone','close',
+      'cloth','cloud','clown','clubs','cluck','clued','clues','clump','clung','coach','coast','cocoa','coils','colon','color',
+      'comet','comic','comma','conch','coral','couch','could','count','coupe','court','cover','covet','crack','craft','crane',
+      'crash','crate','crave','craze','crazy','creak','cream','creed','creek','creep','crest','crews','crick','crime','crisp',
+      'cross','crowd','crown','crude','cruel','crumb','crush','crust','cubic','curry','curse','curve','cycle','daddy','daily',
+      'dairy','daisy','dance','dated','datum','deals','dealt','death','debit','debug','debut','decal','decay','decor','decoy',
+      'decry','deity','delay','delta','delve','demon','denim','dense','depot','depth','derby','desks','detox','deuce','devil',
+      'diary','digit','dimly','dined','dingy','dirty','disco','ditch','dizzy','dodge','dogma','doing','dolly','donor','donut',
+      'doubt','dough','dowdy','dowel','downs','dozed','dozen','draft','drain','drape','drawl','drawn','dread','dream','dress',
+      'dried','drift','drill','drink','drive','drone','drool','drops','dross','drove','drown','drums','drunk','dryer','dryly',
+      'dunce','dusty','dwarf','dwell','eager','eagle','early','earns','earth','eased','easel','eaten','eater','eaves','ebony',
+      'edged','eight','eject','elate','elbow','elder','elect','elfin','elite','elope','elude','email','embed','ember','emoji',
+      'emote','empty','enact','ended','endow','enemy','enjoy','ennui','ensue','enter','entry','envoy','epoch','equal','equip',
+      'erase','erode','error','essay','ether','ethic','ethos','evade','event','every','evict','evoke','exact','exalt','exams',
+      'excel','exile','exist','expat','expel','extra','exude','fable','facet','faded','faint','fairy','faith','false','famed',
+      'fancy','fatal','fatty','fault','fauna','feast','feats','feeds','feign','feint','felon','femur','fence','ferry','fetch',
+      'fever','fewer','fiber','field','fiend','fiery','fifth','fifty','fight','filch','filet','fills','filth','final','finch',
+      'finds','fined','fired','firms','first','fishy','fixed','fizzy','fjord','flair','flake','flaky','flame','flank','flare',
+      'flash','flask','flesh','flick','flies','fling','flint','flips','flirt','float','flock','flood','floor','flora','floss',
+      'flour','flows','fluid','fluke','flung','flunk','flush','flute','foamy','focal','focus','foggy','foils','folks','folly',
+      'fonts','foods','foray','force','forge','forks','forms','forte','forth','forty','forum','found','fount','foxes','foyer',
+      'frail','frame','frank','fraud','freak','freed','fresh','friar','fried','frill','frisk','frizz','front','frost','froze',
+      'fruit','fully','fumed','funds','fungi','funky','funny','furry','fused','fussy','fuzzy','gaily','gains','gamma','gangs',
+      'gases','gauge','gauze','gavel','gazer','gears','geeks','genes','genie','genre','gents','germs','ghost','giant','gifts',
+      'gills','girth','given','giver','gizmo','gland','glare','glass','glaze','gleam','glean','glide','globe','gloom','glory',
+      'gloss','glove','glyph','gnome','goals','goats','going','golds','goner','goods','gooey','goofs','goose','gorge','gouge',
+      'gourd','grace','grade','graft','grain','grams','grand','grant','grape','graph','grasp','grass','grate','grave','gravy',
+      'graze','great','greed','greek','green','greet','grief','grill','grime','grimy','grind','grins','gripe','groan','groin',
+      'groom','grope','gross','group','grout','grove','growl','grown','grubs','gruel','gruff','grunt','guard','guava','guess',
+      'guest','guide','guild','guilt','guise','gulch','gummy','gusts','gusty','gutsy','habit','haiku','hairy','halve','hands',
+      'handy','happy','hardy','harsh','haste','hasty','hatch','hated','hauls','haunt','haven','havoc','hawks','hazel','heads',
+      'heady','heals','heaps','heard','heart','heats','heavy','hedge','heeds','heels','hefty','heirs','heist','helix','hello',
+      'helps','hence','herbs','herds','heron','hitch','hoard','hobby','hoist','holds','homer','homes','honey','honor','hoods',
+      'hooks','hoped','horde','horns','horse','hosts','hotel','hound','hours','house','howdy','human','humid','humor','humps',
+      'hunks','hunts','hurry','hurts','husky','hydra','hyena','hyper','icing','ideal','ideas','idiot','idled','idler','idols',
+      'igloo','image','imbue','impel','imply','inbox','incur','index','indie','inept','inert','infer','ingot','inner','input',
+      'inter','intro','ionic','irate','irked','irony','ivory','jacks','jaded','jails','jaunt','jazzy','jeans','jeeps','jeers',
+      'jelly','jerks','jerky','jests','jetty','jewel','jiffy','jilts','jimmy','jived','jocks','joins','joint','joker','jokes',
+      'jolly','jolts','joust','judge','juice','juicy','jumbo','jumps','jumpy','juror','kayak','kebab','keels','keeps','kempt',
+      'ketch','keyed','khaki','kicks','kills','kilns','kilts','kinds','kings','kinks','kinky','kiosk','knack','knave','knead',
+      'kneel','knees','knelt','knife','knits','knobs','knock','knoll','knots','known','knows','koala','kudos','label','labor',
+      'laced','laden','ladle','lager','lakes','lambs','lance','lands','lanes','lanky','lapel','lapse','large','larks','larva',
+      'laser','lasso','latch','later','latex','laugh','lawns','layer','leads','leafy','leaks','leaky','leans','leaps','learn',
+      'lease','leash','least','leave','ledge','leech','legal','lemon','lemur','lends','level','lever','libel','lifts','light',
+      'lilac','limbo','limbs','limit','limps','lined','linen','liner','lingo','links','lions','lipid','lists','liter','lived',
+      'liven','liver','livid','llama','loads','loafs','loans','lobby','local','locks','locus','lodge','lofty','logic','login',
+      'logos','loner','looks','looms','loops','loose','lords','lorry','loser','lotus','lousy','loved','lover','lower','lowly',
+      'loyal','lucid','lucky','lulls','lumps','lumpy','lunar','lunch','lunge','lungs','lurch','lured','lurks','lusty','lyric',
+      'macaw','macho','macro','madam','madly','mafia','magic','magma','major','maker','males','malls','malty','mambo','mango',
+      'mania','manic','manly','manor','maple','march','marks','marry','marsh','masks','mason','match','mated','maxim','mayor',
+      'mealy','means','meant','meats','meaty','medal','media','medic','meets','melee','melon','melts','memos','mends','menus',
+      'mercy','merge','merit','merry','messy','metal','meter','metro','micro','midst','might','milky','mills','mimic','mince',
+      'minds','mined','miner','minor','mints','minus','mirth','miser','misty','miter','mixed','mixer','moans','moats','model',
+      'modem','modes','mogul','moist','molar','molds','moles','money','monks','month','moods','moody','moose','moral','mossy',
+      'motel','moths','motif','motor','motto','mound','mount','mourn','mouse','mouth','moved','mover','movie','mowed','mucus',
+      'muddy','mulch','mules','munch','mural','murky','music','musky','musty','muted','myrrh','myths','nacho','nadir','nails',
+      'naive','named','nanny','nasty','natal','naval','navel','nears','necks','needs','needy','nerve','nervy','nests','never',
+      'newer','newly','nexus','nicer','niche','nifty','night','nimby','ninja','ninth','noble','nobly','noise','noisy','nonce',
+      'nooks','norms','north','notch','noted','novel','nudge','numbs','nurse','nutty','nylon','nymph','oaken','oasis','oaths',
+      'occur','ocean','oddly','offer','often','ogled','oiled','okays','older','olive','omega','onion','onset','oomph','opals',
+      'opens','opera','opted','optic','orbit','order','organ','other','otter','ought','ounce','outer','ovals','ovens','overt',
+      'owing','owned','owner','oxide','ozone','paced','pacer','packs','paddy','pagan','pails','pains','paint','pairs','paled',
+      'palms','panda','panel','pangs','panic','pansy','pants','papal','paper','parch','parks','parry','parse','parts','party',
+      'pasta','paste','pasty','patch','patio','patsy','patty','pause','paved','pawns','peace','peach','peaks','pearl','pears',
+      'pecan','pecks','pedal','peeks','peels','peers','penal','pence','penny','perch','peril','perks','perky','perms','pesky',
+      'petal','petty','phase','phone','photo','piano','picks','picky','piece','piers','piggy','piled','pills','pilot','pinch',
+      'pined','pings','pinks','pints','pious','piped','piper','pique','pitch','pithy','pivot','pixel','pixie','pizza','place',
+      'plaid','plain','plane','plank','plans','plant','plate','plays','plaza','plead','pleas','pleat','plied','plods','plots',
+      'plows','ploys','pluck','plugs','plumb','plume','plump','plums','plunk','plush','poach','poems','poets','point','poise',
+      'poked','poker','pokes','polar','poles','polka','polls','polyp','ponds','pooch','pools','poppy','porch','pored','ports',
+      'posed','poser','posit','posse','posts','potty','pouch','pound','pours','pouty','power','prank','prawn','prays','preen',
+      'press','preys','price','pride','pried','prima','prime','print','prior','prism','privy','prize','probe','prods','prone',
+      'prong','proof','props','prose','proud','prove','prowl','prude','prune','psalm','puffy','pulls','pulpy','pulse','pumps',
+      'punch','punks','pupil','puppy','puree','purge','purrs','purse','pushy','putts','putty','pygmy','pylon','quack','quaff',
+      'quail','quake','qualm','queen','queer','quell','query','quest','queue','quick','quiet','quill','quilt','quirk','quite',
+      'quota','quote','rabbi','rabid','raced','racer','racks','radar','radio','radon','rafts','raged','raids','rails','rains',
+      'rainy','raise','raked','rally','ramps','ranch','range','rangy','ranks','rants','rapid','rasps','raspy','rated','ratio',
+      'ratty','raved','raven','raves','rayon','razor','reach','react','reads','ready','realm','reams','reaps','rears','rebel',
+      'recur','reeds','reefs','reeks','reels','refer','regal','rehab','reign','reins','relax','relay','relic','remit','renal',
+      'renew','rents','repay','repel','reply','rerun','reset','resin','rests','retry','reuse','revel','rhino','rhyme','rider',
+      'rides','ridge','rifle','rigid','rigor','riled','rinds','rings','rinse','riots','ripen','risen','riser','risky','rites',
+      'ritzy','rival','river','rivet','roads','roams','roars','roast','robed','robin','robot','rocky','rodeo','rogue','roles',
+      'rolls','roman','romps','roofs','rooks','rooms','roomy','roost','roots','roped','roses','rouge','rough','round','rouse',
+      'route','rover','rowdy','rowed','royal','ruins','ruled','ruler','rules','rumba','rumor','runes','rungs','runny','rural',
+      'rusty','saber','sable','sadly','safer','sagas','sages','saint','salad','sales','salon','salsa','salty','salve','sands',
+      'sandy','saner','satin','sauce','saucy','sauna','saved','savor','savvy','scale','scalp','scaly','scamp','scams','scans',
+      'scare','scarf','scary','scene','scent','scoff','scold','scone','scoop','scope','score','scorn','scout','scowl','scram',
+      'scrap','scrub','seals','seams','seats','sedan','seeds','seedy','seeks','seems','seeps','seize','sells','sends','sense',
+      'sepia','serif','serve','setup','seven','sever','sewed','sewer','shack','shade','shady','shaft','shake','shaky','shall',
+      'shame','shank','shape','shard','share','shark','sharp','shave','shawl','shear','sheds','sheen','sheep','sheer','sheet',
+      'shelf','shell','shift','shims','shine','shiny','ships','shire','shirk','shirt','shock','shoes','shone','shook','shoot',
+      'shops','shore','shorn','short','shout','shove','shown','shows','showy','shred','shrew','shrub','shrug','shuck','shunt',
+      'sided','siege','sieve','sight','sigma','signs','silks','silky','sills','silly','silts','since','sinew','singe','sinks',
+      'siren','sites','sixth','sixty','sized','skate','skein','skied','skier','skill','skimp','skins','skips','skirt','skull',
+      'skunk','slabs','slack','slain','slams','slang','slant','slaps','slash','slate','slave','slays','sleds','sleek','sleep',
+      'sleet','slept','slice','slick','slide','slime','slimy','sling','slink','slips','slope','slosh','sloth','slots','slows',
+      'slugs','slums','slung','slurp','slurs','smack','small','smart','smash','smear','smell','smelt','smile','smirk','smith',
+      'smock','smoke','smoky','snack','snags','snail','snake','snaps','snare','snarl','sneak','sneer','sniff','snore','snort',
+      'snout','snowy','snubs','snuff','soaks','soaps','soars','sober','socks','sofas','soggy','soils','solar','soled','solid',
+      'solos','solve','sonic','sorry','sorts','souls','sound','soups','south','sowed','space','spade','spans','spare','spark',
+      'spawn','speak','spear','speck','specs','speed','spell','spend','spent','spice','spicy','spied','spiel','spies','spike',
+      'spill','spine','spite','split','spoke','spoof','spook','spool','spoon','spore','sport','spots','spout','spray','spree',
+      'sprig','spuds','spunk','spurn','spurs','spurt','squat','squid','stabs','stack','staff','stage','stags','staid','stain',
+      'stair','stake','stale','stalk','stall','stamp','stand','stank','stare','stark','stars','start','stash','state','stave',
+      'stays','steak','steal','steam','steed','steel','steep','steer','stems','steps','stern','stews','stick','stiff','still',
+      'stilt','sting','stink','stint','stock','stoic','stoke','stole','stomp','stone','stony','stood','stool','stoop','stops',
+      'store','stork','storm','story','stout','stove','stows','strap','straw','stray','strip','strum','strut','stuck','studs',
+      'study','stuff','stump','stung','stunk','stuns','stunt','style','suave','sugar','suite','suits','sulks','sulky','sunny',
+      'super','surge','surly','sushi','swamp','swank','swans','swaps','swarm','swath','swats','sways','swear','sweat','sweep',
+      'sweet','swell','swept','swift','swigs','swill','swims','swine','swing','swipe','swirl','swish','swoon','swoop','sword',
+      'swore','sworn','swung','syrup','tabby','table','taboo','tacit','tacks','tacky','taffy','tails','taint','taken','taker',
+      'tales','talks','tally','talon','tamed','tamer','tango','tangs','tangy','tanks','taped','taper','tardy','taste','tasty',
+      'taunt','tawny','taxed','taxis','teach','teams','tears','teary','tease','teddy','teens','teeth','tempo','tends','tenor',
+      'tense','tenth','tents','tepid','terms','terra','terse','tests','texts','thank','theft','their','theme','there','these',
+      'thick','thief','thigh','thing','think','third','thorn','those','three','threw','throb','throw','thuds','thugs','thumb',
+      'thump','tiara','tidal','tides','tiers','tiger','tight','tiled','tilts','timed','timer','timid','tinge','tipsy','tired',
+      'titan','title','toast','today','toddy','token','tolls','tombs','tomes','toned','toner','tongs','tonic','tools','tooth',
+      'topaz','topic','torch','torso','total','totem','touch','tough','tours','towel','tower','towns','toxic','trace','track',
+      'tract','trade','trail','train','trait','tramp','traps','trash','trawl','trays','tread','treat','trees','trend','trial',
+      'tribe','trick','tried','tries','trims','trios','trips','trite','troll','troop','trope','trots','trout','truce','truck',
+      'truly','trump','trunk','truss','trust','truth','tryst','tubby','tubes','tucks','tulip','tummy','tumor','tuned','tuner',
+      'turfs','turns','tutor','twain','twang','tweak','tweed','tweet','twice','twigs','twill','twine','twins','twirl','twist',
+      'typed','types','typos','udder','ultra','umber','uncle','uncut','under','undid','undue','unfit','unify','union','unite',
+      'units','unity','unlit','until','unwed','unzip','upper','upset','urban','urged','usage','usher','usual','utter','vague',
+      'valet','valid','valor','value','valve','vanes','vapor','vases','vault','vaunt','veers','veils','veins','venom','venue',
+      'verbs','verge','verse','verve','vexed','vibes','vicar','video','views','vigor','villa','vines','vinyl','viola','viper',
+      'viral','virus','visit','visor','vista','vital','vivid','vixen','vocal','vodka','vogue','voice','voids','volts','voted',
+      'voter','votes','vouch','vowed','vowel','wacky','waded','wafer','waged','wager','wages','wagon','waifs','wails','waist',
+      'waits','walks','walls','waltz','wands','waned','wants','wards','wares','warns','warps','warts','wasps','waste','watch',
+      'water','waved','waver','waves','waxed','weald','weans','wears','weary','weave','wedge','weeds','weedy','weeks','weeps',
+      'weigh','weird','wells','welts','whack','whale','wharf','wheat','wheel','whelp','where','which','whiff','while','whims',
+      'whine','whips','whirl','whisk','white','whole','whose','wicks','wider','widow','width','wield','wills','wilts','wimps',
+      'wince','winch','winds','windy','wines','wings','winks','wiped','wiper','wired','wiser','witch','wives','woken','woman',
+      'women','woods','woody','words','wordy','works','world','worms','worry','worse','worst','worth','would','wound','wrack',
+      'wraps','wrath','wreak','wreck','wring','wrist','wrote','wrung','yacht','yanks','yards','yarns','yawns','yearn','years',
+      'yeast','yells','yelps','yield','yodel','yolks','young','yours','youth','yucca','yummy','zebra','zesty','zilch','zoned',
+      'zones','zooms'
+    ];
+
+    // Valid guesses: accepted words that won't be chosen as answers
+    var VALID_EXTRA = [
+      'aahed','aalii','aaron','abaca','abaci','aback','abaff','abaft','abama','abase','abash','abask','abate','abave','abaze',
+      'abbas','abbes','abbey','abbie','abbot','abdal','abdat','abeam','abear','abele','abets','abhor','abide','abidi','abies',
+      'abilo','abkar','abled','abler','ables','ablow','abmho','abner','abnet','abode','abody','abohm','aboil','aboma','aboon',
+      'abord','abort','abram','abret','abrim','abrin','abris','abrus','absit','abuna','abura','abuta','abuts','abuzz','abwab',
+      'abyes','abysm','abyss','acana','acapu','acara','acari','acate','accoy','acedy','acerb','aceta','achar','achen','acher',
+      'achor','acidy','acier','acing','acini','ackee','acker','ackey','aclys','acmes','acmic','acned','acnes','acock','acoin',
+      'acold','acoma','acone','acorn','acrab','acred','acrid','acroa','acron','acrux','acryl','actin','acton','actor','acuan',
+      'adage','adapa','adapt','adati','adawe','adawn','adays','addax','adder','addie','addle','adead','adeem','adeep','adela',
+      'adept','adfix','adiel','adieu','adion','adios','adits','adjag','adlai','adlay','adlet','adman','admin','admix','adnex',
+      'adobe','adore','adorn','adown','adoxa','adoxy','adoze','adpao','adrip','adrop','adrue','adunc','adusk','adust','adyta',
+      'adzer','aedes','aegis','aegle','aeons','aequi','aeric','aerie','aevia','aface','afara','afear','affix','afifi','afire',
+      'aflat','aflow','afoam','afoot','afore','afoul','afret','afric','agade','agama','agami','agamy','agape','agars','agasp',
+      'agate','agaty','agave','agaze','agazo','agena','agers','agger','aggie','aggro','aggry','aggur','aghan','aghas','agiel',
+      'agios','agism','agist','agita','aglet','agley','aglow','agnel','agnes','agnus','agoge','agoho','agone','agora','agrah',
+      'agral','agria','agrin','agrom','agsam','agued','aguey','agush','agust','aheap','ahind','ahint','ahmed','ahmet','ahold',
+      'ahong','ahsan','ahull','ahunt','ahura','ahush','ahwal','aider','aides','ailed','ailie','aillt','aimak','aimee','aimer',
+      'ainoi','aioli','airan','aired','airer','airns','airts','aitch','aiwan','aizle','ajaja','ajari','ajava','ajees','ajhar',
+      'ajiva','ajuga','akala','akali','akasa','akebi','akees','akeki','akela','akkad','aknee','akpek','akule','akund','alack',
+      'alada','alain','alaki','alala','alamo','aland','alane','alani','alans','alary','alate','alawi','alban','albee','albin',
+      'albus','albyn','alcae','alces','alcor','alder','aldim','aldol','aldus','aleak','aleck','alefs','aleft','aleph','aleut',
+      'alfas','alfet','alfur','algal','algic','algid','algin','algol','algor','algum','alias','alice','alick','alida','alids',
+      'alima','aline','alish','aliso','alisp','alist','alite','alkes','alkyd','alkyl','allah','allan','allay','allen','aller',
+      'allie','allod','allyl','alman','almas','almeh','almes','almon','almud','almug','alnus','alody','aloed','aloes','aloft',
+      'alogy','aloid','aloin','alois','aloma','aloof','alosa','alose','aloud','alowe','alpax','alpen','alpid','altho','altin',
+      'altos','altun','aluco','alula','alums','alure','aluta','alvah','alvan','alvar','alvin','alvus','alway','amaas','amadi',
+      'amaga','amain','amala','amang','amani','amapa','amara','amass','amati','amban','ambar','ambay','ambit','ambon','ambos',
+      'ambry','ameba','ameed','ameen','amelu','amene','amens','ament','amhar','amias','amice','amide','amido','amids','amies',
+      'amigo','amine','amini','amino','amins','amish','amiss','amita','amity','amman','ammer','ammos','amnia','amnic','amnio',
+      'amoke','amoks','amole','among','amort','amour','amove','amper','amply','ampul','ampyx','amrit','amsel','amuck','amula',
+      'amuse','amuze','amvis','amylo','amyls','anabo','anama','anana','anasa','ancha','ancho','ancon','andas','andre','anear',
+      'anele','anend','anent','angas','angie','angka','angor','angst','angus','aniba','anice','anigh','anile','anils','anima',
+      'animi','anion','anise','anita','anjan','anjou','ankee','anker','ankou','ankus','annal','annam','annas','annat','annet',
+      'annie','annul','anoas','anode','anoil','anole','anoli','anomy','anous','ansae','ansar','ansel','anser','antae','antal',
+      'antar','anted','antes','antic','antis','anton','antra','antre','antsy','antum','anura','anury','anzac','aoife','aorta',
+      'aotea','aotes','aotus','apace','apaid','apama','apeak','apert','aperu','apery','aphis','aphra','apian','apiin','apina',
+      'aping','apios','apish','apism','apium','apnea','apoda','apods','apoop','aport','apout','appal','appay','appel','appet',
+      'april','apron','apsis','aptal','apted','aptly','aquae','aquas','araba','araby','araca','arado','arain','arake','araks',
+      'aramu','arara','arati','araua','arawa','arbor','arced','arche','archy','arcos','ardea','ardeb','ardor','ardri','aread',
+      'areal','arean','arear','areas','areca','areek','areel','arend','areng','arent','arete','argal','argas','argel','argid',
+      'argil','argol','argon','argot','argus','arhar','arhat','arian','arias','ariel','aries','arils','arioi','arion','ariot',
+      'arist','arite','arius','arjun','arkab','arles','armed','armer','armet','armil','arneb','arnee','arnut','aroar','aroba',
+      'arock','aroid','aroil','aroon','arpen','arrah','arras','arrau','arrie','arris','arses','arsis','arsle','arsyl','artal',
+      'artar','artel','artha','artie','artsy','aruac','aruke','arulo','arums','arupa','arusa','arval','arvel','arvos','aryan',
+      'arzan','arzun','asale','asana','asaph','asarh','ascan','ascii','ascon','ascot','ascry','ascus','asdic','ashen','asher',
+      'ashes','ashet','ashir','ashur','asian','askar','asker','askew','askip','askos','aslop','asoak','asoka','aspen','asper',
+      'aspic','assai','assam','assay','asses','assis','astay','aster','astir','astor','astur','asuri','asway','aswim','asyla',
+      'atavi','ataxy','ateba','atelo','athar','atilt','atlee','atman','atmid','atmos','atnah','atoke','atoll','atoms','atomy',
+      'atony','atopy','atour','atria','atrip','attar','atter','attid','atule','atune','atwin','atypy','aucan','aueto','augen',
+      'auger','aught','augur','aulae','aulic','auloi','aulos','aumil','aunts','aunty','aurae','aural','aurar','auras','aurei',
+      'aures','auric','aurin','aurir','auris','aurum','auryl','autem','autos','auxin','avahi','avant','avars','avast','avena',
+      'avens','avera','avert','avery','avian','avick','avine','avion','aviso','avows','awabi','awaft','awald','awalt','awane',
+      'awash','awave','awber','aweek','aweel','awest','aweto','awhet','awhir','awide','awing','awink','awiwi','awned','awner',
+      'awoke','awork','axels','axial','axile','axils','axine','axing','axion','axite','axled','axles','axman','axmen','axoid',
+      'axone','axons','ayahs','ayelp','aylet','ayllu','ayond','ayont','ayous','azide','azido','azine','azlon','azoch','azofy',
+      'azoic','azole','azons','azote','azoth','azoxy','aztec','azuki','azury','azyme','babai','babby','babel','babes','babka',
+      'baboo','babua','babul','bacao','bacca','bache','bacis','backs','badan','badon','baffy','bafta','bagdi','baggy','bagre',
+      'bahai','baham','bahan','bahar','bahay','bahoe','bahoo','bahur','bahut','baioc','bairn','baith','baize','bajan','bajau',
+      'bajra','bajri','bakal','baked','baken','bakie','bakli','balai','balak','balan','balao','balas','baldy','baled','balei',
+      'baler','bales','balks','balky','balli','balls','bally','balms','baloo','balor','balow','balsa','balti','balut','balza',
+      'banak','banat','banba','banca','banco','banda','bande','bandi','bando','bandy','banes','banff','banga','bange','bangs',
+      'banig','banky','banns','bantu','banty','banya','barad','barbe','barbs','bardo','bards','bardy','bared','barer','bares',
+      'barff','barge','bargh','baria','baric','barid','barie','baris','barit','barks','barky','barmy','barns','barny','baroi',
+      'barra','barry','barse','barth','barye','basal','baser','bases','basil','basks','bason','basos','bassa','basso','basta',
+      'baste','basto','batad','batak','batan','batea','bated','batel','bater','bathe','baths','batik','batis','baton','batta',
+      'batts','batty','batwa','baubo','bauch','bauds','baulk','baume','bauno','baure','bauta','bavin','bawdy','bawls','bawra',
+      'bayal','bayed','bayok','bayou','bazoo','beads','beady','beaks','beaky','beala','beams','beamy','beano','beans','beant',
+      'beany','bearm','bears','beata','beath','beats','beaus','beaut','beaux','bebar','bebat','bebay','bebed','bebog','bebop',
+      'becap','becks','becky','becry','becut','bedad','beday','bedel','beden','bedew','bedim','bedin','bedip','bedog','bedot',
+      'bedub','bedur','bedye','beech','beefs','beefy','beeps','beers','beery','beest','beeth','beets','beety','beeve','befan',
+      'befit','befog','befop','begad','begar','begat','begay','begem','beget','begob','begot','begum','begun','begut','behap',
+      'behen','beice','beige','beira','beisa','bejan','bejel','bejig','bekah','bekko','belah','belam','belar','belay','belch',
+      'belee','belga','belie','belis','bella','belle','bells','belly','belts','belve','bemad','beman','bemar','bemat','bemba',
+      'bemix','bemud','benab','benda','bends','bendy','benet','benin','benjy','benne','benny','bensh','benty','benzo','beode',
+      'bepat','bepaw','bepen','bepun','berat','beray','beret','bergs','bergy','berms','berne','beroe','berri','berth','beryl',
+      'beryx','besan','besee','beset','besin','besit','besom','besot','bespy','besra','bessi','bessy','betag','betel','beths',
+      'betis','betso','betsy','betta','betty','bevel','bever','bevue','bewet','bewig','bezel','bezzi','bezzo','bhaga','bhalu',
+      'bhang','bhara','bhava','bhili','bhima','biabo','bibio','bichy','bidar','biddy','bided','bider','bides','bidet','bidis',
+      'bidri','bield','biers','bifer','bifid','bigha','bight','bigly','bigot','bihai','biham','bijou','biked','biker','bikes',
+      'bikol','bilbo','bilby','bilch','bilge','bilgy','bilic','bilin','bilio','bilks','billa','billy','bilsh','bimbo','binal',
+      'binds','binge','bingy','binna','biome','biont','biose','biota','biped','bipod','birds','birdy','birle','birls','birma',
+      'birny','biron','birse','birsy','bison','bisti','bitch','biter','bites','bitis','bitsy','bitts','bitty','biune','bixin',
+      'bizen','bizet','blabs','blady','blaff','blain','blair','blake','blanc','blare','blart','blase','blash','blate','blats',
+      'blazy','blear','bleat','bleck','blent','blest','blets','blibe','blick','blimy','blini','blink','blips','blite','blizz',
+      'bloat','blobs','blocs','blogs','bloop','blore','blots','blout','blowy','blued','bluer','bluet','bluey','blunk','blurs',
+      'blype','boars','boats','bobac','bobby','bocal','bocca','bocce','boche','bocoy','boded','boden','boder','bodes','bodge',
+      'bodhi','bodle','bogan','bogey','boggy','bogie','bogle','bogue','bogum','bogus','bohea','bohor','boiko','boils','boily',
+      'boist','bokom','bolag','bolar','bolas','boldo','bolds','boldu','boled','boles','bolis','bolls','bolly','bolti','bolus',
+      'bombo','bonbo','bonce','boned','boner','bones','boney','bongo','bonks','bonny','bonze','boobs','booby','boody','books',
+      'booky','booly','booms','boomy','boone','boonk','boons','boors','boort','boose','boosy','boots','booty','booze','boozy',
+      'borak','boral','boran','borax','bored','boree','borer','bores','borgh','boric','boris','borne','boron','borty','bortz',
+      'boryl','bosch','boser','bosky','bosom','bossy','bosun','botch','bothy','bouge','bough','boule','bourd','bourg','bourn',
+      'bouse','bousy','bouto','bouts','bovid','bowed','bowel','bower','bowet','bowie','bowla','bowls','bowly','boxed','boxen',
+      'boxes','boxty','boyar','boyce','boyer','boyla','boyos','bozal','bozze','braca','brach','brack','bract','brads','braes',
+      'bragi','brags','brahm','brail','brake','braky','brank','brans','brant','brash','brava','bravo','brawl','brawn','braws',
+      'braxy','brays','braza','braze','bream','breba','breck','brede','bredi','breek','breme','brens','brent','breth','brett',
+      'breva','breve','brews','brian','briar','bribe','brier','bries','brigs','brill','brine','brins','briny','briss','brith',
+      'briza','brizz','broch','brock','broll','broma','brome','bromo','bronc','bronk','bronx','brool','broon','brose','brosy',
+      'brows','bruce','brugh','bruin','bruit','bruke','brule','brume','brung','bruno','brusk','bruta','brute','bruzz','bryan',
+      'bryce','bryum','buaze','bubal','bubby','bucca','bucco','buchu','bucko','bucks','bucky','buddh','buffs','buffy','bugan',
+      'bugre','buist','bukat','bulak','bulbs','bulby','bulgy','bulla','bulls','bulse','bumbo','bunce','bunco','bunda','bundu',
+      'bundy','bunga','bungo','bungs','bungy','bunko','bunks','bunts','bunty','bunya','buoys','buran','burao','burel','buret',
+      'burgh','burin','burka','burke','burly','burnt','burny','burro','burry','bursa','burse','burut','busby','bushi','bushy',
+      'busks','busky','bussu','busts','busty','butch','butea','buteo','butic','butsu','butte','butts','butty','butyl','butyn',
+      'butyr','buxom','buxus','buzzy','bylaw','bynin','byous','byron','bysen','bytes','byway','caama','cabal','caban','cabas',
+      'cabby','cabda','caber','cabio','cabob','cabot','cacam','cacan','cacao','cacti','cacur','caddo','caddy','cader','cadew',
+      'cadge','cadgy','cados','cadre','cadua','cadus','caeca','cafes','caffa','cafiz','caged','cager','cages','cagey','caggy',
+      'cagit','cahiz','cahot','cahow','caird','cairn','cairo','caite','cajan','cajun','caked','caker','cakes','cakey','calas',
+      'caleb','calfs','calid','calif','calix','calks','calla','calli','callo','calls','calms','calmy','calor','calve','calyx',
+      'caman','campa','campe','campo','camps','campy','camus','canal','canch','caned','canel','caner','canes','canid','canis',
+      'canna','canny','canso','canto','cants','canty','canun','caoba','capax','caped','capel','caper','capes','capon','capos',
+      'capot','cappy','capra','capri','capsa','carat','carbo','cardo','cards','cared','carer','cares','caret','carex','carga',
+      'carib','carid','carks','carlo','carls','carns','caroa','carob','carom','carse','carte','carts','carty','carua','carum',
+      'carya','caryl','casal','casco','cased','casel','caser','cases','casey','casha','casse','caste','casts','catan','catha',
+      'cathy','catti','catty','cauch','cauda','cauld','cauma','caupo','cavae','caval','cavel','caves','cavia','cavie','cavil',
+      'cavus','cawed','cawky','caxon','ccoya','cebid','cebil','cebur','cebus','cecil','ceded','ceder','cedes','cedre','cedry',
+      'ceiba','ceibo','ceile','celia','cella','cello','cells','celts','cense','cento','cents','ceorl','cequi','ceral','ceras',
+      'cerci','cered','cerer','ceria','ceric','cerin','certy','ceryl','cetic','cetid','cetin','cetus','cetyl','chack','chaco',
+      'chafe','chaff','chaft','chaga','chais','chait','chaja','chaka','chama','chams','chane','chang','chank','chape','chaps',
+      'chapt','chara','chard','chare','chark','charr','chars','chary','chasm','chati','chaui','chauk','chaus','chawk','chawl',
+      'chaya','chazy','cheep','cheet','cheir','cheka','cheke','cheki','chela','chelp','chena','cheng','chera','chert','cheth',
+      'cheve','chevy','chewy','chiam','chian','chico','chide','chien','chile','chimu','chine','ching','chink','chino','chins',
+      'chint','chiot','chirk','chirm','chiro','chirr','chita','chits','chloe','chlor','choca','chock','choco','choel','choes',
+      'choga','choil','choky','chola','chold','choli','cholo','chomp','choop','chopa','chops','chora','chort','chott','choup',
+      'chous','chowk','chows','choya','chria','chris','chuck','chude','chufa','chuff','chuje','chump','chums','churl','churm',
+      'churr','chyak','chyle','chyme','cibol','cicad','cicer','cigua','cilia','cimex','cinct','cindy','cinel','circe','cirri',
+      'cisco','cissy','cista','cited','citee','citer','cites','citua','civet','civvy','clack','clads','clamb','clame','clams',
+      'clank','clans','claps','clapt','clara','clare','clark','claro','clart','clary','claut','clava','clave','clavy','clawk',
+      'claws','clays','clead','cleam','cleat','cleck','cleek','clefs','cleft','cleve','clift','clima','clime','cline','clink',
+      'clint','clips','clipt','clite','clive','cloam','clods','cloff','clogs','cloit','clomb','clonk','cloof','cloop','cloot',
+      'clops','closh','clote','clots','clour','clout','clove','cluff','clunk','clyde','clyer','clype','cnida','coact','coaid',
+      'coals','coaly','coapt','coarb','coati','coats','coaxy','cobby','cobia','coble','cobra','cobus','cocci','cocco','cocky',
+      'cocle','cocos','coded','coder','codes','codex','codol','codon','cogon','cogue','cohen','cohol','coifs','coign','coins',
+      'coiny','coked','coker','cokes','colan','colic','colin','colla','colly','colts','colza','comal','coman','combo','comby',
+      'comer','comes','comfy','comid','comox','compo','comus','conal','condo','coned','coner','cones','conga','congo','conic',
+      'conin','conky','conor','conoy','conte','conto','conus','cooba','cooed','cooee','cooer','cooja','cooks','cooky','cools',
+      'cooly','coomb','coomy','coony','coops','coorg','coost','coots','copal','copei','copen','coper','copis','coppy','copra',
+      'copse','copsy','copus','coque','corah','coram','cords','cordy','cored','coree','corer','cores','corey','corge','corgi',
+      'corin','corke','corks','corky','corns','cornu','corny','coroa','corol','corps','corse','corta','coryl','cosec','coset',
+      'cosse','costa','costs','cotch','cothe','cothy','cotta','cotte','cotty','cotys','couac','coude','cough','couma','coups',
+      'courb','cours','couth','coved','coven','covey','covid','covin','cowal','cowan','cowed','cower','cowle','cowls','coxal',
+      'coyan','coyly','coyol','coypu','cozen','crabs','crags','craig','crain','crake','cramp','crams','crank','crape','craps',
+      'crapy','crare','crass','cravo','crawl','crawm','craws','creat','credo','creel','creem','creen','creme','crena','crepe',
+      'crept','crepy','cress','creta','crete','cribo','cribs','cried','crier','cries','criey','crile','crimp','crine','crink',
+      'criss','crith','croak','croat','croci','crock','croft','crome','crone','cronk','crony','crood','crook','crool','croon',
+      'crops','crore','crosa','croup','crout','crowl','crows','croze','cruce','cruck','cruet','cruft','crump','crunk','crunt',
+      'cruor','cruse','cruth','crypt','ctene','cuban','cubby','cubeb','cubed','cuber','cubes','cubit','cuddy','cueca','cueva',
+      'cuffs','cuffy','cujam','culet','culex','culla','culls','cully','culmy','culpa','cumal','cumar','cumay','cumbu','cumic',
+      'cumin','cumol','cumyl','cunan','cunas','cunye','cunza','cupay','cupel','cupid','cuppy','curbs','curby','curch','curds',
+      'curdy','cured','curer','cures','curie','curin','curio','curls','curly','cursa','curst','curua','curvy','cusec','cushy',
+      'cusie','cusso','cutch','cutie','cutin','cutis','cutty','cutup','cyath','cycad','cycas','cylix','cymar','cymba','cymry',
+      'cynic','cypre','cyril','cyrus','cyton','czech','dabba','dabby','dabih','dacus','dadap','daffy','dafla','dagga','daggy',
+      'daijo','daira','dairi','daiva','daker','dakir','dalar','dalea','daler','dales','dalle','dally','daman','damia','damie',
+      'damme','damon','dampy','danai','danda','dandy','danic','danio','danli','danny','danta','darac','daraf','darat','darby',
+      'darci','dared','daren','darer','dares','dargo','daric','darii','darin','darks','darky','darns','daroo','darst','darts',
+      'daryl','dashy','dasnt','dassy','dasya','datch','dater','dates','datil','daube','daubs','dauby','daunt','dauri','daven',
+      'daver','david','davit','dawdy','dawns','dawny','dawut','dayal','dazed','deair','deary','deash','deave','debar','debby',
+      'deben','debus','decad','decan','decap','decil','decke','decus','decyl','dedan','deeds','deedy','deems','deeps','defat',
+      'defer','defog','degas','degum','deice','deify','deign','deink','deino','deism','deist','dekko','dekle','delft','delhi',
+      'delia','della','demal','demit','demob','demos','demur','denat','denda','deneb','denis','denty','deota','depas','depoh',
+      'derah','derat','deray','derek','deric','derma','derry','desex','desma','dessa','desyl','detar','detax','deter','detin',
+      'detur','devon','devow','dewan','dewax','dewer','dewey','dhabb','dhava','dheri','dhobi','dhole','dhoni','dhoon','dhoti',
+      'dhoul','dhyal','diact','diamb','diana','diane','diced','dicer','dices','dicey','dicky','dicot','dicta','diddy','didie',
+      'didle','didna','didnt','didst','didus','didym','diego','diene','dieri','difda','dight','digor','diker','dildo','dilli',
+      'dilly','dimer','dimit','dimna','dimps','dinah','dinar','diner','dines','dinge','dingo','dinic','dinka','dinky','dinus',
+      'diode','dione','dioon','diose','diota','dioxy','dipus','dirca','dirge','discs','dishy','disme','disna','dital','diter',
+      'ditto','ditty','divan','divas','dived','divel','diver','dives','divot','divus','divvy','dixie','dixit','dizen','djave',
+      'djuka','dobby','dobla','dobra','doddy','dodgy','doest','dogal','doggo','doggy','dogie','dogly','dogra','doigt','doily',
+      'doina','dolia','dolls','dolor','dolph','domal','domba','domed','domer','domes','domic','dompt','donal','donar','donax',
+      'donee','donet','doney','donga','donia','donna','donne','donum','dooja','dooli','dooly','dooms','doors','doper','dopey',
+      'dorab','dorad','doree','doria','doric','doris','dorje','dormy','dorts','dorty','dosed','doser','doses','dosis','dotal',
+      'doted','doter','dotty','douar','douce','douse','dover','dowed','dower','dowie','downy','dowry','dowse','doyle','dozer',
+      'dozes','draba','draco','draff','drago','drags','drail','drake','drama','dramm','drang','drank','drant','drate','drawk',
+      'draws','drear','dreep','dregs','dreng','drest','drias','drier','dries','drinn','drips','drisk','drogh','droit','droll',
+      'drome','drona','drony','droop','dropt','droud','drouk','drovy','drugs','druid','drung','drupa','drupe','druse','drusy',
+      'druxy','dryad','dryas','dryth','duala','duali','duane','dubba','dubby','dubhe','ducal','ducat','duces','duchy','ducks',
+      'ducts','duffs','dugal','duhat','dujan','dukhn','dulat','duler','dulia','dulls','dully','dulse','dumba','dummy','dumps',
+      'dumpy','dunal','dunch','dunes','dungy','dunks','dunne','dunno','dunny','dunst','duole','duped','duper','dupes','dupla',
+      'duple','duppy','dural','durax','durio','duroc','durra','durry','durst','duryl','dusio','dusky','dusun','dutch','dutra',
+      'duvet','dwale','dwalm','dwang','dwelt','dwine','dwyka','dyaus','dyers','dying','dyker','dylan','eagre','eared','earle',
+      'easer','eases','eaved','eaver','ebbed','echea','echis','ecize','eclat','ecoid','ecole','ectad','ectal','edana','edder',
+      'eddic','eddie','edema','edgar','edger','edges','edict','edify','edith','ediya','edoni','educe','educt','edwin','eeler',
+      'eerie','effie','egest','egger','egret','egypt','eider','eigne','eimak','eimer','ekaha','eking','ekron','elain','eland',
+      'elaps','eldin','elean','elegy','elemi','eleut','elfic','elian','elias','elide','elihu','eliot','eliza','ellen','elmer',
+      'eloah','eloge','elops','elric','elsin','elute','elvan','elver','elves','elvet','elvis','elymi','embar','embay','embog',
+      'embow','embox','embus','emcee','emeer','emend','emery','emesa','emily','emits','emmer','emmet','empeo','enage','enapt',
+      'enarm','enate','encup','ender','endew','endue','eneas','enema','engem','enhat','eniac','enoch','enoil','enorm','enray',
+      'enrib','enrol','enrut','ensky','entad','ental','entia','enure','enzym','eosin','epact','ephah','ephod','ephor','epode',
+      'epopt','eppie','epsom','epulo','equid','equus','erade','erava','erbia','erect','erept','ergal','ergon','ergot','erian',
+      'erica','erick','erika','erizo','ernie','ernst','erose','erred','ersar','eruca','eruct','erupt','ervum','erwin','eryon',
+      'esere','eshin','esker','essed','essex','essie','ester','estoc','estop','estre','estus','ethal','ethan','ethel','ethid',
+      'ethyl','ettle','etude','eupad','eurus','eusol','evase','evens','evert','evils','ewder','ewery','exdie','exeat','exert',
+      'exite','exlex','exode','exody','exter','extol','exult','eying','eyoty','eyrie','eyrir','fabes','faced','facer','faces',
+      'facia','facks','facto','facts','facty','faddy','faden','fader','fades','fadge','faery','faffy','fager','fagot','fagus',
+      'faham','fails','fains','fairm','faked','faker','fakes','fakir','falco','falls','fally','fanal','fanam','fangy','fanny',
+      'fanon','fanti','fanwe','farad','farce','farcy','farde','fardh','fardo','fared','farer','fares','farms','farmy','farse',
+      'farsi','fated','fatil','fatly','fatwa','faugh','fauld','fause','faust','fauve','favor','favus','fawny','fayal','featy',
+      'feaze','fecal','feces','fedia','feedy','feels','feere','feeze','feist','felid','felis','felix','fella','felly','felts',
+      'felty','felup','femic','fends','fendy','fenks','fenny','feoff','ferae','feral','feria','ferie','ferio','ferly','ferme',
+      'ferny','ferri','feste','fetal','fetid','fetor','fetus','feuar','feuds','feued','fezzy','fiard','fibre','fibry','fiche',
+      'fichu','ficus','fidac','fides','fidge','fidia','fient','fifer','fifie','figgy','fikie','filao','filar','filed','filer',
+      'files','filix','filly','films','filmy','finer','fines','fingu','finis','finny','fiord','fique','firca','firer','fires',
+      'firry','firth','fists','fisty','fitch','fitly','fitty','fiver','fives','fixer','fixes','fjeld','flack','flaff','flags',
+      'flail','flamb','flamy','flane','flaps','flary','flats','flavo','flawn','flaws','flawy','flaxy','fleam','fleas','fleay',
+      'fleck','fleer','fleet','fleta','flews','flier','flimp','flipe','flisk','flite','floey','flogs','flong','flops','flory',
+      'flosh','flota','flout','flown','floyd','flubs','flued','fluer','fluey','fluff','fluky','flume','flump','fluor','flurn',
+      'flurr','flusk','fluty','flyer','flype','foals','foaly','foams','fodda','foder','fodge','foehn','fogey','fogle','fogon',
+      'fogou','fogus','fohat','foism','foist','folds','foldy','folia','folie','folio','folky','fomes','fondu','fonly','foody',
+      'fools','foots','footy','foppy','forby','fordo','fordy','forel','forgo','forky','forme','formy','forst','fosie','fossa',
+      'fosse','fotch','fotui','fours','foute','fouth','fovea','foxer','frack','fraid','fraik','franc','frase','frass','frawn',
+      'frayn','frays','fraze','fream','freck','freer','frees','freet','freir','freit','fremd','freon','frett','freya','freyr',
+      'frier','fries','frija','frike','frist','frith','fritt','fritz','frize','frock','frogs','frond','froom','frore','frory',
+      'frosh','froth','frowl','frown','frowy','frump','frush','fryer','fubby','fubsy','fucus','fuder','fudge','fudgy','fuffy',
+      'fugal','fuggy','fugle','fugue','fulah','fulth','fultz','fulup','fulwa','fumer','fumes','fumet','fundi','fungo','funis',
+      'funje','fural','furan','furca','furil','furor','furud','furyl','furze','furzy','fusee','fuses','fusht','fusil','fusty',
+      'fusus','futwa','gabby','gable','gaddi','gadge','gadid','gadus','gaffe','gagee','gager','gagor','gaine','gaits','gaize',
+      'galah','galax','galea','galee','galei','galen','gales','galet','galey','galga','galik','galla','galli','gally','galop',
+      'gamba','gamic','gamin','gammy','gamut','ganam','ganch','ganda','ganef','ganga','gange','ganja','gansy','ganta','ganza',
+      'gaper','gapes','gappy','garad','garbs','garce','gardy','gareh','garle','garoo','garse','garth','garum','gasan','gashy',
+      'gasps','gaspy','gassy','gatch','gated','gater','gates','gatha','gator','gauby','gaudy','gault','gaumy','gaunt','gaura',
+      'gauss','gauzy','gavia','gawby','gawky','gayal','gazee','gazel','gazes','gazon','gease','gebur','gecko','geeky','geese',
+      'geest','geira','gekko','gelid','gelly','gemel','gemma','gemmy','gemot','gemul','genal','genep','genet','genic','genii',
+      'genin','genip','genny','genoa','genom','genos','genro','genty','genua','genus','genys','geode','geoff','geoid','geoty',
+      'gerah','gerbe','gerim','gerip','germy','gesan','gesso','geste','getae','getah','getic','getup','geyan','ghazi','ghent',
+      'ghoom','ghoul','gibbi','gibby','gibel','giber','gibus','giddy','gigot','gilds','giles','gilia','gilim','gilly','gilpy',
+      'gilse','gimel','ginny','gipon','gippy','girba','girly','girny','girse','girsh','gisla','gives','givey','glace','glack',
+      'glade','glady','glaga','glaik','glair','glaky','glans','glary','glaum','glaur','glaux','glazy','gleba','glebe','glede',
+      'gledy','gleed','gleek','gleet','glenn','glent','glial','gliff','glime','glink','glint','glisk','gloam','gloat','globy',
+      'gloea','glome','glore','glost','glout','glows','gloze','gluck','glued','gluer','glues','gluey','gluma','glume','glump',
+      'glynn','gnarl','gnash','gnats','gnawn','goads','goala','goaty','goave','goban','gobbe','gobby','gobia','gobio','godet',
+      'godly','goety','gogga','goldi','goldy','golee','golem','golfs','golgi','golly','goloe','golpe','gomer','gonad','gonal',
+      'gondi','gonia','gonid','gonna','gonne','gonys','goody','goofy','gools','gooma','goosy','goral','goran','gorce','gorer',
+      'goric','gorra','gorry','gorse','gorsy','gossy','gotch','gotha','gotra','gotta','gouda','goudy','goumi','goura','gouty',
+      'gowan','goyim','goyin','goyle','graff','grail','graip','grama','grame','gramp','grane','grank','grano','grapy','grays',
+      'grebe','grebo','grece','grege','gregg','grego','grein','greta','greys','grice','gride','griff','grift','grike','grimp',
+      'grips','gripy','grist','grith','grits','groat','groff','groop','groot','grosz','grouf','grovy','grows','grues','gruis',
+      'grume','grump','grush','gruss','gryde','guaba','guaco','guaka','guama','guana','guano','guara','guasa','guato','guaza',
+      'gubbo','gucki','gudge','gudok','guffy','gugal','guiba','guido','guige','guijo','guile','guily','gujar','gulae','gular',
+      'gules','gulfs','gulfy','gulix','gulls','gully','gulps','gulpy','gumbo','gumby','gumly','gumma','gundi','gundy','gunge',
+      'gunky','gunne','gunny','guppy','guran','gurge','guric','gurly','gurry','gushy','gusla','gusle','gusto','gutta','gutte',
+      'gutti','gutty','guyed','guyer','guzul','gweed','gwely','gwine','gyges','gygis','gymel','gynic','gyppo','gypsy','gyral',
+      'gyric','gyron','gyrus','habab','habbe','hache','hacks','hacky','haddo','hades','hadji','hafiz','haggy','hagia','haida',
+      'haikh','haily','haine','haire','hairs','hajib','hakam','hakea','hakim','hakka','halal','halch','haler','halma','haloa',
+      'halse','halts','hamal','hamel','hammy','hamsa','hamus','hamza','hance','hanch','hange','hangs','hanif','hanky','hanna',
+      'hansa','hanse','haole','haoma','haori','haply','harbi','harem','hares','harka','harks','harms','harpa','harps','harpy',
+      'harry','hasan','hashy','hasky','hasta','hater','hates','hathi','hatti','hatty','haugh','hauld','haulm','hausa','hause',
+      'havel','haver','hawer','hawky','hawok','hawse','hayey','hazen','hazer','hazle','heald','heapy','hears','heath','heave',
+      'hecte','heder','hedgy','heedy','heeze','heezy','heiau','heidi','heigh','heinz','helen','helge','helio','helly','helms',
+      'heloe','helot','helve','hemad','hemal','hemen','hemic','hemin','hemol','hempy','henad','henna','henny','henry','hepar',
+      'herat','herby','herem','herma','hermo','herne','herse','hertz','herve','hetty','heuau','heugh','hevea','hewel','hewer',
+      'hexad','hexer','hexis','hexyl','hiant','hiate','hided','hider','hield','hienz','hight','hiker','hilch','hilda','hilly',
+      'hilsa','hilum','hilus','hinau','hinch','hindi','hindu','hinge','hinny','hiper','hippa','hippo','hippy','hiram','hired',
+      'hiren','hirer','hirse','hispa','hithe','hived','hiver','hives','hoary','hoast','hocco','hocky','hocus','hoddy','hogan',
+      'hoggy','hogni','hoick','hoise','hokan','hokey','hokum','holed','holer','holes','holey','holia','holla','hollo','holly',
+      'homam','homey','honda','hondo','honzo','hooch','hooey','hoofs','hoofy','hooky','hooly','hoose','hoosh','hoove','hoper',
+      'hopes','hoppy','horal','horim','horme','horny','horst','horsy','hosed','hosel','hosta','hotch','hotly','hotta','hough',
+      'houri','housy','hovel','hoven','hover','howea','howel','howff','howls','howso','hoyle','hsuan','huaca','huaco','huari',
+      'huave','hubba','hubby','hucho','huffs','huffy','hulky','humbo','humet','humic','humin','humph','humpy','humus','hunch',
+      'hundi','hunky','hurds','hurly','huron','hurri','hurst','hurty','husho','husks','hussy','hutch','hutia','huzza','hybla',
+      'hydro','hying','hyleg','hylic','hymen','hynde','hyoid','hypha','hypho','hyrax','hyson','iambe','iambi','ianus','iberi',
+      'ibota','icaco','iceni','ichor','icica','icily','ictic','ictus','idaho','idaic','idant','iddat','iddio','idean','idgah',
+      'idiom','idism','idist','idite','idles','idola','idose','idryl','idyll','ierne','igara','igdyr','ihlat','ihram','ijore',
+      'ikona','ileac','ileon','ileum','ileus','iliac','iliad','ilial','ilian','iliau','ilima','ilium','illth','iloko','imago',
+      'imban','imbat','imbed','imber','imide','imine','imino','immew','immit','immix','impar','impen','impot','imshi','inaja',
+      'inane','inapt','inarm','incan','incog','incus','incut','indan','india','indic','indra','indri','indue','indus','indyl',
+      'ineri','inerm','infit','infix','infra','inger','ingle','inial','inigo','inion','injun','inked','inken','inker','inket',
+      'inkle','inkra','inlaw','inlay','inlet','innet','inoma','inone','inorb','inrub','inrun','insea','insee','inset','intil',
+      'intue','inula','inure','inurn','invar','inwit','iodic','iodol','iowan','iphis','irade','irani','iraqi','irena','irene',
+      'irfan','irgun','irian','irish','iroha','iroko','irone','irpex','irvin','irwin','isaac','isawa','iseum','isiac','islam',
+      'islay','islet','islot','ismal','issei','issue','istle','itala','itali','itchy','itcze','itemy','ither','ivied','ixion',
+      'ixora','izard','izote','iztle','izumi','jabia','jabot','jabul','jacal','jacko','jacky','jacob','jagat','jager','jaggy',
+      'jagir','jagla','jagua','jahve','jaime','jaina','jakes','jakob','jakun','jalap','jaman','jambo','jambs','james','jamie',
+      'jammy','janet','janos','jantu','janua','janus','japan','japer','japes','japyx','jared','jarmo','jarra','jarry','jasey',
+      'jason','jatha','jatki','jatni','javan','javer','jawab','jawed','jeany','jebus','jeery','jehup','jelab','jemez','jemmy',
+      'jenna','jenny','jerez','jerib','jerry','jesse','jesus','jewry','jheel','jhool','jibby','jiboa','jiggy','jihad','jingo',
+      'jinja','jinks','jinni','jinny','jiqui','jirga','jitro','jiver','jives','jixie','jocko','jocum','jodel','johan','joist',
+      'jokul','jolty','jonah','jonas','jones','joola','joree','jorge','jorum','joshi','josie','josip','jotty','jough','joule',
+      'jours','jowar','jowel','jower','jowly','jowpy','joyce','joyed','juang','jubbe','judah','judas','judex','jufti','jugal',
+      'juger','jugum','julep','jules','julia','julid','julie','julio','julus','jumba','jumby','jumma','junco','junks','junky',
+      'junta','junto','jupon','jural','jurat','jurel','jussi','justo','jutic','jutka','jutty','juvia','juyas','kabel','kadmi',
+      'kados','kafir','kafiz','kafka','kafta','kahar','kahau','kaimo','kaiwi','kajar','kakan','kakar','kakke','kalon','kamao',
+      'kamas','kamba','kamel','kamik','kanae','kanap','kanat','kande','kaneh','kanga','kanji','kansa','kapai','kapok','kappa',
+      'kappe','kapur','kaput','karbi','karch','karel','karen','karma','karou','karri','karst','kasha','kashi','kaska','kassu',
+      'katar','katha','kathy','katie','katik','katun','kauri','kayan','kazak','kazoo','keach','keawe','kecky','kedar','kedge',
+      'keech','keena','keest','keeve','kefir','kefti','keita','keith','keleh','kelek','kelep','kella','kelly','kelps','kelpy',
+      'kelty','kemal','kempy','kenaf','kenai','kench','kenno','kerat','kerel','keres','kerri','kerry','keryx','ketal','keten',
+      'ketol','kette','ketty','ketyl','kevan','kevel','kevin','kevyn','khadi','khair','khaja','khami','khasa','khasi','khass',
+      'khaya','khila','khmer','khoja','khoka','khond','khuai','khula','khuzi','khvat','kiack','kiaki','kiang','kibei','kiddy',
+      'kieye','kikar','kikki','kilah','kilan','kileh','kiley','kilim','killy','kimmo','kinah','kinch','kingu','kioea','kioko',
+      'kiowa','kippy','kirve','kishy','kisra','kissy','kiswa','kitab','kitan','kitar','kithe','kitty','kiver','kiwai','kiyas',
+      'kizil','klaus','kling','klops','klosh','knape','knark','kneed','knell','knezi','kniaz','knick','knosp','knout','knowe',
+      'knurl','knute','knyaz','koali','koban','kobus','kodak','kodro','koeri','kogia','kohen','kohua','koila','koine','kokam',
+      'kokan','kokil','kokio','kokra','kokum','kolea','kolis','kombu','konak','konde','kongo','kongu','konia','kooka','koorg',
+      'koppa','korah','koran','korec','korin','koroa','korwa','kosin','kotal','kotar','kouza','kovil','koyan','kraal','kraft',
+      'krait','krama','kraut','kreis','krems','kreng','krepi','krina','krome','krona','krone','kroon','krosa','kubba','kudzu',
+      'kufic','kugel','kukri','kukui','kulah','kulak','kuman','kumbi','kumni','kumyk','kunai','kunbi','kurku','kurmi','kurus',
+      'kusam','kusan','kusha','kusti','kusum','kvass','kvint','kwapa','kyack','kylix','kyrie','kyung','laang','laban','labba',
+      'labia','labis','labra','lacca','lacer','laces','lacet','lache','lacis','lacto','lader','ladik','ladin','laeti','lagan',
+      'lagen','lagna','laich','laigh','laine','laird','lairs','lairy','laity','laker','lakie','lamba','lamby','lamed','lamel',
+      'lamer','lamia','lamin','lammy','lamna','lamps','lamus','lamut','lanao','lanas','lanaz','laney','langi','lango','lanny',
+      'lanum','lapon','lappa','lapsi','larch','lardy','largo','laria','larid','larin','larix','larky','larry','larus','larve',
+      'lasty','latah','latax','lated','laten','lathe','lathy','latin','latro','latus','lauan','lauds','lauia','laund','laura',
+      'laver','lavic','lawny','lawzy','laxly','layia','layne','lazar','leach','leady','leant','leapt','leath','leavy','leban',
+      'leden','ledgy','ledol','ledum','leeks','leeky','leery','leger','leges','leggy','legit','legoa','legua','lehua','leigh',
+      'leila','leith','lekha','lelia','leman','lemel','lemma','lemna','lenad','lenca','lench','lendu','lenis','lenny','lenth',
+      'lento','leora','lepas','leper','lepra','lepus','lerot','lerwa','lesgh','lesiy','lessn','letch','lethe','letty','letup',
+      'leuch','leuco','leuma','leung','levee','levin','levir','levis','lewie','lewis','lewth','lexia','lhota','liana','liang',
+      'liard','libby','liber','libra','licca','lichi','licit','liege','liesh','lieue','lieve','lifer','lifey','ligas','ligne',
+      'liked','liken','liker','likes','likin','lilts','liman','limax','limbu','limby','limed','limen','limer','limes','limey',
+      'limma','limmu','limpy','limsy','linch','linda','lindo','linea','lines','linet','linga','linge','lings','lingy','linha',
+      'linie','linin','linja','linje','linky','linne','linon','linos','linty','linum','linus','lipan','lipin','lippy','lisle',
+      'litas','litch','lithe','lithi','litho','lithy','litra','litus','lives','livor','livre','liwan','llano','lloyd','lludd',
+      'loach','loams','loamy','loasa','loath','loave','lobal','lobar','lobed','lobes','lochy','locky','locum','lodha','lodur',
+      'loess','lofts','logia','logie','logoi','lohan','lohar','loins','lokao','loket','lolly','longa','longe','longs','looby',
+      'loons','loony','loopy','loots','loper','loppy','loral','loran','lordy','lored','loren','loric','loris','lorum','losel',
+      'lotic','lotta','lotte','lotto','louch','louey','lough','louie','louis','loulu','loupe','louse','louty','lowan','lowed',
+      'lowth','loxia','loxic','lubra','lucan','lucet','lucia','lucre','luffa','luger','luian','luigi','luite','lukas','lulab',
+      'lumen','lummy','lunda','lunel','lunes','lungi','lungy','lunka','lupid','lupis','lupus','lural','lurer','lures','lurid',
+      'lurky','lurry','lushy','lusky','lutao','luteo','luter','lutra','luxus','lyard','lycid','lycus','lydia','lyery','lying',
+      'lymph','lynch','lynne','lyrid','lysin','lysis','lyssa','lytic','lytta','mabel','macan','macao','macco','macer','machi',
+      'macle','macon','madge','madia','madid','madoc','mafic','mafoo','magas','maggy','maghi','magog','magot','mahar','mahdi',
+      'mahoe','mahra','mahri','mahua','maida','maidu','maidy','maiid','maine','mains','maint','maire','maius','maize','makah',
+      'makes','makua','makuk','malar','malax','malay','maleo','malic','malik','malmy','malto','malus','malva','mamas','mamba',
+      'mamie','mamma','mammy','manal','manas','mande','maned','manei','manes','maney','manga','mange','mangi','mangy','manid',
+      'manis','maniu','manna','manny','manoc','manse','manso','manta','manto','manul','manus','maori','mapau','mappy','maqui',
+      'marae','maral','marci','marco','mardy','marek','mares','marge','maria','marid','marie','mario','maris','marka','marko',
+      'marla','marli','marly','marok','marsi','martu','marty','masai','masha','mashy','massa','masse','massy','masty','matai',
+      'matar','matax','mater','mates','matey','maths','matin','matka','matra','matsu','matta','matte','matti','matty','matzo',
+      'maugh','maund','mauri','mauve','mavis','mawky','maxed','mayan','maybe','mayda','mayer','mayey','maynt','mazda','mazed',
+      'mazer','mazes','mazic','mazur','mazut','mbaya','mbori','mbuba','mckay','mease','mecca','mecon','medio','medoc','meece',
+      'meeks','meese','meggy','meile','meith','melam','melas','melch','meles','melia','melic','meloe','melos','mende','mendi',
+      'menic','mensa','mense','mensk','merak','merat','merch','merel','mergh','meril','merle','merop','meros','merse','mesad',
+      'mesal','mesem','meshy','mesic','mesne','meson','messe','mesua','metad','metel','metic','metin','metis','metol','metra',
+      'metze','meuse','meute','mewer','mezzo','miami','miaow','miasm','miaul','micah','miche','micht','micky','middy','mider',
+      'midge','midgy','miffy','mikey','mikie','mikir','milan','milch','miler','miles','milha','milla','mille','milly','milpa',
+      'milty','mimeo','mimer','mimly','mimus','minar','mines','minge','mingo','mingy','minim','minny','minos','minot','minty',
+      'miqra','mirac','mirak','mired','mires','mirid','mirza','misdo','misgo','misky','missy','mitch','mitis','mitra','mitre',
+      'mitty','mitua','mixen','mixes','mizar','mizzy','mneme','mnium','mobby','mobed','moble','mocha','mocoa','modal','modoc',
+      'moggy','mohar','mohel','mohur','moira','moire','moise','moism','moity','mokum','molal','moldy','moler','molge','molka',
+      'molle','molly','molpe','molts','momme','mommy','momus','monad','monal','monas','monel','moner','mongo','monny','monte',
+      'montu','monty','mooch','mools','moony','moore','moorn','moors','moory','moosa','moost','mooth','mopan','moped','moper',
+      'mopes','mopla','moppy','mopsy','mopus','moqui','moran','morat','moray','mordv','morel','mores','morga','moric','morin',
+      'mormo','morne','moroc','moron','morph','morse','morth','morus','moses','mosey','mosgu','mossi','moste','mosul','mosur',
+      'moted','moter','motet','motey','mothy','motte','moudy','mould','moule','mouls','mouly','mousy','moves','mowch','mower',
+      'mowha','mowie','mowra','mowse','mowth','moyen','moyle','mpret','muang','mucic','mucid','mucin','mucky','mucor','mucro',
+      'mudar','mudde','mudee','mudir','mudra','muffs','muffy','mufti','mufty','muggy','mugil','muist','mukri','mukti','mulct',
+      'muley','mulga','mulla','mulls','mulse','mummy','mumps','munda','munga','munge','mungo','mungy','munia','muong','muran',
+      'murat','murex','murga','murid','murly','murmi','murph','murra','murre','murut','murva','murza','musal','musar','musca',
+      'musci','mused','muser','musgu','musha','mushy','musie','mussy','mutch','muter','mutes','mutic','muzzy','myall','mymar',
+      'myoid','myoma','myope','myops','myopy','myron','mysel','mysid','mysis','nabak','nabal','nabby','nabla','nable','nabob',
+      'nacre','nacry','naggy','naght','nagor','nahor','nahua','nahum','naiad','naias','naily','nairy','naish','naked','naker',
+      'nakir','nakoo','namaz','nambe','namda','namer','names','nance','nancy','nanda','nandi','nandu','nanes','nanga','nantz',
+      'naomi','naoto','napal','napes','napoo','nappe','nappy','naren','nares','naric','narks','narky','narra','nasab','nasal',
+      'nasch','nassa','nasua','nasus','natch','nates','nathe','natty','naumk','naunt','navar','navet','navew','navvy','nawab',
+      'nayar','nazim','nazir','neaps','neath','nebby','nebel','neddy','neeld','neele','neese','neeze','neffy','neger','negro',
+      'negus','neigh','neist','nejdi','nelly','nenta','neoza','nepal','neper','nesty','neter','netop','netty','neuma','neume',
+      'nevel','nevoy','nevus','newar','newel','newsy','nexal','nexum','ngaio','ngapi','ngoko','niall','niata','nibby','nicky',
+      'nicol','nidal','nidge','nidor','nidus','niece','niels','niepa','nieve','nific','nifle','nigel','nigre','nigua','nihal',
+      'nikau','nikko','nilot','nimbi','ninny','ninon','ninox','nintu','ninut','niobe','niota','nippy','nisan','nisei','nisse',
+      'nisus','nitch','niter','nitid','niton','nitro','nitty','niuan','nival','nixie','nizam','njave','nobby','nodal','noddy',
+      'noded','nodus','noemi','nogai','nogal','nohow','noily','noint','nokta','nolle','nomad','nomic','nomos','nonda','nondo',
+      'nones','nonet','nonic','nonly','nonya','nonyl','nooky','noose','nopal','norah','noria','noric','norie','norma','norna',
+      'norse','norsk','nosed','noser','nosey','notal','notan','noter','notes','notum','notus','novem','noway','nowed','nowel',
+      'noxal','noyau','nubby','nubia','nucal','nucha','nucin','nullo','nulls','numda','numen','nummi','numud','nunch','nunki',
+      'nunky','nunni','nuque','nurly','nursy','nyaya','nydia','nymil','nyoro','nyssa','nyxis','oadal','oakum','oared','oaric',
+      'oasal','oases','oaten','oater','obeah','obese','obley','obole','ocher','ochna','ochre','ochro','ocote','ocque','ocrea',
+      'octad','octan','octet','octic','octyl','ocuby','odder','odeon','odeum','odist','odium','odoom','oecus','oenin','offal',
+      'ofter','oftly','ogeed','ogham','oghuz','ogive','ogler','ogles','ogmic','ohelo','ohmic','oiler','oisin','okapi','okrug',
+      'olcha','olchi','olden','oldie','oleic','olein','olena','olent','oliva','ollie','ology','olona','olson','omaha','omani',
+      'omber','omina','omlah','oncia','oncin','onery','onium','onkos','onlay','onmun','ontal','onymy','oolak','oolly','oopak',
+      'oopod','ootid','opata','ophic','ophis','opine','opium','orach','orage','orang','orant','oraon','orary','orate','orbed',
+      'orbic','orcin','oread','oreas','orgia','orgic','orgue','orias','oribi','oriel','orion','oriya','orlet','orlop','ormer',
+      'ornis','oromo','orris','orsel','orson','ortet','ortho','ortol','ortyx','oryza','osage','oscan','oscar','oscin','osela',
+      'oshac','oside','osier','oskar','osmic','osmin','osone','ossal','osset','ostic','otary','otate','othin','otkon','otomi',
+      'ottar','otyak','ouabe','ouija','oukia','oulap','ounds','ouphe','ourie','outby','outdo','outed','outen','outgo','outly',
+      'outre','ouzel','ovant','ovary','ovate','ovest','ovile','ovine','ovism','ovist','ovoid','ovolo','ovula','ovule','owght',
+      'owler','owlet','owsen','owser','oxane','oxbow','oxboy','oxeye','oxfly','oxime','oxlip','oxman','oxter','oyana','ozark',
+      'ozena','ozias','paauw','pablo','pacay','paces','pacht','padda','padge','padle','padre','padus','paean','paeon','paged',
+      'pager','pages','pagus','pahmi','paisa','palar','palas','palau','palay','palch','palea','paler','pales','palet','palla',
+      'palli','pallu','pally','palma','palmo','palmy','palpi','palsy','palta','palus','pamir','panak','panax','pandy','paned',
+      'panes','pangi','panna','panne','panos','panse','panto','panty','paola','paolo','papas','papaw','papey','papio','pappi',
+      'pappy','papyr','paque','parah','param','parao','pardo','pared','parel','paren','parer','pares','parge','pargo','paris',
+      'parka','parky','parle','parly','parma','parol','parra','parsi','parto','parus','pasan','pasch','pasha','pashm','pasmo',
+      'passe','passo','pasul','patao','patas','patel','paten','pater','pathy','patly','patta','patte','pattu','paula','pauxi',
+      'pavan','paver','paves','pavia','pavid','pavis','pawed','pawer','pawky','payed','payee','payer','payni','payor','peage',
+      'peaky','peart','pease','peasy','peaty','peavy','peban','pecht','pecky','pecos','pedee','pedes','pedro','pedum','peele',
+      'peeoy','peepy','peery','peeve','peggy','peine','peise','pekan','pekin','pekoe','pelew','pelon','pelta','penda','pengo',
+      'penis','penna','penni','pensy','penta','peony','peppy','perca','percy','perdu','peres','perit','perla','perle','perry',
+      'perse','perty','perun','pesah','peste','peter','petit','petre','peuhl','pewee','pewit','pfund','phaca','phaet','phage',
+      'phano','phare','phasm','pheal','phebe','phene','pheny','pheon','phial','phill','phoby','phoca','phoma','phono','phony',
+      'phora','phose','phyla','phyle','phyma','physa','piaba','piast','picae','pical','picea','pichi','picot','picra','picul',
+      'picus','pidan','piend','piete','piety','piezo','pigly','pigmy','piked','pikel','piker','pikes','pikey','pikle','pilar',
+      'pilau','pilch','pilea','piler','piles','pilin','pilmy','pilon','pilum','pilus','piman','pinal','pinax','pinda','pindy',
+      'piner','pines','piney','pinic','pinko','pinky','pinna','pinny','pinon','pinta','pinte','pinto','pinus','pinyl','pions',
+      'piotr','pioxe','pipal','pipes','pipet','pipil','pipit','pippy','pipra','pirny','pirol','pisan','pisay','pisco','pishu',
+      'pisky','pisum','pitau','piths','piton','pitta','piuri','plack','plaga','plage','plait','plang','plash','plasm','plass',
+      'plats','platt','platy','plaud','playa','plebe','plebs','pleck','pleny','pleon','plica','plier','plies','pliny','ploat',
+      'ploce','plock','plomb','plonk','plook','plote','plouk','plout','pluff','pluma','plumy','pluto','plyer','pobby','poche',
+      'pocks','pocky','podal','poddy','podex','podge','podgy','poesy','pogge','poggy','pohna','poilu','poind','pokan','pokey',
+      'pokom','polab','poled','poler','poley','polio','polis','polly','polos','pomak','pombe','pombo','pomey','pomme','pommy',
+      'pompa','ponca','ponce','pondo','pondy','poney','ponga','pongo','ponja','ponto','pooka','pooli','pooly','popal','popes',
+      'poppa','poral','porer','pores','porge','porgy','poria','porky','poros','porry','porta','porto','porty','porus','posca',
+      'poses','posey','potch','poter','potoo','potto','pouce','poufs','poulp','poult','pouts','poyou','praam','prams','prana',
+      'prase','prate','pratt','praya','prest','prexy','prich','prick','pridy','prier','pries','prill','primp','prims','primy',
+      'prine','prink','prion','priss','prius','proal','proem','proke','prore','proso','pross','prosy','prote','proto','proxy',
+      'prudy','prunt','pryer','pryse','pshav','pshaw','psoas','psora','psych','pubal','pubes','pubic','pubis','pucka','puddy',
+      'pudge','pudgy','pudic','pudsy','puggi','puggy','pugil','puist','puker','pukka','puler','pulex','pulka','pulli','punan',
+      'punct','punga','pungi','punic','punky','punta','punti','punto','punty','pupal','purdy','pured','purer','purga','purre',
+      'purry','pursy','pussy','putid','pyche','pygal','pylar','pylic','pyoid','pyral','pyran','pyrex','pyrus','pyxie','pyxis',
+      'quadi','quaky','quale','quant','quare','quark','quarl','quart','quash','quasi','quata','quauk','quave','quawk','qubba',
+      'queak','queal','quean','queet','quegh','queme','querl','quern','quica','quiff','quila','quina','quink','quint','quipo',
+      'quipu','quira','quire','quirl','quirt','quits','quitu','quoin','quoit','quoth','qurti','raash','rabat','rabic','rabin',
+      'races','rache','racon','radek','radii','radix','raffe','rafik','rafty','rager','rages','raggy','raghu','rahul','raiae',
+      'rajah','rajiv','rakan','raker','rakes','rakit','ralph','ramal','raman','rambo','ramed','ramet','ramex','ramie','rammy',
+      'ramon','ramus','ranal','rance','randy','ranid','ranny','ranty','raper','raphe','rapic','rappe','rarer','rasen','raser',
+      'rasse','ratal','ratch','ratel','rater','rates','rathe','ratti','ratwa','rauli','raupo','ravel','raver','ravin','rayan',
+      'rayed','razee','razer','razoo','reaal','readd','reals','reamy','rearm','reask','reasy','reave','rebab','rebag','reban',
+      'rebar','rebec','rebed','rebeg','rebia','rebid','rebob','rebop','rebox','rebud','rebus','rebut','rebuy','recap','recce',
+      'recco','reccy','recon','recta','recti','recto','recut','redan','reddy','redia','redid','redig','redip','redly','redox',
+      'redry','redub','redue','redux','redye','reedy','reefy','reeky','reese','reesk','reest','reeve','refan','refed','refel',
+      'refit','refix','refly','reges','reget','regga','regia','regin','regle','regma','regur','rehem','rehoe','reifs','reify',
+      'reiki','reina','reink','reive','rejig','rekey','relap','relet','relot','reman','remap','remex','remix','remop','remus',
+      'rends','reneg','renes','renet','renin','renky','renne','rente','reoil','reown','repeg','repen','repew','repic','repin',
+      'repos','repot','repps','reran','reree','rerig','rerob','rerow','rerub','resat','resaw','resay','resee','resew','resex',
+      'resit','resod','resow','resty','resue','resun','resup','retag','retan','retax','retch','retem','rethe','retia','retie',
+      'retin','retip','reuel','reune','rever','revet','revie','revue','rewax','rewed','rewet','rewin','rewon','rexen','rexes',
+      'rezap','rhamn','rheae','rheen','rheic','rhein','rhema','rheme','rheum','rhina','rhine','rhoda','rhoeo','rhomb','rhumb',
+      'rhymy','riant','riata','ribat','ribby','ribes','ricer','ricey','richt','ricin','ricky','riden','ridgy','riels','riffi',
+      'rifts','rifty','rigel','right','rigol','riley','rills','rilly','rimal','rimed','rimer','rimes','rimpi','rinch','rinde',
+      'rindy','ringe','ringy','rinka','rinks','ripal','riper','ripup','rises','rishi','risks','risus','rived','rivel','riven',
+      'rives','riyal','roach','roans','rober','robes','roble','robur','rocks','rocta','rodge','rogan','roger','rohan','rohob',
+      'rohun','roils','roily','roist','rokee','roker','rokey','roleo','rolfe','rollo','romal','romeo','romic','rompu','rompy',
+      'ronco','ronde','rondo','ronga','ronni','roods','roofy','rooky','roosa','rooty','roove','roper','ropes','roque','roral',
+      'roric','rorty','rosae','rosal','rosed','rosel','roset','rosin','rotal','rotan','rotas','rotch','roter','rotes','rotge',
+      'rotis','rotls','rotor','rotse','rougy','rouky','roups','roupy','roust','routh','roves','rovet','rowan','rowel','rowen',
+      'rower','rowet','rowth','rowty','roxie','royet','rozin','rozum','ruach','ruana','rubes','rubia','rubid','ruble','rubor',
+      'rubus','ruche','rucks','rucky','rudas','rudds','ruddy','ruder','rudge','rufus','rugby','ruggy','ruing','rumal','ruman',
+      'rumbo','rumen','rumex','rumly','rummy','rumps','runby','runch','rundi','runds','runed','runer','runic','runts','runty',
+      'rupee','rupia','rupie','ruses','rushy','rusin','rusks','rusky','rusma','rusot','rusts','rutch','ruths','rutic','rutin',
+      'rutty','rutyl','ruvid','rybat','ryder','sabal','saban','sabia','sabik','sabin','sabir','sably','sabot','sabra','sabre',
+      'sabzi','sacae','sacks','sacra','sacro','sadhe','sadhu','sadic','sadie','safar','safen','safes','sagai','sager','saggy',
+      'sagos','sagra','sagum','sahib','sahme','saice','saidi','saids','saify','saiga','saiid','sails','saily','saimy','saiph',
+      'sairy','saite','saith','saiva','sajou','sakai','sakel','saker','sakes','sakha','salal','salar','salat','salay','salep',
+      'salic','salix','salle','sally','salma','salmo','salol','salpa','salps','salse','salta','salts','salva','salvo','salvy',
+      'samaj','samal','saman','samas','samba','sambo','samek','samel','samen','samir','sammy','sampi','samps','sanai','sanct',
+      'sancy','saned','sanes','sanga','sangh','sansi','santa','santo','sapan','sapek','sapid','sapin','saple','sapor','sappy',
+      'saqib','saraf','sarah','saran','saree','sarge','sargo','sarif','sarin','sarip','saris','sarks','sarna','sarod','saron',
+      'saros','sarpo','sarra','sarsa','sarsi','saruk','sarus','sasan','sasin','sassy','satan','satem','satis','satyr','sauch',
+      'saugh','sauld','sauls','sault','saunt','saura','saury','saute','sauty','sauve','saver','saves','savin','savoy','sawah',
+      'sawan','sawed','sawer','saxes','saxon','sayal','sayed','sayer','sayid','sayst','sazen','sazes','scabs','scads','scaff',
+      'scags','scala','scald','scall','scalt','scant','scape','scarn','scarp','scars','scart','scase','scaul','scaum','scaup',
+      'scaur','scaut','scawd','scawl','sceat','scena','scend','schav','schmo','schuh','schul','schwa','scian','scind','scion',
+      'sciot','sclav','sclaw','scler','sclim','scoad','scobs','scoke','scolb','scoon','scoot','scopa','scops','scote','scots',
+      'scott','scouk','scoup','scour','scove','scovy','scows','scrab','scrae','scrag','scran','scrat','scraw','scray','scree',
+      'screw','scrim','scrin','scrip','scrob','scrod','scrog','scroo','scrow','scruf','scrum','scuba','scudi','scudo','scuds',
+      'scuff','scuft','sculk','scull','sculp','scums','scups','scurf','scuse','scuta','scute','scuts','scyld','scyth','seamy',
+      'sears','seary','seave','seavy','sebum','secco','secos','secre','sects','sedat','seder','sedge','sedgy','sedum','seech',
+      'seege','seels','seely','seenu','seepy','seers','segno','segol','segos','segue','sehyo','seifs','seine','seise','seism',
+      'seity','sekar','seker','sekos','selah','seles','sella','selli','selly','selva','semen','semes','semic','semis','senam',
+      'sence','senci','senna','senor','sensa','senso','senti','sents','sepad','sepal','sepic','sepoy','septa','septi','septs',
+      'sequa','serab','serai','seral','serau','seraw','sereh','serer','seres','serge','seric','serin','serio','sermo','seron',
+      'serow','serra','serry','serta','serum','serut','servo','sesia','sesma','sesti','setae','setal','seton','seugh','sewan',
+      'sewen','sexed','sexly','sexto','sfoot','shahi','shaka','shako','shaku','shale','shalt','shaly','shama','shane','shang',
+      'shant','shaps','shapy','shari','sharn','shaul','shaup','shawm','shawn','shawy','sheaf','sheal','shean','sheat','sheik',
+      'shela','sheld','shemu','shend','sheng','sheol','sheth','sheva','shewa','shiah','shice','shide','shied','shiel','shier',
+      'shies','shiko','shilf','shilh','shill','shina','shirl','shirr','shish','shisn','shita','shive','shivy','shluh','shoad',
+      'shoal','shoat','shode','shoer','shogi','shoji','shojo','shola','shole','shona','shood','shooi','shool','shoop','shoor',
+      'shote','shott','shoya','shrab','shraf','shrag','shram','shrap','shree','shrip','shrog','shuba','shuff','shune','shure',
+      'shurf','shush','shyam','shyer','shyly','sibby','sibyl','sicca','sicel','sider','sides','sidhe','sidle','sidth','siena',
+      'sieva','sievy','sifac','sigil','sigla','sikar','siket','silas','silen','silex','silty','silva','silyl','simal','simar',
+      'simia','simon','sinae','sinal','singh','sinic','sinky','sinto','sintu','sinus','sioux','siper','sipid','sirih','siris',
+      'sirki','sirky','siroc','sirup','sisal','sisel','sissu','sissy','sitao','sitar','sitch','sithe','sitio','sitka','sitta',
+      'situs','siusi','sivan','siver','siwan','sixer','sixte','sizal','sizar','sizer','sizes','sjaak','skaff','skair','skart',
+      'skean','skeed','skeeg','skeel','skeen','skeer','skeet','skeif','skelf','skell','skelp','skemp','skene','skere','skete',
+      'skewl','skewy','skice','skidi','skies','skiff','skift','skime','skink','skirl','skirp','skirr','skite','skive','skoal',
+      'skout','skulk','skulp','skuse','skyey','skyre','slade','slait','slake','slaky','slamp','slane','slank','slape','slare',
+      'slart','slath','slaty','slaum','slavi','sleck','sleer','slent','slete','slich','sline','slipe','slirt','slish','slite',
+      'slive','sloan','slock','sloka','sloke','slone','slonk','sloom','sloop','slops','slopy','slorp','slote','slour','sloyd',
+      'slubs','sluer','sluig','sluit','slump','slunk','slush','slyly','slype','smaik','smalm','smalt','smarm','smaze','smeek',
+      'smeer','smeth','smich','smily','smite','smolt','smook','smoos','smoot','smore','smote','smous','smout','smurr','smuse',
+      'smush','smyth','snaff','snafu','snaky','snape','snapy','snark','snary','snath','snead','sneap','sneck','snell','snerp',
+      'snick','snide','snift','snipe','snipy','snirl','snirt','snite','snivy','snock','snoek','snoga','snoke','snood','snook',
+      'snoop','snoot','snork','snowk','snowl','snuck','snurl','snurp','snurt','soaky','soapy','soary','sobby','socht','socii',
+      'socky','socle','soddy','sodic','sodio','sodom','sofar','sofia','softa','softy','soger','soget','soily','soken','solan',
+      'solay','soldi','soldo','solea','solen','soler','soles','solio','solod','solon','solum','somal','somma','sonar','songo',
+      'songy','sonja','sonly','sonny','sonsy','sooke','sooky','soord','sooth','sooty','sophy','sopor','soppy','soral','sorda',
+      'soree','sorex','sorgo','sorra','sorty','sorus','sorva','sosia','soter','sotho','sotie','sotik','sotol','sough','souly',
+      'soupy','soury','souse','sowan','sowar','sowel','sower','sowle','sowse','sowte','soyot','sozin','spack','spacy','spaer',
+      'spahi','spaid','spaik','spald','spale','spall','spalt','spane','spang','spank','spann','sparm','spart','spary','spasm',
+      'spass','spate','spave','speal','spean','spece','speel','speen','speer','spelk','spelt','speos','sperm','spewy','sphex',
+      'spica','spick','spier','spiff','spiky','spile','spilt','spina','spink','spiny','spire','spiro','spirt','spiry','spise',
+      'spitz','splat','splay','splet','spock','spode','spoil','spoky','spole','spong','spoom','spoor','spoot','sposh','sprad',
+      'sprag','sprat','spret','sprew','sprit','sprod','sprue','sprug','spuke','spume','spumy','spung','spurl','sputa','spyer',
+      'squab','squad','squam','squaw','squib','squin','squit','sruti','staab','stacy','stade','stagy','staia','staio','stane',
+      'stang','starn','stary','stauk','staun','staup','stawn','stchi','stead','stean','stech','steek','steen','steid','stein',
+      'stela','stele','stell','stema','stend','steng','steno','stent','stept','stere','steri','sterk','stero','stert','stets',
+      'steve','stewy','stich','stife','stile','stime','stimy','stine','stion','stipa','stipe','stirk','stirp','stite','stith',
+      'stive','stivy','stoat','stoep','stoff','stoga','stogy','stola','stoma','stond','stong','stoof','stook','stoon','stoot',
+      'stopa','stope','stosh','stoss','stoun','stoup','stour','strad','strae','strag','stram','stree','stret','strew','strey',
+      'stria','strid','strig','strit','strix','strom','strop','strow','stroy','strub','strue','struv','stubb','stude','stull',
+      'stulm','stupa','stupe','stupp','sturk','sturt','stuss','styan','styca','stylo','suade','suant','subah','suber','subra',
+      'succi','sucks','sucre','sudan','suddy','sudic','sudra','sudsy','suede','suety','sueve','suevi','sugan','sugih','suina',
+      'suine','suing','suint','suist','suity','sukey','sulea','sulfa','sulka','sulla','sully','sumac','sumak','sumph','sunil',
+      'sunna','sunni','sunup','suomi','supai','surah','sural','surat','sures','surfy','surgy','surma','surra','surya','susan',
+      'susie','sutor','sutra','suyog','suzan','swabs','swack','swage','swain','swale','swami','swamy','swang','swape','sward',
+      'sware','swarf','swart','swash','swati','swazi','sweal','swede','sweer','swego','swelp','swelt','swerd','swick','swile',
+      'swimy','swink','swipy','swird','swire','swiss','swith','swosh','swure','sybil','sycee','sycon','sylid','sylph','sylva',
+      'synch','synod','syrma','taber','tabes','tabet','tabic','tabid','tabla','tabog','tabor','tabun','tabus','tabut','tacca',
+      'taces','tacet','tache','tachs','tacos','tacso','tacts','taels','tafia','tagal','taggy','tagua','tahil','tahin','tahua',
+      'taich','taiga','taily','taino','tains','taipi','taipo','tairn','taise','tajes','tajik','takao','takar','takas','takes',
+      'takin','takyr','talak','talao','talar','talas','taled','taler','talis','talky','talls','talma','talpa','taluk','talus',
+      'tamas','tambo','tames','tamil','tamis','tammy','tamps','tamul','tamus','tanak','tanan','tandy','tanga','tangi','tanha',
+      'tania','tanka','tanoa','tansy','tanti','tanto','tanya','tanzy','tapas','tapen','tapes','tapet','tapia','tapir','tapis',
+      'tapoa','tappa','tapul','taqua','taraf','tarai','tarau','tardo','tarea','tared','tareq','tares','tarfa','targe','tarie',
+      'tarin','tarmi','tarns','taroc','tarok','taros','tarot','tarps','tarre','tarri','tarry','tarse','tarsi','tarts','tarty',
+      'tarve','tasco','tasks','tasse','tatar','tater','tates','tatie','tatou','tatta','tatty','taube','taula','tauli','tauon',
+      'taupe','taupo','tauri','taver','tawer','tawgi','tawie','tawpi','tawse','taxer','taxes','taxon','taxor','taxus','tayer',
+      'tayir','tayra','tazia','tcawi','tchai','tchwi','teaer','teaey','teaks','teals','teart','teasy','teats','teaty','teave',
+      'teaze','tebet','techs','techy','tecla','tecon','tecum','tedge','teels','teems','teeny','teest','teety','teffs','teggs',
+      'tegua','teian','teiid','teind','tejon','tekke','tekya','telae','telar','telco','telei','teles','telex','telia','telic',
+      'tells','tellt','telly','teloi','telos','telyn','teman','tembe','tembu','temin','temne','tempe','tempi','temps','tempt',
+      'temse','tenai','tench','tenet','tengu','tenia','tenio','tenne','tenon','tenty','tepal','tepas','tepee','tepor','terap',
+      'teras','terek','tereu','terma','terna','terne','terns','terri','terry','terzo','tesla','testa','teste','testy','tetch',
+      'tetel','teths','teton','tetra','tetri','tetum','tewel','tewer','tewit','tewly','texan','texas','thack','thais','thana',
+      'thane','tharf','tharm','thatn','thats','thave','thawn','thawy','theah','theat','theca','theek','theer','theet','thegn',
+      'thema','theow','therm','theta','thewy','thilk','thill','thine','thiol','thirl','thirt','thisn','thoft','thoke','thole',
+      'tholi','thone','thong','thoom','thore','thoro','thorp','thort','thowt','thram','thrap','thraw','thrax','thrip','throe',
+      'throu','thrum','thruv','thuan','thuja','thule','thulr','thung','thuoc','thurl','thurm','thurt','thyme','thymy','tiang',
+      'tibbu','tibby','tibet','tibey','tibia','tical','ticca','ticer','ticky','ticul','tiddy','tided','tiffy','tigre','tigua',
+      'tikka','tikor','tikur','tilda','tilde','tiler','tiles','tilia','tilly','tilth','tilty','timar','timbe','timbo','times',
+      'timne','timon','timor','tinct','tinea','tined','tingi','tinne','tinni','tinny','tinta','tinty','tiple','tippy','tipup',
+      'tirer','tirma','tirve','tisar','titar','titer','tithe','titre','titty','titus','tiver','tiwaz','tizzy','tlaco','tmema',
+      'toady','todea','todus','toffs','toffy','togas','togue','toher','toise','toity','tokay','tolan','toldo','tolly','tolyl',
+      'toman','tomas','tombe','tomin','tommy','tonal','tones','tonga','tonna','tonto','tonus','toona','toosh','topee','toper',
+      'topia','toppy','topsl','topsy','toque','torah','toral','toran','tored','toric','torii','torma','torse','torsk','torta',
+      'torus','torve','toshy','tossy','toter','totty','totum','tould','tourn','touse','tousy','tovah','tovar','towai','towan',
+      'towny','toxin','toxon','toyer','toyon','tozee','tozer','tracy','trady','tragi','traik','trama','trame','trank','trans',
+      'trant','trapa','trass','trasy','trave','treed','treen','treey','trema','trent','tress','trest','trews','triad','trias',
+      'trica','trice','trier','trifa','trigs','trike','trill','trine','trink','trior','tripe','tripy','trist','trixy','troad',
+      'troat','troca','trock','troco','trode','troft','trogs','troic','troke','tromp','trona','tronc','trone','troot','troth',
+      'trove','trubu','trudy','trued','truer','trues','truff','trull','trush','tryma','trypa','tsere','tsine','tsuba','tsubo',
+      'tsuga','tsuma','tuarn','tuart','tuath','tubae','tubal','tubar','tubba','tuber','tubig','tubik','tucky','tucum','tudel',
+      'tudor','tufan','tufty','tugui','tuism','tukra','tulle','tulsi','tumid','tunca','tunes','tunga','tungo','tunic','tunna',
+      'tunny','tupek','tupik','tuque','turbo','turco','turfy','turgy','turio','turki','turma','turps','turse','turus','tusky',
+      'tutee','tutin','tutly','tutti','tutty','tutus','tuzla','twale','twalt','twana','twank','twant','tweag','tweeg','tweel',
+      'tween','tweil','twere','twerp','twick','twilt','twink','twiny','twire','twirk','twite','twixt','tyche','tydie','tyigh',
+      'tying','tyken','tyler','tylus','typal','typer','typha','typic','tyste','tzaam','uaupe','uayeb','uchee','uckia','udasi',
+      'udell','udish','udons','ugali','ugged','ughed','ugric','uhlan','uhllo','uigur','uinal','uinta','ukase','ulama','ulans',
+      'ulcer','ulema','uller','ulmic','ulmin','ulmus','ulnad','ulnae','ulnar','ulnas','uloid','ulpan','uluhi','ululu','ulvan',
+      'ulvas','umami','umaua','umbel','umble','umbos','umbra','umiac','umiak','umiaq','umiri','umped','umpty','unact','unadd',
+      'unami','unamo','unapt','unark','unarm','unary','unaus','unbag','unban','unbar','unbay','unbed','unbet','unbid','unbit',
+      'unbog','unbow','unbox','unboy','unbud','uncap','uncia','uncos','uncoy','uncus','undam','undee','unden','undig','undim',
+      'undog','undon','undry','undub','undug','undye','uneye','unfar','unfed','unfew','unfix','unfur','ungag','unget','ungka',
+      'ungod','ungot','ungum','unhad','unhap','unhat','unhex','unhid','unhip','unhit','unhot','uniat','unice','uninn','unjam',
+      'unked','unken','unket','unkey','unkid','unkin','unlap','unlaw','unlay','unled','unlet','unlid','unlie','unmad','unman',
+      'unmet','unmew','unmix','unnew','unode','unoil','unold','unona','unorn','unown','unpeg','unpen','unpin','unpot','unput',
+      'unram','unray','unred','unrid','unrig','unrip','unrow','unrra','unrun','unsad','unsay','unsee','unset','unsew','unsex',
+      'unshy','unsin','unsly','unson','unsty','unsun','untap','untar','untax','untie','untin','untop','unurn','unuse','unwan',
+      'unwax','unweb','unwet','unwig','unwit','unwon','unzen','uparm','upbar','upbay','upbid','upbow','upbuy','upcry','upcut',
+      'updos','updry','upeat','upend','upfly','upget','upher','upjet','uplay','upled','upleg','upmix','uppop','uprid','uprip',
+      'uprun','upsey','upsit','upsun','upsup','uptie','upupa','upwax','upway','upwon','urali','urare','urari','urase','urate',
+      'urbic','urdee','ureal','uredo','ureic','ureid','urena','urent','urger','urges','uriah','urial','urian','uriel','urine',
+      'urite','urlar','urled','urman','urnae','urnal','ursal','ursid','urson','ursuk','ursus','urubu','urucu','usara','usent',
+      'ushak','using','uskok','usnea','usnic','usque','uster','usure','usurp','usury','utchy','utees','uteri','utick','utile',
+      'utrum','utsuk','uvate','uveal','uviol','uvito','uvrou','uvula','uvver','uzara','uzbak','uzbeg','uzbek','vache','vacoa',
+      'vacua','vadim','vagal','vagas','vagus','vails','vainl','vaire','vairs','vairy','vajra','vakia','vakil','valmy','valsa',
+      'valse','valva','valyl','vamps','vance','vanda','vaned','vangs','vanir','vapid','varan','varas','varda','vardy','varec',
+      'varia','varix','varna','varus','varve','vasal','vasty','vatic','vaudy','veals','vealy','vedas','vedda','vedic','vedro',
+      'veena','veeps','veery','vegan','veges','veily','veiny','vejoz','velal','velar','velds','veldt','velic','velte','velum',
+      'venal','vends','vened','venie','venin','vents','venus','vepse','verby','verek','vergi','verpa','verre','verso','verst',
+      'verts','vertu','vespa','vesta','vests','vetch','veuve','vexer','vexes','vexil','viand','vibex','vibix','viced','vices',
+      'vicia','vicki','vicky','vidry','vidua','vidya','viers','viewy','vifda','vigia','vigil','vijao','vijay','viler','ville',
+      'vills','vimen','vinal','vinas','vinca','vince','vinea','vined','viner','vinic','vinny','vinod','vinos','vinta','viols',
+      'vireo','vires','virga','virgo','virid','virls','viron','virtu','vised','vises','visie','visne','vison','visto','vitas',
+      'vitis','vitta','viuva','vivas','vivat','vivax','vivek','viver','vives','vizir','vizor','vlach','vocab','vodou','vodun',
+      'vogie','vogul','voila','voile','volar','voled','voles','volet','volks','volta','volte','volti','volva','vomer','vomit',
+      'votal','vouge','vouli','vower','vraic','vrouw','vrows','vuggy','vulgo','vulns','vulva','vying','waapa','waasi','wabby',
+      'wacke','wacko','wacks','waddy','wader','wades','wadis','wadna','wafts','wafty','waggy','wahoo','waily','wains','waird',
+      'wairs','waise','waive','wakan','waked','waken','waker','wakes','wakhi','wakif','wakon','waled','waler','wales','wally',
+      'walsh','walth','wamel','wamus','wandy','wanes','wanga','wangs','wanks','wanle','wanly','wanny','wanty','wappo','warch',
+      'wared','warks','warly','warms','warnt','warri','warse','warst','warth','warty','warua','warve','wasat','wasco','wasel',
+      'washo','washy','wasir','wasnt','waspy','wasty','watap','watts','wauch','waugh','wauks','wauls','wauns','waura','wauve',
+      'wavey','wawah','wawls','waxen','waxer','waxes','wayao','wayne','wazir','weaky','weals','webby','weber','wecht','wedel',
+      'wedgy','weeda','weens','weeny','weepy','weesh','weest','weeze','wefty','weirs','weism','wekas','wekau','welch','welds',
+      'welly','welsh','wench','wende','wendi','wends','wendy','wenny','weste','wests','westy','wetly','wevet','wezen','whalm',
+      'whalp','whaly','whame','whamo','whamp','whams','whand','whang','whank','whaps','whare','wharl','wharp','whart','whase',
+      'whata','whats','whauk','whaup','whaur','wheal','wheam','wheem','wheen','wheep','wheer','wheft','whein','wheki','whelk',
+      'whelm','whewl','whewt','whiba','whick','whids','whift','whilk','whill','whils','whing','whiny','whipt','whirr','whirs',
+      'whish','whisp','whist','whits','whity','whomp','whone','whoof','whoop','whops','whore','whorl','whort','whuff','whulk',
+      'whump','whush','whute','wicht','wicky','widdy','widen','wides','wifed','wifes','wifie','wifty','wigan','wiggy','wight',
+      'wilco','wilds','wiled','wiles','wilga','willy','wimpy','wined','winer','wingy','winly','winna','winns','winos','winze',
+      'wipes','wirer','wires','wiros','wirra','wised','wisen','wises','wisha','wisht','wisps','wispy','wisse','wiste','witan',
+      'wited','wites','withe','withy','witty','wived','wiver','wiyat','wiyot','wizen','wloka','woads','woady','woald','wocks',
+      'wodge','wodgy','woibe','wokas','wolds','woldy','wolfs','wolof','wolve','wombs','womby','wonga','wonks','wonky','wonna',
+      'wooed','wooer','woofs','woofy','woold','wooly','woons','woosh','wootz','woozy','worky','wormy','wouch','wough','woven',
+      'wramp','wrang','wrawl','wreat','wrest','wrick','wride','wried','wrier','wries','write','writh','writs','wrive','wroke',
+      'wrong','wroth','wryly','wudge','wunna','wurst','wuzzy','wyson','wyver','xebec','xenia','xenon','xenos','xenyl','xeres',
+      'xeric','xerus','xicak','xinca','xoana','xurel','xylan','xylem','xylia','xylic','xylol','xylon','xylyl','xyrid','xyris',
+      'xysti','yabbi','yabby','yacal','yacca','yagua','yahan','yahoo','yaird','yajna','yakan','yaked','yakin','yakka','yakut',
+      'yales','yalla','yamel','yamen','yameo','yampa','yamph','yamun','yanan','yangs','yanky','yaply','yapok','yapon','yappy',
+      'yaqui','yarak','yaray','yarer','yarke','yarly','yarrs','yarth','yasht','yasna','yauds','yauld','yaups','yawed','yawls',
+      'yawny','yawps','yazoo','yeahs','yeara','yeard','yechs','yeggs','yelks','yemen','yenta','yente','yentz','yerba','yerga',
+      'yerks','yerth','yeses','yesso','yesty','yetis','yetts','yeuks','yeuky','yeven','yezdi','yezzy','ygapo','yikes','yills',
+      'yince','yinst','yipes','yirds','yirrs','yirth','yobbp','yobby','yocco','yocks','yodhs','yodle','yogas','yogee','yoghs',
+      'yogin','yogis','yoick','yojan','yoked','yokel','yoker','yokes','yolky','yomer','yomud','youff','yourn','youse','youve',
+      'youze','yoven','yowed','yowes','yowie','yowls','yquem','yuans','yucas','yuchi','yucky','yugas','yukky','yulan','yules',
+      'yuman','yunca','yuppy','yurak','yurok','yurta','yurts','yuruk','zabra','zabti','zaman','zambo','zamia','zande','zante',
+      'zanze','zapas','zappy','zapus','zaque','zarfs','zaxes','zayat','zayin','zeals','zebub','zebus','zeins','zeism','zeist',
+      'zemmi','zemni','zendo','zephz','zerda','zerks','zerma','zeros','zests','zetas','zhmud','zhuzh','ziara','zibet','ziega',
+      'ziffs','zihar','zilla','zimbi','zimme','zimmi','zinco','zincs','zincy','zineb','zines','zings','zingy','zinky','zippo',
+      'zippy','zirai','zirak','ziram','zitis','zizia','zlote','zloty','zmudz','zocco','zoeae','zoeal','zoeas','zogan','zohak',
+      'zoism','zoist','zokor','zolle','zombi','zonal','zonar','zoner','zonic','zonks','zonta','zooey','zooid','zooks','zoons',
+      'zooty','zoque','zoril','zoris','zorro','zosma','zouks','zowie','zudda','zuppa','zurfs','zygal','zygon','zymic','zymin'
+    ];
+
+    // Build sets for fast lookup
+    var answerSet = new Set(ANSWERS.map(function(w){ return w.toLowerCase(); }));
+    var validSet = new Set(VALID_EXTRA.map(function(w){ return w.toLowerCase(); }));
+    // Merge: all answers are also valid guesses
+    answerSet.forEach(function(w){ validSet.add(w); });
+
+    // Deduplicate answers
+    var uniqueAnswers = Array.from(new Set(ANSWERS.map(function(w){ return w.toLowerCase(); })));
+
+    function isValidWord(w) { return validSet.has(w.toLowerCase()); }
+
+    // ==================== GAME STATE ====================
+    var ROWS = 6, COLS = 5;
+    var mode = 'daily'; // 'daily' or 'unlimited'
+    var hardMode = false;
+    var currentRow = 0;
+    var currentCol = 0;
+    var board = [];
+    var targetWord = '';
+    var gameOver = false;
+    var revealedCorrect = {}; // pos -> letter
+    var revealedPresent = {}; // letter -> true
+    var keyStates = {};
+
+    // ==================== DAILY SEED ====================
+    function getDayNumber() {
+      var epoch = new Date(2024, 0, 1);
+      var now = new Date();
+      now.setHours(0,0,0,0);
+      return Math.floor((now - epoch) / 86400000);
+    }
+
+    function seededRandom(seed) {
+      var x = Math.sin(seed * 9301 + 49297) * 49297;
+      return x - Math.floor(x);
+    }
+
+    function getDailyWord() {
+      var day = getDayNumber();
+      var idx = Math.floor(seededRandom(day) * uniqueAnswers.length);
+      return uniqueAnswers[idx];
+    }
+
+    function getRandomWord() {
+      return uniqueAnswers[Math.floor(Math.random() * uniqueAnswers.length)];
+    }
+
+    // ==================== STATS ====================
+    var STATS_KEY = 'wg_stats';
+    var DAILY_STATE_KEY = 'wg_daily_state';
+
+    function getStats() {
+      try {
+        var s = JSON.parse(localStorage.getItem(STATS_KEY));
+        if (s && typeof s.played === 'number') return s;
+      } catch(e){}
+      return { played: 0, won: 0, streak: 0, maxStreak: 0, dist: {1:0,2:0,3:0,4:0,5:0,6:0} };
+    }
+    function saveStats(s) { localStorage.setItem(STATS_KEY, JSON.stringify(s)); }
+
+    function getDailyState() {
+      try {
+        var s = JSON.parse(localStorage.getItem(DAILY_STATE_KEY));
+        if (s && s.day === getDayNumber()) return s;
+      } catch(e){}
+      return null;
+    }
+    function saveDailyState() {
+      var guesses = [];
+      for (var r = 0; r < currentRow; r++) {
+        guesses.push(board[r].join(''));
+      }
+      if (!gameOver && currentRow < ROWS) {
+        // save current incomplete row too? No, just completed rows
+      }
+      localStorage.setItem(DAILY_STATE_KEY, JSON.stringify({
+        day: getDayNumber(),
+        guesses: guesses,
+        gameOver: gameOver,
+        won: gameOver && currentRow > 0 && board[currentRow - 1].join('') === targetWord
+      }));
+    }
+
+    function recordResult(won, numGuesses) {
+      var s = getStats();
+      s.played++;
+      if (won) {
+        s.won++;
+        s.streak++;
+        if (s.streak > s.maxStreak) s.maxStreak = s.streak;
+        s.dist[numGuesses] = (s.dist[numGuesses] || 0) + 1;
+      } else {
+        s.streak = 0;
+      }
+      saveStats(s);
+    }
+
+    // ==================== DOM ====================
+    var boardEl = document.getElementById('wg-board');
+    var kbEl = document.getElementById('wg-keyboard');
+    var msgEl = document.getElementById('wg-message');
+
+    function buildBoard() {
+      boardEl.innerHTML = '';
+      for (var r = 0; r < ROWS; r++) {
+        var row = document.createElement('div');
+        row.className = 'wg-row';
+        row.id = 'wg-row-' + r;
+        for (var c = 0; c < COLS; c++) {
+          var tile = document.createElement('div');
+          tile.className = 'wg-tile';
+          tile.id = 'wg-tile-' + r + '-' + c;
+          row.appendChild(tile);
+        }
+        boardEl.appendChild(row);
+      }
+    }
+
+    var KB_ROWS = [
+      ['Q','W','E','R','T','Y','U','I','O','P'],
+      ['A','S','D','F','G','H','J','K','L'],
+      ['ENTER','Z','X','C','V','B','N','M','DEL']
+    ];
+
+    function buildKeyboard() {
+      kbEl.innerHTML = '';
+      KB_ROWS.forEach(function(row) {
+        var rowEl = document.createElement('div');
+        rowEl.className = 'wg-kb-row';
+        row.forEach(function(key) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'wg-key' + (key === 'ENTER' || key === 'DEL' ? ' wide' : '');
+          btn.textContent = key === 'DEL' ? '\u232B' : key;
+          btn.dataset.key = key;
+          btn.id = 'wg-key-' + key;
+          btn.addEventListener('click', function() { handleKey(key); });
+          rowEl.appendChild(btn);
+        });
+        kbEl.appendChild(rowEl);
+      });
+    }
+
+    function updateTile(r, c, letter) {
+      var tile = document.getElementById('wg-tile-' + r + '-' + c);
+      tile.textContent = letter;
+      if (letter) {
+        tile.classList.add('filled');
+      } else {
+        tile.classList.remove('filled');
+      }
+    }
+
+    function showMessage(msg, duration) {
+      msgEl.textContent = msg;
+      if (duration) {
+        setTimeout(function() {
+          if (msgEl.textContent === msg) msgEl.textContent = '';
+        }, duration);
+      }
+    }
+
+    function shakeRow(r) {
+      var row = document.getElementById('wg-row-' + r);
+      row.classList.add('shake');
+      setTimeout(function() { row.classList.remove('shake'); }, 500);
+    }
+
+    // ==================== GAME LOGIC ====================
+    function initGame() {
+      board = [];
+      for (var r = 0; r < ROWS; r++) {
+        board[r] = [];
+        for (var c = 0; c < COLS; c++) board[r][c] = '';
+      }
+      currentRow = 0;
+      currentCol = 0;
+      gameOver = false;
+      revealedCorrect = {};
+      revealedPresent = {};
+      keyStates = {};
+      msgEl.textContent = '';
+      var aiCard = document.getElementById('wg-ai-insight');
+      if (aiCard) { aiCard.classList.remove('show'); aiCard.innerHTML = ''; }
+
+      if (mode === 'daily') {
+        targetWord = getDailyWord();
+        // Restore daily state
+        var ds = getDailyState();
+        if (ds && ds.guesses && ds.guesses.length > 0) {
+          restoreDailyState(ds);
+          return;
+        }
+      } else {
+        targetWord = getRandomWord();
+      }
+
+      buildBoard();
+      buildKeyboard();
+    }
+
+    function restoreDailyState(ds) {
+      buildBoard();
+      buildKeyboard();
+      // Replay guesses instantly (no animation)
+      ds.guesses.forEach(function(word, rowIdx) {
+        for (var c = 0; c < COLS; c++) {
+          board[rowIdx][c] = word[c];
+          updateTile(rowIdx, c, word[c]);
+        }
+        // Reveal states
+        var states = getGuessStates(word, targetWord);
+        for (var c = 0; c < COLS; c++) {
+          var tile = document.getElementById('wg-tile-' + rowIdx + '-' + c);
+          tile.classList.add(states[c]);
+          updateKeyState(word[c], states[c]);
+          if (states[c] === 'correct') revealedCorrect[c] = word[c];
+          if (states[c] === 'present') revealedPresent[word[c]] = true;
+        }
+        currentRow = rowIdx + 1;
+      });
+      // Update keyboard colors
+      updateKeyboardUI();
+
+      if (ds.gameOver) {
+        gameOver = true;
+        if (ds.won) {
+          showMessage('Well done!');
+          generateAIInsight(targetWord, true, currentRow);
+        } else {
+          showMessage('The word was ' + targetWord.toUpperCase());
+          generateAIInsight(targetWord, false, 0);
+        }
+      }
+    }
+
+    function getGuessStates(guess, target) {
+      var states = Array(COLS).fill('absent');
+      var targetArr = target.split('');
+      var guessArr = guess.split('');
+      // First pass: correct
+      for (var i = 0; i < COLS; i++) {
+        if (guessArr[i] === targetArr[i]) {
+          states[i] = 'correct';
+          targetArr[i] = null;
+          guessArr[i] = null;
+        }
+      }
+      // Second pass: present
+      for (var i = 0; i < COLS; i++) {
+        if (guessArr[i] === null) continue;
+        var idx = targetArr.indexOf(guessArr[i]);
+        if (idx !== -1) {
+          states[i] = 'present';
+          targetArr[idx] = null;
+        }
+      }
+      return states;
+    }
+
+    function updateKeyState(letter, state) {
+      var current = keyStates[letter];
+      if (state === 'correct') {
+        keyStates[letter] = 'correct';
+      } else if (state === 'present' && current !== 'correct') {
+        keyStates[letter] = 'present';
+      } else if (!current) {
+        keyStates[letter] = 'absent';
+      }
+    }
+
+    function updateKeyboardUI() {
+      Object.keys(keyStates).forEach(function(letter) {
+        var el = document.getElementById('wg-key-' + letter.toUpperCase());
+        if (el) {
+          el.classList.remove('correct', 'present', 'absent');
+          el.classList.add(keyStates[letter]);
+        }
+      });
+    }
+
+    function checkHardMode(guess) {
+      // Must use all revealed correct letters in correct positions
+      for (var pos in revealedCorrect) {
+        if (guess[pos] !== revealedCorrect[pos]) {
+          var p = parseInt(pos) + 1;
+          return 'Position ' + p + ' must be ' + revealedCorrect[pos].toUpperCase();
+        }
+      }
+      // Must use all present letters somewhere
+      for (var letter in revealedPresent) {
+        if (guess.indexOf(letter) === -1) {
+          return 'Must include ' + letter.toUpperCase();
+        }
+      }
+      return null;
+    }
+
+    function revealRow(row, states, callback) {
+      var delay = 300;
+      states.forEach(function(state, c) {
+        setTimeout(function() {
+          var tile = document.getElementById('wg-tile-' + row + '-' + c);
+          tile.classList.add('flip');
+          setTimeout(function() {
+            tile.classList.add(state);
+          }, 250);
+        }, c * delay);
+      });
+      setTimeout(callback, COLS * delay + 400);
+    }
+
+    function bounceRow(row) {
+      for (var c = 0; c < COLS; c++) {
+        (function(cc) {
+          setTimeout(function() {
+            var tile = document.getElementById('wg-tile-' + row + '-' + cc);
+            tile.classList.add('bounce');
+          }, cc * 80);
+        })(c);
+      }
+    }
+
+    function submitGuess() {
+      if (gameOver || currentRow >= ROWS) return;
+      if (currentCol < COLS) {
+        showMessage('Not enough letters', 1500);
+        shakeRow(currentRow);
+        return;
+      }
+
+      var guess = board[currentRow].join('');
+
+      if (!isValidWord(guess)) {
+        showMessage('Not in word list', 1500);
+        shakeRow(currentRow);
+        return;
+      }
+
+      // Hard mode check
+      if (hardMode) {
+        var hmErr = checkHardMode(guess);
+        if (hmErr) {
+          showMessage(hmErr, 2000);
+          shakeRow(currentRow);
+          return;
+        }
+      }
+
+      var states = getGuessStates(guess, targetWord);
+      var row = currentRow;
+
+      // Update revealed info for hard mode
+      for (var c = 0; c < COLS; c++) {
+        if (states[c] === 'correct') revealedCorrect[c] = guess[c];
+        if (states[c] === 'present') revealedPresent[guess[c]] = true;
+        updateKeyState(guess[c], states[c]);
+      }
+
+      currentRow++;
+      currentCol = 0;
+
+      revealRow(row, states, function() {
+        updateKeyboardUI();
+
+        var won = guess === targetWord;
+        if (won) {
+          gameOver = true;
+          bounceRow(row);
+          var messages = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
+          showMessage(messages[row] || 'Well done!');
+          recordResult(true, row + 1);
+          if (mode === 'daily') saveDailyState();
+          setTimeout(showStats, 1500);
+          generateAIInsight(targetWord, true, row + 1);
+        } else if (currentRow >= ROWS) {
+          gameOver = true;
+          showMessage('The word was ' + targetWord.toUpperCase());
+          recordResult(false, 0);
+          if (mode === 'daily') saveDailyState();
+          setTimeout(showStats, 1500);
+          generateAIInsight(targetWord, false, 0);
+        } else {
+          if (mode === 'daily') saveDailyState();
+        }
+      });
+    }
+
+    function handleKey(key) {
+      if (gameOver) return;
+      if (key === 'ENTER') {
+        submitGuess();
+        return;
+      }
+      if (key === 'DEL' || key === 'BACKSPACE') {
+        if (currentCol > 0) {
+          currentCol--;
+          board[currentRow][currentCol] = '';
+          updateTile(currentRow, currentCol, '');
+        }
+        return;
+      }
+      if (/^[A-Z]$/.test(key) && currentCol < COLS) {
+        board[currentRow][currentCol] = key.toLowerCase();
+        updateTile(currentRow, currentCol, key);
+        currentCol++;
+      }
+    }
+
+    // Physical keyboard
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Enter') { handleKey('ENTER'); e.preventDefault(); }
+      else if (e.key === 'Backspace') { handleKey('DEL'); e.preventDefault(); }
+      else if (/^[a-zA-Z]$/.test(e.key)) { handleKey(e.key.toUpperCase()); }
+    });
+
+    // ==================== SHARE ====================
+    function getShareText() {
+      var dayNum = mode === 'daily' ? getDayNumber() : '';
+      var title = 'Word Guess' + (mode === 'daily' ? ' #' + dayNum : ' (Practice)');
+      var guessCount = gameOver && currentRow > 0 && board[currentRow - 1].join('') === targetWord ? currentRow : 'X';
+      var lines = [title + ' ' + guessCount + '/6' + (hardMode ? '*' : '')];
+      lines.push('');
+      for (var r = 0; r < (gameOver ? currentRow : currentRow); r++) {
+        var word = board[r].join('');
+        if (!word || word.length < COLS) continue;
+        var states = getGuessStates(word, targetWord);
+        var emojis = states.map(function(s) {
+          if (s === 'correct') return '\u2B1B'; // black square (correct)
+          if (s === 'present') return '\u2B1C'; // white square (present)
+          return '\u2591'; // light shade (absent)
+        }).join('');
+        lines.push(emojis);
+      }
+      lines.push('');
+      lines.push('https://tool.teamzlab.com/games/word-guess/');
+      return lines.join('\n');
+    }
+
+    function shareResults() {
+      var text = getShareText();
+      navigator.clipboard.writeText(text).then(function() {
+        if (window.showToast) window.showToast('Results copied to clipboard!');
+      }).catch(function() {
+        if (window.showToast) window.showToast('Could not copy. Try again.');
+      });
+    }
+
+    // ==================== STATS MODAL ====================
+    function showStats() {
+      var s = getStats();
+      var winPct = s.played > 0 ? Math.round(s.won / s.played * 100) : 0;
+      var grid = document.getElementById('wg-stats-grid');
+      grid.innerHTML =
+        '<div><div class="wg-stat-val">' + s.played + '</div><div class="wg-stat-label">Played</div></div>' +
+        '<div><div class="wg-stat-val">' + winPct + '</div><div class="wg-stat-label">Win %</div></div>' +
+        '<div><div class="wg-stat-val">' + s.streak + '</div><div class="wg-stat-label">Streak</div></div>' +
+        '<div><div class="wg-stat-val">' + s.maxStreak + '</div><div class="wg-stat-label">Max Streak</div></div>';
+
+      var distEl = document.getElementById('wg-dist');
+      var maxDist = 1;
+      for (var i = 1; i <= 6; i++) {
+        if ((s.dist[i] || 0) > maxDist) maxDist = s.dist[i];
+      }
+      var distHTML = '';
+      var lastGuess = gameOver && currentRow > 0 && board[currentRow - 1].join('') === targetWord ? currentRow : -1;
+      for (var i = 1; i <= 6; i++) {
+        var val = s.dist[i] || 0;
+        var pct = Math.max(8, Math.round(val / maxDist * 100));
+        var hl = (i === lastGuess) ? ' highlight' : '';
+        distHTML += '<div class="wg-dist-row"><div class="wg-dist-num">' + i + '</div><div class="wg-dist-bar' + hl + '" style="width:' + pct + '%">' + val + '</div></div>';
+      }
+      distEl.innerHTML = distHTML;
+
+      var actions = document.getElementById('wg-stats-actions');
+      var btns = '';
+      if (gameOver) {
+        btns += '<button type="button" class="wg-btn wg-btn-primary" id="wg-share-btn">Share</button>';
+      }
+      if (mode === 'unlimited' && gameOver) {
+        btns += '<button type="button" class="wg-btn wg-btn-secondary" id="wg-play-again-btn">Play Again</button>';
+      }
+      btns += '<button type="button" class="wg-btn wg-btn-secondary" id="wg-stats-done">Close</button>';
+      actions.innerHTML = btns;
+
+      document.getElementById('wg-stats-modal').classList.add('show');
+
+      // Wire buttons
+      var shareBtn = document.getElementById('wg-share-btn');
+      if (shareBtn) shareBtn.addEventListener('click', shareResults);
+      var playAgainBtn = document.getElementById('wg-play-again-btn');
+      if (playAgainBtn) playAgainBtn.addEventListener('click', function() {
+        document.getElementById('wg-stats-modal').classList.remove('show');
+        initGame();
+      });
+      document.getElementById('wg-stats-done').addEventListener('click', function() {
+        document.getElementById('wg-stats-modal').classList.remove('show');
+      });
+    }
+
+    // ==================== CONTROLS ====================
+    document.getElementById('wg-stats-btn').addEventListener('click', showStats);
+    document.getElementById('wg-stats-close').addEventListener('click', function() {
+      document.getElementById('wg-stats-modal').classList.remove('show');
+    });
+    document.getElementById('wg-stats-modal').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('show');
+    });
+
+    document.getElementById('wg-help-btn').addEventListener('click', function() {
+      document.getElementById('wg-help-modal').classList.add('show');
+    });
+    document.getElementById('wg-help-close').addEventListener('click', function() {
+      document.getElementById('wg-help-modal').classList.remove('show');
+    });
+    document.getElementById('wg-help-ok').addEventListener('click', function() {
+      document.getElementById('wg-help-modal').classList.remove('show');
+    });
+    document.getElementById('wg-help-modal').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('show');
+    });
+
+    document.getElementById('wg-mode-daily').addEventListener('click', function() {
+      if (mode === 'daily') return;
+      mode = 'daily';
+      this.classList.add('active');
+      document.getElementById('wg-mode-unlimited').classList.remove('active');
+      initGame();
+    });
+
+    document.getElementById('wg-mode-unlimited').addEventListener('click', function() {
+      if (mode === 'unlimited') return;
+      mode = 'unlimited';
+      this.classList.add('active');
+      document.getElementById('wg-mode-daily').classList.remove('active');
+      initGame();
+    });
+
+    document.getElementById('wg-hard-toggle').addEventListener('click', function() {
+      if (currentRow > 0 && !gameOver) {
+        if (window.showToast) window.showToast('Cannot change mode mid-game');
+        return;
+      }
+      hardMode = !hardMode;
+      this.classList.toggle('active', hardMode);
+    });
+
+    // ==================== AI INSIGHT (background, non-blocking) ====================
+    var WORD_DEFINITIONS = {
+      'about':'Concerning or regarding something','above':'In a higher position','abuse':'To use wrongly or harmfully',
+      'admit':'To confess or acknowledge','after':'Following in time','again':'One more time','agent':'A person who acts for another',
+      'agree':'To share the same opinion','alarm':'A warning signal','alive':'Living, not dead','allow':'To permit',
+      'anger':'A strong feeling of displeasure','apple':'A round fruit from a tree','apply':'To make a formal request',
+      'arena':'A large venue for events','arise':'To come into being','array':'An ordered arrangement',
+      'avoid':'To keep away from','awake':'Not sleeping','award':'A prize given for achievement',
+      'beach':'Sandy shore by the sea','begin':'To start','being':'Existence or a living creature',
+      'below':'At a lower level','black':'The darkest color','blade':'The cutting part of a knife',
+      'blame':'To hold responsible','blank':'Empty or unmarked','blast':'A sudden loud sound or explosion',
+      'blaze':'A bright flame','blend':'To mix together','blind':'Unable to see','block':'A solid piece or to obstruct',
+      'blood':'Red fluid in the body','bloom':'A flower or to flourish','board':'A flat piece of wood',
+      'brain':'The organ of thought','brand':'A product identity','brave':'Showing courage','bread':'A baked food from flour',
+      'break':'To separate into pieces','brick':'A building block','brief':'Short in duration','bring':'To carry toward',
+      'broad':'Wide in extent','brown':'A dark warm color','brush':'A tool with bristles','build':'To construct',
+      'cabin':'A small wooden dwelling','catch':'To capture or seize','cause':'The reason something happens',
+      'chain':'Connected metal links','chair':'A seat with a back','chase':'To pursue','cheap':'Low in price',
+      'check':'To verify or examine','chief':'The leader','child':'A young person','china':'Fine porcelain',
+      'claim':'To assert ownership','class':'A group or category','clean':'Free from dirt','clear':'Easy to see or understand',
+      'climb':'To go upward','close':'Near in distance or to shut','cloud':'Water vapor in the sky',
+      'coach':'A trainer or instructor','coast':'Land along the sea','color':'A visual property like red or blue',
+      'count':'To number things','court':'A place of law or sport','cover':'To place over',
+      'crack':'A narrow break or sharp sound','craft':'Skill or a made object','crane':'A tall bird or lifting machine',
+      'crash':'A violent collision','crazy':'Mentally unsound or extremely','cream':'A dairy product',
+      'crime':'An illegal act','cross':'To go across','crowd':'A large group of people',
+      'crown':'A royal headpiece','cruel':'Causing pain deliberately','crush':'To press with force',
+      'cycle':'A recurring sequence','daily':'Happening every day','dance':'To move rhythmically to music',
+      'death':'The end of life','depth':'How deep something is','devil':'An evil supernatural being',
+      'dirty':'Not clean','doubt':'An uncertain feeling','draft':'A preliminary version',
+      'drain':'To remove liquid','dream':'Images during sleep','dress':'Clothing or to put on clothes',
+      'drink':'A liquid to consume','drive':'To operate a vehicle','earth':'The planet we live on',
+      'eight':'The number 8','elite':'The best of a group','email':'Electronic mail',
+      'empty':'Containing nothing','enemy':'An opponent','enjoy':'To take pleasure in',
+      'enter':'To go into','equal':'The same in value','error':'A mistake','essay':'A written composition',
+      'event':'Something that happens','every':'Each one without exception','exact':'Precise and accurate',
+      'extra':'More than usual','fable':'A short moral story','faith':'Complete trust or belief',
+      'false':'Not true','fancy':'Elaborate or to desire','fault':'A defect or mistake',
+      'feast':'A large celebratory meal','fever':'Abnormally high body temperature','field':'An open area of land',
+      'fight':'A physical conflict','final':'The last one','first':'Before all others',
+      'fixed':'Stationary or repaired','flame':'A stream of burning gas','flash':'A sudden burst of light',
+      'flesh':'The soft tissue of the body','float':'To rest on a liquid surface','flood':'An overflow of water',
+      'floor':'The bottom surface of a room','focus':'To concentrate attention','force':'Power or strength',
+      'found':'To establish or discover','frame':'A border or structure','fraud':'Intentional deception',
+      'fresh':'Recently made or obtained','front':'The forward part','fruit':'The seed-bearing part of a plant',
+      'funny':'Causing laughter','ghost':'The spirit of a dead person','giant':'Extremely large',
+      'given':'Provided or specified','glass':'A transparent material','globe':'A spherical map of Earth',
+      'going':'Moving or departing','grace':'Elegance or a blessing','grade':'A level or rank',
+      'grain':'A cereal seed','grand':'Impressive in size','grant':'To give or bestow',
+      'grape':'A small round fruit','graph':'A diagram showing data','grass':'Green ground cover plant',
+      'grave':'A burial place or serious','great':'Very large or excellent','green':'The color of grass',
+      'grind':'To crush into small pieces','gross':'Total before deductions','group':'A collection of people or things',
+      'grove':'A small group of trees','grown':'Having developed fully','guard':'To protect or watch over',
+      'guess':'To estimate without knowledge','guest':'A person invited somewhere','guide':'To lead or direct',
+      'guilt':'Responsibility for wrongdoing','habit':'A regular practice','hands':'The parts at the end of arms',
+      'happy':'Feeling pleasure','harsh':'Unpleasantly rough','haste':'Excessive speed','heart':'The organ that pumps blood',
+      'heavy':'Having great weight','hence':'For this reason','hobby':'An activity done for pleasure',
+      'honey':'Sweet substance made by bees','honor':'High respect or integrity','horse':'A large hoofed animal',
+      'hotel':'A place providing paid lodging','house':'A building for living in','human':'Relating to people',
+      'humor':'The quality of being amusing','hurry':'To move quickly','ideal':'Perfect or a standard',
+      'image':'A visual representation','imply':'To suggest indirectly','inbox':'Where messages are received',
+      'index':'An alphabetical list','inner':'Inside or interior','input':'What is put in',
+      'irony':'Expressing meaning through opposites','ivory':'Hard white material from tusks',
+      'jewel':'A precious stone','joint':'A connection point','jolly':'Happy and cheerful',
+      'judge':'To form an opinion or a court official','juice':'Liquid from fruit','kayak':'A narrow canoe',
+      'knife':'A cutting instrument','knock':'To strike a surface','known':'Recognized or familiar',
+      'label':'A tag identifying something','labor':'Physical work','large':'Big in size',
+      'laser':'A focused beam of light','later':'After the expected time','laugh':'To express amusement vocally',
+      'layer':'A sheet covering a surface','learn':'To gain knowledge','least':'Smallest in amount',
+      'leave':'To go away from','legal':'Relating to law','lemon':'A sour yellow citrus fruit',
+      'level':'A flat surface or degree','light':'Electromagnetic radiation we can see','limit':'A boundary or restriction',
+      'local':'Relating to a nearby area','lodge':'A cabin or to stay temporarily','logic':'Reasoning and rational thinking',
+      'loose':'Not tightly fixed','lover':'A person in a romantic relationship','lower':'To move downward',
+      'loyal':'Faithful and devoted','lucky':'Having good fortune','lunch':'A midday meal',
+      'magic':'Supernatural power','major':'Greater in importance','maker':'One who creates',
+      'manor':'A large country house','maple':'A tree known for syrup','march':'To walk in formation',
+      'match':'A contest or to correspond','mayor':'The head of a city','means':'A method or resources',
+      'medal':'An award for achievement','media':'Communication channels','mercy':'Compassion toward offenders',
+      'merge':'To combine into one','merit':'Worth or excellence','metal':'A hard shiny material',
+      'might':'Power or possibility','minor':'Lesser in importance','minus':'Less or subtracted',
+      'mixed':'Combined from different elements','model':'A representation or example','money':'Currency used in exchange',
+      'month':'One twelfth of a year','moral':'Relating to right and wrong','motor':'An engine',
+      'mount':'To climb or a mountain','mouse':'A small rodent','mouth':'The opening for eating and speaking',
+      'movie':'A motion picture','music':'Organized sound as art','naive':'Lacking experience',
+      'nasty':'Very unpleasant','nerve':'A fiber carrying signals in the body','never':'At no time',
+      'night':'The dark period between sunset and sunrise','noble':'Having high moral qualities',
+      'noise':'Unwanted sound','north':'The direction toward the North Pole','noted':'Well known or recorded',
+      'novel':'A long fictional book or new','nurse':'A medical care provider',
+      'ocean':'A vast body of salt water','offer':'To present for acceptance','often':'Frequently',
+      'olive':'A small oval fruit','opera':'A dramatic musical work','orbit':'A circular path',
+      'order':'An arrangement or command','other':'Different from the one mentioned','outer':'On the outside',
+      'owner':'One who possesses something','paint':'A colored coating','panel':'A flat section or group of experts',
+      'panic':'Sudden overwhelming fear','paper':'Thin material for writing','party':'A social gathering',
+      'pasta':'Italian food made from dough','patch':'A small piece covering a hole','pause':'A temporary stop',
+      'peace':'Freedom from disturbance','peach':'A soft juicy fruit','pearl':'A gem formed in an oyster',
+      'phase':'A stage in a process','phone':'A communication device','photo':'A picture taken by camera',
+      'piano':'A large keyboard instrument','piece':'A part of something','pilot':'One who flies aircraft',
+      'pitch':'The degree of sound or to throw','pixel':'The smallest unit of a digital image',
+      'pizza':'An Italian flatbread dish','place':'A location','plain':'Simple or a flat area',
+      'plane':'An aircraft or flat surface','plant':'A living organism or factory','plate':'A flat dish',
+      'plaza':'A public square','plead':'To make an emotional appeal','plumb':'Exactly vertical',
+      'point':'A location or main idea','polar':'Relating to the poles','pound':'A unit of weight or currency',
+      'power':'The ability to do something','press':'To push or the media','price':'The amount of money charged',
+      'pride':'A feeling of satisfaction','prime':'First in importance','print':'To produce text on paper',
+      'prior':'Coming before in time','prize':'A reward for winning','probe':'To investigate',
+      'prone':'Likely to do something','proof':'Evidence establishing truth','prose':'Written language not in verse',
+      'proud':'Feeling deep satisfaction','prove':'To demonstrate truth','psalm':'A sacred song',
+      'pulse':'A rhythmic beating','punch':'To strike with a fist','pupil':'A student or the eye opening',
+      'queen':'A female ruler','query':'A question','quest':'A search or journey','queue':'A line of waiting people',
+      'quick':'Fast or prompt','quiet':'Making little noise','quilt':'A padded bed cover',
+      'quite':'Completely or fairly','quota':'An allocated share','quote':'To repeat words or a stated price',
+      'radar':'A detection system using radio waves','radio':'Wireless communication','raise':'To lift up',
+      'rally':'To come together for a cause','ranch':'A large farm','range':'The extent or a cooking stove',
+      'rapid':'Very fast','ratio':'A proportional relationship','razor':'A sharp cutting instrument',
+      'reach':'To extend to','ready':'Prepared for action','realm':'A kingdom or domain',
+      'rebel':'One who resists authority','refer':'To direct attention to','reign':'Period of rule',
+      'relax':'To become less tense','relay':'To pass along','reply':'An answer',
+      'rider':'One who rides','rifle':'A long firearm','right':'Correct or a moral entitlement',
+      'rigid':'Stiff and inflexible','rival':'A competitor','river':'A large flowing stream of water',
+      'robot':'An automated machine','rocky':'Full of rocks','roman':'Relating to Rome',
+      'rough':'Having an uneven surface','round':'Shaped like a circle','route':'A way or path',
+      'royal':'Relating to a king or queen','ruins':'The remains of destroyed buildings',
+      'ruler':'A measuring tool or leader','rural':'Relating to the countryside',
+      'sadly':'In a sorrowful way','saint':'A holy person','salad':'A dish of mixed raw vegetables',
+      'salon':'A business for beauty services','sauce':'A liquid condiment','scale':'A measuring device or to climb',
+      'scare':'To frighten','scene':'A place where something happens','scent':'A smell',
+      'scope':'The range or extent','score':'Points in a game','scout':'One who explores ahead',
+      'sense':'A faculty of perception','serve':'To provide a service','seven':'The number 7',
+      'shade':'Partial darkness','shall':'Used to express future tense','shame':'A painful feeling of humiliation',
+      'shape':'The form of something','share':'A portion or to give part of','shark':'A large predatory fish',
+      'sharp':'Having a fine cutting edge','sheep':'A woolly farm animal','sheet':'A large flat piece',
+      'shelf':'A flat board for storage','shell':'The hard outer covering','shift':'To move or change',
+      'shine':'To emit light','shirt':'An upper body garment','shock':'A sudden disturbance',
+      'shore':'The land along water','short':'Not long in length or time','sight':'The ability to see',
+      'silly':'Lacking good sense humorously','since':'From a time in the past','skill':'An ability developed through practice',
+      'skull':'The bony structure of the head','slash':'To cut with a sweeping stroke','slate':'A flat grey rock',
+      'slave':'A person held in bondage','sleep':'A state of rest','slice':'A thin cut piece',
+      'slide':'To move smoothly','slope':'An inclined surface','small':'Little in size',
+      'smart':'Intelligent or stylish','smell':'To detect odor','smile':'A pleased facial expression',
+      'smoke':'Visible gas from burning','snake':'A long legless reptile','snare':'A trap',
+      'solar':'Relating to the sun','solid':'Firm and stable','solve':'To find an answer',
+      'sorry':'Feeling regret','sound':'Something heard','south':'The direction opposite north',
+      'space':'An area or outer cosmos','spare':'Extra or to save from harm','spark':'A small fiery particle',
+      'speak':'To talk','speed':'The rate of movement','spell':'To form words with letters',
+      'spend':'To pay out money','spice':'A flavoring substance','spike':'A sharp point',
+      'spine':'The backbone','split':'To divide into parts','spoke':'Past tense of speak',
+      'sport':'An athletic activity','spray':'To scatter liquid','squad':'A small organized group',
+      'stack':'A neat pile','staff':'Employees or a stick','stage':'A platform or a phase',
+      'stain':'A discoloration','stake':'A pointed post or a bet','stale':'No longer fresh',
+      'stall':'A booth or to delay','stamp':'To press a mark or a postal label','stand':'To be upright',
+      'stare':'To look fixedly','start':'To begin','state':'A condition or territory',
+      'stays':'Remains in place','steak':'A thick cut of meat','steal':'To take without permission',
+      'steam':'Water vapor from boiling','steel':'A strong metal alloy','steep':'Having a sharp incline',
+      'steer':'To guide direction','stern':'Serious or the back of a ship','stick':'A thin piece of wood',
+      'stiff':'Rigid and hard to bend','still':'Not moving or continuing','stock':'A supply or company shares',
+      'stone':'A hard mineral piece','stood':'Past tense of stand','store':'A shop or to keep',
+      'storm':'Severe weather','story':'A narrative or a floor of a building','stove':'A cooking appliance',
+      'strap':'A strip of material','straw':'Dried grain stalks','strip':'A narrow piece',
+      'stuck':'Unable to move','study':'To learn through reading','stuff':'Material or belongings',
+      'stump':'The base of a cut tree','style':'A manner of doing things','sugar':'A sweet substance',
+      'suite':'A set of rooms','sunny':'Bright with sunlight','super':'Excellent or above',
+      'surge':'A sudden powerful forward movement','swamp':'Waterlogged ground','swarm':'A large moving group',
+      'swear':'To make a solemn promise','sweat':'Moisture from skin','sweep':'To clean with a broom',
+      'sweet':'Having a sugary taste','swept':'Past tense of sweep','swift':'Moving very fast',
+      'swing':'To move back and forth','swirl':'To move in a twisting pattern','sword':'A bladed weapon',
+      'sworn':'Having made an oath','syrup':'A thick sweet liquid',
+      'table':'A flat-topped furniture piece','taste':'The sense of flavor','teach':'To instruct',
+      'teeth':'Plural of tooth','tempo':'The speed of music','tense':'Tight or a verb form',
+      'terms':'Conditions or words','thank':'To express gratitude','theft':'The act of stealing',
+      'theme':'A central idea','there':'In that place','thick':'Having a large diameter',
+      'thief':'One who steals','thing':'An object','think':'To use the mind','third':'Coming after second',
+      'thorn':'A sharp point on a plant','those':'Plural of that','three':'The number 3',
+      'threw':'Past tense of throw','throw':'To propel through the air','thumb':'The short thick finger',
+      'tiger':'A large striped wild cat','tight':'Firmly fixed','timer':'A device measuring time',
+      'tired':'Needing rest','title':'A name or heading','toast':'Browned bread or a tribute',
+      'today':'This present day','token':'A symbol or sign','total':'The complete amount',
+      'touch':'To make physical contact','tough':'Strong and durable','tower':'A tall narrow structure',
+      'toxic':'Poisonous','trace':'To follow or a small amount','track':'A path or to follow',
+      'trade':'To buy and sell','trail':'A path through nature','train':'A rail vehicle or to practice',
+      'trait':'A distinguishing quality','trash':'Waste material','treat':'Something special or to handle',
+      'trend':'A general direction of change','trial':'A test or court proceeding','tribe':'A social group',
+      'trick':'A cunning act or a prank','tried':'Past tense of try','truck':'A large motor vehicle',
+      'truly':'In a truthful way','trump':'To surpass','trunk':'A tree stem or storage box',
+      'trust':'Firm belief in reliability','truth':'The quality of being true',
+      'twice':'Two times','twist':'To turn or wind','ultra':'Beyond the ordinary',
+      'uncle':'A parent sibling','under':'Below or beneath','union':'A joining together',
+      'unite':'To come together','unity':'The state of being one','until':'Up to the time of',
+      'upper':'Higher in position','upset':'Disturbed or to overturn','urban':'Relating to a city',
+      'usage':'The way something is used','usual':'Normal or typical','utter':'Complete or to speak',
+      'vague':'Not clearly defined','valid':'Legally acceptable','value':'Worth or importance',
+      'vapor':'A gas form of a substance','vault':'A secure room or to jump over',
+      'venue':'A place for an event','verse':'A section of a poem','video':'Moving visual media',
+      'vigor':'Physical strength and energy','vinyl':'A type of plastic','viral':'Spreading rapidly',
+      'virus':'An infectious agent','visit':'To go see someone or a place','vital':'Essential for life',
+      'vivid':'Intensely bright or clear','vocal':'Relating to the voice','vodka':'A clear alcoholic spirit',
+      'voice':'Sound produced in speaking','voter':'One who votes','vowel':'A speech sound like A E I O U',
+      'waist':'The narrow part of the body','waste':'To use carelessly','watch':'To observe or a timepiece',
+      'water':'H2O, essential for life','weary':'Tired or exhausted','weave':'To interlace threads',
+      'wedge':'A triangular shape','weird':'Strange or unusual','whale':'A large marine mammal',
+      'wheat':'A cereal grain','wheel':'A circular rotating device','where':'At what place',
+      'which':'Used to specify one from a group','while':'During the time that','white':'The lightest color',
+      'whole':'Complete or entire','whose':'Belonging to whom','wider':'Having more breadth',
+      'widow':'A woman whose spouse has died','width':'The measurement from side to side',
+      'witch':'A practitioner of magic','woman':'An adult female human','world':'The earth and all its people',
+      'worry':'To feel anxious','worse':'More bad','worst':'Most bad','worth':'The value of something',
+      'would':'Past tense of will','wound':'An injury to the body','wrath':'Intense anger',
+      'wrote':'Past tense of write','yacht':'A sailing vessel','yield':'To produce or give way',
+      'young':'In early life','youth':'The period of being young','zebra':'A striped African animal',
+      'zones':'Divided areas'
+    };
+
+    var WORD_TRIVIA = {
+      'about':'One of the most commonly used words in English, appearing in nearly every conversation.',
+      'apple':'Isaac Newton reportedly conceived gravity after watching an apple fall from a tree.',
+      'beach':'The world longest beach is Praia do Cassino in Brazil, stretching over 150 miles.',
+      'brain':'The human brain uses about 20 percent of the body total energy despite being only 2 percent of body weight.',
+      'candy':'Cotton candy was co-invented by a dentist named William Morrison in 1897.',
+      'chair':'The earliest known chair is from ancient Egypt, dating back about 5000 years.',
+      'chess':'The number of possible chess games exceeds the number of atoms in the observable universe.',
+      'child':'The word child comes from Old English cild, originally meaning a baby or infant.',
+      'cloud':'A single cumulus cloud can weigh more than a million pounds.',
+      'coral':'The Great Barrier Reef is the largest living structure on Earth, visible from space.',
+      'crane':'Japanese tradition holds that folding 1000 paper cranes grants a wish.',
+      'dance':'Dancing is found in every human culture ever studied by anthropologists.',
+      'dream':'Most people forget 95 percent of their dreams within 5 minutes of waking.',
+      'earth':'Earth is the only planet not named after a Greek or Roman deity.',
+      'eight':'The figure eight on its side is the mathematical symbol for infinity.',
+      'flame':'The color of a flame indicates its temperature. Blue flames are hotter than yellow ones.',
+      'ghost':'About 45 percent of Americans say they believe in ghosts, according to polls.',
+      'grape':'It takes about 2.5 pounds of grapes to make a single bottle of wine.',
+      'green':'Green is the most common favorite color worldwide according to global surveys.',
+      'guard':'The Buckingham Palace guard changing ceremony has been a London tradition since 1660.',
+      'happy':'Finland has been ranked the happiest country in the world multiple years running.',
+      'heart':'The human heart beats about 100000 times per day, pumping 2000 gallons of blood.',
+      'honey':'Honey never spoils. Archaeologists found 3000-year-old honey in Egyptian tombs still edible.',
+      'horse':'Horses can sleep both standing up and lying down, thanks to a special locking leg mechanism.',
+      'house':'The oldest known house in the world is in Scotland, dating back about 5000 years.',
+      'human':'Humans share about 60 percent of their DNA with bananas.',
+      'juice':'Orange juice was not popular in America until the 1920s when there was a citrus surplus.',
+      'knife':'The Swiss Army Knife was first produced in 1891 and now has over 500 million sold.',
+      'lemon':'Lemons contain more sugar than strawberries, despite tasting more sour.',
+      'light':'Light from the sun takes about 8 minutes and 20 seconds to reach Earth.',
+      'magic':'The word magic comes from the ancient Persian word magush, meaning priest.',
+      'maple':'Canada produces about 71 percent of the world pure maple syrup.',
+      'metal':'Gold is so malleable that one ounce can be stretched into a wire 50 miles long.',
+      'money':'The first paper money was used in China during the Tang Dynasty around 618 AD.',
+      'month':'The word month comes from moon, reflecting the lunar cycle of approximately 29.5 days.',
+      'mouse':'A computer mouse was first called an X-Y Position Indicator, invented in 1964.',
+      'music':'Music activates every known area of the brain simultaneously.',
+      'night':'The darkest night sky observable from Earth would show about 9000 stars.',
+      'ocean':'The ocean contains about 97 percent of all water on Earth.',
+      'olive':'Olive trees can live for thousands of years. Some in the Mediterranean are over 2000 years old.',
+      'paint':'The Mona Lisa has no eyebrows because it was fashionable to shave them off in Renaissance Florence.',
+      'pearl':'Natural pearls form in about 1 in every 10000 oysters.',
+      'phone':'The first mobile phone call was made in 1973 by Martin Cooper of Motorola.',
+      'piano':'A standard piano has 88 keys, 52 white and 36 black.',
+      'pizza':'Americans eat approximately 3 billion pizzas every year.',
+      'plant':'Plants can communicate with each other through chemical signals released into the air.',
+      'queen':'Queen Elizabeth II was the longest-reigning British monarch, serving for over 70 years.',
+      'quiet':'The quietest place on Earth is Microsoft anechoic chamber, measuring -20.6 decibels.',
+      'radio':'The first commercial radio broadcast was on November 2, 1920, in Pittsburgh.',
+      'river':'The Nile and Amazon rivers compete for the title of longest river in the world.',
+      'robot':'The word robot comes from the Czech word robota, meaning forced labor.',
+      'seven':'Seven is considered the most popular lucky number across many cultures.',
+      'shark':'Sharks have been on Earth for over 400 million years, predating dinosaurs.',
+      'sheep':'Sheep have rectangular pupils, giving them a nearly 360-degree field of vision.',
+      'skill':'It takes approximately 10000 hours of practice to master a complex skill, per Malcolm Gladwell.',
+      'sleep':'Humans are the only mammals that willingly delay sleep.',
+      'smile':'Smiling releases endorphins, serotonin, and dopamine, improving mood naturally.',
+      'smoke':'Smoke signals are one of the oldest forms of long-distance communication.',
+      'snake':'Snakes can have over 400 pairs of ribs, making them incredibly flexible.',
+      'solar':'The sun produces more energy in one second than humanity has used in all of history.',
+      'sound':'Sound travels about 4.3 times faster in water than in air.',
+      'space':'Space is completely silent because there is no medium for sound waves to travel through.',
+      'spine':'The human spine has 33 vertebrae at birth, but only 26 in adulthood as some fuse together.',
+      'steak':'The most expensive steak in the world, Japanese A5 Wagyu, can cost over 200 dollars per pound.',
+      'stone':'Stonehenge stones were transported from Wales, over 150 miles away, around 3000 BC.',
+      'storm':'A single hurricane can release energy equivalent to 10000 nuclear bombs.',
+      'sugar':'The average American consumes about 17 teaspoons of added sugar per day.',
+      'sweet':'Sweetness is the only taste humans are born craving, an evolutionary survival mechanism.',
+      'table':'The periodic table was first published by Dmitri Mendeleev in 1869.',
+      'theme':'The word theme comes from Greek thema, meaning something set down or a proposition.',
+      'tiger':'No two tigers have the same stripe pattern, similar to human fingerprints.',
+      'toast':'Raising a toast originated in ancient Rome, where a piece of toast was dropped into wine.',
+      'tower':'The Eiffel Tower can grow up to 6 inches taller during summer due to thermal expansion.',
+      'track':'The first modern Olympic track and field events were held in Athens in 1896.',
+      'trade':'The Silk Road trade route connected China to the Mediterranean for over 1500 years.',
+      'train':'Japan Shinkansen bullet trains are so punctual that delays average just 36 seconds.',
+      'trash':'The Great Pacific Garbage Patch is roughly twice the size of Texas.',
+      'truck':'The first truck was built by Gottlieb Daimler in 1896.',
+      'trust':'Studies show that people decide whether to trust someone within one-tenth of a second.',
+      'truth':'The word truth shares its root with tree in Proto-Germanic, both relating to something firm.',
+      'voice':'Every human voice is unique, like a fingerprint, determined by vocal cord shape and size.',
+      'water':'Hot water can freeze faster than cold water under certain conditions, known as the Mpemba effect.',
+      'whale':'Blue whales are the largest animals ever to have lived, even bigger than dinosaurs.',
+      'wheel':'The wheel was invented around 3500 BC in Mesopotamia.',
+      'world':'The word world comes from Old English weorold, meaning age of man.',
+      'young':'The youngest person to earn a PhD was Karl Witte, who received his doctorate at age 14 in 1814.',
+      'youth':'The United Nations defines youth as people between 15 and 24 years of age.',
+      'zebra':'Scientists still debate why zebras have stripes. Leading theories include fly deterrence.'
+    };
+
+    function generateAIInsight(word, won, numGuesses) {
+      var insightEl = document.getElementById('wg-ai-insight');
+      if (!insightEl) return;
+
+      // Show loading state immediately
+      insightEl.innerHTML =
+        '<div class="wg-ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 017 7c0 3-2 5-4 6v1a2 2 0 01-2 2h-2a2 2 0 01-2-2v-1c-2-1-4-3-4-6a7 7 0 017-7z"/><path d="M9 18h6"/><path d="M10 21h4"/></svg>Powered by AI</div>' +
+        '<div class="wg-ai-loading"><div class="wg-spinner"></div>Generating word insight...</div>';
+      insightEl.classList.add('show');
+
+      // Build list of words that could have been better guesses
+      var guessedWords = [];
+      for (var r = 0; r < currentRow; r++) {
+        guessedWords.push(board[r].join(''));
+      }
+
+      // Find suggestion words (words sharing letters with target that player did not try)
+      var targetLetters = word.split('');
+      var suggestions = [];
+      for (var i = 0; i < uniqueAnswers.length && suggestions.length < 6; i++) {
+        var w = uniqueAnswers[i];
+        if (w === word || guessedWords.indexOf(w) !== -1) continue;
+        var commonCount = 0;
+        var wLetters = w.split('');
+        var used = {};
+        for (var j = 0; j < 5; j++) {
+          for (var k = 0; k < 5; k++) {
+            if (wLetters[j] === targetLetters[k] && !used[k]) {
+              commonCount++;
+              used[k] = true;
+              break;
+            }
+          }
+        }
+        if (commonCount >= 3) suggestions.push(w);
+      }
+
+      // Try AI generation (non-blocking)
+      var chromePrompt = 'For the 5-letter English word "' + word.toUpperCase() + '", provide:\n' +
+        '1. A one-sentence definition\n' +
+        '2. Its language of origin (etymology) in one sentence\n' +
+        '3. One interesting or surprising fact about this word or what it represents\n' +
+        'Format as: DEFINITION: ...\nETYMOLOGY: ...\nTRIVIA: ...';
+
+      function showFallbackInsight() {
+        var def = WORD_DEFINITIONS[word] || ('A common English word meaning ' + word + '.');
+        var trivia = WORD_TRIVIA[word] || ('The word "' + word.toUpperCase() + '" contains ' + new Set(word.split('')).size + ' unique letters out of 5.');
+        renderInsight(def, 'Derived from Old English or Latin roots.', trivia, suggestions, word);
+      }
+
+      function renderInsight(definition, etymology, trivia, suggestions, word) {
+        var html = '<div class="wg-ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 017 7c0 3-2 5-4 6v1a2 2 0 01-2 2h-2a2 2 0 01-2-2v-1c-2-1-4-3-4-6a7 7 0 017-7z"/><path d="M9 18h6"/><path d="M10 21h4"/></svg>Powered by AI</div>';
+        html += '<div class="wg-ai-word-title">' + word.toUpperCase() + '</div>';
+
+        html += '<div class="wg-ai-section"><div class="wg-ai-section-title">Definition</div><p>' + definition + '</p></div>';
+        html += '<div class="wg-ai-section"><div class="wg-ai-section-title">Etymology</div><p>' + etymology + '</p></div>';
+        html += '<div class="wg-ai-section"><div class="wg-ai-section-title">Fun Fact</div><p>' + trivia + '</p></div>';
+
+        if (suggestions.length > 0) {
+          html += '<div class="wg-ai-section"><div class="wg-ai-section-title">Words You Could Have Tried</div>';
+          html += '<div class="wg-ai-suggestions">';
+          for (var s = 0; s < suggestions.length; s++) {
+            html += '<span class="wg-ai-chip">' + suggestions[s] + '</span>';
+          }
+          html += '</div></div>';
+        }
+
+        insightEl.innerHTML = html;
+      }
+
+      // Use TeamzAI if available (non-blocking)
+      if (typeof TeamzAI !== 'undefined' && TeamzAI.init) {
+        TeamzAI.init().then(function() {
+          return TeamzAI.generate({
+            chromePrompt: chromePrompt,
+            chromeSystemPrompt: 'You are a concise dictionary and trivia assistant. Give brief, factual answers.',
+            transformersTask: 'text2text-generation',
+            transformersModel: 'Xenova/flan-t5-base',
+            transformersPrompt: 'Define the word ' + word + ' and give an interesting fact about it.',
+            transformersOptions: { max_new_tokens: 120, num_beams: 2 },
+            fallback: function() { return null; },
+            qualityCheck: function(text) { return text && text.length > 15; }
+          });
+        }).then(function(result) {
+          if (result && result.text) {
+            // Parse AI response
+            var text = result.text;
+            var defMatch = text.match(/DEFINITION:\s*(.+?)(?:\n|ETYMOLOGY)/i);
+            var etyMatch = text.match(/ETYMOLOGY:\s*(.+?)(?:\n|TRIVIA)/i);
+            var triMatch = text.match(/TRIVIA:\s*(.+)/i);
+
+            var def = (defMatch && defMatch[1].trim()) || WORD_DEFINITIONS[word] || ('A 5-letter English word.');
+            var ety = (etyMatch && etyMatch[1].trim()) || 'Derived from Old English or Latin roots.';
+            var tri = (triMatch && triMatch[1].trim()) || WORD_TRIVIA[word] || ('An interesting word with ' + new Set(word.split('')).size + ' unique letters.');
+
+            renderInsight(def, ety, tri, suggestions, word);
+          } else {
+            showFallbackInsight();
+          }
+        }).catch(function() {
+          showFallbackInsight();
+        });
+      } else {
+        // No AI engine available, use fallback
+        setTimeout(showFallbackInsight, 500);
+      }
+    }
+
+    // ==================== INIT ====================
+    initGame();
+
+    // Show help on first visit
+    if (!localStorage.getItem('wg_has_visited')) {
+      localStorage.setItem('wg_has_visited', '1');
+      document.getElementById('wg-help-modal').classList.add('show');
+    }
+
+    /* AI warm-up: wait 3s AFTER game is fully loaded and playable,
+       then pre-download model in background so results are instant on game end */
+    setTimeout(function() {
+      if (typeof TeamzAI !== 'undefined' && TeamzAI.init) {
+        TeamzAI.init().then(function() {
+          if (!TeamzAI.chromeAI.prompt) {
+            TeamzAI.getPipeline('text2text-generation', 'Xenova/flan-t5-base', {
+              onStatus: function() {},
+              onProgress: function() {}
+            }).catch(function() {});
+          }
+        }).catch(function() {});
+      }
+    }, 3000);
+
+  })();
+  </script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Word Puzzle Games', url: '/games/' },
+      { name: 'Word Guess' }
+    ]);
+    TeamzTools.injectBreadcrumbSchema([
+      { name: 'Home', url: '/' },
+      { name: 'Word Puzzle Games', url: '/games/' },
+      { name: 'Word Guess' }
+    ]);
+
+    var faqs = [
+      { q: 'How does Word Guess choose the daily word?', a: 'The daily word is selected using a date-based algorithm so that every player gets the same word on the same day. The word changes at midnight in your local time zone.' },
+      { q: 'What happens if I guess a word that is not in the dictionary?', a: 'The game only accepts valid 5-letter English words. If your guess is not in the word list, the row will shake and you will see a message saying "Not in word list." Your attempt is not counted.' },
+      { q: 'What is hard mode and how does it work?', a: 'Hard mode requires you to use all clues from previous guesses. Any letter confirmed as correct must stay in the same position, and any letter confirmed as present must be included somewhere in your next guess.' },
+      { q: 'Are my statistics saved between sessions?', a: 'Yes. Your statistics including games played, win percentage, current streak, max streak, and guess distribution are saved in your browser local storage and persist between visits.' },
+      { q: 'Can I play more than one game per day?', a: 'In daily mode, you get one puzzle per day. Switch to unlimited mode using the toggle at the top to play as many random puzzles as you want without affecting your daily streak.' },
+      { q: 'How do I share my results without revealing the answer?', a: 'After completing a game, click the Share button in the statistics popup. It copies a grid of squares representing your guesses to your clipboard without showing any letters.' },
+      { q: 'Does Word Guess work offline?', a: 'Yes. Once the page is loaded, the entire game runs in your browser. No internet connection is needed to play. Your progress and stats are saved locally.' }
+    ];
+
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+    TeamzTools.injectWebAppSchema({
+      slug: 'games/word-guess',
+      title: 'Word Guess Game',
+      description: 'Guess the 5-letter word in 6 tries with color-coded clues. Daily puzzle and unlimited practice mode.'
+    });
+
+    TeamzTools.renderRelatedTools([
+      { slug: 'games/word-groups-puzzle', name: 'Word Groups Puzzle', description: 'Sort 16 words into 4 secret categories before running out of guesses.' },
+      { slug: 'games/letter-hive', name: 'Letter Hive', description: 'Make as many words as you can from 7 letters. Find the pangram for max points.' },
+      { slug: 'games/daily-word-grid', name: 'Daily Word Grid', description: 'Solve a quick 5x5 mini crossword with simple clues. New puzzle every day.' },
+      { slug: 'games/thread-words', name: 'Thread Words', description: 'Find themed words hidden in a letter grid by tracing connected paths.' },
+      { slug: 'tools/countdown-timer', name: 'Countdown Timer', description: 'Set a countdown timer with alarm for any duration. Quick presets and custom time.' },
+      { slug: 'tools/random-number-generator', name: 'Random Number Generator', description: 'Generate random numbers, pick from lists, roll dice, and flip coins.' }
+    ]);
+  });
+  </script>
+</body>
+</html>

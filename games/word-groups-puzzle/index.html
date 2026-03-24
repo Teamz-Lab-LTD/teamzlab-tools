@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Groups Puzzle Game — Teamz Lab Tools</title>
+  <meta name="description" content="Sort 16 words into 4 secret categories. Find hidden connections between words before you run out of guesses. Daily puzzle plus unlimited practice mode.">
+  <meta property="og:title" content="Word Groups Puzzle Game — Teamz Lab Tools">
+  <meta property="og:description" content="Sort 16 words into 4 secret categories. Find hidden connections between words before you run out of guesses. Daily puzzle plus unlimited practice.">
+  <meta property="og:url" content="https://tool.teamzlab.com/games/word-groups-puzzle/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/games.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Word Groups Puzzle Game — Teamz Lab Tools">
+  <meta name="twitter:description" content="Sort 16 words into 4 secret categories. Find hidden connections between words before you run out of guesses. Daily puzzle plus unlimited practice.">
+  <link rel="canonical" href="https://tool.teamzlab.com/games/word-groups-puzzle/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .game-header h2 { margin: 0; font-size: var(--text-xl); }
+    .mode-tabs { display: flex; gap: 0.5rem; }
+    .mode-tab { padding: 0.4rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--heading); font-weight: 600; font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .mode-tab.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .puzzle-info { text-align: center; margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem; }
+    .puzzle-number { font-weight: 700; color: var(--heading); }
+
+    /* Solved groups */
+    .solved-groups { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .solved-group { border-radius: 10px; padding: 0.75rem 1rem; text-align: center; animation: groupReveal 0.5s ease-out; }
+    .solved-group .group-category { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+    .solved-group .group-words { font-size: 0.85rem; font-weight: 500; }
+    /* Difficulty-based solved group styles using opacity on heading color */
+    .solved-group[data-difficulty="1"] { background: var(--heading); color: var(--bg); opacity: 1; }
+    .solved-group[data-difficulty="2"] { background: var(--heading); color: var(--bg); opacity: 0.85; }
+    .solved-group[data-difficulty="3"] { background: var(--heading); color: var(--bg); opacity: 0.7; }
+    .solved-group[data-difficulty="4"] { background: var(--heading); color: var(--bg); opacity: 0.55; }
+
+    @keyframes groupReveal {
+      from { transform: scaleY(0); opacity: 0; }
+      to { transform: scaleY(1); opacity: 1; }
+    }
+
+    /* Word grid */
+    .word-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+    .word-tile { padding: 0.75rem 0.5rem; border-radius: 8px; border: 2px solid var(--border); background: var(--surface); color: var(--heading); font-weight: 700; font-size: clamp(0.7rem, 2.2vw, 0.95rem); cursor: pointer; text-align: center; transition: all 0.2s ease; user-select: none; font-family: inherit; text-transform: uppercase; letter-spacing: 0.02em; min-height: 48px; display: flex; align-items: center; justify-content: center; word-break: break-word; line-height: 1.2; }
+    .word-tile:hover { border-color: var(--heading); }
+    .word-tile.selected { background: var(--heading); color: var(--bg); border-color: var(--heading); transform: scale(0.96); }
+    .word-tile.wrong { animation: wrongShake 0.5s ease; }
+    .word-tile.disabled { pointer-events: none; opacity: 0; height: 0; padding: 0; border: 0; min-height: 0; margin: 0; }
+
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    /* Lives */
+    .lives-bar { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); }
+    .life-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--heading); transition: all 0.3s; }
+    .life-dot.lost { background: var(--border); transform: scale(0.7); }
+
+    /* Controls */
+    .game-controls { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; }
+    .game-controls button { padding: 0.65rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+    .btn-shuffle { background: var(--surface); color: var(--heading); border: 1px solid var(--border) !important; }
+    .btn-deselect { background: var(--surface); color: var(--heading); border: 1px solid var(--border) !important; }
+    .btn-submit { background: var(--heading); color: var(--bg); }
+    .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+    .selection-count { text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; min-height: 1.3em; }
+
+    /* Game over */
+    .game-over { text-align: center; padding: 1.5rem; margin-top: 1rem; }
+    .game-over h3 { font-size: var(--text-xl); color: var(--heading); margin-bottom: 0.5rem; }
+    .game-over p { color: var(--text-muted); margin-bottom: 1rem; }
+    .game-over-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .game-over-actions button { padding: 0.65rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+
+    /* Stats modal */
+    .stats-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+    .stats-overlay.show { display: flex; }
+    .stats-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 380px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .stats-modal h3 { text-align: center; color: var(--heading); margin-bottom: 1.5rem; font-size: var(--text-lg); }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+    .guess-distribution { margin-bottom: 1rem; }
+    .guess-distribution h4 { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600; }
+    .dist-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+    .dist-label { font-size: 0.8rem; color: var(--text-muted); width: 1rem; text-align: right; font-weight: 600; }
+    .dist-bar { height: 20px; border-radius: 4px; background: var(--heading); min-width: 24px; display: flex; align-items: center; justify-content: flex-end; padding: 0 6px; font-size: 0.7rem; font-weight: 700; color: var(--bg); transition: width 0.3s; }
+    .stats-close { display: block; margin: 1rem auto 0; padding: 0.5rem 2rem; border-radius: 8px; background: var(--heading); color: var(--bg); border: none; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; }
+
+    /* Share result */
+    .share-result { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin: 1rem 0; text-align: center; font-family: monospace; font-size: 1.1rem; line-height: 1.6; white-space: pre-line; }
+
+    /* Difficulty legend */
+    .difficulty-legend { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1rem; font-size: 0.8rem; color: var(--text-muted); }
+    .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--heading); }
+    .legend-dot[data-d="1"] { opacity: 1; }
+    .legend-dot[data-d="2"] { opacity: 0.85; }
+    .legend-dot[data-d="3"] { opacity: 0.7; }
+    .legend-dot[data-d="4"] { opacity: 0.55; }
+
+    /* AI insight card */
+    .ai-insight-card { margin-top: 1rem; padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); position: relative; animation: fadeInUp 0.4s ease-out; }
+    .ai-insight-card .ai-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .ai-insight-card .ai-badge svg { width: 14px; height: 14px; }
+    .ai-insight-card .ai-fact { font-size: 0.9rem; color: var(--text); line-height: 1.6; margin-bottom: 0.5rem; }
+    .ai-insight-card .ai-tip { font-size: 0.85rem; color: var(--text-muted); font-style: italic; line-height: 1.5; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      .tool-calculator h2 { font-size: var(--text-lg); }
+      .word-tile { padding: 0.6rem 0.3rem; font-size: clamp(0.6rem, 3vw, 0.8rem); min-height: 42px; }
+      .game-controls { gap: 0.5rem; }
+      .game-controls button { padding: 0.55rem 1rem; font-size: 0.8rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .game-header { flex-direction: column; align-items: flex-start; }
+      .ai-insight-card { padding: 0.75rem 1rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How does the daily puzzle work?", "acceptedAnswer": {"@type": "Answer", "text": "A new puzzle is generated each day based on the date. Everyone gets the same daily puzzle, so you can compare results with friends without spoiling answers."}}, {"@type": "Question", "name": "How many guesses do I get?", "acceptedAnswer": {"@type": "Answer", "text": "You get 4 wrong guesses (mistakes). Correct guesses do not count against you. If you make 4 mistakes, the game ends and all remaining groups are revealed."}}, {"@type": "Question", "name": "Can I play more than one puzzle per day?", "acceptedAnswer": {"@type": "Answer", "text": "Yes! Switch to Practice Mode for unlimited random puzzles. Your daily puzzle stats and practice stats are both tracked."}}, {"@type": "Question", "name": "How do the difficulty levels work?", "acceptedAnswer": {"@type": "Answer", "text": "Each puzzle has 4 groups rated from easy (most obvious connections) to hard (tricky wordplay, double meanings, or obscure links). Harder groups appear with lower opacity when revealed."}}, {"@type": "Question", "name": "How do I share my results?", "acceptedAnswer": {"@type": "Answer", "text": "After completing a puzzle, click Share Results to copy an emoji grid showing your guesses without revealing the answers. Paste it anywhere — messaging apps, social media, etc."}}, {"@type": "Question", "name": "Is my data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Everything runs in your browser. Your stats are saved in localStorage on your device. No data is sent to any server."}}, {"@type": "Question", "name": "What if I accidentally close the page during a daily puzzle?", "acceptedAnswer": {"@type": "Answer", "text": "Your daily puzzle progress is saved automatically. When you return on the same day, your game state (solved groups, remaining lives) is restored."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Word Groups Puzzle", "description": "Sort 16 words into 4 secret categories. Daily puzzle plus unlimited practice mode.", "url": "https://tool.teamzlab.com/games/word-groups-puzzle/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Word Groups Puzzle</h1>
+      <p class="tool-description">Sort 16 words into 4 secret categories. Find the hidden connections between words before you run out of guesses. A new daily puzzle every day, plus unlimited practice mode. Free, private, no login required.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="game-header">
+        <h2 id="game-title">Daily Puzzle</h2>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <div class="mode-tabs">
+            <button type="button" class="mode-tab active" id="btn-daily">Daily</button>
+            <button type="button" class="mode-tab" id="btn-practice">Practice</button>
+          </div>
+          <button type="button" class="mode-tab" id="btn-stats" title="Stats">Stats</button>
+        </div>
+      </div>
+      <div class="puzzle-info" id="puzzle-info">Find groups of 4 related words</div>
+      <div class="difficulty-legend">
+        <span class="legend-item"><span class="legend-dot" data-d="1"></span> Easy</span>
+        <span class="legend-item"><span class="legend-dot" data-d="2"></span> Medium</span>
+        <span class="legend-item"><span class="legend-dot" data-d="3"></span> Tricky</span>
+        <span class="legend-item"><span class="legend-dot" data-d="4"></span> Hard</span>
+      </div>
+      <div class="solved-groups" id="solved-groups"></div>
+      <div class="word-grid" id="word-grid"></div>
+      <div class="selection-count" id="selection-count"></div>
+      <div class="lives-bar" id="lives-bar">
+        Mistakes remaining:
+        <span class="life-dot" id="life-1"></span>
+        <span class="life-dot" id="life-2"></span>
+        <span class="life-dot" id="life-3"></span>
+        <span class="life-dot" id="life-4"></span>
+      </div>
+      <div class="game-controls">
+        <button type="button" class="btn-shuffle" id="btn-shuffle">Shuffle</button>
+        <button type="button" class="btn-deselect" id="btn-deselect">Deselect All</button>
+        <button type="button" class="btn-submit" id="btn-submit" disabled>Submit</button>
+      </div>
+      <div id="game-over" class="game-over" style="display:none;"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How to Play Word Groups Puzzle</h2>
+      <p>Word Groups Puzzle challenges you to find four groups of four related words from a grid of 16. Each puzzle contains four hidden categories with four words each. The categories range from straightforward to tricky, often involving wordplay, double meanings, or pop culture references. Select four words you think belong together and submit your guess. If correct, the group is revealed. If wrong, you lose one of your four lives. Find all four groups before running out of guesses to win. Words can be deceptive — a word that seems to fit one category might actually belong to another.</p>
+      <div class="formula-box">
+        <h3>Quick Tips</h3>
+        <p><strong>Start easy:</strong> Look for the most obvious group first</p>
+        <p><strong>Watch for traps:</strong> Some words fit multiple categories</p>
+        <p><strong>Think laterally:</strong> Categories may involve prefixes, suffixes, or hidden words</p>
+        <p><strong>Use shuffle:</strong> Rearranging words can reveal new patterns</p>
+      </div>
+      <h2>Daily Puzzle vs Practice Mode</h2>
+      <p>The daily puzzle gives everyone the same puzzle each day, making it fun to compare with friends. Your daily streak tracks how many consecutive days you have solved the puzzle. Practice mode lets you play unlimited random puzzles to sharpen your skills. The game tracks your stats separately — games played, win percentage, current streak, and best streak. Share your results as an emoji grid without spoiling the answers, just like popular word games.</p>
+      <h2>Word Groups Puzzle Strategy Guide</h2>
+      <p>The key to solving word groups is to look beyond surface-level connections. Start by scanning all 16 words and mentally sorting them. If you spot an obvious group of four, lock that in first. The hardest category (difficulty 4) often involves wordplay — words that contain a hidden word, share a common prefix, or relate to a category in an unexpected way. When stuck, try the shuffle button to see words in a new arrangement. Experienced players often solve the easiest group first to narrow down possibilities. Remember: you only get four wrong guesses, so save risky guesses for when you have fewer words remaining and better odds.</p>
+      <h2>Why Word Puzzles Sharpen Your Mind</h2>
+      <p>Word group puzzles exercise lateral thinking, vocabulary, and pattern recognition — skills that transfer to everyday problem-solving. Research in cognitive science shows that categorization tasks strengthen neural pathways associated with flexible thinking. Unlike simple word searches, connection puzzles require you to consider multiple possible relationships simultaneously. Playing daily builds a habit of structured thinking that helps in work, study, and creative projects. The four-difficulty system ensures both casual and hardcore puzzle solvers find the right level of challenge.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <div class="stats-overlay" id="stats-overlay">
+    <div class="stats-modal">
+      <h3>Your Statistics</h3>
+      <div class="stats-grid">
+        <div class="stat-item"><div class="stat-value" id="stat-played">0</div><div class="stat-label">Played</div></div>
+        <div class="stat-item"><div class="stat-value" id="stat-win-pct">0</div><div class="stat-label">Win %</div></div>
+        <div class="stat-item"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">Current Streak</div></div>
+        <div class="stat-item"><div class="stat-value" id="stat-max-streak">0</div><div class="stat-label">Best Streak</div></div>
+      </div>
+      <div class="guess-distribution">
+        <h4>Mistake Distribution</h4>
+        <div id="dist-bars"></div>
+      </div>
+      <button type="button" class="stats-close" id="stats-close">Close</button>
+    </div>
+  </div>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    /* ===== BREADCRUMBS + SCHEMAS ===== */
+    var crumbs = [{name:'Home',url:'/'},{name:'Word Puzzle Games',url:'/games/'},{name:'Word Groups Puzzle'}];
+    TeamzTools.renderBreadcrumbs(crumbs);
+    TeamzTools.injectBreadcrumbSchema(crumbs);
+
+    var faqs = [
+      {q:'How does the daily puzzle work?',a:'A new puzzle is generated each day based on the date. Everyone gets the same daily puzzle, so you can compare results with friends without spoiling answers.'},
+      {q:'How many guesses do I get?',a:'You get 4 wrong guesses (mistakes). Correct guesses do not count against you. If you make 4 mistakes, the game ends and all remaining groups are revealed.'},
+      {q:'Can I play more than one puzzle per day?',a:'Yes! Switch to Practice Mode for unlimited random puzzles. Your daily puzzle stats and practice stats are both tracked.'},
+      {q:'How do the difficulty levels work?',a:'Each puzzle has 4 groups rated from easy (most obvious connections) to hard (tricky wordplay, double meanings, or obscure links). Harder groups appear with lower opacity when revealed.'},
+      {q:'How do I share my results?',a:'After completing a puzzle, click Share Results to copy an emoji grid showing your guesses without revealing the answers. Paste it anywhere — messaging apps, social media, etc.'},
+      {q:'Is my data private?',a:'Yes. Everything runs in your browser. Your stats are saved in localStorage on your device. No data is sent to any server.'},
+      {q:'What if I accidentally close the page during a daily puzzle?',a:'Your daily puzzle progress is saved automatically. When you return on the same day, your game state (solved groups, remaining lives) is restored.'}
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'games/word-groups-puzzle',
+      title: 'Word Groups Puzzle',
+      description: 'Sort 16 words into 4 secret categories. Daily puzzle plus unlimited practice mode.'
+    });
+
+    TeamzTools.renderRelatedTools([
+      {slug:'games/word-guess',name:'Word Guess',description:'Guess the 5-letter word in 6 tries with color-coded clues.'},
+      {slug:'games/letter-hive',name:'Letter Hive',description:'Make words from 7 letters. Center letter must be used.'},
+      {slug:'games/daily-word-grid',name:'Daily Word Grid',description:'Solve a quick 5x5 mini crossword with daily clues.'},
+      {slug:'games/thread-words',name:'Thread Words',description:'Find themed words hidden in a letter grid by tracing paths.'},
+      {slug:'tools/random-word-generator',name:'Random Word Generator',description:'Generate random words for games, writing prompts, and brainstorming.'},
+      {slug:'tools/password-generator',name:'Password Generator',description:'Create strong random passwords with customizable length and characters.'}
+    ]);
+
+    /* ===== PUZZLE DATA (60+ puzzles) ===== */
+    var PUZZLES = [
+      {groups:[{category:"Types of Bread",words:["SOURDOUGH","PUMPERNICKEL","BRIOCHE","FOCACCIA"],difficulty:1},{category:"Chess Pieces",words:["KNIGHT","BISHOP","ROOK","PAWN"],difficulty:2},{category:"___ Light",words:["FLASH","MOON","SPOT","HIGH"],difficulty:3},{category:"Words Containing a Fish",words:["TROUT","BASSOON","SWORDFISH","CARBASS"],difficulty:4}]},
+      {groups:[{category:"Breakfast Foods",words:["WAFFLE","PANCAKE","OMELETTE","CROISSANT"],difficulty:1},{category:"Card Games",words:["POKER","BRIDGE","SOLITAIRE","RUMMY"],difficulty:2},{category:"Things That Are Golden",words:["RETRIEVER","GATE","RATIO","HOUR"],difficulty:3},{category:"Hidden Colors",words:["BLUEGRASS","ORANGUTAN","PINKY","LAVENDER"],difficulty:4}]},
+      {groups:[{category:"Planets",words:["MARS","VENUS","SATURN","NEPTUNE"],difficulty:1},{category:"Musical Instruments",words:["CELLO","HARP","OBOE","TUBA"],difficulty:2},{category:"Double Letters",words:["COFFEE","BALLOON","BROCCOLI","COMMITTEE"],difficulty:3},{category:"___ Run",words:["HOME","BULL","DRY","LONG"],difficulty:4}]},
+      {groups:[{category:"Winter Sports",words:["SKIING","HOCKEY","CURLING","BOBSLED"],difficulty:1},{category:"Types of Dance",words:["WALTZ","TANGO","SALSA","FOXTROT"],difficulty:2},{category:"Famous Paintings",words:["STARRY","MONA","SCREAM","PEARL"],difficulty:3},{category:"Anagram of an Animal",words:["FLOW","LAMP","REED","TACO"],difficulty:4}]},
+      {groups:[{category:"Coffee Drinks",words:["LATTE","ESPRESSO","MOCHA","CAPPUCCINO"],difficulty:1},{category:"Math Terms",words:["RADIUS","COSINE","MATRIX","VECTOR"],difficulty:2},{category:"Tom ___",words:["CRUISE","HANKS","SAWYER","HARDY"],difficulty:3},{category:"Words Without Vowels in a Row",words:["RHYTHM","LYNCH","GLYPH","CRYPT"],difficulty:4}]},
+      {groups:[{category:"Fruits",words:["MANGO","PAPAYA","GUAVA","LYCHEE"],difficulty:1},{category:"Types of Hat",words:["FEDORA","BERET","BEANIE","TURBAN"],difficulty:2},{category:"Famous Johns",words:["LENNON","WICK","WAYNE","LEGEND"],difficulty:3},{category:"___ Stone",words:["KEY","MILE","LIME","CORNER"],difficulty:4}]},
+      {groups:[{category:"Dog Breeds",words:["HUSKY","POODLE","BEAGLE","CORGI"],difficulty:1},{category:"Cloud Types",words:["CIRRUS","STRATUS","CUMULUS","NIMBUS"],difficulty:2},{category:"Bond Movies (One Word)",words:["GOLDFINGER","SKYFALL","THUNDERBALL","SPECTRE"],difficulty:3},{category:"___ Board",words:["SKATE","CARD","CUP","DART"],difficulty:4}]},
+      {groups:[{category:"Vegetables",words:["SPINACH","ZUCCHINI","ARTICHOKE","BROCCOLI"],difficulty:1},{category:"Greek Gods",words:["ZEUS","APOLLO","HERMES","ATHENA"],difficulty:2},{category:"Things in a Wallet",words:["CASH","LICENSE","RECEIPT","PHOTO"],difficulty:3},{category:"Starts with a Body Part",words:["ARMADILLO","KNEECAP","ELBOWROOM","SHINDIG"],difficulty:4}]},
+      {groups:[{category:"Pasta Shapes",words:["PENNE","FUSILLI","RIGATONI","FARFALLE"],difficulty:1},{category:"NBA Teams",words:["LAKERS","CELTICS","WARRIORS","RAPTORS"],difficulty:2},{category:"Things That Spin",words:["TORNADO","RECORD","WHEEL","TOP"],difficulty:3},{category:"Hidden Countries",words:["CUBAN","GERMAN","IRAQI","THAI"],difficulty:4}]},
+      {groups:[{category:"Berries",words:["BLUEBERRY","RASPBERRY","CRANBERRY","BLACKBERRY"],difficulty:1},{category:"Shakespeare Plays",words:["HAMLET","OTHELLO","TEMPEST","MACBETH"],difficulty:2},{category:"Slang for Money",words:["DOUGH","BREAD","CHEDDAR","CABBAGE"],difficulty:3},{category:"Words that Sound Like Letters",words:["SEA","QUEUE","ARE","WHY"],difficulty:4}]},
+      {groups:[{category:"Ocean Creatures",words:["DOLPHIN","OCTOPUS","SEAHORSE","JELLYFISH"],difficulty:1},{category:"Types of Rock",words:["GRANITE","MARBLE","SLATE","BASALT"],difficulty:2},{category:"Mike ___",words:["TYSON","JORDAN","WAZOWSKI","MYERS"],difficulty:3},{category:"___ House",words:["WARE","FIRE","POWER","GREEN"],difficulty:4}]},
+      {groups:[{category:"Citrus Fruits",words:["LEMON","LIME","GRAPEFRUIT","TANGERINE"],difficulty:1},{category:"Martial Arts",words:["KARATE","JUDO","TAEKWONDO","AIKIDO"],difficulty:2},{category:"Things with Keys",words:["PIANO","KEYBOARD","MAP","LOCK"],difficulty:3},{category:"___ Drop",words:["TEAR","RAIN","BACK","SNOW"],difficulty:4}]},
+      {groups:[{category:"Desserts",words:["TIRAMISU","BROWNIE","CHEESECAKE","ECLAIR"],difficulty:1},{category:"Gemstones",words:["RUBY","EMERALD","SAPPHIRE","TOPAZ"],difficulty:2},{category:"Things That Have Rings",words:["SATURN","ONION","PHONE","TREE"],difficulty:3},{category:"Jack ___",words:["POT","HAMMER","KNIFE","RABBIT"],difficulty:4}]},
+      {groups:[{category:"Garden Flowers",words:["TULIP","DAISY","ORCHID","SUNFLOWER"],difficulty:1},{category:"Currencies",words:["FRANC","PESO","RUPEE","KRONA"],difficulty:2},{category:"Things That Pop",words:["CORN","BUBBLE","QUIZ","CULTURE"],difficulty:3},{category:"Silent Letters",words:["KNIGHT","PSALM","GNOME","WRECK"],difficulty:4}]},
+      {groups:[{category:"Cheeses",words:["CHEDDAR","BRIE","GOUDA","FETA"],difficulty:1},{category:"Constellations",words:["ORION","CASSIOPEIA","SCORPIUS","LYRA"],difficulty:2},{category:"Things You Catch",words:["BALL","COLD","FISH","TRAIN"],difficulty:3},{category:"___ King",words:["LION","BURGER","SMOKE","MARTIN"],difficulty:4}]},
+      {groups:[{category:"Spices",words:["CINNAMON","TURMERIC","PAPRIKA","CUMIN"],difficulty:1},{category:"Types of Shoe",words:["LOAFER","SANDAL","STILETTO","MOCCASIN"],difficulty:2},{category:"Words Meaning Big",words:["MASSIVE","COLOSSAL","MAMMOTH","GIGANTIC"],difficulty:3},{category:"___Scape",words:["LAND","SEA","MOON","CITY"],difficulty:4}]},
+      {groups:[{category:"Nuts",words:["ALMOND","CASHEW","WALNUT","PISTACHIO"],difficulty:1},{category:"Units of Measurement",words:["GALLON","LEAGUE","FATHOM","FURLONG"],difficulty:2},{category:"Things with Tails",words:["COMET","COAT","FAIRY","PONY"],difficulty:3},{category:"Homophones of Numbers",words:["WON","ATE","FORE","TOO"],difficulty:4}]},
+      {groups:[{category:"Asian Cuisines",words:["SUSHI","PHOBO","DIMSUM","CURRY"],difficulty:1},{category:"Norse Gods",words:["ODIN","THOR","LOKI","FREYA"],difficulty:2},{category:"Things That Are Pitch",words:["BLACK","DARK","FORK","PERFECT"],difficulty:3},{category:"Compound Words with Fire",words:["WORK","FLY","PLACE","FIGHTER"],difficulty:4}]},
+      {groups:[{category:"Herbs",words:["BASIL","THYME","OREGANO","ROSEMARY"],difficulty:1},{category:"Types of Bridge",words:["ARCH","SUSPENSION","DRAWBRIDGE","CANTILEVER"],difficulty:2},{category:"Things with Crowns",words:["KING","TOOTH","ROYAL","BOWLING"],difficulty:3},{category:"Palindromes",words:["KAYAK","RADAR","LEVEL","CIVIC"],difficulty:4}]},
+      {groups:[{category:"Cat Breeds",words:["PERSIAN","SIAMESE","BENGAL","SPHYNX"],difficulty:1},{category:"Classical Composers",words:["MOZART","BEETHOVEN","CHOPIN","VIVALDI"],difficulty:2},{category:"Things with Bark",words:["DOG","TREE","SHARK","COMMAND"],difficulty:3},{category:"Words within THERMOSTAT",words:["THERM","MOST","HERO","STAT"],difficulty:4}]},
+      {groups:[{category:"Sauces",words:["KETCHUP","MUSTARD","MAYO","SRIRACHA"],difficulty:1},{category:"Elements",words:["NEON","ARGON","HELIUM","XENON"],difficulty:2},{category:"Things That Go Viral",words:["VIDEO","MEME","TWEET","DANCE"],difficulty:3},{category:"State Abbreviations as Words",words:["MAIN","IDEA","OHIO","MINI"],difficulty:4}]},
+      {groups:[{category:"Tropical Fruits",words:["COCONUT","PINEAPPLE","DRAGONFRUIT","PASSIONFRUIT"],difficulty:1},{category:"Ancient Civilizations",words:["AZTEC","MAYAN","ROMAN","INCA"],difficulty:2},{category:"Things That Roar",words:["LION","ENGINE","CROWD","FIRE"],difficulty:3},{category:"Silent B Words",words:["LAMB","BOMB","CLIMB","THUMB"],difficulty:4}]},
+      {groups:[{category:"Pizza Toppings",words:["PEPPERONI","MUSHROOM","OLIVE","ANCHOVY"],difficulty:1},{category:"Dances",words:["BALLET","POLKA","RUMBA","SAMBA"],difficulty:2},{category:"Things That Click",words:["MOUSE","PEN","TONGUE","CAMERA"],difficulty:3},{category:"___ Way",words:["HIGH","RUN","STAIR","HALL"],difficulty:4}]},
+      {groups:[{category:"Ice Cream Flavors",words:["VANILLA","PISTACHIO","STRAWBERRY","CARAMEL"],difficulty:1},{category:"Fabrics",words:["SILK","DENIM","VELVET","COTTON"],difficulty:2},{category:"Things with Wings",words:["AIRPLANE","BUTTERFLY","BUILDING","STAGE"],difficulty:3},{category:"Words Ending in -IGHT",words:["KNIGHT","FREIGHT","BLIGHT","TWILIGHT"],difficulty:4}]},
+      {groups:[{category:"Root Vegetables",words:["CARROT","TURNIP","RADISH","PARSNIP"],difficulty:1},{category:"Dances from Latin America",words:["CUMBIA","MERENGUE","BACHATA","REGGAETON"],difficulty:2},{category:"Things with Necks",words:["BOTTLE","GUITAR","SWAN","WOODS"],difficulty:3},{category:"Hidden Tree Names",words:["MAPLE","OAKLEY","ELMIRA","ASPEN"],difficulty:4}]},
+      {groups:[{category:"Soup Types",words:["MINESTRONE","CHOWDER","BISQUE","GUMBO"],difficulty:1},{category:"Jazz Musicians",words:["COLTRANE","ELLINGTON","GILLESPIE","MONK"],difficulty:2},{category:"Things with Caps",words:["BOTTLE","MUSHROOM","KNEE","MARKET"],difficulty:3},{category:"Double Meaning: Music and Food",words:["JAM","BEAT","ROLL","TOAST"],difficulty:4}]},
+      {groups:[{category:"Salad Greens",words:["ARUGULA","KALE","ROMAINE","WATERCRESS"],difficulty:1},{category:"Wonders of the World",words:["COLOSSEUM","PYRAMID","WALL","PETRA"],difficulty:2},{category:"Things with Hands",words:["CLOCK","POKER","DECK","SECOND"],difficulty:3},{category:"Words That Are Also Colors When Prefixed",words:["BERRY","BELL","STONE","BIRD"],difficulty:4}]},
+      {groups:[{category:"Cocktails",words:["MARGARITA","MOJITO","MARTINI","DAIQUIRI"],difficulty:1},{category:"Dinosaurs",words:["TREX","RAPTOR","STEGO","BRONTO"],difficulty:2},{category:"Things with Scales",words:["FISH","JUSTICE","MUSIC","MAP"],difficulty:3},{category:"Hidden Gems (Contain a Gem)",words:["TOPAZ","JADED","PEARLY","OPALINE"],difficulty:4}]},
+      {groups:[{category:"Grains",words:["QUINOA","BARLEY","MILLET","BULGUR"],difficulty:1},{category:"Types of Poem",words:["SONNET","HAIKU","LIMERICK","BALLAD"],difficulty:2},{category:"Things That Bloom",words:["FLOWER","ALGAE","YOUTH","ROMANCE"],difficulty:3},{category:"Contronyms (Self-Antonyms)",words:["CLEAVE","DUST","SANCTION","BUCKLE"],difficulty:4}]},
+      {groups:[{category:"Mushroom Types",words:["SHIITAKE","PORTOBELLO","CHANTERELLE","TRUFFLE"],difficulty:1},{category:"Olympic Sports",words:["FENCING","ROWING","ARCHERY","JAVELIN"],difficulty:2},{category:"Things with Banks",words:["RIVER","BLOOD","SNOW","PIGGY"],difficulty:3},{category:"Words Spelled the Same Backwards",words:["MADAM","ROTOR","REFER","TENET"],difficulty:4}]},
+      {groups:[{category:"Tea Types",words:["CHAMOMILE","OOLONG","MATCHA","ROOIBOS"],difficulty:1},{category:"Types of Lock",words:["DEAD","COMBINATION","PAD","CANAL"],difficulty:2},{category:"Things with Beds",words:["RIVER","FLOWER","HOSPITAL","OYSTER"],difficulty:3},{category:"___ Ball",words:["BASE","SNOW","EYE","FIRE"],difficulty:4}]},
+      {groups:[{category:"Leafy Greens",words:["SPINACH","CHARD","ENDIVE","COLLARD"],difficulty:1},{category:"Wind Instruments",words:["CLARINET","BASSOON","PICCOLO","SAXOPHONE"],difficulty:2},{category:"Things with Shells",words:["TURTLE","NUT","COMPANY","SHOCK"],difficulty:3},{category:"Words from Japanese",words:["TSUNAMI","KARAOKE","EMOJI","TOFU"],difficulty:4}]},
+      {groups:[{category:"Sandwiches",words:["CLUB","REUBEN","PANINI","GYRO"],difficulty:1},{category:"Board Games",words:["MONOPOLY","CLUE","RISK","CATAN"],difficulty:2},{category:"Things That Strike",words:["LIGHTNING","MATCH","BOWLING","CLOCK"],difficulty:3},{category:"False Friends (Not What They Sound)",words:["CARPET","FABRIC","ACTUAL","BRAVE"],difficulty:4}]},
+      {groups:[{category:"Noodle Dishes",words:["RAMEN","UDON","LAKSA","PESTO"],difficulty:1},{category:"Poker Terms",words:["FLUSH","FOLD","BLIND","RIVER"],difficulty:2},{category:"Things with Teeth",words:["COMB","GEAR","SAW","ZIPPER"],difficulty:3},{category:"___ Man",words:["SPIDER","IRON","SAND","SNOW"],difficulty:4}]},
+      {groups:[{category:"Legumes",words:["LENTIL","CHICKPEA","KIDNEY","EDAMAME"],difficulty:1},{category:"Mythical Creatures",words:["GRIFFIN","PHOENIX","HYDRA","KRAKEN"],difficulty:2},{category:"Things with Bridges",words:["NOSE","DENTAL","CARD","CAPTAIN"],difficulty:3},{category:"Words That Become New Words Reversed",words:["LIVE","STAR","LOOP","DRAWER"],difficulty:4}]},
+      {groups:[{category:"Rice Dishes",words:["RISOTTO","PAELLA","BIRYANI","JAMBALAYA"],difficulty:1},{category:"Horror Movie Villains",words:["FREDDY","JASON","LEATHERFACE","PENNYWISE"],difficulty:2},{category:"Things That Fly",words:["KITE","RUMOR","TIME","FLAG"],difficulty:3},{category:"Animal + Sound Combos",words:["CATCALL","FOXHOUND","COWBELL","DOGWATCH"],difficulty:4}]},
+      {groups:[{category:"Smoothie Ingredients",words:["BANANA","SPINACH","BLUEBERRY","YOGURT"],difficulty:1},{category:"Stephen King Novels",words:["CARRIE","MISERY","CUJO","CHRISTINE"],difficulty:2},{category:"Things with Forks",words:["ROAD","TUNING","DINNER","PITCH"],difficulty:3},{category:"Occupations Hidden in Words",words:["DOCTOR","TEACHER","PAINTER","BUTCHER"],difficulty:4}]},
+      {groups:[{category:"Dumplings",words:["GYOZA","PIEROGI","RAVIOLI","WONTON"],difficulty:1},{category:"Famous Robots",words:["WALL","DATA","OPTIMUS","BENDER"],difficulty:2},{category:"Things with Plates",words:["LICENSE","TECTONIC","HOME","DINNER"],difficulty:3},{category:"___ Line",words:["PUNCH","BOTTOM","PICK","SIDE"],difficulty:4}]},
+      {groups:[{category:"Flatbreads",words:["NAAN","PITA","TORTILLA","CHAPATI"],difficulty:1},{category:"Types of Whale",words:["BLUE","HUMPBACK","BELUGA","ORCA"],difficulty:2},{category:"Things That Break",words:["ICE","DAWN","RECORD","NEWS"],difficulty:3},{category:"Chemical Symbol Words",words:["IRON","GOLD","SILVER","TIN"],difficulty:4}]},
+      {groups:[{category:"Spreads",words:["HUMMUS","GUACAMOLE","PESTO","TZATZIKI"],difficulty:1},{category:"Famous Ships",words:["TITANIC","MAYFLOWER","BEAGLE","ENTERPRISE"],difficulty:2},{category:"Things with Floors",words:["DANCE","OCEAN","GROUND","KILLING"],difficulty:3},{category:"Words from Arabic",words:["ALGEBRA","COFFEE","MAGAZINE","ZERO"],difficulty:4}]},
+      {groups:[{category:"BBQ Foods",words:["BRISKET","RIBS","SAUSAGE","CHICKEN"],difficulty:1},{category:"Video Game Characters",words:["MARIO","ZELDA","SONIC","PIKACHU"],difficulty:2},{category:"Things That Are Sharp",words:["KNIFE","CHEESE","MIND","TURN"],difficulty:3},{category:"Months Hidden in Words",words:["MAJORITY","PEACH","DECIMAL","DANGER"],difficulty:4}]},
+      {groups:[{category:"Street Food",words:["TACO","FALAFEL","KEBAB","CREPE"],difficulty:1},{category:"Rivers",words:["NILE","AMAZON","DANUBE","THAMES"],difficulty:2},{category:"Things with Springs",words:["MATTRESS","WATER","SEASON","ROLL"],difficulty:3},{category:"___ Out",words:["BLACK","CHECK","FALL","HAND"],difficulty:4}]},
+      {groups:[{category:"Baked Goods",words:["SCONE","MUFFIN","CROISSANT","PRETZEL"],difficulty:1},{category:"Capital Cities",words:["CAIRO","LIMA","OSLO","BAKU"],difficulty:2},{category:"Things with Drums",words:["BAND","EAR","STEEL","MAJOR"],difficulty:3},{category:"Words with All 5 Vowels",words:["EDUCATION","SEQUOIA","DIALOGUE","EQUATION"],difficulty:4}]},
+      {groups:[{category:"Dim Sum Items",words:["DUMPLING","SPRING","SPARERIBS","CUSTARD"],difficulty:1},{category:"Famous Architects",words:["GAUDI","WRIGHT","HADID","PIANO"],difficulty:2},{category:"Things That Sink",words:["SHIP","KITCHEN","HEART","FEELING"],difficulty:3},{category:"Words from Hindi",words:["JUNGLE","SHAMPOO","THUG","VERANDA"],difficulty:4}]},
+      {groups:[{category:"Candy Types",words:["TAFFY","TRUFFLE","CARAMEL","NOUGAT"],difficulty:1},{category:"Types of Triangle",words:["SCALENE","ISOSCELES","EQUILATERAL","RIGHT"],difficulty:2},{category:"Things That Leak",words:["FAUCET","NEWS","ROOF","SECRET"],difficulty:3},{category:"Silent K Words",words:["KNOW","KNOCK","KNIT","KNIFE"],difficulty:4}]},
+      {groups:[{category:"Cookie Types",words:["SHORTBREAD","MACAROON","BISCOTTI","SNICKERDOODLE"],difficulty:1},{category:"Types of Government",words:["DEMOCRACY","MONARCHY","REPUBLIC","OLIGARCHY"],difficulty:2},{category:"Things with Roots",words:["TREE","SQUARE","GRASS","HAIR"],difficulty:3},{category:"___ Work",words:["FRAME","NET","TEAM","GROUND"],difficulty:4}]},
+      {groups:[{category:"Cheese Types",words:["GRUYERE","MANCHEGO","HALLOUMI","CAMEMBERT"],difficulty:1},{category:"Greek Letters",words:["ALPHA","SIGMA","OMEGA","DELTA"],difficulty:2},{category:"Things with Lanes",words:["BOWLING","HIGHWAY","SWIM","MEMORY"],difficulty:3},{category:"Movie Genres as Emotions",words:["HORROR","ROMANCE","DRAMA","THRILLER"],difficulty:4}]},
+      {groups:[{category:"Dips",words:["SALSA","RANCH","QUESO","AIOLI"],difficulty:1},{category:"Types of Energy",words:["SOLAR","WIND","NUCLEAR","THERMAL"],difficulty:2},{category:"Things That Roll",words:["DICE","THUNDER","CREDIT","CARPET"],difficulty:3},{category:"Words Containing Animals",words:["CATALOG","DONATE","PIGEON","COWBOY"],difficulty:4}]},
+      {groups:[{category:"Breakfast Cereals",words:["GRANOLA","PORRIDGE","MUESLI","CORNFLAKES"],difficulty:1},{category:"Astronomy Terms",words:["NEBULA","PULSAR","QUASAR","DWARF"],difficulty:2},{category:"Things That Crack",words:["EGG","JOKE","CODE","DAWN"],difficulty:3},{category:"___ Head",words:["DEAD","FIGURE","HAMMER","BALD"],difficulty:4}]},
+      {groups:[{category:"Fried Foods",words:["TEMPURA","SAMOSA","CHURRO","DONUT"],difficulty:1},{category:"Types of Storm",words:["BLIZZARD","TYPHOON","MONSOON","SQUALL"],difficulty:2},{category:"Things with Waves",words:["OCEAN","RADIO","HEAT","HAIR"],difficulty:3},{category:"Words That Are Longer Abbreviated",words:["WWW","SCUBA","ASAP","RSVP"],difficulty:4}]},
+      {groups:[{category:"Sushi Types",words:["NIGIRI","MAKI","SASHIMI","TEMAKI"],difficulty:1},{category:"Famous Detectives",words:["HOLMES","POIROT","MARPLE","COLUMBO"],difficulty:2},{category:"Things with Chains",words:["FOOD","BIKE","SUPPLY","MOUNTAIN"],difficulty:3},{category:"___ Point",words:["GUN","CHECK","VIEW","NEEDLE"],difficulty:4}]},
+      {groups:[{category:"Curry Types",words:["TIKKA","KORMA","VINDALOO","MASSAMAN"],difficulty:1},{category:"Types of Cloud",words:["CIRRUS","NIMBUS","STRATUS","CUMULUS"],difficulty:2},{category:"Things with Strings",words:["GUITAR","PUPPET","KITE","HEART"],difficulty:3},{category:"Words from French",words:["BOUTIQUE","CLICHE","GENRE","FIANCE"],difficulty:4}]},
+      {groups:[{category:"Jerky Flavors",words:["TERIYAKI","PEPPERED","SMOKED","ORIGINAL"],difficulty:1},{category:"Types of Map",words:["ROAD","TOPO","HEAT","MIND"],difficulty:2},{category:"Things with Eyes",words:["NEEDLE","HURRICANE","POTATO","STORM"],difficulty:3},{category:"___ Water",words:["BREAK","FLOOD","RAIN","WHITE"],difficulty:4}]},
+      {groups:[{category:"Steak Cuts",words:["RIBEYE","SIRLOIN","TENDERLOIN","STRIP"],difficulty:1},{category:"Famous Painters",words:["MONET","PICASSO","WARHOL","REMBRANDT"],difficulty:2},{category:"Things That Bloom",words:["FLOWER","ALGAE","LOVE","BUSINESS"],difficulty:3},{category:"Words Containing Drinks",words:["BEWARE","WINERY","TEASPOON","RUMBLE"],difficulty:4}]},
+      {groups:[{category:"Roasted Vegetables",words:["CAULIFLOWER","ASPARAGUS","BRUSSELS","EGGPLANT"],difficulty:1},{category:"Philosophers",words:["PLATO","SOCRATES","ARISTOTLE","NIETZSCHE"],difficulty:2},{category:"Things with Cups",words:["WORLD","BUTTER","TEA","SUCTION"],difficulty:3},{category:"___ Fly",words:["MAY","BAR","BUTTER","FIRE"],difficulty:4}]},
+      {groups:[{category:"Stir Fry Ingredients",words:["TOFU","GINGER","SESAME","BAMBOO"],difficulty:1},{category:"Famous Walls",words:["BERLIN","GREAT","WAILING","HADRIAN"],difficulty:2},{category:"Things with Hoods",words:["ROBIN","RIDING","CAR","NEIGHBOR"],difficulty:3},{category:"Words Ending in -TION Not Nouns",words:["MENTION","QUESTION","CAUTION","POSITION"],difficulty:4}]},
+      {groups:[{category:"Picnic Foods",words:["SANDWICH","WATERMELON","LEMONADE","COLESLAW"],difficulty:1},{category:"Types of Pen",words:["FOUNTAIN","BALLPOINT","MARKER","QUILL"],difficulty:2},{category:"Things with Belts",words:["ASTEROID","KARATE","RUST","CONVEYOR"],difficulty:3},{category:"___ Box",words:["SAND","MAIL","JUICE","TOOL"],difficulty:4}]},
+      {groups:[{category:"Comfort Foods",words:["MACARONI","LASAGNA","CASSEROLE","MEATLOAF"],difficulty:1},{category:"Legendary Swords",words:["EXCALIBUR","DURANDAL","ANDURIL","MASAMUNE"],difficulty:2},{category:"Things That Fold",words:["PAPER","PROTEIN","POKER","CLOTHES"],difficulty:3},{category:"Hidden Musical Instruments",words:["TRIUMPH","TOBOGGAN","DRUMSTICK","TABLATURE"],difficulty:4}]},
+      {groups:[{category:"Breakfast Sides",words:["BACON","HASHBROWN","TOAST","SAUSAGE"],difficulty:1},{category:"Famous Gardens",words:["VERSAILLES","BABYLON","KENSINGTON","BUTCHART"],difficulty:2},{category:"Things with Bars",words:["CHOCOLATE","PRISON","MUSIC","CROW"],difficulty:3},{category:"___ Ship",words:["FLAG","RELATION","CHAMPION","HARD"],difficulty:4}]},
+      {groups:[{category:"Deli Meats",words:["SALAMI","PROSCIUTTO","PASTRAMI","BOLOGNA"],difficulty:1},{category:"Famous Libraries",words:["CONGRESS","ALEXANDRIA","BODLEIAN","VATICAN"],difficulty:2},{category:"Things with Patches",words:["EYE","PUMPKIN","SOFTWARE","CABBAGE"],difficulty:3},{category:"Words That Mean Both Hello and Goodbye",words:["CIAO","ALOHA","SHALOM","SALUTE"],difficulty:4}]},
+      {groups:[{category:"Marvel Heroes",words:["THOR","HULK","WIDOW","PANTHER"],difficulty:1},{category:"Types of Pasta",words:["ORZO","LINGUINE","GNOCCHI","MANICOTTI"],difficulty:2},{category:"Things with Rings",words:["BOXING","CIRCUS","PHONE","TREE"],difficulty:3},{category:"___ Pool",words:["CAR","DEAD","SWIMMING","WHIRL"],difficulty:4}]},
+      {groups:[{category:"Social Media Platforms",words:["TWITTER","INSTAGRAM","TIKTOK","SNAPCHAT"],difficulty:1},{category:"Nobel Prize Categories",words:["PHYSICS","CHEMISTRY","PEACE","LITERATURE"],difficulty:2},{category:"Things That Stick",words:["GLUE","MEMORY","LANDING","JOKE"],difficulty:3},{category:"Words with Double O",words:["VOODOO","BAMBOO","TABOO","SHAMPOO"],difficulty:4}]},
+      {groups:[{category:"Harry Potter Houses",words:["GRYFFINDOR","SLYTHERIN","HUFFLEPUFF","RAVENCLAW"],difficulty:1},{category:"Types of Volcano",words:["SHIELD","COMPOSITE","CINDER","CALDERA"],difficulty:2},{category:"Things That Bounce",words:["BALL","CHECK","EMAIL","IDEA"],difficulty:3},{category:"___ Fish",words:["SWORD","CAT","BLOW","STAR"],difficulty:4}]},
+      {groups:[{category:"Pixar Movies",words:["BRAVE","COCO","SOUL","LUCA"],difficulty:1},{category:"Keyboard Shortcuts",words:["COPY","PASTE","UNDO","SAVE"],difficulty:2},{category:"Things with Trunks",words:["ELEPHANT","CAR","TREE","SWIM"],difficulty:3},{category:"Words Ending in -ATE",words:["CLIMATE","PIRATE","ULTIMATE","SENATE"],difficulty:4}]},
+      {groups:[{category:"Zodiac Signs",words:["ARIES","GEMINI","SCORPIO","PISCES"],difficulty:1},{category:"Types of Coffee Bean",words:["ARABICA","ROBUSTA","LIBERICA","EXCELSA"],difficulty:2},{category:"Things That Crash",words:["WAVE","MARKET","PARTY","COMPUTER"],difficulty:3},{category:"Hidden Birds",words:["SPARROW","CROWBAR","SWALLOW","CARDINAL"],difficulty:4}]},
+      {groups:[{category:"Disney Princesses",words:["MULAN","MOANA","ELSA","TIANA"],difficulty:1},{category:"Programming Languages",words:["PYTHON","RUBY","SWIFT","RUST"],difficulty:2},{category:"Things with Chains",words:["DAISY","ANCHOR","FOOD","KEY"],difficulty:3},{category:"___ Horse",words:["DARK","SEA","CLOTHES","TROJAN"],difficulty:4}]},
+      {groups:[{category:"Superhero Powers",words:["FLIGHT","STRENGTH","SPEED","INVISIBILITY"],difficulty:1},{category:"Renaissance Artists",words:["RAPHAEL","DONATELLO","MICHELANGELO","BOTTICELLI"],difficulty:2},{category:"Things That Run",words:["NOSE","STOCKING","BATTERY","CANDIDATE"],difficulty:3},{category:"Words Starting with SUN",words:["SUNFLOWER","SUNDAY","SUNBURN","SUNSET"],difficulty:4}]},
+      {groups:[{category:"Streaming Services",words:["NETFLIX","DISNEY","HULU","PARAMOUNT"],difficulty:1},{category:"Logical Fallacies",words:["STRAWMAN","SLIPPERY","BANDWAGON","HASTY"],difficulty:2},{category:"Things with Covers",words:["BOOK","ALBUM","PILLOW","UNDERCOVER"],difficulty:3},{category:"___ Cake",words:["PAN","CUP","CHEESE","SHORT"],difficulty:4}]},
+      {groups:[{category:"Taylor Swift Albums",words:["FOLKLORE","MIDNIGHTS","REPUTATION","EVERMORE"],difficulty:1},{category:"Types of Radiation",words:["GAMMA","ALPHA","BETA","ULTRA"],difficulty:2},{category:"Things with Stems",words:["FLOWER","WINE","BRAIN","CHERRY"],difficulty:3},{category:"Words Containing RAIN",words:["BRAIN","TRAIN","DRAIN","TERRAIN"],difficulty:4}]},
+      {groups:[{category:"Star Wars Characters",words:["YODA","VADER","LEIA","CHEWBACCA"],difficulty:1},{category:"Logical Connectives",words:["AND","OR","NOT","IF"],difficulty:2},{category:"Things That Are Blue",words:["SKY","MOOD","BLOOD","CHEESE"],difficulty:3},{category:"___ Berry",words:["BLACK","BLUE","STRAW","GOOSE"],difficulty:4}]},
+      {groups:[{category:"Friends Characters",words:["ROSS","JOEY","PHOEBE","CHANDLER"],difficulty:1},{category:"Types of Wave",words:["SOUND","HEAT","RADIO","SHOCK"],difficulty:2},{category:"Things with Buttons",words:["SHIRT","BELLY","ELEVATOR","SNOOZE"],difficulty:3},{category:"Hidden Fruits in Words",words:["APPLIANCE","PEACHING","GRAPEVINE","PLUMBER"],difficulty:4}]},
+      {groups:[{category:"Beatles Songs",words:["YESTERDAY","HELP","BLACKBIRD","IMAGINE"],difficulty:1},{category:"Subatomic Particles",words:["QUARK","ELECTRON","PROTON","NEUTRINO"],difficulty:2},{category:"Things That are FLAT",words:["EARTH","TIRE","NOTE","IRON"],difficulty:3},{category:"___ Dog",words:["HOT","BULL","CORN","UNDER"],difficulty:4}]},
+      {groups:[{category:"Game of Thrones Houses",words:["STARK","LANNISTER","TARGARYEN","BARATHEON"],difficulty:1},{category:"Types of Lightning",words:["BALL","SHEET","BOLT","FORKED"],difficulty:2},{category:"Things with Feet",words:["TABLE","SQUARE","CROW","CLUB"],difficulty:3},{category:"Words from Spanish",words:["CANYON","MOSQUITO","TORNADO","PLAZA"],difficulty:4}]},
+      {groups:[{category:"The Office Characters",words:["MICHAEL","DWIGHT","JIM","KEVIN"],difficulty:1},{category:"Periodic Table Groups",words:["NOBLE","ALKALI","HALOGEN","METAL"],difficulty:2},{category:"Things That Float",words:["BOAT","IDEA","ROOT","PARADE"],difficulty:3},{category:"___ House",words:["GREEN","DOG","PLAY","TOWN"],difficulty:4}]},
+      {groups:[{category:"FIFA World Cup Host Countries",words:["BRAZIL","QATAR","RUSSIA","GERMANY"],difficulty:1},{category:"Types of Memory",words:["FLASH","MUSCLE","SHORT","LONG"],difficulty:2},{category:"Things That Open",words:["DOOR","MIND","WOUND","ACCOUNT"],difficulty:3},{category:"Words Containing ICE",words:["JUSTICE","PRACTICE","SERVICE","NOTICE"],difficulty:4}]},
+      {groups:[{category:"Fast Food Chains",words:["MCDONALDS","WENDY","CHIPOTLE","SUBWAY"],difficulty:1},{category:"Blood Types",words:["POSITIVE","NEGATIVE","UNIVERSAL","RARE"],difficulty:2},{category:"Things with Corners",words:["BOXING","STREET","TABLE","EYE"],difficulty:3},{category:"___ Bone",words:["BACK","WISH","TROM","JAW"],difficulty:4}]},
+      {groups:[{category:"Tennis Grand Slams",words:["WIMBLEDON","AUSTRALIAN","FRENCH","USOPEN"],difficulty:1},{category:"Blockchain Terms",words:["MINING","TOKEN","LEDGER","WALLET"],difficulty:2},{category:"Things with Spots",words:["LEOPARD","PARKING","TROUBLE","BLIND"],difficulty:3},{category:"Words That Rhyme with NIGHT",words:["FLIGHT","SIGHT","MIGHT","BRIGHT"],difficulty:4}]},
+      {groups:[{category:"Seinfeld Characters",words:["JERRY","GEORGE","ELAINE","KRAMER"],difficulty:1},{category:"Cloud Computing Terms",words:["SERVER","DOCKER","LAMBDA","CLUSTER"],difficulty:2},{category:"Things with POINTS",words:["BULLET","POWER","TALKING","FOCAL"],difficulty:3},{category:"___ Door",words:["TRAP","BACK","NEXT","STAGE"],difficulty:4}]},
+      {groups:[{category:"Batman Villains",words:["JOKER","RIDDLER","PENGUIN","SCARECROW"],difficulty:1},{category:"Types of Number",words:["PRIME","NATURAL","RATIONAL","COMPLEX"],difficulty:2},{category:"Things That Burn",words:["FIRE","BRIDGE","CALORIES","RUBBER"],difficulty:3},{category:"Words with OVER",words:["OVERDUE","OVERCOME","OVERFLOW","OVERLOOK"],difficulty:4}]},
+      {groups:[{category:"Stranger Things Characters",words:["ELEVEN","HOPPER","DUSTIN","NANCY"],difficulty:1},{category:"Chemical Bonds",words:["IONIC","COVALENT","METALLIC","HYDROGEN"],difficulty:2},{category:"Things with ARMS",words:["CHAIR","OCEAN","FIRE","COAT"],difficulty:3},{category:"___ PAPER",words:["WALL","NEWS","SAND","TOILET"],difficulty:4}]},
+      {groups:[{category:"Avocado Varieties",words:["HASS","FUERTE","BACON","REED"],difficulty:1},{category:"Internet Protocols",words:["HTTP","FTP","SMTP","DNS"],difficulty:2},{category:"Things That Twist",words:["PLOT","ANKLE","ARM","FATE"],difficulty:3},{category:"Words from Italian",words:["PIANO","VOLCANO","BALCONY","GRAFFITI"],difficulty:4}]},
+      {groups:[{category:"Soccer Positions",words:["STRIKER","GOALKEEPER","MIDFIELDER","DEFENDER"],difficulty:1},{category:"Encryption Methods",words:["AES","RSA","BLOWFISH","CIPHER"],difficulty:2},{category:"Things with HEADS",words:["NAIL","SHOWER","LETTER","DRUM"],difficulty:3},{category:"___ GAME",words:["BALL","BOARD","VIDEO","END"],difficulty:4}]},
+      {groups:[{category:"Anime Series",words:["NARUTO","BLEACH","DRAGONBALL","ONEPIECE"],difficulty:1},{category:"Cognitive Biases",words:["ANCHORING","FRAMING","HALO","DUNNING"],difficulty:2},{category:"Things That Grow",words:["PLANT","BUSINESS","FOND","APART"],difficulty:3},{category:"Words Ending in MENT",words:["JUDGMENT","MOMENT","CEMENT","SEGMENT"],difficulty:4}]},
+      {groups:[{category:"Famous Duos",words:["BATMAN","SHERLOCK","MARIO","THELMA"],difficulty:1},{category:"Machine Learning Terms",words:["NEURAL","EPOCH","GRADIENT","TENSOR"],difficulty:2},{category:"Things with LINES",words:["FISHING","PUNCH","BOTTOM","CLOTHES"],difficulty:3},{category:"___ LOCK",words:["PAD","DEAD","CAP","GRID"],difficulty:4}]},
+      {groups:[{category:"Studio Ghibli Films",words:["TOTORO","SPIRITED","HOWL","PONYO"],difficulty:1},{category:"Genetic Terms",words:["CODON","HELIX","GENOME","ALLELE"],difficulty:2},{category:"Things That Set",words:["SUN","TABLE","RECORD","CONCRETE"],difficulty:3},{category:"Words from German",words:["KINDERGARTEN","DOPPELGANGER","ANGST","WANDERLUST"],difficulty:4}]},
+      {groups:[{category:"Rock Bands",words:["QUEEN","NIRVANA","COLDPLAY","OASIS"],difficulty:1},{category:"Types of Soil",words:["CLAY","LOAM","SAND","SILT"],difficulty:2},{category:"Things with MARKS",words:["QUESTION","TRADE","BENCH","BOOK"],difficulty:3},{category:"___ HAND",words:["BACK","SHORT","SECOND","CLOCK"],difficulty:4}]},
+      {groups:[{category:"Pokemon Types",words:["FIRE","WATER","GRASS","ELECTRIC"],difficulty:1},{category:"Rhetorical Devices",words:["IRONY","METAPHOR","HYPERBOLE","ANAPHORA"],difficulty:2},{category:"Things That COUNT",words:["NUMBERS","BLESSINGS","CALORIES","SHEEP"],difficulty:3},{category:"Words with BACK",words:["SETBACK","FEEDBACK","DRAWBACK","PAYBACK"],difficulty:4}]},
+      {groups:[{category:"Marvel Villains",words:["THANOS","ULTRON","MAGNETO","LOKI"],difficulty:1},{category:"Database Terms",words:["QUERY","INDEX","TABLE","SCHEMA"],difficulty:2},{category:"Things That DROP",words:["BALL","MIC","NAME","JAW"],difficulty:3},{category:"___ SIDE",words:["BED","OUT","RING","BLIND"],difficulty:4}]},
+      {groups:[{category:"Olympic Host Cities",words:["PARIS","TOKYO","LONDON","BEIJING"],difficulty:1},{category:"Philosophy Branches",words:["ETHICS","LOGIC","AESTHETICS","ONTOLOGY"],difficulty:2},{category:"Things with ROOTS",words:["FAMILY","SQUARE","TREE","GRASS"],difficulty:3},{category:"Words That Are Also Dances",words:["SWING","TWIST","HOP","STEP"],difficulty:4}]},
+      {groups:[{category:"Emojis (Names)",words:["HEART","FIRE","SKULL","ROCKET"],difficulty:1},{category:"Organic Chemistry",words:["METHANE","ETHANOL","BENZENE","PROPANE"],difficulty:2},{category:"Things That PRESS",words:["BUTTON","IRON","BENCH","FRENCH"],difficulty:3},{category:"___ STORM",words:["BRAIN","FIRE","THUNDER","SAND"],difficulty:4}]},
+      {groups:[{category:"Minecraft Biomes",words:["DESERT","JUNGLE","TUNDRA","OCEAN"],difficulty:1},{category:"Tectonic Terms",words:["FAULT","PLATE","MANTLE","CRUST"],difficulty:2},{category:"Things with EYES",words:["NEEDLE","STORM","BULL","BIRD"],difficulty:3},{category:"Words from Portuguese",words:["FLAMINGO","COMMANDO","BANANA","ZEBRA"],difficulty:4}]},
+      {groups:[{category:"Wes Anderson Films",words:["BUDAPEST","MOONRISE","FANTASTIC","TENENBAUMS"],difficulty:1},{category:"Astronomy Objects",words:["PULSAR","QUASAR","NEUTRON","MAGNETAR"],difficulty:2},{category:"Things with TABLES",words:["TURNING","ROUND","TIME","PERIODIC"],difficulty:3},{category:"___ TREE",words:["FAMILY","PALM","SHOE","CHRISTMAS"],difficulty:4}]},
+      {groups:[{category:"Beyonce Albums",words:["LEMONADE","RENAISSANCE","BEYONCE","DANGEROUSLY"],difficulty:1},{category:"Economics Terms",words:["INFLATION","TARIFF","DEFICIT","SURPLUS"],difficulty:2},{category:"Things That BREAK",words:["HEART","GROUND","RECORD","NEWS"],difficulty:3},{category:"Words Containing LAND",words:["ISLAND","HOMELAND","LANDLORD","ICELAND"],difficulty:4}]},
+      {groups:[{category:"Mario Characters",words:["LUIGI","PEACH","BOWSER","TOAD"],difficulty:1},{category:"Data Structures",words:["STACK","QUEUE","GRAPH","HEAP"],difficulty:2},{category:"Things That FALL",words:["RAIN","NIGHT","ASLEEP","APART"],difficulty:3},{category:"___ FIELD",words:["CORN","MINE","AIR","SPRING"],difficulty:4}]},
+      {groups:[{category:"Lord of the Rings Characters",words:["GANDALF","FRODO","ARAGORN","LEGOLAS"],difficulty:1},{category:"Astronomy Telescopes",words:["HUBBLE","WEBB","KEPLER","CHANDRA"],difficulty:2},{category:"Things with WINGS",words:["CHICKEN","HOSPITAL","ANGEL","BUFFALO"],difficulty:3},{category:"Words Ending in -IOUS",words:["CURIOUS","PRECIOUS","OBVIOUS","FURIOUS"],difficulty:4}]},
+      {groups:[{category:"90s Sitcoms",words:["SEINFELD","FRASIER","CHEERS","ROSEANNE"],difficulty:1},{category:"Types of Symbiosis",words:["MUTUALISM","PARASITISM","COMMENSALISM","AMENSALISM"],difficulty:2},{category:"Things with SEEDS",words:["PUMPKIN","SUNFLOWER","SESAME","POPPY"],difficulty:3},{category:"___ ROAD",words:["RAIL","CROSS","SILK","THUNDER"],difficulty:4}]},
+      {groups:[{category:"Christopher Nolan Films",words:["INCEPTION","TENET","INTERSTELLAR","MEMENTO"],difficulty:1},{category:"Weather Instruments",words:["BAROMETER","ANEMOMETER","HYGROMETER","THERMOMETER"],difficulty:2},{category:"Things That RING",words:["PHONE","BELL","BOXING","EAR"],difficulty:3},{category:"Words Starting with OUT",words:["OUTCOME","OUTLINE","OUTRAGE","OUTLOOK"],difficulty:4}]},
+      {groups:[{category:"Tarantino Films",words:["PULP","RESERVOIR","DJANGO","HATEFUL"],difficulty:1},{category:"Geometry Shapes",words:["PENTAGON","HEXAGON","OCTAGON","DECAGON"],difficulty:2},{category:"Things with MOUTHS",words:["RIVER","CAVE","BOTTLE","CANNON"],difficulty:3},{category:"___ TOWN",words:["DOWN","MID","HOME","CHINA"],difficulty:4}]},
+      {groups:[{category:"SpongeBob Characters",words:["PATRICK","SQUIDWARD","SANDY","GARY"],difficulty:1},{category:"Calculus Terms",words:["INTEGRAL","DERIVATIVE","LIMIT","TANGENT"],difficulty:2},{category:"Things with FACES",words:["CLOCK","TYPE","POKER","SURFACE"],difficulty:3},{category:"Words from Turkish",words:["YOGURT","KIOSK","TURQUOISE","TULIP"],difficulty:4}]},
+      {groups:[{category:"Simpsons Family",words:["HOMER","MARGE","BART","MAGGIE"],difficulty:1},{category:"Human Bones",words:["FEMUR","TIBIA","RADIUS","ULNA"],difficulty:2},{category:"Things That BLOOM",words:["ROSE","YOUTH","ROMANCE","ALGAE"],difficulty:3},{category:"___ ROOM",words:["BATH","MUSH","BALL","CLASS"],difficulty:4}]},
+      {groups:[{category:"DC Heroes",words:["BATMAN","FLASH","AQUAMAN","CYBORG"],difficulty:1},{category:"Igneous Rocks",words:["OBSIDIAN","PUMICE","GRANITE","BASALT"],difficulty:2},{category:"Things with GLASS",words:["WINE","STAINED","LOOKING","MAGNIFYING"],difficulty:3},{category:"Words Containing PART",words:["DEPART","APARTMENT","IMPARTIAL","PARTNER"],difficulty:4}]},
+      {groups:[{category:"Kendrick Lamar Albums",words:["DAMN","SECTION","PIMP","HUMBLE"],difficulty:1},{category:"Linguistics Terms",words:["SYNTAX","PHONEME","MORPHEME","PRAGMA"],difficulty:2},{category:"Things That SNAP",words:["FINGER","PHOTO","COLD","TURTLE"],difficulty:3},{category:"___ FIGHT",words:["DOG","CAT","FIST","FIRE"],difficulty:4}]},
+      {groups:[{category:"Breaking Bad Characters",words:["WALTER","JESSE","GUS","SAUL"],difficulty:1},{category:"Vitamins",words:["THIAMINE","RIBOFLAVIN","NIACIN","BIOTIN"],difficulty:2},{category:"Things with POCKETS",words:["JACKET","POOL","HOT","AIR"],difficulty:3},{category:"Words That Can Follow GREEN",words:["HOUSE","BACK","HORN","PEACE"],difficulty:4}]},
+      {groups:[{category:"Kardashian Names",words:["KIM","KHLOE","KOURTNEY","KYLIE"],difficulty:1},{category:"Amino Acids",words:["GLYCINE","ALANINE","LYSINE","PROLINE"],difficulty:2},{category:"Things with TAILS",words:["FAIRY","PONY","COCK","DETAIL"],difficulty:3},{category:"___ HOUSE",words:["WARE","POWER","COURT","SLAUGHTER"],difficulty:4}]},
+      {groups:[{category:"Olympics Sports (Track)",words:["SPRINT","HURDLES","RELAY","MARATHON"],difficulty:1},{category:"Types of Wave",words:["TIDAL","GAMMA","MICRO","SINE"],difficulty:2},{category:"Things with HEARTS",words:["SWEET","BRAVE","BROKEN","PURPLE"],difficulty:3},{category:"Words from Chinese",words:["KETCHUP","TYPHOON","TOFU","SILK"],difficulty:4}]},
+      {groups:[{category:"Iconic Video Games",words:["TETRIS","PACMAN","PONG","GALAGA"],difficulty:1},{category:"Philosophy Concepts",words:["NIHILISM","STOICISM","HEDONISM","DUALISM"],difficulty:2},{category:"Things with NAILS",words:["FINGER","COFFIN","HAMMER","RUSTY"],difficulty:3},{category:"___ WORLD",words:["UNDER","OTHER","FREE","DREAM"],difficulty:4}]},
+      {groups:[{category:"Pop Stars",words:["ADELE","RIHANNA","BEYONCE","MADONNA"],difficulty:1},{category:"Parts of a Cell",words:["NUCLEUS","RIBOSOME","MEMBRANE","LYSOSOME"],difficulty:2},{category:"Things That SHINE",words:["STAR","SHOE","MOON","ARMOR"],difficulty:3},{category:"Words with NIGHT",words:["MIDNIGHT","NIGHTMARE","TONIGHT","FORTNIGHT"],difficulty:4}]},
+      {groups:[{category:"Rap Artists",words:["DRAKE","EMINEM","KENDRICK","KANYE"],difficulty:1},{category:"Types of Muscle",words:["CARDIAC","SMOOTH","SKELETAL","VOLUNTARY"],difficulty:2},{category:"Things with BRIDGES",words:["NOSE","CAPTAIN","DENTAL","CAMBRIDGE"],difficulty:3},{category:"___ WAVE",words:["HEAT","COLD","MICRO","BRAIN"],difficulty:4}]},
+      {groups:[{category:"TV Doctors",words:["HOUSE","GREY","STRANGE","WHO"],difficulty:1},{category:"Sedimentary Rocks",words:["LIMESTONE","SANDSTONE","SHALE","CHALK"],difficulty:2},{category:"Things That CATCH",words:["BALL","COLD","FIRE","PHRASE"],difficulty:3},{category:"Words from Malay",words:["BAMBOO","AMOK","ORANGUTAN","KETCHUP"],difficulty:4}]},
+      {groups:[{category:"Famous Athletes",words:["MESSI","FEDERER","BOLT","PHELPS"],difficulty:1},{category:"Types of Equation",words:["LINEAR","QUADRATIC","CUBIC","POLYNOMIAL"],difficulty:2},{category:"Things with STONES",words:["KIDNEY","STEPPING","MILE","ROLLING"],difficulty:3},{category:"___ KEEPER",words:["BEE","BOOK","GATE","GOAL"],difficulty:4}]},
+      {groups:[{category:"Iconic Movie Quotes",words:["HERES","HOUSTON","FRANKLY","TOTO"],difficulty:1},{category:"Hormones",words:["INSULIN","CORTISOL","DOPAMINE","SEROTONIN"],difficulty:2},{category:"Things That MELT",words:["ICE","HEART","CHEESE","METAL"],difficulty:3},{category:"Words Ending in -MENT",words:["FRAGMENT","ARGUMENT","DOCUMENT","GARMENT"],difficulty:4}]},
+      {groups:[{category:"K-Pop Groups",words:["BTS","BLACKPINK","TWICE","EXID"],difficulty:1},{category:"Neuroscience Terms",words:["SYNAPSE","AXON","DENDRITE","CORTEX"],difficulty:2},{category:"Things with LOCKS",words:["HAIR","CANAL","KEY","GRID"],difficulty:3},{category:"___ GROUND",words:["BACK","FORE","PLAY","UNDER"],difficulty:4}]},
+      {groups:[{category:"Famous Chefs",words:["RAMSAY","CHILD","OLIVER","FLAY"],difficulty:1},{category:"Types of Lens",words:["CONVEX","CONCAVE","BIFOCAL","TELEPHOTO"],difficulty:2},{category:"Things That WEIGH",words:["OPTIONS","ANCHOR","EVIDENCE","WORDS"],difficulty:3},{category:"Words from Arabic",words:["ALGEBRA","ALGORITHM","ALMANAC","ALCHEMY"],difficulty:4}]},
+      {groups:[{category:"NBA Legends",words:["JORDAN","KOBE","LEBRON","MAGIC"],difficulty:1},{category:"Quantum Terms",words:["ENTANGLE","SUPERPOSE","DECOHERE","TUNNEL"],difficulty:2},{category:"Things with WALLS",words:["FIRE","STONE","PAY","FOURTH"],difficulty:3},{category:"___ BELL",words:["DOOR","COW","DUMB","BLUE"],difficulty:4}]},
+      {groups:[{category:"Famous Michaels",words:["JACKSON","JORDAN","PHELPS","SCOTT"],difficulty:1},{category:"Immune System Parts",words:["ANTIBODY","ANTIGEN","LYMPH","THYMUS"],difficulty:2},{category:"Things That CHARGE",words:["PHONE","BULL","CARD","CAVALRY"],difficulty:3},{category:"Words Containing TIME",words:["SOMETIME","LIFETIME","OVERTIME","NIGHTTIME"],difficulty:4}]},
+      {groups:[{category:"Iconic Directors",words:["SPIELBERG","KUBRICK","HITCHCOCK","SCORSESE"],difficulty:1},{category:"Types of Current",words:["DIRECT","ALTERNATE","ELECTRIC","OCEAN"],difficulty:2},{category:"Things with PINS",words:["BOWLING","SAFETY","PUSH","ROLLING"],difficulty:3},{category:"___ BOOK",words:["TEXT","NOTE","FACE","COOK"],difficulty:4}]},
+      {groups:[{category:"Famous James",words:["BOND","BROWN","DEAN","MADISON"],difficulty:1},{category:"Ecology Terms",words:["NICHE","BIOME","HABITAT","TROPHIC"],difficulty:2},{category:"Things with SPRINGS",words:["HOT","BOX","MATTRESS","SEASON"],difficulty:3},{category:"Words from Greek",words:["DEMOCRACY","PHILOSOPHY","MARATHON","Olympics"],difficulty:4}]},
+      {groups:[{category:"Pixar Shorts",words:["LUXO","BIRDMAN","LAVA","PARTLY"],difficulty:1},{category:"Statistical Terms",words:["MEDIAN","VARIANCE","DEVIATION","REGRESSION"],difficulty:2},{category:"Things That PEAK",words:["MOUNTAIN","INTEREST","CAREER","SNEAK"],difficulty:3},{category:"___ BOARD",words:["SKATE","KEY","CARD","CLIP"],difficulty:4}]},
+      {groups:[{category:"Horror Icons",words:["DRACULA","FRANKENSTEIN","WOLFMAN","MUMMY"],difficulty:1},{category:"Metamorphic Rocks",words:["MARBLE","SLATE","QUARTZITE","SCHIST"],difficulty:2},{category:"Things with CODES",words:["AREA","DRESS","ZIP","CHEAT"],difficulty:3},{category:"Words That Can Precede LIGHT",words:["MOON","FLASH","DAY","LIME"],difficulty:4}]},
+      {groups:[{category:"Famous Williams",words:["SHAKESPEARE","WILLIAMS","SHATNER","PRINCE"],difficulty:1},{category:"Types of Graph",words:["BAR","PIE","LINE","SCATTER"],difficulty:2},{category:"Things That CRACK",words:["WHIP","JOKE","SAFE","DAWN"],difficulty:3},{category:"___ MARK",words:["BOOK","BENCH","TRADE","BIRTH"],difficulty:4}]},
+      {groups:[{category:"Internet Slang",words:["YOLO","FOMO","GOAT","SLAY"],difficulty:1},{category:"Endocrine Glands",words:["THYROID","ADRENAL","PITUITARY","PINEAL"],difficulty:2},{category:"Things with SPACE",words:["OUTER","CYBER","BACK","CRAWL"],difficulty:3},{category:"Words Ending in -NESS",words:["DARKNESS","KINDNESS","FITNESS","MADNESS"],difficulty:4}]},
+      {groups:[{category:"Famous Roberts",words:["DOWNEY","DENIRO","REDFORD","PATTINSON"],difficulty:1},{category:"Algebra Terms",words:["VARIABLE","COEFFICIENT","EXPONENT","POLYNOMIAL"],difficulty:2},{category:"Things with LEAVES",words:["TREE","BAY","SICK","AUTUMN"],difficulty:3},{category:"___ JACK",words:["BLACK","FLAP","LUMBER","CRACK"],difficulty:4}]},
+      {groups:[{category:"Trending Memes",words:["DOGE","PEPE","WOJAK","CHAD"],difficulty:1},{category:"Taxonomy Ranks",words:["KINGDOM","PHYLUM","CLASS","ORDER"],difficulty:2},{category:"Things That SPREAD",words:["BUTTER","RUMOR","FIRE","DISEASE"],difficulty:3},{category:"Words with FIRE",words:["BONFIRE","FIREFOX","FIREWALL","CAMPFIRE"],difficulty:4}]},
+      {groups:[{category:"Classic Board Games",words:["CHESS","CHECKERS","BACKGAMMON","OTHELLO"],difficulty:1},{category:"Music Theory Terms",words:["CHORD","TEMPO","OCTAVE","CLEF"],difficulty:2},{category:"Things with NETS",words:["INTER","BASKET","SAFETY","HAIR"],difficulty:3},{category:"___ CARD",words:["WILD","POST","SCORE","FLASH"],difficulty:4}]},
+      {groups:[{category:"Yoga Poses",words:["COBRA","WARRIOR","TREE","MOUNTAIN"],difficulty:1},{category:"Computer Architecture",words:["CACHE","REGISTER","BUS","PIPELINE"],difficulty:2},{category:"Things That WAVE",words:["FLAG","HAND","CROWD","HEAT"],difficulty:3},{category:"Words from Sanskrit",words:["YOGA","KARMA","AVATAR","MANTRA"],difficulty:4}]},
+      {groups:[{category:"Reality TV Shows",words:["SURVIVOR","BACHELOR","IDOL","RACE"],difficulty:1},{category:"Types of Tissue",words:["MUSCLE","NERVE","BONE","EPITHELIAL"],difficulty:2},{category:"Things That MATCH",words:["FIRE","TENNIS","COLOR","PERFECT"],difficulty:3},{category:"___ POWER",words:["MAN","FIRE","HORSE","BRAIN"],difficulty:4}]},
+      {groups:[{category:"Famous Bridges",words:["GOLDEN","BROOKLYN","TOWER","LONDON"],difficulty:1},{category:"Cryptography Terms",words:["CIPHER","HASH","SALT","NONCE"],difficulty:2},{category:"Things That PASS",words:["TIME","BALL","TEST","MOUNTAIN"],difficulty:3},{category:"Words Containing KING",words:["PARKING","SMOKING","STOCKING","WORKING"],difficulty:4}]},
+      {groups:[{category:"Olympic Medals",words:["GOLD","SILVER","BRONZE","PLATINUM"],difficulty:1},{category:"Psychology Terms",words:["GESTALT","PRIMING","CATHARSIS","SUBLIMATE"],difficulty:2},{category:"Things with TRACKS",words:["TRAIN","SOUND","RACE","KEEPING"],difficulty:3},{category:"___ TOP",words:["LAP","TABLE","ROOF","TIP"],difficulty:4}]},
+      {groups:[{category:"Famous Landmarks",words:["EIFFEL","COLOSSEUM","SPHINX","ACROPOLIS"],difficulty:1},{category:"Operating Systems",words:["LINUX","WINDOWS","ANDROID","MACOS"],difficulty:2},{category:"Things That DRIFT",words:["SNOW","CONTINENTAL","TOKYO","AIMLESS"],difficulty:3},{category:"Words from Persian",words:["PAJAMA","PARADISE","BAZAAR","CARAVAN"],difficulty:4}]},
+      {groups:[{category:"Cocktail Ingredients",words:["BITTERS","VERMOUTH","TRIPLE","GRENADINE"],difficulty:1},{category:"Immunology Terms",words:["TCELL","BCELL","ANTIBODY","CYTOKINE"],difficulty:2},{category:"Things with BANDS",words:["RUBBER","ROCK","ARM","BROAD"],difficulty:3},{category:"___ LAND",words:["ICE","FARM","WONDER","DREAM"],difficulty:4}]},
+      {groups:[{category:"Famous Davids",words:["BOWIE","BECKHAM","ATTENBOROUGH","LETTERMAN"],difficulty:1},{category:"Sorting Algorithms",words:["BUBBLE","MERGE","QUICK","HEAP"],difficulty:2},{category:"Things That PLUG",words:["ELECTRIC","EAR","SPARK","FIRE"],difficulty:3},{category:"Words Ending in -TION",words:["NATION","STATION","PORTION","CAPTION"],difficulty:4}]},
+      {groups:[{category:"Horror Subgenres",words:["SLASHER","GOTHIC","COSMIC","FOLK"],difficulty:1},{category:"Brain Regions",words:["FRONTAL","TEMPORAL","PARIETAL","OCCIPITAL"],difficulty:2},{category:"Things with KEYS",words:["KEYBOARD","MASTER","MONKEY","FLORIDA"],difficulty:3},{category:"___ PIT",words:["ARM","SAND","COCK","FIRE"],difficulty:4}]},
+      {groups:[{category:"Famous Monuments",words:["RUSHMORE","LIBERTY","LINCOLN","STONEHENGE"],difficulty:1},{category:"Network Topologies",words:["STAR","RING","MESH","BUS"],difficulty:2},{category:"Things That FOLD",words:["PAPER","BLIND","MANIFOLD","CLOTHES"],difficulty:3},{category:"Words from Hawaiian",words:["ALOHA","HULA","UKULELE","WIKI"],difficulty:4}]},
+      {groups:[{category:"Action Movie Stars",words:["STALLONE","SCHWARZENEGGER","WILLIS","STATHAM"],difficulty:1},{category:"Trigonometry",words:["SINE","COSINE","TANGENT","SECANT"],difficulty:2},{category:"Things That ROLL",words:["DICE","ROCK","THUNDER","EGG"],difficulty:3},{category:"___ BLOCK",words:["ROAD","WRITER","CELL","STUMBLING"],difficulty:4}]},
+      {groups:[{category:"TikTok Trends",words:["RENEGADE","SAVAGE","BUSS","DEVIOUS"],difficulty:1},{category:"Pharmacology Terms",words:["DOSE","RECEPTOR","PLACEBO","AGONIST"],difficulty:2},{category:"Things with CUTS",words:["PAPER","SHORT","HAIR","TAX"],difficulty:3},{category:"Words Containing GRAPH",words:["PARAGRAPH","PHOTOGRAPH","GEOGRAPHY","AUTOGRAPH"],difficulty:4}]},
+      {groups:[{category:"Famous Seas",words:["RED","DEAD","BLACK","CASPIAN"],difficulty:1},{category:"Design Principles",words:["CONTRAST","BALANCE","RHYTHM","PROXIMITY"],difficulty:2},{category:"Things That MOUNT",words:["HORSE","DISPLAY","EVIDENCE","RUSHMORE"],difficulty:3},{category:"___ BREAK",words:["DAY","JAW","HEART","JAIL"],difficulty:4}]},
+      {groups:[{category:"Famous Islands",words:["HAWAII","BALI","CRETE","MADAGASCAR"],difficulty:1},{category:"Fluid Dynamics",words:["VISCOSITY","TURBULENCE","LAMINAR","REYNOLDS"],difficulty:2},{category:"Things with KEYS",words:["PIANO","CAR","ANSWER","MASTER"],difficulty:3},{category:"Words from Dutch",words:["COOKIE","LANDSCAPE","CRUISE","YACHT"],difficulty:4}]},
+      {groups:[{category:"Classic Arcade Games",words:["ASTEROIDS","CENTIPEDE","FROGGER","DEFENDER"],difficulty:1},{category:"Set Theory Terms",words:["UNION","SUBSET","ELEMENT","COMPLEMENT"],difficulty:2},{category:"Things That POP",words:["CORN","BUBBLE","HOOD","QUIZ"],difficulty:3},{category:"___ FALL",words:["WATER","DOWN","FOOT","RAIN"],difficulty:4}]},
+      {groups:[{category:"Stand-Up Comics",words:["CHAPPELLE","SEINFELD","ROCK","BURR"],difficulty:1},{category:"Polymer Types",words:["NYLON","KEVLAR","TEFLON","ACRYLIC"],difficulty:2},{category:"Things with BALLS",words:["SNOW","CRYSTAL","BASKET","EYE"],difficulty:3},{category:"Words Starting with UNDER",words:["UNDERDOG","UNDERGO","UNDERMINE","UNDERSCORE"],difficulty:4}]},
+      {groups:[{category:"Famous Mountains",words:["EVEREST","FUJI","KILIMANJARO","MATTERHORN"],difficulty:1},{category:"Nutrition Terms",words:["CALORIE","PROTEIN","FIBER","MINERAL"],difficulty:2},{category:"Things That GLOW",words:["WORM","STAR","SCREEN","SKIN"],difficulty:3},{category:"___ WIND",words:["WHIRL","TAIL","TRADE","WOOD"],difficulty:4}]},
+      {groups:[{category:"Classic Cartoons",words:["SCOOBY","DEXTER","COURAGE","JOHNNY"],difficulty:1},{category:"Thermodynamics",words:["ENTROPY","ENTHALPY","KELVIN","JOULE"],difficulty:2},{category:"Things with LIPS",words:["TULIP","CHAP","ECLIPSE","SLIP"],difficulty:3},{category:"Words Containing WORK",words:["NETWORK","HOMEWORK","FRAMEWORK","CLOCKWORK"],difficulty:4}]},
+      {groups:[{category:"Famous Deserts",words:["SAHARA","GOBI","KALAHARI","MOJAVE"],difficulty:1},{category:"Music Genres",words:["GRUNGE","REGGAE","BLUES","FUNK"],difficulty:2},{category:"Things That HOLD",words:["GRUDGE","BREATH","WATER","FORT"],difficulty:3},{category:"___ STAND",words:["BAND","GRAND","UNDER","LAST"],difficulty:4}]},
+      {groups:[{category:"Famous Canals",words:["SUEZ","PANAMA","ERIE","GRAND"],difficulty:1},{category:"Ecology Concepts",words:["SUCCESSION","SYMBIOSIS","PREDATION","ADAPTATION"],difficulty:2},{category:"Things That SLIDE",words:["PLAYGROUND","GUITAR","TROMBONE","PRESENTATION"],difficulty:3},{category:"Words from Norse",words:["BERSERK","SLAUGHTER","HUSBAND","WINDOW"],difficulty:4}]},
+      {groups:[{category:"Famous Waterfalls",words:["NIAGARA","VICTORIA","ANGEL","IGUAZU"],difficulty:1},{category:"Optics Terms",words:["REFRACTION","DIFFRACTION","REFLECTION","PRISM"],difficulty:2},{category:"Things with BARS",words:["CROW","HANDLE","GOLD","SPACE"],difficulty:3},{category:"___ RING",words:["BOX","SPRING","EAR","SUFFER"],difficulty:4}]},
+      {groups:[{category:"Famous Volcanoes",words:["VESUVIUS","KRAKATOA","FUJI","ETNA"],difficulty:1},{category:"Information Theory",words:["ENTROPY","BANDWIDTH","SIGNAL","NOISE"],difficulty:2},{category:"Things That PLANT",words:["SEED","FLAG","BOMB","EVIDENCE"],difficulty:3},{category:"Words from Japanese",words:["TSUNAMI","ORIGAMI","KARATE","SAMURAI"],difficulty:4}]},
+      {groups:[{category:"Classic Sitcoms",words:["FRIENDS","OFFICE","PARKS","BROOKLYN"],difficulty:1},{category:"Materials Science",words:["ALLOY","CERAMIC","POLYMER","COMPOSITE"],difficulty:2},{category:"Things with EDGES",words:["KNIFE","CUTTING","WEDGE","LEADING"],difficulty:3},{category:"___ STAR",words:["ALL","ROCK","POP","NORTH"],difficulty:4}]},
+      {groups:[{category:"Space Missions",words:["APOLLO","VOYAGER","CASSINI","CURIOSITY"],difficulty:1},{category:"Color Theory Terms",words:["HUE","SATURATION","TINT","SHADE"],difficulty:2},{category:"Things That STRIKE",words:["LIGHTNING","GOLD","BOWLING","MATCH"],difficulty:3},{category:"Words Ending in -ENCE",words:["SILENCE","PATIENCE","VIOLENCE","SCIENCE"],difficulty:4}]},
+      {groups:[{category:"Famous Explorers",words:["COLUMBUS","MAGELLAN","DRAKE","COOK"],difficulty:1},{category:"Zoology Terms",words:["VERTEBRATE","MAMMAL","PRIMATE","CETACEAN"],difficulty:2},{category:"Things with LOCKS",words:["DEAD","CANAL","PAD","DREAD"],difficulty:3},{category:"___ GUARD",words:["BODY","LIFE","SAFE","MOUTH"],difficulty:4}]},
+      {groups:[{category:"Famous Dams",words:["HOOVER","ASWAN","THREE","ITAIPU"],difficulty:1},{category:"Botany Terms",words:["STAMEN","PISTIL","PETAL","SEPAL"],difficulty:2},{category:"Things That SNAP",words:["GINGER","COLD","PHOTO","FINGER"],difficulty:3},{category:"Words from Yiddish",words:["BAGEL","GLITCH","SCHMUCK","CHUTZPAH"],difficulty:4}]},
+      {groups:[{category:"Famous Towers",words:["EIFFEL","PISA","BABEL","LONDON"],difficulty:1},{category:"Proteomics Terms",words:["PEPTIDE","ENZYME","CATALYST","SUBSTRATE"],difficulty:2},{category:"Things That HANG",words:["PICTURE","JURY","TOUGH","CLIFF"],difficulty:3},{category:"___ GLASS",words:["HOUR","LOOKING","STAINED","SPY"],difficulty:4}]},
+      {groups:[{category:"Famous Caves",words:["LASCAUX","MAMMOTH","CARLSBAD","ALTAMIRA"],difficulty:1},{category:"Genetics Concepts",words:["DOMINANT","RECESSIVE","PHENOTYPE","GENOTYPE"],difficulty:2},{category:"Things with SOLES",words:["SHOE","FISH","SOUL","CONSOLE"],difficulty:3},{category:"Words Containing BOOK",words:["NOTEBOOK","TEXTBOOK","FACEBOOK","BOOKMARK"],difficulty:4}]},
+      {groups:[{category:"Famous Palaces",words:["VERSAILLES","BUCKINGHAM","FORBIDDEN","ALHAMBRA"],difficulty:1},{category:"Marine Biology",words:["PLANKTON","CORAL","KELP","ANEMONE"],difficulty:2},{category:"Things That PARK",words:["CAR","BALL","THEME","NATIONAL"],difficulty:3},{category:"___ SPACE",words:["CYBER","OUTER","AIR","CRAWL"],difficulty:4}]},
+      {groups:[{category:"Country Music Stars",words:["CASH","SWIFT","PARTON","BROOKS"],difficulty:1},{category:"Astronomy Concepts",words:["REDSHIFT","PARALLAX","LUMINOSITY","MAGNITUDE"],difficulty:2},{category:"Things with TEETH",words:["COMB","WISDOM","GEAR","SWEET"],difficulty:3},{category:"___ FISH",words:["JELLY","STAR","SWORD","ANGEL"],difficulty:4}]},
+      {groups:[{category:"Famous Scientists",words:["EINSTEIN","CURIE","NEWTON","HAWKING"],difficulty:1},{category:"Electrical Terms",words:["VOLTAGE","AMPERE","OHMS","WATT"],difficulty:2},{category:"Things with WHEELS",words:["STEERING","PRAYER","FORTUNE","CART"],difficulty:3},{category:"Words from Swahili",words:["SAFARI","BONGO","SIMBA","JUMBO"],difficulty:4}]},
+      {groups:[{category:"Soccer Legends",words:["PELE","MARADONA","ZIDANE","RONALDO"],difficulty:1},{category:"Protein Sources",words:["TOFU","TEMPEH","SEITAN","LENTIL"],difficulty:2},{category:"Things with WALLS",words:["BRICK","FOURTH","STONEWALL","PAYWALL"],difficulty:3},{category:"___ PICK",words:["TOOTH","CHERRY","HAND","ICE"],difficulty:4}]},
+      {groups:[{category:"Famous Paintings",words:["GUERNICA","NIGHTHAWKS","PERSISTENCE","BIRTH"],difficulty:1},{category:"Geology Eras",words:["JURASSIC","TRIASSIC","PERMIAN","CAMBRIAN"],difficulty:2},{category:"Things That LEAD",words:["PENCIL","ROAD","EXAMPLE","PIPE"],difficulty:3},{category:"Words Ending in -LY",words:["FRIENDLY","LONELY","FAMILY","LOVELY"],difficulty:4}]},
+      {groups:[{category:"Formula 1 Teams",words:["FERRARI","MCLAREN","MERCEDES","REDBULL"],difficulty:1},{category:"Photosynthesis Terms",words:["CHLOROPHYLL","STOMATA","GLUCOSE","STROMA"],difficulty:2},{category:"Things That SEAL",words:["ENVELOPE","DEAL","FATE","NAVY"],difficulty:3},{category:"___ HOUSE",words:["LIGHT","STORE","CLEARING","STAKE"],difficulty:4}]},
+      {groups:[{category:"Wrestling Moves",words:["SUPLEX","PILEDRIVER","CLOTHESLINE","POWERBOMB"],difficulty:1},{category:"Atmospheric Layers",words:["TROPO","STRATO","MESO","THERMO"],difficulty:2},{category:"Things That SETTLE",words:["DUST","SCORE","STOMACH","LAWSUIT"],difficulty:3},{category:"Words Containing MAN",words:["COMMAND","MANAGER","ROMANCE","DEMAND"],difficulty:4}]},
+      {groups:[{category:"Famous Speeches",words:["DREAM","GETTYSBURG","INAUGURAL","CHECKERS"],difficulty:1},{category:"Enzymes",words:["LIPASE","AMYLASE","PROTEASE","LACTASE"],difficulty:2},{category:"Things with PLATES",words:["ARMOR","HOME","LICENSE","DINNER"],difficulty:3},{category:"___ LIGHT",words:["SEARCH","GREEN","MOON","LIME"],difficulty:4}]},
+      {groups:[{category:"Dog Commands",words:["SIT","STAY","HEEL","FETCH"],difficulty:1},{category:"Logic Gates",words:["NAND","XOR","NOR","BUFFER"],difficulty:2},{category:"Things That SINK",words:["KITCHEN","SHIP","HEART","FEELING"],difficulty:3},{category:"Words from Latin",words:["CAMPUS","ALUMNI","VIRUS","FORUM"],difficulty:4}]},
+      {groups:[{category:"Jazz Standards",words:["AUTUMN","SUMMERTIME","MISTY","CARAVAN"],difficulty:1},{category:"Microorganism Types",words:["BACTERIA","ARCHAEA","FUNGI","PROTIST"],difficulty:2},{category:"Things That DRIVE",words:["CAR","HARD","AMBITION","TEST"],difficulty:3},{category:"___ LAND",words:["SWITZER","GREEN","CLOUD","MARSH"],difficulty:4}]},
+      {groups:[{category:"Famous Mathematicians",words:["EULER","GAUSS","TURING","RAMANUJAN"],difficulty:1},{category:"Plant Hormones",words:["AUXIN","GIBBERELLIN","CYTOKININ","ETHYLENE"],difficulty:2},{category:"Things with HANDS",words:["CLOCK","UPPER","SHORT","HELPING"],difficulty:3},{category:"Words Ending in -FUL",words:["POWERFUL","GRATEFUL","PEACEFUL","BEAUTIFUL"],difficulty:4}]},
+      {groups:[{category:"Martial Arts Movies",words:["KARATE","CROUCHING","ENTER","FIST"],difficulty:1},{category:"Oceanography",words:["TRENCH","GYRE","UPWELLING","SEAMOUNT"],difficulty:2},{category:"Things That BEND",words:["ELBOW","RIVER","RULES","FENDER"],difficulty:3},{category:"___ CROSS",words:["RED","DOUBLE","MOTOCROSS","HOT"],difficulty:4}]},
+      {groups:[{category:"Famous Guitars",words:["FENDER","GIBSON","RICKENBACKER","GRETSCH"],difficulty:1},{category:"Blood Components",words:["PLASMA","PLATELET","HEMOGLOBIN","LEUKOCYTE"],difficulty:2},{category:"Things That BRANCH",words:["TREE","BANK","GOVERNMENT","OLIVE"],difficulty:3},{category:"Words from Celtic",words:["WHISKEY","CLAN","SLOGAN","BARD"],difficulty:4}]},
+      {groups:[{category:"Famous Inventors",words:["EDISON","TESLA","BELL","WRIGHT"],difficulty:1},{category:"Plate Tectonics",words:["SUBDUCTION","DIVERGENT","TRANSFORM","RIFT"],difficulty:2},{category:"Things That CAST",words:["SHADOW","SPELL","DOUBT","FISHING"],difficulty:3},{category:"___ PLAY",words:["FAIR","FORE","HORSE","SWORD"],difficulty:4}]},
+      {groups:[{category:"Famous Queens",words:["VICTORIA","ELIZABETH","CLEOPATRA","NEFERTITI"],difficulty:1},{category:"Virus Types",words:["RETRO","CORONA","RHINO","ADENO"],difficulty:2},{category:"Things That RACE",words:["CAR","RAT","DRAG","HUMAN"],difficulty:3},{category:"Words Containing PORT",words:["EXPORT","SUPPORT","TRANSPORT","REPORT"],difficulty:4}]},
+      {groups:[{category:"Types of Bread",words:["RYE","CIABATTA","CHALLAH","BAGUETTE"],difficulty:1},{category:"Muscle Groups",words:["BICEP","TRICEP","DELTOID","TRAPEZIUS"],difficulty:2},{category:"Things with HORNS",words:["BULL","FRENCH","FOG","CAPE"],difficulty:3},{category:"___ TIME",words:["BED","PRIME","HALF","OVER"],difficulty:4}]},
+      {groups:[{category:"Nobel Laureates",words:["MALALA","MANDELA","KING","OBAMA"],difficulty:1},{category:"Crystal Systems",words:["CUBIC","HEXAGONAL","TETRAGONAL","MONOCLINIC"],difficulty:2},{category:"Things That DRAW",words:["BATH","SWORD","CURTAIN","CONCLUSION"],difficulty:3},{category:"Words from Russian",words:["SPUTNIK","MAMMOTH","TUNDRA","STEPPE"],difficulty:4}]},
+      {groups:[{category:"Famous Magicians",words:["HOUDINI","COPPERFIELD","BLAINE","PENN"],difficulty:1},{category:"Ecology Levels",words:["ORGANISM","POPULATION","COMMUNITY","BIOSPHERE"],difficulty:2},{category:"Things That CUT",words:["PAPER","BUDGET","DIAMOND","MUSTARD"],difficulty:3},{category:"___ SHOT",words:["BIG","BUCK","GUN","MOON"],difficulty:4}]},
+      {groups:[{category:"World Wonders (Modern)",words:["CHRIST","CHICHEN","MACHU","PETRA"],difficulty:1},{category:"Semiconductor Terms",words:["DIODE","TRANSISTOR","SILICON","WAFER"],difficulty:2},{category:"Things That CARRY",words:["WEIGHT","TORCH","TUNE","BABY"],difficulty:3},{category:"Words Containing LIGHT",words:["FLASHLIGHT","HIGHLIGHT","MOONLIGHT","SUNLIGHT"],difficulty:4}]},
+      {groups:[{category:"Famous Rebels",words:["SPARTACUS","GUEVARA","PANCHO","ROBIN"],difficulty:1},{category:"Quantum Mechanics",words:["PHOTON","BOSON","FERMION","GLUON"],difficulty:2},{category:"Things with CHIPS",words:["POKER","COMPUTER","CHOCOLATE","SHOULDER"],difficulty:3},{category:"___ TAIL",words:["COCK","PONY","FAIRY","FOX"],difficulty:4}]},
+      {groups:[{category:"Famous Couples",words:["ROMEO","BONNIE","ANTONY","TRISTAN"],difficulty:1},{category:"Stoichiometry",words:["MOLE","AVOGADRO","MOLARITY","YIELD"],difficulty:2},{category:"Things That FLY",words:["KITE","TIME","COLORS","RUMOR"],difficulty:3},{category:"Words from Welsh",words:["PENGUIN","CORGI","FLANNEL","CRAG"],difficulty:4}]},
+      {groups:[{category:"Famous Poets",words:["SHAKESPEARE","FROST","DICKINSON","WHITMAN"],difficulty:1},{category:"Meteorology",words:["FRONT","ISOBAR","ISOTHERM","CONVECTION"],difficulty:2},{category:"Things That HOLD",words:["GRUDGE","BREATH","COURT","WATER"],difficulty:3},{category:"___ COAT",words:["OVER","RAIN","TOP","UNDER"],difficulty:4}]},
+      {groups:[{category:"Pixar Characters",words:["WOODY","NEMO","BUZZ","REMY"],difficulty:1},{category:"Taxonomy Domains",words:["BACTERIA","ARCHAEA","EUKARYA","VIRUS"],difficulty:2},{category:"Things That STRETCH",words:["RUBBER","TRUTH","BUDGET","IMAGINATION"],difficulty:3},{category:"Words Ending in -WARD",words:["FORWARD","BACKWARD","INWARD","OUTWARD"],difficulty:4}]},
+      {groups:[{category:"Famous Prisons",words:["ALCATRAZ","BASTILLE","TOWER","ROBBEN"],difficulty:1},{category:"Thermometer Types",words:["MERCURY","DIGITAL","INFRARED","CLINICAL"],difficulty:2},{category:"Things with CAPS",words:["BOTTLE","ICE","KNEE","HUB"],difficulty:3},{category:"___ TOUCH",words:["SOFT","FINISH","GOLDEN","MIDAS"],difficulty:4}]},
+      {groups:[{category:"Famous Generals",words:["PATTON","ROMMEL","NAPOLEON","ALEXANDER"],difficulty:1},{category:"Genome Terms",words:["EXON","INTRON","PROMOTER","ENHANCER"],difficulty:2},{category:"Things That SPARK",words:["PLUG","CONVERSATION","INTEREST","JOY"],difficulty:3},{category:"Words from Nahuatl",words:["CHOCOLATE","TOMATO","AVOCADO","COYOTE"],difficulty:4}]},
+      {groups:[{category:"Famous Comedies",words:["AIRPLANE","CADDYSHACK","BLAZING","MONTY"],difficulty:1},{category:"Biotech Terms",words:["CRISPR","CLONE","VECTOR","PLASMID"],difficulty:2},{category:"Things That SWING",words:["PENDULUM","MOOD","BAT","DOOR"],difficulty:3},{category:"___ MASTER",words:["WEB","POST","GRAND","HEAD"],difficulty:4}]},
+      {groups:[{category:"Dance Styles",words:["BREAKDANCE","FLAMENCO","CAPOEIRA","BHANGRA"],difficulty:1},{category:"Polymer Chemistry",words:["MONOMER","CATALYST","CROSS","CHAIN"],difficulty:2},{category:"Things with RINGS",words:["TREE","BOXING","ONION","SATURN"],difficulty:3},{category:"Words Containing SHIP",words:["WORSHIP","FLAGSHIP","HARDSHIP","KINSHIP"],difficulty:4}]},
+      {groups:[{category:"Famous Logos",words:["APPLE","NIKE","SHELL","AMAZON"],difficulty:1},{category:"Seismology",words:["RICHTER","EPICENTER","AFTERSHOCK","MAGNITUDE"],difficulty:2},{category:"Things That SPRING",words:["CHICKEN","BOARD","WATER","TRAP"],difficulty:3},{category:"___ WALK",words:["BOARD","MOON","CROSS","SIDE"],difficulty:4}]},
+      {groups:[{category:"Famous Maps",words:["MERCATOR","PETERS","ROBINSON","WINKEL"],difficulty:1},{category:"Neurochemistry",words:["DOPAMINE","SEROTONIN","OXYTOCIN","ENDORPHIN"],difficulty:2},{category:"Things That LIFT",words:["SPIRIT","WEIGHT","FACE","SHOP"],difficulty:3},{category:"Words from Quechua",words:["CONDOR","LLAMA","QUINOA","PUMA"],difficulty:4}]},
+      {groups:[{category:"Famous Spies",words:["BOND","BOURNE","HUNT","SALT"],difficulty:1},{category:"Tectonics Terms",words:["PANGAEA","LAURASIA","GONDWANA","RODINIA"],difficulty:2},{category:"Things That CATCH",words:["EYE","BUS","FIRE","BREATH"],difficulty:3},{category:"___ STONE",words:["MILE","KEY","TOMB","BLOOD"],difficulty:4}]},
+      {groups:[{category:"Chess Openings",words:["SICILIAN","FRENCH","ENGLISH","ITALIAN"],difficulty:1},{category:"Spectroscopy",words:["INFRARED","RAMAN","XRAY","MASS"],difficulty:2},{category:"Things That WAVE",words:["CROWD","OCEAN","FLAG","HAIR"],difficulty:3},{category:"Words from Aboriginal",words:["BOOMERANG","KANGAROO","KOALA","BILLABONG"],difficulty:4}]},
+      {groups:[{category:"Musical Eras",words:["BAROQUE","ROMANTIC","CLASSICAL","MODERN"],difficulty:1},{category:"Epidemiology",words:["ENDEMIC","PANDEMIC","EPIDEMIC","OUTBREAK"],difficulty:2},{category:"Things with BACKS",words:["QUARTER","PAPER","HUMP","DRAW"],difficulty:3},{category:"___ LAND",words:["NETHER","SCOT","SWAZI","THAI"],difficulty:4}]},
+      {groups:[{category:"Types of Apple",words:["GRANNY","FUJI","GALA","HONEYCRISP"],difficulty:1},{category:"Paleontology",words:["FOSSIL","AMBER","STRATA","EXTINCTION"],difficulty:2},{category:"Things That PLAY",words:["MUSIC","FAIR","FOUL","CHILD"],difficulty:3},{category:"Words Containing HAND",words:["HANDSOME","HANDBOOK","BACKHAND","HANDLE"],difficulty:4}]},
+      {groups:[{category:"Famous Comedians",words:["PRYOR","CARLIN","MURPHY","WILLIAMS"],difficulty:1},{category:"Crystallography",words:["LATTICE","FACET","CLEAVAGE","SYMMETRY"],difficulty:2},{category:"Things That FREEZE",words:["WATER","FRAME","ASSETS","WAGES"],difficulty:3},{category:"___ PEN",words:["BULL","FOUN","PLAY","HAP"],difficulty:4}]},
+      {groups:[{category:"Famous Sculptors",words:["RODIN","BRANCUSI","GIACOMETTI","CALDER"],difficulty:1},{category:"Electromagnetism",words:["FARADAY","MAXWELL","GAUSS","AMPERE"],difficulty:2},{category:"Things with PLATES",words:["TECTONIC","LICENSE","HOME","DINNER"],difficulty:3},{category:"Words Ending in -ISH",words:["FOOLISH","FINISH","POLISH","VANISH"],difficulty:4}]},
+      {groups:[{category:"Types of Rain",words:["DRIZZLE","DOWNPOUR","SHOWER","MONSOON"],difficulty:1},{category:"Acoustics Terms",words:["DECIBEL","RESONANCE","FREQUENCY","HARMONIC"],difficulty:2},{category:"Things That BEAR",words:["WEIGHT","FRUIT","WITNESS","GRUDGE"],difficulty:3},{category:"___ IRON",words:["FLAT","CAST","GRID","WAFFLE"],difficulty:4}]},
+      {groups:[{category:"Famous Detectives (Fiction)",words:["HOLMES","POIROT","MORSE","WALLANDER"],difficulty:1},{category:"Topology Terms",words:["MANIFOLD","TORUS","MOBIUS","GENUS"],difficulty:2},{category:"Things with POSTS",words:["GOAL","LAMP","FINGER","SIGN"],difficulty:3},{category:"Words from Tagalog",words:["BOONDOCKS","COGON","YLANG","BUNDOK"],difficulty:4}]},
+      {groups:[{category:"Famous Chases",words:["BULLITT","RONIN","BOURNE","FRENCH"],difficulty:1},{category:"Materials Properties",words:["DUCTILE","BRITTLE","MALLEABLE","ELASTIC"],difficulty:2},{category:"Things That SPLIT",words:["BANANA","ATOM","DECISION","PERSONALITY"],difficulty:3},{category:"___ PLACE",words:["FIRE","BIRTH","MARKET","COMMON"],difficulty:4}]},
+      {groups:[{category:"Famous Masks",words:["PHANTOM","ZORRO","BATMAN","VENDETTA"],difficulty:1},{category:"Wave Properties",words:["AMPLITUDE","WAVELENGTH","PERIOD","PHASE"],difficulty:2},{category:"Things That TICK",words:["CLOCK","BOMB","BOX","PARA"],difficulty:3},{category:"Words Containing FORM",words:["PLATFORM","UNIFORM","REFORM","PERFORM"],difficulty:4}]},
+      {groups:[{category:"Types of Boat",words:["KAYAK","CANOE","YACHT","CATAMARAN"],difficulty:1},{category:"Petroleum Terms",words:["CRUDE","REFINERY","BARREL","OCTANE"],difficulty:2},{category:"Things with BASES",words:["MILITARY","DATA","ACID","TOUCH"],difficulty:3},{category:"___ MAKER",words:["MATCH","WATCH","PEACE","TROUBLE"],difficulty:4}]},
+      {groups:[{category:"Famous Heists",words:["BRINKS","HATTON","ANTWERP","STOCKHOLM"],difficulty:1},{category:"Volcanology",words:["MAGMA","CALDERA","PYROCLAST","LAHAR"],difficulty:2},{category:"Things That CRACK",words:["WHIP","SAFE","CODE","DAWN"],difficulty:3},{category:"Words from Maori",words:["KIWI","HAKA","MANA","TABOO"],difficulty:4}]},
+      {groups:[{category:"Classic Toys",words:["LEGO","BARBIE","RUBIKS","SLINKY"],difficulty:1},{category:"Palaeography",words:["PAPYRUS","VELLUM","PARCHMENT","CODEX"],difficulty:2},{category:"Things That LAUNCH",words:["ROCKET","PRODUCT","CAREER","ATTACK"],difficulty:3},{category:"___ WORK",words:["ART","CLOCK","PATCH","GUESS"],difficulty:4}]},
+      {groups:[{category:"Famous Arenas",words:["COLOSSEUM","MADISON","WEMBLEY","STAPLES"],difficulty:1},{category:"Photonics",words:["LASER","FIBER","PHOTON","DIODE"],difficulty:2},{category:"Things That GUIDE",words:["TOUR","SPIRIT","STUDY","MISSILE"],difficulty:3},{category:"Words Containing MARK",words:["LANDMARK","BOOKMARK","TRADEMARK","REMARK"],difficulty:4}]},
+      {groups:[{category:"Famous Clocks",words:["BIGBEN","CUCKOO","SUNDIAL","ATOMIC"],difficulty:1},{category:"Relativity Terms",words:["SPACETIME","GEODESIC","LORENTZ","DILATION"],difficulty:2},{category:"Things That PRESS",words:["IRON","FRENCH","BENCH","WINE"],difficulty:3},{category:"___ BACK",words:["FEED","SET","PAY","FLASH"],difficulty:4}]},
+      {groups:[{category:"Famous Statues",words:["LIBERTY","DAVID","THINKER","VENUS"],difficulty:1},{category:"Hydrology",words:["AQUIFER","WATERSHED","ALLUVIAL","ESTUARY"],difficulty:2},{category:"Things That LOCK",words:["DOOR","GRID","ARM","AIR"],difficulty:3},{category:"Words from Finnish",words:["SAUNA","SISU","AURORA","NOKIA"],difficulty:4}]},
+      {groups:[{category:"Classic Novels",words:["GATSBY","MOCKINGBIRD","CATCHER","PRIDE"],difficulty:1},{category:"Astrophysics",words:["ACCRETION","HAWKING","SINGULARITY","HORIZON"],difficulty:2},{category:"Things with FRAMES",words:["PICTURE","TIME","DOOR","FREEZE"],difficulty:3},{category:"___ FIRE",words:["CAMP","CROSS","CEASE","GUN"],difficulty:4}]},
+      {groups:[{category:"Famous Duels",words:["HAMILTON","PUSHKIN","HICKOK","BURR"],difficulty:1},{category:"Polymer Science",words:["VULCANIZE","THERMOPLAST","THERMOSET","ELASTOMER"],difficulty:2},{category:"Things That BURN",words:["CANDLE","BRIDGE","RUBBER","CALORIES"],difficulty:3},{category:"Words Ending in -ABLE",words:["CAPABLE","NOTABLE","DURABLE","VALUABLE"],difficulty:4}]},
+      {groups:[{category:"Famous Escapes",words:["ALCATRAZ","COLDITZ","PAPILLON","SHAWSHANK"],difficulty:1},{category:"Microbiology",words:["CULTURE","AGAR","COLONY","INOCULATE"],difficulty:2},{category:"Things That STAND",words:["BAND","GRAND","UNDER","WITNESS"],difficulty:3},{category:"___ SCREEN",words:["SILVER","BIG","SUN","SMOKE"],difficulty:4}]},
+      {groups:[{category:"Camping Gear",words:["TENT","LANTERN","COMPASS","SLEEPING"],difficulty:1},{category:"Geomorphology",words:["MORAINE","DELTA","FJORD","MESA"],difficulty:2},{category:"Things That TRACK",words:["TRAIN","RECORD","ANIMAL","TIME"],difficulty:3},{category:"___ STOP",words:["NON","PIT","BUS","BACK"],difficulty:4}]},
+      {groups:[{category:"Famous Walls (History)",words:["BERLIN","HADRIAN","CHINA","WESTERN"],difficulty:1},{category:"Epigenetics",words:["METHYLATION","HISTONE","CHROMATIN","ACETYLATION"],difficulty:2},{category:"Things That LIFT",words:["ELEVATOR","SPIRIT","FOG","EMBARGO"],difficulty:3},{category:"Words Containing STAR",words:["MUSTARD","CUSTARD","UPSTART","BASTARD"],difficulty:4}]},
+      {groups:[{category:"Famous Trains",words:["ORIENT","HOGWARTS","POLAR","BULLET"],difficulty:1},{category:"Geochemistry",words:["ISOTOPE","MINERAL","LEACHING","WEATHERING"],difficulty:2},{category:"Things That RING",words:["ALARM","BELL","BOXING","PHONE"],difficulty:3},{category:"___ SIDE",words:["OUT","IN","DOWN","HILL"],difficulty:4}]},
+      {groups:[{category:"Ocean Zones",words:["ABYSSAL","PELAGIC","BENTHIC","NERITIC"],difficulty:1},{category:"Astronomy Events",words:["ECLIPSE","EQUINOX","SOLSTICE","TRANSIT"],difficulty:2},{category:"Things with EYES",words:["NEEDLE","BIRD","HURRICANE","PRIVATE"],difficulty:3},{category:"Words from Korean",words:["KIMCHI","TAEKWONDO","HALLYU","SOJU"],difficulty:4}]},
+      {groups:[{category:"Famous Festivals",words:["COACHELLA","GLASTONBURY","BURNING","LOLLAPALOOZA"],difficulty:1},{category:"Aerodynamics",words:["DRAG","THRUST","BERNOULLI","TURBULENCE"],difficulty:2},{category:"Things That DROP",words:["BASS","TEMPERATURE","CHARGES","ANCHOR"],difficulty:3},{category:"___ WATCH",words:["BIRD","NIGHT","STOP","DOG"],difficulty:4}]}
+    ];
+
+    /* ===== GAME STATE ===== */
+    var mode = 'daily';
+    var currentPuzzle = null;
+    var selected = [];
+    var solvedGroups = [];
+    var mistakes = 0;
+    var maxMistakes = 4;
+    var gameActive = false;
+    var guessHistory = [];
+    var remainingWords = [];
+    var dailyState = null;
+
+    /* ===== SEEDED RANDOM ===== */
+    function seededRandom(seed) {
+      var x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function getDailyPuzzleIndex() {
+      var now = new Date();
+      var start = new Date(2026, 0, 1);
+      var daysSinceStart = Math.floor((now - start) / 86400000);
+      return Math.abs(daysSinceStart) % PUZZLES.length;
+    }
+
+    function getDailyDateString() {
+      var now = new Date();
+      return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+    }
+
+    /* ===== SHUFFLE ===== */
+    function shuffleArray(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    /* ===== LOCAL STORAGE ===== */
+    var STATS_KEY = 'wordgroups_stats';
+    var DAILY_KEY = 'wordgroups_daily';
+
+    function getStats() {
+      try {
+        var s = JSON.parse(localStorage.getItem(STATS_KEY));
+        if (s) return s;
+      } catch(e) {}
+      return { played: 0, won: 0, currentStreak: 0, maxStreak: 0, mistakeDist: {0:0,1:0,2:0,3:0,4:0} };
+    }
+
+    function saveStats(s) {
+      try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch(e) {}
+    }
+
+    function getDailyState() {
+      try {
+        var d = JSON.parse(localStorage.getItem(DAILY_KEY));
+        if (d && d.date === getDailyDateString()) return d;
+      } catch(e) {}
+      return null;
+    }
+
+    function saveDailyState() {
+      if (mode !== 'daily') return;
+      var state = {
+        date: getDailyDateString(),
+        puzzleIndex: getDailyPuzzleIndex(),
+        solvedGroups: solvedGroups,
+        mistakes: mistakes,
+        remainingWords: remainingWords,
+        guessHistory: guessHistory,
+        gameActive: gameActive
+      };
+      try { localStorage.setItem(DAILY_KEY, JSON.stringify(state)); } catch(e) {}
+    }
+
+    /* ===== RENDER ===== */
+    function renderGrid() {
+      var grid = document.getElementById('word-grid');
+      grid.innerHTML = '';
+      remainingWords.forEach(function(word) {
+        var tile = document.createElement('button');
+        tile.type = 'button';
+        tile.className = 'word-tile';
+        tile.textContent = word;
+        tile.setAttribute('data-word', word);
+        if (selected.indexOf(word) > -1) tile.classList.add('selected');
+        tile.addEventListener('click', function() { toggleWord(word); });
+        grid.appendChild(tile);
+      });
+      updateSelectionCount();
+    }
+
+    function renderSolvedGroups() {
+      var container = document.getElementById('solved-groups');
+      container.innerHTML = '';
+      solvedGroups.forEach(function(g) {
+        var div = document.createElement('div');
+        div.className = 'solved-group';
+        div.setAttribute('data-difficulty', g.difficulty);
+        div.innerHTML = '<div class="group-category">' + escapeHTML(g.category) + '</div>' +
+                        '<div class="group-words">' + g.words.map(escapeHTML).join(', ') + '</div>';
+        container.appendChild(div);
+      });
+    }
+
+    function renderLives() {
+      for (var i = 1; i <= 4; i++) {
+        var dot = document.getElementById('life-' + i);
+        if (i <= maxMistakes - mistakes) {
+          dot.classList.remove('lost');
+        } else {
+          dot.classList.add('lost');
+        }
+      }
+    }
+
+    function updateSelectionCount() {
+      var el = document.getElementById('selection-count');
+      if (selected.length === 0) {
+        el.textContent = '';
+      } else {
+        el.textContent = selected.length + ' of 4 selected';
+      }
+      document.getElementById('btn-submit').disabled = selected.length !== 4;
+    }
+
+    function escapeHTML(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    /* ===== GAME LOGIC ===== */
+    function toggleWord(word) {
+      if (!gameActive) return;
+      var idx = selected.indexOf(word);
+      if (idx > -1) {
+        selected.splice(idx, 1);
+      } else {
+        if (selected.length >= 4) return;
+        selected.push(word);
+      }
+      renderGrid();
+    }
+
+    function submitGuess() {
+      if (selected.length !== 4 || !gameActive) return;
+
+      var puzzle = currentPuzzle;
+      var matchedGroup = null;
+
+      for (var i = 0; i < puzzle.groups.length; i++) {
+        var g = puzzle.groups[i];
+        var alreadySolved = false;
+        for (var s = 0; s < solvedGroups.length; s++) {
+          if (solvedGroups[s].category === g.category) { alreadySolved = true; break; }
+        }
+        if (alreadySolved) continue;
+
+        var match = true;
+        for (var w = 0; w < selected.length; w++) {
+          if (g.words.indexOf(selected[w]) === -1) { match = false; break; }
+        }
+        if (match && selected.length === g.words.length) {
+          matchedGroup = g;
+          break;
+        }
+      }
+
+      if (matchedGroup) {
+        /* Correct guess */
+        solvedGroups.push(matchedGroup);
+        guessHistory.push({ words: selected.slice(), correct: true, difficulty: matchedGroup.difficulty });
+        remainingWords = remainingWords.filter(function(w) { return selected.indexOf(w) === -1; });
+        selected = [];
+        renderSolvedGroups();
+        renderGrid();
+        renderLives();
+        saveDailyState();
+
+        if (solvedGroups.length === 4) {
+          gameActive = false;
+          saveDailyState();
+          showGameOver(true);
+          recordStats(true);
+        }
+      } else {
+        /* Wrong guess — check for "one away" */
+        var oneAway = false;
+        for (var i = 0; i < puzzle.groups.length; i++) {
+          var g = puzzle.groups[i];
+          var alreadySolved = false;
+          for (var s = 0; s < solvedGroups.length; s++) {
+            if (solvedGroups[s].category === g.category) { alreadySolved = true; break; }
+          }
+          if (alreadySolved) continue;
+          var overlap = 0;
+          for (var w = 0; w < selected.length; w++) {
+            if (g.words.indexOf(selected[w]) > -1) overlap++;
+          }
+          if (overlap === 3) { oneAway = true; break; }
+        }
+
+        mistakes++;
+        guessHistory.push({ words: selected.slice(), correct: false });
+        renderLives();
+
+        /* Shake animation */
+        var tiles = document.querySelectorAll('.word-tile.selected');
+        tiles.forEach(function(t) { t.classList.add('wrong'); });
+        setTimeout(function() {
+          tiles.forEach(function(t) { t.classList.remove('wrong'); });
+        }, 500);
+
+        if (oneAway && window.showToast) {
+          window.showToast('So close! One word away...');
+        }
+
+        if (mistakes >= maxMistakes) {
+          gameActive = false;
+          /* Reveal remaining groups */
+          puzzle.groups.forEach(function(g) {
+            var alreadySolved = false;
+            for (var s = 0; s < solvedGroups.length; s++) {
+              if (solvedGroups[s].category === g.category) { alreadySolved = true; break; }
+            }
+            if (!alreadySolved) solvedGroups.push(g);
+          });
+          remainingWords = [];
+          selected = [];
+          renderSolvedGroups();
+          renderGrid();
+          saveDailyState();
+          showGameOver(false);
+          recordStats(false);
+        } else {
+          saveDailyState();
+        }
+      }
+    }
+
+    function recordStats(won) {
+      var stats = getStats();
+      stats.played++;
+      if (won) {
+        stats.won++;
+        stats.currentStreak++;
+        if (stats.currentStreak > stats.maxStreak) stats.maxStreak = stats.currentStreak;
+      } else {
+        stats.currentStreak = 0;
+      }
+      var key = String(mistakes);
+      if (!stats.mistakeDist) stats.mistakeDist = {0:0,1:0,2:0,3:0,4:0};
+      stats.mistakeDist[key] = (stats.mistakeDist[key] || 0) + 1;
+      saveStats(stats);
+    }
+
+    function showGameOver(won) {
+      var el = document.getElementById('game-over');
+      var emoji = buildEmojiGrid();
+      el.style.display = 'block';
+      el.innerHTML = '<h3>' + (won ? 'Puzzle Solved!' : 'Better Luck Next Time') + '</h3>' +
+        '<p>' + (won ? 'You found all 4 groups with ' + mistakes + ' mistake' + (mistakes !== 1 ? 's' : '') + '!' : 'You used all 4 guesses. The remaining groups have been revealed.') + '</p>' +
+        '<div class="share-result" id="share-result">' + emoji + '</div>' +
+        '<div class="game-over-actions">' +
+          '<button type="button" style="background:var(--heading);color:var(--bg);" id="btn-share-result">Share Results</button>' +
+          '<button type="button" style="background:var(--surface);color:var(--heading);border:1px solid var(--border);" id="btn-new-game">New Puzzle</button>' +
+          '<button type="button" style="background:var(--surface);color:var(--heading);border:1px solid var(--border);" id="btn-show-stats">View Stats</button>' +
+        '</div>';
+
+      document.getElementById('btn-share-result').addEventListener('click', shareResults);
+      document.getElementById('btn-new-game').addEventListener('click', function() {
+        if (mode === 'daily') {
+          switchMode('practice');
+        }
+        startNewGame();
+      });
+      document.getElementById('btn-show-stats').addEventListener('click', showStats);
+
+      /* Fire AI insight in background — non-blocking */
+      generateAIInsight(currentPuzzle, won, mistakes);
+    }
+
+    function buildEmojiGrid() {
+      var diffEmojis = { 1: '\u{1F7E9}', 2: '\u{1F7E8}', 3: '\u{1F7E6}', 4: '\u{1F7EA}' };
+      var lines = [];
+      var puzzleLabel = mode === 'daily' ? 'Word Groups #' + (getDailyPuzzleIndex() + 1) : 'Word Groups (Practice)';
+      lines.push(puzzleLabel);
+
+      guessHistory.forEach(function(guess) {
+        if (guess.correct) {
+          var emoji = diffEmojis[guess.difficulty] || '\u2B1C';
+          lines.push(emoji + emoji + emoji + emoji);
+        } else {
+          /* Show what difficulties the wrong guess words belonged to */
+          var row = '';
+          guess.words.forEach(function(w) {
+            var d = 0;
+            for (var i = 0; i < currentPuzzle.groups.length; i++) {
+              if (currentPuzzle.groups[i].words.indexOf(w) > -1) {
+                d = currentPuzzle.groups[i].difficulty;
+                break;
+              }
+            }
+            row += diffEmojis[d] || '\u2B1C';
+          });
+          lines.push(row);
+        }
+      });
+
+      /* Add any auto-revealed groups at end */
+      if (mistakes >= maxMistakes) {
+        currentPuzzle.groups.forEach(function(g) {
+          var wasGuessed = false;
+          for (var i = 0; i < guessHistory.length; i++) {
+            if (guessHistory[i].correct && guessHistory[i].difficulty === g.difficulty) {
+              wasGuessed = true; break;
+            }
+          }
+          if (!wasGuessed) {
+            var emoji = diffEmojis[g.difficulty] || '\u2B1C';
+            lines.push(emoji + emoji + emoji + emoji);
+          }
+        });
+      }
+
+      return lines.join('\n');
+    }
+
+    function shareResults() {
+      var text = buildEmojiGrid() + '\nhttps://tool.teamzlab.com/games/word-groups-puzzle/';
+      navigator.clipboard.writeText(text).then(function() {
+        if (window.showToast) window.showToast('Results copied to clipboard!');
+      }).catch(function() {
+        if (window.showToast) window.showToast('Could not copy — try selecting the text manually');
+      });
+    }
+
+    /* ===== STATS ===== */
+    function showStats() {
+      var stats = getStats();
+      document.getElementById('stat-played').textContent = stats.played;
+      document.getElementById('stat-win-pct').textContent = stats.played > 0 ? Math.round(stats.won / stats.played * 100) : 0;
+      document.getElementById('stat-streak').textContent = stats.currentStreak;
+      document.getElementById('stat-max-streak').textContent = stats.maxStreak;
+
+      var dist = stats.mistakeDist || {0:0,1:0,2:0,3:0,4:0};
+      var maxVal = Math.max(1, dist[0] || 0, dist[1] || 0, dist[2] || 0, dist[3] || 0, dist[4] || 0);
+      var barsHTML = '';
+      for (var i = 0; i <= 4; i++) {
+        var val = dist[i] || 0;
+        var pct = Math.max(8, (val / maxVal) * 100);
+        barsHTML += '<div class="dist-row"><span class="dist-label">' + i + '</span><div class="dist-bar" style="width:' + pct + '%;">' + val + '</div></div>';
+      }
+      document.getElementById('dist-bars').innerHTML = barsHTML;
+      document.getElementById('stats-overlay').classList.add('show');
+    }
+
+    document.getElementById('stats-close').addEventListener('click', function() {
+      document.getElementById('stats-overlay').classList.remove('show');
+    });
+    document.getElementById('stats-overlay').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('show');
+    });
+
+    /* ===== GAME INIT ===== */
+    function startNewGame(puzzleIndex) {
+      var idx;
+      if (typeof puzzleIndex === 'number') {
+        idx = puzzleIndex;
+      } else if (mode === 'daily') {
+        idx = getDailyPuzzleIndex();
+      } else {
+        idx = Math.floor(Math.random() * PUZZLES.length);
+      }
+
+      currentPuzzle = PUZZLES[idx];
+      selected = [];
+      solvedGroups = [];
+      mistakes = 0;
+      guessHistory = [];
+      gameActive = true;
+
+      /* Collect all words and shuffle */
+      remainingWords = [];
+      currentPuzzle.groups.forEach(function(g) {
+        g.words.forEach(function(w) { remainingWords.push(w); });
+      });
+      remainingWords = shuffleArray(remainingWords);
+
+      document.getElementById('game-over').style.display = 'none';
+      document.getElementById('game-over').innerHTML = '';
+
+      if (mode === 'daily') {
+        document.getElementById('game-title').textContent = 'Daily Puzzle #' + (idx + 1);
+        document.getElementById('puzzle-info').textContent = getDailyDateString() + ' — Find groups of 4 related words';
+      } else {
+        document.getElementById('game-title').textContent = 'Practice Mode';
+        document.getElementById('puzzle-info').textContent = 'Puzzle #' + (idx + 1) + ' — Find groups of 4 related words';
+      }
+
+      renderSolvedGroups();
+      renderGrid();
+      renderLives();
+      saveDailyState();
+    }
+
+    function restoreDailyState(state) {
+      currentPuzzle = PUZZLES[state.puzzleIndex];
+      solvedGroups = state.solvedGroups || [];
+      mistakes = state.mistakes || 0;
+      remainingWords = state.remainingWords || [];
+      guessHistory = state.guessHistory || [];
+      gameActive = state.gameActive !== false;
+      selected = [];
+
+      var idx = state.puzzleIndex;
+      document.getElementById('game-title').textContent = 'Daily Puzzle #' + (idx + 1);
+      document.getElementById('puzzle-info').textContent = getDailyDateString() + ' — Find groups of 4 related words';
+
+      renderSolvedGroups();
+      renderGrid();
+      renderLives();
+
+      if (!gameActive) {
+        var won = solvedGroups.length === 4 && mistakes < maxMistakes;
+        showGameOver(won);
+      }
+    }
+
+    function switchMode(newMode) {
+      mode = newMode;
+      document.getElementById('btn-daily').classList.toggle('active', mode === 'daily');
+      document.getElementById('btn-practice').classList.toggle('active', mode === 'practice');
+    }
+
+    /* ===== EVENT LISTENERS ===== */
+    document.getElementById('btn-submit').addEventListener('click', submitGuess);
+
+    document.getElementById('btn-shuffle').addEventListener('click', function() {
+      if (!gameActive) return;
+      remainingWords = shuffleArray(remainingWords);
+      renderGrid();
+    });
+
+    document.getElementById('btn-deselect').addEventListener('click', function() {
+      selected = [];
+      renderGrid();
+    });
+
+    document.getElementById('btn-daily').addEventListener('click', function() {
+      if (mode === 'daily') return;
+      switchMode('daily');
+      var state = getDailyState();
+      if (state) {
+        restoreDailyState(state);
+      } else {
+        startNewGame();
+      }
+    });
+
+    document.getElementById('btn-practice').addEventListener('click', function() {
+      if (mode === 'practice') return;
+      switchMode('practice');
+      startNewGame();
+    });
+
+    document.getElementById('btn-stats').addEventListener('click', showStats);
+
+    /* ===== KEYBOARD SUPPORT ===== */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && selected.length === 4 && gameActive) {
+        submitGuess();
+      }
+    });
+
+    /* ===== AI INSIGHT (non-blocking, fires after game ends) ===== */
+    var curatedFacts = [
+      'The word "puzzle" comes from the 1590s, possibly from the Old English "pusle" meaning to bewilder.',
+      'Pattern recognition is one of the most important cognitive skills — it helps us learn languages, solve math, and even navigate social situations.',
+      'The human brain can process images in as little as 13 milliseconds, which is why visual word puzzles feel so natural.',
+      'Studies show that people who do word puzzles regularly have brain function equivalent to people 10 years younger.',
+      'The English language has over 170,000 words in current use — word group puzzles only scratch the surface!',
+      'Categorization is a fundamental human cognitive ability that emerges in infants as young as 3 months old.',
+      'The average English speaker knows between 20,000 and 35,000 words — enough for thousands of puzzle combinations.',
+      'Word association games date back to the 19th century, when psychologist Carl Jung used them in therapy.',
+      'The concept of "lateral thinking" was coined by Edward de Bono in 1967 — it is essential for tricky puzzle categories.',
+      'Crossword puzzles were invented in 1913 by journalist Arthur Wynne — word group puzzles are a modern evolution.',
+      'Your working memory can hold about 7 items at once, which is why 16-word puzzles feel challenging but possible.',
+      'The "tip of the tongue" phenomenon happens when your brain has retrieved partial info — shuffle the words to jog it loose.',
+      'Bilingual people tend to solve word puzzles faster because their brains are trained to switch between categories.',
+      'The term "eureka moment" comes from Archimedes — that feeling when a puzzle category suddenly clicks.',
+      'Word frequency effects mean common words are recognized faster — rare words in puzzles make harder categories.',
+      'Compound words like "sunflower" activate two meaning networks in your brain simultaneously.',
+      'Semantic memory (facts and word meanings) typically remains strong well into old age, making word puzzles great for all ages.',
+      'The longest English word without a repeated letter is "uncopyrightable" at 15 letters.',
+      'Anagram solving uses a different cognitive pathway than reading — that is why anagram-based categories feel extra tricky.',
+      'Color-word associations (like "blue" meaning sad) vary across cultures, making some categories culturally specific.'
+    ];
+
+    var curatedTips = [
+      'Start with the most concrete category — proper nouns and specific facts are easier to spot than abstract connections.',
+      'If you are stuck, try elimination: identify 3 words that clearly belong together, then figure out the 4th.',
+      'Look for wordplay patterns: prefixes (___door), suffixes (sun___), and hidden words are common in hard categories.',
+      'The hardest group often relies on a word having a meaning you did not initially consider — think double meanings!',
+      'Shuffle frequently. Seeing words next to different neighbors can reveal new connections your brain missed.',
+      'Save your riskiest guess for last — when only 4-8 words remain, the odds of guessing correctly are much better.',
+      'If a word seems to fit two categories, it probably belongs to the trickier one — the puzzle is designed to deceive.',
+      'Categories involving "___ Word" or "Word ___" patterns are common at difficulty 3-4. Mentally prefix/suffix each word.',
+      'When you get "one away," think about which word is the imposter — it likely fits a harder category.',
+      'Count your remaining groups. If you have solved 2 easy ones, the remaining 2 are both tricky — proceed carefully.',
+      'Look at all 16 words before making any guess. A quick scan often reveals the easiest group immediately.',
+      'Wrong guesses give you information too — note which words stuck together in failed attempts.',
+      'Four-letter words are often part of compound word categories (e.g., FIRE___, ___BALL).',
+      'If you spot a theme but can only find 3 words, the 4th is probably disguised — think synonyms and slang.',
+      'Practice mode is great for learning patterns — the more puzzles you solve, the faster you spot tricky categories.'
+    ];
+
+    function generateAIInsight(puzzle, won, mistakeCount) {
+      var gameOverEl = document.getElementById('game-over');
+      if (!gameOverEl) return;
+
+      /* Pick a random category from the puzzle for the fact prompt */
+      var randomGroup = puzzle.groups[Math.floor(Math.random() * puzzle.groups.length)];
+      var categoryName = randomGroup.category;
+      var categoryWords = randomGroup.words.join(', ');
+
+      /* Determine performance-based tip context */
+      var perfContext = '';
+      if (won && mistakeCount === 0) {
+        perfContext = 'perfect solve with zero mistakes';
+      } else if (won) {
+        perfContext = 'solved with ' + mistakeCount + ' mistake' + (mistakeCount !== 1 ? 's' : '');
+      } else {
+        perfContext = 'did not solve the puzzle (used all 4 guesses)';
+      }
+
+      var factPrompt = 'Give me one short fun fact (1-2 sentences max) related to the category "' + categoryName + '" (which included the words: ' + categoryWords + '). Make it surprising and educational. Do not start with "Did you know".';
+      var tipPrompt = 'A player just finished a word groups puzzle (' + perfContext + '). The puzzle had these categories: ' + puzzle.groups.map(function(g) { return g.category; }).join(', ') + '. Give one short, specific gameplay tip (1 sentence) based on their performance.';
+
+      /* Fire AI generation in background — non-blocking */
+      var insightReady = false;
+
+      function showInsight(factText, tipText) {
+        if (insightReady) return;
+        insightReady = true;
+        var card = document.createElement('div');
+        card.className = 'ai-insight-card';
+        card.innerHTML = '<div class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a2 2 0 0 1-2 2h-1l1 5h-3l-1-5h-2l-1 5H7l1-5H7a2 2 0 0 1-2-2v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z"/></svg> AI Insight</div>' +
+          '<div class="ai-fact">' + escapeHTML(factText) + '</div>' +
+          (tipText ? '<div class="ai-tip">' + escapeHTML(tipText) + '</div>' : '');
+        gameOverEl.appendChild(card);
+      }
+
+      /* Fallback picks */
+      var fallbackFact = curatedFacts[Math.floor(Math.random() * curatedFacts.length)];
+      var fallbackTip = curatedTips[Math.floor(Math.random() * curatedTips.length)];
+
+      if (typeof TeamzAI !== 'undefined' && TeamzAI.generate) {
+        /* Try to get AI fact */
+        var aiFact = fallbackFact;
+        var aiTip = fallbackTip;
+
+        TeamzAI.generate({
+          chromePrompt: factPrompt,
+          chromeSystemPrompt: 'You are a concise trivia expert. Reply with just the fun fact, 1-2 sentences max.',
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Tell a fun fact about ' + categoryName + ': ',
+          transformersOptions: { max_new_tokens: 80 },
+          fallback: function() { return fallbackFact; },
+          qualityCheck: function(text) { return text && text.length > 15 && text.length < 500; }
+        }).then(function(result) {
+          if (result && result.text) aiFact = result.text;
+        }).catch(function() {}).finally(function() {
+          /* Now try the tip */
+          TeamzAI.generate({
+            chromePrompt: tipPrompt,
+            chromeSystemPrompt: 'You are a word puzzle coach. Give one specific, actionable tip in 1 sentence.',
+            transformersTask: 'text2text-generation',
+            transformersModel: 'Xenova/flan-t5-base',
+            transformersPrompt: 'Give a word puzzle tip for someone who ' + perfContext + ': ',
+            transformersOptions: { max_new_tokens: 60 },
+            fallback: function() { return fallbackTip; },
+            qualityCheck: function(text) { return text && text.length > 10 && text.length < 300; }
+          }).then(function(result) {
+            if (result && result.text) aiTip = result.text;
+          }).catch(function() {}).finally(function() {
+            showInsight(aiFact, aiTip);
+          });
+        });
+      } else {
+        /* No AI engine — show curated fallback after a short delay */
+        setTimeout(function() {
+          showInsight(fallbackFact, fallbackTip);
+        }, 600);
+      }
+    }
+
+    /* ===== INIT ===== */
+    var savedDaily = getDailyState();
+    if (savedDaily) {
+      restoreDailyState(savedDaily);
+    } else {
+      startNewGame();
+    }
+
+    /* AI warm-up: wait 3s AFTER game is fully loaded and playable,
+       then pre-download model in background so results are instant on game end */
+    setTimeout(function() {
+      if (typeof TeamzAI !== 'undefined' && TeamzAI.init) {
+        TeamzAI.init().then(function() {
+          if (!TeamzAI.chromeAI.prompt) {
+            TeamzAI.getPipeline('text2text-generation', 'Xenova/flan-t5-base', {
+              onStatus: function() {},
+              onProgress: function() {}
+            }).catch(function() {});
+          }
+        }).catch(function() {});
+      }
+    }, 3000);
+
+  });
+  </script>
+</body>
+</html>
