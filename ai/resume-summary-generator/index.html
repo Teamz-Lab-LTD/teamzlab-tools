@@ -55,7 +55,7 @@
       <div class="ai-fallback" id="ai-fallback">
         This tool works in two modes: AI-powered (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
-        <strong>Smart Analysis Mode:</strong> The tool will extract key details from your resume and compose a template-based professional summary.
+        <strong>Multi-Tier AI:</strong> Chrome AI (fastest) → Transformers.js AI (works offline in any browser) → Smart analysis that extracts key details and composes a template-based professional summary.
       </div>
       <div class="tool-field">
         <label for="input-text" class="tool-label">Paste Your Resume or Work Experience</label>
@@ -99,6 +99,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
     var aiMode = 'none';
@@ -249,7 +250,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste your resume or work experience first.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste your resume or work experience first.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Generating...';
@@ -260,31 +261,56 @@
       var resultEl = document.getElementById('tool-result');
 
       try {
+        await TeamzAI.init();
+
         if (hasAI && aiMode === 'summarizer') {
           var summarizer = await self.ai.summarizer.create({ type: 'key-points', length: 'short' });
-          var result = await summarizer.summarize(text, { context: 'Generate a professional 2-3 sentence resume summary highlighting years of experience, key skills, and career strengths.' });
-          output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + result.replace(/\n/g, '<br>') + '</div>';
+          var aiResult = await summarizer.summarize(text, { context: 'Generate a professional 2-3 sentence resume summary highlighting years of experience, key skills, and career strengths.' });
+          output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + aiResult.replace(/\n/g, '<br>') + '</div>';
+          output.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Chrome AI</p>';
           var fb = fallbackSummary(text);
           var tips = generateTips(fb);
           tipsArea.innerHTML = '<div class="tips-list"><h4>Tips to Improve Your Summary</h4><ul>' + tips.map(function(t){return '<li>'+t+'</li>';}).join('') + '</ul></div>';
         } else if (hasAI && aiMode === 'writer') {
           var writer = await self.ai.writer.create({ tone: 'formal', length: 'short' });
-          var result = await writer.write('Write a professional 2-3 sentence resume summary based on this resume:\n\n' + text);
-          output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + result.replace(/\n/g, '<br>') + '</div>';
+          var aiResult = await writer.write('Write a professional 2-3 sentence resume summary based on this resume:\n\n' + text);
+          output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + aiResult.replace(/\n/g, '<br>') + '</div>';
+          output.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Chrome AI</p>';
           var fb = fallbackSummary(text);
           var tips = generateTips(fb);
           tipsArea.innerHTML = '<div class="tips-list"><h4>Tips to Improve Your Summary</h4><ul>' + tips.map(function(t){return '<li>'+t+'</li>';}).join('') + '</ul></div>';
         } else {
+          // Try Transformers.js as middle tier
+          var result = await TeamzAI.generate({
+            chromePrompt: '',
+            transformersTask: 'summarization',
+            transformersModel: 'Xenova/distilbart-cnn-6-6',
+            transformersPrompt: text.substring(0, 1000),
+            transformersOptions: { max_new_tokens: 150, num_beams: 4 },
+            fallback: function() { return fallbackSummary(text).summary; },
+            onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+            onStatus: function(msg) { btn.textContent = msg; },
+            qualityCheck: function(t) { return t && t.length > 30; }
+          });
+
+          var modeLabel = result.source === 'transformers' ? 'Transformers.js AI' : 'Smart Analysis';
           var data = fallbackSummary(text);
           var tips = generateTips(data);
-          var html = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + data.summary + '</div>';
-          html += '<div style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted);">';
-          html += '<strong>Detected:</strong> ';
-          if (data.years) html += data.years + ' years experience • ';
-          if (data.skills.length) html += data.skills.length + ' skills found • ';
-          if (data.titles.length) html += 'Role: ' + data.titles[0];
-          html += '</div>';
-          output.innerHTML = html;
+
+          if (result.source === 'transformers') {
+            output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + result.text.replace(/\n/g, '<br>') + '</div>';
+            output.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by ' + modeLabel + '</p>';
+          } else {
+            var html = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + data.summary + '</div>';
+            html += '<div style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted);">';
+            html += '<strong>Detected:</strong> ';
+            if (data.years) html += data.years + ' years experience • ';
+            if (data.skills.length) html += data.skills.length + ' skills found • ';
+            if (data.titles.length) html += 'Role: ' + data.titles[0];
+            html += '</div>';
+            html += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by ' + modeLabel + '</p>';
+            output.innerHTML = html;
+          }
           tipsArea.innerHTML = '<div class="tips-list"><h4>Tips to Improve Your Summary</h4><ul>' + tips.map(function(t){return '<li>'+t+'</li>';}).join('') + '</ul></div>';
         }
         resultEl.style.display = 'block';
@@ -292,7 +318,7 @@
       } catch (e) {
         var data = fallbackSummary(text);
         var tips = generateTips(data);
-        output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + data.summary + '</div><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">AI unavailable — used smart analysis fallback.</div>';
+        output.innerHTML = '<div style="padding:1rem;background:var(--surface-bg,var(--surface));border-radius:8px;font-size:1.05rem;line-height:1.8;">' + data.summary + '</div><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by Smart Analysis</div>';
         tipsArea.innerHTML = '<div class="tips-list"><h4>Tips to Improve Your Summary</h4><ul>' + tips.map(function(t){return '<li>'+t+'</li>';}).join('') + '</ul></div>';
         resultEl.style.display = 'block';
       }

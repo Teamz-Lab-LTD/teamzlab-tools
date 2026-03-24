@@ -47,7 +47,7 @@
       <div class="ai-fallback" id="ai-fallback">
         This tool works in two modes: AI-powered (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
-        <strong>Smart Analysis Mode:</strong> The tool will provide writing tips, word count, and basic analysis of your email instead.
+        <strong>Multi-Tier AI:</strong> Chrome AI (fastest) → Transformers.js AI (works offline in any browser) → Smart Analysis fallback.
       </div>
       <div class="tool-field">
         <label for="input-text" class="tool-label">Paste Your Email Draft</label>
@@ -82,6 +82,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -134,7 +135,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste your email draft first.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste your email draft first.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Improving...';
@@ -145,14 +146,32 @@
       var resultEl = document.getElementById('tool-result');
 
       try {
-        if (hasAI) {
-          var RewriterAPI = self.Rewriter || (self.ai && self.ai.rewriter);
-          var rewriter = await RewriterAPI.create({ tone: 'more-formal', format: 'as-is', length: 'as-is' });
-          var improved = await rewriter.rewrite(text, { context: 'Improve this email for better clarity, tone, and professionalism.' });
-          output.innerHTML = improved.replace(/\n/g, '<br>');
+        await TeamzAI.init();
+        var result = await TeamzAI.generate({
+          chromePrompt: text,
+          chromeSystemPrompt: 'Improve this email for better clarity, tone, and professionalism. Rewrite it as a complete improved email.',
+          chromeType: 'rewriter',
+          chromeOptions: { tone: 'more-formal', format: 'as-is', length: 'as-is' },
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Rewrite this email to be more professional and clear: ' + text.substring(0, 500),
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return fallbackAnalysis(text); },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 20; }
+        });
+
+        if (result.source === 'chrome-ai') {
+          output.innerHTML = result.text.replace(/\n/g, '<br>');
           extracted.innerHTML = '<h4 style="margin-top:1rem;">Email Statistics</h4><div style="white-space:pre-wrap;">' + fallbackAnalysis(text) + '</div>';
+          extracted.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Chrome AI</p>';
+        } else if (result.source === 'transformers') {
+          output.innerHTML = result.text.replace(/\n/g, '<br>');
+          extracted.innerHTML = '<h4 style="margin-top:1rem;">Email Statistics</h4><div style="white-space:pre-wrap;">' + fallbackAnalysis(text) + '</div>';
+          extracted.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Transformers.js AI</p>';
         } else {
-          output.innerHTML = '<strong>Email Analysis</strong> (Chrome AI not available)<br><br>' + fallbackAnalysis(text).replace(/\n/g, '<br>');
+          output.innerHTML = '<strong>Email Analysis</strong> (Smart Analysis Mode)<br><br>' + result.text.replace(/\n/g, '<br>');
           extracted.innerHTML = '';
         }
         resultEl.style.display = 'block';

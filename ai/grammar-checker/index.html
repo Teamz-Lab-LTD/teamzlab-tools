@@ -63,7 +63,7 @@
       <div class="ai-fallback" id="ai-fallback">
         This tool works in two modes: AI-enhanced (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
-        <strong>Smart Analysis Mode:</strong> The tool checks for 30+ common errors including misspellings, double words, missing capitalization, punctuation issues, and spacing problems.
+        <strong>Multi-Tier AI:</strong> Chrome AI (fastest) → Transformers.js AI (works offline in any browser) → Rule-based analysis that checks 30+ common errors including misspellings, double words, and punctuation issues.
       </div>
       <div class="tool-field">
         <label for="input-text" class="tool-label">Paste Your Text</label>
@@ -98,6 +98,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -277,7 +278,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste some text to check.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste some text to check.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Checking...';
@@ -310,11 +311,37 @@
           } else {
             extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Rule-based checks also passed. Text looks great!</p>';
           }
+          extracted.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Chrome AI</p>';
         } else {
-          var issues = fallbackCheck(text);
-          output.innerHTML = renderIssues(issues);
-          var wordCount = text.trim().split(/\s+/).length;
-          extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Checked ' + wordCount + ' words using rule-based analysis. For deeper AI-powered checking, use Chrome 138+.</p>';
+          // Try Transformers.js as middle tier
+          await TeamzAI.init();
+          var aiResult = await TeamzAI.generate({
+            chromePrompt: '', // Chrome AI already handled above
+            transformersTask: 'text2text-generation',
+            transformersModel: 'Xenova/flan-t5-base',
+            transformersPrompt: 'Check grammar and fix errors in this text: ' + text.substring(0, 500),
+            transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+            fallback: function() { return null; },
+            onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+            onStatus: function(msg) { btn.textContent = msg; },
+            qualityCheck: function(t) { return t && t.length > 20; }
+          });
+
+          if (aiResult.source === 'transformers' && aiResult.text) {
+            output.innerHTML = '<strong>AI-Corrected Text</strong> (Transformers.js AI)<br><br>' + aiResult.text.replace(/\n/g, '<br>');
+            var ruleIssues = fallbackCheck(text);
+            if (ruleIssues.length > 0) {
+              extracted.innerHTML = '<h4 style="margin-top:1rem;">Additional Rule-Based Checks</h4>' + renderIssues(ruleIssues);
+            } else {
+              extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Rule-based checks also passed.</p>';
+            }
+            extracted.innerHTML += '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Transformers.js AI</p>';
+          } else {
+            var issues = fallbackCheck(text);
+            output.innerHTML = renderIssues(issues);
+            var wordCount = text.trim().split(/\s+/).length;
+            extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;">Checked ' + wordCount + ' words using Smart Analysis. For deeper AI-powered checking, use Chrome 138+.</p>';
+          }
         }
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

@@ -60,7 +60,7 @@
       <div class="ai-fallback" id="ai-fallback">
         This tool works in two modes: AI-powered (Chrome 138+) and template engine (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
-        <strong>Template Engine Mode:</strong> The tool uses proven headline formulas from copywriting to generate 10 compelling variations.
+        <strong>Multi-Tier AI:</strong> Chrome AI (fastest) → Transformers.js AI (works offline in any browser) → Template engine using proven headline formulas from copywriting.
       </div>
       <div class="tool-field">
         <label for="input-topic" class="tool-label">Topic or Keyword</label>
@@ -115,6 +115,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -268,7 +269,7 @@
       var tone = document.getElementById('input-tone').value;
       var contentType = document.getElementById('input-type').value;
 
-      if (!topic) { alert('Please enter a topic or keyword.'); return; }
+      if (!topic) { if (window.showToast) window.showToast('Please enter a topic or keyword.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Generating...';
@@ -277,27 +278,44 @@
       var output = document.getElementById('ai-output');
       var resultEl = document.getElementById('tool-result');
 
+      var prompt = 'Generate exactly 10 ' + tone + ' headlines for a ' + contentType + ' about "' + topic + '". Each headline should be on its own line. Make them compelling and varied. Use proven headline formulas.';
+
       try {
-        if (hasAI) {
-          var writer = await self.ai.writer.create({ tone: tone === 'professional' ? 'formal' : 'casual', length: 'short' });
-          var prompt = 'Generate exactly 10 ' + tone + ' headlines for a ' + contentType + ' about "' + topic + '". Each headline should be on its own line. Make them compelling and varied. Use proven headline formulas.';
-          var result = await writer.write(prompt);
-          var lines = result.split('\n').map(function(l){ return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){ return l.length > 5; }).slice(0, 10);
+        await TeamzAI.init();
+        var result = await TeamzAI.generate({
+          chromePrompt: prompt,
+          chromeSystemPrompt: 'You are a headline copywriter. Generate exactly 10 compelling headlines, one per line.',
+          chromeType: 'writer',
+          chromeOptions: { tone: (tone === 'professional' ? 'formal' : 'casual'), length: 'short' },
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Generate 10 ' + tone + ' headlines about ' + topic + ' for ' + contentType,
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return generateHeadlines(topic, tone, contentType).join('\n'); },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 30; }
+        });
+
+        var modeLabel = result.source === 'chrome-ai' ? 'Chrome AI' : (result.source === 'transformers' ? 'Transformers.js AI' : 'Template Engine');
+
+        if (result.source === 'chrome-ai' || result.source === 'transformers') {
+          var lines = result.text.split('\n').map(function(l){ return l.replace(/^\d+[\.\)]\s*/, '').trim(); }).filter(function(l){ return l.length > 5; }).slice(0, 10);
           if (lines.length >= 5) {
-            output.innerHTML = renderHeadlines(lines);
+            output.innerHTML = renderHeadlines(lines) + '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by ' + modeLabel + '</div>';
           } else {
             var headlines = generateHeadlines(topic, tone, contentType);
-            output.innerHTML = renderHeadlines(headlines);
+            output.innerHTML = renderHeadlines(headlines) + '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by Template Engine</div>';
           }
         } else {
           var headlines = generateHeadlines(topic, tone, contentType);
-          output.innerHTML = renderHeadlines(headlines);
+          output.innerHTML = renderHeadlines(headlines) + '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by ' + modeLabel + '</div>';
         }
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
         var headlines = generateHeadlines(topic, tone, contentType);
-        output.innerHTML = renderHeadlines(headlines) + '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">AI unavailable — used template engine.</div>';
+        output.innerHTML = renderHeadlines(headlines) + '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by Smart Analysis</div>';
         resultEl.style.display = 'block';
       }
 

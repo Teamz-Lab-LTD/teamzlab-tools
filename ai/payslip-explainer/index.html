@@ -46,7 +46,7 @@
         This tool uses Chrome's built-in AI (Gemini Nano). It runs 100% on your device for complete privacy. Requires Chrome 138+ with AI features enabled.
       </div>
       <div class="ai-fallback" id="ai-fallback">
-        This tool works in two modes: AI-powered (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        This tool works in three modes: AI-powered (Chrome 138+), Transformers.js (any browser, downloads once), and smart analysis (instant, all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
         <strong>Smart Analysis Mode:</strong> The tool will detect common payslip items (gross pay, tax, NI, pension, net pay) using pattern matching instead.
       </div>
@@ -91,6 +91,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -151,7 +152,7 @@
 
     async function analyze() {
       var text = document.getElementById('payslip-text').value.trim();
-      if (!text) { alert('Paste your payslip text first.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste your payslip text first.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Analyzing...';
@@ -162,25 +163,29 @@
       var resultEl = document.getElementById('tool-result');
 
       try {
-        if (hasAI) {
-          var prompt = 'You are a payslip explainer. The user has pasted their payslip below. Explain each line item in plain English. For each deduction, explain what it is, why it is deducted, and roughly how it is calculated. Be helpful and clear.\n\nPayslip:\n' + text;
-          var session;
-          if ('Summarizer' in self || (self.ai && self.ai.summarizer)) {
-            var SummarizerAPI = self.Summarizer || (self.ai && self.ai.summarizer);
-            var summarizer = await SummarizerAPI.create({ type: 'key-points', length: 'long', format: 'markdown' });
-            var summary = await summarizer.summarize(text, { context: 'This is a payslip. Explain each deduction in plain English.' });
-            output.innerHTML = summary.replace(/\n/g, '<br>');
-          } else {
-            var LM = self.LanguageModel || (self.ai && self.ai.languageModel);
-            session = await LM.create({ systemPrompt: 'You explain payslip deductions in plain English.' });
-            var result = await session.prompt(prompt);
-            output.innerHTML = result.replace(/\n/g, '<br>');
-          }
-          extracted.innerHTML = '<h4 style="margin-top:1rem;">Extracted Data</h4><div style="white-space:pre-wrap;">' + fallbackAnalysis(text) + '</div>';
-        } else {
-          output.innerHTML = '<strong>Rule-Based Analysis</strong> (Chrome AI not available)<br><br>' + fallbackAnalysis(text).replace(/\n/g, '<br>');
+        var result = await TeamzAI.generate({
+          chromePrompt: text,
+          chromeSystemPrompt: 'This is a payslip. Explain each line item and deduction in plain English. For each deduction, explain what it is, why it is deducted, and roughly how it is calculated.',
+          chromeType: 'summarizer',
+          chromeOptions: { type: 'key-points', length: 'long', format: 'markdown' },
+          transformersTask: 'summarization',
+          transformersModel: 'Xenova/distilbart-cnn-6-6',
+          transformersPrompt: 'Explain this payslip: ' + text.substring(0, 1000),
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return fallbackAnalysis(text); },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 20; }
+        });
+
+        if (result.source === 'fallback') {
+          output.innerHTML = '<strong>Rule-Based Analysis</strong> (Smart Analysis Mode)<br><br>' + result.text.replace(/\n/g, '<br>');
           extracted.innerHTML = '';
+        } else {
+          output.innerHTML = result.text.replace(/\n/g, '<br>');
+          extracted.innerHTML = '<h4 style="margin-top:1rem;">Extracted Data</h4><div style="white-space:pre-wrap;">' + fallbackAnalysis(text) + '</div>';
         }
+        output.innerHTML += '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Mode: ' + result.source + '</div>';
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
@@ -192,8 +197,9 @@
       btn.disabled = false;
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       checkAI();
+      if (typeof TeamzAI !== 'undefined') await TeamzAI.init();
       document.getElementById('analyze-btn').addEventListener('click', analyze);
       document.getElementById('clear-btn').addEventListener('click', function() {
         document.getElementById('payslip-text').value = '';

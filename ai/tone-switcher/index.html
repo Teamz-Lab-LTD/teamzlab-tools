@@ -47,7 +47,7 @@
       <div class="ai-fallback" id="ai-fallback">
         This tool works in two modes: AI-powered (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
-        <strong>Smart Analysis Mode:</strong> The tool will apply rule-based word replacements to adjust tone instead.
+        <strong>Multi-Tier AI:</strong> Chrome AI (fastest) → Transformers.js AI (works offline in any browser) → Rule-based word replacements to adjust tone.
       </div>
       <div class="tool-field">
         <label for="input-text" class="tool-label">Paste Your Text</label>
@@ -90,6 +90,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -148,7 +149,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste some text first.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste some text first.'); return; }
 
       var tone = document.getElementById('tone-select').value;
       var btn = document.getElementById('analyze-btn');
@@ -159,21 +160,33 @@
       var extracted = document.getElementById('extracted-data');
       var resultEl = document.getElementById('tool-result');
 
+      var toneLabel = tone === 'more-formal' ? 'formal' : (tone === 'more-casual' ? 'casual' : 'friendly');
+
       try {
-        if (hasAI) {
-          var RewriterAPI = self.Rewriter || (self.ai && self.ai.rewriter);
-          var rewriter = await RewriterAPI.create({ tone: tone });
-          var rewritten = await rewriter.rewrite(text);
-          output.innerHTML = rewritten.replace(/\n/g, '<br>');
-          extracted.innerHTML = '';
-        } else {
-          output.innerHTML = fallbackToneSwitch(text, tone).replace(/\n/g, '<br>');
-          extracted.innerHTML = '';
-        }
+        await TeamzAI.init();
+        var result = await TeamzAI.generate({
+          chromePrompt: text,
+          chromeSystemPrompt: 'Rewrite this text in a ' + toneLabel + ' tone while preserving the original meaning.',
+          chromeType: 'rewriter',
+          chromeOptions: { tone: tone },
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Rewrite this text in a ' + toneLabel + ' tone: ' + text.substring(0, 500),
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return fallbackToneSwitch(text, tone); },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 20; }
+        });
+
+        var modeLabel = result.source === 'chrome-ai' ? 'Chrome AI' : (result.source === 'transformers' ? 'Transformers.js AI' : 'Smart Analysis');
+        output.innerHTML = result.text.replace(/\n/g, '<br>');
+        extracted.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by ' + modeLabel + '</p>';
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
         output.innerHTML = 'Error: ' + e.message + '<br><br>' + fallbackToneSwitch(text, tone).replace(/\n/g, '<br>');
+        extracted.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;">Powered by Smart Analysis</p>';
         resultEl.style.display = 'block';
       }
 

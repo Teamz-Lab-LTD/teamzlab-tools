@@ -48,7 +48,7 @@
         This tool uses Chrome's built-in Summarizer API (Gemini Nano) with type=key-points. It runs 100% on your device for complete privacy. Requires Chrome 138+ with AI features enabled.
       </div>
       <div class="ai-fallback" id="ai-fallback">
-        This tool works in two modes: AI-powered (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        This tool works in three modes: AI-powered (Chrome 138+), Transformers.js (any browser, downloads once), and smart analysis (instant, all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
         <strong>Smart Analysis Mode:</strong> The tool will split text on sentences to create a checklist instead.
       </div>
@@ -85,6 +85,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -131,7 +132,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste some text first.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste some text first.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Generating...';
@@ -142,33 +143,43 @@
       var resultEl = document.getElementById('tool-result');
 
       try {
-        if (hasAI) {
-          var SummarizerAPI = self.Summarizer || (self.ai && self.ai.summarizer);
-          var summarizer = await SummarizerAPI.create({ type: 'key-points', length: 'long', format: 'markdown' });
-          var summary = await summarizer.summarize(text, { context: 'Extract each actionable item or key point as a separate bullet point for a checklist.' });
-          // Parse AI bullet points into checklist
-          var aiItems = summary.split(/\n/).map(function(l) { return l.replace(/^\s*[-*•●]\s*/, '').trim(); }).filter(function(l) { return l.length > 3; });
+        var fallbackItems = textToChecklist(text);
+        var result = await TeamzAI.generate({
+          chromePrompt: text,
+          chromeSystemPrompt: 'Extract each actionable item or key point as a separate bullet point for a checklist.',
+          chromeType: 'summarizer',
+          chromeOptions: { type: 'key-points', length: 'long', format: 'markdown' },
+          transformersTask: 'summarization',
+          transformersModel: 'Xenova/distilbart-cnn-6-6',
+          transformersPrompt: text.substring(0, 1000),
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return fallbackItems.join('\n'); },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 10; }
+        });
+
+        if (result.source === 'fallback') {
+          if (fallbackItems.length > 0) {
+            output.innerHTML = renderChecklist(fallbackItems);
+          } else {
+            output.innerHTML = 'Could not extract checklist items. Try pasting text with multiple sentences or bullet points.';
+          }
+          extracted.innerHTML = '<p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-muted);">' + fallbackItems.length + ' items extracted from ' + text.trim().split(/\s+/).length + ' words (Smart Analysis Mode)</p>';
+        } else {
+          var aiItems = result.text.split(/\n/).map(function(l) { return l.replace(/^\s*[-*\u2022\u25CF]\s*/, '').trim(); }).filter(function(l) { return l.length > 3; });
           if (aiItems.length > 0) {
             output.innerHTML = renderChecklist(aiItems);
           } else {
-            output.innerHTML = summary.replace(/\n/g, '<br>');
+            output.innerHTML = result.text.replace(/\n/g, '<br>');
           }
-          // Also show fallback
-          var fallbackItems = textToChecklist(text);
           if (fallbackItems.length > 0) {
             extracted.innerHTML = '<h4 style="margin-top:1rem;">Sentence-Based Checklist</h4>' + renderChecklist(fallbackItems);
           } else {
             extracted.innerHTML = '';
           }
-        } else {
-          var items = textToChecklist(text);
-          if (items.length > 0) {
-            output.innerHTML = renderChecklist(items);
-          } else {
-            output.innerHTML = 'Could not extract checklist items. Try pasting text with multiple sentences or bullet points.';
-          }
-          extracted.innerHTML = '<p style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-secondary);">' + items.length + ' items extracted from ' + text.trim().split(/\s+/).length + ' words</p>';
         }
+        output.innerHTML += '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Mode: ' + result.source + '</div>';
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
@@ -181,8 +192,9 @@
       btn.disabled = false;
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       checkAI();
+      if (typeof TeamzAI !== 'undefined') await TeamzAI.init();
       document.getElementById('analyze-btn').addEventListener('click', analyze);
       document.getElementById('clear-btn').addEventListener('click', function() {
         document.getElementById('input-text').value = '';

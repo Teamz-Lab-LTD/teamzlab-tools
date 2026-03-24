@@ -52,7 +52,7 @@
       <div class="ai-fallback" id="ai-fallback">
         This tool works in two modes: AI-powered (Chrome 138+) and template-based (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
-        <strong>Template Mode:</strong> The tool will generate a cover letter using proven professional templates tailored to your inputs.
+        <strong>Multi-Tier AI:</strong> Chrome AI (fastest) → Transformers.js AI (works offline in any browser) → Template-based generation using proven professional formats.
       </div>
       <div class="input-row">
         <div class="tool-field">
@@ -118,6 +118,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -172,8 +173,8 @@
       var years = document.getElementById('input-years').value.trim();
       var tone = document.getElementById('input-tone').value;
 
-      if (!job) { alert('Please enter the job title.'); return; }
-      if (!company) { alert('Please enter the company name.'); return; }
+      if (!job) { if (window.showToast) window.showToast('Please enter the job title.'); return; }
+      if (!company) { if (window.showToast) window.showToast('Please enter the company name.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Generating...';
@@ -182,22 +183,32 @@
       var output = document.getElementById('ai-output');
       var resultEl = document.getElementById('tool-result');
 
+      var prompt = 'Write a ' + tone + ' cover letter for a ' + job + ' position at ' + company + '. The candidate has ' + (years || 'several') + ' years of experience with skills in ' + (skills || 'relevant professional areas') + '. Include an opening paragraph expressing interest, a body paragraph highlighting skills and experience, and a closing paragraph requesting an interview.';
+
       try {
-        if (hasAI) {
-          var toneMap = { professional: 'formal', enthusiastic: 'casual', confident: 'formal' };
-          var writer = await self.ai.writer.create({ tone: toneMap[tone] || 'formal', length: 'long' });
-          var prompt = 'Write a ' + tone + ' cover letter for a ' + job + ' position at ' + company + '. The candidate has ' + (years || 'several') + ' years of experience with skills in ' + (skills || 'relevant professional areas') + '. Include an opening paragraph expressing interest, a body paragraph highlighting skills and experience, and a closing paragraph requesting an interview.';
-          var result = await writer.write(prompt);
-          output.innerHTML = '<div style="padding:1.25rem;background:var(--surface-bg,var(--surface));border-radius:8px;line-height:1.8;font-size:0.95rem;">' + result.replace(/\n/g, '<br>') + '</div>';
-        } else {
-          var letter = fallbackCoverLetter(job, company, skills, years, tone);
-          output.innerHTML = '<div style="padding:1.25rem;background:var(--surface-bg,var(--surface));border-radius:8px;line-height:1.8;font-size:0.95rem;">' + letter.replace(/\n/g, '<br>') + '</div>';
-        }
+        await TeamzAI.init();
+        var result = await TeamzAI.generate({
+          chromePrompt: prompt,
+          chromeSystemPrompt: 'You are a professional cover letter writer. Write compelling, well-structured cover letters.',
+          chromeType: 'writer',
+          chromeOptions: { tone: (tone === 'enthusiastic' ? 'casual' : 'formal'), length: 'long' },
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Write a ' + tone + ' cover letter for ' + job + ' at ' + company + ' with ' + (years || 'several') + ' years experience in ' + (skills || 'professional skills'),
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return fallbackCoverLetter(job, company, skills, years, tone); },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 50; }
+        });
+
+        var modeLabel = result.source === 'chrome-ai' ? 'Chrome AI' : (result.source === 'transformers' ? 'Transformers.js AI' : 'Template Engine');
+        output.innerHTML = '<div style="padding:1.25rem;background:var(--surface-bg,var(--surface));border-radius:8px;line-height:1.8;font-size:0.95rem;">' + result.text.replace(/\n/g, '<br>') + '</div><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by ' + modeLabel + '</div>';
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
         var letter = fallbackCoverLetter(job, company, skills, years, tone);
-        output.innerHTML = '<div style="padding:1.25rem;background:var(--surface-bg,var(--surface));border-radius:8px;line-height:1.8;font-size:0.95rem;">' + letter.replace(/\n/g, '<br>') + '</div><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted,#666);">AI unavailable — used template-based generation.</div>';
+        output.innerHTML = '<div style="padding:1.25rem;background:var(--surface-bg,var(--surface));border-radius:8px;line-height:1.8;font-size:0.95rem;">' + letter.replace(/\n/g, '<br>') + '</div><div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Powered by Smart Analysis</div>';
         resultEl.style.display = 'block';
       }
 

@@ -65,7 +65,7 @@
         This tool uses Chrome's built-in Rewriter API (Gemini Nano). Your prompt is processed 100% on your device. Requires Chrome 138+ with AI features enabled.
       </div>
       <div class="ai-fallback" id="ai-fallback">
-        This tool works in two modes: AI-powered (Chrome 138+) and deep analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        This tool works in three modes: AI-powered (Chrome 138+), Transformers.js (any browser, downloads once), and deep analysis (instant, all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
         <strong>Analysis Mode:</strong> The tool provides prompt scoring, vague word detection, structure analysis, and specific improvement suggestions.
       </div>
@@ -112,6 +112,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -381,7 +382,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste your AI prompt first.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste your AI prompt first.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Analyzing...';
@@ -394,17 +395,26 @@
       try {
         var data = fullAnalysis(text);
 
-        if (hasAI) {
-          var RewriterAPI = self.Rewriter || (self.ai && self.ai.rewriter);
-          var rewriter = await RewriterAPI.create({ tone: 'more-formal', format: 'as-is', length: 'as-is' });
-          var improved = await rewriter.rewrite(text, { context: 'Improve this AI prompt for better clarity, specificity, and structure. Make it more likely to produce high-quality AI output. Keep the original intent.' });
-          data.improved = improved;
-          output.innerHTML = '';
-          analysisArea.innerHTML = renderAnalysis(data);
-        } else {
-          output.innerHTML = '';
-          analysisArea.innerHTML = renderAnalysis(data);
+        var result = await TeamzAI.generate({
+          chromePrompt: text,
+          chromeSystemPrompt: 'Improve this AI prompt for better clarity, specificity, and structure. Make it more likely to produce high-quality AI output. Keep the original intent.',
+          chromeType: 'rewriter',
+          chromeOptions: { tone: 'more-formal', format: 'as-is', length: 'as-is' },
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: 'Rewrite this prompt to be clearer and more specific: ' + text.substring(0, 500),
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() { return data.improved; },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 20; }
+        });
+
+        if (result.source !== 'fallback') {
+          data.improved = result.text;
         }
+        output.innerHTML = '';
+        analysisArea.innerHTML = renderAnalysis(data) + '<div style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted);">Mode: ' + result.source + '</div>';
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
@@ -418,8 +428,9 @@
       btn.disabled = false;
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       checkAI();
+      if (typeof TeamzAI !== 'undefined') await TeamzAI.init();
       document.getElementById('analyze-btn').addEventListener('click', analyze);
       document.getElementById('clear-btn').addEventListener('click', function() {
         document.getElementById('input-text').value = '';
