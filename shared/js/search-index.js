@@ -594,6 +594,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Net 60 Calculator',d:'Calculate Net 60 payment term calculator — enter your invoice date to instantly find the due date and get a reminder schedule for timely follow-ups.',h:'/freelance/net-60-calculator/'},
   {t:'Profit Margin Calculator',d:'Calculate gross, net, and operating profit margins from revenue and costs. Free business calculator.',h:'/freelance/profit-margin-calculator/'},
   {t:'Project Pricing Calculator',d:'Estimate your project price with hours, hourly rate, revision buffer, and profit margin. Free calculator for freelancers.',h:'/freelance/project-pricing-calculator/'},
+  {t:'Freelance Proposal Generator — Free Online',d:'Create professional freelance proposals in minutes. Project scope, timeline, pricing, terms. Download as PDF. Free, private, no signup needed.',h:'/freelance/proposal-generator/'},
   {t:'Quote Estimator',d:'Estimate a project quote from task breakdown, hourly rate, complexity factor, and contingency buffer. Free tool for freelancers and agencies.',h:'/freelance/quote-estimator/'},
   {t:'Retainer Calculator',d:'Calculate retainer calculator for freelancers and agencies — determine a fair monthly retainer price based on hours, hourly rate, support level, and',h:'/freelance/retainer-calculator/'},
   {t:'Revision Cost Calculator',d:'Calculate the cost of revision rounds for freelance and agency projects. Account for included revisions, extra rounds, and rush fees instantly.',h:'/freelance/revision-cost-calculator/'},
