@@ -167,6 +167,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     /* ===== STATE ===== */
     var hasAI = false;
@@ -324,7 +325,7 @@
     /* ===== MAIN ANALYZE ===== */
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste some text to summarize.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste some text to summarize.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Summarizing...';
@@ -476,23 +477,8 @@
       TeamzTools.renderFAQs(FAQS); TeamzTools.renderRelatedTools(RELATED_TOOLS);
     });
   </script>
-  <script type="module">
-    /* ===== TRANSFORMERS.JS (Tier 2) ===== */
-    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3';
-    env.allowLocalModels = false;
-
-    function updateProgress(progress) {
-      if (progress && progress.progress !== undefined) {
-        var wrap = document.getElementById('progress-wrap');
-        var fill = document.getElementById('progress-fill');
-        var statusText = document.getElementById('model-status-text');
-        wrap.style.display = 'block';
-        fill.style.width = Math.round(progress.progress) + '%';
-        statusText.textContent = 'Downloading AI model... ' + Math.round(progress.progress) + '%';
-      }
-    }
-
-    /* Expose loadTransformersModel globally */
+  <script>
+    /* ===== TRANSFORMERS.JS (Tier 2) via TeamzAI ===== */
     window.loadTransformersModel = async function() {
       if (window._transformersModel) return window._transformersModel;
       var statusEl = document.getElementById('model-status');
@@ -503,8 +489,16 @@
       statusText.textContent = 'Loading AI model (one-time ~100 MB download)...';
       progressWrap.style.display = 'block';
 
-      window._transformersModel = await pipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
-        progress_callback: updateProgress
+      window._transformersModel = await TeamzAI.getPipeline('summarization', 'Xenova/distilbart-cnn-6-6', {
+        onProgress: function(pct) {
+          var fill = document.getElementById('progress-fill');
+          progressWrap.style.display = 'block';
+          fill.style.width = pct + '%';
+          statusText.textContent = 'Downloading AI model... ' + pct + '%';
+        },
+        onStatus: function(msg) {
+          statusText.textContent = msg;
+        }
       });
 
       statusText.textContent = 'AI Ready — Works offline now';

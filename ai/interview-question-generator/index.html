@@ -53,7 +53,7 @@
         This tool uses Chrome's built-in Prompt API (Gemini Nano). Questions are generated 100% on your device. Requires Chrome 138+ with AI features enabled.
       </div>
       <div class="ai-fallback" id="ai-fallback">
-        This tool works in two modes: AI-powered (Chrome 138+) and curated question bank (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        This tool works in three modes: AI-powered (Chrome 138+), Universal AI (Transformers.js, all browsers), and curated question bank. <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
         <strong>Question Bank Mode:</strong> The tool selects from a curated bank of 200+ categorized interview questions matched to your criteria.
       </div>
@@ -122,6 +122,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -338,7 +339,7 @@
       var level = document.getElementById('input-level').value;
       var focus = document.getElementById('input-focus').value;
 
-      if (!role) { alert('Please enter a job role or title.'); return; }
+      if (!role) { if (window.showToast) window.showToast('Please enter a job role or title.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Generating...';
@@ -347,18 +348,39 @@
       var output = document.getElementById('ai-output');
       var resultEl = document.getElementById('tool-result');
 
-      try {
-        if (hasAI) {
-          var session = await self.ai.languageModel.create();
-          var prompt = 'Generate exactly 10 interview questions for a ' + level + '-level ' + role + ' position' + (industry ? ' in the ' + industry + ' industry' : '') + '.\n\n';
-          if (focus === 'behavioral') prompt += 'Focus on behavioral questions (Tell me about a time...). Include STAR method tips for each.\n';
-          else if (focus === 'technical') prompt += 'Focus on technical/role-specific questions.\n';
-          else if (focus === 'situational') prompt += 'Focus on situational questions (What would you do if...). Include answer frameworks.\n';
-          else prompt += 'Mix behavioral (4), technical (3), and situational (3) questions. Include answer frameworks for each.\n';
-          prompt += '\nFormat each as:\nQ[number]: [question]\nFramework: [suggested answer approach]\n';
+      var chromePrompt = 'Generate exactly 10 interview questions for a ' + level + '-level ' + role + ' position' + (industry ? ' in the ' + industry + ' industry' : '') + '.\n\n';
+      if (focus === 'behavioral') chromePrompt += 'Focus on behavioral questions (Tell me about a time...). Include STAR method tips for each.\n';
+      else if (focus === 'technical') chromePrompt += 'Focus on technical/role-specific questions.\n';
+      else if (focus === 'situational') chromePrompt += 'Focus on situational questions (What would you do if...). Include answer frameworks.\n';
+      else chromePrompt += 'Mix behavioral (4), technical (3), and situational (3) questions. Include answer frameworks for each.\n';
+      chromePrompt += '\nFormat each as:\nQ[number]: [question]\nFramework: [suggested answer approach]\n';
 
-          var result = await session.prompt(prompt);
-          output.innerHTML = '<div style="white-space:pre-wrap;line-height:1.8;font-size:0.95rem;">' + result.replace(/\n/g, '<br>') + '</div>';
+      var tfPrompt = 'Generate 5 interview questions for a ' + level + ' ' + role + (focus !== 'all' ? ' focusing on ' + focus : '') + ':';
+
+      try {
+        var result = await TeamzAI.generate({
+          chromePrompt: chromePrompt,
+          chromeSystemPrompt: 'You are an expert interviewer who generates tailored interview questions with answer frameworks.',
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: tfPrompt,
+          transformersOptions: { max_new_tokens: 250, num_beams: 4 },
+          fallback: function() {
+            var questions = getQuestions(role, level, focus);
+            return '__FALLBACK_QUESTIONS__';
+          },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 30; }
+        });
+
+        if (result.source === 'chrome-ai') {
+          output.innerHTML = '<div style="white-space:pre-wrap;line-height:1.8;font-size:0.95rem;">' + result.text.replace(/\n/g, '<br>') + '</div>';
+        } else if (result.source === 'transformers') {
+          output.innerHTML = '<div style="white-space:pre-wrap;line-height:1.8;font-size:0.95rem;">' + result.text.replace(/\n/g, '<br>') + '</div>';
+          /* Also show curated questions as supplement */
+          var questions = getQuestions(role, level, focus);
+          output.innerHTML += '<h4 style="margin-top:1.5rem;">Additional Curated Questions</h4>' + renderQuestions(questions.slice(0, 5), role);
         } else {
           var questions = getQuestions(role, level, focus);
           output.innerHTML = renderQuestions(questions, role);

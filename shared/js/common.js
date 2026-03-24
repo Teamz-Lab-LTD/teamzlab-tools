@@ -33,6 +33,66 @@ var TeamzTools = (function () {
   // Expose globally so tool pages can use it too
   window.showToast = _showToast;
 
+  // === CENTRAL FIX: Override alert() to use showToast() ===
+  // Fixes 110+ tools that use alert() instead of showToast()
+  // alert() is blocking and ugly — showToast() is non-blocking and styled
+  window.alert = function (msg) {
+    _showToast(String(msg));
+  };
+
+  // === CENTRAL FIX: Safe clipboard helpers ===
+  // Fixes 316+ clipboard calls missing .catch() — silent failure on permission denied / Firefox
+  window.safeClipboardText = function (text, successMsg, failMsg) {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      _showToast(failMsg || 'Copy not supported in this browser.');
+      return Promise.resolve(false);
+    }
+    return navigator.clipboard.writeText(text).then(function () {
+      _showToast(successMsg || 'Copied to clipboard!');
+      return true;
+    }).catch(function () {
+      _showToast(failMsg || 'Copy failed — try selecting and copying manually.');
+      return false;
+    });
+  };
+
+  window.safeClipboardImage = function (canvas, successMsg, failMsg) {
+    if (!canvas || !canvas.toBlob) {
+      _showToast(failMsg || 'Could not create image.');
+      return Promise.resolve(false);
+    }
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (blob) {
+        if (!blob) { _showToast(failMsg || 'Could not create image.'); resolve(false); return; }
+        try {
+          navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
+            _showToast(successMsg || 'Image copied to clipboard!');
+            resolve(true);
+          }).catch(function () {
+            _showToast(failMsg || 'Copy failed — try Download instead.');
+            resolve(false);
+          });
+        } catch (e) {
+          _showToast(failMsg || 'Image copy not supported — use Download instead.');
+          resolve(false);
+        }
+      }, 'image/png');
+    });
+  };
+
+  // === CENTRAL FIX: Safe html2canvas wrapper ===
+  // Always uses white background (not null/transparent), handles CDN loading
+  window.safeHtml2Canvas = function (el, callback, options) {
+    var opts = Object.assign({ backgroundColor: '#ffffff', scale: 2 }, options || {});
+    function run() { html2canvas(el, opts).then(callback).catch(function () { _showToast('Could not render image.'); }); }
+    if (window.html2canvas) { run(); return; }
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = run;
+    script.onerror = function () { _showToast('Could not load image library. Try again.'); };
+    document.head.appendChild(script);
+  };
+
   function _escapeHtml(text) {
     if (text === null || text === undefined) return '';
     var div = document.createElement('div');
@@ -1512,6 +1572,45 @@ document.addEventListener('DOMContentLoaded', function () {
   TeamzTranslate.init();
   // Rating widget renders after a short delay to ensure FAQs/related tools are rendered first
   setTimeout(function () { TeamzTools.renderRating(); TeamzTools.renderFeedback(); }, 100);
+
+  // === CENTRAL FIX: Auto-scroll to results when they become visible ===
+  // Uses MutationObserver to detect when tool-result divs go from hidden to visible
+  (function initAutoScroll() {
+    var results = document.querySelectorAll('.tool-result, [id*="result"], [id*="output"], [id*="preview"]');
+    if (!results.length || !window.MutationObserver) return;
+    results.forEach(function (el) {
+      var observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (m) {
+          if (m.type === 'attributes' && m.attributeName === 'style') {
+            var display = el.style.display;
+            if (display && display !== 'none') {
+              el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }
+        });
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['style'] });
+    });
+  })();
+
+  // === CENTRAL FIX: Auto-generate IDs for inputs without them ===
+  // Ensures auto-save works for all inputs by generating IDs from label text or position
+  (function initAutoIds() {
+    var inputs = document.querySelectorAll('.tool-calculator input:not([id]), .tool-calculator textarea:not([id]), .tool-calculator select:not([id]), .site-main input:not([id]), .site-main textarea:not([id]), .site-main select:not([id])');
+    inputs.forEach(function (input, i) {
+      // Try to derive ID from label
+      var label = input.closest('label') || (input.previousElementSibling && input.previousElementSibling.tagName === 'LABEL' ? input.previousElementSibling : null);
+      if (label) {
+        var text = (label.textContent || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 30);
+        if (text && !document.getElementById('auto-' + text)) {
+          input.id = 'auto-' + text;
+          return;
+        }
+      }
+      // Fallback: use position-based ID
+      input.id = 'auto-input-' + i;
+    });
+  })();
 
   // Offline indicator — show banner when offline, hide when back online
   (function initOfflineIndicator() {

@@ -51,7 +51,7 @@
         This tool uses Chrome's built-in Prompt API (Gemini Nano). It runs 100% on your device for complete privacy. Requires Chrome 138+ with AI features enabled.
       </div>
       <div class="ai-fallback" id="ai-fallback">
-        This tool works in two modes: AI-enhanced (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        This tool works in three modes: AI-powered (Chrome 138+), Universal AI (Transformers.js, all browsers), and built-in dictionary. <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
         <strong>Smart Analysis Mode:</strong> The tool uses a built-in dictionary of 100+ common words with curated synonyms, covering everyday vocabulary.
       </div>
@@ -92,6 +92,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -264,7 +265,7 @@
 
     async function analyze() {
       var word = document.getElementById('input-text').value.trim();
-      if (!word) { alert('Enter a word to find synonyms.'); return; }
+      if (!word) { if (window.showToast) window.showToast('Enter a word to find synonyms.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Finding...';
@@ -275,27 +276,48 @@
       var resultEl = document.getElementById('tool-result');
       var context = document.getElementById('context-text').value.trim();
 
+      var chromePrompt = 'Give synonyms for the word "' + word + '"';
+      if (context) chromePrompt += ' in the context of: ' + context;
+      chromePrompt += '. Return JSON only.';
+
+      var tfPrompt = 'List synonyms for the word "' + word + '"';
+      if (context) tfPrompt += ' used in ' + context;
+
       try {
-        if (hasAI) {
-          var LMAPI = self.LanguageModel || (self.ai && self.ai.languageModel);
-          var session = await LMAPI.create({ systemPrompt: 'You are a thesaurus. Given a word, list synonyms grouped by context (general, formal, casual). Return ONLY a JSON object like {"general":["word1","word2"],"formal":["word3"],"casual":["word4"]}. No explanation.' });
-          var prompt = 'Give synonyms for the word "' + word + '"';
-          if (context) prompt += ' in the context of: ' + context;
-          prompt += '. Return JSON only.';
-          var result = await session.prompt(prompt);
+        var result = await TeamzAI.generate({
+          chromePrompt: chromePrompt,
+          chromeSystemPrompt: 'You are a thesaurus. Given a word, list synonyms grouped by context (general, formal, casual). Return ONLY a JSON object like {"general":["word1","word2"],"formal":["word3"],"casual":["word4"]}. No explanation.',
+          transformersTask: 'text2text-generation',
+          transformersModel: 'Xenova/flan-t5-base',
+          transformersPrompt: tfPrompt,
+          transformersOptions: { max_new_tokens: 150, num_beams: 4 },
+          fallback: function() {
+            var dict = fallbackSynonyms(word);
+            return dict ? JSON.stringify(dict) : '';
+          },
+          onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+          onStatus: function(msg) { btn.textContent = msg; },
+          qualityCheck: function(t) { return t && t.length > 5; }
+        });
+
+        if (result.source === 'chrome-ai') {
           try {
-            var jsonMatch = result.match(/\{[\s\S]*\}/);
+            var jsonMatch = result.text.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               var parsed = JSON.parse(jsonMatch[0]);
               output.innerHTML = renderChips(parsed, word);
             } else {
-              output.innerHTML = '<p>Synonyms for <strong>"' + word + '"</strong>:</p><div style="margin-top:0.5rem;">' + result.replace(/\n/g, '<br>') + '</div>';
+              output.innerHTML = '<p>Synonyms for <strong>"' + word + '"</strong>:</p><div style="margin-top:0.5rem;">' + result.text.replace(/\n/g, '<br>') + '</div>';
             }
           } catch (pe) {
-            output.innerHTML = '<p>Synonyms for <strong>"' + word + '"</strong>:</p><div style="margin-top:0.5rem;">' + result.replace(/\n/g, '<br>') + '</div>';
+            output.innerHTML = '<p>Synonyms for <strong>"' + word + '"</strong>:</p><div style="margin-top:0.5rem;">' + result.text.replace(/\n/g, '<br>') + '</div>';
           }
           extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">Generated using Chrome\'s on-device AI (Gemini Nano).</p>';
+        } else if (result.source === 'transformers') {
+          output.innerHTML = '<p>Synonyms for <strong>"' + word + '"</strong> (AI-generated):</p><div style="margin-top:0.5rem;">' + result.text.replace(/\n/g, '<br>') + '</div>';
+          extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">Generated using Transformers.js AI model.</p>';
         } else {
+          /* Fallback */
           var dict = fallbackSynonyms(word);
           if (dict) {
             output.innerHTML = renderChips(dict, word);

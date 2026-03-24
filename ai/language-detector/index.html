@@ -52,7 +52,7 @@
         This tool uses Chrome's built-in Language Detector API (Gemini Nano). It runs 100% on your device for complete privacy. Requires Chrome 138+ with AI features enabled.
       </div>
       <div class="ai-fallback" id="ai-fallback">
-        This tool works in two modes: AI-enhanced (Chrome 138+) and smart analysis (all browsers). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
+        This tool works in three modes: AI-powered (Chrome 138+), Universal AI (Transformers.js, all browsers), and smart analysis (pattern matching). <a href="https://developer.chrome.com/docs/ai" target="_blank">Learn more</a>.
         <br><br>
         <strong>Smart Analysis Mode:</strong> The tool will detect languages using character pattern analysis (CJK, Arabic, Cyrillic, Latin scripts) and common word frequency matching.
       </div>
@@ -95,6 +95,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/ai-engine.js"></script>
   <script>
     var hasAI = false;
 
@@ -196,7 +197,7 @@
 
     async function analyze() {
       var text = document.getElementById('input-text').value.trim();
-      if (!text) { alert('Paste some text to detect the language.'); return; }
+      if (!text) { if (window.showToast) window.showToast('Paste some text to detect the language.'); return; }
 
       var btn = document.getElementById('analyze-btn');
       btn.textContent = 'Detecting...';
@@ -218,10 +219,36 @@
           var topLang = LANG_NAMES[formatted[0].lang] || formatted[0].lang;
           extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">Detected using Chrome\'s on-device Language Detector API. Top result: <strong>' + topLang + '</strong></p>';
         } else {
-          var fallbackResults = fallbackDetect(text);
-          output.innerHTML = renderResults(fallbackResults);
-          var mode = 'heuristic character pattern analysis';
-          extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">Detected using ' + mode + '. For higher accuracy, use Chrome 138+ with AI features enabled.</p>';
+          /* Try Transformers.js via TeamzAI for language identification */
+          var aiUsed = false;
+          try {
+            if (typeof TeamzAI !== 'undefined') {
+              btn.textContent = 'Loading AI...';
+              var result = await TeamzAI.generate({
+                chromePrompt: '',
+                transformersTask: 'text2text-generation',
+                transformersModel: 'Xenova/flan-t5-base',
+                transformersPrompt: 'Detect the language of this text and respond with just the language name: ' + text.substring(0, 256),
+                transformersOptions: { max_new_tokens: 30, num_beams: 4 },
+                fallback: function() { return ''; },
+                onProgress: function(pct) { btn.textContent = 'Loading AI... ' + pct + '%'; },
+                onStatus: function(msg) { btn.textContent = msg; },
+                qualityCheck: function(t) { return t && t.length > 2; }
+              });
+              if (result.source === 'transformers' && result.text) {
+                aiUsed = true;
+                var fallbackResults = fallbackDetect(text);
+                output.innerHTML = '<p style="margin-bottom:1rem;"><strong>AI Detection:</strong> ' + result.text + '</p>' + renderResults(fallbackResults);
+                extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">AI detection via Transformers.js + pattern analysis. For highest accuracy, use Chrome 138+.</p>';
+              }
+            }
+          } catch (aiErr) { /* fall through to heuristic */ }
+
+          if (!aiUsed) {
+            var fallbackResults = fallbackDetect(text);
+            output.innerHTML = renderResults(fallbackResults);
+            extracted.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted);">Detected using heuristic character pattern analysis. For higher accuracy, use Chrome 138+ with AI features enabled.</p>';
+          }
         }
         resultEl.style.display = 'block';
         resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

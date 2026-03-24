@@ -594,6 +594,42 @@ These mistakes were made and must NEVER happen again:
 - Target: internal link health score 90+/100
 - **Why:** Orphan pages can't be discovered by Google through internal links, hurting SEO
 
+### Rule 24: MANDATORY usability QA before declaring ANY tool done
+Every tool MUST pass this usability checklist before being declared "done". Trace through the code as a real user would:
+
+**A) Event Wiring (does every button work?):**
+- Every `<button>` in HTML has a matching `addEventListener` in JS — no orphan buttons
+- Every `getElementById()` call matches an actual `id` in the HTML
+- Clear/Reset buttons clear ALL inputs INCLUDING `<select>` dropdowns (use `.selectedIndex = 0`)
+
+**B) Error Handling (no silent failures):**
+- `navigator.clipboard.writeText()` MUST have `.catch()` with `showToast()` — Firefox and permission denied cases
+- `navigator.clipboard.write()` for images MUST have `try/catch` + `.catch()` — ClipboardItem not supported in Firefox
+- Buttons MUST re-enable after errors — use `finally {}` block, NEVER put `btn.disabled = false` only in try block
+- CDN script loads MUST have `onerror` handler with user feedback
+
+**C) Unicode / String Safety:**
+- `.split('')` does NOT work for characters above U+FFFF (emoji, squared letters) — use `Array.from()` instead
+- `escapeAttr()` MUST handle Unicode characters that produce surrogate pairs
+- Italic Mathematical Unicode has exceptions: `h` → U+210E (not the offset formula)
+
+**D) AI Tool Specific:**
+- ALL AI tools MUST use 3-tier fallback: Chrome AI → Transformers.js → Rule-based
+- MUST load `/shared/js/ai-engine.js` and use `TeamzAI.generate()` — NEVER call Chrome AI APIs directly
+- Fallback functions MUST produce real usable output — NOT empty strings or "AI not available"
+- `applyTone()` or similar functions MUST handle ALL tone options in the dropdown — no no-op tones
+- Progress callback MUST update button text during model download
+
+**E) Download/Export:**
+- `html2canvas` MUST use `backgroundColor: '#ffffff'` — NOT `null` (produces transparent/dark PNGs)
+- Downloaded filenames MUST be sanitized: `.replace(/\s+/g, '-').toLowerCase()`
+- Copy Image MUST have fallback message: "Copy not supported — use Download instead"
+
+**F) Data Integrity:**
+- Calculations MUST be verified with sample data (e.g., $5000 basic + $1000 HRA = $6000 gross)
+- Date inputs MUST be formatted for display (use `toLocaleDateString()`, not raw `YYYY-MM-DD`)
+- Upside Down text MUST reverse character order (not just map characters)
+
 ## AI Assistant Memory (portable across machines)
 - Memory files live in `~/.claude/projects/.../memory/` (Claude Code's local storage)
 - A **backup copy** is kept in `.claude-memory/` in the repo (committed to git)
