@@ -1418,6 +1418,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Salary Per Hour Calculator',d:'Convert your monthly or annual salary to an hourly rate. Free calculator for employees and contractors.',h:'/work/salary-per-hour-calculator/'},
   {t:'Severance Pay Calculator',d:'Calculate severance pay based on years of service, monthly salary, and multiplier. Free instant severance estimation tool.',h:'/work/severance-pay-calculator/'},
   {t:'Shift Pay Calculator',d:'Calculate your take-home pay for today\'s shift including overtime, tips, and break deductions. Get instant results with tax estimates.',h:'/work/shift-pay-calculator/'},
+  {t:'SWOT Analysis Generator — Free Online Tool',d:'Create a professional SWOT analysis in minutes. Enter strengths, weaknesses, opportunities, and threats. Download as PDF or PNG. Free, private, no sig',h:'/work/swot-analysis-generator/'},
   {t:'South Africa Tools',d:'Free South Africa tools — Two-Pot retirement payout, SASSA payment planner, SRD budget, and salary tax calculators.',h:'/za/'},
   {t:'Salary Impact After Two-Pot Withdrawal South Africa',d:'Discover how a lump-sum Two-Pot withdrawal affects your overall annual tax position in South Africa. Compare your salary before and after the withdraw',h:'/za/salary-after-two-pot-withdrawal/'},
   {t:'SASSA Payment Date Budget Planner South Africa',d:'Plan your monthly budget around SASSA grant payment dates in South Africa. See your daily budget, days until payment, and expense coverage status.',h:'/za/sassa-payment-date-planner/'},
