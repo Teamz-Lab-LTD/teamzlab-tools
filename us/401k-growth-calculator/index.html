@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>401k Growth Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Project your 401k balance at retirement with employer match, compound growth, and salary increases. Free, private 401k growth calculator. No signup.">
+  <meta property="og:title" content="401k Growth Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Project your 401k balance at retirement with employer match, compound growth, and salary increases. Free, private 401k growth calculator. No signup.">
+  <meta property="og:url" content="https://tool.teamzlab.com/us/401k-growth-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/us.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="401k Growth Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Project your 401k balance at retirement with employer match, compound growth, and salary increases. Free, private 401k growth calculator. No signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/us/401k-growth-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .growth-summary {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .growth-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .growth-stat-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .growth-stat-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .growth-stat--highlight {
+      grid-column: 1 / -1;
+    }
+    .growth-stat--highlight .growth-stat-value {
+      font-size: var(--text-2xl);
+    }
+    .chart-container {
+      position: relative;
+      width: 100%;
+      margin: 24px 0;
+    }
+    .chart-container canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .pie-chart-row {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      justify-content: center;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .pie-chart-row canvas {
+      flex-shrink: 0;
+    }
+    .pie-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pie-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+    .pie-legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .scenario-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .scenario-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .scenario-box h4 {
+      margin: 0 0 8px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .scenario-box .scenario-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .scenario-diff {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .scenario-diff strong {
+      color: var(--heading);
+    }
+    .year-table-wrapper {
+      overflow-x: auto;
+      margin-top: 16px;
+    }
+    .year-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+      white-space: nowrap;
+    }
+    .year-table th,
+    .year-table td {
+      padding: 8px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    .year-table th {
+      background: var(--surface);
+      color: var(--heading);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    .year-table td:first-child,
+    .year-table th:first-child {
+      text-align: left;
+    }
+    .year-table tbody tr:hover {
+      background: var(--surface);
+    }
+    .tool-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .form-group label {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--heading);
+    }
+    .form-group input,
+    .form-group select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--heading);
+    }
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .form-full {
+      grid-column: 1 / -1;
+    }
+    .calc-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .calc-actions .btn-primary,
+    .calc-actions .btn-secondary {
+      flex: 1;
+    }
+    .results-section h3 {
+      color: var(--heading);
+      margin: 24px 0 12px;
+      font-size: var(--text-lg);
+    }
+    @media (max-width: 600px) {
+      .tool-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .growth-summary {
+        grid-template-columns: 1fr;
+      }
+      .growth-stat--highlight {
+        grid-column: auto;
+      }
+      .scenario-compare {
+        grid-template-columns: 1fr;
+      }
+      .scenario-diff {
+        grid-column: auto;
+      }
+      .calc-actions {
+        flex-direction: column;
+      }
+      .calc-actions .btn-primary,
+      .calc-actions .btn-secondary {
+        width: 100%;
+      }
+      .pie-chart-row {
+        flex-direction: column;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "US Tools", "item": "https://tool.teamzlab.com/us/"}, {"@type": "ListItem", "position": 3, "name": "401k Growth Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How much will my 401k be worth at retirement?", "acceptedAnswer": {"@type": "Answer", "text": "It depends on your contribution rate, employer match, investment returns, and time until retirement. Use this calculator to project your balance based on your specific numbers."}}, {"@type": "Question", "name": "What is the 401k contribution limit for 2025?", "acceptedAnswer": {"@type": "Answer", "text": "The IRS 401k contribution limit is $23,500 for 2025. If you are 50 or older, you can contribute an additional $7,500 in catch-up contributions, bringing the total to $31,000."}}, {"@type": "Question", "name": "What is employer match and how does it work?", "acceptedAnswer": {"@type": "Answer", "text": "Employer match means your employer contributes money to your 401k based on your contributions. A common match is 50% of your contribution up to 6% of salary — meaning if you put in 6%, they add 3%. This is free money."}}, {"@type": "Question", "name": "What is a good expected return rate?", "acceptedAnswer": {"@type": "Answer", "text": "Historically, a diversified portfolio of stocks has returned about 7-10% annually before inflation. A conservative estimate is 6-7%, while aggressive portfolios may target 8-10%."}}, {"@type": "Question", "name": "Should I max out my 401k?", "acceptedAnswer": {"@type": "Answer", "text": "At minimum, contribute enough to get the full employer match — otherwise you are leaving free money on the table. Maxing out your 401k ($23,500/year) provides maximum tax-deferred growth."}}, {"@type": "Question", "name": "Is this calculator private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, all calculations happen in your browser. Your salary and financial data never leave your device."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "401k Growth Calculator", "description": "Project your 401k balance at retirement with employer match and compound growth.", "url": "https://tool.teamzlab.com/us/401k-growth-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>401k Growth Calculator</h1>
+      <p class="tool-description">Project your 401k balance at retirement with employer match, compound growth, and annual salary increases. See how your contributions grow over time with a year-by-year breakdown.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="tool-form-grid">
+        <div class="form-group">
+          <label for="current-age">Current Age</label>
+          <input type="number" id="current-age" value="30" min="18" max="75">
+        </div>
+        <div class="form-group">
+          <label for="retirement-age">Retirement Age</label>
+          <input type="number" id="retirement-age" value="65" min="30" max="80">
+        </div>
+        <div class="form-group">
+          <label for="current-balance">Current 401k Balance ($)</label>
+          <input type="number" id="current-balance" value="25000" min="0" step="1000">
+        </div>
+        <div class="form-group">
+          <label for="annual-salary">Annual Salary ($)</label>
+          <input type="number" id="annual-salary" value="75000" min="0" step="1000">
+        </div>
+        <div class="form-group">
+          <label for="contribution-rate">Your Contribution Rate (%)</label>
+          <input type="number" id="contribution-rate" value="6" min="0" max="100" step="0.5">
+        </div>
+        <div class="form-group">
+          <label for="employer-match-rate">Employer Match Rate (%)</label>
+          <input type="number" id="employer-match-rate" value="50" min="0" max="200" step="5">
+          <span class="form-hint">% of your contribution they match</span>
+        </div>
+        <div class="form-group">
+          <label for="employer-match-limit">Employer Match Limit (% of salary)</label>
+          <input type="number" id="employer-match-limit" value="6" min="0" max="100" step="0.5">
+          <span class="form-hint">They match up to this % of your salary</span>
+        </div>
+        <div class="form-group">
+          <label for="annual-return">Expected Annual Return (%)</label>
+          <input type="number" id="annual-return" value="7" min="0" max="30" step="0.5">
+        </div>
+        <div class="form-group">
+          <label for="salary-increase">Annual Salary Increase (%)</label>
+          <input type="number" id="salary-increase" value="3" min="0" max="20" step="0.5">
+        </div>
+        <div class="form-group">
+          <label for="contribution-limit">Annual Contribution Limit ($)</label>
+          <input type="number" id="contribution-limit" value="23500" min="0" step="500">
+          <span class="form-hint">IRS limit: $23,500 for 2025</span>
+        </div>
+        <div class="form-group form-full">
+          <label for="catchup-enabled">
+            <input type="checkbox" id="catchup-enabled" checked>
+            Include catch-up contributions ($7,500 extra at age 50+)
+          </label>
+        </div>
+      </div>
+      <div class="calc-actions">
+        <button class="btn-primary" id="calculate-btn">Calculate Growth</button>
+        <button class="btn-secondary" id="clear-btn">Clear</button>
+      </div>
+      <div id="results" class="results-section" style="display:none;">
+        <h3>Projected 401k Balance at Retirement</h3>
+        <div id="summary" class="growth-summary"></div>
+        <h3>Breakdown</h3>
+        <div class="pie-chart-row">
+          <canvas id="pie-chart" width="220" height="220"></canvas>
+          <div id="pie-legend" class="pie-legend"></div>
+        </div>
+        <h3>Balance Growth Over Time</h3>
+        <div class="chart-container">
+          <canvas id="line-chart" width="700" height="350"></canvas>
+        </div>
+        <h3>What If You Increase Contribution by 1%?</h3>
+        <div id="scenario" class="scenario-compare"></div>
+        <h3>Year-by-Year Breakdown</h3>
+        <div class="year-table-wrapper">
+          <table class="year-table" id="year-table">
+            <thead>
+              <tr>
+                <th>Age</th>
+                <th>Salary</th>
+                <th>Your Contrib.</th>
+                <th>Employer Match</th>
+                <th>Growth</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How 401k Growth Works</h2>
+      <p>A 401k retirement account grows through three powerful mechanisms: your contributions, employer matching, and compound investment returns. Each paycheck, a percentage of your pre-tax salary goes into your 401k. Your employer may match a portion of your contributions, essentially giving you free money. The combined balance then earns investment returns that compound year after year.</p>
+      <p>Compound growth is the real engine behind 401k wealth building. When your investments earn returns, those returns themselves earn returns in subsequent years. Over a 30-year career, compound growth typically accounts for more than half of your total 401k balance, making it crucial to start contributing as early as possible.</p>
+
+      <h2>401k Contribution Limits 2025-2026</h2>
+      <p>The IRS sets annual contribution limits for 401k plans. For 2025, the employee contribution limit is $23,500. If you are age 50 or older, you can make an additional catch-up contribution of $7,500, bringing your total to $31,000. Starting in 2025, the SECURE 2.0 Act introduced a super catch-up for workers aged 60-63, allowing an extra $11,250 instead of the standard $7,500.</p>
+      <p>Employer matching contributions do not count toward your employee contribution limit. The combined employee plus employer limit is $70,000 for 2025. These limits typically increase each year with inflation adjustments announced by the IRS in the fall.</p>
+
+      <h2>Maximizing Your 401k Returns</h2>
+      <p>The single most important step is to contribute at least enough to capture your full employer match. If your employer matches 50% of contributions up to 6% of salary, you should contribute at minimum 6% to avoid leaving free money on the table. After capturing the full match, consider increasing your contribution rate by 1% each year, which is barely noticeable in your paycheck but adds significantly to your retirement balance.</p>
+      <p>Asset allocation also matters. Younger workers can typically afford more aggressive stock-heavy portfolios since they have decades to recover from downturns. As you approach retirement, gradually shifting toward bonds and stable value funds helps protect your accumulated savings. Most 401k plans offer target-date funds that handle this rebalancing automatically.</p>
+
+      <h2>401k vs Roth 401k vs IRA</h2>
+      <p>A traditional 401k uses pre-tax dollars, reducing your taxable income now but requiring you to pay taxes on withdrawals in retirement. A Roth 401k uses after-tax dollars with no upfront tax break, but qualified withdrawals in retirement are completely tax-free. If you expect to be in a higher tax bracket in retirement, Roth may be better. If you expect lower income in retirement, traditional makes more sense.</p>
+      <p>An IRA (Individual Retirement Account) is a separate retirement account you open yourself, with a lower contribution limit of $7,000 for 2025 ($8,000 if age 50+). Many workers use both a 401k and an IRA for maximum tax-advantaged savings. The best strategy depends on your current tax bracket, expected retirement income, and whether your employer offers a match.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      function fmt(n) {
+        return '$' + Math.round(n).toLocaleString('en-US');
+      }
+
+      function getInputs() {
+        return {
+          currentAge: parseInt(document.getElementById('current-age').value) || 30,
+          retirementAge: parseInt(document.getElementById('retirement-age').value) || 65,
+          currentBalance: parseFloat(document.getElementById('current-balance').value) || 0,
+          annualSalary: parseFloat(document.getElementById('annual-salary').value) || 0,
+          contributionRate: (parseFloat(document.getElementById('contribution-rate').value) || 0) / 100,
+          employerMatchRate: (parseFloat(document.getElementById('employer-match-rate').value) || 0) / 100,
+          employerMatchLimit: (parseFloat(document.getElementById('employer-match-limit').value) || 0) / 100,
+          annualReturn: (parseFloat(document.getElementById('annual-return').value) || 0) / 100,
+          salaryIncrease: (parseFloat(document.getElementById('salary-increase').value) || 0) / 100,
+          contributionLimit: parseFloat(document.getElementById('contribution-limit').value) || 23500,
+          catchupEnabled: document.getElementById('catchup-enabled').checked
+        };
+      }
+
+      function projectGrowth(inputs, overrideRate) {
+        var rate = overrideRate !== undefined ? overrideRate : inputs.contributionRate;
+        var years = inputs.retirementAge - inputs.currentAge;
+        if (years <= 0) return { rows: [], totalYou: 0, totalEmployer: 0, totalGrowth: 0, finalBalance: inputs.currentBalance };
+
+        var balance = inputs.currentBalance;
+        var salary = inputs.annualSalary;
+        var totalYou = 0;
+        var totalEmployer = 0;
+        var totalGrowth = 0;
+        var rows = [];
+
+        for (var y = 0; y < years; y++) {
+          var age = inputs.currentAge + y;
+          var limit = inputs.contributionLimit;
+          if (inputs.catchupEnabled && age >= 50) {
+            limit += 7500;
+          }
+          var yourContrib = Math.min(salary * rate, limit);
+          var matchableAmount = Math.min(yourContrib, salary * inputs.employerMatchLimit);
+          var employerMatch = matchableAmount * inputs.employerMatchRate;
+          var totalAddition = yourContrib + employerMatch;
+          var startBal = balance;
+          balance = (balance + totalAddition) * (1 + inputs.annualReturn);
+          var growth = balance - startBal - totalAddition;
+
+          totalYou += yourContrib;
+          totalEmployer += employerMatch;
+          totalGrowth += growth;
+
+          rows.push({
+            age: age,
+            salary: salary,
+            yourContrib: yourContrib,
+            employerMatch: employerMatch,
+            growth: growth,
+            balance: balance
+          });
+
+          salary *= (1 + inputs.salaryIncrease);
+        }
+
+        return {
+          rows: rows,
+          totalYou: totalYou,
+          totalEmployer: totalEmployer,
+          totalGrowth: totalGrowth,
+          finalBalance: balance
+        };
+      }
+
+      function renderSummary(result) {
+        var el = document.getElementById('summary');
+        el.innerHTML =
+          '<div class="growth-stat growth-stat--highlight"><div class="growth-stat-label">Projected Balance at Retirement</div><div class="growth-stat-value">' + fmt(result.finalBalance) + '</div></div>' +
+          '<div class="growth-stat"><div class="growth-stat-label">Your Contributions</div><div class="growth-stat-value">' + fmt(result.totalYou) + '</div></div>' +
+          '<div class="growth-stat"><div class="growth-stat-label">Employer Contributions</div><div class="growth-stat-value">' + fmt(result.totalEmployer) + '</div></div>' +
+          '<div class="growth-stat"><div class="growth-stat-label">Investment Growth</div><div class="growth-stat-value">' + fmt(result.totalGrowth) + '</div></div>' +
+          '<div class="growth-stat"><div class="growth-stat-label">Starting Balance</div><div class="growth-stat-value">' + fmt(getInputs().currentBalance) + '</div></div>';
+      }
+
+      function getCSSColor(varName) {
+        return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      }
+
+      function renderPieChart(result) {
+        var canvas = document.getElementById('pie-chart');
+        var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = 220 * dpr;
+        canvas.height = 220 * dpr;
+        canvas.style.width = '220px';
+        canvas.style.height = '220px';
+        ctx.scale(dpr, dpr);
+
+        var total = result.totalYou + result.totalEmployer + result.totalGrowth + (getInputs().currentBalance || 0);
+        if (total <= 0) return;
+
+        var startBalance = getInputs().currentBalance || 0;
+        var slices = [
+          { label: 'Your Contributions', value: result.totalYou, color: getCSSColor('--heading') },
+          { label: 'Employer Match', value: result.totalEmployer, color: getCSSColor('--accent') },
+          { label: 'Investment Growth', value: result.totalGrowth, color: getCSSColor('--text-muted') },
+          { label: 'Starting Balance', value: startBalance, color: getCSSColor('--border') }
+        ];
+
+        var cx = 110, cy = 110, r = 95;
+        var startAngle = -Math.PI / 2;
+        for (var i = 0; i < slices.length; i++) {
+          var s = slices[i];
+          if (s.value <= 0) continue;
+          var sweep = (s.value / total) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, startAngle, startAngle + sweep);
+          ctx.closePath();
+          ctx.fillStyle = s.color;
+          ctx.fill();
+          startAngle += sweep;
+        }
+
+        var legendEl = document.getElementById('pie-legend');
+        legendEl.innerHTML = '';
+        for (var j = 0; j < slices.length; j++) {
+          var sl = slices[j];
+          if (sl.value <= 0) continue;
+          var pct = ((sl.value / total) * 100).toFixed(1);
+          legendEl.innerHTML += '<div class="pie-legend-item"><span class="pie-legend-swatch" style="background:' + sl.color + '"></span>' + sl.label + ': ' + fmt(sl.value) + ' (' + pct + '%)</div>';
+        }
+      }
+
+      function renderLineChart(result) {
+        var canvas = document.getElementById('line-chart');
+        var dpr = window.devicePixelRatio || 1;
+        var w = canvas.parentElement.offsetWidth || 700;
+        var h = Math.min(350, w * 0.5);
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        var ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        var rows = result.rows;
+        if (rows.length === 0) return;
+
+        var padL = 70, padR = 20, padT = 20, padB = 40;
+        var cw = w - padL - padR;
+        var ch = h - padT - padB;
+
+        var maxBal = 0;
+        var cumYou = [0], cumEmp = [0], cumGrowth = [0], balances = [getInputs().currentBalance || 0];
+        var runYou = 0, runEmp = 0, runGrowth = 0;
+        for (var i = 0; i < rows.length; i++) {
+          runYou += rows[i].yourContrib;
+          runEmp += rows[i].employerMatch;
+          runGrowth += rows[i].growth;
+          cumYou.push(runYou);
+          cumEmp.push(runEmp);
+          cumGrowth.push(runGrowth);
+          balances.push(rows[i].balance);
+          if (rows[i].balance > maxBal) maxBal = rows[i].balance;
+        }
+        if (maxBal === 0) maxBal = 1;
+
+        var n = balances.length;
+        var startAge = getInputs().currentAge;
+
+        // Grid
+        ctx.strokeStyle = getCSSColor('--border');
+        ctx.lineWidth = 0.5;
+        var gridLines = 5;
+        ctx.fillStyle = getCSSColor('--text-muted');
+        ctx.font = '11px Poppins, sans-serif';
+        ctx.textAlign = 'right';
+        for (var g = 0; g <= gridLines; g++) {
+          var gy = padT + ch - (g / gridLines) * ch;
+          ctx.beginPath();
+          ctx.moveTo(padL, gy);
+          ctx.lineTo(padL + cw, gy);
+          ctx.stroke();
+          var val = (g / gridLines) * maxBal;
+          ctx.fillText(fmt(val), padL - 8, gy + 4);
+        }
+
+        // X labels
+        ctx.textAlign = 'center';
+        var xStep = Math.max(1, Math.floor(n / 8));
+        for (var xi = 0; xi < n; xi += xStep) {
+          var xx = padL + (xi / (n - 1)) * cw;
+          ctx.fillText(startAge + xi, xx, h - 8);
+        }
+        // Last label
+        var lastX = padL + cw;
+        ctx.fillText(startAge + n - 1, lastX, h - 8);
+
+        // Stacked area: growth, employer, your contributions (bottom to top)
+        var startBal = getInputs().currentBalance || 0;
+        function getX(idx) { return padL + (idx / (n - 1)) * cw; }
+        function getY(val) { return padT + ch - (val / maxBal) * ch; }
+
+        // Layer 1: Balance line (total)
+        ctx.beginPath();
+        for (var b = 0; b < n; b++) {
+          var bx = getX(b);
+          var by = getY(balances[b]);
+          if (b === 0) ctx.moveTo(bx, by); else ctx.lineTo(bx, by);
+        }
+        ctx.lineTo(getX(n - 1), getY(0));
+        ctx.lineTo(getX(0), getY(0));
+        ctx.closePath();
+        ctx.fillStyle = getCSSColor('--text-muted') + '30';
+        ctx.fill();
+
+        // Layer 2: Contributions + Employer (no growth)
+        ctx.beginPath();
+        for (var c = 0; c < n; c++) {
+          var cv = startBal + cumYou[c] + cumEmp[c];
+          if (c === 0) ctx.moveTo(getX(c), getY(cv)); else ctx.lineTo(getX(c), getY(cv));
+        }
+        ctx.lineTo(getX(n - 1), getY(0));
+        ctx.lineTo(getX(0), getY(0));
+        ctx.closePath();
+        ctx.fillStyle = getCSSColor('--accent') + '40';
+        ctx.fill();
+
+        // Layer 3: Your contributions only
+        ctx.beginPath();
+        for (var d = 0; d < n; d++) {
+          var dv = startBal + cumYou[d];
+          if (d === 0) ctx.moveTo(getX(d), getY(dv)); else ctx.lineTo(getX(d), getY(dv));
+        }
+        ctx.lineTo(getX(n - 1), getY(0));
+        ctx.lineTo(getX(0), getY(0));
+        ctx.closePath();
+        ctx.fillStyle = getCSSColor('--heading') + '40';
+        ctx.fill();
+
+        // Balance line on top
+        ctx.beginPath();
+        ctx.strokeStyle = getCSSColor('--heading');
+        ctx.lineWidth = 2.5;
+        for (var e = 0; e < n; e++) {
+          if (e === 0) ctx.moveTo(getX(e), getY(balances[e])); else ctx.lineTo(getX(e), getY(balances[e]));
+        }
+        ctx.stroke();
+      }
+
+      function renderScenario(result, inputs) {
+        var newRate = inputs.contributionRate + 0.01;
+        var altResult = projectGrowth(inputs, newRate);
+        var diff = altResult.finalBalance - result.finalBalance;
+        var el = document.getElementById('scenario');
+        el.innerHTML =
+          '<div class="scenario-box"><h4>Current (' + (inputs.contributionRate * 100).toFixed(1) + '%)</h4><div class="scenario-value">' + fmt(result.finalBalance) + '</div></div>' +
+          '<div class="scenario-box"><h4>+1% (' + ((inputs.contributionRate + 0.01) * 100).toFixed(1) + '%)</h4><div class="scenario-value">' + fmt(altResult.finalBalance) + '</div></div>' +
+          '<div class="scenario-diff">Increasing your contribution by just 1% adds <strong>' + fmt(diff) + '</strong> to your retirement balance.</div>';
+      }
+
+      function renderTable(result) {
+        var tbody = document.querySelector('#year-table tbody');
+        var html = '';
+        for (var i = 0; i < result.rows.length; i++) {
+          var r = result.rows[i];
+          html += '<tr><td>' + r.age + '</td><td>' + fmt(r.salary) + '</td><td>' + fmt(r.yourContrib) + '</td><td>' + fmt(r.employerMatch) + '</td><td>' + fmt(r.growth) + '</td><td>' + fmt(r.balance) + '</td></tr>';
+        }
+        tbody.innerHTML = html;
+      }
+
+      function calculate() {
+        var inputs = getInputs();
+        if (inputs.retirementAge <= inputs.currentAge) {
+          if (window.showToast) window.showToast('Retirement age must be greater than current age.');
+          return;
+        }
+        var result = projectGrowth(inputs);
+        document.getElementById('results').style.display = 'block';
+        renderSummary(result);
+        renderPieChart(result);
+        renderLineChart(result);
+        renderScenario(result, inputs);
+        renderTable(result);
+      }
+
+      document.getElementById('calculate-btn').addEventListener('click', calculate);
+
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('current-age').value = '30';
+        document.getElementById('retirement-age').value = '65';
+        document.getElementById('current-balance').value = '25000';
+        document.getElementById('annual-salary').value = '75000';
+        document.getElementById('contribution-rate').value = '6';
+        document.getElementById('employer-match-rate').value = '50';
+        document.getElementById('employer-match-limit').value = '6';
+        document.getElementById('annual-return').value = '7';
+        document.getElementById('salary-increase').value = '3';
+        document.getElementById('contribution-limit').value = '23500';
+        document.getElementById('catchup-enabled').checked = true;
+        document.getElementById('results').style.display = 'none';
+      });
+
+      // Auto-calculate on load if inputs have saved values
+      window.addEventListener('load', function() {
+        setTimeout(calculate, 300);
+      });
+
+      // Redraw charts on resize
+      var resizeTimer;
+      window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+          if (document.getElementById('results').style.display !== 'none') {
+            var inputs = getInputs();
+            var result = projectGrowth(inputs);
+            renderLineChart(result);
+          }
+        }, 200);
+      });
+
+      // Breadcrumbs and schemas
+      var BREADCRUMBS = [
+        { name: 'Home', url: '/' },
+        { name: 'US Tools', url: '/us/' },
+        { name: '401k Growth Calculator' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+
+      var faqs = [
+        { q: 'How much will my 401k be worth at retirement?', a: 'It depends on your contribution rate, employer match, investment returns, and time until retirement. Use this calculator to project your balance based on your specific numbers.' },
+        { q: 'What is the 401k contribution limit for 2025?', a: 'The IRS 401k contribution limit is $23,500 for 2025. If you are 50 or older, you can contribute an additional $7,500 in catch-up contributions, bringing the total to $31,000.' },
+        { q: 'What is employer match and how does it work?', a: 'Employer match means your employer contributes money to your 401k based on your contributions. A common match is 50% of your contribution up to 6% of salary — meaning if you put in 6%, they add 3%. This is free money.' },
+        { q: 'What is a good expected return rate?', a: 'Historically, a diversified portfolio of stocks has returned about 7-10% annually before inflation. A conservative estimate is 6-7%, while aggressive portfolios may target 8-10%.' },
+        { q: 'Should I max out my 401k?', a: 'At minimum, contribute enough to get the full employer match — otherwise you are leaving free money on the table. Maxing out your 401k ($23,500/year) provides maximum tax-deferred growth.' },
+        { q: 'Is this calculator private?', a: 'Yes, all calculations happen in your browser. Your salary and financial data never leave your device.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      TeamzTools.injectWebAppSchema({
+        slug: 'us/401k-growth-calculator',
+        title: '401k Growth Calculator',
+        description: 'Project your 401k balance at retirement with employer match and compound growth.'
+      });
+
+      TeamzTools.renderRelatedTools([
+        { slug: '/us/401k-paycheck-calculator/', name: '401k Paycheck Calculator', description: 'See how 401k contributions affect your paycheck.' },
+        { slug: '/evergreen/retirement-calculator/', name: 'Retirement Calculator', description: 'Plan your complete retirement savings strategy.' },
+        { slug: '/evergreen/compound-interest-calculator/', name: 'Compound Interest Calculator', description: 'See how compound interest grows your money.' },
+        { slug: '/evergreen/investment-return-calculator/', name: 'Investment Return Calculator', description: 'Calculate investment returns over time.' },
+        { slug: '/us/income-tax-calculator/', name: 'US Income Tax Calculator', description: 'Calculate federal and state income tax.' },
+        { slug: '/evergreen/net-worth-calculator/', name: 'Net Worth Calculator', description: 'Calculate your total net worth.' }
+      ]);
+    })();
+  </script>
+</body>
+</html>
