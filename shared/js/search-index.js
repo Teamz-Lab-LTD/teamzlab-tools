@@ -322,6 +322,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'EM to PX Converter',d:'Convert between EM, PX, REM, and PT units instantly. Set base font size, see all CSS unit conversions. Free online converter for developers.',h:'/dev/em-to-px/'},
   {t:'Dotenv (.env) Validator & Formatter',d:'Validate .env and dotenv files instantly — find duplicate keys, empty values, security issues, and missing variables for popular frameworks. Free, p',h:'/dev/env-validator/'},
   {t:'Git Cheat Sheet & Command Reference',d:'Find any git command instantly with this ultimate git cheat sheet. Undo commits, manage branches, stash changes, sync remotes, and more. Free and sear',h:'/dev/git-command-generator/'},
+  {t:'.gitignore Generator — Create gitignore Files',d:'Generate .gitignore files for any project. Select your languages, frameworks, and IDEs to get a ready-to-use gitignore file. Free, instant, copy and p',h:'/dev/gitignore-generator/'},
   {t:'Hash Generator',d:'Generate SHA-256, SHA-1, SHA-384, SHA-512 hashes from any text. Uses browser\'s built-in Web Crypto API. Free online hash generator — private and in',h:'/dev/hash-generator/'},
   {t:'Hex to RGB Color Converter',d:'Convert hex color codes to RGB, HSL, and CMYK values instantly. Preview colors live, copy CSS code. Free online hex to RGB converter, 100% private.',h:'/dev/hex-to-rgb/'},
   {t:'Htaccess Redirect Generator',d:'Generate .htaccess redirect rules and Apache configurations instantly — create 301/302 redirects, HTTPS rewrites, security headers, and more. Free t',h:'/dev/htaccess-generator/'},
