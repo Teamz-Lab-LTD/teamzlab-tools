@@ -8,7 +8,10 @@ import json
 import os
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly']
+SCOPES = [
+    'https://www.googleapis.com/auth/webmasters.readonly',
+    'https://www.googleapis.com/auth/webmasters',  # Needed for URL Inspection API
+]
 TOKEN_FILE = os.path.expanduser('~/.config/teamzlab/search-console-token.json')
 
 # Use the API key's OAuth client (we'll create a simple one)

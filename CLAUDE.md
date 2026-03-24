@@ -264,6 +264,11 @@ Every tool page MUST have:
 │
 ├── icons/                     — favicons (16-512px)
 ├── og-images/                 — hub-level OG images for social sharing
+├── .claude-memory/            — AI assistant memory backup (synced to repo)
+│   ├── MEMORY.md              — memory index
+│   ├── *.md                   — individual memory files (feedback, project, user, reference)
+│   └── restore.sh             — restore memories on new machine
+│
 ├── docs/                      — SEO audit docs, setup guides
 │
 ├── [hub]/                     — tool category hubs (40+ hubs)
@@ -588,6 +593,25 @@ These mistakes were made and must NEVER happen again:
 - The fixer adds orphans to same-hub siblings' related tools (3 passes: <6, <8, cross-hub)
 - Target: internal link health score 90+/100
 - **Why:** Orphan pages can't be discovered by Google through internal links, hurting SEO
+
+## AI Assistant Memory (portable across machines)
+- Memory files live in `~/.claude/projects/.../memory/` (Claude Code's local storage)
+- A **backup copy** is kept in `.claude-memory/` in the repo (committed to git)
+- **SYNC RULE:** Whenever you save/update a memory file locally, ALSO copy it to `.claude-memory/`
+- **On a new machine:** Run `bash .claude-memory/restore.sh` to restore all memories
+- Memory contains: user preferences, feedback rules, project context, SEO audit state, references
+- See `.claude-memory/MEMORY.md` for the full index
+
+## Indexing & Search Engine Submission
+```bash
+python3 scripts/build-request-indexing.py                  # Check top 30 pages + submit to Bing/Yandex
+python3 scripts/build-request-indexing.py --all            # Check ALL pages from sitemap
+python3 scripts/build-request-indexing.py --check          # Check indexing status only (no IndexNow)
+python3 scripts/build-request-indexing.py --url URL        # Check/submit a specific URL
+```
+- Uses Google URL Inspection API (via Search Console token) to check real indexing status
+- Submits to Bing/Yandex via IndexNow protocol (requires `teamzlab-indexnow-key.txt` on live site)
+- **MANDATORY:** Run after creating or updating ANY tool to ensure it gets indexed
 
 ## QA & Monitoring
 ```bash
