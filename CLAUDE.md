@@ -481,11 +481,17 @@ Before committing ANY new tool (whether built by AI or by user), verify ALL:
 # 3. Rebuild all JSON-LD schemas (BreadcrumbList, FAQPage, WebApplication)
 python3 build-static-schema.py
 
-# 4. Fix orphan pages (cross-link new tools)
+# 4. Full SEO keyword audit
+./build-seo-audit.sh --report
+
+# 5. Check auto-fixable SEO issues
+./build-seo-audit.sh --fix --dry-run
+
+# 6. Fix orphan pages (cross-link new tools)
 python3 scripts/build-fix-orphans.py fix
 
-# 5. Review ALL warnings — fix CRITICAL and HIGH issues before committing
-# 6. THEN commit (pre-commit hook runs 25+ additional checks on staged files)
+# 7. Review ALL warnings — fix CRITICAL and HIGH issues before committing
+# 8. THEN commit (pre-commit hook runs 25+ additional checks on staged files)
 ```
 
 - Fix ALL critical/high warnings before telling user the tool is ready
