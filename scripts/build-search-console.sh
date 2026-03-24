@@ -126,8 +126,11 @@ if MODE in ('--status', '--all'):
 if MODE in ('--queries', '--all'):
     print("\n🔍 TOP SEARCH QUERIES (Last 90 days)")
     print("-" * 90)
-    rows = query_search(['query'], 30)
+    rows = query_search(['query'], 100)
     if rows:
+        # Sort by impressions descending to show highest-visibility queries first
+        rows.sort(key=lambda r: r.get('impressions', 0), reverse=True)
+        rows = rows[:30]
         print(f"  {'Keyword':<45} {'Clicks':>7} {'Impr':>8} {'CTR':>7} {'Pos':>6}")
         print("  " + "-" * 75)
         total_clicks = 0
@@ -149,7 +152,7 @@ if MODE in ('--queries', '--all'):
 if MODE in ('--pages', '--all'):
     print("\n📄 TOP PAGES (Last 90 days)")
     print("-" * 90)
-    rows = query_search(['page'], 25)
+    rows = query_search(['page'], 100)
     if rows:
         print(f"  {'Page':<55} {'Clicks':>7} {'Impr':>8} {'Pos':>6}")
         print("  " + "-" * 78)

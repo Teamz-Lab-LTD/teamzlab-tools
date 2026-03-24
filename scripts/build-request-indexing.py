@@ -66,6 +66,40 @@ TOP_PAGES = [
 ]
 
 
+def refresh_token():
+    """Force-refresh the OAuth token and return new access token."""
+    if not os.path.exists(SC_TOKEN_FILE):
+        return None
+
+    with open(SC_TOKEN_FILE) as f:
+        td = json.load(f)
+
+    refresh = td.get('refresh_token')
+    client_id = td.get('client_id')
+    client_secret = td.get('client_secret')
+
+    if not all([refresh, client_id, client_secret]):
+        return None
+
+    try:
+        data = urllib.parse.urlencode({
+            'refresh_token': refresh,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'grant_type': 'refresh_token'
+        }).encode()
+        req = urllib.request.Request('https://oauth2.googleapis.com/token', data=data)
+        with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
+            new_token = json.loads(r.read())['access_token']
+            td['token'] = new_token
+            with open(SC_TOKEN_FILE, 'w') as f:
+                json.dump(td, f, indent=2)
+            return new_token
+    except Exception as e:
+        print(f'  WARN: Token refresh failed: {e}')
+        return None
+
+
 def get_sc_token():
     """Get a valid Search Console access token (auto-refreshes)."""
     if not os.path.exists(SC_TOKEN_FILE):
@@ -89,34 +123,14 @@ def get_sc_token():
     except:
         pass
 
-    # Refresh token
-    refresh = td.get('refresh_token')
-    client_id = td.get('client_id')
-    client_secret = td.get('client_secret')
+    # Token expired — refresh it
+    new_token = refresh_token()
+    if new_token:
+        return new_token
 
-    if not all([refresh, client_id, client_secret]):
-        print('  ERROR: Token missing refresh credentials. Re-auth needed.')
-        print('  Run: python3 scripts/build-search-console-auth.py')
-        return None
-
-    try:
-        data = urllib.parse.urlencode({
-            'refresh_token': refresh,
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'grant_type': 'refresh_token'
-        }).encode()
-        req = urllib.request.Request('https://oauth2.googleapis.com/token', data=data)
-        with urllib.request.urlopen(req, context=ctx, timeout=10) as r:
-            new_token = json.loads(r.read())['access_token']
-            td['token'] = new_token
-            with open(SC_TOKEN_FILE, 'w') as f:
-                json.dump(td, f, indent=2)
-            return new_token
-    except Exception as e:
-        print(f'  ERROR: Token refresh failed: {e}')
-        print('  Run: python3 scripts/build-search-console-auth.py')
-        return None
+    print('  ERROR: Token expired and refresh failed. Re-auth needed.')
+    print('  Run: python3 scripts/build-search-console-auth.py')
+    return None
 
 
 def inspect_url(token, url):
@@ -234,13 +248,14 @@ def get_all_urls_from_sitemap():
 
 def main():
     mode = '--top'
+    check_only = '--check' in sys.argv
     specific_url = None
 
     for i, arg in enumerate(sys.argv[1:], 1):
         if arg == '--all':
             mode = '--all'
         elif arg == '--check':
-            mode = '--check'
+            pass  # handled above
         elif arg == '--url' and i < len(sys.argv) - 1:
             mode = '--url'
             specific_url = sys.argv[i + 1]
@@ -274,54 +289,133 @@ def main():
         not_indexed = 0
         errors = 0
         need_manual = []
+        indexed_urls = []
+        not_indexed_details = []
+        import time
 
-        for url in full_urls:
+        for i, url in enumerate(full_urls):
+            # Progress indicator every 100 URLs
+            if len(full_urls) > 50 and i > 0 and i % 100 == 0:
+                print(f'  ... checked {i}/{len(full_urls)} ({indexed} indexed, {not_indexed} not indexed, {errors} errors)', flush=True)
+
             result = inspect_url(token, url)
 
             if 'error' in result:
-                print(f'  ERR {url}')
-                print(f'       {result["error"]}')
-                errors += 1
-                need_manual.append(url)
-                continue
+                err_msg = result['error']
 
+                # Auto-refresh on auth errors
+                if 'authentication' in err_msg.lower() or 'credentials' in err_msg.lower() or 'OAuth' in err_msg:
+                    print(f'  ... token expired at URL #{i+1}, refreshing...')
+                    new_token = refresh_token()
+                    if new_token:
+                        token = new_token
+                        print(f'  ... token refreshed, retrying...')
+                        # Retry this URL with new token
+                        result = inspect_url(token, url)
+                        if 'error' not in result:
+                            # Fall through to normal processing below
+                            pass
+                        else:
+                            print(f'  ERR {url}')
+                            print(f'       {result["error"]}')
+                            errors += 1
+                            need_manual.append(url)
+                            continue
+                    else:
+                        print(f'  ERR Token refresh failed. Remaining {len(full_urls) - i} URLs skipped.')
+                        errors += len(full_urls) - i
+                        need_manual.extend(full_urls[i:])
+                        break
+
+                # Rate limit — wait and retry
+                elif 'rate' in err_msg.lower() or '429' in err_msg:
+                    print(f'  ... rate limited at URL #{i+1}, waiting 60s...')
+                    time.sleep(60)
+                    result = inspect_url(token, url)
+                    if 'error' in result:
+                        print(f'  ERR {url}')
+                        print(f'       {result["error"]}')
+                        errors += 1
+                        need_manual.append(url)
+                        continue
+
+                # Timeout — retry once
+                elif 'timed out' in err_msg.lower() or 'timeout' in err_msg.lower():
+                    time.sleep(2)
+                    result = inspect_url(token, url)
+                    if 'error' in result:
+                        errors += 1
+                        need_manual.append(url)
+                        continue
+
+                else:
+                    print(f'  ERR {url}')
+                    print(f'       {err_msg}')
+                    errors += 1
+                    need_manual.append(url)
+                    continue
+
+            # Process successful result
             inspection = result.get('inspectionResult', {})
             index_status = inspection.get('indexStatusResult', {})
             coverage = index_status.get('coverageState', 'UNKNOWN')
             verdict = index_status.get('verdict', 'UNKNOWN')
             crawled = index_status.get('lastCrawlTime', 'never')
-            robot = index_status.get('robotsTxtState', '')
 
             short_url = url.replace(SITE_URL, '')
 
             if verdict == 'PASS':
                 print(f'  IDX {short_url}  (crawled: {crawled[:10]})')
                 indexed += 1
+                indexed_urls.append(short_url)
             elif coverage in ('Submitted and indexed', 'Indexed, not submitted in sitemap'):
                 print(f'  IDX {short_url}  ({coverage})')
                 indexed += 1
+                indexed_urls.append(short_url)
             else:
                 status_short = coverage[:50] if coverage else verdict
                 print(f'  --- {short_url}  ({status_short})')
                 not_indexed += 1
+                not_indexed_details.append((short_url, status_short))
                 need_manual.append(url)
 
-        print(f'\n  Summary: {indexed} indexed, {not_indexed} not indexed, {errors} errors')
+        total_checked = indexed + not_indexed + errors
+        print(f'\n  Summary: {indexed} indexed, {not_indexed} not indexed, {errors} errors (of {total_checked} checked)')
 
         if need_manual:
-            print(f'\n  {len(need_manual)} pages need manual "Request Indexing" in Search Console:')
+            print(f'\n  {len(need_manual)} pages need attention:')
             print(f'  Go to: https://search.google.com/search-console/inspect?resource_id={urllib.parse.quote(SITE_URL + "/", safe="")}')
-            print()
-            for u in need_manual[:20]:
-                short = u.replace(SITE_URL, '')
-                print(f'    {short}')
-            if len(need_manual) > 20:
-                print(f'    ... and {len(need_manual) - 20} more')
+
+        # ─── Save report to file ────────────────────────────────────
+        report_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'docs', 'indexing-report.md')
+        os.makedirs(os.path.dirname(report_path), exist_ok=True)
+        from datetime import datetime
+        with open(report_path, 'w') as f:
+            f.write(f'# Indexing Report — {datetime.now().strftime("%Y-%m-%d %H:%M")}\n\n')
+            f.write(f'Total pages: {len(full_urls)}\n')
+            f.write(f'Checked: {total_checked}\n')
+            f.write(f'Indexed: {indexed} ({indexed*100//max(total_checked,1)}%)\n')
+            f.write(f'Not indexed: {not_indexed}\n')
+            f.write(f'Errors: {errors}\n\n')
+
+            if not_indexed_details:
+                f.write('## Not Indexed Pages\n\n')
+                f.write('| Page | Reason |\n|---|---|\n')
+                for page, reason in not_indexed_details:
+                    f.write(f'| {page} | {reason} |\n')
+                f.write('\n')
+
+            if indexed_urls:
+                f.write(f'## Indexed Pages ({indexed})\n\n')
+                for page in indexed_urls:
+                    f.write(f'- {page}\n')
+
+        print(f'\n  Report saved: docs/indexing-report.md')
     else:
         print('\n  Skipping Google URL Inspection (no token)')
         need_manual = full_urls
 
-    if mode == '--check':
+    if check_only:
         return
 
     # ─── Step 2: IndexNow (Bing, Yandex, DuckDuckGo) ────────────────
