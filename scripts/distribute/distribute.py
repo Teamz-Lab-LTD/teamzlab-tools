@@ -34,7 +34,7 @@ HISTORY_FILE = SCRIPT_DIR / "history.json"
 EXAMPLE_CONFIG = SCRIPT_DIR / "config.example.json"
 ARTICLES_DIR = SCRIPT_DIR / "articles"
 
-ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon"]
+ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions"]
 
 # SSL context for HTTPS requests
 SSL_CTX = ssl.create_default_context()
@@ -579,6 +579,59 @@ def post_mastodon(config, title, body, tags, canonical_url):
     return None, f"HTTP {status_code}: {json.dumps(resp)[:200]}"
 
 
+def post_github_discussions(config, title, body, tags, canonical_url):
+    """Post to GitHub Discussions via GraphQL API (uses gh CLI)."""
+    cfg = config.get("github_discussions", {})
+    if not cfg.get("enabled"):
+        return None, "Platform disabled in config"
+
+    repo_id = cfg.get("repo_id", "")
+    category_id = cfg.get("category_id", "")
+    if not repo_id or not category_id:
+        return None, "Missing repo_id or category_id in config"
+
+    # Build body with canonical link
+    full_body = body
+    if canonical_url:
+        full_body += f"\n\n---\n\nOriginally published at [{canonical_url}]({canonical_url})"
+
+    # Escape for JSON
+    escaped_body = json.dumps(full_body)[1:-1]  # Remove outer quotes
+    escaped_title = json.dumps(title)[1:-1]
+
+    query = f'''mutation {{
+      createDiscussion(input: {{
+        repositoryId: "{repo_id}",
+        categoryId: "{category_id}",
+        title: "{escaped_title}",
+        body: "{escaped_body}"
+      }}) {{
+        discussion {{ url }}
+      }}
+    }}'''
+
+    # Use subprocess to call gh CLI (avoids needing separate GitHub token)
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["gh", "api", "graphql", "-f", f"query={query}"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0:
+            resp = json.loads(result.stdout)
+            url = resp.get("data", {}).get("createDiscussion", {}).get("discussion", {}).get("url", "")
+            if url:
+                return url, None
+            return None, f"No URL in response: {result.stdout[:200]}"
+        return None, f"gh CLI error: {result.stderr[:200]}"
+    except FileNotFoundError:
+        return None, "gh CLI not installed"
+    except subprocess.TimeoutExpired:
+        return None, "gh CLI timed out"
+    except Exception as e:
+        return None, str(e)
+
+
 # ─── Markdown to HTML (basic) ─────────────────────────────────────────────────
 
 def markdown_to_html(md):
@@ -679,6 +732,7 @@ def cmd_post(title, filepath, platforms):
         "tumblr": post_tumblr,
         "bluesky": post_bluesky,
         "mastodon": post_mastodon,
+        "github_discussions": post_github_discussions,
     }
 
     results = {}
@@ -854,6 +908,19 @@ def cmd_test():
                     print(f"OK")
             else:
                 print(f"FAILED — HTTP {status}")
+        elif platform == "github_discussions":
+            import subprocess
+            try:
+                result = subprocess.run(
+                    ["gh", "api", "graphql", "-f", f'query={{ repository(owner:"Teamz-Lab-LTD", name:"teamz-lab-blogs") {{ id }} }}'],
+                    capture_output=True, text=True, timeout=10
+                )
+                if result.returncode == 0 and "repository" in result.stdout:
+                    print(f"OK — connected to Teamz-Lab-LTD/teamz-lab-blogs")
+                else:
+                    print(f"FAILED — {result.stderr[:100]}")
+            except Exception as e:
+                print(f"FAILED — {e}")
         else:
             print(f"SKIP — no test available")
 
