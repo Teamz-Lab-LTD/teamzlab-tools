@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Trimmer Online Free — Teamz Lab Tools</title>
+  <meta name="description" content="Trim and cut videos online free in your browser. Visual timeline, fast or precise mode. No upload, no watermark, completely private. No signup needed.">
+  <meta property="og:title" content="Video Trimmer Online Free — Teamz Lab Tools">
+  <meta property="og:description" content="Trim and cut videos online free in your browser. Visual timeline, no upload, no watermark.">
+  <meta property="og:url" content="https://tool.teamzlab.com/video/video-trimmer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/video.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Video Trimmer Online Free — Teamz Lab Tools">
+  <meta name="twitter:description" content="Trim and cut videos online free in your browser. Visual timeline, no upload, no watermark.">
+  <link rel="canonical" href="https://tool.teamzlab.com/video/video-trimmer/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .trimmer-upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--surface);
+    }
+    .trimmer-upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--bg);
+    }
+    .trimmer-upload-zone svg {
+      width: 48px;
+      height: 48px;
+      stroke: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .trimmer-upload-zone p {
+      color: var(--text-muted);
+      margin: 0.5rem 0;
+    }
+    .trimmer-upload-zone .upload-browse {
+      color: var(--heading);
+      font-weight: 600;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .trimmer-video-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin: 1rem 0;
+    }
+    .trimmer-info-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+    .trimmer-info-stat .stat-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--heading);
+      font-family: 'Fira Code', monospace;
+    }
+    .trimmer-info-stat .stat-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.2rem;
+    }
+    .trimmer-player-wrap {
+      margin: 1.5rem 0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .trimmer-player-wrap video {
+      width: 100%;
+      display: block;
+      max-height: 450px;
+      object-fit: contain;
+      background: var(--bg);
+    }
+    .trimmer-timeline-section {
+      margin: 1.5rem 0;
+    }
+    .trimmer-timeline-container {
+      position: relative;
+      width: 100%;
+      height: 60px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    .trimmer-timeline-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .trimmer-timeline-selection {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      background: var(--accent);
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .trimmer-handle {
+      position: absolute;
+      top: -4px;
+      width: 16px;
+      height: 68px;
+      background: var(--heading);
+      border-radius: 4px;
+      cursor: ew-resize;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+    .trimmer-handle::after {
+      content: '';
+      width: 4px;
+      height: 24px;
+      border-left: 2px solid var(--bg);
+      border-right: 2px solid var(--bg);
+    }
+    .trimmer-handle-left {
+      transform: translateX(-50%);
+    }
+    .trimmer-handle-right {
+      transform: translateX(-50%);
+    }
+    .trimmer-playhead {
+      position: absolute;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--text);
+      pointer-events: none;
+      z-index: 5;
+      transition: left 0.05s linear;
+    }
+    .trimmer-time-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      font-family: 'Fira Code', monospace;
+      color: var(--text-muted);
+    }
+    .trimmer-time-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .trimmer-time-input-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+    .trimmer-time-input-group input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: 'Fira Code', monospace;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+    }
+    .trimmer-time-input-group input:focus {
+      outline: none;
+      border-color: var(--heading);
+    }
+    .trimmer-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+    .trimmer-actions button {
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+    .trimmer-actions button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .trimmer-btn-primary {
+      background: var(--heading);
+      color: var(--bg);
+    }
+    .trimmer-btn-secondary {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border) !important;
+    }
+    .trimmer-trim-options {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    .trimmer-trim-option {
+      flex: 1;
+      min-width: 200px;
+      padding: 1rem;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .trimmer-trim-option.active {
+      border-color: var(--heading);
+    }
+    .trimmer-trim-option h4 {
+      margin: 0 0 0.25rem;
+      color: var(--heading);
+      font-size: 0.95rem;
+    }
+    .trimmer-trim-option p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      line-height: 1.4;
+    }
+    .trimmer-progress-wrap {
+      margin: 1rem 0;
+      display: none;
+    }
+    .trimmer-progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--surface);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .trimmer-progress-fill {
+      height: 100%;
+      background: var(--heading);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .trimmer-progress-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      text-align: center;
+    }
+    .trimmer-output {
+      margin: 1.5rem 0;
+      padding: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: none;
+    }
+    .trimmer-output h3 {
+      margin: 0 0 1rem;
+      color: var(--heading);
+    }
+    .trimmer-hidden { display: none; }
+
+    @media (max-width: 600px) {
+      .trimmer-upload-zone { padding: 2rem 1rem; }
+      .trimmer-time-inputs { grid-template-columns: 1fr; }
+      .trimmer-actions { flex-direction: column; }
+      .trimmer-actions button { width: 100%; }
+      .trimmer-trim-options { flex-direction: column; }
+      .trimmer-trim-option { min-width: 100%; }
+      .trimmer-handle { width: 22px; height: 68px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .trimmer-video-info { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Video Tools", "item": "https://tool.teamzlab.com/video/"}, {"@type": "ListItem", "position": 3, "name": "Video Trimmer Online"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is this video trimmer free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely free with no watermark, no signup, and no file size limits."}}, {"@type": "Question", "name": "Are my videos uploaded to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. All trimming happens locally in your browser. Your videos never leave your device — 100% private."}}, {"@type": "Question", "name": "What is the difference between Fast and Precise trim?", "acceptedAnswer": {"@type": "Answer", "text": "Fast trim copies the video data without re-encoding — it is instant but may start a few frames before your selected point. Precise trim re-encodes for frame-accurate cuts but takes longer."}}, {"@type": "Question", "name": "What video formats are supported?", "acceptedAnswer": {"@type": "Answer", "text": "MP4, WebM, AVI, MOV, MKV and most common video formats. Output is MP4."}}, {"@type": "Question", "name": "Is there a file size limit?", "acceptedAnswer": {"@type": "Answer", "text": "No hard limit. Your device memory is the only constraint. Most devices handle videos up to 500MB-1GB."}}, {"@type": "Question", "name": "Can I trim multiple segments?", "acceptedAnswer": {"@type": "Answer", "text": "Currently you can trim one segment per operation. For multiple cuts, trim your video multiple times."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Video Trimmer Online Free", "description": "Trim and cut videos online free in your browser. Visual timeline, no upload, no watermark.", "url": "https://tool.teamzlab.com/video/video-trimmer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Video Trimmer Online</h1>
+      <p class="tool-description">Trim and cut videos directly in your browser. Use the visual timeline with draggable handles to select the exact segment you want, then export with fast copy mode or precise re-encoding. No upload to any server, no watermark, no signup — completely private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Upload Zone -->
+      <div id="trimmer-upload" class="trimmer-upload-zone">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+        </svg>
+        <p><strong>Drop your video here</strong></p>
+        <p>or <span class="upload-browse">browse to select</span></p>
+        <p style="font-size:0.75rem;">MP4, WebM, AVI, MOV, MKV supported</p>
+        <input type="file" id="trimmer-file-input" accept="video/*" style="display:none;">
+      </div>
+
+      <!-- Video Info -->
+      <div id="trimmer-info" class="trimmer-video-info trimmer-hidden"></div>
+
+      <!-- Video Player -->
+      <div id="trimmer-player" class="trimmer-player-wrap trimmer-hidden">
+        <video id="trimmer-video" playsinline></video>
+      </div>
+
+      <!-- Timeline -->
+      <div id="trimmer-timeline-section" class="trimmer-timeline-section trimmer-hidden">
+        <label style="font-weight:600;color:var(--text);margin-bottom:0.5rem;display:block;">Trim Selection</label>
+        <div id="trimmer-timeline" class="trimmer-timeline-container">
+          <div class="trimmer-timeline-bg"></div>
+          <div id="trimmer-selection" class="trimmer-timeline-selection"></div>
+          <div id="trimmer-playhead" class="trimmer-playhead" style="left:0"></div>
+          <div id="trimmer-handle-left" class="trimmer-handle trimmer-handle-left" style="left:0%"></div>
+          <div id="trimmer-handle-right" class="trimmer-handle trimmer-handle-right" style="left:100%"></div>
+        </div>
+        <div class="trimmer-time-labels">
+          <span id="trimmer-label-start">00:00.0</span>
+          <span id="trimmer-label-duration">Duration: 0.0s</span>
+          <span id="trimmer-label-end">00:00.0</span>
+        </div>
+
+        <!-- Time Inputs -->
+        <div class="trimmer-time-inputs">
+          <div class="trimmer-time-input-group">
+            <label for="trimmer-start-time">Start Time (MM:SS.ms)</label>
+            <input type="text" id="trimmer-start-time" placeholder="00:00.0" value="00:00.0">
+          </div>
+          <div class="trimmer-time-input-group">
+            <label for="trimmer-end-time">End Time (MM:SS.ms)</label>
+            <input type="text" id="trimmer-end-time" placeholder="00:00.0" value="00:00.0">
+          </div>
+          <div class="trimmer-time-input-group">
+            <label for="trimmer-selection-duration">Selection Duration</label>
+            <input type="text" id="trimmer-selection-duration" readonly value="0.0s" style="opacity:0.7;">
+          </div>
+        </div>
+
+        <!-- Trim Mode Options -->
+        <label style="font-weight:600;color:var(--text);margin-bottom:0.5rem;display:block;">Trim Mode</label>
+        <div class="trimmer-trim-options">
+          <div id="trimmer-mode-fast" class="trimmer-trim-option active" data-mode="fast">
+            <h4>Fast Trim (Copy)</h4>
+            <p>No re-encoding. Instant but may start a few frames before the selected point due to keyframe alignment.</p>
+          </div>
+          <div id="trimmer-mode-precise" class="trimmer-trim-option" data-mode="precise">
+            <h4>Precise Trim (Re-encode)</h4>
+            <p>Frame-accurate cuts. Slower processing but exact start and end points. Output is H.264 + AAC.</p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="trimmer-actions">
+          <button id="trimmer-preview-btn" class="trimmer-btn-secondary" disabled>Preview Selection</button>
+          <button id="trimmer-trim-btn" class="trimmer-btn-primary" disabled>Trim Video</button>
+          <button id="trimmer-reset-btn" class="trimmer-btn-secondary trimmer-hidden">Load New Video</button>
+        </div>
+
+        <!-- Progress -->
+        <div id="trimmer-progress" class="trimmer-progress-wrap">
+          <div class="trimmer-progress-bar">
+            <div id="trimmer-progress-fill" class="trimmer-progress-fill"></div>
+          </div>
+          <div id="trimmer-progress-text" class="trimmer-progress-text">Loading FFmpeg...</div>
+        </div>
+
+        <!-- Output -->
+        <div id="trimmer-output" class="trimmer-output">
+          <h3>Trimmed Video Ready</h3>
+          <div id="trimmer-output-info" class="trimmer-video-info"></div>
+          <div class="trimmer-actions" style="margin-top:1rem;">
+            <button id="trimmer-download-btn" class="trimmer-btn-primary">Download Trimmed Video</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Online Video Trimmer Works</h2>
+      <p>This browser-based video trimmer uses FFmpeg.wasm, a WebAssembly port of the industry-standard FFmpeg multimedia framework, to process videos entirely on your device. When you upload a video, it stays in your browser memory and is never sent to any server. The visual timeline displays the full video duration with draggable handles that let you select the exact start and end points of the segment you want to keep. You can drag the handles, type precise times manually, or click the timeline to seek and preview your selection before trimming. The tool supports all common video formats including MP4, WebM, AVI, MOV, and MKV, with output always in the widely compatible MP4 format using H.264 video and AAC audio codecs.</p>
+
+      <h2>Fast Trim vs Precise Trim</h2>
+      <p>The tool offers two trimming modes to balance speed and accuracy. Fast trim uses stream copy mode, which extracts the selected segment without re-encoding. This is nearly instant regardless of file size because it simply copies the compressed data between the nearest keyframes. The tradeoff is that the actual start point may be a few frames before your selection, since video compression groups frames together in keyframe intervals typically every 2 to 10 seconds. Precise trim re-encodes the video using H.264 with CRF 18 quality and AAC audio at 192 kbps, producing frame-accurate cuts at your exact selected timestamps. This takes longer but is ideal when you need clean transitions or are preparing clips for editing software.</p>
+
+      <h2>Video Trimming for Content Creators</h2>
+      <p>Content creators frequently need to extract specific segments from longer recordings for social media clips, highlight reels, or podcast excerpts. This trimmer eliminates the need for heavy desktop editing software for simple cut operations. Since everything runs locally, you can safely trim client footage, unreleased content, or private recordings without worrying about cloud storage policies or data breaches. The visual timeline makes it easy to identify the right moments, and the preview function lets you verify your selection before committing to the trim operation. For creators working on mobile or Chromebooks without access to traditional editing software, this tool provides professional-quality trimming capability directly in the browser.</p>
+
+      <h2>Privacy and Technical Details</h2>
+      <p>All video processing happens through WebAssembly in your browser tab. FFmpeg.wasm is loaded from a CDN on first use and cached for subsequent visits. Your video file is read into browser memory, processed by the FFmpeg engine locally, and the trimmed output is generated as a downloadable file — all without any network transfer of your video data. The tool works offline after the initial FFmpeg load. Device memory is the only practical limit; most modern devices handle videos up to 500 MB to 1 GB comfortably. For larger files, ensure your device has sufficient available RAM. The trimmed video maintains the original quality in fast mode and near-original quality at CRF 18 in precise mode, which is visually lossless for most content.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    /* ── Breadcrumbs & Schema ── */
+    var breadcrumbs = [{name:'Home',url:'/'},{name:'Video Tools',url:'/video/'},{name:'Video Trimmer Online'}];
+    TeamzTools.renderBreadcrumbs(breadcrumbs);
+    TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+    var faqs = [
+      {q:'Is this video trimmer free?', a:'Yes, completely free with no watermark, no signup, and no file size limits.'},
+      {q:'Are my videos uploaded to a server?', a:'No. All trimming happens locally in your browser. Your videos never leave your device — 100% private.'},
+      {q:'What is the difference between Fast and Precise trim?', a:'Fast trim copies the video data without re-encoding — it is instant but may start a few frames before your selected point. Precise trim re-encodes for frame-accurate cuts but takes longer.'},
+      {q:'What video formats are supported?', a:'MP4, WebM, AVI, MOV, MKV and most common video formats. Output is MP4.'},
+      {q:'Is there a file size limit?', a:'No hard limit. Your device memory is the only constraint. Most devices handle videos up to 500MB-1GB.'},
+      {q:'Can I trim multiple segments?', a:'Currently you can trim one segment per operation. For multiple cuts, trim your video multiple times.'}
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    TeamzTools.injectWebAppSchema({
+      slug: 'video/video-trimmer',
+      title: 'Video Trimmer Online Free',
+      description: 'Trim and cut videos online free in your browser. Visual timeline, no upload, no watermark.'
+    });
+
+    TeamzTools.renderRelatedTools([
+      {slug:'/video/youtube-thumbnail-downloader/', name:'YouTube Thumbnail Downloader', description:'Download YouTube thumbnails in all sizes.'},
+      {slug:'/video/watch-speed-calculator/', name:'Watch Speed Calculator', description:'Calculate watch time at different speeds.'},
+      {slug:'/video/srt-subtitle-formatter/', name:'SRT Subtitle Formatter', description:'Format and edit SRT subtitle files.'},
+      {slug:'/video/playlist-duration-calculator/', name:'Playlist Duration Calculator', description:'Calculate total playlist duration.'},
+      {slug:'/tools/gif-maker/', name:'GIF Maker', description:'Create GIFs from videos and images.'},
+      {slug:'/image/image-cropper/', name:'Image Cropper', description:'Crop images to any size or ratio.'}
+    ]);
+
+    /* ── State ── */
+    var videoFile = null;
+    var videoDuration = 0;
+    var startTime = 0;
+    var endTime = 0;
+    var trimMode = 'fast';
+    var ffmpegLoaded = false;
+    var ffmpegInstance = null;
+    var trimmedBlobURL = null;
+    var dragging = null; // 'left', 'right', or null
+
+    /* ── DOM refs ── */
+    var uploadZone = document.getElementById('trimmer-upload');
+    var fileInput = document.getElementById('trimmer-file-input');
+    var infoDiv = document.getElementById('trimmer-info');
+    var playerDiv = document.getElementById('trimmer-player');
+    var video = document.getElementById('trimmer-video');
+    var timelineSection = document.getElementById('trimmer-timeline-section');
+    var timeline = document.getElementById('trimmer-timeline');
+    var selection = document.getElementById('trimmer-selection');
+    var playhead = document.getElementById('trimmer-playhead');
+    var handleLeft = document.getElementById('trimmer-handle-left');
+    var handleRight = document.getElementById('trimmer-handle-right');
+    var labelStart = document.getElementById('trimmer-label-start');
+    var labelDuration = document.getElementById('trimmer-label-duration');
+    var labelEnd = document.getElementById('trimmer-label-end');
+    var inputStart = document.getElementById('trimmer-start-time');
+    var inputEnd = document.getElementById('trimmer-end-time');
+    var inputDuration = document.getElementById('trimmer-selection-duration');
+    var previewBtn = document.getElementById('trimmer-preview-btn');
+    var trimBtn = document.getElementById('trimmer-trim-btn');
+    var resetBtn = document.getElementById('trimmer-reset-btn');
+    var progressWrap = document.getElementById('trimmer-progress');
+    var progressFill = document.getElementById('trimmer-progress-fill');
+    var progressText = document.getElementById('trimmer-progress-text');
+    var outputDiv = document.getElementById('trimmer-output');
+    var outputInfo = document.getElementById('trimmer-output-info');
+    var downloadBtn = document.getElementById('trimmer-download-btn');
+    var modeFast = document.getElementById('trimmer-mode-fast');
+    var modePrecise = document.getElementById('trimmer-mode-precise');
+
+    /* ── Helpers ── */
+    function formatTime(sec) {
+      if (isNaN(sec) || sec < 0) sec = 0;
+      var m = Math.floor(sec / 60);
+      var s = sec - m * 60;
+      var mm = String(m).padStart(2, '0');
+      var ss = s.toFixed(1).padStart(4, '0');
+      return mm + ':' + ss;
+    }
+
+    function parseTime(str) {
+      str = (str || '').trim();
+      var parts = str.split(':');
+      if (parts.length === 2) {
+        return (parseInt(parts[0], 10) || 0) * 60 + (parseFloat(parts[1]) || 0);
+      }
+      if (parts.length === 3) {
+        return (parseInt(parts[0], 10) || 0) * 3600 + (parseInt(parts[1], 10) || 0) * 60 + (parseFloat(parts[2]) || 0);
+      }
+      return parseFloat(str) || 0;
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    }
+
+    function clamp(val, min, max) {
+      return Math.max(min, Math.min(max, val));
+    }
+
+    function updateSelectionUI() {
+      if (videoDuration <= 0) return;
+      var leftPct = (startTime / videoDuration) * 100;
+      var rightPct = (endTime / videoDuration) * 100;
+      handleLeft.style.left = leftPct + '%';
+      handleRight.style.left = rightPct + '%';
+      selection.style.left = leftPct + '%';
+      selection.style.width = (rightPct - leftPct) + '%';
+      labelStart.textContent = formatTime(startTime);
+      labelEnd.textContent = formatTime(endTime);
+      var dur = endTime - startTime;
+      labelDuration.textContent = 'Duration: ' + dur.toFixed(1) + 's';
+      inputStart.value = formatTime(startTime);
+      inputEnd.value = formatTime(endTime);
+      inputDuration.value = dur.toFixed(1) + 's';
+    }
+
+    function updatePlayhead() {
+      if (videoDuration <= 0) return;
+      var pct = (video.currentTime / videoDuration) * 100;
+      playhead.style.left = clamp(pct, 0, 100) + '%';
+    }
+
+    /* ── File Upload ── */
+    uploadZone.addEventListener('click', function() { fileInput.click(); });
+    uploadZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      uploadZone.classList.add('drag-over');
+    });
+    uploadZone.addEventListener('dragleave', function() {
+      uploadZone.classList.remove('drag-over');
+    });
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', function() {
+      if (fileInput.files && fileInput.files.length > 0) {
+        handleFile(fileInput.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('video/')) {
+        if (window.showToast) window.showToast('Please select a video file.');
+        return;
+      }
+      videoFile = file;
+      var url = URL.createObjectURL(file);
+      video.src = url;
+      video.load();
+      video.onloadedmetadata = function() {
+        videoDuration = video.duration;
+        startTime = 0;
+        endTime = videoDuration;
+
+        // Show info
+        var infoHTML = '';
+        infoHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + formatTime(videoDuration) + '</div><div class="stat-label">Duration</div></div>';
+        infoHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + video.videoWidth + 'x' + video.videoHeight + '</div><div class="stat-label">Resolution</div></div>';
+        infoHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + formatFileSize(file.size) + '</div><div class="stat-label">File Size</div></div>';
+        infoHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + (file.name.split('.').pop() || 'N/A').toUpperCase() + '</div><div class="stat-label">Format</div></div>';
+        infoDiv.innerHTML = infoHTML;
+        infoDiv.classList.remove('trimmer-hidden');
+        playerDiv.classList.remove('trimmer-hidden');
+        timelineSection.classList.remove('trimmer-hidden');
+        uploadZone.classList.add('trimmer-hidden');
+        previewBtn.disabled = false;
+        trimBtn.disabled = false;
+        resetBtn.classList.remove('trimmer-hidden');
+
+        updateSelectionUI();
+      };
+      video.onerror = function() {
+        if (window.showToast) window.showToast('Could not load video. Try a different file or format.');
+      };
+    }
+
+    /* ── Video Playback ── */
+    video.addEventListener('timeupdate', updatePlayhead);
+
+    /* ── Timeline Drag ── */
+    function getTimelineX(e) {
+      var rect = timeline.getBoundingClientRect();
+      var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      return clamp((clientX - rect.left) / rect.width, 0, 1);
+    }
+
+    handleLeft.addEventListener('mousedown', function(e) { e.preventDefault(); dragging = 'left'; });
+    handleLeft.addEventListener('touchstart', function(e) { e.preventDefault(); dragging = 'left'; }, {passive: false});
+    handleRight.addEventListener('mousedown', function(e) { e.preventDefault(); dragging = 'right'; });
+    handleRight.addEventListener('touchstart', function(e) { e.preventDefault(); dragging = 'right'; }, {passive: false});
+
+    function onDragMove(e) {
+      if (!dragging || videoDuration <= 0) return;
+      var pct = getTimelineX(e);
+      var t = pct * videoDuration;
+      if (dragging === 'left') {
+        startTime = clamp(t, 0, endTime - 0.1);
+      } else {
+        endTime = clamp(t, startTime + 0.1, videoDuration);
+      }
+      updateSelectionUI();
+    }
+    function onDragEnd() { dragging = null; }
+
+    document.addEventListener('mousemove', onDragMove);
+    document.addEventListener('mouseup', onDragEnd);
+    document.addEventListener('touchmove', onDragMove, {passive: false});
+    document.addEventListener('touchend', onDragEnd);
+
+    // Click on timeline to seek
+    timeline.addEventListener('click', function(e) {
+      if (dragging) return;
+      if (e.target === handleLeft || e.target === handleRight) return;
+      var pct = getTimelineX(e);
+      var t = clamp(pct * videoDuration, 0, videoDuration);
+      video.currentTime = t;
+      updatePlayhead();
+    });
+
+    /* ── Manual Time Inputs ── */
+    inputStart.addEventListener('change', function() {
+      var t = parseTime(inputStart.value);
+      startTime = clamp(t, 0, endTime - 0.1);
+      updateSelectionUI();
+    });
+    inputEnd.addEventListener('change', function() {
+      var t = parseTime(inputEnd.value);
+      endTime = clamp(t, startTime + 0.1, videoDuration);
+      updateSelectionUI();
+    });
+
+    /* ── Trim Mode Toggle ── */
+    modeFast.addEventListener('click', function() {
+      trimMode = 'fast';
+      modeFast.classList.add('active');
+      modePrecise.classList.remove('active');
+    });
+    modePrecise.addEventListener('click', function() {
+      trimMode = 'precise';
+      modePrecise.classList.add('active');
+      modeFast.classList.remove('active');
+    });
+
+    /* ── Preview Selection ── */
+    previewBtn.addEventListener('click', function() {
+      video.currentTime = startTime;
+      video.play();
+      var checkEnd = function() {
+        if (video.currentTime >= endTime) {
+          video.pause();
+          video.removeEventListener('timeupdate', checkEnd);
+        }
+      };
+      video.addEventListener('timeupdate', checkEnd);
+    });
+
+    /* ── Reset ── */
+    resetBtn.addEventListener('click', function() {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      videoFile = null;
+      videoDuration = 0;
+      startTime = 0;
+      endTime = 0;
+      if (trimmedBlobURL) { URL.revokeObjectURL(trimmedBlobURL); trimmedBlobURL = null; }
+      uploadZone.classList.remove('trimmer-hidden');
+      infoDiv.classList.add('trimmer-hidden');
+      playerDiv.classList.add('trimmer-hidden');
+      timelineSection.classList.add('trimmer-hidden');
+      outputDiv.style.display = 'none';
+      progressWrap.style.display = 'none';
+      resetBtn.classList.add('trimmer-hidden');
+      previewBtn.disabled = true;
+      trimBtn.disabled = true;
+      fileInput.value = '';
+    });
+
+    /* ── FFmpeg Loading ── */
+    async function loadFFmpeg() {
+      if (ffmpegLoaded && ffmpegInstance) return ffmpegInstance;
+      progressWrap.style.display = 'block';
+      progressText.textContent = 'Loading FFmpeg engine (first time may take a moment)...';
+      progressFill.style.width = '10%';
+
+      try {
+        var FFmpegModule = window.FFmpegWASM || window.FFmpeg;
+        if (!FFmpegModule) {
+          // Load scripts dynamically
+          await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.min.js');
+          await loadScript('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/util.min.js');
+          FFmpegModule = window.FFmpegWASM || window.FFmpeg;
+        }
+
+        var ffmpeg = new FFmpegModule.FFmpeg();
+        ffmpeg.on('progress', function(ev) {
+          var pct = Math.round((ev.progress || 0) * 100);
+          progressFill.style.width = Math.max(pct, 5) + '%';
+          progressText.textContent = 'Processing... ' + pct + '%';
+        });
+        ffmpeg.on('log', function(ev) {
+          // silent
+        });
+
+        progressText.textContent = 'Loading FFmpeg core...';
+        progressFill.style.width = '30%';
+
+        await ffmpeg.load({
+          coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js',
+          wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm'
+        });
+
+        ffmpegInstance = ffmpeg;
+        ffmpegLoaded = true;
+        progressFill.style.width = '50%';
+        progressText.textContent = 'FFmpeg ready.';
+        return ffmpeg;
+      } catch (err) {
+        progressText.textContent = 'Failed to load FFmpeg: ' + err.message;
+        progressFill.style.width = '0%';
+        throw err;
+      }
+    }
+
+    function loadScript(src) {
+      return new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = function() { reject(new Error('Failed to load: ' + src)); };
+        document.head.appendChild(s);
+      });
+    }
+
+    /* ── Trim Video ── */
+    trimBtn.addEventListener('click', async function() {
+      if (!videoFile || videoDuration <= 0) return;
+      trimBtn.disabled = true;
+      previewBtn.disabled = true;
+      outputDiv.style.display = 'none';
+
+      try {
+        var ffmpeg = await loadFFmpeg();
+        progressWrap.style.display = 'block';
+        progressText.textContent = 'Reading video file...';
+        progressFill.style.width = '15%';
+
+        var FFmpegUtil = window.FFmpegUtil || window.FFmpegWASMUtil;
+        var fileData;
+        if (FFmpegUtil && FFmpegUtil.fetchFile) {
+          fileData = await FFmpegUtil.fetchFile(videoFile);
+        } else {
+          // Manual fallback
+          var buf = await videoFile.arrayBuffer();
+          fileData = new Uint8Array(buf);
+        }
+
+        await ffmpeg.writeFile('input.mp4', fileData);
+
+        progressText.textContent = 'Trimming video...';
+        progressFill.style.width = '20%';
+
+        var startStr = startTime.toFixed(3);
+        var endStr = endTime.toFixed(3);
+
+        if (trimMode === 'fast') {
+          await ffmpeg.exec([
+            '-i', 'input.mp4',
+            '-ss', startStr,
+            '-to', endStr,
+            '-c', 'copy',
+            'output.mp4'
+          ]);
+        } else {
+          await ffmpeg.exec([
+            '-i', 'input.mp4',
+            '-ss', startStr,
+            '-to', endStr,
+            '-c:v', 'libx264', '-preset', 'fast', '-crf', '18',
+            '-c:a', 'aac', '-b:a', '192k',
+            'output.mp4'
+          ]);
+        }
+
+        progressText.textContent = 'Reading output...';
+        progressFill.style.width = '90%';
+
+        var outputData = await ffmpeg.readFile('output.mp4');
+        var blob = new Blob([outputData.buffer], {type: 'video/mp4'});
+        if (trimmedBlobURL) URL.revokeObjectURL(trimmedBlobURL);
+        trimmedBlobURL = URL.createObjectURL(blob);
+
+        // Clean up ffmpeg files
+        try { await ffmpeg.deleteFile('input.mp4'); } catch(e) {}
+        try { await ffmpeg.deleteFile('output.mp4'); } catch(e) {}
+
+        // Show output info
+        var trimDuration = endTime - startTime;
+        var outHTML = '';
+        outHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + formatTime(trimDuration) + '</div><div class="stat-label">Duration</div></div>';
+        outHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + formatFileSize(blob.size) + '</div><div class="stat-label">File Size</div></div>';
+        outHTML += '<div class="trimmer-info-stat"><div class="stat-value">' + (trimMode === 'fast' ? 'Copy' : 'Re-encoded') + '</div><div class="stat-label">Mode</div></div>';
+        outHTML += '<div class="trimmer-info-stat"><div class="stat-value">MP4</div><div class="stat-label">Format</div></div>';
+        outputInfo.innerHTML = outHTML;
+        outputDiv.style.display = 'block';
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Trim complete!';
+        if (window.showToast) window.showToast('Video trimmed successfully!');
+
+      } catch (err) {
+        progressText.textContent = 'Error: ' + err.message;
+        if (window.showToast) window.showToast('Trimming failed. Try a different video or mode.');
+      } finally {
+        trimBtn.disabled = false;
+        previewBtn.disabled = false;
+      }
+    });
+
+    /* ── Download ── */
+    downloadBtn.addEventListener('click', function() {
+      if (!trimmedBlobURL) return;
+      var a = document.createElement('a');
+      a.href = trimmedBlobURL;
+      var origName = videoFile ? videoFile.name.replace(/\.[^.]+$/, '') : 'video';
+      a.download = origName + '-trimmed.mp4';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (window.showToast) window.showToast('Download started!');
+    });
+  });
+  </script>
+</body>
+</html>
