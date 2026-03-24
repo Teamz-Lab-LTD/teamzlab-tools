@@ -466,28 +466,31 @@ Before committing ANY new tool (whether built by AI or by user), verify ALL:
 - `Xenova/flan-t5-base` — text2text-generation (quote generator)
 - `Xenova/distilbart-cnn-6-6` — summarization (article summarizer)
 
-### Rule 13: ALWAYS run SEO validation scripts after building ANY tool
-- **NEVER skip the built-in scripts.** They exist to catch SEO issues automatically.
+### Rule 13: ALWAYS run validation scripts — ESPECIALLY before committing
+- **NEVER skip the built-in scripts.** They exist to catch SEO + runtime + UX issues automatically.
 - **NEVER substitute with manual grep checks** — the scripts are more thorough.
-- After building any new tool, run this checklist IN ORDER before declaring done:
+- **MANDATORY: When user says "commit" or "push", run this BEFORE committing:**
 
 ```bash
-# 1. Full build + validation (8 checks: search, sitemap, counts, colors, unlinked, dupes, SEO, technical)
+# 1. Full QA + UX scan (SEO structure + runtime safety + UX usability)
+./build-qa-check.sh
+
+# 2. Full build + validation (search, sitemap, counts, colors, unlinked, dupes)
 ./build.sh
 
-# 2. Rebuild all JSON-LD schemas (BreadcrumbList, FAQPage, WebApplication)
+# 3. Rebuild all JSON-LD schemas (BreadcrumbList, FAQPage, WebApplication)
 python3 build-static-schema.py
 
-# 3. Full SEO keyword audit
-./build-seo-audit.sh --report
+# 4. Fix orphan pages (cross-link new tools)
+python3 scripts/build-fix-orphans.py fix
 
-# 4. Check auto-fixable issues
-./build-seo-audit.sh --fix --dry-run
-
-# 5. Review ALL pre-commit warnings — fix them, don't ignore them
+# 5. Review ALL warnings — fix CRITICAL and HIGH issues before committing
+# 6. THEN commit (pre-commit hook runs 25+ additional checks on staged files)
 ```
 
-- Fix ALL warnings before telling user the tool is ready
+- Fix ALL critical/high warnings before telling user the tool is ready
+- The pre-commit hook runs automatically but only checks STAGED files
+- `build-qa-check.sh` checks ALL tools — run it before every commit to catch regressions
 - Verify these schemas exist: FAQPage, WebApplication, BreadcrumbList
 - Verify these tags exist: twitter:title, twitter:description, og:image
 - Verify these JS calls exist: injectFAQSchema, injectWebAppSchema, renderFAQs, renderRelatedTools
