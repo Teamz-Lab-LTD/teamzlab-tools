@@ -149,6 +149,10 @@
       strategy = s;
       document.getElementById('btn-avalanche').classList.toggle('active', s === 'avalanche');
       document.getElementById('btn-snowball').classList.toggle('active', s === 'snowball');
+      // Auto-recalculate if results are already visible
+      if (document.getElementById('results').style.display !== 'none') {
+        calculate();
+      }
     }
 
     function addCard() {
@@ -416,8 +420,27 @@
       }
       html += '</tbody></table></div></div></div>';
 
+      // Copy button
+      html += '<div style="margin-top:16px;"><button class="btn-secondary" id="copy-payoff-btn" style="width:100%;">Copy Results</button></div>';
+
       document.getElementById('results').innerHTML = html;
       document.getElementById('results').style.display = 'block';
+
+      // Wire up copy button
+      document.getElementById('copy-payoff-btn').addEventListener('click', function() {
+        var lines = ['Credit Card Payoff — ' + (strategy === 'avalanche' ? 'Avalanche' : 'Snowball') + ' Method'];
+        lines.push('Payoff Time: ' + formatTime(result.months));
+        lines.push('Total Interest: ' + formatMoney(result.totalInterest));
+        lines.push('Total Paid: ' + formatMoney(result.totalPaid));
+        if (extra > 0 && resultMinOnly) {
+          var savedInterest = resultMinOnly.totalInterest - result.totalInterest;
+          var savedMonths = resultMinOnly.months - result.months;
+          lines.push('Extra payment: ' + formatMoney(extra) + '/month saves ' + formatMoney(savedInterest) + ' in interest and ' + savedMonths + ' months');
+        }
+        lines.push('', 'Calculated at tool.teamzlab.com/evergreen/credit-card-payoff-calculator/');
+        window.safeClipboardText(lines.join('\n'), 'Results copied!', 'Could not copy results.');
+      });
+
       document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.showToast('Payoff calculated!', 'success');
     }
