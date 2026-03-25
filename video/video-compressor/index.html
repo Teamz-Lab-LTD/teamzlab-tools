@@ -327,8 +327,34 @@
   </main>
   <footer id="site-footer" class="site-footer"></footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/util.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js" onerror="console.warn('FFmpeg script failed to load')"></script>
+  <script>
+    // @ffmpeg/util@0.12.2 UMD has broken CommonJS detection in browsers.
+    // Load it in an isolated scope with exports/module/require shims.
+    (function() {
+      var script = document.createElement('script');
+      script.textContent = 'var exports={},module={exports:exports};' +
+        '(function(){var require=function(){return{}};' +
+        'var s=document.createElement("script");' +
+        's.src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/index.js";' +
+        'document.head.appendChild(s);})();';
+      // Simpler approach: just fetch and eval in a safe scope
+      fetch('https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.2/dist/umd/index.js')
+        .then(function(r) { return r.text(); })
+        .then(function(code) {
+          var exports = {};
+          var module = { exports: exports };
+          var require = function() { return {}; };
+          try {
+            new Function('exports', 'module', 'require', code)(exports, module, require);
+            window.FFmpegUtil = module.exports || exports;
+          } catch (e) {
+            console.warn('FFmpeg util init failed:', e.message);
+          }
+        })
+        .catch(function() { console.warn('FFmpeg util failed to load'); });
+    })();
+  </script>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
   <script>
@@ -442,10 +468,24 @@
     }
 
     // === Load FFmpeg ===
+    async function waitForLibs(maxWait) {
+      var start = Date.now();
+      while (Date.now() - start < maxWait) {
+        if (typeof FFmpegWASM !== 'undefined' && typeof FFmpegUtil !== 'undefined') return true;
+        await new Promise(function(r) { setTimeout(r, 200); });
+      }
+      return typeof FFmpegWASM !== 'undefined' && typeof FFmpegUtil !== 'undefined';
+    }
+
     async function loadFFmpeg() {
       loadingEl.style.display = 'block';
       dropzoneEl.style.display = 'none';
       try {
+        // Wait up to 8s for CDN scripts to load (util is fetched async)
+        var libsReady = await waitForLibs(8000);
+        if (!libsReady) {
+          throw new Error('FFmpeg libraries not available. Please refresh or try a different browser.');
+        }
         var FFmpegLib = FFmpegWASM.FFmpeg;
         var toBlobURL = FFmpegUtil.toBlobURL;
         ffmpeg = new FFmpegLib();
@@ -472,7 +512,7 @@
         dropzoneEl.style.display = 'block';
       } catch (err) {
         loadStatusEl.textContent = 'Failed to load FFmpeg. Please refresh and try again.';
-        console.error('FFmpeg load error:', err);
+        console.warn('FFmpeg load:', err.message);
       }
     }
 

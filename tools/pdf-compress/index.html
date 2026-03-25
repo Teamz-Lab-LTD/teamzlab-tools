@@ -91,7 +91,10 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
-  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script>window.__pdfLibLoaded = false;</script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js" async
+    onload="window.__pdfLibLoaded=true; document.dispatchEvent(new Event('pdf-lib-ready'));"
+    onerror="document.dispatchEvent(new Event('pdf-lib-failed'));"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     var fileInput = document.getElementById('pdf-input');
@@ -101,6 +104,29 @@
     var resultEl = document.getElementById('compress-result');
     var originalSize = 0;
     var currentFile = null;
+    var pdfLibFailed = false;
+
+    function initPdfTool() {
+      /* pdf-lib is ready — enable file input interaction */
+    }
+
+    function onPdfLibFail() {
+      pdfLibFailed = true;
+      compressBtn.disabled = true;
+      infoEl.innerHTML = '<p style="color:var(--muted);">Failed to load PDF library. Please check your internet connection and reload the page.</p>';
+      infoEl.style.display = 'block';
+    }
+
+    if (window.__pdfLibLoaded) {
+      initPdfTool();
+    } else {
+      document.addEventListener('pdf-lib-ready', initPdfTool, { once: true });
+      document.addEventListener('pdf-lib-failed', onPdfLibFail, { once: true });
+      /* Timeout fallback: if CDN hasn't responded in 6 seconds, show error */
+      setTimeout(function() {
+        if (!window.__pdfLibLoaded && !pdfLibFailed) { onPdfLibFail(); }
+      }, 6000);
+    }
 
     function formatSize(bytes) {
       if (bytes < 1024) return bytes + ' B';
@@ -111,6 +137,11 @@
     fileInput.addEventListener('change', async function() {
       var file = fileInput.files[0];
       if (!file) return;
+      if (pdfLibFailed || typeof PDFLib === 'undefined') {
+        infoEl.innerHTML = '<p style="color:var(--muted);">PDF library not loaded. Please reload the page.</p>';
+        infoEl.style.display = 'block';
+        return;
+      }
       currentFile = file;
       originalSize = file.size;
 
@@ -139,6 +170,10 @@
 
     compressBtn.addEventListener('click', async function() {
       if (!currentFile) return;
+      if (pdfLibFailed || typeof PDFLib === 'undefined') {
+        if (window.showToast) window.showToast('PDF library not loaded. Please reload the page.');
+        return;
+      }
       compressBtn.textContent = 'Compressing...';
       compressBtn.disabled = true;
 

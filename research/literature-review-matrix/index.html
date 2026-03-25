@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Literature Review Matrix Generator — Teamz Lab Tools</title>
+  <meta name="description" content="Organize your literature review with a dynamic matrix. Add sources, track methodology, findings, themes, and relevance scores. Export as CSV. Free, private.">
+  <meta property="og:title" content="Literature Review Matrix Generator — Teamz Lab Tools">
+  <meta property="og:description" content="Build a structured literature review matrix. Add sources, sort by relevance, track themes and methodology. Export as CSV. Free, private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/research/literature-review-matrix/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/research.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Literature Review Matrix Generator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Organize literature review sources in a dynamic matrix. Track methodology, findings, themes, relevance. Export CSV.">
+  <link rel="canonical" href="https://tool.teamzlab.com/research/literature-review-matrix/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .matrix-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+    .matrix-table-wrap { overflow-x: auto; margin: 1rem 0; border-radius: 8px; border: 1px solid var(--border); }
+    .matrix-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: 0.85rem; }
+    .matrix-table th { background: var(--surface); color: var(--heading); font-weight: 600; padding: 0.6rem 0.5rem; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; position: relative; }
+    .matrix-table th:hover { color: var(--accent-text); background: var(--accent); }
+    .matrix-table th .sort-arrow { font-size: 0.7rem; margin-left: 0.25rem; opacity: 0.5; }
+    .matrix-table th.sorted-asc .sort-arrow, .matrix-table th.sorted-desc .sort-arrow { opacity: 1; }
+    .matrix-table td { padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .matrix-table tr:hover td { background: var(--surface); }
+    .matrix-table input, .matrix-table textarea { width: 100%; background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 0.25rem 0.35rem; font-size: 0.82rem; color: var(--text); font-family: inherit; }
+    .matrix-table input:focus, .matrix-table textarea:focus { border-color: var(--heading); outline: none; background: var(--surface); }
+    .matrix-table textarea { resize: vertical; min-height: 2.5rem; }
+    .matrix-table .col-author { min-width: 130px; }
+    .matrix-table .col-year { min-width: 60px; width: 70px; }
+    .matrix-table .col-title { min-width: 180px; }
+    .matrix-table .col-method { min-width: 120px; }
+    .matrix-table .col-findings { min-width: 180px; }
+    .matrix-table .col-themes { min-width: 140px; }
+    .matrix-table .col-relevance { min-width: 90px; width: 100px; text-align: center; }
+    .matrix-table .col-notes { min-width: 140px; }
+    .matrix-table .col-actions { width: 50px; text-align: center; }
+    .relevance-stars { display: flex; gap: 2px; justify-content: center; cursor: pointer; }
+    .relevance-stars .star { font-size: 1.1rem; color: var(--border); transition: color 0.15s; }
+    .relevance-stars .star.active { color: var(--heading); }
+    .relevance-stars .star:hover { color: var(--heading); }
+    .remove-row-btn { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 0.25rem; border-radius: 4px; }
+    .remove-row-btn:hover { color: var(--heading); background: var(--surface); }
+    .matrix-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin: 1rem 0; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+    .stat-card .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.25rem; }
+    .stat-card .stat-value { font-size: 1.15rem; font-weight: 700; color: var(--heading); }
+    .custom-col-manager { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.75rem; }
+    .custom-col-tag { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 0.2rem 0.6rem; font-size: 0.78rem; color: var(--text); }
+    .custom-col-tag button { background: none; border: none; font-size: 0.85rem; color: var(--text-muted); cursor: pointer; padding: 0; line-height: 1; }
+    .custom-col-tag button:hover { color: var(--heading); }
+    .add-col-input { display: flex; gap: 0.35rem; align-items: center; }
+    .add-col-input input { width: 140px; padding: 0.25rem 0.5rem; font-size: 0.82rem; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; color: var(--text); }
+    .add-col-input input:focus { border-color: var(--heading); outline: none; }
+    .add-col-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.78rem; color: var(--heading); cursor: pointer; font-weight: 600; }
+    .add-col-btn:hover { background: var(--heading); color: var(--bg); }
+    .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem; }
+    @media (max-width: 600px) {
+      .matrix-controls { flex-direction: column; align-items: stretch; }
+      .matrix-controls button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .tool-actions { flex-direction: column; }
+      .tool-actions button { width: 100%; }
+      .matrix-stats { grid-template-columns: 1fr 1fr; }
+      .stat-card { padding: 0.6rem 0.75rem; }
+      .custom-col-manager { flex-direction: column; align-items: stretch; }
+      .add-col-input { width: 100%; }
+      .add-col-input input { flex: 1; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is a literature review matrix?", "acceptedAnswer": {"@type": "Answer", "text": "A literature review matrix (or synthesis matrix) is a table that organizes research sources by key attributes — author, year, methodology, findings, and themes — so you can compare and contrast studies side by side. It helps identify patterns, gaps, and contradictions across your sources."}}, {"@type": "Question", "name": "How many sources should I include in my matrix?", "acceptedAnswer": {"@type": "Answer", "text": "There is no fixed number. A typical undergraduate review includes 15-30 sources, while a systematic review may include 50-200+. Add all sources relevant to your research question and use the relevance rating to prioritize."}}, {"@type": "Question", "name": "Can I add custom columns to the matrix?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the \"+ Add\" button next to \"Custom Columns\" and type any column name — sample size, geographic scope, theoretical framework, limitations, or anything your review requires. Custom columns appear in all rows and are included in CSV exports."}}, {"@type": "Question", "name": "How does the relevance scoring work?", "acceptedAnswer": {"@type": "Answer", "text": "Click the stars (1-5) in the Relevance column. A 5-star source directly addresses your research question, while a 1-star source provides only peripheral context. Click a star again to reduce the rating. You can sort by relevance to prioritize your most important sources."}}, {"@type": "Question", "name": "Is my data saved between sessions?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All sources and custom columns are saved to your browser's local storage automatically. Your data persists between sessions and never leaves your device. Use \"Clear All\" to reset everything."}}, {"@type": "Question", "name": "How do I export my matrix?", "acceptedAnswer": {"@type": "Answer", "text": "Click \"Download CSV\" to export a file that opens in Excel, Google Sheets, or any spreadsheet application. Click \"Copy Table\" to copy tab-separated text you can paste directly into a document. Both exports include all columns including custom ones."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Literature Review Matrix Generator", "description": "Organize research sources in a structured matrix with sortable columns, relevance scoring, custom fields, and CSV export. Free, private, browser-based.", "url": "https://tool.teamzlab.com/research/literature-review-matrix/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Literature Review Matrix Generator</h1>
+      <p class="tool-description">Organize your research sources in a structured matrix. Add authors, track methodology, key findings, themes, and relevance scores. Sort columns, add custom fields, and export as CSV. 100% browser-based — your data stays on your device.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="custom-col-manager">
+        <span style="font-size:0.82rem; font-weight:600; color:var(--heading);">Custom Columns:</span>
+        <div id="custom-col-tags"></div>
+        <div class="add-col-input">
+          <input type="text" id="new-col-name" placeholder="Column name..." maxlength="30">
+          <button type="button" class="add-col-btn" id="add-col-btn">+ Add</button>
+        </div>
+      </div>
+      <div id="matrix-stats" class="matrix-stats"></div>
+      <div class="matrix-table-wrap">
+        <table class="matrix-table" id="matrix-table">
+          <thead id="matrix-thead"></thead>
+          <tbody id="matrix-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="empty-state">No sources added yet. Click "Add Source" to get started.</div>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="add-source-btn" class="btn-pill tool-calculate-btn">+ Add Source</button>
+        <button type="button" id="export-csv-btn" class="btn-pill-ghost">Download CSV</button>
+        <button type="button" id="copy-table-btn" class="btn-pill-ghost">Copy Table</button>
+        <button type="button" id="clear-all-btn" class="btn-pill-ghost tool-clear-btn">Clear All</button>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How to Use the Literature Review Matrix</h2>
+      <p>A literature review matrix (also called a synthesis matrix) helps you organize and compare multiple research sources side by side. Click "Add Source" to create a new row, then fill in the author names, publication year, title, methodology used, key findings, and relevant themes or keywords. Rate each source from 1 to 5 stars based on its relevance to your research question. Use the notes column for your own annotations, critiques, or connections to other sources. You can sort any column by clicking its header, making it easy to group sources by methodology, year, or relevance score.</p>
+
+      <h2>Customizing Your Review Matrix</h2>
+      <p>Every research project has different requirements. The custom column feature lets you add fields specific to your review — sample size, geographic scope, theoretical framework, limitations, or anything else you need to track. Click "Add Column," type a name, and it appears instantly in all rows. Remove custom columns when they are no longer needed. The default columns cover the most common literature review needs: author, year, title, methodology, key findings, themes, relevance, and notes. This flexibility makes the tool useful for systematic reviews, scoping reviews, narrative reviews, and meta-analyses alike.</p>
+
+      <h2>Exporting and Sharing Your Matrix</h2>
+      <p>Once your matrix is complete, export it as a CSV file that opens in Excel, Google Sheets, or any spreadsheet application. The CSV export includes all columns — both default and custom — with proper escaping for special characters. You can also copy the entire table as formatted text for pasting into documents or emails. The summary statistics at the top give you a quick overview: total source count, year range covered, most frequently used methodology, and top recurring themes. These stats help you identify patterns and gaps in your literature before writing your review.</p>
+
+      <h2>Tips for an Effective Literature Review</h2>
+      <p>Start by defining clear inclusion and exclusion criteria for your sources. As you add sources, use consistent terminology in the methodology and themes columns — this makes sorting and filtering more useful. Rate relevance honestly; a 5-star source directly addresses your research question, while a 1-star source provides only background context. Review your matrix periodically to spot trends: Are most studies using qualitative methods? Is there a gap in recent publications? Do findings converge or conflict? A well-maintained matrix transforms a scattered collection of papers into a coherent narrative for your literature review chapter.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var sources = [];
+    var customCols = [];
+    var sortCol = null;
+    var sortAsc = true;
+    var nextId = 1;
+
+    var defaultCols = [
+      { key: 'author', label: 'Author(s)', cls: 'col-author', type: 'input' },
+      { key: 'year', label: 'Year', cls: 'col-year', type: 'input' },
+      { key: 'title', label: 'Title', cls: 'col-title', type: 'input' },
+      { key: 'methodology', label: 'Methodology', cls: 'col-method', type: 'input' },
+      { key: 'findings', label: 'Key Findings', cls: 'col-findings', type: 'textarea' },
+      { key: 'themes', label: 'Themes/Keywords', cls: 'col-themes', type: 'input' },
+      { key: 'relevance', label: 'Relevance', cls: 'col-relevance', type: 'stars' },
+      { key: 'notes', label: 'Notes', cls: 'col-notes', type: 'textarea' }
+    ];
+
+    var thead = document.getElementById('matrix-thead');
+    var tbody = document.getElementById('matrix-tbody');
+    var emptyState = document.getElementById('empty-state');
+    var statsEl = document.getElementById('matrix-stats');
+    var addSourceBtn = document.getElementById('add-source-btn');
+    var exportCsvBtn = document.getElementById('export-csv-btn');
+    var copyTableBtn = document.getElementById('copy-table-btn');
+    var clearAllBtn = document.getElementById('clear-all-btn');
+    var addColBtn = document.getElementById('add-col-btn');
+    var newColNameInput = document.getElementById('new-col-name');
+    var customColTags = document.getElementById('custom-col-tags');
+
+    function getAllCols() {
+      return defaultCols.concat(customCols.map(function(name) {
+        return { key: 'custom_' + name.replace(/\s+/g, '_').toLowerCase(), label: name, cls: '', type: 'input', custom: true };
+      }));
+    }
+
+    function createSource() {
+      var s = { id: nextId++, relevance: 0 };
+      getAllCols().forEach(function(col) {
+        if (col.type !== 'stars') s[col.key] = '';
+      });
+      return s;
+    }
+
+    function renderCustomColTags() {
+      var html = '';
+      customCols.forEach(function(name, i) {
+        html += '<span class="custom-col-tag">' + escapeHtml(name) + ' <button type="button" data-col-idx="' + i + '" title="Remove column">&times;</button></span>';
+      });
+      customColTags.innerHTML = html;
+      customColTags.querySelectorAll('button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(this.getAttribute('data-col-idx'));
+          var colKey = 'custom_' + customCols[idx].replace(/\s+/g, '_').toLowerCase();
+          customCols.splice(idx, 1);
+          sources.forEach(function(s) { delete s[colKey]; });
+          renderAll();
+          saveToStorage();
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function renderHead() {
+      var cols = getAllCols();
+      var html = '<tr>';
+      cols.forEach(function(col) {
+        var sorted = sortCol === col.key;
+        var arrow = sorted ? (sortAsc ? ' &#9650;' : ' &#9660;') : ' &#9650;';
+        var cls = col.cls + (sorted ? (sortAsc ? ' sorted-asc' : ' sorted-desc') : '');
+        html += '<th class="' + cls + '" data-sort-key="' + col.key + '">' + escapeHtml(col.label) + '<span class="sort-arrow">' + arrow + '</span></th>';
+      });
+      html += '<th class="col-actions"></th></tr>';
+      thead.innerHTML = html;
+      thead.querySelectorAll('th[data-sort-key]').forEach(function(th) {
+        th.addEventListener('click', function() {
+          var key = this.getAttribute('data-sort-key');
+          if (sortCol === key) { sortAsc = !sortAsc; } else { sortCol = key; sortAsc = true; }
+          renderAll();
+        });
+      });
+    }
+
+    function renderStars(sourceId, value) {
+      var html = '<div class="relevance-stars" data-source-id="' + sourceId + '">';
+      for (var i = 1; i <= 5; i++) {
+        html += '<span class="star' + (i <= value ? ' active' : '') + '" data-val="' + i + '">&#9733;</span>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderBody() {
+      var sorted = sources.slice();
+      if (sortCol) {
+        sorted.sort(function(a, b) {
+          var va = sortCol === 'relevance' ? (a.relevance || 0) : (a[sortCol] || '').toString().toLowerCase();
+          var vb = sortCol === 'relevance' ? (b.relevance || 0) : (b[sortCol] || '').toString().toLowerCase();
+          if (sortCol === 'relevance' || sortCol === 'year') {
+            va = parseFloat(va) || 0;
+            vb = parseFloat(vb) || 0;
+          }
+          if (va < vb) return sortAsc ? -1 : 1;
+          if (va > vb) return sortAsc ? 1 : -1;
+          return 0;
+        });
+      }
+
+      if (sorted.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+      emptyState.style.display = 'none';
+
+      var cols = getAllCols();
+      var html = '';
+      sorted.forEach(function(src) {
+        html += '<tr data-id="' + src.id + '">';
+        cols.forEach(function(col) {
+          if (col.type === 'stars') {
+            html += '<td class="' + col.cls + '">' + renderStars(src.id, src.relevance) + '</td>';
+          } else if (col.type === 'textarea') {
+            html += '<td class="' + col.cls + '"><textarea data-id="' + src.id + '" data-key="' + col.key + '">' + escapeHtml(src[col.key] || '') + '</textarea></td>';
+          } else {
+            var inputType = col.key === 'year' ? 'number' : 'text';
+            html += '<td class="' + col.cls + '"><input type="' + inputType + '" data-id="' + src.id + '" data-key="' + col.key + '" value="' + escapeHtml(src[col.key] || '') + '"' + (col.key === 'year' ? ' min="1900" max="2099" placeholder="YYYY"' : '') + '></td>';
+          }
+        });
+        html += '<td class="col-actions"><button type="button" class="remove-row-btn" data-id="' + src.id + '" title="Remove source">&times;</button></td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+
+      tbody.querySelectorAll('input, textarea').forEach(function(el) {
+        el.addEventListener('input', function() {
+          var id = parseInt(this.getAttribute('data-id'));
+          var key = this.getAttribute('data-key');
+          var src = sources.find(function(s) { return s.id === id; });
+          if (src) { src[key] = this.value; }
+          updateStats();
+          saveToStorage();
+        });
+      });
+
+      tbody.querySelectorAll('.relevance-stars .star').forEach(function(star) {
+        star.addEventListener('click', function() {
+          var val = parseInt(this.getAttribute('data-val'));
+          var id = parseInt(this.parentElement.getAttribute('data-source-id'));
+          var src = sources.find(function(s) { return s.id === id; });
+          if (src) {
+            src.relevance = src.relevance === val ? val - 1 : val;
+            renderBody();
+            updateStats();
+            saveToStorage();
+          }
+        });
+      });
+
+      tbody.querySelectorAll('.remove-row-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = parseInt(this.getAttribute('data-id'));
+          sources = sources.filter(function(s) { return s.id !== id; });
+          renderAll();
+          saveToStorage();
+        });
+      });
+    }
+
+    function updateStats() {
+      if (sources.length === 0) {
+        statsEl.innerHTML = '';
+        return;
+      }
+      var years = sources.map(function(s) { return parseInt(s.year); }).filter(function(y) { return !isNaN(y) && y > 0; });
+      var yearRange = years.length > 0 ? Math.min.apply(null, years) + ' – ' + Math.max.apply(null, years) : 'N/A';
+
+      var methodCount = {};
+      sources.forEach(function(s) {
+        var m = (s.methodology || '').trim().toLowerCase();
+        if (m) { methodCount[m] = (methodCount[m] || 0) + 1; }
+      });
+      var topMethod = 'N/A';
+      var topMethodVal = 0;
+      Object.keys(methodCount).forEach(function(k) {
+        if (methodCount[k] > topMethodVal) { topMethodVal = methodCount[k]; topMethod = k; }
+      });
+      if (topMethod !== 'N/A') topMethod = topMethod.charAt(0).toUpperCase() + topMethod.slice(1) + ' (' + topMethodVal + ')';
+
+      var themeCount = {};
+      sources.forEach(function(s) {
+        (s.themes || '').split(/[,;]+/).forEach(function(t) {
+          t = t.trim().toLowerCase();
+          if (t) themeCount[t] = (themeCount[t] || 0) + 1;
+        });
+      });
+      var themesSorted = Object.keys(themeCount).sort(function(a, b) { return themeCount[b] - themeCount[a]; });
+      var topThemes = themesSorted.slice(0, 3).map(function(t) {
+        return t.charAt(0).toUpperCase() + t.slice(1) + ' (' + themeCount[t] + ')';
+      }).join(', ') || 'N/A';
+
+      var avgRelevance = sources.reduce(function(sum, s) { return sum + (s.relevance || 0); }, 0) / sources.length;
+
+      statsEl.innerHTML =
+        '<div class="stat-card"><div class="stat-label">Total Sources</div><div class="stat-value">' + sources.length + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Year Range</div><div class="stat-value">' + yearRange + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Top Methodology</div><div class="stat-value">' + escapeHtml(topMethod) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Top Themes</div><div class="stat-value">' + escapeHtml(topThemes) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Avg Relevance</div><div class="stat-value">' + avgRelevance.toFixed(1) + ' / 5</div></div>';
+    }
+
+    function renderAll() {
+      renderCustomColTags();
+      renderHead();
+      renderBody();
+      updateStats();
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem('litmatrix_sources', JSON.stringify(sources));
+        localStorage.setItem('litmatrix_customcols', JSON.stringify(customCols));
+        localStorage.setItem('litmatrix_nextid', nextId.toString());
+      } catch (e) { /* storage full */ }
+    }
+
+    function loadFromStorage() {
+      try {
+        var s = localStorage.getItem('litmatrix_sources');
+        var c = localStorage.getItem('litmatrix_customcols');
+        var n = localStorage.getItem('litmatrix_nextid');
+        if (s) sources = JSON.parse(s);
+        if (c) customCols = JSON.parse(c);
+        if (n) nextId = parseInt(n) || 1;
+      } catch (e) { /* corrupt data */ }
+    }
+
+    addSourceBtn.addEventListener('click', function() {
+      sources.push(createSource());
+      renderAll();
+      saveToStorage();
+      var rows = tbody.querySelectorAll('tr');
+      if (rows.length > 0) {
+        var lastRow = rows[rows.length - 1];
+        var firstInput = lastRow.querySelector('input, textarea');
+        if (firstInput) firstInput.focus();
+      }
+    });
+
+    addColBtn.addEventListener('click', function() {
+      var name = newColNameInput.value.trim();
+      if (!name) return;
+      if (customCols.indexOf(name) !== -1) {
+        if (window.showToast) window.showToast('Column "' + name + '" already exists');
+        return;
+      }
+      customCols.push(name);
+      var colKey = 'custom_' + name.replace(/\s+/g, '_').toLowerCase();
+      sources.forEach(function(s) { s[colKey] = ''; });
+      newColNameInput.value = '';
+      renderAll();
+      saveToStorage();
+    });
+
+    newColNameInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); addColBtn.click(); }
+    });
+
+    exportCsvBtn.addEventListener('click', function() {
+      if (sources.length === 0) {
+        if (window.showToast) window.showToast('No sources to export');
+        return;
+      }
+      var cols = getAllCols();
+      var rows = [cols.map(function(c) { return '"' + c.label.replace(/"/g, '""') + '"'; }).join(',')];
+      sources.forEach(function(src) {
+        var row = cols.map(function(col) {
+          var val = col.type === 'stars' ? (src.relevance || 0).toString() : (src[col.key] || '');
+          return '"' + val.toString().replace(/"/g, '""') + '"';
+        });
+        rows.push(row.join(','));
+      });
+      var csv = rows.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'literature-review-matrix.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('CSV downloaded');
+    });
+
+    copyTableBtn.addEventListener('click', function() {
+      if (sources.length === 0) {
+        if (window.showToast) window.showToast('No sources to copy');
+        return;
+      }
+      var cols = getAllCols();
+      var lines = [cols.map(function(c) { return c.label; }).join('\t')];
+      sources.forEach(function(src) {
+        var row = cols.map(function(col) {
+          return col.type === 'stars' ? (src.relevance || 0) + '/5' : (src[col.key] || '').replace(/\t/g, ' ');
+        });
+        lines.push(row.join('\t'));
+      });
+      var text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(function() {
+        if (window.showToast) window.showToast('Table copied to clipboard');
+      }).catch(function() {
+        if (window.showToast) window.showToast('Copy failed — try selecting and copying manually');
+      });
+    });
+
+    clearAllBtn.addEventListener('click', function() {
+      sources = [];
+      customCols = [];
+      nextId = 1;
+      sortCol = null;
+      sortAsc = true;
+      localStorage.removeItem('litmatrix_sources');
+      localStorage.removeItem('litmatrix_customcols');
+      localStorage.removeItem('litmatrix_nextid');
+      renderAll();
+      if (window.showToast) window.showToast('Matrix cleared');
+    });
+
+    loadFromStorage();
+    renderAll();
+
+    var faqs = [
+      { q: 'What is a literature review matrix?', a: 'A literature review matrix (or synthesis matrix) is a table that organizes research sources by key attributes — author, year, methodology, findings, and themes — so you can compare and contrast studies side by side. It helps identify patterns, gaps, and contradictions across your sources.' },
+      { q: 'How many sources should I include in my matrix?', a: 'There is no fixed number. A typical undergraduate review includes 15-30 sources, while a systematic review may include 50-200+. Add all sources relevant to your research question and use the relevance rating to prioritize.' },
+      { q: 'Can I add custom columns to the matrix?', a: 'Yes. Click the "+ Add" button next to "Custom Columns" and type any column name — sample size, geographic scope, theoretical framework, limitations, or anything your review requires. Custom columns appear in all rows and are included in CSV exports.' },
+      { q: 'How does the relevance scoring work?', a: 'Click the stars (1-5) in the Relevance column. A 5-star source directly addresses your research question, while a 1-star source provides only peripheral context. Click a star again to reduce the rating. You can sort by relevance to prioritize your most important sources.' },
+      { q: 'Is my data saved between sessions?', a: 'Yes. All sources and custom columns are saved to your browser\'s local storage automatically. Your data persists between sessions and never leaves your device. Use "Clear All" to reset everything.' },
+      { q: 'How do I export my matrix?', a: 'Click "Download CSV" to export a file that opens in Excel, Google Sheets, or any spreadsheet application. Click "Copy Table" to copy tab-separated text you can paste directly into a document. Both exports include all columns including custom ones.' }
+    ];
+    if (typeof TeamzTools !== 'undefined') {
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+      TeamzTools.injectWebAppSchema({ slug: 'literature-review-matrix', title: 'Literature Review Matrix Generator', description: 'Organize research sources in a structured matrix with sortable columns, relevance scoring, custom fields, and CSV export. Free, private, browser-based.' });
+      TeamzTools.renderRelatedTools([
+        { slug: 'research/citation-generator', name: 'Citation Generator', description: 'Generate citations in multiple formats' },
+        { slug: 'research/bibliography-generator', name: 'Bibliography Generator', description: 'Create complete bibliographies' },
+        { slug: 'research/research-paper-outline-generator', name: 'Research Paper Outline Generator', description: 'Create structured outlines' },
+        { slug: 'research/doi-lookup', name: 'DOI Lookup Tool', description: 'Look up paper details by DOI' },
+        { slug: 'research/thesis-statement-generator', name: 'Thesis Statement Generator', description: 'Create thesis statements' },
+        { slug: 'research/methodology-selector', name: 'Research Methodology Selector', description: 'Choose research methodology' }
+      ]);
+    }
+  });
+  </script>
+</body>
+</html>
