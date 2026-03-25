@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fertility Window Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your 6-day fertility window based on cycle length. See your most fertile days, ovulation day, and conception chances. Free and private.">
+  <meta property="og:title" content="Fertility Window Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your 6-day fertility window based on cycle length. See your most fertile days, ovulation day, and conception chances. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/fertility-window-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Fertility Window Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate your 6-day fertility window based on cycle length. See your most fertile days, ovulation day, and conception chances. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/fertility-window-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* Legend */
+    .fw-legend { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); }
+    .fw-legend-item { display: flex; align-items: center; gap: 5px; }
+    .fw-legend-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+    .fw-legend-dot.l-period    { background: var(--heading); }
+    .fw-legend-dot.l-low       { background: var(--surface); border: 2px solid var(--border); }
+    .fw-legend-dot.l-fertile   { background: color-mix(in srgb, var(--accent) 25%, transparent); border: 2px solid var(--accent); }
+    .fw-legend-dot.l-peak      { background: color-mix(in srgb, var(--accent) 70%, transparent); border: 2px solid var(--accent); }
+    .fw-legend-dot.l-ovulation { background: var(--accent); }
+    .fw-legend-dot.l-luteal    { background: color-mix(in srgb, var(--heading) 18%, transparent); border: 2px solid var(--border); }
+
+    /* Cycle blocks */
+    .fw-cycle-block { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+    .fw-cycle-block h3 { margin: 0 0 0.75rem 0; font-size: 1rem; color: var(--heading); font-weight: 700; }
+    .fw-cycle-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+    .fw-day { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); cursor: default; position: relative; }
+    .fw-day:hover .fw-day-tip { display: block; }
+    .fw-day-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--heading); color: var(--bg); font-size: 0.65rem; white-space: nowrap; padding: 3px 7px; border-radius: 4px; z-index: 10; pointer-events: none; }
+    .fw-day.period    { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .fw-day.fertile   { background: color-mix(in srgb, var(--accent) 25%, transparent); border-color: var(--accent); color: var(--heading); }
+    .fw-day.peak      { background: color-mix(in srgb, var(--accent) 70%, transparent); border-color: var(--accent); color: var(--heading); font-weight: 800; }
+    .fw-day.ovulation { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 800; }
+    .fw-day.luteal    { background: color-mix(in srgb, var(--heading) 12%, transparent); border-color: var(--border); color: var(--text-muted); }
+
+    /* Summary card */
+    .fw-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1.5rem; }
+    .fw-summary-card { padding: 1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .fw-summary-card h3 { margin: 0 0 0.3rem 0; font-size: 0.8rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+    .fw-summary-card .fw-val { font-size: 1rem; font-weight: 700; color: var(--heading); }
+    .fw-summary-card.highlight { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+    .fw-summary-card.highlight .fw-val { color: var(--heading); }
+
+    /* Probability bar */
+    .fw-prob-table { margin-top: 1rem; width: 100%; border-collapse: collapse; }
+    .fw-prob-table th, .fw-prob-table td { padding: 0.45rem 0.6rem; font-size: 0.82rem; text-align: left; border-bottom: 1px solid var(--border); }
+    .fw-prob-table th { color: var(--text-muted); font-weight: 600; background: var(--surface); }
+    .fw-prob-table td { color: var(--text); }
+    .fw-prob-bar-wrap { background: var(--surface); border-radius: 4px; height: 8px; width: 120px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+    .fw-prob-bar { height: 100%; border-radius: 4px; background: var(--accent); }
+    .fw-prob-peak td { color: var(--heading); font-weight: 700; }
+
+    /* Disclaimer */
+    .fw-disclaimer { margin-top: 1.25rem; font-size: 0.82rem; color: var(--text-muted); padding: 0.75rem 1rem; border-left: 3px solid var(--border); border-radius: 0 6px 6px 0; background: var(--surface); }
+
+    @media (max-width: 600px) {
+      .fw-summary { grid-template-columns: 1fr; }
+      .fw-day { width: 28px; height: 28px; font-size: 0.62rem; }
+      .tool-calculator h2 { font-size: var(--text-lg); }
+      .fw-prob-bar-wrap { width: 70px; }
+      .fw-cycle-block { padding: 0.9rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Health Tools", "item": "https://tool.teamzlab.com/health/"}, {"@type": "ListItem", "position": 3, "name": "Fertility Window Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the fertility window?", "acceptedAnswer": {"@type": "Answer", "text": "The fertility window is the 6-day period each menstrual cycle when conception is possible. It spans the 5 days before ovulation and ovulation day itself. Sperm can survive in the female reproductive tract for up to 5 days, while an egg remains viable for only 12 to 24 hours after release."}}, {"@type": "Question", "name": "How is the fertility window calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Ovulation typically occurs 14 days before the next period starts (the luteal phase is fairly consistent). So for a 28-day cycle, ovulation is around day 14. The fertile window starts 5 days before ovulation and ends on ovulation day. Formula: Ovulation day = cycle start + (cycle length - 14)."}}, {"@type": "Question", "name": "Which day in the fertility window gives the highest chance of conception?", "acceptedAnswer": {"@type": "Answer", "text": "The day before ovulation (day -1) and ovulation day itself (day 0) offer the highest chances — around 31% and 33% per cycle respectively. Two days before ovulation (day -2) is also very effective at about 27%. Conception probability drops significantly after ovulation day."}}, {"@type": "Question", "name": "Can I use this calculator if my cycle is irregular?", "acceptedAnswer": {"@type": "Answer", "text": "This calculator is most reliable for regular cycles (21-40 days). If your cycle varies by more than 7 days month to month, use your shortest cycle length to identify your earliest possible ovulation. Consider pairing with basal body temperature tracking or ovulation predictor kits (OPKs) for better accuracy."}}, {"@type": "Question", "name": "Is my data stored anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. All calculations happen entirely in your browser using JavaScript. No data is sent to any server, and nothing is stored in the cloud. Your period dates and cycle information remain completely private on your device."}}, {"@type": "Question", "name": "How many cycles can this calculator show?", "acceptedAnswer": {"@type": "Answer", "text": "You can view up to 6 consecutive cycles at once. This lets you plan ahead and see patterns in your fertile windows across multiple months. The default view shows 3 cycles."}}, {"@type": "Question", "name": "Does stress or illness affect the fertility window?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Stress, illness, significant weight changes, intense exercise, and conditions like PCOS or thyroid disorders can delay or prevent ovulation, shifting the fertility window. If you experience cycles that are consistently very short, very long, or irregular, consult a healthcare provider."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Fertility Window Calculator", "description": "Calculate your 6-day fertility window, ovulation day, and daily conception probabilities.", "url": "https://tool.teamzlab.com/health/fertility-window-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Fertility Window Calculator</h1>
+      <p class="tool-description">Find your 6-day fertility window, ovulation date, and daily conception probabilities based on your cycle length. Plan ahead with multi-cycle views. 100% private — all calculations run in your browser, nothing is stored.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="tool-grid">
+        <div class="tool-field">
+          <label class="tool-label" for="fw-last-period">First Day of Last Period</label>
+          <input type="date" id="fw-last-period" class="tool-input">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="fw-cycle-length">Average Cycle Length (days)</label>
+          <input type="number" id="fw-cycle-length" class="tool-input" value="28" min="21" max="40">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="fw-cycles-to-show">Cycles to Show</label>
+          <select id="fw-cycles-to-show" class="tool-input">
+            <option value="1">1 cycle</option>
+            <option value="2">2 cycles</option>
+            <option value="3" selected>3 cycles</option>
+            <option value="4">4 cycles</option>
+            <option value="5">5 cycles</option>
+            <option value="6">6 cycles</option>
+          </select>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="fw-calculate-btn" class="btn-pill tool-calculate-btn">Calculate Fertility Window</button>
+        <button type="button" id="fw-clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+
+      <div id="fw-result" class="tool-result" style="display:none;">
+        <h2>Your Fertility Windows</h2>
+
+        <!-- Summary card for first/current cycle -->
+        <div id="fw-summary" class="fw-summary"></div>
+
+        <!-- Conception probability table -->
+        <h3 style="margin-top:1.5rem; margin-bottom:0.5rem; color:var(--heading); font-size:1rem;">Daily Conception Probability</h3>
+        <table class="fw-prob-table" id="fw-prob-table">
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Date</th>
+              <th>Chance</th>
+              <th>Phase</th>
+            </tr>
+          </thead>
+          <tbody id="fw-prob-tbody"></tbody>
+        </table>
+
+        <!-- Cycle visualizations -->
+        <div id="fw-cycles-container"></div>
+
+        <!-- Legend -->
+        <div class="fw-legend">
+          <div class="fw-legend-item"><div class="fw-legend-dot l-period"></div> Period</div>
+          <div class="fw-legend-item"><div class="fw-legend-dot l-low"></div> Low fertility</div>
+          <div class="fw-legend-item"><div class="fw-legend-dot l-fertile"></div> Fertile (early)</div>
+          <div class="fw-legend-item"><div class="fw-legend-dot l-peak"></div> Peak fertility</div>
+          <div class="fw-legend-item"><div class="fw-legend-dot l-ovulation"></div> Ovulation day</div>
+          <div class="fw-legend-item"><div class="fw-legend-dot l-luteal"></div> Luteal phase</div>
+        </div>
+
+        <div class="fw-disclaimer">
+          <strong>Medical disclaimer:</strong> This calculator provides estimates based on average cycle patterns using the calendar method. It is not a substitute for medical advice and should not be used as a contraception method. Actual ovulation can vary due to stress, illness, or hormonal changes. Consult a healthcare provider for personalized fertility guidance.
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is the Fertility Window?</h2>
+      <p>The fertility window is the roughly 6-day period each menstrual cycle when conception is biologically possible. It exists because sperm cells are remarkably resilient — they can survive in the female reproductive tract for up to 5 days — while a newly released egg remains viable for only 12 to 24 hours after ovulation. This overlap creates a window of opportunity that begins 5 days before ovulation and closes on ovulation day itself.</p>
+      <p>Understanding your fertility window is the cornerstone of both trying to conceive and natural family planning. It gives you actionable data: instead of guessing, you know exactly which days to prioritize — or avoid — depending on your goals.</p>
+
+      <h2>How to Calculate Your Fertile Days</h2>
+      <p>The standard calendar method relies on one consistent biological fact: the luteal phase (the time from ovulation to the next period) is almost always 14 days, regardless of total cycle length. This means ovulation day can be estimated as:</p>
+      <div class="formula-box">
+        <h3>Fertility Window Formula</h3>
+        <p><strong>Ovulation Day</strong> = First Day of Last Period + (Cycle Length &minus; 14)</p>
+        <p><strong>Fertile Window</strong> = Ovulation Day &minus; 5 days through Ovulation Day</p>
+        <p><strong>Peak Fertility</strong> = Ovulation Day &minus; 1 and Ovulation Day (highest conception chance)</p>
+      </div>
+      <p>For example, with a 28-day cycle starting on March 1, ovulation falls on March 15 (day 14), the fertile window opens on March 10 (day 9), and peak fertility is March 14-15. The daily conception probabilities are not equal: the day before ovulation carries roughly a 31% chance, ovulation day itself about 33%, while the first day of the window (5 days prior) offers only around 10%.</p>
+
+      <h2>Fertility Window for Irregular Periods</h2>
+      <p>Calendar methods are inherently more uncertain when cycle lengths fluctuate. If your cycles range from 26 to 32 days, your fertile window shifts by up to 6 days between cycles. Strategies for irregular cycles include:</p>
+      <ul>
+        <li><strong>Use your shortest cycle</strong> to find your earliest possible ovulation (most conservative estimate for avoiding pregnancy).</li>
+        <li><strong>Basal Body Temperature (BBT) charting</strong> — a slight temperature rise of 0.2–0.5°C after ovulation confirms it has occurred.</li>
+        <li><strong>Ovulation Predictor Kits (OPKs)</strong> — detect the LH surge that precedes ovulation by 24-36 hours, giving advance notice of peak fertility.</li>
+        <li><strong>Cervical mucus monitoring</strong> — egg-white-quality discharge typically signals peak fertility and approaching ovulation.</li>
+      </ul>
+      <p>Combining the calendar method with one or more of these physical signs is known as the Symptothermal Method and is significantly more accurate than calendar calculations alone.</p>
+
+      <h2>Maximizing Conception Chances</h2>
+      <p>Research consistently shows that the highest conception probability occurs in the 48 hours before ovulation. Timing intercourse to coincide with the 2-3 days leading up to and including ovulation day gives the best statistical odds. Having intercourse every 1-2 days throughout the fertile window ensures sperm are present when the egg is released, regardless of slight variations in ovulation timing.</p>
+      <p>Beyond timing, other factors support fertility: maintaining a healthy BMI, limiting caffeine and alcohol, managing stress, and ensuring adequate sleep all contribute to hormonal balance and cycle regularity. If conception has not occurred after 12 months of regular unprotected intercourse (or 6 months if over 35), a healthcare provider can evaluate for underlying factors and discuss next steps.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      // Default last period to ~14 days ago so results show immediately
+      var today = new Date();
+      var defaultLP = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 14);
+      document.getElementById('fw-last-period').valueAsDate = defaultLP;
+
+      document.getElementById('fw-calculate-btn').addEventListener('click', calculate);
+      document.getElementById('fw-clear-btn').addEventListener('click', function () {
+        hideEl(document.getElementById('fw-result'));
+      });
+
+      // ─── Helpers ───────────────────────────────────────────────
+      function addDays(date, n) {
+        var d = new Date(date);
+        d.setDate(d.getDate() + n);
+        return d;
+      }
+
+      function sameDay(a, b) {
+        return a.getFullYear() === b.getFullYear() &&
+               a.getMonth() === b.getMonth() &&
+               a.getDate() === b.getDate();
+      }
+
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+      function fmt(d) {
+        return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+      }
+
+      function fmtShort(d) {
+        return MONTHS[d.getMonth()] + ' ' + d.getDate();
+      }
+
+      // Conception probability by day relative to ovulation (day 0)
+      var PROB = { '-5': 10, '-4': 16, '-3': 14, '-2': 27, '-1': 31, '0': 33 };
+
+      // ─── Main calculation ───────────────────────────────────────
+      function calculate() {
+        var lpVal       = document.getElementById('fw-last-period').value;
+        var cycleLen    = parseInt(document.getElementById('fw-cycle-length').value, 10);
+        var cyclesToShow = parseInt(document.getElementById('fw-cycles-to-show').value, 10);
+
+        if (!lpVal) {
+          window.showToast('Please enter the first day of your last period.');
+          return;
+        }
+        if (isNaN(cycleLen) || cycleLen < 21 || cycleLen > 40) {
+          window.showToast('Cycle length must be between 21 and 40 days.');
+          return;
+        }
+
+        var lastPeriod = new Date(lpVal + 'T00:00:00');
+
+        // Build cycle data for each requested cycle
+        var cycles = [];
+        for (var c = 0; c < cyclesToShow; c++) {
+          var periodStart  = addDays(lastPeriod, c * cycleLen);
+          var ovulationDay = addDays(periodStart, cycleLen - 14);
+          var fertileStart = addDays(ovulationDay, -5);
+          var fertileEnd   = ovulationDay;           // day 0 = last fertile day
+          var peakStart    = addDays(ovulationDay, -1);
+          var nextPeriod   = addDays(periodStart, cycleLen);
+          cycles.push({ periodStart, ovulationDay, fertileStart, fertileEnd, peakStart, nextPeriod, cycleLen });
+        }
+
+        renderSummary(cycles[0]);
+        renderProbTable(cycles[0]);
+        renderCycleBlocks(cycles);
+
+        showEl(document.getElementById('fw-result'));
+      }
+
+      // ─── Summary cards ──────────────────────────────────────────
+      function renderSummary(c) {
+        var html = '';
+        html += '<div class="fw-summary-card highlight">' +
+                  '<h3>Fertile Window Opens</h3>' +
+                  '<div class="fw-val">' + fmt(c.fertileStart) + '</div>' +
+                '</div>';
+        html += '<div class="fw-summary-card highlight">' +
+                  '<h3>Ovulation Day</h3>' +
+                  '<div class="fw-val">' + fmt(c.ovulationDay) + '</div>' +
+                '</div>';
+        html += '<div class="fw-summary-card">' +
+                  '<h3>Peak Fertility (highest chance)</h3>' +
+                  '<div class="fw-val">' + fmtShort(c.peakStart) + ' &ndash; ' + fmtShort(c.ovulationDay) + '</div>' +
+                '</div>';
+        html += '<div class="fw-summary-card">' +
+                  '<h3>Next Period (est.)</h3>' +
+                  '<div class="fw-val">' + fmt(c.nextPeriod) + '</div>' +
+                '</div>';
+        document.getElementById('fw-summary').innerHTML = html;
+      }
+
+      // ─── Probability table ──────────────────────────────────────
+      function renderProbTable(c) {
+        var rows = [
+          { offset: -5, label: 'Day &minus;5 (5 days before ovulation)', phase: 'Fertile (early)' },
+          { offset: -4, label: 'Day &minus;4 (4 days before ovulation)', phase: 'Fertile (early)' },
+          { offset: -3, label: 'Day &minus;3 (3 days before ovulation)', phase: 'Fertile (early)' },
+          { offset: -2, label: 'Day &minus;2 (2 days before ovulation)', phase: 'Peak fertility' },
+          { offset: -1, label: 'Day &minus;1 (day before ovulation)',    phase: 'Peak fertility' },
+          { offset:  0, label: 'Day 0 (ovulation day)',                  phase: 'Ovulation' }
+        ];
+        var html = '';
+        rows.forEach(function (row) {
+          var date = addDays(c.ovulationDay, row.offset);
+          var pct  = PROB[String(row.offset)];
+          var isPeak = row.offset >= -1;
+          html += '<tr' + (isPeak ? ' class="fw-prob-peak"' : '') + '>' +
+                    '<td>' + row.label + '</td>' +
+                    '<td>' + fmtShort(date) + '</td>' +
+                    '<td>' + pct + '% <span class="fw-prob-bar-wrap"><span class="fw-prob-bar" style="width:' + Math.round(pct / 33 * 100) + '%"></span></span></td>' +
+                    '<td>' + row.phase + '</td>' +
+                  '</tr>';
+        });
+        document.getElementById('fw-prob-tbody').innerHTML = html;
+      }
+
+      // ─── Cycle visual blocks ────────────────────────────────────
+      function renderCycleBlocks(cycles) {
+        var container = document.getElementById('fw-cycles-container');
+        var html = '';
+        cycles.forEach(function (c, idx) {
+          var label = 'Cycle ' + (idx + 1) + ': Starting ' + fmt(c.periodStart);
+          html += '<div class="fw-cycle-block"><h3>' + label + '</h3><div class="fw-cycle-grid">';
+          for (var i = 0; i < c.cycleLen; i++) {
+            var dayDate = addDays(c.periodStart, i);
+            var cls     = 'fw-day';
+            var tip     = fmtShort(dayDate);
+            var prob    = '';
+
+            if (i < 5) {
+              cls += ' period';
+              tip += ' — Period';
+            } else if (sameDay(dayDate, c.ovulationDay)) {
+              cls += ' ovulation';
+              tip += ' — Ovulation (33%)';
+            } else if (sameDay(dayDate, c.peakStart)) {
+              cls += ' peak';
+              tip += ' — Peak fertility (31%)';
+            } else if (dayDate >= c.fertileStart && dayDate <= c.fertileEnd) {
+              var off = Math.round((dayDate - c.ovulationDay) / 86400000);
+              var p   = PROB[String(off)] || '';
+              cls += ' fertile';
+              tip += p ? ' — Fertile (' + p + '%)' : ' — Fertile';
+            } else if (dayDate > c.ovulationDay) {
+              cls += ' luteal';
+              tip += ' — Luteal phase';
+            }
+
+            html += '<div class="' + cls + '"><span class="fw-day-tip">' + tip + '</span>' + (i + 1) + '</div>';
+          }
+          html += '</div></div>';
+        });
+        container.innerHTML = html;
+      }
+
+      // ─── Schema & UI scaffolding ────────────────────────────────
+      var BREADCRUMBS = [
+        { name: 'Home', url: '/' },
+        { name: 'Health Tools', url: '/health/' },
+        { name: 'Fertility Window Calculator' }
+      ];
+
+      var FAQS = [
+        {
+          q: 'What is the fertility window?',
+          a: 'The fertility window is the 6-day period each menstrual cycle when conception is possible. It spans the 5 days before ovulation and ovulation day itself. Sperm can survive in the female reproductive tract for up to 5 days, while an egg remains viable for only 12 to 24 hours after release.'
+        },
+        {
+          q: 'How is the fertility window calculated?',
+          a: 'Ovulation typically occurs 14 days before the next period starts (the luteal phase is fairly consistent). So for a 28-day cycle, ovulation is around day 14. The fertile window starts 5 days before ovulation and ends on ovulation day. Formula: Ovulation day = cycle start + (cycle length - 14).'
+        },
+        {
+          q: 'Which day in the fertility window gives the highest chance of conception?',
+          a: 'The day before ovulation (day -1) and ovulation day itself (day 0) offer the highest chances — around 31% and 33% per cycle respectively. Two days before ovulation (day -2) is also very effective at about 27%. Conception probability drops significantly after ovulation day.'
+        },
+        {
+          q: 'Can I use this calculator if my cycle is irregular?',
+          a: 'This calculator is most reliable for regular cycles (21-40 days). If your cycle varies by more than 7 days month to month, use your shortest cycle length to identify your earliest possible ovulation. Consider pairing with basal body temperature tracking or ovulation predictor kits (OPKs) for better accuracy.'
+        },
+        {
+          q: 'Is my data stored anywhere?',
+          a: 'No. All calculations happen entirely in your browser using JavaScript. No data is sent to any server, and nothing is stored in the cloud. Your period dates and cycle information remain completely private on your device.'
+        },
+        {
+          q: 'How many cycles can this calculator show?',
+          a: 'You can view up to 6 consecutive cycles at once. This lets you plan ahead and see patterns in your fertile windows across multiple months. The default view shows 3 cycles.'
+        },
+        {
+          q: 'Does stress or illness affect the fertility window?',
+          a: 'Yes. Stress, illness, significant weight changes, intense exercise, and conditions like PCOS or thyroid disorders can delay or prevent ovulation, shifting the fertility window. If you experience cycles that are consistently very short, very long, or irregular, consult a healthcare provider.'
+        }
+      ];
+
+      var RELATED_TOOLS = [
+        { slug: '/health/ovulation-calculator/',              name: 'Ovulation Calculator',             description: 'Quick ovulation day prediction' },
+        { slug: '/health/menstrual-cycle-tracker/',           name: 'Menstrual Cycle Tracker',          description: 'Track your period with full privacy' },
+        { slug: '/health/pregnancy-week-calculator/',         name: 'Pregnancy Week Calculator',        description: 'Track your pregnancy week by week' },
+        { slug: '/evergreen/pregnancy-due-date-calculator/',  name: 'Due Date Calculator',              description: 'Calculate your expected delivery date' },
+        { slug: '/health/pregnancy-weight-gain-calculator/',  name: 'Pregnancy Weight Gain Calculator', description: 'Track healthy weight gain by week' },
+        { slug: '/health/bmi-health-checker/',                name: 'BMI Calculator',                   description: 'Check your body mass index' }
+      ];
+
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'health/fertility-window-calculator',
+        title: 'Fertility Window Calculator',
+        description: 'Calculate your 6-day fertility window, ovulation day, and daily conception probabilities.'
+      });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

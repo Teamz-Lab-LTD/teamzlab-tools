@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zero-Based Budget Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Create a zero-based budget where every dollar has a job. Free YNAB alternative with no signup. Assign income to categories and track surplus. Private.">
+  <meta property="og:title" content="Zero-Based Budget Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Create a zero-based budget where every dollar has a job. Free, private, no signup required.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/zero-based-budget-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Zero-Based Budget Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Create a zero-based budget where every dollar has a job. Free, private, no signup required.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/zero-based-budget-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* --- Income input row --- */
+    .zbb-income-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .zbb-income-row .zbb-field {
+      flex: 1;
+    }
+    .zbb-income-row label {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .zbb-income-row input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .zbb-income-row input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    /* --- Categories table --- */
+    .zbb-categories {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .zbb-category-row {
+      display: grid;
+      grid-template-columns: 1fr 160px 44px;
+      gap: 8px;
+      align-items: center;
+    }
+    .zbb-category-row input[type="text"],
+    .zbb-category-row input[type="number"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-sm);
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .zbb-category-row input:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .zbb-remove-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    .zbb-remove-btn:hover {
+      background: var(--border);
+      color: var(--heading);
+    }
+
+    /* --- Column headers --- */
+    .zbb-col-headers {
+      display: grid;
+      grid-template-columns: 1fr 160px 44px;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .zbb-col-headers span {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 4px;
+    }
+
+    /* --- Actions row --- */
+    .zbb-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* --- Summary bar --- */
+    .zbb-summary {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .zbb-summary-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .zbb-stat {
+      text-align: center;
+    }
+    .zbb-stat-label {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .zbb-stat-value {
+      font-size: clamp(18px, 4vw, 26px);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .zbb-stat-value.surplus { color: var(--heading); }
+    .zbb-stat-value.over { color: var(--heading); }
+
+    /* --- Allocation bar --- */
+    .zbb-bar-wrap {
+      margin-bottom: 16px;
+    }
+    .zbb-bar-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .zbb-alloc-bar {
+      display: flex;
+      height: 28px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--border);
+    }
+    .zbb-bar-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+      min-width: 0;
+    }
+
+    /* --- Category breakdown list --- */
+    .zbb-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 16px;
+    }
+    .zbb-breakdown-item {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: center;
+      font-size: var(--text-sm);
+    }
+    .zbb-breakdown-name {
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .zbb-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .zbb-breakdown-pct {
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      min-width: 42px;
+      text-align: right;
+    }
+    .zbb-breakdown-amount {
+      color: var(--heading);
+      font-weight: 600;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    /* --- Status banner --- */
+    .zbb-status {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--heading);
+      text-align: center;
+    }
+
+    /* --- Palette for category colors (CSS-variable based shades) --- */
+    .zbb-c0  { background: var(--heading); }
+    .zbb-c1  { background: var(--accent); }
+    .zbb-c2  { background: var(--text-muted); }
+    .zbb-c3  { background: var(--heading); opacity: 0.7; }
+    .zbb-c4  { background: var(--text-muted); opacity: 0.6; }
+    .zbb-c5  { background: var(--accent); opacity: 0.7; }
+    .zbb-c6  { background: var(--heading); opacity: 0.5; }
+    .zbb-c7  { background: var(--text-muted); opacity: 0.4; }
+    .zbb-c8  { background: var(--accent); opacity: 0.5; }
+    .zbb-c9  { background: var(--heading); opacity: 0.35; }
+    .zbb-c10 { background: var(--text-muted); opacity: 0.25; }
+    .zbb-c11 { background: var(--accent); opacity: 0.35; }
+    .zbb-c12 { background: var(--heading); opacity: 0.2; }
+
+    /* Keep accent-text dark on neon segments */
+    .zbb-c1 { color: var(--accent-text); }
+    .zbb-c5 { color: var(--accent-text); }
+    .zbb-c8 { color: var(--accent-text); }
+    .zbb-c11 { color: var(--accent-text); }
+
+    @media (max-width: 600px) {
+      .tool-content h2 { font-size: var(--text-lg); }
+      .zbb-income-row { flex-direction: column; }
+      .zbb-category-row { grid-template-columns: 1fr 120px 36px; }
+      .zbb-col-headers { grid-template-columns: 1fr 120px 36px; }
+      .zbb-summary-stats { grid-template-columns: 1fr 1fr; }
+      .zbb-summary-stats .zbb-stat:last-child { grid-column: span 2; }
+      .zbb-actions { flex-direction: column; }
+      .zbb-actions button { width: 100%; }
+      .zbb-breakdown-item { grid-template-columns: 1fr auto; }
+      .zbb-breakdown-pct { display: none; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "Zero-Based Budget Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is zero-based budgeting?", "acceptedAnswer": {"@type": "Answer", "text": "Zero-based budgeting (ZBB) is a method where you assign every dollar of income to a specific category — expenses, savings, or debt — until you reach zero. The goal is Income minus Allocations equals zero, meaning no dollar is left unassigned."}}, {"@type": "Question", "name": "Is this a YNAB alternative?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. This free calculator applies the same zero-based budgeting principle as YNAB (You Need A Budget) without any subscription, account, or app required. Everything runs in your browser and your data never leaves your device."}}, {"@type": "Question", "name": "What if I have money left over after allocating?", "acceptedAnswer": {"@type": "Answer", "text": "A positive remaining balance means you have unassigned dollars. Add it to savings, investments, or an extra debt payment category until you reach zero. The goal is to give every dollar a job before the month begins."}}, {"@type": "Question", "name": "What if I allocate more than my income?", "acceptedAnswer": {"@type": "Answer", "text": "You are over-budget. Reduce amounts in discretionary categories like entertainment, clothing, or dining out until the remaining balance reaches zero. Prioritize fixed needs (housing, utilities) and debt minimums first."}}, {"@type": "Question", "name": "How does zero-based budgeting differ from the 50/30/20 rule?", "acceptedAnswer": {"@type": "Answer", "text": "The 50/30/20 rule divides income into three broad buckets. Zero-based budgeting assigns every dollar to a specific named category. ZBB requires more effort but provides much more detail and control over your spending."}}, {"@type": "Question", "name": "Can I add custom budget categories?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click the Add Category button to add as many custom categories as you need — pet care, hobbies, travel fund, gifts, or anything else relevant to your life."}}, {"@type": "Question", "name": "How often should I do a zero-based budget?", "acceptedAnswer": {"@type": "Answer", "text": "Most people do a zero-based budget monthly, before the month begins. You plan how to spend the income you expect to receive. Review and adjust mid-month if unexpected expenses arise."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Zero-Based Budget Calculator", "description": "Create a zero-based budget where every dollar has a job. Free YNAB alternative with no signup.", "url": "https://tool.teamzlab.com/evergreen/zero-based-budget-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Zero-Based Budget Calculator</h1>
+      <p class="tool-description">Assign every dollar of your income to a category until you reach zero. A free YNAB-style budgeting tool — no signup, no tracking, 100% private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Income input -->
+      <div class="zbb-income-row">
+        <div class="zbb-field">
+          <label for="zbb-income">Monthly Take-Home Income ($)</label>
+          <input type="number" id="zbb-income" placeholder="e.g. 5000" min="0" step="100" inputmode="decimal">
+        </div>
+      </div>
+
+      <!-- Column headers -->
+      <div class="zbb-col-headers">
+        <span>Category</span>
+        <span>Amount ($)</span>
+        <span></span>
+      </div>
+
+      <!-- Category rows -->
+      <div class="zbb-categories" id="zbb-categories"></div>
+
+      <!-- Action buttons -->
+      <div class="zbb-actions">
+        <button class="btn-secondary" id="zbb-add-btn" type="button">+ Add Category</button>
+        <button class="btn-primary" id="zbb-calc-btn" type="button">Calculate Budget</button>
+        <button class="btn-secondary tool-clear-btn" id="zbb-reset-btn" type="button">Reset</button>
+      </div>
+
+      <!-- Result summary -->
+      <div id="zbb-result" style="display:none">
+        <div class="zbb-summary">
+          <div class="zbb-summary-stats">
+            <div class="zbb-stat">
+              <div class="zbb-stat-label">Income</div>
+              <div class="zbb-stat-value" id="zbb-res-income">$0</div>
+            </div>
+            <div class="zbb-stat">
+              <div class="zbb-stat-label">Allocated</div>
+              <div class="zbb-stat-value" id="zbb-res-allocated">$0</div>
+            </div>
+            <div class="zbb-stat">
+              <div class="zbb-stat-label">Remaining</div>
+              <div class="zbb-stat-value" id="zbb-res-remaining">$0</div>
+            </div>
+          </div>
+
+          <div class="zbb-bar-wrap">
+            <div class="zbb-bar-label">Budget allocation breakdown</div>
+            <div class="zbb-alloc-bar" id="zbb-bar"></div>
+          </div>
+
+          <div class="zbb-breakdown" id="zbb-breakdown"></div>
+          <div class="zbb-status" id="zbb-status"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is Zero-Based Budgeting?</h2>
+      <p>Zero-based budgeting (ZBB) is a personal finance method where you start each month with your income and assign every single dollar to a specific job — housing, groceries, savings, debt repayment, entertainment, and so on — until the balance reaches exactly zero. The idea is not to spend everything: it is to consciously decide in advance what each dollar will do. Savings and investments count as "spending" in this system because you are intentionally directing money toward a goal. The result is a budget where Income minus All Allocations = $0. Every dollar has a purpose before the month begins.</p>
+      <p>The method was popularized by the budgeting app YNAB (You Need A Budget), but the underlying principle is decades old and used by households and corporations alike. Unlike the 50/30/20 rule, which gives you three broad buckets, zero-based budgeting gives you granular control over your money at the category level.</p>
+
+      <h2>Zero-Based Budget vs 50/30/20</h2>
+      <p>The 50/30/20 rule is simple: half your income for needs, 30% for wants, 20% for savings. It is a great starting point and easy to remember. Zero-based budgeting takes more effort — you name every category and assign a specific dollar amount — but it reveals far more about your spending habits. If you have tried the 50/30/20 rule and still feel like money disappears, zero-based budgeting is the natural next step. You will quickly discover that small, untracked expenses (subscriptions, impulse purchases, coffee runs) are the most common culprits eating into savings goals.</p>
+      <p>Zero-based budgeting also works better for irregular expenses. You can create a category called "Car Maintenance" and assign $50/month to it, so when a $300 repair hits, you already have the money. The 50/30/20 rule does not prompt you to plan for these moments the way ZBB does.</p>
+
+      <h2>How to Use This Calculator</h2>
+      <p>Enter your monthly take-home income (after taxes and any payroll deductions). Then review the pre-filled categories and type an amount for each one you spend money on. Leave categories you do not use at $0 — or remove them entirely using the minus button. Click <strong>Add Category</strong> to create custom categories for anything not in the default list (pet care, travel fund, gym, gifts, and so on). As you fill in amounts, watch the <em>Remaining</em> figure. Your goal is to bring it to exactly $0. If you have money left over, assign it to savings, an investment account, or extra debt payments. If you go over, reduce discretionary amounts until you balance. Hit <strong>Calculate Budget</strong> to see the full allocation breakdown with a visual bar chart.</p>
+
+      <h2>Tips for Zero-Based Budgeting Success</h2>
+      <p>Start with fixed expenses first — rent or mortgage, loan minimums, insurance premiums, subscriptions you cannot cancel. These amounts are known and non-negotiable. Then fund your savings goal before budgeting for wants. Treat savings like a bill you owe yourself. Next, estimate variable needs like groceries and utilities based on past months. Finally, allocate the remainder to wants categories until you reach zero.</p>
+      <p>Review your budget mid-month. Life happens — an unexpected car repair or a birthday gift can throw off your categories. In zero-based budgeting, you "move money" from one category to another rather than giving up on the budget entirely. This flexible approach is why zero-based budgeting has a higher success rate than rigid percentage-based methods for people who stick with it for more than three months. Build the habit monthly and you will have a clearer picture of your financial life than 90% of people around you.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* ------------------------------------------------------------------ */
+    /* Zero-Based Budget Calculator                                         */
+    /* ------------------------------------------------------------------ */
+
+    var DEFAULT_CATEGORIES = [
+      { name: 'Housing (Rent / Mortgage)', amount: '' },
+      { name: 'Utilities',                  amount: '' },
+      { name: 'Groceries',                  amount: '' },
+      { name: 'Transportation',             amount: '' },
+      { name: 'Insurance',                  amount: '' },
+      { name: 'Debt Payments',              amount: '' },
+      { name: 'Savings / Investments',      amount: '' },
+      { name: 'Entertainment',              amount: '' },
+      { name: 'Clothing',                   amount: '' },
+      { name: 'Personal Care',              amount: '' },
+      { name: 'Subscriptions',              amount: '' },
+      { name: 'Giving / Charity',           amount: '' },
+      { name: 'Miscellaneous',              amount: '' }
+    ];
+
+    /* Palette: each index maps to a CSS class defined above */
+    var COLOR_CLASSES = [
+      'zbb-c0','zbb-c1','zbb-c2','zbb-c3','zbb-c4',
+      'zbb-c5','zbb-c6','zbb-c7','zbb-c8','zbb-c9',
+      'zbb-c10','zbb-c11','zbb-c12'
+    ];
+
+    var fmt = function(n) {
+      return '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    };
+
+    /* ---- DOM helpers ---- */
+    var $  = function(id) { return document.getElementById(id); };
+    var categoriesEl = null;
+
+    function getColorStyle(idx) {
+      /* Return inline background style as a CSS variable expression so no
+         hex is ever hardcoded. We cycle through --heading / --accent /
+         --text-muted with decreasing opacity using a small lookup. */
+      var styles = [
+        'background:var(--heading)',
+        'background:var(--accent)',
+        'background:var(--text-muted)',
+        'background:var(--heading);opacity:0.7',
+        'background:var(--text-muted);opacity:0.6',
+        'background:var(--accent);opacity:0.7',
+        'background:var(--heading);opacity:0.5',
+        'background:var(--text-muted);opacity:0.4',
+        'background:var(--accent);opacity:0.5',
+        'background:var(--heading);opacity:0.35',
+        'background:var(--text-muted);opacity:0.25',
+        'background:var(--accent);opacity:0.35',
+        'background:var(--heading);opacity:0.2'
+      ];
+      return styles[idx % styles.length];
+    }
+
+    function addCategoryRow(name, amount) {
+      var row = document.createElement('div');
+      row.className = 'zbb-category-row';
+      var rowIdx = categoriesEl.children.length;
+
+      var nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.placeholder = 'Category name';
+      nameInput.value = name || '';
+      nameInput.id = 'zbb-cat-name-' + rowIdx;
+      nameInput.addEventListener('input', onCategoryChange);
+
+      var amtInput = document.createElement('input');
+      amtInput.type = 'number';
+      amtInput.placeholder = '0';
+      amtInput.min = '0';
+      amtInput.step = '10';
+      amtInput.value = amount || '';
+      amtInput.id = 'zbb-cat-amt-' + rowIdx;
+      amtInput.inputMode = 'decimal';
+      amtInput.addEventListener('input', onCategoryChange);
+
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'zbb-remove-btn';
+      removeBtn.setAttribute('aria-label', 'Remove category');
+      removeBtn.innerHTML = '&times;';
+      removeBtn.addEventListener('click', function() {
+        row.parentNode.removeChild(row);
+        onCategoryChange();
+      });
+
+      row.appendChild(nameInput);
+      row.appendChild(amtInput);
+      row.appendChild(removeBtn);
+      categoriesEl.appendChild(row);
+    }
+
+    function getCategoryData() {
+      var rows = categoriesEl.querySelectorAll('.zbb-category-row');
+      var cats = [];
+      rows.forEach(function(row) {
+        var inputs = row.querySelectorAll('input');
+        var name = inputs[0].value.trim();
+        var amt  = parseFloat(inputs[1].value) || 0;
+        if (name || amt > 0) {
+          cats.push({ name: name || 'Unnamed', amount: amt });
+        }
+      });
+      return cats;
+    }
+
+    function renderResult() {
+      var income = parseFloat($('zbb-income').value) || 0;
+      if (income <= 0) {
+        hideEl($('zbb-result'));
+        return;
+      }
+      var cats = getCategoryData();
+      var total = cats.reduce(function(s, c) { return s + c.amount; }, 0);
+      var remaining = income - total;
+
+      $('zbb-res-income').textContent    = fmt(income);
+      $('zbb-res-allocated').textContent = fmt(total);
+
+      var remEl = $('zbb-res-remaining');
+      if (remaining === 0) {
+        remEl.textContent = '$0';
+        remEl.className = 'zbb-stat-value surplus';
+      } else if (remaining > 0) {
+        remEl.textContent = '+' + fmt(remaining);
+        remEl.className = 'zbb-stat-value surplus';
+      } else {
+        remEl.textContent = '-' + fmt(remaining);
+        remEl.className = 'zbb-stat-value over';
+      }
+
+      /* Allocation bar */
+      var barEl = $('zbb-bar');
+      barEl.innerHTML = '';
+      cats.forEach(function(cat, idx) {
+        if (cat.amount <= 0) return;
+        var pct = Math.min((cat.amount / income) * 100, 100);
+        var seg = document.createElement('div');
+        seg.className = 'zbb-bar-segment';
+        seg.style.cssText = 'width:' + pct.toFixed(2) + '%;' + getColorStyle(idx);
+        seg.title = cat.name + ': ' + fmt(cat.amount);
+        barEl.appendChild(seg);
+      });
+
+      /* Breakdown list */
+      var breakdownEl = $('zbb-breakdown');
+      breakdownEl.innerHTML = '';
+      cats.forEach(function(cat, idx) {
+        if (cat.amount <= 0) return;
+        var pct = income > 0 ? ((cat.amount / income) * 100).toFixed(1) : '0.0';
+        var item = document.createElement('div');
+        item.className = 'zbb-breakdown-item';
+
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'zbb-breakdown-name';
+        var dot = document.createElement('span');
+        dot.className = 'zbb-dot ' + COLOR_CLASSES[idx % COLOR_CLASSES.length];
+        nameSpan.appendChild(dot);
+        nameSpan.appendChild(document.createTextNode(cat.name));
+
+        var pctSpan = document.createElement('span');
+        pctSpan.className = 'zbb-breakdown-pct';
+        pctSpan.textContent = pct + '%';
+
+        var amtSpan = document.createElement('span');
+        amtSpan.className = 'zbb-breakdown-amount';
+        amtSpan.textContent = fmt(cat.amount);
+
+        item.appendChild(nameSpan);
+        item.appendChild(pctSpan);
+        item.appendChild(amtSpan);
+        breakdownEl.appendChild(item);
+      });
+
+      /* Status message */
+      var statusEl = $('zbb-status');
+      if (remaining === 0) {
+        statusEl.textContent = 'Every dollar has a job — your zero-based budget is balanced!';
+        showEl(statusEl);
+      } else if (remaining > 0) {
+        statusEl.textContent = fmt(remaining) + ' remaining — assign it to savings, investments, or extra debt payments to reach zero.';
+        showEl(statusEl);
+      } else {
+        statusEl.textContent = 'Over budget by ' + fmt(remaining) + ' — reduce discretionary categories until you reach zero.';
+        showEl(statusEl);
+      }
+
+      showEl($('zbb-result'));
+    }
+
+    function onCategoryChange() {
+      var income = parseFloat($('zbb-income').value) || 0;
+      if (income > 0) {
+        renderResult();
+      }
+    }
+
+    function resetBudget() {
+      $('zbb-income').value = '';
+      categoriesEl.innerHTML = '';
+      DEFAULT_CATEGORIES.forEach(function(c) { addCategoryRow(c.name, c.amount); });
+      hideEl($('zbb-result'));
+    }
+
+    /* ---- Breadcrumbs / FAQs / Schema / Related ---- */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Zero-Based Budget Calculator' }
+    ];
+
+    var FAQS = [
+      {
+        q: 'What is zero-based budgeting?',
+        a: 'Zero-based budgeting (ZBB) is a method where you assign every dollar of income to a specific category — expenses, savings, or debt — until you reach zero. The goal is Income minus Allocations equals zero, meaning no dollar is left unassigned.'
+      },
+      {
+        q: 'Is this a YNAB alternative?',
+        a: 'Yes. This free calculator applies the same zero-based budgeting principle as YNAB (You Need A Budget) without any subscription, account, or app required. Everything runs in your browser and your data never leaves your device.'
+      },
+      {
+        q: 'What if I have money left over after allocating?',
+        a: 'A positive remaining balance means you have unassigned dollars. Add it to savings, investments, or an extra debt payment category until you reach zero. The goal is to give every dollar a job before the month begins.'
+      },
+      {
+        q: 'What if I allocate more than my income?',
+        a: 'You are over-budget. Reduce amounts in discretionary categories like entertainment, clothing, or dining out until the remaining balance reaches zero. Prioritize fixed needs (housing, utilities) and debt minimums first.'
+      },
+      {
+        q: 'How does zero-based budgeting differ from the 50/30/20 rule?',
+        a: 'The 50/30/20 rule divides income into three broad buckets. Zero-based budgeting assigns every dollar to a specific named category. ZBB requires more effort but provides much more detail and control over your spending.'
+      },
+      {
+        q: 'Can I add custom budget categories?',
+        a: 'Yes. Click the Add Category button to add as many custom categories as you need — pet care, hobbies, travel fund, gifts, or anything else relevant to your life.'
+      },
+      {
+        q: 'How often should I do a zero-based budget?',
+        a: 'Most people do a zero-based budget monthly, before the month begins. You plan how to spend the income you expect to receive. Review and adjust mid-month if unexpected expenses arise.'
+      }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: '/evergreen/50-30-20-budget-calculator/',      name: '50/30/20 Budget Calculator',      description: 'Split your income using the popular 50/30/20 rule' },
+      { slug: '/evergreen/debt-payoff-calculator/',           name: 'Debt Payoff Calculator',           description: 'Plan your debt-free date with custom payments' },
+      { slug: '/evergreen/debt-snowball-vs-avalanche/',       name: 'Debt Snowball vs Avalanche',       description: 'Compare debt payoff strategies side by side' },
+      { slug: '/evergreen/emergency-fund-calculator/',        name: 'Emergency Fund Calculator',        description: 'Find out how much emergency savings you need' },
+      { slug: '/evergreen/cost-of-living-calculator/',        name: 'Cost of Living Calculator',        description: 'Compare living costs between cities' },
+      { slug: '/evergreen/compound-interest-calculator/',     name: 'Compound Interest Calculator',     description: 'See how your savings grow with compound interest' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      categoriesEl = $('zbb-categories');
+
+      /* Render default categories */
+      DEFAULT_CATEGORIES.forEach(function(c) { addCategoryRow(c.name, c.amount); });
+
+      /* Button listeners */
+      $('zbb-add-btn').addEventListener('click', function() {
+        addCategoryRow('', '');
+      });
+
+      $('zbb-calc-btn').addEventListener('click', function() {
+        var income = parseFloat($('zbb-income').value) || 0;
+        if (!income || income <= 0) {
+          if (window.showToast) window.showToast('Please enter your monthly take-home income.');
+          return;
+        }
+        renderResult();
+      });
+
+      $('zbb-reset-btn').addEventListener('click', function() {
+        resetBudget();
+      });
+
+      /* Live update when income changes */
+      $('zbb-income').addEventListener('input', onCategoryChange);
+
+      /* Schemas & UI components */
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'evergreen/zero-based-budget-calculator',
+        title: 'Zero-Based Budget Calculator',
+        description: 'Create a zero-based budget where every dollar has a job. Free YNAB alternative with no signup.'
+      });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
