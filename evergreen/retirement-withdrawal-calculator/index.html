@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retirement Withdrawal Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how long your retirement savings will last with monthly withdrawals. Model withdrawal rates, inflation, and investment returns free.">
+  <meta property="og:title" content="Retirement Withdrawal Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate how long retirement savings last with monthly withdrawals and inflation. Free calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/retirement-withdrawal-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Retirement Withdrawal Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate how long retirement savings last with monthly withdrawals and inflation. Free calculator.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/retirement-withdrawal-calculator/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .rw-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .rw-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .rw-card h4 { margin: 0; font-size: var(--text-sm); color: var(--text-muted); }
+    .rw-card .rw-val { font-size: clamp(18px, 4vw, 28px); font-weight: 700; color: var(--heading); margin: 6px 0 0; }
+    .rw-table-wrap { overflow-x: auto; margin-top: 16px; }
+    .rw-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .rw-table th, .rw-table td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--border); }
+    .rw-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .rw-table td:first-child, .rw-table th:first-child { text-align: center; }
+    .rw-depleted { color: var(--text-muted); font-style: italic; }
+    @media (max-width: 600px) {
+      .rw-summary { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Retirement Withdrawal Calculator</h1>
+      <p class="tool-description">How long will your retirement savings last? Model withdrawals with inflation adjustment and investment returns to see your year-by-year balance projection.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="tool-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="portfolio">Retirement Portfolio ($)</label>
+            <input type="number" id="portfolio" placeholder="e.g. 1000000" min="0" step="10000">
+          </div>
+          <div class="form-group">
+            <label for="monthlyWithdrawal">Monthly Withdrawal ($)</label>
+            <input type="number" id="monthlyWithdrawal" placeholder="e.g. 4000" min="0" step="100">
+          </div>
+          <div class="form-group">
+            <label for="annualReturn">Expected Annual Return (%)</label>
+            <input type="number" id="annualReturn" placeholder="e.g. 6" min="0" max="20" step="0.5" value="6">
+          </div>
+          <div class="form-group">
+            <label for="inflationRate">Annual Inflation Rate (%)</label>
+            <input type="number" id="inflationRate" placeholder="e.g. 3" min="0" max="15" step="0.5" value="3">
+          </div>
+          <div class="form-group">
+            <label for="retireAge">Retirement Age</label>
+            <input type="number" id="retireAge" placeholder="e.g. 65" min="30" max="85" step="1" value="65">
+          </div>
+          <div class="form-group">
+            <label for="planHorizon">Plan Through Age</label>
+            <input type="number" id="planHorizon" placeholder="e.g. 95" min="60" max="110" step="1" value="95">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="calcBtn">Calculate Withdrawal Plan</button>
+          <button class="btn-secondary" id="clearBtn">Clear</button>
+        </div>
+      </div>
+      <div id="resultArea" style="display:none;">
+        <div class="rw-summary" id="summaryCards"></div>
+        <div class="rw-table-wrap">
+          <table class="rw-table">
+            <thead><tr><th>Age</th><th>Start Balance</th><th>Withdrawal</th><th>Growth</th><th>End Balance</th></tr></thead>
+            <tbody id="rwBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Retirement Withdrawals Work</h2>
+      <p>During retirement, you draw down your savings while the remaining balance continues to grow through investment returns. The key challenge is balancing withdrawals against growth so your money lasts as long as you live. The classic 4% rule suggests withdrawing 4% of your initial portfolio in year one, then adjusting for inflation each subsequent year. This approach has historically provided a 95% success rate over 30-year periods based on the Trinity Study. However, your actual results depend on market returns during your specific retirement years, particularly the first few years when sequence-of-returns risk is highest.</p>
+
+      <h2>Inflation Impact on Retirement Income</h2>
+      <p>Inflation is the silent threat to retirement planning. At 3% inflation, your purchasing power is halved in 24 years. A $4,000 monthly withdrawal today would need to be $7,200 in 20 years to buy the same goods and services. This calculator models inflation-adjusted withdrawals that increase each year to maintain your living standard. Without inflation adjustment, your real income decreases every year, potentially forcing painful spending cuts in your 80s and 90s. Investing a portion of your retirement portfolio in growth assets helps combat inflation by generating returns above the inflation rate.</p>
+
+      <h2>Strategies to Make Retirement Savings Last</h2>
+      <p>Consider a dynamic withdrawal strategy: withdraw less in down markets and more in good years. The guardrails approach sets upper and lower limits — increase spending when your portfolio grows above the upper guardrail and decrease when it drops below the lower guardrail. Delaying Social Security to age 70 increases your benefit by 24-32% compared to claiming at 66-67, providing a larger inflation-adjusted income floor. Consider a bond tent strategy: holding a higher bond allocation in the first 5 years of retirement to reduce sequence risk, then gradually shifting back to stocks. Keep 1-2 years of expenses in cash to avoid selling investments during market downturns.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Retirement Withdrawal Calculator' }];
+    var FAQS = [
+      { q: 'What is the 4% rule?', a: 'Withdraw 4% of your portfolio in year one, then adjust for inflation each year. Based on the Trinity Study, this has a 95%+ success rate over 30-year periods with a balanced portfolio.' },
+      { q: 'How long will $1 million last in retirement?', a: 'At $4,000/month withdrawal with 6% returns and 3% inflation, $1 million lasts approximately 30+ years. Without investment returns, it lasts about 21 years.' },
+      { q: 'Should I adjust withdrawals for inflation?', a: 'Yes. Without inflation adjustment, your purchasing power decreases every year. At 3% inflation, your money buys half as much in 24 years.' },
+      { q: 'What is sequence-of-returns risk?', a: 'Poor market returns in your first few years of retirement can permanently damage your portfolio. Even if average returns are good, early losses combined with withdrawals deplete your savings faster.' },
+      { q: 'How much should I withdraw monthly?', a: 'The 4% rule translates to roughly 0.33% of your portfolio per month. For $1 million, that is $3,333/month initially. Adjust based on your other income sources and life expectancy.' },
+      { q: 'What return rate should I assume?', a: 'A balanced 60/40 portfolio has historically returned 6-8% annually. Conservative retirees might assume 5-6%. Higher stock allocations may return more but with greater volatility.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/retirement-calculator', name: 'Retirement Calculator', description: 'Plan your retirement savings.' },
+      { slug: 'evergreen/fire-calculator', name: 'FIRE Calculator', description: 'Calculate financial independence date.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'Calculate compound interest growth.' },
+      { slug: 'evergreen/inflation-calculator', name: 'Inflation Calculator', description: 'Calculate inflation impact over time.' },
+      { slug: 'evergreen/passive-income-calculator', name: 'Passive Income Calculator', description: 'Calculate passive income from investments.' },
+      { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal Calculator', description: 'Calculate monthly savings needed.' }
+    ];
+
+    function fmt(n) { return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'evergreen/retirement-withdrawal-calculator', title: 'Retirement Withdrawal Calculator', description: 'Calculate how long retirement savings last with monthly withdrawals.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      document.getElementById('calcBtn').addEventListener('click', function() {
+        var portfolio = parseFloat(document.getElementById('portfolio').value) || 0;
+        var monthlyWD = parseFloat(document.getElementById('monthlyWithdrawal').value) || 0;
+        var annualReturn = parseFloat(document.getElementById('annualReturn').value) || 0;
+        var inflation = parseFloat(document.getElementById('inflationRate').value) || 0;
+        var retireAge = parseInt(document.getElementById('retireAge').value) || 65;
+        var planAge = parseInt(document.getElementById('planHorizon').value) || 95;
+
+        if (portfolio <= 0) { window.showToast('Enter your retirement portfolio value.'); return; }
+        if (monthlyWD <= 0) { window.showToast('Enter monthly withdrawal amount.'); return; }
+        if (planAge <= retireAge) { window.showToast('Plan-through age must be greater than retirement age.'); return; }
+
+        var years = planAge - retireAge;
+        var balance = portfolio;
+        var currentWD = monthlyWD;
+        var totalWithdrawn = 0;
+        var depleted = false;
+        var depletedAge = 0;
+        var rows = [];
+
+        for (var y = 0; y < years; y++) {
+          var age = retireAge + y;
+          var startBal = balance;
+          var annualWD = currentWD * 12;
+
+          if (balance <= 0) {
+            rows.push({ age: age, start: fmt(0), wd: fmt(0), growth: fmt(0), end: fmt(0), depleted: true });
+            continue;
+          }
+
+          // Withdraw monthly throughout the year, earn returns on remaining
+          var yearGrowth = 0;
+          for (var m = 0; m < 12; m++) {
+            var withdrawal = Math.min(currentWD, balance);
+            balance -= withdrawal;
+            totalWithdrawn += withdrawal;
+            var monthGrowth = balance * (annualReturn / 100 / 12);
+            balance += monthGrowth;
+            yearGrowth += monthGrowth;
+          }
+
+          if (balance <= 0 && !depleted) {
+            depleted = true;
+            depletedAge = age;
+            balance = 0;
+          }
+
+          rows.push({
+            age: age,
+            start: fmt(startBal),
+            wd: fmt(Math.min(annualWD, startBal + yearGrowth)),
+            growth: fmt(yearGrowth),
+            end: fmt(Math.max(0, balance)),
+            depleted: balance <= 0
+          });
+
+          // Inflation adjustment for next year
+          currentWD *= (1 + inflation / 100);
+        }
+
+        var lastsBeyond = !depleted;
+        var withdrawalRate = (monthlyWD * 12 / portfolio * 100).toFixed(1);
+        var endBalance = Math.max(0, balance);
+
+        document.getElementById('summaryCards').innerHTML =
+          '<div class="rw-card"><h4>Money Lasts Until Age</h4><div class="rw-val">' + (depleted ? depletedAge : planAge + '+') + '</div></div>' +
+          '<div class="rw-card"><h4>Initial Withdrawal Rate</h4><div class="rw-val">' + withdrawalRate + '%</div></div>' +
+          '<div class="rw-card"><h4>' + (lastsBeyond ? 'Balance at Age ' + planAge : 'Total Withdrawn') + '</h4><div class="rw-val">' + (lastsBeyond ? fmt(endBalance) : fmt(totalWithdrawn)) + '</div></div>';
+
+        var tbody = document.getElementById('rwBody');
+        tbody.innerHTML = '';
+        for (var i = 0; i < rows.length; i++) {
+          var r = rows[i];
+          var cls = r.depleted ? ' class="rw-depleted"' : '';
+          tbody.innerHTML += '<tr' + cls + '><td>' + r.age + '</td><td>' + r.start + '</td><td>' + r.wd + '</td><td>' + r.growth + '</td><td>' + r.end + '</td></tr>';
+        }
+
+        window.showEl(document.getElementById('resultArea'));
+      });
+
+      document.getElementById('clearBtn').addEventListener('click', function() {
+        document.getElementById('portfolio').value = '';
+        document.getElementById('monthlyWithdrawal').value = '';
+        document.getElementById('annualReturn').value = '6';
+        document.getElementById('inflationRate').value = '3';
+        document.getElementById('retireAge').value = '65';
+        document.getElementById('planHorizon').value = '95';
+        window.hideEl(document.getElementById('resultArea'));
+      });
+    });
+  </script>
+</body>
+</html>
