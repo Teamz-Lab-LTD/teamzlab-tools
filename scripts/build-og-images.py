@@ -63,6 +63,7 @@ HUB_META = {
     'kids': ('Kids & Parenting', 'Reading, screen time, and learning tools'),
     'ma': ('Morocco Tools', 'Moroccan finance calculators'),
     'math': ('Math Tools', 'Calculators, plotters, and converters'),
+    'physics': ('Physics Calculators', 'Velocity, force, energy, and motion tools'),
     'mobile': ('Mobile Tools', 'Screen sizes, data, and device tools'),
     'music': ('Music Tools', 'BPM, tuning, and music theory tools'),
     'my': ('Malaysia Tools', 'EPF, PCB, and Malaysian tools'),
