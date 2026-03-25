@@ -180,6 +180,13 @@ var TeamzTools = (function () {
           '</button>' +
           '<div class="lang-dropdown notranslate" id="lang-dropdown" translate="no"></div>' +
         '</div>' +
+        '<div class="fav-header-wrap">' +
+          '<button id="fav-header-btn" class="header-icon-btn nav-link--icon" aria-label="Favorites" title="Your Favourites">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+            '<span id="fav-badge" class="fav-badge" style="display:none;">0</span>' +
+          '</button>' +
+          '<div id="fav-dropdown" class="fav-dropdown" style="display:none;"></div>' +
+        '</div>' +
         '<button id="theme-toggle" class="header-icon-btn nav-link--icon" aria-label="Toggle theme" title="Toggle dark/light mode">' +
           '<svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' +
           '<svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>' +
@@ -197,7 +204,113 @@ var TeamzTools = (function () {
     }
 
     _updateThemeIcon(typeof TeamzTheme !== 'undefined' ? TeamzTheme.get() : 'dark');
+
+    // --- Favorites header button ---
+    window._updateFavBadge();
+    var favHeaderBtn = document.getElementById('fav-header-btn');
+    var favDropdown = document.getElementById('fav-dropdown');
+    if (favHeaderBtn && favDropdown) {
+      favHeaderBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var isOpen = favDropdown.style.display !== 'none';
+        if (isOpen) {
+          favDropdown.style.display = 'none';
+          return;
+        }
+        // Render favorites list
+        var favs = [];
+        try { favs = JSON.parse(localStorage.getItem('tz_favorites') || '[]'); } catch(ex) {}
+        var html = '<div class="fav-dropdown__header">Your Favourites</div>';
+        if (favs.length === 0) {
+          html += '<div class="fav-dropdown__empty">No favourites yet.<br>Tap the heart on any tool to save it here.</div>';
+        } else {
+          html += '<div class="fav-dropdown__list">';
+          for (var fi = 0; fi < favs.length; fi++) {
+            var f = favs[fi];
+            html += '<a href="/' + f.slug + '/" class="fav-dropdown__item">' +
+              '<span class="fav-dropdown__title">' + (f.title || f.slug) + '</span>' +
+              '<button class="fav-dropdown__remove" data-slug="' + f.slug + '" title="Remove">&times;</button>' +
+            '</a>';
+          }
+          html += '</div>';
+          if (favs.length > 3) {
+            html += '<div class="fav-dropdown__footer"><a href="/#favorites">See all ' + favs.length + ' favourites</a></div>';
+          }
+        }
+        favDropdown.innerHTML = html;
+        favDropdown.style.display = 'block';
+
+        // Remove buttons
+        favDropdown.querySelectorAll('.fav-dropdown__remove').forEach(function(rb) {
+          rb.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            var slug = rb.getAttribute('data-slug');
+            try {
+              var list = JSON.parse(localStorage.getItem('tz_favorites') || '[]');
+              list = list.filter(function(item) { return item.slug !== slug; });
+              localStorage.setItem('tz_favorites', JSON.stringify(list));
+              window._updateFavBadge();
+
+              // Remove item from dropdown
+              var itemEl = rb.closest('.fav-dropdown__item');
+              if (itemEl) itemEl.remove();
+
+              // If dropdown list is now empty, show empty state
+              var remaining = favDropdown.querySelectorAll('.fav-dropdown__item');
+              if (remaining.length === 0) {
+                favDropdown.innerHTML = '<div class="fav-dropdown__header">Your Favourites</div>' +
+                  '<div class="fav-dropdown__empty">No favourites yet.<br>Tap the heart on any tool to save it here.</div>';
+              }
+
+              // Update share bar fav button if on same page
+              var shareFav = document.querySelector('.share-btn--fav');
+              if (shareFav && window.location.pathname.replace(/^\/|\/$/g, '') === slug) {
+                shareFav.classList.remove('share-btn--faved');
+                shareFav.querySelector('svg').setAttribute('fill', 'none');
+              }
+
+              // Remove from homepage/hub favourites grid
+              var homeCard = document.querySelector('.fav-homepage-card[href="/' + slug + '/"]');
+              if (homeCard) homeCard.remove();
+              // Hide entire section if no favourites left
+              var favSection = document.getElementById('favorites');
+              if (favSection) {
+                var grid = favSection.querySelector('.fav-homepage-grid');
+                if (grid && grid.children.length === 0) favSection.remove();
+              }
+
+              window.showToast('Removed from favourites');
+            } catch(ex) {}
+          });
+        });
+      });
+
+      // Close dropdown on outside click
+      document.addEventListener('click', function() {
+        if (favDropdown) favDropdown.style.display = 'none';
+      });
+      favDropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
   }
+
+  window._updateFavBadge = function() {
+    var badge = document.getElementById('fav-badge');
+    if (!badge) return;
+    try {
+      var favs = JSON.parse(localStorage.getItem('tz_favorites') || '[]');
+      if (favs.length > 0) {
+        badge.textContent = favs.length;
+        badge.style.display = 'flex';
+        var svg = badge.parentElement.querySelector('svg');
+        if (svg) svg.setAttribute('fill', 'currentColor');
+      } else {
+        badge.style.display = 'none';
+        var svg = badge.parentElement.querySelector('svg');
+        if (svg) svg.setAttribute('fill', 'none');
+      }
+    } catch(e) {}
+  };
 
   function _updateThemeIcon(theme) {
     var dark = document.getElementById('theme-icon-dark');
@@ -1811,6 +1924,45 @@ document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
   TeamzTranslate.init();
+
+  // Render favorites section on homepage + hub pages
+  (function renderFavoritesSection() {
+    var favs = [];
+    try { favs = JSON.parse(localStorage.getItem('tz_favorites') || '[]'); } catch(e) {}
+    if (favs.length === 0) return;
+
+    // Show on: homepage, hub index pages (1-segment paths like /ai/, /tools/)
+    var path = window.location.pathname.replace(/^\/|\/$/g, '');
+    var segments = path ? path.split('/') : [];
+    var isHomepage = path === '' || path === 'index.html';
+    var isHubPage = segments.length === 1; // /ai/, /tools/, /evergreen/ etc.
+    if (!isHomepage && !isHubPage) return;
+
+    // Find insertion point: after .hero or before .tools-grid parent
+    var anchor = document.querySelector('.hero') || document.querySelector('.tool-hero');
+    if (!anchor) {
+      var grid = document.querySelector('.tools-grid');
+      if (grid) anchor = grid.parentElement;
+    }
+    if (!anchor) return;
+
+    var section = document.createElement('section');
+    section.className = 'fav-homepage-section';
+    section.id = 'favorites';
+    var html = '<h2 style="font-size:var(--text-lg);color:var(--heading);margin-bottom:4px;">Your Favourites</h2>';
+    html += '<div class="fav-homepage-grid">';
+    for (var i = 0; i < favs.length; i++) {
+      var f = favs[i];
+      html += '<a href="/' + f.slug + '/" class="fav-homepage-card">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+        '<span class="fav-homepage-card__title">' + (f.title || f.slug) + '</span>' +
+      '</a>';
+    }
+    html += '</div>';
+    section.innerHTML = html;
+
+    anchor.parentNode.insertBefore(section, anchor.nextSibling);
+  })();
   // Rating widget renders after a short delay to ensure FAQs/related tools are rendered first
   setTimeout(function () { TeamzTools.renderRating(); TeamzTools.renderFeedback(); }, 100);
 
@@ -2081,10 +2233,19 @@ document.addEventListener('DOMContentLoaded', function () {
     bar.className = 'teamz-share-bar';
     bar.setAttribute('aria-label', 'Share this tool');
 
-    var barHTML = '<div class="share-bar__label">' +
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
-      ' Share' +
-    '</div>';
+    // Fav button — toggle favorite for this tool
+    var _favKey = 'tz_favorites';
+    var _toolSlug = window.location.pathname.replace(/^\/|\/$/g, '');
+    var _isFaved = false;
+    try {
+      var _favs = JSON.parse(localStorage.getItem(_favKey) || '[]');
+      _isFaved = _favs.some(function(f) { return f.slug === _toolSlug; });
+    } catch(e) {}
+
+    var barHTML = '<button class="share-btn share-btn--fav' + (_isFaved ? ' share-btn--faved' : '') + '" title="' + (_isFaved ? 'Remove from Favourites' : 'Add to Favourites') + '" aria-label="Favorite this tool">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="' + (_isFaved ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+      '<span class="share-fav-text"> Favourite</span>' +
+    '</button>';
 
     // WhatsApp
     barHTML += '<a href="https://wa.me/?text=' + encodeURIComponent(pageTitle + ' — ' + pageUrl) + '" target="_blank" rel="noopener" class="share-btn share-btn--wa" title="Share on WhatsApp" aria-label="Share on WhatsApp">' +
@@ -2114,10 +2275,14 @@ document.addEventListener('DOMContentLoaded', function () {
       '</button>';
     }
 
-    // Embed button
-    barHTML += '<button class="share-btn share-btn--embed" title="Embed this tool" aria-label="Get embed code">' +
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>' +
-    '</button>';
+    // Add to Home button (only on tool pages, not if already installed as PWA)
+    var _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (!_isStandalone) {
+      barHTML += '<button class="share-btn share-btn--install" title="Add to Home Screen" aria-label="Add to Home Screen">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        '<span class="share-install-text"> Add to Home</span>' +
+      '</button>';
+    }
 
     bar.innerHTML = barHTML;
 
@@ -2125,6 +2290,40 @@ document.addEventListener('DOMContentLoaded', function () {
     calc.parentNode.insertBefore(bar, calc.nextSibling);
 
     // --- Event handlers ---
+
+    // Fav toggle
+    var favBtn = bar.querySelector('.share-btn--fav');
+    if (favBtn) {
+      favBtn.addEventListener('click', function () {
+        try {
+          var favs = JSON.parse(localStorage.getItem(_favKey) || '[]');
+          var idx = -1;
+          for (var i = 0; i < favs.length; i++) {
+            if (favs[i].slug === _toolSlug) { idx = i; break; }
+          }
+          if (idx >= 0) {
+            // Remove
+            favs.splice(idx, 1);
+            favBtn.classList.remove('share-btn--faved');
+            favBtn.querySelector('svg').setAttribute('fill', 'none');
+            favBtn.title = 'Add to Favourites';
+            window.showToast('Removed from favourites');
+          } else {
+            // Add
+            favs.unshift({ slug: _toolSlug, title: pageTitle.replace(' — Teamz Lab Tools', ''), url: pageUrl, added: Date.now() });
+            favBtn.classList.add('share-btn--faved');
+            favBtn.querySelector('svg').setAttribute('fill', 'currentColor');
+            favBtn.title = 'Remove from Favourites';
+            window.showToast('Added to favourites!');
+          }
+          localStorage.setItem(_favKey, JSON.stringify(favs));
+          // Update header badge count
+          window._updateFavBadge();
+        } catch (e) {
+          window.showToast('Could not save favourite.');
+        }
+      });
+    }
 
     // Copy link
     var copyBtn = bar.querySelector('.share-btn--copy');
@@ -2156,73 +2355,83 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
-    // Embed modal
-    var embedBtn = bar.querySelector('.share-btn--embed');
-    if (embedBtn) {
-      embedBtn.addEventListener('click', function () {
-        var existing = document.getElementById('teamz-embed-modal');
-        if (existing) { existing.remove(); return; }
+    // Add to Home button — uses deferred prompt or shows instructions
+    var _shareDeferredPrompt = null;
+    var _shareIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      _shareDeferredPrompt = e;
+    });
 
-        var linkCode = '<a href="' + pageUrl + '" target="_blank" rel="noopener" style="display:inline-block;padding:8px 16px;background:#12151A;color:#D9FE06;border-radius:6px;text-decoration:none;font-family:sans-serif;font-size:14px;font-weight:600;">Try ' + _escapeHtml(pageTitle) + ' &#x2192;</a>';
-        var badgeCode = '<a href="' + pageUrl + '" target="_blank" rel="noopener" title="' + _escapeHtml(pageTitle) + ' — Free Online Tool"><img src="https://tool.teamzlab.com/icons/icon-32x32.png" alt="Teamz Lab Tools" width="20" height="20" style="vertical-align:middle;margin-right:4px">' + _escapeHtml(pageTitle) + '</a>';
-        var markdownCode = '[' + _escapeHtml(pageTitle) + '](' + pageUrl + ')';
-
-        var modal = document.createElement('div');
-        modal.id = 'teamz-embed-modal';
-        modal.className = 'teamz-embed-modal';
-        modal.innerHTML =
-          '<div class="embed-modal__content">' +
-            '<div class="embed-modal__header">' +
-              '<h3>Link to This Tool</h3>' +
-              '<button class="embed-modal__close" aria-label="Close">&times;</button>' +
-            '</div>' +
-            '<p>Add a link to this tool on your website or blog:</p>' +
-            '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.25rem 0 0.75rem">Button style</p>' +
-            '<textarea class="embed-modal__code" readonly rows="2" id="embed-link-code">' + _escapeHtml(linkCode) + '</textarea>' +
-            '<div class="embed-modal__actions">' +
-              '<button class="embed-modal__copy" data-target="embed-link-code">Copy Button Code</button>' +
-            '</div>' +
-            '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem">Text link with icon</p>' +
-            '<textarea class="embed-modal__code" readonly rows="2" id="embed-badge-code">' + _escapeHtml(badgeCode) + '</textarea>' +
-            '<div class="embed-modal__actions">' +
-              '<button class="embed-modal__copy" data-target="embed-badge-code">Copy Link Code</button>' +
-            '</div>' +
-            '<p style="font-size:0.8rem;color:var(--text-muted);margin:0.75rem 0 0.25rem">Markdown</p>' +
-            '<textarea class="embed-modal__code" readonly rows="1" id="embed-md-code">' + _escapeHtml(markdownCode) + '</textarea>' +
-            '<div class="embed-modal__actions">' +
-              '<button class="embed-modal__copy" data-target="embed-md-code">Copy Markdown</button>' +
-            '</div>' +
-            '<p class="embed-modal__note">Free to use. Each link helps us keep these tools free!</p>' +
-          '</div>';
-        document.body.appendChild(modal);
-
-        // Close
-        modal.querySelector('.embed-modal__close').addEventListener('click', function () { modal.remove(); });
-        modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
-
-        // Copy buttons (multiple)
-        modal.querySelectorAll('.embed-modal__copy').forEach(function(btn) {
-          btn.addEventListener('click', function () {
-            var targetId = btn.getAttribute('data-target');
-            var textarea = document.getElementById(targetId);
-            if (!textarea) return;
-            textarea.select();
-            var originalText = btn.textContent;
-            navigator.clipboard.writeText(textarea.value).then(function () {
-              btn.textContent = 'Copied!';
-              window.showToast('Code copied to clipboard!');
-              setTimeout(function () { btn.textContent = originalText; }, 2000);
-            }).catch(function() {
-              window.showToast('Copy failed — select and copy manually.');
-            });
+    var installBtn = bar.querySelector('.share-btn--install');
+    if (installBtn) {
+      installBtn.addEventListener('click', function () {
+        if (_shareDeferredPrompt) {
+          _shareDeferredPrompt.prompt();
+          _shareDeferredPrompt.userChoice.then(function (choiceResult) {
+            if (choiceResult.outcome === 'accepted' && typeof TeamzAnalytics !== 'undefined') {
+              TeamzAnalytics.trackClick('pwa-install::accepted');
+            }
+            _shareDeferredPrompt = null;
           });
-        });
-
-        // Track
-        if (typeof TeamzAnalytics !== 'undefined') {
-          TeamzAnalytics.trackClick('embed-code::' + path);
+        } else if (_shareIsIOS) {
+          _showInstallInstructions('ios');
+        } else {
+          _showInstallInstructions('generic');
         }
       });
+    }
+
+    function _showInstallInstructions(type) {
+      var steps = '';
+      if (type === 'ios') {
+        steps =
+          '<h3>Install on iPhone / iPad</h3>' +
+          '<div class="pwa-ios-steps">' +
+            '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Tap the <strong>Share</strong> button <span style="font-size:1.2em">&#x2191;</span> at the bottom of Safari</div></div>' +
+            '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">Scroll down and tap <strong>"Add to Home Screen"</strong></div></div>' +
+            '<div class="pwa-ios-step"><div class="pwa-ios-step__num">3</div><div class="pwa-ios-step__text">Tap <strong>"Add"</strong> — the app icon will appear on your home screen</div></div>' +
+          '</div>';
+      } else {
+        var isFirefox = navigator.userAgent.indexOf('Firefox') > -1;
+        var isChromeLike = navigator.userAgent.indexOf('Chrome') > -1;
+        var isSafari = navigator.userAgent.indexOf('Safari') > -1 && !isChromeLike;
+        if (isChromeLike) {
+          steps =
+            '<h3>Add to Home Screen</h3>' +
+            '<div class="pwa-ios-steps">' +
+              '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Click the <strong>install icon</strong> in the address bar (or <strong>menu &#x22EE; &rarr; Install app</strong>)</div></div>' +
+              '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">Click <strong>"Install"</strong> — the app will appear on your desktop or home screen</div></div>' +
+            '</div>';
+        } else if (isSafari) {
+          steps =
+            '<h3>Add to Dock</h3>' +
+            '<div class="pwa-ios-steps">' +
+              '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Click <strong>File &rarr; Add to Dock</strong> in the menu bar</div></div>' +
+              '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">The app will appear in your Dock for quick access</div></div>' +
+            '</div>';
+        } else {
+          steps =
+            '<h3>Add to Home Screen</h3>' +
+            '<div class="pwa-ios-steps">' +
+              '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Open <strong>browser menu</strong> and look for <strong>"Install"</strong> or <strong>"Add to Home Screen"</strong></div></div>' +
+              '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">The app launches like a native app — works offline</div></div>' +
+            '</div>';
+        }
+      }
+      var overlay = document.createElement('div');
+      overlay.className = 'pwa-ios-modal';
+      overlay.innerHTML =
+        '<div class="pwa-ios-modal__content">' +
+          '<button class="pwa-ios-modal__close" aria-label="Close">&times;</button>' +
+          steps +
+          '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">Works offline — your data stays on your device.</p>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay || e.target.classList.contains('pwa-ios-modal__close')) overlay.remove();
+      });
+      overlay.querySelector('.pwa-ios-modal__close').addEventListener('click', function () { overlay.remove(); });
     }
 
     // Track share clicks
@@ -2312,7 +2521,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   })();
 
-  // ─── INSTALL AS APP BUTTON ───
+  // ─── INSTALL AS APP BUTTON (legacy banner — replaced by share bar install button) ───
+  // Kept as fallback for edge cases where share bar doesn't render
   (function initInstallButton() {
     // Only show on tool pages (path must have at least 2 segments like /hub/tool/)
     var path = window.location.pathname.replace(/^\/|\/$/g, '');
@@ -2333,13 +2543,13 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       deferredPrompt = e;
-      showInstallButton();
+      // Update button text if banner already rendered
+      var btn = document.getElementById('pwa-install-btn');
+      if (btn) btn.textContent = 'Install App';
     });
 
-    // On iOS, always show (since there's no beforeinstallprompt)
-    if (isIOS) {
-      showInstallButton();
-    }
+    // Always show the install banner on all tools
+    showInstallButton();
 
     function showInstallButton() {
       var btn = document.createElement('div');
@@ -2353,7 +2563,7 @@ document.addEventListener('DOMContentLoaded', function () {
           '<span>Install as an app — no download needed, works without internet</span>' +
         '</div>' +
         '<button class="pwa-install-banner__btn" id="pwa-install-btn">' +
-          (isIOS ? 'How to Install' : 'Install App') +
+          (isIOS ? 'How to Install' : 'Add to Home') +
         '</button>' +
         '<button class="pwa-install-banner__close" id="pwa-install-close" aria-label="Close">&times;</button>';
 
@@ -2379,9 +2589,8 @@ document.addEventListener('DOMContentLoaded', function () {
       var installBtn = document.getElementById('pwa-install-btn');
       if (installBtn) {
         installBtn.addEventListener('click', function () {
-          if (isIOS) {
-            showIOSInstructions();
-          } else if (deferredPrompt) {
+          if (deferredPrompt) {
+            // Chrome/Edge — native install prompt
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then(function (choiceResult) {
               if (choiceResult.outcome === 'accepted') {
@@ -2392,6 +2601,10 @@ document.addEventListener('DOMContentLoaded', function () {
               }
               deferredPrompt = null;
             });
+          } else if (isIOS) {
+            showIOSInstructions();
+          } else {
+            showGenericInstructions();
           }
         });
       }
@@ -2427,6 +2640,56 @@ document.addEventListener('DOMContentLoaded', function () {
               '<div class="pwa-ios-step__text">Tap <strong>"Add"</strong> — the app icon will appear on your home screen</div>' +
             '</div>' +
           '</div>' +
+          '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">The app works offline and your data stays on your device.</p>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay || e.target.classList.contains('pwa-ios-modal__close')) {
+          overlay.remove();
+        }
+      });
+      overlay.querySelector('.pwa-ios-modal__close').addEventListener('click', function () {
+        overlay.remove();
+      });
+    }
+
+    function showGenericInstructions() {
+      var isFirefox = navigator.userAgent.indexOf('Firefox') > -1;
+      var isChrome = navigator.userAgent.indexOf('Chrome') > -1 && navigator.userAgent.indexOf('Edg') === -1;
+      var isEdge = navigator.userAgent.indexOf('Edg') > -1;
+      var isSafari = navigator.userAgent.indexOf('Safari') > -1 && !isChrome && !isEdge;
+
+      var steps = '';
+      if (isChrome || isEdge) {
+        steps =
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Click the <strong>install icon</strong> in the address bar (or the <strong>three-dot menu &#x22EE;</strong>)</div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">3</div><div class="pwa-ios-step__text">Click <strong>"Install"</strong> — the app will appear on your desktop or home screen</div></div>';
+      } else if (isFirefox) {
+        steps =
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Open this page in <strong>Chrome</strong> or <strong>Edge</strong> for the best install experience</div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">Or <strong>bookmark</strong> this page for quick access</div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">3</div><div class="pwa-ios-step__text">On Android Firefox, tap <strong>menu &#x22EE; → Install</strong></div></div>';
+      } else if (isSafari) {
+        steps =
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Click <strong>File</strong> in the menu bar</div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">Select <strong>"Add to Dock"</strong></div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">3</div><div class="pwa-ios-step__text">The app will appear in your Dock for quick access</div></div>';
+      } else {
+        steps =
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">1</div><div class="pwa-ios-step__text">Open the <strong>browser menu</strong></div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">2</div><div class="pwa-ios-step__text">Look for <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong></div></div>' +
+          '<div class="pwa-ios-step"><div class="pwa-ios-step__num">3</div><div class="pwa-ios-step__text">The app will launch like a native app — works offline too</div></div>';
+      }
+
+      var overlay = document.createElement('div');
+      overlay.className = 'pwa-ios-modal';
+      overlay.innerHTML =
+        '<div class="pwa-ios-modal__content">' +
+          '<button class="pwa-ios-modal__close" aria-label="Close">&times;</button>' +
+          '<h3>Add to Home Screen</h3>' +
+          '<div class="pwa-ios-steps">' + steps + '</div>' +
           '<p style="font-size:0.85rem;color:var(--text-muted);margin-top:1rem;">The app works offline and your data stays on your device.</p>' +
         '</div>';
       document.body.appendChild(overlay);
@@ -2590,10 +2853,27 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
+    var dirty = false; // Track if user changed anything since last save
+
     function debouncedSave() {
+      dirty = true;
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(saveFormData, 500);
+      debounceTimer = setTimeout(function() { saveFormData(); dirty = false; }, 500);
     }
+
+    function flushSave() {
+      if (dirty) {
+        clearTimeout(debounceTimer);
+        saveFormData();
+        dirty = false;
+      }
+    }
+
+    // Flush pending save when user leaves the page or switches tabs/apps
+    window.addEventListener('beforeunload', flushSave);
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') flushSave();
+    });
 
     // Restore saved data after a short delay (let tool JS initialize first)
     setTimeout(restoreFormData, 300);
@@ -2605,10 +2885,23 @@ document.addEventListener('DOMContentLoaded', function () {
       formContainer.addEventListener('change', debouncedSave);
     }
 
-    // Clear saved data when user clicks any "Clear" or "Reset" button
+    // Clear saved data AND reset all form inputs when user clicks any "Clear" or "Reset" button
     document.querySelectorAll('.tool-clear-btn, [id*="clear"], [id*="reset"]').forEach(function(btn) {
       btn.addEventListener('click', function() {
+        dirty = false;
+        clearTimeout(debounceTimer);
         try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+
+        // Central form reset — clears ALL inputs so per-tool code doesn't need to
+        var container = document.querySelector('.tool-calculator') || document.querySelector('.site-main');
+        if (!container) return;
+        container.querySelectorAll('input, textarea, select').forEach(function(el) {
+          if (el.type === 'file') return;
+          if (el.type === 'checkbox' || el.type === 'radio') { el.checked = false; return; }
+          if (el.tagName === 'SELECT') { el.selectedIndex = 0; return; }
+          if (el.type === 'range') { el.value = el.defaultValue || el.min || 0; return; }
+          el.value = '';
+        });
       });
     });
   })();
