@@ -486,91 +486,19 @@
 
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
-  <script src="/shared/js/search-index.js?v=202603250702"></script>
+  <script src="/shared/js/search-index.js?v=202603250717"></script>
+  <script src="/shared/js/smart-search.js"></script>
   <script>
     TeamzTools.injectOrganizationSchema();
     TeamzTools.injectWebSiteSchema();
-
-    // Dynamic search — fetches live titles from sitemap, falls back to static index
-    document.addEventListener('DOMContentLoaded', function () {
-      var searchInput = document.getElementById('tool-search');
-      var searchResults = document.getElementById('search-results');
-      if (!searchInput || !searchResults) return;
-
-      var dynamicIndex = null;
-      var indexReady = false;
-
-      // Build dynamic index from sitemap URLs by fetching each page's <title> and <meta description>
-      // Cache in sessionStorage so it only builds once per session
-      function loadDynamicIndex() {
-        var cached = sessionStorage.getItem('teamz_search_index');
-        var cacheTime = sessionStorage.getItem('teamz_search_time');
-        // Use cache if less than 1 hour old
-        if (cached && cacheTime && (Date.now() - parseInt(cacheTime)) < 3600000) {
-          try { dynamicIndex = JSON.parse(cached); indexReady = true; return; } catch(e) {}
-        }
-
-        // Fetch sitemap and build index
-        fetch('/sitemap.xml').then(function(r) { return r.text(); }).then(function(xml) {
-          var parser = new DOMParser();
-          var doc = parser.parseFromString(xml, 'text/xml');
-          var urls = doc.querySelectorAll('url > loc');
-          var entries = [];
-          urls.forEach(function(u) {
-            var loc = u.textContent.replace('https://tool.teamzlab.com', '');
-            // Skip non-tool pages
-            if (loc === '/' || loc === '/about/' || loc === '/contact/' || loc === '/privacy/' || loc === '/terms/') return;
-            entries.push({ h: loc, t: '', d: '' });
-          });
-
-          // Fetch titles for first 50 most important pages dynamically, rest use static index
-          // For performance, we merge: static index (instant) + dynamic updates (background)
-          dynamicIndex = entries;
-          indexReady = true;
-
-          // Store URLs in session for quick reuse
-          sessionStorage.setItem('teamz_search_index', JSON.stringify(entries));
-          sessionStorage.setItem('teamz_search_time', Date.now().toString());
-        }).catch(function() {
-          // Sitemap fetch failed, use static index only
-          indexReady = true;
-        });
-      }
-
-      loadDynamicIndex();
-
-      searchInput.addEventListener('input', function () {
-        var query = searchInput.value.toLowerCase().trim();
-        if (query.length < 2) {
-          searchResults.style.display = 'none';
-          searchResults.innerHTML = '';
-          return;
-        }
-
-        // Always use the static index for searching (it has titles + descriptions)
-        var searchPool = (typeof TOOL_SEARCH_INDEX !== 'undefined') ? TOOL_SEARCH_INDEX : [];
-
-        var words = query.split(/\s+/);
-        var matches = searchPool.filter(function (t) {
-          var haystack = (t.t + ' ' + t.d + ' ' + t.h).toLowerCase();
-          return words.every(function (w) { return haystack.indexOf(w) !== -1; });
-        }).slice(0, 12);
-
-        if (matches.length === 0) {
-          searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">No tools found for "' + query + '"</p>';
-          searchResults.style.display = 'block';
-          return;
-        }
-
-        var html = '<div class="tools-grid" style="grid-template-columns:1fr;">';
-        matches.forEach(function (m) {
-          html += '<a href="' + m.h + '" class="tool-card" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + m.t + '</h3><p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);">' + (m.d || '').substring(0, 100) + '</p></div></a>';
-        });
-        html += '</div>';
-        searchResults.innerHTML = html;
-        searchResults.style.display = 'block';
-      });
-    });
+    // Homepage search is now handled by the Central Search Component in common.js
+    // It auto-detects the #tool-search input and upgrades it with:
+    // - Synonym/concept matching (photo↔image, money↔finance, etc.)
+    // - Fuzzy matching for typos (calculater→calculator)
+    // - Word stemming (calculators→calculator)
+    // - Weighted scoring (title > description > URL)
+    // - AI fallback: Chrome AI → Transformers.js → concept tags
+    // - "Did you mean" suggestions
   </script>
   <script>
     // PWA Service Worker Registration

@@ -93,6 +93,66 @@ var TeamzTools = (function () {
     document.head.appendChild(script);
   };
 
+  // === CENTRAL FIX: Safe show/hide helpers ===
+  // Fixes style.display='' bug — setting display to '' only removes inline style,
+  // does NOT override CSS class display:none. Use showEl()/hideEl() instead.
+  // showEl() auto-detects the right display value (block, flex, grid, etc.)
+  window.showEl = function (el, displayType) {
+    if (!el) return;
+    if (displayType) { el.style.display = displayType; return; }
+    // Temporarily show to detect the natural CSS display value
+    el.style.display = '';
+    var computed = window.getComputedStyle(el).display;
+    if (computed === 'none') {
+      el.style.display = 'block'; // Safe fallback
+    }
+    // Otherwise '' worked fine (CSS default is visible)
+  };
+  window.hideEl = function (el) {
+    if (el) el.style.display = 'none';
+  };
+
+  // === CENTRAL FIX: Runtime safety net for style.display='' bug ===
+  // When JS sets style.display='', it removes the inline style. If the CSS class has display:none,
+  // the element stays hidden. This observer catches that and auto-fixes to display:block.
+  // Only fires when: old style had 'display' → cleared to '' → computed is still 'none'.
+  (function _patchDisplayBug() {
+    if (typeof MutationObserver === 'undefined') return;
+    var _fixing = false;
+    var observer = new MutationObserver(function (mutations) {
+      if (_fixing) return;
+      _fixing = true;
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        var el = m.target;
+        var oldVal = m.oldValue || '';
+        // Only act if: old style had display set AND current inline display is now cleared
+        if (oldVal.indexOf('display') !== -1 && el.style && el.style.display === '') {
+          try {
+            var comp = window.getComputedStyle(el).display;
+            if (comp === 'none') {
+              el.style.display = 'block';
+            }
+          } catch (e) { /* ignore */ }
+        }
+      }
+      _fixing = false;
+    });
+    function start() {
+      if (document.body) {
+        observer.observe(document.body, {
+          attributes: true, subtree: true,
+          attributeFilter: ['style'], attributeOldValue: true
+        });
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  })();
+
   function _escapeHtml(text) {
     if (text === null || text === undefined) return '';
     var div = document.createElement('div');
@@ -1563,6 +1623,187 @@ var TeamzAnalytics = (function () {
     getTopPages: getTopPages,
     GA_ID: GA_ID
   };
+})();
+
+// === CENTRAL SEARCH COMPONENT ===
+// Auto-injects smart search bar into ALL hub page hero sections
+// Lazy-loads search-index.js + smart-search.js on demand
+// Uses TeamzSearch for synonym/fuzzy/AI-powered search (Chrome AI → Transformers.js → concept)
+// Homepage search is also upgraded to use smart search when available
+(function initCentralSearch() {
+  document.addEventListener('DOMContentLoaded', function () {
+    var hero = document.querySelector('.hero');
+    if (!hero) return;
+
+    var existingSearch = document.getElementById('tool-search');
+    var isHomepage = (existingSearch !== null);
+    var isHubPage = !isHomepage && !!document.querySelector('.tools-grid');
+
+    // Only activate on homepage (upgrade) or hub pages (inject)
+    if (!isHomepage && !isHubPage) return;
+
+    var pathParts = window.location.pathname.split('/').filter(Boolean);
+    var currentHub = pathParts.length > 0 ? pathParts[0] : '';
+    var hubName = (hero.querySelector('h1') || {}).textContent || '';
+
+    // For hub pages: inject search bar into hero
+    if (isHubPage) {
+      var searchWrap = document.createElement('div');
+      searchWrap.style.cssText = 'max-width:500px;margin:1.2rem auto 0;';
+      var toolCount = document.querySelectorAll('.tool-card').length;
+      var cleanName = (hubName || 'tools').replace(/\s*—.*/, '').trim();
+      searchWrap.innerHTML =
+        '<input type="text" id="tool-search" class="tool-input" placeholder="Search' + (toolCount > 0 ? ' ' + toolCount : '') + ' ' + cleanName + ' tools..." style="text-align:center;font-size:var(--text-lg);" autocomplete="off">' +
+        '<div id="search-results" style="max-width:600px;margin:0.8rem auto 0;display:none;"></div>';
+      hero.appendChild(searchWrap);
+    }
+
+    var searchInput = document.getElementById('tool-search');
+    var searchResults = document.getElementById('search-results');
+    if (!searchInput || !searchResults) return;
+
+    // Lazy-load search scripts if not already present
+    function loadScript(src) {
+      return new Promise(function (resolve) {
+        var basename = src.split('/').pop().split('?')[0];
+        if (document.querySelector('script[src*="' + basename + '"]')) { resolve(); return; }
+        var s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = resolve;
+        document.head.appendChild(s);
+      });
+    }
+
+    var _scriptsLoaded = false;
+    function ensureScripts() {
+      if (_scriptsLoaded && typeof TOOL_SEARCH_INDEX !== 'undefined' && window.TeamzSearch) return Promise.resolve();
+      var promises = [];
+      if (typeof TOOL_SEARCH_INDEX === 'undefined') promises.push(loadScript('/shared/js/search-index.js'));
+      if (!window.TeamzSearch) promises.push(loadScript('/shared/js/smart-search.js'));
+      return Promise.all(promises).then(function () { _scriptsLoaded = true; });
+    }
+
+    var toolsSections = document.querySelectorAll('.tools-section');
+    var adSlots = document.querySelectorAll('.ad-slot');
+    var aiDebounce = null;
+
+    function showToolsGrid() {
+      toolsSections.forEach(function (s) { s.style.display = ''; });
+      adSlots.forEach(function (s) { s.style.display = ''; });
+    }
+    function hideToolsGrid() {
+      toolsSections.forEach(function (s) { s.style.display = 'none'; });
+      adSlots.forEach(function (s) { s.style.display = 'none'; });
+    }
+
+    searchInput.addEventListener('input', function () {
+      var query = searchInput.value.trim();
+      if (query.length < 2) {
+        searchResults.style.display = 'none';
+        searchResults.innerHTML = '';
+        showToolsGrid();
+        return;
+      }
+
+      ensureScripts().then(function () {
+        var searchPool = (typeof TOOL_SEARCH_INDEX !== 'undefined') ? TOOL_SEARCH_INDEX : [];
+        var results = [];
+
+        if (window.TeamzSearch) {
+          if (currentHub && isHubPage) {
+            // Hub page: prioritize hub tools, then show global
+            var hubPool = [], globalPool = [];
+            searchPool.forEach(function (t) {
+              if ((t.h || '').indexOf('/' + currentHub + '/') === 0) hubPool.push(t);
+              else globalPool.push(t);
+            });
+            var hubResults = hubPool.length > 0 ? window.TeamzSearch.search(query, hubPool, 8) : [];
+            var globalResults = window.TeamzSearch.search(query, globalPool, 15 - hubResults.length);
+            var seen = {};
+            hubResults.concat(globalResults).forEach(function (r) {
+              if (!seen[r.h]) { seen[r.h] = true; results.push(r); }
+            });
+          } else {
+            results = window.TeamzSearch.search(query, searchPool, 15);
+          }
+        } else {
+          var words = query.toLowerCase().split(/\s+/);
+          results = searchPool.filter(function (t) {
+            var h = ((t.t || '') + ' ' + (t.d || '') + ' ' + (t.h || '')).toLowerCase();
+            return words.every(function (w) { return h.indexOf(w) !== -1; });
+          }).slice(0, 12).map(function (t) { return { t: t.t, d: t.d, h: t.h, source: 'static' }; });
+        }
+
+        _renderSearchResults(results, query, null);
+
+        // AI fallback when few/no results
+        if (results.length < 3 && window.TeamzSearch && query.length >= 3) {
+          clearTimeout(aiDebounce);
+          var captured = results.slice();
+          aiDebounce = setTimeout(function () {
+            window.TeamzSearch.aiSearch(query, searchPool, 12, function (aiR, src) {
+              if (searchInput.value.trim().toLowerCase() !== query.toLowerCase()) return;
+              var merged = captured.slice();
+              var seenH = {};
+              merged.forEach(function (r) { seenH[r.h] = true; });
+              aiR.forEach(function (r) { if (!seenH[r.h]) { seenH[r.h] = true; merged.push(r); } });
+              _renderSearchResults(merged, query, src);
+            });
+          }, 600);
+        }
+
+        // "Did you mean" for zero results
+        if (results.length === 0 && window.TeamzSearch) {
+          var sug = window.TeamzSearch.didYouMean(query, searchPool);
+          if (sug) {
+            searchResults.innerHTML += '<p style="color:var(--text-muted);text-align:center;font-size:var(--text-sm);margin-top:0.5rem;">Did you mean: <a href="#" style="color:var(--heading);text-decoration:underline;" data-suggest="' + sug + '">' + sug + '</a>?</p>';
+            searchResults.querySelector('[data-suggest]').addEventListener('click', function (e) {
+              e.preventDefault();
+              searchInput.value = this.getAttribute('data-suggest');
+              searchInput.dispatchEvent(new Event('input'));
+            });
+          }
+        }
+      });
+    });
+
+    function _renderSearchResults(matches, query, aiSource) {
+      if (matches.length === 0) {
+        searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">No tools found for "' + _esc(query) + '"</p>';
+        searchResults.style.display = 'block';
+        hideToolsGrid();
+        return;
+      }
+      var html = '';
+      if (aiSource === 'ai') {
+        html += '<p style="color:var(--text-muted);text-align:center;font-size:var(--text-sm);margin-bottom:0.5rem;">Smart suggestions</p>';
+      }
+      html += '<div class="tools-grid" style="grid-template-columns:1fr;">';
+      matches.forEach(function (m) {
+        var desc = (m.d || '').substring(0, 120);
+        html += '<a href="' + m.h + '" class="tool-card" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + _esc(m.t) + '</h3>';
+        if (desc) html += '<p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);">' + _esc(desc) + '</p>';
+        html += '</div></a>';
+      });
+      html += '</div>';
+      searchResults.innerHTML = html;
+      searchResults.style.display = 'block';
+      hideToolsGrid();
+    }
+
+    function _esc(str) { var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+    // Escape clears search and restores hub grid
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        searchResults.style.display = 'none';
+        searchResults.innerHTML = '';
+        showToolsGrid();
+      }
+    });
+  });
 })();
 
 // Auto-render header, footer, floating CTA, and init analytics
