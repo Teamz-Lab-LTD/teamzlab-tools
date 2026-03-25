@@ -53,7 +53,9 @@ import ssl
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_URL = "https://tool.teamzlab.com"
 PH_TOKEN_FILE = os.path.expanduser("~/.config/teamzlab/producthunt-token.txt")
+BING_API_KEY_FILE = os.path.expanduser("~/.config/teamzlab/bing-webmaster-api-key.txt")
 PH_API_URL = "https://api.producthunt.com/v2/api/graphql"
+BING_API_BASE = "https://ssl.bing.com/webmaster/api.svc/json"
 SSL_CTX = ssl.create_default_context()
 
 # Directories to exclude from tool discovery
@@ -1001,6 +1003,22 @@ def run_suggest(query):
                         print(f"    -> {r}  (long-tail)")
             time.sleep(0.15)
 
+    # Bing site health check (if API key available)
+    bing_key = load_bing_api_key()
+    if bing_key:
+        print(f"\n  [+] Bing Webmaster site health...")
+        crawl = fetch_bing_crawl_stats()
+        if crawl and isinstance(crawl, list) and len(crawl) > 0:
+            latest = crawl[-1]
+            print(f"    Pages in Bing index: {latest.get('InIndex', 0):,}")
+            print(f"    Pages crawled/day: {latest.get('CrawledPages', 0):,}")
+        traffic = fetch_bing_traffic_stats()
+        if traffic and isinstance(traffic, list) and len(traffic) > 0:
+            total_imp = sum(e.get('Impressions', 0) for e in traffic)
+            total_clicks = sum(e.get('Clicks', 0) for e in traffic)
+            print(f"    Bing impressions (period): {total_imp:,}")
+            print(f"    Bing clicks (period): {total_clicks:,}")
+
     print(f"\n{'='*60}\n")
 
 
@@ -1456,10 +1474,173 @@ def ph_validate_signal(keyword, token):
         return 8, f"EARLY market — {len(results)} products, avg {avg_votes:.0f} votes. First-mover advantage"
 
 
+# ─── BING WEBMASTER TOOLS API ────────────────────────────────────────
+# Available endpoints: GetRankAndTrafficStats, GetCrawlStats, GetQueryStats,
+# GetLinkCounts, GetUrlInfo. Keyword research endpoints (GetKeywordData,
+# GetRelatedKeywords) were removed by Microsoft.
+
+def load_bing_api_key():
+    """Load Bing Webmaster Tools API key."""
+    if os.path.exists(BING_API_KEY_FILE):
+        with open(BING_API_KEY_FILE) as f:
+            return f.read().strip()
+    return None
+
+
+def _bing_api_get(endpoint, params=None):
+    """Make a Bing Webmaster Tools API request."""
+    api_key = load_bing_api_key()
+    if not api_key:
+        return None
+    base_params = f"siteUrl={urllib.parse.quote(SITE_URL + '/', safe='')}&apikey={api_key}"
+    if params:
+        base_params += f"&{params}"
+    url = f"{BING_API_BASE}/{endpoint}?{base_params}"
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=15) as resp:
+            raw = resp.read().decode('utf-8-sig')
+            data = json.loads(raw)
+            return data.get('d', data)
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def fetch_bing_traffic_stats():
+    """Get Bing rank and traffic stats (clicks + impressions over time)."""
+    return _bing_api_get('GetRankAndTrafficStats')
+
+
+def fetch_bing_crawl_stats():
+    """Get Bing crawl stats (pages crawled, indexed, errors)."""
+    return _bing_api_get('GetCrawlStats')
+
+
+def fetch_bing_url_info(url):
+    """Get info about a specific URL on Bing."""
+    return _bing_api_get('GetUrlInfo', f"url={urllib.parse.quote(url, safe='')}")
+
+
+def _parse_bing_date(date_str):
+    """Parse Bing's /Date(...)/ format to YYYY-MM-DD."""
+    import datetime
+    try:
+        ts = int(date_str.split('(')[1].split('-')[0].split('+')[0]) / 1000
+        return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d')
+    except Exception:
+        return date_str
+
+
+def run_bing_stats():
+    """Standalone Bing Webmaster Tools stats command."""
+    api_key = load_bing_api_key()
+    if not api_key:
+        print(f"\n  Bing Webmaster API key not found.")
+        print(f"  Get it from: Bing Webmaster Tools > Settings > API access > API Key")
+        print(f"  Save it:     echo 'YOUR_KEY' > {BING_API_KEY_FILE}")
+        return
+
+    print(f"\n{'='*60}")
+    print(f"  BING WEBMASTER TOOLS REPORT")
+    print(f"  Site: {SITE_URL}")
+    print(f"{'='*60}")
+
+    # 1. Traffic stats
+    print(f"\n  TRAFFIC (Bing Search)")
+    print(f"  {'-'*50}")
+    traffic = fetch_bing_traffic_stats()
+    if traffic and isinstance(traffic, list) and len(traffic) > 0:
+        total_clicks = sum(e.get('Clicks', 0) for e in traffic)
+        total_imp = sum(e.get('Impressions', 0) for e in traffic)
+        print(f"  Period: {len(traffic)} days")
+        print(f"  Total clicks: {total_clicks:,}")
+        print(f"  Total impressions: {total_imp:,}")
+        if total_imp > 0:
+            ctr = (total_clicks / total_imp) * 100
+            print(f"  CTR: {ctr:.1f}%")
+        print(f"\n  {'Date':<14} {'Clicks':>8} {'Impressions':>12}")
+        print(f"  {'-'*14} {'-'*8} {'-'*12}")
+        for e in traffic:
+            dt = _parse_bing_date(e.get('Date', ''))
+            print(f"  {dt:<14} {e.get('Clicks',0):>8,} {e.get('Impressions',0):>12,}")
+    else:
+        print(f"  No traffic data yet")
+
+    # 2. Crawl stats
+    print(f"\n  CRAWL STATS")
+    print(f"  {'-'*50}")
+    crawl = fetch_bing_crawl_stats()
+    if crawl and isinstance(crawl, list) and len(crawl) > 0:
+        latest = crawl[-1]
+        print(f"  Date: {_parse_bing_date(latest.get('Date', ''))}")
+        print(f"  Pages in Bing index: {latest.get('InIndex', 0):,}")
+        print(f"  Pages crawled: {latest.get('CrawledPages', 0):,}")
+        print(f"  2xx responses: {latest.get('Code2xx', 0):,}")
+        print(f"  4xx errors: {latest.get('Code4xx', 0):,}")
+        print(f"  5xx errors: {latest.get('Code5xx', 0):,}")
+        print(f"  Blocked by robots.txt: {latest.get('BlockedByRobotsTxt', 0):,}")
+        print(f"  Crawl errors: {latest.get('CrawlErrors', 0):,}")
+        print(f"  DNS failures: {latest.get('DnsFailures', 0):,}")
+    else:
+        print(f"  No crawl data yet")
+
+    # 3. Link counts
+    print(f"\n  BACKLINKS")
+    print(f"  {'-'*50}")
+    links = _bing_api_get('GetLinkCounts')
+    if links and isinstance(links, dict):
+        total_pages = links.get('TotalPages', 0)
+        link_list = links.get('Links', [])
+        print(f"  Total linking pages: {total_pages:,}")
+        if link_list:
+            for lnk in link_list[:10]:
+                print(f"    -> {lnk.get('Url', '?')}  ({lnk.get('LinkCount', 0)} links)")
+        else:
+            print(f"  No external backlinks detected yet")
+
+    print(f"\n{'='*60}\n")
+
+
+def bing_validate_signal():
+    """
+    Bing site validation for use in validate-new.
+    Uses crawl stats to check if Bing is indexing the site well.
+    Returns (score_delta, summary_string).
+    """
+    crawl = fetch_bing_crawl_stats()
+    if not crawl or not isinstance(crawl, list) or len(crawl) == 0:
+        return 0, "No Bing crawl data available"
+
+    latest = crawl[-1]
+    in_index = latest.get('InIndex', 0)
+    crawled = latest.get('CrawledPages', 0)
+    errors = latest.get('CrawlErrors', 0) + latest.get('Code4xx', 0) + latest.get('Code5xx', 0)
+
+    traffic = fetch_bing_traffic_stats()
+    total_imp = 0
+    total_clicks = 0
+    if traffic and isinstance(traffic, list):
+        total_imp = sum(e.get('Impressions', 0) for e in traffic)
+        total_clicks = sum(e.get('Clicks', 0) for e in traffic)
+
+    summary = f"Bing: {in_index} indexed, {crawled} crawled/day, {total_imp} impressions, {total_clicks} clicks"
+    if errors > 0:
+        summary += f", {errors} errors"
+
+    if in_index >= 500 and total_imp >= 100:
+        return 10, f"STRONG Bing presence — {summary}"
+    elif in_index >= 100:
+        return 5, f"GROWING Bing presence — {summary}"
+    elif in_index > 0:
+        return 2, f"EARLY Bing presence — {summary}"
+    else:
+        return 0, f"NOT indexed on Bing yet — {summary}"
+
+
 def run_validate_new_tool(keyword, geo=''):
     """
     Before building a new tool, validate it has search demand.
-    Runs: Google Trends + Autocomplete + Cannibalization check + Product Hunt.
+    Runs: Google Trends + Autocomplete + Bing Volume + Cannibalization + Product Hunt.
     Returns a GO/CAUTION/STOP recommendation.
     """
     print(f"\n{'='*60}")
@@ -1469,7 +1650,14 @@ def run_validate_new_tool(keyword, geo=''):
     issues = []
     score = 0  # 0-100 viability score
     ph_token = load_ph_token()
-    steps = "5" if ph_token else "4"
+    bing_key = load_bing_api_key()
+    # Count available steps
+    total_steps = 4  # Trends + Autocomplete + Cannibalization + Intent
+    if bing_key:
+        total_steps += 1
+    if ph_token:
+        total_steps += 1
+    steps = str(total_steps)
 
     # 1. Check Google Trends interest
     print(f"  [1/{steps}] Checking Google Trends demand...")
@@ -1533,8 +1721,23 @@ def run_validate_new_tool(keyword, geo=''):
         score += 5
         issues.append("No autocomplete suggestions — very niche or new keyword")
 
-    # 3. Check for cannibalization with existing tools
-    print(f"\n  [3/{steps}] Checking cannibalization with existing tools...")
+    # Next step counter
+    step_num = 3
+
+    # Bing Webmaster Tools site health (optional — requires API key)
+    if bing_key:
+        print(f"\n  [{step_num}/{steps}] Checking Bing indexing & traffic...")
+        bing_delta, bing_summary = bing_validate_signal()
+        score += bing_delta
+        print(f"    {bing_summary}")
+        step_num += 1
+    else:
+        print(f"\n  [—] Bing Webmaster — SKIPPED (no API key)")
+        print(f"    Set up: Get key from Bing Webmaster Tools > Settings > API access")
+        print(f"    Save:   echo 'YOUR_KEY' > {BING_API_KEY_FILE}")
+
+    # Check for cannibalization with existing tools
+    print(f"\n  [{step_num}/{steps}] Checking cannibalization with existing tools...")
     tools = find_all_tools()
     all_meta = [extract_metadata(fp) for fp in tools]
     all_meta = [m for m in all_meta if m]
@@ -1564,8 +1767,9 @@ def run_validate_new_tool(keyword, geo=''):
         score += 15
         print(f"    No cannibalization found — unique keyword!")
 
-    # 4. Check search intent match
-    print(f"\n  [4/{steps}] Analyzing search intent...")
+    # Check search intent match
+    step_num += 1
+    print(f"\n  [{step_num}/{steps}] Analyzing search intent...")
     intent = classify_search_intent(keyword)
     print(f"    Intent: {intent}")
     if intent == 'transactional':
@@ -1586,9 +1790,10 @@ def run_validate_new_tool(keyword, geo=''):
         for r in rising[:5]:
             print(f"    -> {r['query']}  ({r['value']})")
 
-    # 5. Product Hunt market signal (optional)
+    # Product Hunt market signal (optional)
     if ph_token:
-        print(f"\n  [5/{steps}] Checking Product Hunt market signal...")
+        step_num += 1
+        print(f"\n  [{step_num}/{steps}] Checking Product Hunt market signal...")
         ph_delta, ph_summary = ph_validate_signal(keyword, ph_token)
         score += ph_delta
         print(f"    {ph_summary}")
@@ -2835,6 +3040,9 @@ def main():
             print("Usage: python3 seo-keyword-engine.py validate-new \"keyword\" [--geo US]")
             sys.exit(1)
         run_validate_new_tool(keywords[0], geo=geo)
+
+    elif command == 'bing-stats':
+        run_bing_stats()
 
     elif command == 'internal-links':
         run_internal_links()

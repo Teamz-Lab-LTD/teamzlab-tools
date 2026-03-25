@@ -57,6 +57,9 @@ case "${1:-audit}" in
         shift
         python3 "$SCRIPT" validate-new "$@"
         ;;
+    --bing-stats)
+        python3 "$SCRIPT" bing-stats
+        ;;
     --internal-links)
         python3 "$SCRIPT" internal-links
         ;;
