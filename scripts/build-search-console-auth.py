@@ -6,6 +6,7 @@ It will open your browser to sign in, then save the token for future use.
 """
 import json
 import os
+import sys
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 SCOPES = [
@@ -13,20 +14,19 @@ SCOPES = [
     'https://www.googleapis.com/auth/webmasters',  # Needed for URL Inspection API
 ]
 TOKEN_FILE = os.path.expanduser('~/.config/teamzlab/search-console-token.json')
-
-# Use the API key's OAuth client (we'll create a simple one)
-CLIENT_CONFIG = {
-    "installed": {
-        "client_id": "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com",
-        "client_secret": "d-FL95Q19q7MQmFpd7hHD0Ty",
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "redirect_uris": ["http://localhost"]
-    }
-}
+CLIENT_CONFIG_FILE = os.path.expanduser('~/.config/teamzlab/oauth-client-config.json')
 
 def main():
     os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
+
+    if not os.path.exists(CLIENT_CONFIG_FILE):
+        print(f'ERROR: OAuth client config not found at {CLIENT_CONFIG_FILE}')
+        print(f'Create it with your Google OAuth client_id and client_secret:')
+        print(f'  {{"installed": {{"client_id": "YOUR_ID", "client_secret": "YOUR_SECRET", "auth_uri": "https://accounts.google.com/o/oauth2/auth", "token_uri": "https://oauth2.googleapis.com/token", "redirect_uris": ["http://localhost"]}}}}')
+        sys.exit(1)
+
+    with open(CLIENT_CONFIG_FILE) as f:
+        CLIENT_CONFIG = json.load(f)
 
     flow = InstalledAppFlow.from_client_config(CLIENT_CONFIG, SCOPES)
     creds = flow.run_local_server(port=0, open_browser=True)

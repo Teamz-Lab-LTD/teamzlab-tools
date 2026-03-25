@@ -31,6 +31,8 @@ var TOOL_SEARCH_INDEX = [
   {t:'تخطيط تعويض فقدان الوظيفة — الإمارات',d:'خطط لتأمين فقدان الوظيفة (ILOE) في الإمارات. احسب التعويض الشهري والمدة والتكلفة الس�',h:'/ae/job-loss-insurance-planner/'},
   {t:'Salik Toll Calculator Dubai 2026',d:'Estimate your monthly Salik toll costs with Dubai\'s new dynamic pricing. Peak, off-peak, and free hours included. Free and private.',h:'/ae/salik-toll-calculator/'},
   {t:'UAE Visa Overstay Fine Calculator 2026',d:'Calculate your UAE visa overstay fine instantly. Updated with the new unified AED 50/day penalty system effective February 2026.',h:'/ae/visa-overstay-fine-calculator/'},
+  {t:'AI Agent ROI Calculator',d:'Calculate your AI agent return on investment free. Compare human vs AI costs, estimate savings, and find your breakeven point. Private, no signup.',h:'/ai/ai-agent-roi-calculator/'},
+  {t:'AI Deepfake Detector',d:'Detect AI-generated images and deepfakes free in your browser. 100% private — photos never leave your device. No signup, powered by on-device AI.',h:'/ai/ai-deepfake-detector/'},
   {t:'AI Email Writer Free No Login',d:'Write professional emails instantly with AI. Choose your tone, purpose, and context — get a polished email in seconds. Free, private, no signup requ',h:'/ai/ai-email-writer/'},
   {t:'AI Quote Generator',d:'Generate beautiful quotes with AI or browse 500+ curated quotes. Customize backgrounds, fonts, and colors. Download as image or share. Free and privat',h:'/ai/ai-quote-generator/'},
   {t:'AI Text Humanizer Free',d:'Humanize AI-generated text instantly in your browser. Rewrite robotic AI content into natural human-sounding text. Free, private, no signup needed.',h:'/ai/ai-text-humanizer/'},
@@ -351,6 +353,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Markdown Table Generator',d:'Generate Markdown tables visually. Set rows and columns, enter data, and copy the formatted Markdown. Perfect for GitHub READMEs and documentation. Fr',h:'/dev/markdown-table-generator/'},
   {t:'Markdown to HTML Converter',d:'Use this free Markdown to HTML converter. Transform Markdown text into raw HTML code with support for headings, bold, italic, links, images, lists, an',h:'/dev/markdown-to-html/'},
   {t:'Nginx Config Generator',d:'Generate production-ready Nginx configuration files for static sites, reverse proxies, PHP-FPM, load balancers, and WebSocket proxies. Free and privat',h:'/dev/nginx-config-generator/'},
+  {t:'Passkey Tester & Generator',d:'Test passkey support on your device free. Check WebAuthn compatibility, create test passkeys, and score your browser readiness. Private, no signup.',h:'/dev/passkey-tester/'},
   {t:'Query String Parser',d:'Parse URL query strings into key-value pairs. Extract parameters from any URL. Edit and rebuild query strings. Free online query string parser.',h:'/dev/query-string-parser/'},
   {t:'Regex Tester',d:'Check regex tester — enter a regular expression pattern and test string to find all matches instantly with highlighted results.',h:'/dev/regex-tester/'},
   {t:'Slug Generator',d:'Convert any text to a clean URL-friendly slug. Removes special characters, converts spaces to hyphens, and lowercases. Free online slug generator.',h:'/dev/slug-generator/'},
@@ -364,6 +367,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'URL Encode/Decode',d:'Use this free URL encoder and decoder. Encode special characters for safe URL usage or decode percent-encoded URL strings back to readable text.',h:'/dev/url-encode-decode/'},
   {t:'URL Parser',d:'Use this free URL parser — break down any URL into its components including protocol, hostname, port, path, query parameters, and hash fragment.',h:'/dev/url-parser/'},
   {t:'UUID Generator',d:'Generate UUID generator — create random UUIDs in v4 and v7 formats with options for quantity, uppercase, lowercase, and no-hyphen output.',h:'/dev/uuid-generator/'},
+  {t:'Vibe Coding Cost Calculator',d:'Compare vibe coding vs traditional development costs free. Estimate AI coding tool spend vs hiring developers. Private, instant results, no signup.',h:'/dev/vibe-coding-cost-calculator/'},
   {t:'Web Font Performance Analyzer',d:'Analyze your web font CSS for performance issues — check WOFF2, font-display, preload hints, subset usage, and get an optimization score. Free and p',h:'/dev/web-font-performance-analyzer/'},
   {t:'Webhook Payload Formatter',d:'Format, validate, and debug webhook JSON payloads from n8n, Zapier, Make, and any API. Syntax highlighting, error detection, and copy button. Free too',h:'/dev/webhook-payload-formatter/'},
   {t:'Website Speed Audit Checklist',d:'Audit website speed with an interactive checklist — score optimizations across images, fonts, scripts, caching, and Core Web Vitals. Free tool.',h:'/dev/website-speed-audit-checklist/'},
