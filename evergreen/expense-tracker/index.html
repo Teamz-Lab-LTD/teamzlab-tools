@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track and categorize expenses with totals by category and monthly breakdown. Free, private expense tracker that runs entirely in your browser.">
+  <meta property="og:title" content="Expense Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Track and categorize expenses with totals by category and monthly breakdown. Free, private, browser-only.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/expense-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Expense Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track and categorize expenses with totals by category and monthly breakdown. Free, private, browser-only.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/expense-tracker/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .expense-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .expense-form label { font-weight: 600; font-size: var(--text-sm); color: var(--text-muted); display: block; margin-bottom: 4px; }
+    .expense-form input, .expense-form select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-base); }
+    .expense-form .full-width { grid-column: 1 / -1; }
+    .expense-actions { display: flex; gap: 10px; margin-bottom: 24px; }
+    .expense-table-wrap { overflow-x: auto; margin-bottom: 20px; }
+    .expense-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .expense-table th, .expense-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .expense-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .expense-table td { color: var(--text); }
+    .expense-delete-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--text-base); padding: 2px 6px; }
+    .expense-delete-btn:hover { color: var(--heading); }
+    .expense-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .expense-summary-card { padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+    .expense-summary-card h4 { font-size: var(--text-sm); color: var(--text-muted); margin: 0 0 4px; font-weight: 500; }
+    .expense-summary-card .expense-val { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+    .expense-category-list { list-style: none; padding: 0; margin: 0; }
+    .expense-category-list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--text); }
+    .expense-category-list li span:last-child { font-weight: 600; color: var(--heading); }
+    .expense-bar { height: 8px; border-radius: 4px; background: var(--border); margin-top: 4px; overflow: hidden; }
+    .expense-bar-fill { height: 100%; border-radius: 4px; background: var(--heading); }
+    .expense-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    @media (max-width: 600px) {
+      .expense-form { grid-template-columns: 1fr; }
+      .expense-actions { flex-direction: column; }
+      .expense-actions button { width: 100%; }
+      .expense-summary { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Expense Tracker</h1>
+      <p class="tool-description">Track your expenses by category, see totals and breakdowns, and understand where your money goes. All data stays in your browser — nothing is sent to any server.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="expense-form">
+        <div>
+          <label for="expense_date">Date</label>
+          <input type="date" id="expense_date">
+        </div>
+        <div>
+          <label for="expense_category">Category</label>
+          <select id="expense_category">
+            <option value="Housing">Housing</option>
+            <option value="Food">Food</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Education">Education</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Savings">Savings</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="expense_description">Description</label>
+          <input type="text" id="expense_description" placeholder="e.g. Grocery shopping">
+        </div>
+        <div>
+          <label for="expense_amount">Amount ($)</label>
+          <input type="number" id="expense_amount" placeholder="e.g. 45.00" min="0.01" step="0.01">
+        </div>
+      </div>
+      <div class="expense-actions">
+        <button class="btn-primary" id="expense-add-btn">Add Expense</button>
+        <button class="btn-secondary" id="expense-clear-btn">Clear All</button>
+        <button class="btn-secondary" id="expense-export-btn">Export CSV</button>
+      </div>
+      <div id="expense-summary"></div>
+      <div id="expense-categories"></div>
+      <div id="expense-list"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Expense Tracker Works</h2>
+      <p>This expense tracker lets you log individual expenses with a date, category, description, and amount. It automatically calculates your total spending, breaks down expenses by category, and shows you where your money is going. All data is stored locally in your browser using localStorage, so your financial information never leaves your device.</p>
+      <p>Tracking expenses is the foundation of effective budgeting. Research shows that people who actively track their spending save 15-20% more than those who don't. By categorizing expenses, you can identify areas where you're overspending and make informed decisions about where to cut back.</p>
+
+      <h2>Expense Categories Explained</h2>
+      <ul>
+        <li><strong>Housing:</strong> Rent, mortgage payments, property taxes, home repairs, home insurance.</li>
+        <li><strong>Food:</strong> Groceries, dining out, coffee, meal delivery, snacks.</li>
+        <li><strong>Transportation:</strong> Gas, public transit, car payments, rideshare, parking, maintenance.</li>
+        <li><strong>Utilities:</strong> Electricity, water, gas, internet, phone, streaming services.</li>
+        <li><strong>Healthcare:</strong> Doctor visits, prescriptions, dental, vision, health insurance premiums.</li>
+        <li><strong>Education:</strong> Tuition, books, courses, online learning subscriptions.</li>
+        <li><strong>Entertainment:</strong> Movies, concerts, hobbies, sports, subscriptions, games.</li>
+        <li><strong>Shopping:</strong> Clothing, electronics, household items, gifts.</li>
+      </ul>
+
+      <h2>Tips for Effective Expense Tracking</h2>
+      <p>Log expenses immediately after making them to avoid forgetting. Review your spending weekly to stay aware of patterns. Compare your actual spending against your budget categories to identify overruns. Use the category breakdown to find your biggest spending areas — these typically offer the most opportunity for savings. Export your data to CSV for more detailed analysis in spreadsheet software. Consistent tracking over three months reveals reliable spending patterns that you can use to create an accurate budget.</p>
+
+      <h2>Privacy and Data Storage</h2>
+      <p>All your expense data is stored locally in your browser's localStorage. No data is ever sent to any server, uploaded to the cloud, or shared with anyone. You have complete control over your financial information. Use the export feature to back up your data as a CSV file. Clearing your browser data will remove all stored expenses, so export regularly if you want to keep long-term records.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Expense Tracker' }
+    ];
+
+    var FAQS = [
+      {
+        q: 'Is my expense data private?',
+        a: 'Yes. All data is stored locally in your browser using localStorage. Nothing is sent to any server, cloud service, or third party. Your financial data stays entirely on your device. Clearing browser data will remove stored expenses.'
+      },
+      {
+        q: 'Can I export my expense data?',
+        a: 'Yes. Click the Export CSV button to download all your expenses as a CSV file. You can open this in Excel, Google Sheets, or any spreadsheet application for further analysis, charts, or long-term record keeping.'
+      },
+      {
+        q: 'What categories are available?',
+        a: 'The tracker includes 11 categories: Housing, Food, Transportation, Utilities, Healthcare, Education, Entertainment, Shopping, Insurance, Savings, and Other. These cover the most common personal expense categories for comprehensive budget tracking.'
+      },
+      {
+        q: 'Will my data survive browser updates?',
+        a: 'Yes, localStorage data persists across browser sessions and updates. However, clearing your browser cache or site data will remove stored expenses. We recommend exporting to CSV regularly as a backup, especially before clearing browser data.'
+      },
+      {
+        q: 'How should I use the category breakdown?',
+        a: 'The category breakdown shows what percentage of your total spending goes to each area. Financial advisors recommend housing should be under 30% of income, food under 15%, and transportation under 15%. Compare your percentages to these benchmarks to identify areas for improvement.'
+      }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/50-30-20-budget-calculator', name: '50/30/20 Budget Calculator', description: 'Apply the 50/30/20 budget rule to your income instantly.' },
+      { slug: 'evergreen/zero-based-budget-calculator', name: 'Zero-Based Budget Calculator', description: 'Create a zero-based budget where every dollar has a job.' },
+      { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal Calculator', description: 'Calculate how much to save each month to reach your goal.' },
+      { slug: 'evergreen/net-worth-calculator', name: 'Net Worth Calculator', description: 'Calculate your net worth from assets and liabilities.' },
+      { slug: 'evergreen/debt-payoff-calculator', name: 'Debt Payoff Calculator', description: 'Calculate how long to pay off debt and total interest.' },
+      { slug: 'evergreen/fire-calculator', name: 'FIRE Calculator', description: 'Calculate your financial independence date.' }
+    ];
+
+    var expenses = [];
+    var STORAGE_KEY = 'teamz_expense_tracker_data';
+
+    function loadExpenses() {
+      try {
+        var stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) expenses = JSON.parse(stored);
+      } catch (e) { expenses = []; }
+    }
+
+    function saveExpenses() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses)); } catch (e) {}
+    }
+
+    function formatCurrency(n) {
+      return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function renderAll() {
+      renderSummary();
+      renderCategories();
+      renderList();
+    }
+
+    function renderSummary() {
+      var el = document.getElementById('expense-summary');
+      if (!expenses.length) { el.innerHTML = ''; return; }
+      var total = expenses.reduce(function(s, e) { return s + e.amount; }, 0);
+      var avg = total / expenses.length;
+      var cats = {};
+      expenses.forEach(function(e) { cats[e.category] = (cats[e.category] || 0) + 1; });
+      var topCat = Object.keys(cats).sort(function(a, b) { return cats[b] - cats[a]; })[0];
+
+      el.innerHTML =
+        '<div class="expense-summary">' +
+          '<div class="expense-summary-card"><h4>Total Expenses</h4><div class="expense-val">' + formatCurrency(total) + '</div></div>' +
+          '<div class="expense-summary-card"><h4>Transactions</h4><div class="expense-val">' + expenses.length + '</div></div>' +
+          '<div class="expense-summary-card"><h4>Average</h4><div class="expense-val">' + formatCurrency(avg) + '</div></div>' +
+          '<div class="expense-summary-card"><h4>Top Category</h4><div class="expense-val">' + topCat + '</div></div>' +
+        '</div>';
+    }
+
+    function renderCategories() {
+      var el = document.getElementById('expense-categories');
+      if (!expenses.length) { el.innerHTML = ''; return; }
+      var total = expenses.reduce(function(s, e) { return s + e.amount; }, 0);
+      var cats = {};
+      expenses.forEach(function(e) { cats[e.category] = (cats[e.category] || 0) + e.amount; });
+      var sorted = Object.keys(cats).sort(function(a, b) { return cats[b] - cats[a]; });
+      var maxAmt = cats[sorted[0]];
+
+      var html = '<h3 style="color:var(--heading);margin:0 0 12px;font-size:var(--text-base);">Spending by Category</h3><ul class="expense-category-list">';
+      sorted.forEach(function(cat) {
+        var pct = ((cats[cat] / total) * 100).toFixed(1);
+        var barW = ((cats[cat] / maxAmt) * 100).toFixed(0);
+        html += '<li><span>' + cat + ' (' + pct + '%)</span><span>' + formatCurrency(cats[cat]) + '</span></li>';
+        html += '<li style="border:none;padding:0 0 6px;"><div class="expense-bar"><div class="expense-bar-fill" style="width:' + barW + '%;"></div></div></li>';
+      });
+      html += '</ul>';
+      el.innerHTML = html;
+    }
+
+    function renderList() {
+      var el = document.getElementById('expense-list');
+      if (!expenses.length) {
+        el.innerHTML = '<div class="expense-empty">No expenses yet. Add your first expense above.</div>';
+        return;
+      }
+      var sorted = expenses.slice().sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+      var html = '<div class="expense-table-wrap"><table class="expense-table"><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead><tbody>';
+      sorted.forEach(function(e) {
+        var displayDate = new Date(e.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        html += '<tr><td>' + displayDate + '</td><td>' + e.category + '</td><td>' + (e.description || '-') + '</td><td>' + formatCurrency(e.amount) + '</td><td><button class="expense-delete-btn" data-id="' + e.id + '" title="Delete">&times;</button></td></tr>';
+      });
+      html += '</tbody></table></div>';
+      el.innerHTML = html;
+    }
+
+    function addExpense() {
+      var dateEl = document.getElementById('expense_date');
+      var catEl = document.getElementById('expense_category');
+      var descEl = document.getElementById('expense_description');
+      var amtEl = document.getElementById('expense_amount');
+
+      var date = dateEl.value;
+      var category = catEl.value;
+      var description = descEl.value.trim();
+      var amount = parseFloat(amtEl.value);
+
+      if (!date) { if (window.showToast) window.showToast('Please select a date.'); return; }
+      if (!amount || amount <= 0) { if (window.showToast) window.showToast('Please enter a valid amount.'); return; }
+
+      expenses.push({
+        id: Date.now().toString(),
+        date: date,
+        category: category,
+        description: description,
+        amount: amount
+      });
+      saveExpenses();
+      renderAll();
+
+      descEl.value = '';
+      amtEl.value = '';
+      if (window.showToast) window.showToast('Expense added.');
+    }
+
+    function deleteExpense(id) {
+      expenses = expenses.filter(function(e) { return e.id !== id; });
+      saveExpenses();
+      renderAll();
+      if (window.showToast) window.showToast('Expense deleted.');
+    }
+
+    function clearAll() {
+      if (expenses.length === 0) return;
+      expenses = [];
+      saveExpenses();
+      renderAll();
+      if (window.showToast) window.showToast('All expenses cleared.');
+    }
+
+    function exportCSV() {
+      if (!expenses.length) { if (window.showToast) window.showToast('No expenses to export.'); return; }
+      var csv = 'Date,Category,Description,Amount\n';
+      expenses.forEach(function(e) {
+        csv += e.date + ',' + e.category + ',"' + (e.description || '').replace(/"/g, '""') + '",' + e.amount.toFixed(2) + '\n';
+      });
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'expenses-' + new Date().toISOString().slice(0, 10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('CSV exported.');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'evergreen/expense-tracker', title: 'Expense Tracker', description: 'Track and categorize expenses with totals by category.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      var today = new Date().toISOString().slice(0, 10);
+      document.getElementById('expense_date').value = today;
+
+      loadExpenses();
+      renderAll();
+
+      document.getElementById('expense-add-btn').addEventListener('click', addExpense);
+      document.getElementById('expense-clear-btn').addEventListener('click', clearAll);
+      document.getElementById('expense-export-btn').addEventListener('click', exportCSV);
+
+      document.getElementById('expense-list').addEventListener('click', function(e) {
+        var btn = e.target.closest('.expense-delete-btn');
+        if (btn) deleteExpense(btn.dataset.id);
+      });
+    });
+  </script>
+</body>
+</html>
