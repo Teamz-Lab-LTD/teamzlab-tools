@@ -1,11 +1,14 @@
-# Indexing Report — 2026-03-26 03:29
+# Indexing Report — 2026-03-26 03:35
 
 Total pages: 1
 Checked: 1
-Indexed: 1 (100%)
-Not indexed: 0
+Indexed: 0 (0%)
+Not indexed: 1
 Errors: 0
 
-## Indexed Pages (1)
+## Not Indexed Pages
 
-- /tools/birthday-invitation-maker/
+| Page | Reason |
+|---|---|
+| /dev/esg-compliance-calculator/ | URL is unknown to Google |
+
