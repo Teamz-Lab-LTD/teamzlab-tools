@@ -61,7 +61,7 @@ TOTAL=0
 # SEO
 NO_JS=0; LOW_CONTENT=0; NO_FAQS=0; NO_RELATED=0; NO_SCHEMA=0; NO_COPY_HANDLER=0
 # Runtime
-ALERT_COUNT=0; AI_NO_ENGINE=0; NULL_BG=0
+ALERT_COUNT=0; AI_NO_ENGINE=0; NULL_BG=0; DISPLAY_EMPTY=0
 # UX
 NO_HERO=0; NO_DESC=0; NO_LABELS=0; NO_IDS=0; NO_MOBILE=0; NO_SCROLL=0
 WHITE_ACCENT=0; NO_LOADING=0
@@ -144,6 +144,15 @@ while IFS= read -r f; do
   ${YEL}NULL BG:${NC} $SLUG"
   fi
 
+  # style.display='' on elements with CSS display:none (element stays hidden)
+  has_display_empty=$(echo "$CONTENT" | grep -c "style\.display\s*=\s*['\"]['\"]" 2>/dev/null || true)
+  has_css_display_none=$(echo "$CONTENT" | grep -c 'display:\s*none' 2>/dev/null || true)
+  if [ "$has_display_empty" -gt 0 ] && [ "$has_css_display_none" -gt 0 ]; then
+    DISPLAY_EMPTY=$((DISPLAY_EMPTY + 1))
+    ISSUES_RUNTIME="$ISSUES_RUNTIME
+  ${RED}DISPLAY BUG:${NC} $SLUG — style.display='' with CSS display:none (use block/flex/grid)"
+  fi
+
   # ===== UX USABILITY =====
 
   # Missing tool-hero section
@@ -210,6 +219,7 @@ echo "  RUNTIME SAFETY:"
 printf "    alert() calls:        %s%d%s (overridden centrally)\n" "$YEL" "$ALERT_COUNT" "$NC"
 printf "    AI no ai-engine.js:   %s%d%s\n" "$RED" "$AI_NO_ENGINE" "$NC"
 printf "    html2canvas null bg:  %s%d%s\n" "$YEL" "$NULL_BG" "$NC"
+printf "    display='' bug:       %s%d%s\n" "$RED" "$DISPLAY_EMPTY" "$NC"
 echo ""
 
 echo "  UX USABILITY:"
@@ -221,7 +231,7 @@ printf "    White on accent:      %s%d%s\n" "$RED" "$WHITE_ACCENT" "$NC"
 printf "    No loading state:     %s%d%s\n" "$YEL" "$NO_LOADING" "$NC"
 echo ""
 
-TOTAL_ISSUES=$((NO_JS + LOW_CONTENT + NO_FAQS + NO_RELATED + NO_SCHEMA + NO_COPY_HANDLER + AI_NO_ENGINE + NULL_BG + NO_HERO + NO_LABELS + WHITE_ACCENT))
+TOTAL_ISSUES=$((NO_JS + LOW_CONTENT + NO_FAQS + NO_RELATED + NO_SCHEMA + NO_COPY_HANDLER + AI_NO_ENGINE + NULL_BG + DISPLAY_EMPTY + NO_HERO + NO_LABELS + WHITE_ACCENT))
 printf "  Total tools:  %d\n" "$TOTAL"
 printf "  Key issues:   %s%d%s\n" "$RED" "$TOTAL_ISSUES" "$NC"
 echo ""

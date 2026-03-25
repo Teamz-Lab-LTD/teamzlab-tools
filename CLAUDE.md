@@ -507,6 +507,16 @@ python3 scripts/build-fix-orphans.py fix
 - NEVER use `alert()` or `confirm()` for success/info messages
 - For share link callbacks: `function(msg) { if (window.showToast) window.showToast(msg); }`
 
+### Rule 14b: ALWAYS use showEl()/hideEl() — NEVER use style.display = ''
+- `window.showEl(el)` and `window.hideEl(el)` are defined globally in `common.js`
+- `showEl(el)` auto-detects the correct display value (block/flex/grid) — always safe
+- `showEl(el, 'flex')` — pass explicit display type when you know it
+- `hideEl(el)` — sets `display: none`
+- **NEVER** use `el.style.display = ''` — it only removes inline style, CSS `display:none` still wins
+- **Runtime safety net:** MutationObserver in common.js catches and fixes this bug automatically
+- **Pre-commit hook + build-qa-check.sh** warn on any `style.display = ''` usage
+- Central utilities in common.js: `showToast()`, `showEl()`, `hideEl()`, `safeClipboardText()`, `safeClipboardImage()`, `safeHtml2Canvas()`
+
 ### Rule 15: Every image tool MUST have a Copy Image button
 - Any tool that generates/downloads an image MUST include "Copy Image" button
 - Wire up the event listener (don't just add the HTML button!)
@@ -611,6 +621,13 @@ Every tool MUST pass this usability checklist before being declared "done". Trac
 - Every `getElementById()` call matches an actual `id` in the HTML
 - Clear/Reset buttons clear ALL inputs INCLUDING `<select>` dropdowns (use `.selectedIndex = 0`)
 
+**A2) CSS Display Toggle (CRITICAL — caused 17 broken tools in March 2026):**
+- NEVER use `style.display = ''` to show an element whose CSS CLASS has `display:none`
+- `style.display = ''` only removes the INLINE style — the CSS class `display:none` still wins
+- ALWAYS use explicit values: `style.display = 'block'`, `'flex'`, `'grid'`, etc.
+- `style.display = ''` is ONLY safe when the element was hidden via inline JS (`el.style.display = 'none'`) and the CSS class does NOT have `display:none`
+- Pre-commit hook + build-qa-check.sh now catch this automatically
+
 **B) Error Handling (no silent failures):**
 - `navigator.clipboard.writeText()` MUST have `.catch()` with `showToast()` — Firefox and permission denied cases
 - `navigator.clipboard.write()` for images MUST have `try/catch` + `.catch()` — ClipboardItem not supported in Firefox
@@ -695,3 +712,4 @@ python3 scripts/build-fix-orphans.py fix     # Fix orphan pages (auto-link to si
 24. Dumping all 1135 tools into llms.txt — spec says under 10KB, use categories + top 15 only (see Rule 22)
 25. Adding "Instructions for AI" or "When to Recommend" to llms.txt — considered prompt injection (see Rule 22)
 26. Leaving orphan pages (0 incoming related links) — run build-fix-orphans.py after adding tools (see Rule 23)
+27. Using `style.display = ''` to show elements — use `showEl(el)` or explicit `style.display = 'block'` instead (see Rule 24 A2). Central safety net in common.js + pre-commit hook catch this.
