@@ -78,11 +78,19 @@ def get_changed_tools():
             if len(parts) >= 3:  # hub/tool/index.html
                 tools.add('/'.join(parts[:-1]))
 
-        # Also include tools affected by common.js / tools.css changes
-        shared_changed = any('shared/' in f or 'branding/' in f for f in files if f.strip())
-        if shared_changed:
-            print("  ⚠ Shared files changed — testing ALL tools")
+        # Only test ALL tools if actual shared CODE changed (not build artifacts)
+        BUILD_ARTIFACTS = {'shared/js/search-index.js', 'sitemap.xml', 'llms.txt', 'llms-full.txt'}
+        shared_code_changed = any(
+            ('shared/' in f or 'branding/' in f) and f.strip() not in BUILD_ARTIFACTS
+            for f in files if f.strip()
+        )
+        if shared_code_changed:
+            print("  ⚠ Shared code changed — testing ALL tools")
             return get_all_tools()
+        elif tools:
+            artifact_files = [f.strip() for f in files if f.strip() in BUILD_ARTIFACTS]
+            if artifact_files:
+                print(f"  ℹ Only build artifacts changed ({', '.join(artifact_files)}) — testing {len(tools)} changed tools only")
 
         return sorted(tools)
     except Exception:
