@@ -108,6 +108,67 @@ cd "$PROJECT_DIR" || exit 1
 # Pull latest changes first
 git pull origin main 2>/dev/null
 
+# Phase 0: Research — find high-value keywords (zero quota, bash scripts only)
+echo ""
+echo "=== Phase 0: Keyword Research (zero quota) ==="
+
+# Clean previous research
+rm -f /tmp/nightly-suggestions.txt /tmp/nightly-trends.txt /tmp/nightly-multilang.txt /tmp/nightly-research.txt
+
+# Google Autocomplete suggestions for high-RPM niches
+echo "  Researching keywords..."
+for keyword in "stamp duty calculator" "retirement calculator" "tax calculator" "salary calculator" "mortgage calculator" "budget planner" "loan calculator" "investment calculator" "insurance calculator" "cost of living" "rent vs buy" "salary comparison" "profit margin calculator" "invoice generator" "contract template"; do
+    ./build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
+done
+
+# Pinterest-friendly keywords (finance/health/budget perform best on Pinterest)
+echo "  Researching Pinterest-friendly keywords..."
+for keyword in "budget template" "savings plan" "debt payoff" "meal planner" "wedding budget" "baby cost" "home buying checklist" "retirement plan"; do
+    ./build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
+done
+
+# Comparison page keywords (X vs Y = high intent)
+echo "  Researching comparison keywords..."
+for keyword in "roth vs traditional" "rent vs buy" "lease vs buy" "term vs whole life" "hsa vs fsa" "fixed vs variable rate" "sole trader vs company" "etf vs mutual fund"; do
+    ./build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
+done
+
+# Get trending/breakout keywords
+echo "  Checking trends..."
+./build-seo-audit.sh --batch-trends 2>/dev/null | head -30 >> /tmp/nightly-trends.txt
+
+# Keyword volume estimation
+echo "  Checking keyword volumes..."
+./build-seo-audit.sh --bing-volume "stamp duty calculator" "retirement planner" "salary comparison" "budget calculator" "tax estimator" 2>/dev/null >> /tmp/nightly-research.txt
+
+# Check keyword cannibalization
+echo "  Checking cannibalization..."
+./build-seo-audit.sh --cannibalize 2>/dev/null | head -20 >> /tmp/nightly-research.txt
+
+# Check seasonal relevance
+echo "  Checking seasonal calendar..."
+MONTH=$(date '+%m')
+case $MONTH in
+    01|02|03|04) echo "SEASONAL: Tax season (US/UK/AU). Build tax tools." >> /tmp/nightly-research.txt ;;
+    04|05|06) echo "SEASONAL: DE Steuererklärung, Nordic tax, wedding season." >> /tmp/nightly-research.txt ;;
+    07|08|09) echo "SEASONAL: Back to school, SG National Day, summer travel." >> /tmp/nightly-research.txt ;;
+    10|11|12) echo "SEASONAL: Black Friday, year-end finance, holiday budgets." >> /tmp/nightly-research.txt ;;
+esac
+
+# Ensure backlog file exists
+BACKLOG="$PROJECT_DIR/docs/tool-backlog.md"
+if [ ! -f "$BACKLOG" ]; then
+    echo "# Tool Backlog" > "$BACKLOG"
+    echo "## Pending" >> "$BACKLOG"
+    echo "" >> "$BACKLOG"
+fi
+
+# Check which existing tools need ES/PT versions
+echo "  Checking multilang gaps..."
+python3 scripts/build-multilang.py suggest 2>/dev/null | grep "→" > /tmp/nightly-multilang.txt
+
+echo "  Research done. All results saved for Claude to use."
+
 # Phase 1: Run all maintenance scripts (no Claude needed, zero quota)
 echo ""
 echo "=== Phase 1: Maintenance Scripts (zero quota) ==="
@@ -131,19 +192,62 @@ echo "=== Phase 3: Pull Data (local tokens) ==="
 # Phase 4: Run Claude to build tools (uses quota)
 echo ""
 echo "=== Phase 4: Claude Build Agent ==="
-claude --print --dangerously-skip-permissions --model sonnet "$(cat <<'PROMPT'
+echo "  Starting Sonnet... (live output below)"
+echo "  ─────────────────────────────────────"
+claude --print --verbose --dangerously-skip-permissions --model sonnet "$(cat <<'PROMPT'
+
+IMPORTANT: Print your progress as you work. After EACH step, print a status line like:
+  [1/6] Reading context files...
+  [2/6] Picking tools to build (checking backlog + research)...
+  [3/6] Building tool 1: [name] in /[hub]/[slug]/...
+  [3/6] Building tool 2: [name] in /[hub]/[slug]/...
+  [4/6] Generating programmatic variants...
+  [5/6] Building ES/PT versions...
+  [6/6] Running QA + pushing...
+
+After EACH tool is built, print: "✓ Built: [tool name] at /[hub]/[slug]/"
+After EACH commit, print: "✓ Committed: [message]"
+If something fails, print: "✗ Failed: [what] — [why]"
+
+Now begin:
 You are the nightly build agent for tool.teamzlab.com (1680+ tools).
 
-FIRST: Read CLAUDE.md, .claude-memory/MEMORY.md, .claude-memory/feedback_idea_generation_framework.md, .claude-memory/feedback_programmatic_seo.md, .claude-memory/feedback_multilang_strategy.md, .claude-memory/project_hub_building_queue.md, and docs/tool-backlog.md.
+FIRST: Read these files for context:
+- CLAUDE.md (all build rules)
+- .claude-memory/MEMORY.md (feedback + project context)
+- .claude-memory/feedback_idea_generation_framework.md (country/language targeting)
+- .claude-memory/feedback_programmatic_seo.md (variant generation)
+- .claude-memory/feedback_multilang_strategy.md (ES/PT rules)
+- .claude-memory/project_hub_building_queue.md (hub queue)
+- docs/tool-backlog.md (pending keywords)
+- /tmp/nightly-suggestions.txt (Google Autocomplete results — pre-researched)
+- /tmp/nightly-trends.txt (trending keywords — pre-researched)
+- /tmp/nightly-multilang.txt (tools needing ES/PT versions — pre-researched)
+- /tmp/nightly-research.txt (keyword volumes, cannibalization, seasonal info)
 
 CONTENT RESTRICTIONS: Owner is Muslim. NEVER build alcohol, gambling, betting, casino, lottery tools.
 
-THEN DO:
-1. BUILD 5-8 new tools targeting Tier S/A countries (AU, NZ, SG, IE, CH, US, UK, DE, JP). Diverse types (generators, planners, analyzers — not just calculators). Check duplicates first. Follow ALL CLAUDE.md rules. Commit each.
-2. PROGRAMMATIC SEO: If any new tool has location-varying data, write a Python generator script and run it. Zero quota.
-3. MULTILANG: For finance/career/business tools, also build ES + PT versions natively. Target 2-4 each.
+## DECISION LAYERS — Apply ALL of these when picking what to build:
+
+1. COUNTRY RPM: Target Tier S first (AU, NZ, SG, IE, CH $190-350/capita), then Tier A (US, UK, CA, DE, JP). AVOID BD, IN, PK (RPM $0.05-0.20).
+2. TOOL TYPE DIVERSITY: Build generators ($15+ RPM), planners ($10+), analyzers ($8+), checkers ($6+) — NOT just calculators ($5+). Never build fun/joke tools ($1-2).
+3. HUB CLUSTER: Add tools to EXISTING thin hubs (<10 tools) to build topical authority. 10 tools in one hub ranks faster than 10 scattered tools.
+4. FREE ALTERNATIVE: Check if the tool replaces a paid product. "Free alternative to X" = highest conversion intent keywords.
+5. COMPARISON PAGES: Build "X vs Y" tools (rent vs buy, Roth vs traditional). These are high-intent search queries.
+6. EVERGREEN FIRST: Prefer tools with year-round traffic over seasonal spikes.
+7. TREND-JACK: Check /tmp/nightly-trends.txt for rising keywords. Build if breakout + high RPM.
+8. VIRALITY: Prefer tools where results are screenshot-worthy and shareable.
+9. PINTEREST FIT: Finance/health/budget tools perform well on Pinterest. Build pin-worthy tools.
+11. AI SEARCH: Frame tool as answering a question (ChatGPT/Perplexity recommend tools that answer questions). We have llms.txt advantage.
+12. FEATURED SNIPPET: Structure results to match Google's featured snippet format (tables, bullet lists).
+13. E-E-A-T: All tools already have author byline + About page link. Ensure content mentions methodology/sources.
+
+## THEN DO:
+1. BUILD 5-8 new tools using the decision layers above. Check /tmp/nightly-suggestions.txt for validated keywords. Check duplicates BEFORE each (find . -path '*keyword*'). Follow ALL CLAUDE.md rules. Commit each tool immediately.
+2. PROGRAMMATIC SEO: If any new tool has location-varying data, write a Python generator script and run it (zero cost). Examples: tax by state, cost by city.
+3. MULTILANG: For finance/career/business tools, also build Spanish (/es/) + Portuguese (/pt/) versions natively. Not machine translation. Target 2-4 each.
 4. QA: Run build-static-schema.py, build-search-index.sh, build-fix-orphans.py fix. Fix issues. Commit.
-5. RESEARCH: WebSearch for trending keywords in high-RPM niches. Save to docs/tool-backlog.md.
+5. BACKLOG: Save any good keyword ideas you found to docs/tool-backlog.md with columns: keyword | hub | region | RPM tier | programmatic? | multilang? | source.
 6. Push all changes: git push origin main
 
 TARGET: 5-8 base tools + variants + 4-8 multilang + QA fixes + backlog update.
@@ -155,5 +259,14 @@ echo ""
 echo "=== Phase 5: Final Push ==="
 git push origin main 2>&1
 
+# Count what was built
+NEW_TOOLS=$(git log --oneline --since="2 hours ago" --grep="Add " | wc -l | tr -d ' ')
+TOTAL_COMMITS=$(git log --oneline --since="2 hours ago" | wc -l | tr -d ' ')
+
 echo ""
 echo "=== DONE — $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
+echo "  New tools built: $NEW_TOOLS"
+echo "  Total commits: $TOTAL_COMMITS"
+
+# Mac notification so you see results even if asleep
+osascript -e "display notification \"Built $NEW_TOOLS new tools. $TOTAL_COMMITS commits pushed.\" with title \"Teamz Nightly Build\" sound name \"Glass\"" 2>/dev/null

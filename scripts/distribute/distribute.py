@@ -34,7 +34,7 @@ HISTORY_FILE = SCRIPT_DIR / "history.json"
 EXAMPLE_CONFIG = SCRIPT_DIR / "config.example.json"
 ARTICLES_DIR = SCRIPT_DIR / "articles"
 
-ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "telegraph", "pinterest"]
+ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "gitlab", "substack", "telegraph", "pinterest"]
 
 # SSL context for HTTPS requests
 SSL_CTX = ssl.create_default_context()
@@ -703,6 +703,187 @@ def pinterest_refresh_access_token(cfg, creds_path):
     return access
 
 
+def post_gitlab(config, title, body, tags, canonical_url):
+    """Post to GitLab Snippets — dofollow backlinks, DA 95+."""
+    cfg = config.get("gitlab", {})
+    token = cfg.get("access_token", "")
+    if not token:
+        token_file = os.path.expanduser("~/.config/teamzlab/gitlab-token.txt")
+        if os.path.exists(token_file):
+            with open(token_file) as f:
+                token = f.read().strip()
+    if not token:
+        return None, "No GitLab access_token"
+
+    try:
+        # Add footer link to body
+        body_with_link = body + "\n\n---\n\n*Originally published at [tool.teamzlab.com](https://tool.teamzlab.com)*"
+
+        slug = re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
+        payload = json.dumps({
+            "title": title,
+            "description": f"Free browser-based tools — no signup, 100% private. Visit https://tool.teamzlab.com",
+            "visibility": "public",
+            "files": [{
+                "file_path": f"{slug}.md",
+                "content": f"# {title}\n\n{body_with_link}"
+            }]
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
+            'https://gitlab.com/api/v4/snippets',
+            data=payload,
+            method='POST',
+            headers={
+                'Content-Type': 'application/json',
+                'PRIVATE-TOKEN': token
+            }
+        )
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=20, context=ctx) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+
+        snippet_id = result.get('id')
+        web_url = result.get('web_url')
+        if web_url:
+            return web_url, None
+        elif snippet_id:
+            return f"https://gitlab.com/-/snippets/{snippet_id}", None
+        else:
+            return None, result.get('error', result.get('message', 'Unknown GitLab error'))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8')[:200] if hasattr(e, 'read') else ''
+        return None, f"HTTP {e.code}: {body}"
+    except Exception as e:
+        return None, str(e)[:120]
+
+
+def post_substack(config, title, body, tags, canonical_url):
+    """Post to Substack — dofollow backlinks, DA 90+. Uses python-substack library."""
+    cfg = config.get("substack", {})
+    pub_url = cfg.get("publication_url", "")
+    if not pub_url:
+        return None, "No Substack publication_url in config"
+
+    try:
+        from substack import Api
+        from substack.post import Post as SubstackPost
+
+        # Auth: cookie string (from file or config) or email/password
+        cookie_string = cfg.get("cookies_string", "")
+        if not cookie_string:
+            cookie_file = os.path.expanduser("~/.config/teamzlab/substack-cookie-string.txt")
+            if os.path.exists(cookie_file):
+                with open(cookie_file) as f:
+                    cookie_string = f.read().strip()
+
+        email = cfg.get("email", "")
+        password = cfg.get("password", "")
+
+        if cookie_string:
+            api = Api(cookies_string=cookie_string, publication_url=pub_url)
+        else:
+            return None, "No Substack cookie. Run: browser DevTools → Cookies → substack.sid → save as 'substack.sid=VALUE' to ~/.config/teamzlab/substack-cookie-string.txt"
+
+        try:
+            user_id = api.get_user_id()
+        except Exception:
+            return None, "Substack cookie EXPIRED. Fix: browser DevTools → Application → Cookies → substack.com → copy substack.sid value → save as 'substack.sid=VALUE' to ~/.config/teamzlab/substack-cookie-string.txt"
+
+        post = SubstackPost(
+            title=title,
+            subtitle="Free browser-based tools — no signup, 100% private",
+            user_id=user_id,
+            audience="everyone",
+        )
+
+        def md_inline_to_chunks(text):
+            """Convert markdown inline formatting to Substack content chunks."""
+            chunks = []
+            pattern = r'(\*\*\[([^\]]+)\]\(([^)]+)\)\*\*|\[([^\]]+)\]\(([^)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*)'
+            last_end = 0
+            for m in re.finditer(pattern, text):
+                if m.start() > last_end:
+                    plain = text[last_end:m.start()]
+                    if plain:
+                        chunks.append({'content': plain})
+                if m.group(2) and m.group(3):  # **[text](url)** — bold link
+                    chunks.append({'content': m.group(2), 'marks': [{'type': 'bold'}, {'type': 'link', 'href': m.group(3)}]})
+                elif m.group(4) and m.group(5):  # [text](url) — link
+                    chunks.append({'content': m.group(4), 'marks': [{'type': 'link', 'href': m.group(5)}]})
+                elif m.group(6):  # **text** — bold
+                    chunks.append({'content': m.group(6), 'marks': [{'type': 'bold'}]})
+                elif m.group(7):  # *text* — italic
+                    chunks.append({'content': m.group(7), 'marks': [{'type': 'italic'}]})
+                last_end = m.end()
+            if last_end < len(text):
+                remaining = text[last_end:]
+                if remaining:
+                    chunks.append({'content': remaining})
+            if not chunks:
+                chunks.append({'content': text})
+            return chunks
+
+        # Convert markdown paragraphs to Substack content blocks
+        paragraphs = re.split(r'\n\n+', body.strip())
+        for p in paragraphs:
+            p = p.strip()
+            if not p:
+                continue
+            if p.startswith('#'):
+                level = len(re.match(r'^(#+)', p).group(1))
+                text = re.sub(r'^#+\s*', '', p)
+                post.add({'type': 'heading', 'content': text, 'level': min(level, 3)})
+            elif p.startswith('---'):
+                post.add({'type': 'horizontal_rule'})
+            elif p.startswith('|'):
+                rows = [r.strip() for r in p.split('\n') if r.strip() and '---' not in r]
+                for row in rows:
+                    cells = [c.strip() for c in row.split('|') if c.strip()]
+                    chunks = md_inline_to_chunks(' | '.join(cells))
+                    post.add({'type': 'paragraph', 'content': chunks})
+            elif p.startswith('- ') or p.startswith('* '):
+                # List items — each as separate paragraph with bullet
+                for line in p.split('\n'):
+                    line = re.sub(r'^[-*]\s+', '', line.strip())
+                    if line:
+                        chunks = md_inline_to_chunks(line)
+                        post.add({'type': 'paragraph', 'content': [{'content': '• '}] + chunks})
+            else:
+                # Handle multi-line paragraphs
+                lines = p.split('\n')
+                all_chunks = []
+                for i, line in enumerate(lines):
+                    all_chunks.extend(md_inline_to_chunks(line))
+                    if i < len(lines) - 1:
+                        all_chunks.append({'content': '\n'})
+                post.add({'type': 'paragraph', 'content': all_chunks})
+
+        # Add footer with link
+        post.add({'type': 'horizontal_rule'})
+        post.add({'type': 'paragraph', 'content': [
+            {'content': 'Originally published at '},
+            {'content': 'tool.teamzlab.com', 'marks': [{'type': 'link', 'href': 'https://tool.teamzlab.com'}]}
+        ]})
+
+        # Create and publish
+        draft = api.post_draft(post.get_draft())
+        draft_id = draft.get("id")
+        if draft_id:
+            api.prepublish_draft(draft_id)
+            api.publish_draft(draft_id)
+            # Use the canonical URL from Substack's response, or construct from draft ID
+            url = f"https://substack.com/home/post/p-{draft_id}"
+            return url, None
+        else:
+            return None, "Draft creation failed"
+
+    except ImportError:
+        return None, "python-substack not installed (pip install python-substack)"
+    except Exception as e:
+        return None, str(e)[:120]
+
+
 def post_telegraph(config, title, body, tags, canonical_url):
     """Post to Telegraph (telegra.ph) — dofollow backlinks, DA 90+."""
     cfg = config.get("telegraph", {})
@@ -777,6 +958,14 @@ def post_telegraph(config, title, body, tags, canonical_url):
 
     try:
         nodes = md_to_nodes(body)
+        # Add properly formatted footer with dofollow link
+        nodes.append({"tag": "hr"})
+        nodes.append({"tag": "p", "children": [
+            {"tag": "i", "children": [
+                "Originally published at ",
+                {"tag": "a", "attrs": {"href": "https://tool.teamzlab.com"}, "children": ["tool.teamzlab.com"]}
+            ]}
+        ]})
         payload = json.dumps({
             'access_token': token,
             'title': title[:256],
@@ -942,6 +1131,7 @@ def update_github_blog_readme(history):
             devto_url = platforms.get("devto", {}).get("url", "")
             hashnode_url = platforms.get("hashnode", {}).get("url", "")
             blogger_url = platforms.get("blogger", {}).get("url", "")
+            telegraph_url = platforms.get("telegraph", {}).get("url", "")
 
             # Skip deleted/empty posts
             if not any([devto_url, hashnode_url, blogger_url]):
@@ -953,7 +1143,8 @@ def update_github_blog_readme(history):
             devto_cell = f"[Read]({devto_url})" if devto_url else "—"
             hashnode_cell = f"[Read]({hashnode_url})" if hashnode_url else "—"
             blogger_cell = f"[Read]({blogger_url})" if blogger_url else "—"
-            rows.append(f"| {title_cell} | {devto_cell} | {hashnode_cell} | {blogger_cell} |")
+            telegraph_cell = f"[Read]({telegraph_url})" if telegraph_url else "—"
+            rows.append(f"| {title_cell} | {devto_cell} | {hashnode_cell} | {blogger_cell} | {telegraph_cell} |")
 
         articles_table = "\n".join(rows) if rows else "| *No articles yet* | — | — | — |"
 
@@ -1131,8 +1322,8 @@ def update_github_blog_readme(history):
 
 ## Articles & Guides
 
-| Article | Dev.to | Hashnode | Blogger |
-|---------|--------|---------|---------|
+| Article | Dev.to | Hashnode | Blogger | Telegraph |
+|---------|--------|---------|---------|-----------|
 {articles_table}
 
 **[View all articles →](https://github.com/Teamz-Lab-LTD/teamz-lab-blogs/discussions)**
@@ -1256,6 +1447,8 @@ def cmd_post(title, filepath, platforms):
         "bluesky": post_bluesky,
         "mastodon": post_mastodon,
         "github_discussions": post_github_discussions,
+        "gitlab": post_gitlab,
+        "substack": post_substack,
         "telegraph": post_telegraph,
     }
 
@@ -1282,6 +1475,9 @@ def cmd_post(title, filepath, platforms):
         if platform == "pinterest":
             pin_img = (meta.get("pin_image") or meta.get("og_image") or "").strip()
             url, error = post_pinterest(config, title, body, tags, canonical_url, pin_img)
+        elif platform in ("telegraph", "substack", "gitlab"):
+            # These platforms handle their own formatting/footer — send raw body
+            url, error = platform_funcs[platform](config, title, body, tags, canonical_url)
         else:
             url, error = platform_funcs[platform](config, title, body_with_footer, tags, canonical_url)
 
