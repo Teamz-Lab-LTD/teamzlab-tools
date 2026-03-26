@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Pressure Log — Teamz Lab Tools</title>
+  <meta name="description" content="Track and log blood pressure readings over time. View trends, averages, and categories with this free, private blood pressure tracker that runs locally.">
+  <meta property="og:title" content="Blood Pressure Log — Teamz Lab Tools">
+  <meta property="og:description" content="Track blood pressure readings, view trends and averages. Free and private BP logger.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/blood-pressure-log/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Blood Pressure Log — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track blood pressure readings, view trends and averages. Free and private BP logger.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/blood-pressure-log/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .bp-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .bp-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .bp-card h4 { margin: 0; font-size: var(--text-sm); color: var(--text-muted); }
+    .bp-card .bp-val { font-size: clamp(18px, 4vw, 28px); font-weight: 700; color: var(--heading); margin: 6px 0 0; }
+    .bp-table-wrap { overflow-x: auto; margin-top: 16px; }
+    .bp-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .bp-table th, .bp-table td { padding: 8px 12px; text-align: center; border-bottom: 1px solid var(--border); }
+    .bp-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .bp-table td { color: var(--text); }
+    .bp-delete-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px 8px; }
+    .bp-delete-btn:hover { color: var(--heading); }
+    .bp-export { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    @media (max-width: 600px) {
+      .bp-summary { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .bp-export { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Blood Pressure Log</h1>
+      <p class="tool-description">Log and track your blood pressure readings over time. View average readings, trends, and category classifications. All data stays private in your browser.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="tool-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="systolic">Systolic (mmHg)</label>
+            <input type="number" id="systolic" placeholder="e.g. 120" min="60" max="300" step="1">
+          </div>
+          <div class="form-group">
+            <label for="diastolic">Diastolic (mmHg)</label>
+            <input type="number" id="diastolic" placeholder="e.g. 80" min="30" max="200" step="1">
+          </div>
+          <div class="form-group">
+            <label for="pulse">Pulse (bpm, optional)</label>
+            <input type="number" id="pulse" placeholder="e.g. 72" min="30" max="250" step="1">
+          </div>
+          <div class="form-group">
+            <label for="bpDate">Date</label>
+            <input type="date" id="bpDate">
+          </div>
+          <div class="form-group">
+            <label for="bpTime">Time of Day</label>
+            <select id="bpTime">
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bpNotes">Notes (optional)</label>
+            <input type="text" id="bpNotes" placeholder="e.g. after exercise">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="addBtn">Add Reading</button>
+          <button class="btn-secondary" id="clearBtn">Clear Form</button>
+        </div>
+      </div>
+      <div id="resultArea" style="display:none;">
+        <div class="bp-summary" id="summaryCards"></div>
+        <div class="bp-table-wrap">
+          <table class="bp-table">
+            <thead><tr><th>Date</th><th>Time</th><th>Systolic</th><th>Diastolic</th><th>Pulse</th><th>Category</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="bpBody"></tbody>
+          </table>
+        </div>
+        <div class="bp-export">
+          <button class="btn-secondary" id="exportBtn">Export CSV</button>
+          <button class="btn-secondary" id="clearAllBtn">Clear All Data</button>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>Understanding Blood Pressure Readings</h2>
+      <p>Blood pressure is measured in millimeters of mercury (mmHg) with two numbers: systolic (pressure when heart beats) over diastolic (pressure between beats). Normal blood pressure is below 120/80 mmHg. Elevated blood pressure is 120-129 systolic with diastolic below 80. Stage 1 hypertension is 130-139 systolic or 80-89 diastolic. Stage 2 hypertension is 140+ systolic or 90+ diastolic. A hypertensive crisis occurs at 180+ systolic or 120+ diastolic — this requires immediate medical attention. Regular monitoring helps detect hypertension early, as it often has no symptoms but significantly increases the risk of heart attack and stroke.</p>
+
+      <h2>Why Track Blood Pressure Over Time</h2>
+      <p>A single blood pressure reading only captures one moment. Blood pressure naturally fluctuates throughout the day based on activity, stress, caffeine intake, and time of day. Morning readings tend to be higher than afternoon readings. White coat hypertension causes elevated readings in a doctor's office but normal readings at home. Masked hypertension shows normal readings at the doctor but high readings elsewhere. Tracking multiple readings over weeks reveals your true average blood pressure, giving you and your doctor a much more accurate picture of cardiovascular health. Home monitoring has been shown to be a better predictor of cardiovascular events than office readings alone.</p>
+
+      <h2>Tips for Accurate Blood Pressure Measurement</h2>
+      <p>For accurate readings, sit quietly for 5 minutes before measuring. Use the same arm each time, supported at heart level. Do not talk during measurement. Avoid caffeine, exercise, and smoking for 30 minutes beforehand. Empty your bladder first. Take two readings 1-2 minutes apart and record both. Measure at the same times each day for consistency. Use a validated, properly fitting cuff — too small a cuff gives falsely high readings. Keep a regular log and share it with your healthcare provider at each visit. This tool stores all readings locally in your browser for complete privacy.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Health Tools', url: '/health/' }, { name: 'Blood Pressure Log' }];
+    var FAQS = [
+      { q: 'What is a normal blood pressure reading?', a: 'Normal blood pressure is below 120/80 mmHg. The first number (systolic) measures pressure when the heart beats, and the second (diastolic) measures pressure between beats.' },
+      { q: 'How often should I check blood pressure?', a: 'If you have hypertension, check twice daily (morning and evening) for a week, then weekly. If normal, checking a few times per month is sufficient. Your doctor may recommend a specific schedule.' },
+      { q: 'What time of day is best to check blood pressure?', a: 'Morning (before medication or breakfast) and evening readings are most valuable. Take readings at the same times each day for consistent tracking. Avoid measuring right after exercise or caffeine.' },
+      { q: 'Is my data stored securely?', a: 'Yes, all readings are stored locally in your browser using localStorage. No data is sent to any server. Your blood pressure readings remain completely private on your device.' },
+      { q: 'What is white coat hypertension?', a: 'White coat hypertension is when blood pressure is elevated at the doctor\'s office but normal at home. This affects about 15-30% of people. Home monitoring helps identify this condition.' },
+      { q: 'When should I seek emergency care for blood pressure?', a: 'Seek immediate medical attention if systolic is 180+ or diastolic is 120+, especially with symptoms like chest pain, shortness of breath, severe headache, vision changes, or confusion.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'health/blood-pressure-checker', name: 'Blood Pressure Checker', description: 'Check a single BP reading instantly.' },
+      { slug: 'health/cholesterol-ratio-calculator', name: 'Cholesterol Ratio Calculator', description: 'Calculate cholesterol ratios and risk.' },
+      { slug: 'health/bmi-health-checker', name: 'BMI Health Checker', description: 'Calculate BMI and health status.' },
+      { slug: 'health/biological-age-calculator', name: 'Biological Age Calculator', description: 'Estimate your biological age.' },
+      { slug: 'health/heart-rate-zone-calculator', name: 'Heart Rate Zone Calculator', description: 'Find your training heart rate zones.' },
+      { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate daily calorie needs.' }
+    ];
+
+    var BP_STORAGE_KEY = 'teamz_bp_log_readings';
+
+    function classifyBP(sys, dia) {
+      if (sys >= 180 || dia >= 120) return 'Crisis';
+      if (sys >= 140 || dia >= 90) return 'Stage 2 HTN';
+      if (sys >= 130 || dia >= 80) return 'Stage 1 HTN';
+      if (sys >= 120 && dia < 80) return 'Elevated';
+      return 'Normal';
+    }
+
+    function getReadings() {
+      try { return JSON.parse(localStorage.getItem(BP_STORAGE_KEY)) || []; }
+      catch(e) { return []; }
+    }
+
+    function saveReadings(readings) {
+      localStorage.setItem(BP_STORAGE_KEY, JSON.stringify(readings));
+    }
+
+    function renderLog() {
+      var readings = getReadings();
+      if (readings.length === 0) {
+        window.hideEl(document.getElementById('resultArea'));
+        return;
+      }
+
+      var totalSys = 0, totalDia = 0, totalPulse = 0, pulseCount = 0;
+      for (var i = 0; i < readings.length; i++) {
+        totalSys += readings[i].systolic;
+        totalDia += readings[i].diastolic;
+        if (readings[i].pulse) { totalPulse += readings[i].pulse; pulseCount++; }
+      }
+
+      var avgSys = Math.round(totalSys / readings.length);
+      var avgDia = Math.round(totalDia / readings.length);
+      var avgPulse = pulseCount > 0 ? Math.round(totalPulse / pulseCount) : '--';
+
+      document.getElementById('summaryCards').innerHTML =
+        '<div class="bp-card"><h4>Average BP</h4><div class="bp-val">' + avgSys + '/' + avgDia + '</div></div>' +
+        '<div class="bp-card"><h4>Avg Category</h4><div class="bp-val">' + classifyBP(avgSys, avgDia) + '</div></div>' +
+        '<div class="bp-card"><h4>Total Readings</h4><div class="bp-val">' + readings.length + '</div></div>';
+
+      var tbody = document.getElementById('bpBody');
+      tbody.innerHTML = '';
+      for (var j = readings.length - 1; j >= 0; j--) {
+        var r = readings[j];
+        var dateStr = r.date ? new Date(r.date).toLocaleDateString() : '--';
+        tbody.innerHTML += '<tr><td>' + dateStr + '</td><td>' + (r.time || '--') + '</td><td>' + r.systolic + '</td><td>' + r.diastolic + '</td><td>' + (r.pulse || '--') + '</td><td>' + classifyBP(r.systolic, r.diastolic) + '</td><td>' + (r.notes || '--') + '</td><td><button class="bp-delete-btn" data-idx="' + j + '" title="Delete">x</button></td></tr>';
+      }
+
+      window.showEl(document.getElementById('resultArea'));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({ slug: 'health/blood-pressure-log', title: 'Blood Pressure Log', description: 'Track and log blood pressure readings over time.' });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      document.getElementById('bpDate').valueAsDate = new Date();
+
+      renderLog();
+
+      document.getElementById('addBtn').addEventListener('click', function() {
+        var sys = parseInt(document.getElementById('systolic').value);
+        var dia = parseInt(document.getElementById('diastolic').value);
+        var pulse = parseInt(document.getElementById('pulse').value) || null;
+        var date = document.getElementById('bpDate').value;
+        var time = document.getElementById('bpTime').value;
+        var notes = document.getElementById('bpNotes').value.trim();
+
+        if (!sys || !dia) { window.showToast('Enter systolic and diastolic values.'); return; }
+        if (sys < 60 || sys > 300 || dia < 30 || dia > 200) { window.showToast('Please enter realistic blood pressure values.'); return; }
+
+        var readings = getReadings();
+        readings.push({ systolic: sys, diastolic: dia, pulse: pulse, date: date, time: time, notes: notes, timestamp: Date.now() });
+        saveReadings(readings);
+
+        document.getElementById('systolic').value = '';
+        document.getElementById('diastolic').value = '';
+        document.getElementById('pulse').value = '';
+        document.getElementById('bpNotes').value = '';
+        window.showToast('Reading added: ' + sys + '/' + dia + ' — ' + classifyBP(sys, dia));
+        renderLog();
+      });
+
+      document.getElementById('bpBody').addEventListener('click', function(e) {
+        if (e.target.classList.contains('bp-delete-btn')) {
+          var idx = parseInt(e.target.getAttribute('data-idx'));
+          var readings = getReadings();
+          readings.splice(idx, 1);
+          saveReadings(readings);
+          window.showToast('Reading deleted.');
+          renderLog();
+        }
+      });
+
+      document.getElementById('exportBtn').addEventListener('click', function() {
+        var readings = getReadings();
+        if (readings.length === 0) { window.showToast('No readings to export.'); return; }
+        var csv = 'Date,Time,Systolic,Diastolic,Pulse,Category,Notes\n';
+        for (var i = 0; i < readings.length; i++) {
+          var r = readings[i];
+          csv += (r.date || '') + ',' + (r.time || '') + ',' + r.systolic + ',' + r.diastolic + ',' + (r.pulse || '') + ',' + classifyBP(r.systolic, r.diastolic) + ',"' + (r.notes || '') + '"\n';
+        }
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'blood-pressure-log.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        window.showToast('CSV exported successfully.');
+      });
+
+      document.getElementById('clearAllBtn').addEventListener('click', function() {
+        localStorage.removeItem(BP_STORAGE_KEY);
+        window.showToast('All readings cleared.');
+        renderLog();
+      });
+
+      document.getElementById('clearBtn').addEventListener('click', function() {
+        document.getElementById('systolic').value = '';
+        document.getElementById('diastolic').value = '';
+        document.getElementById('pulse').value = '';
+        document.getElementById('bpNotes').value = '';
+        document.getElementById('bpTime').selectedIndex = 0;
+      });
+    });
+  </script>
+</body>
+</html>
