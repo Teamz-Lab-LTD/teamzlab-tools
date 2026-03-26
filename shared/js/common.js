@@ -524,6 +524,10 @@ var TeamzTools = (function () {
 
   function injectBreadcrumbSchema(items) {
     if (!items || items.length < 2) return;
+    var existing = document.querySelectorAll('script[type="application/ld+json"]');
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].textContent.indexOf('"BreadcrumbList"') !== -1) return;
+    }
 
     var schemaItems = [];
     items.forEach(function (item, i) {
@@ -547,6 +551,11 @@ var TeamzTools = (function () {
 
   function injectFAQSchema(faqs) {
     if (!faqs || !faqs.length) return;
+    // Skip if static FAQPage schema already exists (injected by build-static-schema.py)
+    var existing = document.querySelectorAll('script[type="application/ld+json"]');
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].textContent.indexOf('"FAQPage"') !== -1) return;
+    }
 
     _injectSchema({
       "@context": "https://schema.org",
@@ -566,6 +575,10 @@ var TeamzTools = (function () {
 
   function injectWebAppSchema(config) {
     if (!config || !config.slug) return;
+    var existing = document.querySelectorAll('script[type="application/ld+json"]');
+    for (var i = 0; i < existing.length; i++) {
+      if (existing[i].textContent.indexOf('"WebApplication"') !== -1) return;
+    }
 
     _injectSchema({
       "@context": "https://schema.org",
