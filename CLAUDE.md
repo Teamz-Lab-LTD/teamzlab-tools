@@ -250,6 +250,7 @@ Every tool page MUST have:
 │   ├── build-qa-check.sh      — automated QA checker
 │   ├── build-validate-freshness.sh — stale content checker
 │   ├── build-og-images.py     — regenerate hub OG images
+│   ├── build-programmatic-seo.py — generate location variant pages (state/city/region)
 │   ├── build-search-console.sh — Google Search Console API
 │   ├── build-analytics.sh     — Google Analytics GA4 data
 │   ├── build-adsense.sh       — Google AdSense revenue data
@@ -287,6 +288,9 @@ Every tool page MUST have:
 ./build-og-images.py                         # Regenerate hub OG images (run after adding new hub)
 python3 scripts/build-fix-orphans.py fix     # Fix orphan pages (auto cross-link)
 scripts/build-internal-links.sh --quick      # Check internal link health score
+python3 scripts/build-programmatic-seo.py --list           # List programmatic SEO templates
+python3 scripts/build-programmatic-seo.py us-income-tax    # Generate US state tax pages (51 pages)
+python3 scripts/build-programmatic-seo.py --dry-run [name] # Preview without writing
 ```
 
 ## SEO & ASO Keyword Engine

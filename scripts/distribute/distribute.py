@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Teamz Lab Tools — Content Distribution Script
-Posts articles to 8 platforms with duplicate detection.
+Posts articles to multiple platforms with duplicate detection.
 
 Usage:
     python3 scripts/distribute/distribute.py post "Title" content.md [--platforms devto,hashnode,...]
@@ -12,7 +12,7 @@ Usage:
     python3 scripts/distribute/distribute.py setup                            # Show setup instructions
     python3 scripts/distribute/distribute.py test                             # Test API connections
 
-Platforms: devto, hashnode, medium, blogger, wordpress, tumblr, bluesky, mastodon
+Platforms: devto, hashnode, medium, blogger, wordpress, tumblr, bluesky, mastodon, github_discussions, pinterest
 """
 
 import json
@@ -34,7 +34,7 @@ HISTORY_FILE = SCRIPT_DIR / "history.json"
 EXAMPLE_CONFIG = SCRIPT_DIR / "config.example.json"
 ARTICLES_DIR = SCRIPT_DIR / "articles"
 
-ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions"]
+ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "pinterest"]
 
 # SSL context for HTTPS requests
 SSL_CTX = ssl.create_default_context()
@@ -105,6 +105,31 @@ def api_request(url, data=None, headers=None, method=None):
             return e.code, {"error": body}
     except Exception as e:
         return 0, {"error": str(e)}
+
+
+def api_request_form(url, form_fields, headers=None):
+    """POST application/x-www-form-urlencoded (Pinterest OAuth token refresh)."""
+    if headers is None:
+        headers = {}
+    if "User-Agent" not in headers:
+        headers["User-Agent"] = "TeamzLabDistribute/1.0"
+    data = urllib.parse.urlencode(form_fields).encode("utf-8")
+    if "Content-Type" not in headers:
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as resp:
+            body = resp.read().decode("utf-8")
+            try:
+                return resp.status, json.loads(body)
+            except json.JSONDecodeError:
+                return resp.status, {"raw": body}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8")
+        try:
+            return e.code, json.loads(body)
+        except json.JSONDecodeError:
+            return e.code, {"error": body}
 
 
 def slugify(title):
@@ -632,6 +657,132 @@ def post_github_discussions(config, title, body, tags, canonical_url):
         return None, str(e)
 
 
+def markdown_to_plain_excerpt(md, max_len=800):
+    """Strip basic markdown for Pinterest description (API limit 800 chars)."""
+    t = md or ""
+    t = re.sub(r"^#+\s*", "", t, flags=re.MULTILINE)
+    t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
+    t = re.sub(r"\*(.+?)\*", r"\1", t)
+    t = re.sub(r"\[(.+?)\]\((.+?)\)", r"\1 — \2", t)
+    t = re.sub(r"`([^`]+)`", r"\1", t)
+    t = re.sub(r"\s+", " ", t).strip()
+    return truncate(t, max_len)
+
+
+def pinterest_refresh_access_token(cfg, creds_path):
+    """Refresh Pinterest access token; update credentials file. Returns new token or None."""
+    with open(creds_path) as f:
+        creds = json.load(f)
+    refresh_token = creds.get("refresh_token")
+    if not refresh_token:
+        return None
+    app_id = cfg.get("app_id", "")
+    app_secret = cfg.get("app_secret", "")
+    if not app_id or not app_secret:
+        return None
+    basic = base64.b64encode(f"{app_id}:{app_secret}".encode()).decode()
+    status, resp = api_request_form(
+        "https://api.pinterest.com/v5/oauth/token",
+        {"grant_type": "refresh_token", "refresh_token": refresh_token},
+        headers={"Authorization": f"Basic {basic}"},
+    )
+    if status != 200:
+        return None
+    access = resp.get("access_token")
+    if not access:
+        return None
+    creds["access_token"] = access
+    if resp.get("refresh_token"):
+        creds["refresh_token"] = resp["refresh_token"]
+    with open(creds_path, "w") as f:
+        json.dump(creds, f, indent=2)
+    try:
+        os.chmod(creds_path, 0o600)
+    except OSError:
+        pass
+    return access
+
+
+def post_pinterest(config, title, body, tags, canonical_url, pin_image_url=""):
+    """
+    Create a Pin on Pinterest (v5 API). Requires a public HTTPS image URL.
+    Per-article: frontmatter pin_image or og_image; fallback: default_pin_image_url in config.
+    """
+    cfg = config.get("pinterest", {})
+    if not cfg.get("enabled"):
+        return None, "Platform disabled in config"
+
+    creds_path = os.path.expanduser(
+        cfg.get("credentials_file", "~/.config/teamzlab/pinterest-credentials.json")
+    )
+    if not os.path.isfile(creds_path):
+        return None, f"Missing credentials. Run: python3 {SCRIPT_DIR}/pinterest-auth.py"
+
+    defaults = config.get("defaults", {})
+    site_url = defaults.get("site_url", "https://tool.teamzlab.com")
+
+    image_url = (pin_image_url or "").strip() or (cfg.get("default_pin_image_url") or "").strip()
+    if not image_url:
+        return (
+            None,
+            "Pinterest needs an image URL: set pin_image (or og_image) in article frontmatter "
+            "or pinterest.default_pin_image_url in config",
+        )
+
+    if not image_url.startswith("https://"):
+        return None, "pin image URL must be https:// (Pinterest API requirement)"
+
+    board_id = (cfg.get("board_id") or "").strip()
+    if not board_id:
+        return None, "Set pinterest.board_id in config (run pinterest-auth.py to list boards)"
+
+    link = (canonical_url or "").strip() or site_url
+    if len(link) > 2048:
+        link = link[:2045] + "..."
+
+    desc = markdown_to_plain_excerpt(body, 760)
+    if tags:
+        tag_bits = " ".join("#" + re.sub(r"\s+", "", t) for t in tags[:8])
+        desc = truncate(desc + "\n\n" + tag_bits, 800)
+
+    title_pin = title[:100] if title else "Post"
+
+    payload = {
+        "board_id": board_id,
+        "title": title_pin,
+        "description": desc,
+        "link": link,
+        "media_source": {"source_type": "image_url", "url": image_url},
+    }
+
+    with open(creds_path) as f:
+        creds = json.load(f)
+    access = creds.get("access_token")
+    if not access:
+        return None, "No access_token in credentials file. Run pinterest-auth.py"
+
+    def create_with_token(token):
+        return api_request(
+            "https://api.pinterest.com/v5/pins",
+            data=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    status, resp = create_with_token(access)
+    if status == 401:
+        new_access = pinterest_refresh_access_token(cfg, creds_path)
+        if new_access:
+            status, resp = create_with_token(new_access)
+
+    if status in (200, 201):
+        pin_id = resp.get("id", "")
+        if pin_id:
+            return f"https://www.pinterest.com/pin/{pin_id}/", None
+        return resp.get("link") or "posted", None
+
+    return None, f"HTTP {status}: {json.dumps(resp)[:350]}"
+
+
 # ─── Markdown to HTML (basic) ─────────────────────────────────────────────────
 
 def markdown_to_html(md):
@@ -755,7 +906,11 @@ def cmd_post(title, filepath, platforms):
             continue
 
         print(f"  [{platform}] Posting...", end=" ", flush=True)
-        url, error = platform_funcs[platform](config, title, body_with_footer, tags, canonical_url)
+        if platform == "pinterest":
+            pin_img = (meta.get("pin_image") or meta.get("og_image") or "").strip()
+            url, error = post_pinterest(config, title, body, tags, canonical_url, pin_img)
+        else:
+            url, error = platform_funcs[platform](config, title, body_with_footer, tags, canonical_url)
 
         if url:
             print(f"OK — {url}")
@@ -921,6 +1076,37 @@ def cmd_test():
                     print(f"FAILED — {result.stderr[:100]}")
             except Exception as e:
                 print(f"FAILED — {e}")
+
+        elif platform == "pinterest":
+            creds_path = os.path.expanduser(
+                cfg.get("credentials_file", "~/.config/teamzlab/pinterest-credentials.json")
+            )
+            if not os.path.isfile(creds_path):
+                print(f"FAILED — run pinterest-auth.py first")
+                continue
+            with open(creds_path) as f:
+                pcreds = json.load(f)
+            token = pcreds.get("access_token", "")
+            if not token:
+                print(f"FAILED — no access_token in credentials file")
+                continue
+            status, resp = api_request(
+                "https://api.pinterest.com/v5/boards?page_size=1",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if status == 401:
+                new_t = pinterest_refresh_access_token(cfg, creds_path)
+                if new_t:
+                    status, resp = api_request(
+                        "https://api.pinterest.com/v5/boards?page_size=1",
+                        headers={"Authorization": f"Bearer {new_t}"},
+                    )
+            if status == 200:
+                n = len(resp.get("items") or [])
+                print(f"OK — API reachable ({n}+ board(s) visible)")
+            else:
+                print(f"FAILED — HTTP {status}: {json.dumps(resp)[:120]}")
+
         else:
             print(f"SKIP — no test available")
 
@@ -1006,6 +1192,16 @@ Step 2: Get API keys (one-time per platform)
    → Copy "Your access token" to config: mastodon.access_token
    → Set mastodon.enabled = true
 
+9. PINTEREST (Pins — requires a public image URL per post)
+   → Create a developer app: https://developers.pinterest.com/apps/
+   → Add Redirect URI: must match pinterest.redirect_uri (default http://localhost:8085/)
+   → Copy App id + App secret into config: pinterest.app_id, pinterest.app_secret
+   → Run: python3 scripts/distribute/pinterest-auth.py
+   → Copy a board_id from the script output into pinterest.board_id
+   → Set pinterest.default_pin_image_url to a stable https image (e.g. hub OG image), or set
+     pin_image / og_image per article in frontmatter
+   → Set pinterest.enabled = true
+
 Step 3: Test connections
 ────────────────────────
   python3 scripts/distribute/distribute.py test
@@ -1018,6 +1214,7 @@ Step 4: Create your first article
   slug: my-first-post
   tags: tools, free, web, calculator
   canonical_url: https://tool.teamzlab.com/your-tool/
+  pin_image: https://tool.teamzlab.com/og-images/tools.png
   ---
 
   Your article content here in markdown...
@@ -1030,7 +1227,7 @@ Step 5: Distribute!
   python3 scripts/distribute/distribute.py post "My Article Title" scripts/distribute/articles/my-first-post.md
 
   # Or specific platforms only:
-  python3 scripts/distribute/distribute.py post "Title" scripts/distribute/articles/my-post.md --platforms devto,hashnode
+  python3 scripts/distribute/distribute.py post "Title" scripts/distribute/articles/my-post.md --platforms devto,hashnode,pinterest
 
   # Check what's been posted:
   python3 scripts/distribute/distribute.py status

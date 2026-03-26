@@ -207,15 +207,41 @@ Search using WebSearch:
 
 ---
 
-## Phase 6: International & Geographic Opportunities
+## Phase 6: International, Geographic & Programmatic SEO Opportunities
 
-Check if this niche has **country-specific** angles — these often have ZERO competition:
-- **UK/EU**: Different tax rates, regulations, measurements (stone/kg, miles/km)
-- **Non-English markets**: We have hubs for de/fr/jp/ae/eg/sa/id/vn/no/fi/se/nl/ma — non-English tools have 10x less competition
-- **Region-specific tools**: Country tax calculators, city cost-of-living comparisons, local regulation checkers
-- **Localized variations**: Same tool, different defaults/units/currencies per country
+### 6a. Country/Region Targeting (by RPM priority)
 
-If the niche has geographic angles, include country-specific tool variations in the ideas list (e.g., "UK Stamp Duty Calculator", "Germany Einkommensteuer Rechner").
+**Tier S (build first):** Switzerland ($350), Norway ($320), Australia ($280), Denmark ($270), Sweden ($260), New Zealand ($190), Ireland ($190), Singapore ($180)
+**Tier A:** Canada ($200), Germany ($180), Austria ($170), Israel ($170), Belgium ($160), UAE ($160), Netherlands ($220), Finland ($200), Japan ($150)
+**Tier B:** Italy ($110), Spain ($100 + 500M LatAm), France ($140), Portugal ($80 + 170M Brazil), Czech Republic ($90), Poland ($70)
+**AVOID for revenue:** BD, IN, PK, NG, KE, GH (RPM $0.05-0.20)
+
+- **English-speaking high-RPM countries with no tools:** NZ, HK, Israel — no translation needed
+- **Language multipliers:** Spanish (500M+), Portuguese (180M+), Arabic (400M+) — one language serves many countries
+- **Non-English markets**: We have hubs for de/fr/jp/ae/eg/sa/id/vn/no/fi/se/nl/ma — 10x less competition
+
+### 6b. Programmatic SEO — Location Variants (MANDATORY CHECK)
+
+**For EVERY tool idea, ask: "Does the data change by location?"** If YES → flag as programmatic SEO candidate.
+
+**Qualifying tools:**
+- Tax calculators → state/country variants (rates differ)
+- Cost of living tools → city variants (costs differ)
+- Stamp duty / property tax → state/region variants (rates differ)
+- Salary calculators → city/state variants (averages differ)
+- Rent/housing tools → city variants (rents differ)
+- Legal document generators → state variants (laws differ)
+- Benefits/welfare tools → country variants (rules differ)
+
+**NOT qualifying:** BMI, unit converters, text tools, image tools (same formula everywhere)
+
+**How it works:** Build ONE base tool → run `python3 scripts/build-programmatic-seo.py [template]` to generate 10-50 location variants. Each targets a long-tail keyword (e.g., "income tax calculator California") with lower competition than the generic keyword.
+
+**Available templates:** Run `python3 scripts/build-programmatic-seo.py --list` to see existing templates. Add new templates to the script for new tools.
+
+**Real example:** `/us/income-tax-calculator/` → 51 state pages generated, each with state-specific brackets, content, and FAQs.
+
+**In the output table, add a "Programmatic" column:** Show how many variant pages can be generated (e.g., "×50 states", "×8 AU states", "×16 DE Bundesländer", "×30 cities").
 
 ---
 
@@ -223,9 +249,9 @@ If the niche has geographic angles, include country-specific tool variations in 
 
 Present **10-15+ tool ideas** in this summary table:
 
-| # | Tool Name | Target Keyword | Niche RPM | Score | Tier | Est. $/mo |
-|---|-----------|---------------|-----------|-------|------|-----------|
-| 1 | ... | ... | Finance ($15-30) | 9.2 | Build NOW | $200-400 |
+| # | Tool Name | Target Keyword | Region | Niche RPM | Programmatic | Score | Tier | Est. $/mo |
+|---|-----------|---------------|--------|-----------|-------------|-------|------|-----------|
+| 1 | ... | ... | US | Finance ($15-30) | ×50 states | 9.2 | Build NOW | $200-400 |
 
 **For EACH idea, provide ALL of these details:**
 
@@ -253,7 +279,7 @@ Present **10-15+ tool ideas** in this summary table:
 **Build & Launch:**
 - **Build complexity**: Easy (2-4h) / Medium (4-8h) / Hard (8-16h) — client-side only
 - **Seasonal timing**: Peak months? Is NOW the right time to launch?
-- **Programmatic potential**: Can 1 template → 10-50 pages? (e.g., "[X] to [Y] converter" × 20 currency pairs)
+- **Programmatic potential**: Can 1 template → 10-50 pages? If YES: specify region (×50 US states, ×8 AU states, ×16 DE Bundesländer, ×30 cities). After building base tool, generate variants with `python3 scripts/build-programmatic-seo.py [template]`
 - **AI enhancement**: Can Chrome AI or Transformers.js add a unique feature competitors don't have?
 
 **AI Search Optimization:**

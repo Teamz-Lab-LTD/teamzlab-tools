@@ -193,7 +193,8 @@ def extract_webapp(content, filepath=""):
         "operatingSystem": "All",
         "browserRequirements": "Requires JavaScript",
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
-        "author": {"@type": "Organization", "name": "Teamz Lab", "url": TEAMZ_URL},
+        "author": {"@type": "Organization", "name": "Teamz Lab", "url": TEAMZ_URL, "foundingDate": "2023"},
+        "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": TEAMZ_URL},
         "inLanguage": lang,
     }
 

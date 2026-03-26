@@ -171,8 +171,8 @@ var TeamzTools = (function () {
       '</a>' +
       '<nav class="header-nav" aria-label="Main navigation">' +
         '<a href="/" class="nav-link">Home</a>' +
-        '<a href="https://apps.teamzlab.com/" target="_blank" rel="noopener" class="nav-link">About</a>' +
-        '<a href="https://teamzlab.com/contact" target="_blank" rel="noopener" class="nav-link">Contact</a>' +
+        '<a href="/about/" class="nav-link">About</a>' +
+        '<a href="/contact/" class="nav-link">Contact</a>' +
         '<div class="lang-selector notranslate" translate="no">' +
           '<button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no">' +
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' +
@@ -326,6 +326,8 @@ var TeamzTools = (function () {
     if (!footer) return;
 
     var year = new Date().getFullYear();
+    var _nlSub = false;
+    try { _nlSub = localStorage.getItem('tz_newsletter') === '1'; } catch(e) {}
     footer.innerHTML =
       '<div class="footer-cta">' +
         '<div class="build-cta">' +
@@ -429,8 +431,8 @@ var TeamzTools = (function () {
         '</div>' +
         '<div class="footer-col">' +
           '<h4>Company</h4>' +
-          '<a href="https://apps.teamzlab.com/" target="_blank" rel="noopener">About</a>' +
-          '<a href="https://teamzlab.com/contact" target="_blank" rel="noopener">Contact</a>' +
+          '<a href="/about/">About</a>' +
+          '<a href="/contact/">Contact</a>' +
           '<a href="/privacy/">Privacy Policy</a>' +
           '<a href="/terms/">Terms of Service</a>' +
           '<a href="' + TEAMZ_URL + '" target="_blank" rel="noopener">Teamz Lab</a>' +
@@ -538,6 +540,11 @@ var TeamzTools = (function () {
         "name": "Teamz Lab",
         "url": TEAMZ_URL
       },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Teamz Lab",
+        "url": TEAMZ_URL
+      },
       "inLanguage": document.documentElement.lang || "en"
     });
   }
@@ -547,9 +554,16 @@ var TeamzTools = (function () {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": "Teamz Lab",
+      "legalName": "Teamz Lab Ltd",
       "url": TEAMZ_URL,
       "logo": TEAMZ_URL + "/logo.png",
       "email": "mailto:hello@teamzlab.com",
+      "foundingDate": "2023",
+      "description": "Software development company building free, privacy-first browser tools, web apps, and mobile apps.",
+      "sameAs": [
+        "https://play.google.com/store/apps/dev?id=7194763656319643086",
+        "https://apps.apple.com/us/developer/teamz-lab-ltd/id1785282466"
+      ],
       "contactPoint": {
         "@type": "ContactPoint",
         "email": "mailto:hello@teamzlab.com",
@@ -620,6 +634,31 @@ var TeamzTools = (function () {
       '</details>';
     });
     container.innerHTML = html;
+  }
+
+  // --- Author Byline (E-E-A-T signal — renders centrally on all tool pages) ---
+  function renderAuthorByline() {
+    var toolContent = document.querySelector('.tool-content');
+    if (!toolContent) return;
+
+    var byline = document.createElement('div');
+    byline.className = 'tool-author-byline';
+
+    byline.innerHTML =
+      '<span>Built by <a href="/about/">Teamz Lab</a></span>' +
+      '<span class="byline-sep">|</span>' +
+      '<a href="/about/">About Us</a>' +
+      '<span class="byline-sep">|</span>' +
+      '<a href="/contact/">Contact</a>' +
+      '<span class="byline-sep">|</span>' +
+      '<a href="/privacy/">Privacy</a>';
+
+    var faqSection = document.getElementById('tool-faqs');
+    if (faqSection) {
+      faqSection.parentNode.insertBefore(byline, faqSection);
+    } else {
+      toolContent.parentNode.insertBefore(byline, toolContent.nextSibling);
+    }
   }
 
   // --- Star Rating Widget (Firebase RTDB for cross-user aggregation) ---
@@ -976,6 +1015,7 @@ var TeamzTools = (function () {
   return {
     renderHeader: renderHeader,
     renderFooter: renderFooter,
+    renderAuthorByline: renderAuthorByline,
     renderBreadcrumbs: renderBreadcrumbs,
     injectBreadcrumbSchema: injectBreadcrumbSchema,
     injectFAQSchema: injectFAQSchema,
@@ -1930,6 +1970,7 @@ var TeamzAnalytics = (function () {
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
+  TeamzTools.renderAuthorByline();
   TeamzTranslate.init();
 
   // Render favorites section on homepage + hub pages
