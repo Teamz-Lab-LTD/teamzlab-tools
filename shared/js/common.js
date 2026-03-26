@@ -63,9 +63,12 @@ var TeamzTools = (function () {
     }
     return navigator.clipboard.writeText(text).then(function () {
       _showToast(successMsg || 'Copied to clipboard!');
+      // GA4: track text copy
+      if (window.gtag) try { window.gtag('event', 'clipboard_text_copy', { page_path: window.location.pathname, content_length: text.length }); } catch(e) {}
       return true;
     }).catch(function () {
       _showToast(failMsg || 'Copy failed — try selecting and copying manually.');
+      if (window.gtag) try { window.gtag('event', 'clipboard_copy_failed', { page_path: window.location.pathname }); } catch(e) {}
       return false;
     });
   };
@@ -81,9 +84,12 @@ var TeamzTools = (function () {
         try {
           navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function () {
             _showToast(successMsg || 'Image copied to clipboard!');
+            // GA4: track image copy
+            if (window.gtag) try { window.gtag('event', 'clipboard_image_copy', { page_path: window.location.pathname }); } catch(e) {}
             resolve(true);
           }).catch(function () {
             _showToast(failMsg || 'Copy failed — try Download instead.');
+            if (window.gtag) try { window.gtag('event', 'clipboard_image_failed', { page_path: window.location.pathname }); } catch(e) {}
             resolve(false);
           });
         } catch (e) {
@@ -1191,6 +1197,8 @@ var TeamzTools = (function () {
           url: url
         }).then(function() {
           notify('Shared!');
+          // GA4: track native share
+          if (window.gtag) try { window.gtag('event', 'share', { method: 'web_share_api', content_type: 'tool', item_id: window.location.pathname }); } catch(e) {}
         }).catch(function() {
           // User cancelled or share failed — fallback to copy
           fallbackCopy(url, notify);
@@ -1206,6 +1214,8 @@ var TeamzTools = (function () {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(u).then(function() {
             cb('Share link copied!');
+            // GA4: track share link copy
+            if (window.gtag) try { window.gtag('event', 'share', { method: 'clipboard_copy', content_type: 'tool', item_id: window.location.pathname }); } catch(e) {}
           }).catch(function() {
             textareaCopy(u, cb);
           });
@@ -1962,6 +1972,7 @@ var TeamzAnalytics = (function () {
       adSlots.forEach(function (s) { s.style.display = 'none'; });
     }
 
+    var _searchDebounce = null;
     searchInput.addEventListener('input', function () {
       var query = searchInput.value.trim();
       if (query.length < 2) {
@@ -1970,6 +1981,13 @@ var TeamzAnalytics = (function () {
         showToolsGrid();
         return;
       }
+      // GA4: track search queries (debounced — fires 800ms after user stops typing)
+      clearTimeout(_searchDebounce);
+      _searchDebounce = setTimeout(function() {
+        if (window.gtag && query.length >= 3) {
+          try { window.gtag('event', 'search', { search_term: query, page_path: window.location.pathname }); } catch(e) {}
+        }
+      }, 800);
 
       ensureScripts().then(function () {
         var searchPool = (typeof TOOL_SEARCH_INDEX !== 'undefined') ? TOOL_SEARCH_INDEX : [];
@@ -2486,6 +2504,8 @@ document.addEventListener('DOMContentLoaded', function () {
             favBtn.querySelector('svg').setAttribute('fill', 'currentColor');
             favBtn.title = 'Remove from Favourites';
             window.showToast('Added to favourites!');
+            // GA4: track favorite
+            if (window.gtag) try { window.gtag('event', 'add_to_favorites', { item_id: _toolSlug, page_path: window.location.pathname }); } catch(e) {}
           }
           localStorage.setItem(_favKey, JSON.stringify(favs));
           // Update header badge count
@@ -2504,6 +2524,8 @@ document.addEventListener('DOMContentLoaded', function () {
           copyBtn.classList.add('share-btn--copied');
           copyBtn.title = 'Copied!';
           window.showToast('Link copied to clipboard!');
+          // GA4: track share bar copy
+          if (window.gtag) try { window.gtag('event', 'share', { method: 'copy_link', content_type: 'tool', item_id: window.location.pathname }); } catch(e) {}
           setTimeout(function () {
             copyBtn.classList.remove('share-btn--copied');
             copyBtn.title = 'Copy link';
@@ -2522,8 +2544,23 @@ document.addEventListener('DOMContentLoaded', function () {
           title: pageTitle,
           text: pageDesc.substring(0, 100),
           url: pageUrl
+        }).then(function() {
+          // GA4: track native share from share bar
+          if (window.gtag) try { window.gtag('event', 'share', { method: 'native_share', content_type: 'tool', item_id: window.location.pathname }); } catch(e) {}
         }).catch(function () {});
       });
+    }
+
+    // GA4: Track social share button clicks (WhatsApp, Twitter, Facebook)
+    var socialLinks = bar.querySelectorAll('.share-btn--wa, .share-btn--tw, .share-btn--fb');
+    for (var si = 0; si < socialLinks.length; si++) {
+      (function(link) {
+        link.addEventListener('click', function() {
+          var method = link.classList.contains('share-btn--wa') ? 'whatsapp' :
+                       link.classList.contains('share-btn--tw') ? 'twitter' : 'facebook';
+          if (window.gtag) try { window.gtag('event', 'share', { method: method, content_type: 'tool', item_id: window.location.pathname }); } catch(e) {}
+        });
+      })(socialLinks[si]);
     }
 
     // Add to Home button — uses deferred prompt or shows instructions

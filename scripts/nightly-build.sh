@@ -131,7 +131,7 @@ echo "=== Phase 3: Pull Data (local tokens) ==="
 # Phase 4: Run Claude to build tools (uses quota)
 echo ""
 echo "=== Phase 4: Claude Build Agent ==="
-claude --print --dangerously-skip-permissions -m claude-opus-4-6 "$(cat <<'PROMPT'
+claude --print --dangerously-skip-permissions -m claude-sonnet-4-6 "$(cat <<'PROMPT'
 You are the nightly build agent for tool.teamzlab.com (1680+ tools).
 
 FIRST: Read CLAUDE.md, .claude-memory/MEMORY.md, .claude-memory/feedback_idea_generation_framework.md, .claude-memory/feedback_programmatic_seo.md, .claude-memory/feedback_multilang_strategy.md, .claude-memory/project_hub_building_queue.md, and docs/tool-backlog.md.

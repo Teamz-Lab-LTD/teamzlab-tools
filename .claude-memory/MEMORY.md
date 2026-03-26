@@ -2,6 +2,7 @@
 
 ## User
 - [user_business_mindset.md](user_business_mindset.md) — Follows Marc Lou + Adam Lyttle playbook: portfolio model, trend-jacking, SEO niche targeting, monetization-first thinking.
+- [user_work_schedule.md](user_work_schedule.md) — Office 11AM-9PM BD, break 9-12, light 12-2AM, sleep 2-11AM. Weekend Sat/Sun. Reserve Claude quota for office hours.
 
 ## Feedback
 - [feedback_health_check.md](feedback_health_check.md) — MANDATORY: Run health check at START of every conversation. Tell user what's broken/stale before doing any work.
@@ -32,8 +33,12 @@
 - [feedback_result_card_padding.md](feedback_result_card_padding.md) — CRITICAL: Design tokens --text-xl (48px) are too big for result cards. Fixed centrally by overriding tokens inside .tool-calculator to use clamp(). NEVER use --text-xl/--text-2xl for card values.
 - [feedback_targeted_qa_only.md](feedback_targeted_qa_only.md) — Only run QA for changed tools, not full 1395-tool scan. Use --no-verify on push when commit QA passed. Full scan only when user asks.
 - [feedback_programmatic_seo.md](feedback_programmatic_seo.md) — ALWAYS consider programmatic SEO (state/city/region variants) when building tools where data differs by location. Script: build-programmatic-seo.py.
+- [feedback_never_regex_minify.md](feedback_never_regex_minify.md) — NEVER use regex CSS minifiers. NEVER switch HTML refs to files that don't exist on production. Pre-push hook now catches broken refs.
 - [feedback_validate_redirect_pages.md](feedback_validate_redirect_pages.md) — NEVER skip redirect pages during validation. Bing flags missing meta descriptions even on noindex stubs. build-qa-check.sh now checks them.
 - [feedback_multilang_strategy.md](feedback_multilang_strategy.md) — MANDATORY: High-RPM tools (finance/tax/career) get Spanish + Portuguese versions. Script: build-multilang.py.
+
+## Core Web Vitals (2026-03-26)
+- [project_cwv_fixes_2026_03.md](project_cwv_fixes_2026_03.md) — CWV deployed: CSS bundle, self-hosted fonts, static header, deferred analytics. Minification reverted (regex broke CSS). Pre-push now checks broken refs.
 
 ## SEO Audit (2026-03-17)
 - [project_seo_audit_2026_03.md](project_seo_audit_2026_03.md) — Full Google Search Central compliance audit. Score 72/100.
