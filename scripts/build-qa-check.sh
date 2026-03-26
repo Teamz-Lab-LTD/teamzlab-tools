@@ -77,9 +77,41 @@ while IFS= read -r f; do
   CONTENT=$(cat "$f" 2>/dev/null)
   SLUG=$(echo "$f" | sed "s|^\./||" | sed "s|/index\.html$||")
 
-  # Skip redirect pages
-  is_redirect=$(echo "$CONTENT" | grep -c 'meta.*refresh\|window\.location\.\|location\.href\s*=' 2>/dev/null || true)
-  [ "$is_redirect" -gt 0 ] && continue
+  # Redirect pages — check basic SEO tags + best practices, then skip full checks
+  is_redirect=$(echo "$CONTENT" | grep -c 'window\.location\.replace' 2>/dev/null || true)
+  has_meta_refresh=$(echo "$CONTENT" | grep -c 'http-equiv="refresh"' 2>/dev/null || true)
+  if [ "$is_redirect" -gt 0 ] || [ "$has_meta_refresh" -gt 0 ]; then
+    # Even redirect pages need these for Bing Site Scan
+    has_meta_desc=$(echo "$CONTENT" | grep -c '<meta name="description"' 2>/dev/null || true)
+    has_title=$(echo "$CONTENT" | grep -c '<title>' 2>/dev/null || true)
+    has_canonical=$(echo "$CONTENT" | grep -c 'rel="canonical"' 2>/dev/null || true)
+    has_noindex=$(echo "$CONTENT" | grep -c 'noindex' 2>/dev/null || true)
+    has_viewport=$(echo "$CONTENT" | grep -c 'name="viewport"' 2>/dev/null || true)
+    has_h1=$(echo "$CONTENT" | grep -c '<h1' 2>/dev/null || true)
+    has_noscript=$(echo "$CONTENT" | grep -c '<noscript>' 2>/dev/null || true)
+    redir_issues=""
+    [ "$has_meta_desc" -eq 0 ] && redir_issues="${redir_issues} meta-desc"
+    [ "$has_title" -eq 0 ] && redir_issues="${redir_issues} title"
+    [ "$has_canonical" -eq 0 ] && redir_issues="${redir_issues} canonical"
+    [ "$has_noindex" -eq 0 ] && redir_issues="${redir_issues} noindex"
+    [ "$has_viewport" -eq 0 ] && redir_issues="${redir_issues} viewport"
+    [ "$has_h1" -eq 0 ] && redir_issues="${redir_issues} h1"
+    # Meta refresh should be inside <noscript>, not bare in <head>
+    if [ "$has_meta_refresh" -gt 0 ] && [ "$has_noscript" -eq 0 ]; then
+      redir_issues="${redir_issues} meta-refresh-not-in-noscript"
+    fi
+    # Check redirect target exists
+    redir_target=$(echo "$CONTENT" | grep -o 'url=/[^"]*' 2>/dev/null | head -1 | sed 's|url=||')
+    if [ -n "$redir_target" ]; then
+      target_file="${BASE}${redir_target}index.html"
+      [ ! -f "$target_file" ] && redir_issues="${redir_issues} broken-target(${redir_target})"
+    fi
+    if [ -n "$redir_issues" ]; then
+      ISSUES_SEO="$ISSUES_SEO
+  ${RED}REDIRECT MISSING:${NC} $SLUG —${redir_issues}"
+    fi
+    continue
+  fi
 
   # ===== SEO STRUCTURE =====
 

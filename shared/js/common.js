@@ -370,6 +370,22 @@ var TeamzTools = (function () {
           '<a href="' + TEAMZ_URL + '/contact" target="_blank" rel="noopener" class="engage-card__btn btn-pill">Get in Touch</a>' +
         '</div>' +
       '</div>' +
+      '<div class="footer-newsletter">' +
+        '<div class="newsletter-inner">' +
+          '<div class="newsletter-text">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
+            '<strong>Weekly Tool Digest</strong>' +
+            '<span>New tools, tips &amp; trending picks &mdash; every Thursday.</span>' +
+          '</div>' +
+          (_nlSub
+            ? '<div class="newsletter-form newsletter-done"><span class="newsletter-check">&#10003;</span> You\'re subscribed!</div>'
+            : '<form class="newsletter-form" id="newsletter-form">' +
+                '<input type="email" class="newsletter-input" id="newsletter-email" placeholder="your@email.com" required autocomplete="email">' +
+                '<button type="submit" class="newsletter-btn">Subscribe</button>' +
+              '</form>'
+          ) +
+        '</div>' +
+      '</div>' +
       '<div class="footer-links">' +
         '<div class="footer-col">' +
           '<h4>Work &amp; Payroll</h4>' +
@@ -453,6 +469,12 @@ var TeamzTools = (function () {
             ' Free forever &mdash; 700+ tools' +
           '</span>' +
         '</div>' +
+      '</div>' +
+      '<div class="footer-support">' +
+        '<a href="https://buymeacoffee.com/teamzlab" target="_blank" rel="noopener" class="support-link">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>' +
+          ' Love these tools? Buy us a coffee' +
+        '</a>' +
       '</div>' +
       '<div class="footer-bottom">' +
         '<p>&copy; ' + year + ' ' + SITE_NAME + '. A project by <a href="' + TEAMZ_URL + '" target="_blank" rel="noopener" class="teamz-logo">Teamz Lab</a>.</p>' +
@@ -1012,10 +1034,84 @@ var TeamzTools = (function () {
     });
   }
 
+  // --- Newsletter Subscribe (Firebase RTDB via SDK — auto-handles App Check) ---
+  var _rtdbModuleUrl = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js';
+
+  function subscribeNewsletter(email) {
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      if (window.showToast) window.showToast('Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      if (localStorage.getItem('tz_newsletter') === '1') {
+        if (window.showToast) window.showToast('You\'re already subscribed!');
+        return;
+      }
+    } catch(e) {}
+
+    var btn = document.querySelector('.newsletter-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Subscribing\u2026'; }
+
+    var data = {
+      email: email,
+      subscribedAt: new Date().toISOString(),
+      source: window.location.pathname,
+      status: 'active'
+    };
+
+    function _onSuccess() {
+      try { localStorage.setItem('tz_newsletter', '1'); } catch(e) {}
+      if (window.showToast) window.showToast('Subscribed! Weekly digest coming soon.');
+      var form = document.getElementById('newsletter-form');
+      if (form) {
+        form.innerHTML = '<span class="newsletter-check">&#10003;</span> You\'re subscribed!';
+        form.classList.add('newsletter-done');
+      }
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'newsletter_subscribe', { event_category: 'engagement', event_label: window.location.pathname });
+      }
+      if (window._fbAnalytics) {
+        try { window._fbAnalytics.logEvent('newsletter_subscribe', { source: window.location.pathname }); } catch(e) {}
+      }
+    }
+
+    function _onError() {
+      if (window.showToast) window.showToast('Something went wrong. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
+    }
+
+    // Use Firebase SDK (handles App Check tokens automatically)
+    function _pushViaSDK() {
+      try {
+        firebase.database().ref('newsletter/subscribers').push(data)
+          .then(function() { _onSuccess(); })
+          .catch(function() { _onError(); });
+      } catch(e) { _onError(); }
+    }
+
+    if (typeof firebase !== 'undefined' && firebase.database) {
+      // RTDB module already loaded
+      _pushViaSDK();
+    } else if (typeof firebase !== 'undefined' && firebase.app) {
+      // Firebase loaded but RTDB module not yet — lazy-load it
+      var s = document.createElement('script');
+      s.src = _rtdbModuleUrl;
+      s.onload = function() { _pushViaSDK(); };
+      s.onerror = function() { _onError(); };
+      document.head.appendChild(s);
+    } else {
+      // Firebase not loaded (dev/owner mode) — save locally only
+      _onSuccess();
+    }
+  }
+
   return {
     renderHeader: renderHeader,
     renderFooter: renderFooter,
     renderAuthorByline: renderAuthorByline,
+    subscribeNewsletter: subscribeNewsletter,
     renderBreadcrumbs: renderBreadcrumbs,
     injectBreadcrumbSchema: injectBreadcrumbSchema,
     injectFAQSchema: injectFAQSchema,
@@ -1971,6 +2067,16 @@ document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderHeader();
   TeamzTools.renderFooter();
   TeamzTools.renderAuthorByline();
+
+  // Wire up newsletter form
+  var nlForm = document.getElementById('newsletter-form');
+  if (nlForm) {
+    nlForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var input = document.getElementById('newsletter-email');
+      if (input) TeamzTools.subscribeNewsletter(input.value.trim());
+    });
+  }
   TeamzTranslate.init();
 
   // Render favorites section on homepage + hub pages

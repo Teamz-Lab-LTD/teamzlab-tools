@@ -26,12 +26,24 @@
 - [feedback_always_check_duplicates.md](feedback_always_check_duplicates.md) — MANDATORY: Search broadly (*meme* not *meme-generator*) BEFORE building. Check concepts not just slugs. Never launch agents without duplicate check.
 - [feedback_tool_building_mistakes.md](feedback_tool_building_mistakes.md) — CRITICAL: Full checklist of 7 mistakes to never repeat: duplicate checking, feature merging, hub link cleanup, git tracking, URL verification, concept overlap.
 - [feedback_always_rebuild_llms.md](feedback_always_rebuild_llms.md) — MANDATORY: After adding/changing/removing ANY tool, verify llms.txt + llms-full.txt are updated. Spec: llms.txt <10KB (categories only), llms-full.txt has all tools.
+- [feedback_usability_qa.md](feedback_usability_qa.md) — MANDATORY: Run full usability QA on every new tool. Clipboard .catch(), button re-enable in finally{}, Array.from() for Unicode, html2canvas white bg, all tones implemented, clear resets selects.
 - [feedback_request_indexing_after_changes.md](feedback_request_indexing_after_changes.md) — MANDATORY: After creating/updating ANY tool, run build-request-indexing.py to check Google indexing + submit to Bing/Yandex via IndexNow.
+- [feedback_ai_in_all_tools.md](feedback_ai_in_all_tools.md) — Always integrate TeamzAI in every tool where AI adds value (generators, analyzers, recommenders). Skip for pure calculators/formatters. Always keep rule-based fallback.
+- [feedback_result_card_padding.md](feedback_result_card_padding.md) — CRITICAL: Design tokens --text-xl (48px) are too big for result cards. Fixed centrally by overriding tokens inside .tool-calculator to use clamp(). NEVER use --text-xl/--text-2xl for card values.
+- [feedback_targeted_qa_only.md](feedback_targeted_qa_only.md) — Only run QA for changed tools, not full 1395-tool scan. Use --no-verify on push when commit QA passed. Full scan only when user asks.
+- [feedback_programmatic_seo.md](feedback_programmatic_seo.md) — ALWAYS consider programmatic SEO (state/city/region variants) when building tools where data differs by location. Script: build-programmatic-seo.py.
+- [feedback_validate_redirect_pages.md](feedback_validate_redirect_pages.md) — NEVER skip redirect pages during validation. Bing flags missing meta descriptions even on noindex stubs. build-qa-check.sh now checks them.
+- [feedback_multilang_strategy.md](feedback_multilang_strategy.md) — MANDATORY: High-RPM tools (finance/tax/career) get Spanish + Portuguese versions. Script: build-multilang.py.
 
 ## SEO Audit (2026-03-17)
 - [project_seo_audit_2026_03.md](project_seo_audit_2026_03.md) — Full Google Search Central compliance audit. Score 72/100.
 - [project_hardcoded_colors_list.md](project_hardcoded_colors_list.md) — 76 pages with hardcoded hex colors.
 - [reference_google_seo_docs.md](reference_google_seo_docs.md) — Google Search Central documentation URLs cited in audit.
+
+## Revenue Strategy
+- [feedback_idea_generation_framework.md](feedback_idea_generation_framework.md) — 10-factor framework for idea generation: country RPM tiers, language multipliers, tool types, programmatic SEO, Pinterest, seasonal timing
+- [project_200k_revenue_plan.md](project_200k_revenue_plan.md) — $200K/year target: needs 2M monthly high-RPM views, 10 blockers identified, multi-region strategy
+- [project_missing_country_hubs.md](project_missing_country_hubs.md) — 10 high-RPM countries with 0 tools (NZ, IL, BE, HK, ES, PT, CZ, PL, TR, QA) + missing languages (Spanish, Portuguese)
 
 ## Hub Building Queue
 - [project_hub_building_queue.md](project_hub_building_queue.md) — Planned hubs to build: Cocktails → Skincare → Candle Making → Knitting. Distribute 1 article per 2-3 days. Completed: Coffee, Tea, Baking (2026-03-24).
