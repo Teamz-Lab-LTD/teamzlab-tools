@@ -76,7 +76,7 @@
     return;
   }
 
-  // Normal browsers: load ads immediately
+  // Normal browsers: load ads immediately (AdSense handles its own optimization)
   loadAds();
 
   function loadAds() {

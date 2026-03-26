@@ -178,6 +178,9 @@ var TeamzTools = (function () {
     var header = document.getElementById('site-header');
     if (!header) return;
 
+    // CWV: If static header already pre-rendered by build-static-header.sh, skip innerHTML
+    // Just wire up event listeners below
+    if (!header.querySelector('.header-logo')) {
     header.innerHTML =
       '<a href="/" class="header-logo teamz-logo" aria-label="Teamz Lab Tools Home">' +
         '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' +
@@ -206,6 +209,7 @@ var TeamzTools = (function () {
           '<svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>' +
         '</button>' +
       '</nav>';
+    } // end if (!header.querySelector('.header-logo'))
 
     var toggleBtn = document.getElementById('theme-toggle');
     if (toggleBtn) {
@@ -1941,7 +1945,7 @@ var TeamzAnalytics = (function () {
       if (_scriptsLoaded && typeof TOOL_SEARCH_INDEX !== 'undefined' && window.TeamzSearch) return Promise.resolve();
       var promises = [];
       if (typeof TOOL_SEARCH_INDEX === 'undefined') promises.push(loadScript('/shared/js/search-index.js'));
-      if (!window.TeamzSearch) promises.push(loadScript('/shared/js/smart-search.min.js'));
+      if (!window.TeamzSearch) promises.push(loadScript('/shared/js/smart-search.js'));
       return Promise.all(promises).then(function () { _scriptsLoaded = true; });
     }
 
@@ -2615,7 +2619,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // AdSense: Load ad integration script
   (function loadAdSense() {
     var s = document.createElement('script');
-    s.src = '/shared/js/adsense.min.js?v=202603261';
+    s.src = '/shared/js/adsense.js?v=202603261';
     s.async = true;
     document.body.appendChild(s);
   })();

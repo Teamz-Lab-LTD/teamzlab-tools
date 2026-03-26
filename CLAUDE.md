@@ -251,6 +251,7 @@ Every tool page MUST have:
 │   ├── build-validate-freshness.sh — stale content checker
 │   ├── build-og-images.py     — regenerate hub OG images
 │   ├── build-programmatic-seo.py — generate location variant pages (state/city/region)
+│   ├── build-multilang.py       — track/suggest multi-language translations (ES/PT/DE/FR/JP)
 │   ├── build-search-console.sh — Google Search Console API
 │   ├── build-analytics.sh     — Google Analytics GA4 data
 │   ├── build-adsense.sh       — Google AdSense revenue data
@@ -291,6 +292,8 @@ scripts/build-internal-links.sh --quick      # Check internal link health score
 python3 scripts/build-programmatic-seo.py --list           # List programmatic SEO templates
 python3 scripts/build-programmatic-seo.py us-income-tax    # Generate US state tax pages (51 pages)
 python3 scripts/build-programmatic-seo.py --dry-run [name] # Preview without writing
+python3 scripts/build-multilang.py status                  # Show translation status (ES/PT/DE/FR/JP)
+python3 scripts/build-multilang.py suggest                 # Suggest which tools to translate next
 ```
 
 ## SEO & ASO Keyword Engine

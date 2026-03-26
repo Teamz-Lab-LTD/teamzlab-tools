@@ -108,10 +108,10 @@ python3 scripts/seo-keyword-engine.py suggest "[main keyword]" 2>/dev/null || tr
 python3 scripts/seo-keyword-engine.py validate-new "[main keyword]" 2>/dev/null || true
 
 # 7. Keyword VOLUME estimation — score how much search traffic each candidate gets
-# Use --volume-bulk to score ALL candidates in one shot (faster than individual calls)
-./build-seo-audit.sh --volume-bulk "[candidate 1]" "[candidate 2]" "[candidate 3]" "[candidate 4]" "[candidate 5]" 2>/dev/null
-# Or individual for specific deep-dives:
-python3 scripts/build-keyword-volume.py "[most promising candidate]" 2>/dev/null
+# Composite score: Autocomplete + Trends + Bing Volume + Search Console
+python3 scripts/build-keyword-volume.py "[candidate 1]" "[candidate 2]" "[candidate 3]" "[candidate 4]" "[candidate 5]" 2>/dev/null
+# Quick Bing-only volume check (real monthly search volume, fast, no rate limits):
+./build-seo-audit.sh --bing-volume "[candidate 1]" "[candidate 2]" "[candidate 3]" "[candidate 4]" "[candidate 5]" 2>/dev/null
 
 # 8. Virality & share readiness score — how shareable are existing tools in this niche?
 ./build-seo-audit.sh --viral 2>/dev/null | head -20
@@ -243,15 +243,30 @@ Search using WebSearch:
 
 **In the output table, add a "Programmatic" column:** Show how many variant pages can be generated (e.g., "×50 states", "×8 AU states", "×16 DE Bundesländer", "×30 cities").
 
+### 6c. Multi-Language Versions (MANDATORY CHECK for high-RPM tools)
+
+**For EVERY finance/tax/career/business tool idea, check:** Should this also be built in Spanish (/es/) and Portuguese (/pt/)?
+
+**Rule:** If RPM category is Finance, Tax, Career, Legal, or Business → ALWAYS suggest ES + PT versions.
+
+**Existing hubs:** `/es/` (10 tools), `/pt/` (10 tools) — build on these.
+
+**Language priority:** ES (500M speakers) > PT (180M speakers) > already covered (DE/FR/JP)
+
+**In the output table, add a "Multilang" column:** Show which languages to build (e.g., "+ES +PT", "+DE", "EN only").
+
+**Script:** Run `python3 scripts/build-multilang.py suggest` to see which existing tools need translation.
+**Script:** Run `python3 scripts/build-multilang.py status` to see current translation coverage.
+
 ---
 
 ## Phase 7: Generate Ideas
 
 Present **10-15+ tool ideas** in this summary table:
 
-| # | Tool Name | Target Keyword | Region | Niche RPM | Programmatic | Score | Tier | Est. $/mo |
-|---|-----------|---------------|--------|-----------|-------------|-------|------|-----------|
-| 1 | ... | ... | US | Finance ($15-30) | ×50 states | 9.2 | Build NOW | $200-400 |
+| # | Tool Name | Target Keyword | Region | Niche RPM | Programmatic | Multilang | Score | Tier | Est. $/mo |
+|---|-----------|---------------|--------|-----------|-------------|-----------|-------|------|-----------|
+| 1 | ... | ... | US | Finance ($15-30) | ×50 states | +ES +PT | 9.2 | Build NOW | $200-400 |
 
 **For EACH idea, provide ALL of these details:**
 
@@ -280,10 +295,15 @@ Present **10-15+ tool ideas** in this summary table:
 - **Build complexity**: Easy (2-4h) / Medium (4-8h) / Hard (8-16h) — client-side only
 - **Seasonal timing**: Peak months? Is NOW the right time to launch?
 - **Programmatic potential**: Can 1 template → 10-50 pages? If YES: specify region (×50 US states, ×8 AU states, ×16 DE Bundesländer, ×30 cities). After building base tool, generate variants with `python3 scripts/build-programmatic-seo.py [template]`
+- **Multilang potential**: If Finance/Tax/Career/Legal/Business → flag "+ES +PT". Run `python3 scripts/build-multilang.py suggest`
 - **AI enhancement**: Can Chrome AI or Transformers.js add a unique feature competitors don't have?
+- **Tool type**: What TYPE is it? Generator, Analyzer, Planner, Simulator, Checker, Converter, Comparison, or Calculator? Prefer non-calculator types (generators/planners = higher RPM)
 
-**AI Search Optimization:**
-- **Question this tool answers**: Frame as a question (ChatGPT/Perplexity feature tools that answer questions)
+**Traffic Channel Fit:**
+- **Pinterest potential** (1-10): Finance/health/budget tools perform extremely well on Pinterest. Would this tool's results make a good pin? (80% of Pinterest users have purchase intent)
+- **Comparison page angle**: Can this be framed as "X vs Y"? (e.g., "Roth vs Traditional IRA", "Rent vs Buy"). Comparison keywords are high-intent and easier to rank for
+- **Embeddable widget potential**: Could bloggers embed this calculator on their site? Embeddable tools = free backlinks + traffic
+- **AI search fit**: Frame the tool as answering a question for ChatGPT/Perplexity/Claude (we have llms.txt advantage)
 - **Featured snippet potential**: Can the result format match Google's featured snippet box?
 
 ---
@@ -305,7 +325,13 @@ Group related ideas into **hub clusters** — this is how you beat bigger sites:
 ## Phase 9: Rank & Score
 
 Sort ALL ideas by this formula:
-**Score = (Traffic Potential × 3) + (Low Competition × 3) + (Revenue/RPM × 2) + (Virality × 2) + (Backlink Potential × 1) + (Repeat Usage × 1) - (Build Difficulty × 1)**
+**Score = (Traffic Potential × 3) + (Low Competition × 3) + (Revenue/RPM × 2) + (Virality × 2) + (Backlink Potential × 1) + (Repeat Usage × 1) + (Programmatic Multiplier × 2) + (Multilang Multiplier × 1) - (Build Difficulty × 1)**
+
+**Multiplier bonuses:**
+- **Programmatic Multiplier**: 0 = no variants, 1 = ×8 states, 2 = ×16 regions, 3 = ×30+ cities/states
+- **Multilang Multiplier**: 0 = EN only, 1 = +ES or +PT, 2 = +ES +PT, 3 = +ES +PT +DE
+
+**Total pages estimate**: For each idea, calculate: (1 base) + (programmatic variants) × (1 + multilang versions) = total pages. Show this number — it's the real SEO surface area.
 
 Normalize to 1-10 scale. Group into tiers:
 - **Build NOW** (score 8-10): High traffic + low competition + high revenue. Build TODAY.
@@ -318,7 +344,7 @@ For EVERY idea scoring 6+, provide:
 2. Meta title (max 60 chars, keyword + "Teamz Lab Tools")
 3. Meta description (120-155 chars, starts with action verb + "free" + "private")
 4. 5 H2 section titles for SEO content
-5. Related existing tools to cross-link (from our 1135+ tools)
+5. Related existing tools to cross-link (from our 1680+ tools)
 6. Affiliate/monetization hook with specific program name
 7. Best launch platform: which subreddit, social platform, or community to post FIRST
 
@@ -349,12 +375,24 @@ For the "Build NOW" tier:
 **Day 1 — Build:**
 - Launch all Build NOW tools in parallel using build agents
 - Each tool: HTML + JS + SEO content + FAQs + schemas + related tools
+- If programmatic SEO candidate → generate location variants (`python3 scripts/build-programmatic-seo.py [template]`)
+- If high-RPM → also build ES + PT versions (`python3 scripts/build-multilang.py suggest`)
+
+**Day 1 — Post-Build Checklist (MANDATORY):**
+```bash
+# 1. Add new tools to hub page (e.g., /us/index.html, /es/index.html)
+# 2. If new hub created → run: python3 scripts/build-og-images.py
+python3 build-static-schema.py                  # Rebuild all JSON-LD schemas
+./build-search-index.sh                         # Rebuild search + sitemap + llms.txt + counts
+python3 scripts/build-fix-orphans.py fix        # Cross-link new tools (no orphans)
+python3 scripts/build-request-indexing.py       # Submit to Google + Bing/Yandex via IndexNow
+```
 
 **Day 1-2 — Immediate Distribution:**
 - Post the MOST viral/shareable tool to r/InternetIsBeautiful (check sub rules first)
 - Submit to Product Hunt (if it's novel enough)
 - Post to Hacker News "Show HN" (if it's dev/tech focused)
-- Distribute articles via 7-platform system: `python3 scripts/distribute/distribute.py`
+- Distribute articles via 10-platform system: `python3 scripts/distribute/distribute.py` (includes Pinterest for finance/health tools)
 
 **Week 1 — Targeted Distribution:**
 - Post individual tools to relevant subreddits with genuine, helpful framing
@@ -426,6 +464,10 @@ Then ask:
 - At least 1 **"hub cluster"** idea (5+ related tools = topical authority)
 - At least 1 **"free alternative"** idea (replaces a paid tool)
 - At least 1 **"international"** idea (non-English or country-specific)
+- At least 1 **"multilang"** idea (build in EN + ES + PT for 3x ranking surface)
+- At least 1 **"non-calculator"** idea (generator, planner, checker, simulator, comparison — higher RPM than calculators)
+- At least 1 **"comparison"** idea (X vs Y page — high-intent search queries)
+- At least 1 **"Pinterest-friendly"** idea (visual results that get pinned — finance/health/budget)
 
 ### Revenue & Monetization
 - ALWAYS show estimated monthly revenue per tool — user decides based on money, not feelings

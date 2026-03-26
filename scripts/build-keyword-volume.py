@@ -35,6 +35,58 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONSOLE_TOKEN = os.path.expanduser("~/.config/teamzlab/search-console-token.json")
 ADS_CONFIG = os.path.expanduser("~/.config/teamzlab/google-ads-config.json")
 ADS_TOKEN = os.path.expanduser("~/.config/teamzlab/google-ads-token.json")
+BING_API_KEY_FILE = os.path.expanduser("~/.config/teamzlab/bing-webmaster-api-key.txt")
+
+
+def fetch_bing_keyword_volume(keyword, country='us', language='en-US'):
+    """
+    Get real search volume from Bing Webmaster Tools Keyword Research API.
+    Returns dict with weekly avg impressions (exact + broad) or None on failure.
+    """
+    cache_key = f"bing:{keyword}:{country}"
+    if cache_key in _cache:
+        return _cache[cache_key]
+
+    try:
+        api_key = ''
+        if os.path.exists(BING_API_KEY_FILE):
+            with open(BING_API_KEY_FILE) as f:
+                api_key = f.read().strip()
+        if not api_key:
+            _cache[cache_key] = None
+            return None
+
+        encoded = urllib.parse.quote(keyword)
+        url = (f"https://ssl.bing.com/webmaster/api.svc/json/GetKeywordStats"
+               f"?q={encoded}&country={country}&language={language}&apikey={api_key}")
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'TeamzLabTools/1.0'
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+
+        entries = data.get('d', [])
+        if not entries:
+            _cache[cache_key] = {'exact_weekly': 0, 'broad_weekly': 0, 'exact_monthly': 0, 'broad_monthly': 0, 'weeks': 0}
+            return _cache[cache_key]
+
+        # Average over available weeks (last 6 months typically)
+        exact_total = sum(e.get('Impressions', 0) for e in entries)
+        broad_total = sum(e.get('BroadImpressions', 0) for e in entries)
+        weeks = len(entries)
+
+        result = {
+            'exact_weekly': round(exact_total / weeks) if weeks else 0,
+            'broad_weekly': round(broad_total / weeks) if weeks else 0,
+            'exact_monthly': round(exact_total / weeks * 4.33) if weeks else 0,
+            'broad_monthly': round(broad_total / weeks * 4.33) if weeks else 0,
+            'weeks': weeks,
+        }
+        _cache[cache_key] = result
+        return result
+    except Exception:
+        _cache[cache_key] = None
+        return None
 
 # Cache to avoid re-fetching
 _cache = {}
@@ -351,6 +403,7 @@ def estimate_volume(keyword):
         'result_count': None,
         'console_impressions': None,
         'ads_volume': None,
+        'bing_volume': None,
         'composite_score': 0,
         'volume_tier': 'UNKNOWN',
     }
@@ -370,6 +423,10 @@ def estimate_volume(keyword):
     # Signal 4: Search Console impressions (if available)
     impressions = get_search_console_impressions(keyword)
     result['console_impressions'] = impressions
+
+    # Signal 5: Bing Keyword Research API (real search volume data)
+    bing = fetch_bing_keyword_volume(keyword)
+    result['bing_volume'] = bing
 
     # Compute composite score (weighted average of available signals)
     scores = []
@@ -401,7 +458,7 @@ def estimate_volume(keyword):
         scores.append(count_score)
         weights.append(2)
 
-    # Console impressions: strongest signal (real data from YOUR site)
+    # Console impressions: strong signal (real data from YOUR site)
     if impressions is not None and impressions > 0:
         if impressions > 100:
             impr_score = 90
@@ -412,7 +469,29 @@ def estimate_volume(keyword):
         else:
             impr_score = 30
         scores.append(impr_score)
-        weights.append(5)  # Highest weight — real data
+        weights.append(5)  # High weight — real data
+
+    # Bing volume: strongest signal — actual search volume from Bing API
+    if bing is not None and bing.get('exact_monthly', 0) > 0:
+        monthly = bing['exact_monthly']
+        if monthly > 50000:
+            bing_score = 98
+        elif monthly > 10000:
+            bing_score = 90
+        elif monthly > 5000:
+            bing_score = 80
+        elif monthly > 1000:
+            bing_score = 65
+        elif monthly > 500:
+            bing_score = 50
+        elif monthly > 100:
+            bing_score = 35
+        elif monthly > 10:
+            bing_score = 20
+        else:
+            bing_score = 10
+        scores.append(bing_score)
+        weights.append(6)  # Highest weight — real search volume data
 
     # Weighted average
     if scores and weights:
@@ -466,24 +545,27 @@ def fetch_all_tool_keywords():
 
 def print_single_results(results):
     """Print results for 1-10 keyword lookups."""
-    print(f"\n  {'Keyword':<40} {'Score':>6} {'Tier':<10} {'AC':>4} {'Trends':>7} {'Results':>12} {'Impr':>6}")
-    print("  " + "-" * 87)
+    print(f"\n  {'Keyword':<35} {'Score':>6} {'Tier':<10} {'AC':>4} {'Trends':>7} {'Bing/mo':>9} {'BingBrd':>9} {'Impr':>6}")
+    print("  " + "-" * 92)
     for r in results:
-        kw = r['keyword'][:40]
+        kw = r['keyword'][:35]
         score = r['composite_score']
         tier = r['volume_tier']
         ac = r['autocomplete_score']
         trends = f"{r['trends_score']}" if r['trends_score'] is not None else "---"
-        count = f"{r['result_count']:,}" if r['result_count'] is not None else "---"
+        bing = r.get('bing_volume')
+        bing_exact = f"{bing['exact_monthly']:,}" if bing and bing.get('exact_monthly') else "---"
+        bing_broad = f"{bing['broad_monthly']:,}" if bing and bing.get('broad_monthly') else "---"
         impr = f"{r['console_impressions']}" if r['console_impressions'] is not None else "---"
-        print(f"  {kw:<40} {score:>5}/100 {tier:<10} {ac:>4} {trends:>7} {count:>12} {impr:>6}")
+        print(f"  {kw:<35} {score:>5}/100 {tier:<10} {ac:>4} {trends:>7} {bing_exact:>9} {bing_broad:>9} {impr:>6}")
 
     # Recommendations
     print(f"\n  LEGEND:")
     print(f"  Score  = Composite volume estimate (0-100)")
     print(f"  AC     = Autocomplete position score")
     print(f"  Trends = Google Trends interest (0-100)")
-    print(f"  Results= Google search result count")
+    print(f"  Bing/mo= Bing exact-match monthly search volume (real data)")
+    print(f"  BingBrd= Bing broad-match monthly search volume")
     print(f"  Impr   = Your Search Console impressions (last 90 days)")
     print(f"\n  VOLUME TIERS:")
     print(f"  80-100 = VERY HIGH — Goldmine keyword, build immediately")
@@ -531,7 +613,7 @@ def main():
     else:
         print("  Google Ads Keyword Planner: NOT CONFIGURED (using free estimates)")
 
-    print("  Signals: Autocomplete + Google Trends + Result Count + Search Console")
+    print("  Signals: Autocomplete + Google Trends + Result Count + Search Console + Bing Volume")
 
     if sys.argv[1] == '--bulk' or sys.argv[1] == '--top':
         top_n = 50

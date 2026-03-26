@@ -111,6 +111,27 @@ case "${1:-audit}" in
     --volume-bulk)
         python3 "$SCRIPTS/build-keyword-volume.py" --bulk
         ;;
+    --bing-volume)
+        shift
+        # Quick Bing-only volume lookup (no Google signals, just Bing API)
+        BING_KEY=$(cat ~/.config/teamzlab/bing-webmaster-api-key.txt 2>/dev/null)
+        if [ -z "$BING_KEY" ]; then echo "ERROR: No Bing API key at ~/.config/teamzlab/bing-webmaster-api-key.txt"; exit 1; fi
+        for kw in "$@"; do
+            encoded=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$kw'))")
+            data=$(curl -s "https://ssl.bing.com/webmaster/api.svc/json/GetKeywordStats?q=${encoded}&country=us&language=en-US&apikey=${BING_KEY}")
+            python3 -c "
+import json, sys
+data = json.loads('$data'.replace(\"'\", \"\"))
+entries = data.get('d', [])
+if not entries:
+    print(f'  $kw: No data')
+else:
+    exact = sum(e.get('Impressions',0) for e in entries) // len(entries)
+    broad = sum(e.get('BroadImpressions',0) for e in entries) // len(entries)
+    print(f'  $kw: {exact*4:,}/mo exact | {broad*4:,}/mo broad ({len(entries)} weeks)')
+" 2>/dev/null || echo "  $kw: API error"
+        done
+        ;;
     --verbose|-v)
         python3 "$SCRIPT" audit --verbose
         ;;
