@@ -3,6 +3,20 @@
  * Header, footer, theme, FAQ schema, breadcrumbs
  */
 
+// CWV: Preload critical font weights so font-display:optional uses them within 100ms window
+(function() {
+  var fonts = ['/branding/fonts/poppins-400.woff2', '/branding/fonts/poppins-700.woff2'];
+  for (var i = 0; i < fonts.length; i++) {
+    var link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'font';
+    link.type = 'font/woff2';
+    link.crossOrigin = 'anonymous';
+    link.href = fonts[i];
+    document.head.appendChild(link);
+  }
+})();
+
 var TeamzTools = (function () {
   var SITE_NAME = 'Teamz Lab Tools';
   var SITE_URL = 'https://tool.teamzlab.com';
@@ -683,8 +697,7 @@ var TeamzTools = (function () {
     }
   }
 
-  // --- Star Rating Widget (Firebase RTDB for cross-user aggregation) ---
-  var RTDB_URL = 'https://teamzlab-tools-default-rtdb.firebaseio.com/ratings';
+  // --- Star Rating Widget (Firestore for cross-user aggregation) ---
 
   function _getToolSlug() {
     var path = window.location.pathname.replace(/^\/|\/$/g, '');
@@ -692,8 +705,13 @@ var TeamzTools = (function () {
   }
 
   function _safeKey(slug) {
-    // Firebase keys can't have . # $ [ ] /
+    // Firestore doc IDs can't have /
     return slug.replace(/\//g, '__');
+  }
+
+  function _getDb() {
+    if (typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
+    return null;
   }
 
   function _hasUserRated(slug) {
@@ -725,39 +743,49 @@ var TeamzTools = (function () {
 
   function _submitRatingToFirebase(slug, rating, callback) {
     var key = _safeKey(slug);
-    // First read current totals
-    fetch(RTDB_URL + '/' + key + '.json')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var total = (data && data.total) ? data.total + rating : rating;
-        var count = (data && data.count) ? data.count + 1 : 1;
-        var avg = Math.round((total / count) * 10) / 10;
-        // Write back
-        return fetch(RTDB_URL + '/' + key + '.json', {
-          method: 'PUT',
-          body: JSON.stringify({ total: total, count: count, avg: avg })
-        }).then(function () {
-          if (callback) callback({ avg: avg, count: count });
-        });
-      })
-      .catch(function () {
-        // Firebase not available — degrade silently
-        if (callback) callback(null);
-      });
+    var db = _getDb();
+    if (!db) { if (callback) callback(null); return; }
+
+    var ref = db.collection('ratings').doc(key);
+    // Atomic increment — no race condition
+    ref.set({
+      total: firebase.firestore.FieldValue.increment(rating),
+      count: firebase.firestore.FieldValue.increment(1)
+    }, { merge: true })
+    .then(function() { return ref.get(); })
+    .then(function(doc) {
+      var d = doc.data();
+      var avg = Math.round((d.total / d.count) * 10) / 10;
+      ref.update({ avg: avg }).catch(function() {});
+      if (callback) callback({ avg: avg, count: d.count });
+    })
+    .catch(function() {
+      if (callback) callback(null);
+    });
   }
 
   function _fetchRatingFromFirebase(slug, callback) {
     var key = _safeKey(slug);
-    fetch(RTDB_URL + '/' + key + '.json')
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data && data.count && data.avg) {
-          callback({ avg: data.avg, count: data.count });
-        } else {
-          callback(null);
-        }
-      })
-      .catch(function () { callback(null); });
+    function _doFetch() {
+      var db = _getDb();
+      if (!db) { callback(null); return; }
+      db.collection('ratings').doc(key).get()
+        .then(function(doc) {
+          if (doc.exists) {
+            var d = doc.data();
+            callback({ avg: d.avg || 0, count: d.count || 0 });
+          } else {
+            callback(null);
+          }
+        })
+        .catch(function() { callback(null); });
+    }
+    // Wait for Firestore if not ready yet
+    if (window._firestoreReady) {
+      _doFetch();
+    } else {
+      window.addEventListener('firestoreReady', _doFetch, { once: true });
+    }
   }
 
   function _injectAggregateRating(avg, count) {
@@ -894,8 +922,7 @@ var TeamzTools = (function () {
     }
   }
 
-  // --- Quick Feedback Widget (shows after star rating or standalone) ---
-  var FEEDBACK_URL = 'https://teamzlab-tools-default-rtdb.firebaseio.com/feedback';
+  // --- Quick Feedback Widget (Firestore for cross-user aggregation) ---
 
   function renderFeedback() {
     if (document.getElementById('tool-feedback')) return;
@@ -980,32 +1007,19 @@ var TeamzTools = (function () {
             selectedTags.push(t.textContent);
           });
 
-          // Save to Firebase
-          var feedbackData = {
-            reaction: reaction,
-            tags: selectedTags.join(','),
-            timestamp: Date.now(),
-            path: window.location.pathname
-          };
-          fetch(FEEDBACK_URL + '/' + key + '.json')
-            .then(function(r) { return r.json(); })
-            .then(function(existing) {
-              var reactions = (existing && existing.reactions) || {};
-              reactions[reaction] = (reactions[reaction] || 0) + 1;
-              var tagCounts = (existing && existing.tagCounts) || {};
-              selectedTags.forEach(function(t) { tagCounts[t] = (tagCounts[t] || 0) + 1; });
-              var totalFeedback = (existing && existing.total) || 0;
-              return fetch(FEEDBACK_URL + '/' + key + '.json', {
-                method: 'PUT',
-                body: JSON.stringify({
-                  reactions: reactions,
-                  tagCounts: tagCounts,
-                  total: totalFeedback + 1,
-                  lastUpdated: Date.now()
-                })
-              });
-            })
-            .catch(function() {});
+          // Save to Firestore (atomic increments — no race conditions)
+          var db = _getDb();
+          if (db) {
+            var updateData = {
+              total: firebase.firestore.FieldValue.increment(1),
+              lastUpdated: Date.now()
+            };
+            updateData['reactions.' + reaction] = firebase.firestore.FieldValue.increment(1);
+            selectedTags.forEach(function(t) {
+              updateData['tagCounts.' + t] = firebase.firestore.FieldValue.increment(1);
+            });
+            db.collection('feedback').doc(key).set(updateData, { merge: true }).catch(function() {});
+          }
 
           // Track in GA
           if (typeof window.gtag === 'function') {
@@ -1034,9 +1048,7 @@ var TeamzTools = (function () {
     });
   }
 
-  // --- Newsletter Subscribe (Firebase RTDB via SDK — auto-handles App Check) ---
-  var _rtdbModuleUrl = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js';
-
+  // --- Newsletter Subscribe (Firestore) ---
   function subscribeNewsletter(email) {
     var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
@@ -1053,13 +1065,6 @@ var TeamzTools = (function () {
 
     var btn = document.querySelector('.newsletter-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Subscribing\u2026'; }
-
-    var data = {
-      email: email,
-      subscribedAt: new Date().toISOString(),
-      source: window.location.pathname,
-      status: 'active'
-    };
 
     function _onSuccess() {
       try { localStorage.setItem('tz_newsletter', '1'); } catch(e) {}
@@ -1082,27 +1087,18 @@ var TeamzTools = (function () {
       if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
     }
 
-    // Use Firebase SDK (handles App Check tokens automatically)
-    function _pushViaSDK() {
-      try {
-        firebase.database().ref('newsletter/subscribers').push(data)
-          .then(function() { _onSuccess(); })
-          .catch(function() { _onError(); });
-      } catch(e) { _onError(); }
-    }
-
-    if (typeof firebase !== 'undefined' && firebase.database) {
-      // RTDB module already loaded
-      _pushViaSDK();
-    } else if (typeof firebase !== 'undefined' && firebase.app) {
-      // Firebase loaded but RTDB module not yet — lazy-load it
-      var s = document.createElement('script');
-      s.src = _rtdbModuleUrl;
-      s.onload = function() { _pushViaSDK(); };
-      s.onerror = function() { _onError(); };
-      document.head.appendChild(s);
+    var db = _getDb();
+    if (db) {
+      db.collection('newsletter_subscribers').add({
+        email: email,
+        subscribedAt: new Date().toISOString(),
+        source: window.location.pathname,
+        status: 'active'
+      })
+      .then(function() { _onSuccess(); })
+      .catch(function() { _onError(); });
     } else {
-      // Firebase not loaded (dev/owner mode) — save locally only
+      // Firestore not loaded (dev/owner mode) — save locally only
       _onSuccess();
     }
   }
@@ -1573,7 +1569,12 @@ var TeamzAnalytics = (function () {
         var fbAppCheck = document.createElement('script');
         fbAppCheck.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js';
         fbAppCheck.onload = function () {
-          _initFirebaseApp();
+          // Load Firestore (for ratings, feedback, newsletter)
+          var fbFirestore = document.createElement('script');
+          fbFirestore.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js';
+          fbFirestore.onload = function() { _initFirebaseApp(); };
+          fbFirestore.onerror = function() { _initFirebaseApp(); };
+          document.head.appendChild(fbFirestore);
         };
         fbAppCheck.onerror = function () {
           // App Check failed to load — init without it
@@ -1601,6 +1602,10 @@ var TeamzAnalytics = (function () {
         var analytics = firebase.analytics(app);
         window._fbAnalytics = analytics;
         _firebaseReady = true;
+
+        // Signal Firestore ready for rating/feedback widgets
+        window._firestoreReady = true;
+        try { window.dispatchEvent(new Event('firestoreReady')); } catch(e) {}
 
         // Log initial page view with rich data
         analytics.logEvent('page_view', _getPageContext());
@@ -1936,7 +1941,7 @@ var TeamzAnalytics = (function () {
       if (_scriptsLoaded && typeof TOOL_SEARCH_INDEX !== 'undefined' && window.TeamzSearch) return Promise.resolve();
       var promises = [];
       if (typeof TOOL_SEARCH_INDEX === 'undefined') promises.push(loadScript('/shared/js/search-index.js'));
-      if (!window.TeamzSearch) promises.push(loadScript('/shared/js/smart-search.js'));
+      if (!window.TeamzSearch) promises.push(loadScript('/shared/js/smart-search.min.js'));
       return Promise.all(promises).then(function () { _scriptsLoaded = true; });
     }
 
@@ -2062,9 +2067,12 @@ var TeamzAnalytics = (function () {
   });
 })();
 
-// Auto-render header, footer, floating CTA, and init analytics
+// CWV: Render header IMMEDIATELY (not on DOMContentLoaded) to prevent CLS
+// The script is at bottom of body, so #site-header already exists in DOM
+TeamzTools.renderHeader();
+
+// Auto-render footer, floating CTA, and init analytics
 document.addEventListener('DOMContentLoaded', function () {
-  TeamzTools.renderHeader();
   TeamzTools.renderFooter();
   TeamzTools.renderAuthorByline();
 
@@ -2366,7 +2374,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  TeamzAnalytics.init();
+  // CWV: Defer analytics to idle time so it doesn't compete with critical rendering
+  if (window.requestIdleCallback) {
+    requestIdleCallback(function() { TeamzAnalytics.init(); }, { timeout: 3000 });
+  } else {
+    setTimeout(function() { TeamzAnalytics.init(); }, 2000);
+  }
 
   // ─── SHARE BAR: Web Share API + Social Buttons + Embed Code ───
   (function initShareBar() {
@@ -2602,7 +2615,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // AdSense: Load ad integration script
   (function loadAdSense() {
     var s = document.createElement('script');
-    s.src = '/shared/js/adsense.js?v=202603201719';
+    s.src = '/shared/js/adsense.min.js?v=202603261';
     s.async = true;
     document.body.appendChild(s);
   })();

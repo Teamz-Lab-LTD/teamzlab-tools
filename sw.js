@@ -10,21 +10,24 @@
  * - AdSense/Analytics: always skip (never cache)
  */
 
-var CACHE_NAME = 'teamztools-202603261705';
+var CACHE_NAME = 'teamztools-202603261927';
 var PRECACHE_URLS = [
   '/',
-  '/branding/css/teamz-branding.css',
-  '/shared/css/tools.css',
+  '/branding/css/teamz-branding.min.css',
+  '/shared/css/tools.min.css',
+  '/branding/fonts/poppins-400.woff2',
+  '/branding/fonts/poppins-600.woff2',
+  '/branding/fonts/poppins-700.woff2',
   '/branding/js/theme.js',
-  '/shared/js/common.js',
-  '/shared/js/tool-engine.js',
-  '/shared/js/utility-engine.js',
-  '/shared/js/search-index.js',
-  '/shared/js/adsense.js',
+  '/shared/js/common.min.js',
+  '/shared/js/tool-engine.min.js',
+  '/shared/js/utility-engine.min.js',
+  '/shared/js/adsense.min.js',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/icons/og-default.png',
   '/manifest.json'
+  // search-index.js (365KB) removed from precache — lazy-loaded on first search
 ];
 
 // Install: precache core assets
