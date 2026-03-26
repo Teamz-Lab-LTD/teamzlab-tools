@@ -34,7 +34,7 @@ HISTORY_FILE = SCRIPT_DIR / "history.json"
 EXAMPLE_CONFIG = SCRIPT_DIR / "config.example.json"
 ARTICLES_DIR = SCRIPT_DIR / "articles"
 
-ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "pinterest"]
+ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "telegraph", "pinterest"]
 
 # SSL context for HTTPS requests
 SSL_CTX = ssl.create_default_context()
@@ -703,6 +703,107 @@ def pinterest_refresh_access_token(cfg, creds_path):
     return access
 
 
+def post_telegraph(config, title, body, tags, canonical_url):
+    """Post to Telegraph (telegra.ph) — dofollow backlinks, DA 90+."""
+    cfg = config.get("telegraph", {})
+    token = cfg.get("access_token", "")
+    if not token:
+        token_file = os.path.expanduser("~/.config/teamzlab/telegraph-token.txt")
+        if os.path.exists(token_file):
+            with open(token_file) as f:
+                token = f.read().strip()
+    if not token:
+        return None, "No Telegraph access_token"
+
+    def md_to_nodes(md):
+        """Convert markdown to Telegraph Node array."""
+        nodes = []
+        paragraphs = re.split(r'\n\n+', md.strip())
+        for p in paragraphs:
+            p = p.strip()
+            if not p:
+                continue
+            # Horizontal rule
+            if re.match(r'^---+$', p):
+                nodes.append({"tag": "hr"})
+                continue
+            # Headers
+            h_match = re.match(r'^(#{1,3})\s+(.+)$', p)
+            if h_match:
+                level = len(h_match.group(1))
+                tag = "h3" if level <= 2 else "h4"
+                nodes.append({"tag": tag, "children": inline_parse(h_match.group(2))})
+                continue
+            # Table — convert to simple text
+            if '|' in p and '---' in p:
+                rows = [r.strip() for r in p.split('\n') if r.strip() and '---' not in r]
+                for row in rows:
+                    cells = [c.strip() for c in row.split('|') if c.strip()]
+                    nodes.append({"tag": "p", "children": inline_parse(' | '.join(cells))})
+                continue
+            # Regular paragraph (may have multiple lines)
+            children = []
+            lines = p.split('\n')
+            for i, line in enumerate(lines):
+                children.extend(inline_parse(line))
+                if i < len(lines) - 1:
+                    children.append({"tag": "br"})
+            nodes.append({"tag": "p", "children": children})
+        return nodes
+
+    def inline_parse(text):
+        """Parse inline markdown (bold, italic, links) into Telegraph children."""
+        children = []
+        # Process links, bold, italic via regex
+        pattern = r'(\*\*(.+?)\*\*|\*(.+?)\*|\[([^\]]+)\]\(([^)]+)\))'
+        last_end = 0
+        for m in re.finditer(pattern, text):
+            # Add text before match
+            if m.start() > last_end:
+                children.append(text[last_end:m.start()])
+            if m.group(2):  # Bold
+                children.append({"tag": "b", "children": [m.group(2)]})
+            elif m.group(3):  # Italic
+                children.append({"tag": "i", "children": [m.group(3)]})
+            elif m.group(4) and m.group(5):  # Link
+                children.append({"tag": "a", "attrs": {"href": m.group(5)}, "children": [m.group(4)]})
+            last_end = m.end()
+        # Add remaining text
+        if last_end < len(text):
+            children.append(text[last_end:])
+        if not children:
+            children.append(text)
+        return children
+
+    try:
+        nodes = md_to_nodes(body)
+        payload = json.dumps({
+            'access_token': token,
+            'title': title[:256],
+            'author_name': cfg.get('author_name', 'Teamz Lab'),
+            'author_url': cfg.get('author_url', 'https://tool.teamzlab.com'),
+            'content': nodes,
+            'return_content': False,
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
+            'https://api.telegra.ph/createPage',
+            data=payload,
+            method='POST',
+            headers={'Content-Type': 'application/json'}
+        )
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+
+        if result.get('ok') and result.get('result', {}).get('url'):
+            return result['result']['url'], None
+        else:
+            return None, result.get('error', 'Unknown Telegraph error')
+    except Exception as e:
+        return None, str(e)[:120]
+
+
 def post_pinterest(config, title, body, tags, canonical_url, pin_image_url=""):
     """
     Create a Pin on Pinterest (v5 API). Requires a public HTTPS image URL.
@@ -826,6 +927,277 @@ def markdown_to_html(md):
 
 # ─── Commands ─────────────────────────────────────────────────────────────────
 
+def update_github_blog_readme(history):
+    """Auto-update the teamz-lab-blogs repo README with all distributed articles."""
+    REPO = "Teamz-Lab-LTD/teamz-lab-blogs"
+    try:
+        import subprocess
+
+        # Build articles table from history
+        rows = []
+        for post in history.get("posts", []):
+            title = post.get("title", "")
+            platforms = post.get("platforms", {})
+            gh_url = platforms.get("github_discussions", {}).get("url", "")
+            devto_url = platforms.get("devto", {}).get("url", "")
+            hashnode_url = platforms.get("hashnode", {}).get("url", "")
+            blogger_url = platforms.get("blogger", {}).get("url", "")
+
+            # Skip deleted/empty posts
+            if not any([devto_url, hashnode_url, blogger_url]):
+                continue
+
+            # Title links to GH discussion if available, otherwise first platform
+            title_link = gh_url or devto_url or hashnode_url or blogger_url
+            title_cell = f"[{title}]({title_link})" if title_link else title
+            devto_cell = f"[Read]({devto_url})" if devto_url else "—"
+            hashnode_cell = f"[Read]({hashnode_url})" if hashnode_url else "—"
+            blogger_cell = f"[Read]({blogger_url})" if blogger_url else "—"
+            rows.append(f"| {title_cell} | {devto_cell} | {hashnode_cell} | {blogger_cell} |")
+
+        articles_table = "\n".join(rows) if rows else "| *No articles yet* | — | — | — |"
+
+        readme = f"""# Awesome Free Browser Tools [![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
+
+> A curated collection of **1,680+ free browser-based tools** — no signup, no downloads, 100% private. Everything runs client-side; your data never leaves your device.
+
+**[tool.teamzlab.com](https://tool.teamzlab.com)** — Built by [Teamz Lab](https://teamzlab.com)
+
+---
+
+## Contents
+
+- [Finance & Money](#finance--money)
+- [Developer Tools](#developer-tools)
+- [Health & Wellness](#health--wellness)
+- [AI-Powered Tools](#ai-powered-tools)
+- [Design & Images](#design--images)
+- [Home & Housing](#home--housing)
+- [Career & Resume](#career--resume)
+- [Math & Science](#math--science)
+- [Gaming](#gaming)
+- [Privacy & Security](#privacy--security)
+- [Food & Drink](#food--drink)
+- [Kids & Education](#kids--education)
+- [Country-Specific Tools](#country-specific-tools)
+- [Articles & Guides](#articles--guides)
+
+---
+
+## Finance & Money
+
+- [50/30/20 Budget Calculator](https://tool.teamzlab.com/evergreen/50-30-20-budget-calculator/) — Split income into needs, wants, and savings
+- [Compound Interest Calculator](https://tool.teamzlab.com/evergreen/compound-interest-calculator/) — See how your money grows over time
+- [Debt Snowball vs Avalanche](https://tool.teamzlab.com/evergreen/debt-snowball-vs-avalanche/) — Compare debt payoff strategies
+- [FIRE Calculator](https://tool.teamzlab.com/evergreen/fire-calculator/) — Find out when you can retire early
+- [Mortgage Calculator](https://tool.teamzlab.com/evergreen/mortgage-calculator/) — Monthly payment, amortization, total interest
+- [Rent vs Buy Calculator](https://tool.teamzlab.com/evergreen/rent-vs-buy-calculator/) — Honest comparison including opportunity cost
+- [Investment Return Calculator](https://tool.teamzlab.com/evergreen/investment-return-calculator/) — Project portfolio growth
+- [Credit Card Payoff Calculator](https://tool.teamzlab.com/evergreen/credit-card-payoff-calculator/) — Payoff timeline and total interest
+- [Net Worth Calculator](https://tool.teamzlab.com/evergreen/net-worth-calculator/) — Track assets minus liabilities
+- [Side Hustle Profit Calculator](https://tool.teamzlab.com/evergreen/side-hustle-profit-calculator/) — Real hourly rate after expenses
+
+**[Browse all 178+ finance tools →](https://tool.teamzlab.com/evergreen/)**
+
+## Developer Tools
+
+- [JSON Formatter](https://tool.teamzlab.com/dev/json-formatter/) — Beautify, validate, and explore JSON
+- [JWT Decoder](https://tool.teamzlab.com/dev/jwt-decoder/) — Decode JWT tokens instantly
+- [Regex Tester](https://tool.teamzlab.com/dev/regex-tester/) — Real-time regex matching with capture groups
+- [Cron Expression Generator](https://tool.teamzlab.com/dev/cron-expression-generator/) — Build cron schedules visually
+- [CSS Gradient Generator](https://tool.teamzlab.com/dev/css-gradient-generator/) — Design gradients, copy CSS
+- [Docker Run to Compose](https://tool.teamzlab.com/dev/docker-run-to-compose/) — Convert docker run to docker-compose.yml
+- [Base64 Encode/Decode](https://tool.teamzlab.com/dev/base64-encode-decode/) — Encode and decode Base64
+- [UUID Generator](https://tool.teamzlab.com/dev/uuid-generator/) — Generate v4 UUIDs in bulk
+- [Subnet Calculator](https://tool.teamzlab.com/dev/subnet-calculator/) — CIDR, network ranges, host counts
+
+**[Browse all 71+ developer tools →](https://tool.teamzlab.com/dev/)**
+
+## Health & Wellness
+
+- [TDEE Calculator](https://tool.teamzlab.com/health/tdee-calculator/) — Total Daily Energy Expenditure
+- [BMI Calculator](https://tool.teamzlab.com/evergreen/bmi-calculator/) — Body Mass Index with health category
+- [Macro Calculator](https://tool.teamzlab.com/health/macro-calculator/) — Protein, carbs, fat split
+- [Sleep Calculator](https://tool.teamzlab.com/health/sleep-calculator/) — Optimal bedtime based on sleep cycles
+- [Burnout Test](https://tool.teamzlab.com/health/burnout-test/) — Clinical-grade burnout assessment
+- [Reaction Time Test](https://tool.teamzlab.com/health/reaction-time-test/) — Measure reflexes in milliseconds
+- [Body Fat Calculator](https://tool.teamzlab.com/health/body-fat-calculator/) — Estimate from measurements
+- [Phone Addiction Test](https://tool.teamzlab.com/health/phone-addiction-test/) — Screen time assessment
+
+**[Browse all 93+ health tools →](https://tool.teamzlab.com/health/)**
+
+## AI-Powered Tools
+
+- [Grammar Checker](https://tool.teamzlab.com/ai/grammar-checker/) — Fix grammar, spelling, punctuation in browser
+- [Article Summarizer](https://tool.teamzlab.com/ai/article-summarizer/) — TL;DR any article into bullet points
+- [Resume Summary Generator](https://tool.teamzlab.com/ai/resume-summary-generator/) — Professional summary from experience
+- [Cover Letter Helper](https://tool.teamzlab.com/ai/cover-letter-helper/) — Generate tailored cover letters
+- [Headline Generator](https://tool.teamzlab.com/ai/headline-generator/) — Click-worthy headlines with AI
+
+**[Browse all 25+ AI tools →](https://tool.teamzlab.com/ai/)**
+
+## Design & Images
+
+- [Background Remover](https://tool.teamzlab.com/design/background-remover/) — Remove backgrounds with AI, in-browser
+- [Image Compressor](https://tool.teamzlab.com/image/image-compressor/) — Compress without quality loss
+- [Favicon Generator](https://tool.teamzlab.com/image/favicon-generator/) — All sizes from any image, ICO included
+- [Photo to Pencil Sketch](https://tool.teamzlab.com/image/photo-to-pencil-sketch/) — Convert photos to sketch art
+- [Color Palette Extractor](https://tool.teamzlab.com/image/color-palette-extractor/) — Extract dominant colors with hex codes
+- [Meme Maker](https://tool.teamzlab.com/image/meme-maker/) — Classic meme generator
+
+**[Browse all design tools →](https://tool.teamzlab.com/design/)**
+
+## Home & Housing
+
+- [Kitchen Remodel Calculator](https://tool.teamzlab.com/housing/kitchen-remodel-calculator/) — Cabinets, counters, appliances breakdown
+- [Bathroom Remodel Calculator](https://tool.teamzlab.com/housing/bathroom-remodel-calculator/) — Tile, vanity, plumbing estimates
+- [Paint Calculator](https://tool.teamzlab.com/housing/paint-calculator/) — Exact gallons needed for any room
+- [Solar Panel Calculator](https://tool.teamzlab.com/evergreen/solar-panel-calculator/) — Payback period, savings, ROI
+- [Electricity Cost Calculator](https://tool.teamzlab.com/evergreen/electricity-cost-calculator/) — Cost per appliance per day/month/year
+- [Roommate Split Calculator](https://tool.teamzlab.com/housing/roommate-split-calculator/) — Fair rent split by room features
+
+**[Browse all 29+ housing tools →](https://tool.teamzlab.com/housing/)**
+
+## Career & Resume
+
+- [ATS Resume Checker](https://tool.teamzlab.com/career/ats-resume-checker/) — Check if your resume passes ATS filters
+- [Resume Keyword Scanner](https://tool.teamzlab.com/career/resume-keyword-scanner/) — Match resume keywords to job descriptions
+- [LinkedIn Summary Generator](https://tool.teamzlab.com/career/linkedin-summary-generator/) — Professional LinkedIn About section
+- [Offer Comparison Calculator](https://tool.teamzlab.com/career/offer-comparison-calculator/) — Compare job offers with total compensation
+
+**[Browse all career tools →](https://tool.teamzlab.com/career/)**
+
+## Math & Science
+
+- [Scientific Calculator](https://tool.teamzlab.com/evergreen/scientific-calculator/) — Full scientific calculator with history
+- [Graph Plotter](https://tool.teamzlab.com/math/graph-plotter/) — Plot any equation with zoom and pan
+- [Matrix Calculator](https://tool.teamzlab.com/math/matrix-calculator/) — Operations up to 10x10 matrices
+- [Standard Deviation Calculator](https://tool.teamzlab.com/math/standard-deviation-calculator/) — Mean, median, variance
+
+**[Browse all 29+ math tools →](https://tool.teamzlab.com/math/)**
+
+## Gaming
+
+- [Click Speed Test](https://tool.teamzlab.com/gaming/click-speed-test/) — Measure CPS (clicks per second)
+- [Keyboard Tester](https://tool.teamzlab.com/gaming/keyboard-tester/) — Visual key registration test
+- [DPI Calculator](https://tool.teamzlab.com/gaming/dpi-calculator/) — Effective DPI and sensitivity converter
+- [PC Bottleneck Calculator](https://tool.teamzlab.com/gaming/pc-bottleneck-calculator/) — CPU vs GPU bottleneck analysis
+
+**[Browse all gaming tools →](https://tool.teamzlab.com/gaming/)**
+
+## Privacy & Security
+
+- [Password Strength Checker](https://tool.teamzlab.com/diagnostic/password-strength-checker/) — Crack time estimation, runs locally
+- [DNS Leak Test](https://tool.teamzlab.com/diagnostic/dns-leak-test/) — Check if your VPN is leaking
+- [Browser Fingerprint Checker](https://tool.teamzlab.com/diagnostic/browser-fingerprint-checker/) — See how trackable you are
+- [WebRTC Leak Checker](https://tool.teamzlab.com/diagnostic/webrtc-leak-checker/) — Detect IP leaks through WebRTC
+
+**[Browse all 30+ diagnostic tools →](https://tool.teamzlab.com/diagnostic/)**
+
+## Food & Drink
+
+- [Coffee-to-Water Ratio](https://tool.teamzlab.com/coffee/coffee-to-water-ratio-calculator/) — Perfect ratio for any brew method
+- [Recipe Scaler](https://tool.teamzlab.com/baking/recipe-scaler-calculator/) — Scale recipes up or down
+- [Sourdough Hydration](https://tool.teamzlab.com/baking/sourdough-hydration-calculator/) — Baker's percentages
+- [Caffeine Half-Life](https://tool.teamzlab.com/coffee/caffeine-half-life-calculator/) — Caffeine remaining at bedtime
+
+**Browse: [Coffee](https://tool.teamzlab.com/coffee/) · [Baking](https://tool.teamzlab.com/baking/) · [Tea](https://tool.teamzlab.com/tea/)**
+
+## Kids & Education
+
+- [Times Table Quiz](https://tool.teamzlab.com/kids/times-table-quiz/) — Timed multiplication practice
+- [Typing Speed Test for Kids](https://tool.teamzlab.com/kids/typing-speed-test-kids/) — Kid-friendly WPM test
+- [Reading Level Test](https://tool.teamzlab.com/kids/reading-level-test/) — Reading comprehension assessment
+- [Math Word Problem Generator](https://tool.teamzlab.com/kids/math-word-problem-generator/) — Grade-appropriate problems
+
+**[Browse all kids tools →](https://tool.teamzlab.com/kids/)**
+
+## Country-Specific Tools
+
+| Country | Tools | Link |
+|---------|-------|------|
+| \\U0001f1fa\\U0001f1f8 United States | 80+ tax, finance, military | [Browse →](https://tool.teamzlab.com/us/) |
+| \\U0001f1ec\\U0001f1e7 United Kingdom | Tax, pension, NHS tools | [Browse →](https://tool.teamzlab.com/uk/) |
+| \\U0001f1e9\\U0001f1ea Germany | Brutto-Netto, Elterngeld, KFZ | [Browse →](https://tool.teamzlab.com/de/) |
+| \\U0001f1eb\\U0001f1f7 France | APL, Prime d'activite, CROUS | [Browse →](https://tool.teamzlab.com/fr/) |
+| \\U0001f1ef\\U0001f1f5 Japan | Tedori, Furusato Nozei, Housing Loan | [Browse →](https://tool.teamzlab.com/jp/) |
+| \\U0001f1e6\\U0001f1ea UAE | Gratuity, Salik, Visa fines | [Browse →](https://tool.teamzlab.com/ae/) |
+| \\U0001f1e7\\U0001f1e9 Bangladesh | bKash, Nagad, Tax, CGPA | [Browse →](https://tool.teamzlab.com/bd/) |
+| \\U0001f1e6\\U0001f1fa Australia | HECS, Super, PR Points | [Browse →](https://tool.teamzlab.com/au/) |
+| \\U0001f1e8\\U0001f1e6 Canada | TFSA, RRSP, EI, CCB | [Browse →](https://tool.teamzlab.com/ca/) |
+| \\U0001f1ee\\U0001f1f3 India | GST, EMI, PPF, SIP | [Browse →](https://tool.teamzlab.com/in/) |
+
+---
+
+## Articles & Guides
+
+| Article | Dev.to | Hashnode | Blogger |
+|---------|--------|---------|---------|
+{articles_table}
+
+**[View all articles →](https://github.com/Teamz-Lab-LTD/teamz-lab-blogs/discussions)**
+
+---
+
+## Full Tool Index
+
+**[View all 1,680+ tools organized by category → TOOLS.md](TOOLS.md)**
+
+Every tool with a direct link — searchable, browsable, and all dofollow.
+
+---
+
+## Why These Tools?
+
+- **No signup, no email** — open and use immediately
+- **No downloads** — runs entirely in your browser
+- **100% private** — your data never leaves your device (client-side JavaScript)
+- **No paywall** — everything is free, forever
+- **Works offline** — many tools work without internet after first load
+- **Mobile friendly** — responsive design for all screen sizes
+
+## For Developers
+
+- **AI-discoverable** — indexed via [llms.txt](https://tool.teamzlab.com/llms.txt) for ChatGPT, Perplexity, Claude
+- **Static site** — hosted on GitHub Pages, no backend
+- **Open standards** — JSON-LD schemas, sitemap, RSS
+
+## Contributing
+
+Found a bug? Have a tool suggestion? [Open a discussion](https://github.com/Teamz-Lab-LTD/teamz-lab-blogs/discussions/new?category=ideas).
+
+## License
+
+Tools are free to use. Content is copyright [Teamz Lab](https://teamzlab.com).
+"""
+        # Push README via GitHub API
+        encoded = base64.b64encode(readme.encode("utf-8")).decode("utf-8")
+
+        # Get current SHA (needed for update)
+        result = subprocess.run(
+            ["gh", "api", f"repos/{REPO}/contents/README.md", "--jq", ".sha"],
+            capture_output=True, text=True, timeout=15
+        )
+        sha = result.stdout.strip() if result.returncode == 0 else ""
+
+        # Build API call
+        cmd = ["gh", "api", f"repos/{REPO}/contents/README.md", "-X", "PUT",
+               "-f", "message=Auto-update README with latest articles",
+               "-f", f"content={encoded}"]
+        if sha:
+            cmd += ["-f", f"sha={sha}"]
+        cmd += ["--jq", ".content.html_url"]
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            print(f"  [github-readme] Updated — {result.stdout.strip()}")
+        else:
+            print(f"  [github-readme] SKIP — could not update README ({result.stderr.strip()[:80]})")
+
+    except Exception as e:
+        print(f"  [github-readme] SKIP — {str(e)[:80]}")
+
+
 def cmd_post(title, filepath, platforms):
     """Post article to specified platforms."""
     config = load_config()
@@ -884,6 +1256,7 @@ def cmd_post(title, filepath, platforms):
         "bluesky": post_bluesky,
         "mastodon": post_mastodon,
         "github_discussions": post_github_discussions,
+        "telegraph": post_telegraph,
     }
 
     results = {}
@@ -938,6 +1311,10 @@ def cmd_post(title, filepath, platforms):
         detail = r.get("url", r.get("error", ""))
         print(f"    {icon} {p}: {detail}")
     print(f"{'=' * 60}\n")
+
+    # Auto-update GitHub blog README with new article
+    if ok > 0:
+        update_github_blog_readme(history)
 
 
 def cmd_status():
