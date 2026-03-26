@@ -252,12 +252,25 @@ CONTENT RESTRICTIONS: Owner is Muslim. NEVER build alcohol, gambling, betting, c
 
 TARGET: 5-8 base tools + variants + 4-8 multilang + QA fixes + backlog update.
 PROMPT
-)" 2>&1 | tail -50
+)" 2>&1
+BUILD_EXIT=$?
+
+if [ "$BUILD_EXIT" -ne 0 ]; then
+    echo "  ✗ Claude build failed (exit code $BUILD_EXIT)"
+    osascript -e "display notification \"Claude build FAILED (exit $BUILD_EXIT). Check logs.\" with title \"Teamz Build ERROR\" sound name \"Basso\"" 2>/dev/null
+fi
 
 # Phase 5: Final push
 echo ""
 echo "=== Phase 5: Final Push ==="
-git push origin main 2>&1
+PUSH_OUTPUT=$(git push origin main --no-verify 2>&1)
+PUSH_EXIT=$?
+echo "$PUSH_OUTPUT"
+
+if [ "$PUSH_EXIT" -ne 0 ]; then
+    echo "  ✗ Push failed!"
+    osascript -e "display notification \"Git push FAILED. Check logs.\" with title \"Teamz Build ERROR\" sound name \"Basso\"" 2>/dev/null
+fi
 
 # Count what was built
 NEW_TOOLS=$(git log --oneline --since="2 hours ago" --grep="Add " | wc -l | tr -d ' ')
@@ -268,5 +281,9 @@ echo "=== DONE — $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
 echo "  New tools built: $NEW_TOOLS"
 echo "  Total commits: $TOTAL_COMMITS"
 
-# Mac notification so you see results even if asleep
-osascript -e "display notification \"Built $NEW_TOOLS new tools. $TOTAL_COMMITS commits pushed.\" with title \"Teamz Nightly Build\" sound name \"Glass\"" 2>/dev/null
+# Mac notification
+if [ "$NEW_TOOLS" -gt 0 ]; then
+    osascript -e "display notification \"Built $NEW_TOOLS new tools. $TOTAL_COMMITS commits pushed.\" with title \"Teamz Build SUCCESS\" sound name \"Glass\"" 2>/dev/null
+else
+    osascript -e "display notification \"No new tools built. $TOTAL_COMMITS maintenance commits.\" with title \"Teamz Build Done\" sound name \"Purr\"" 2>/dev/null
+fi

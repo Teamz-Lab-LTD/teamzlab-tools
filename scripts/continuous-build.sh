@@ -37,9 +37,8 @@ START_TIME=$(date +%s)
 END_TIME=$((START_TIME + DURATION_MIN * 60))
 RETURN_TIME=$(date -r "$END_TIME" '+%I:%M %p' 2>/dev/null || date -d "@$END_TIME" '+%I:%M %p' 2>/dev/null)
 
-# 1 Claude build takes ~45 min, so calculate how many fit
-MAX_BUILDS=$((DURATION_MIN / 60))
-if [ "$MAX_BUILDS" -lt 1 ]; then MAX_BUILDS=1; fi
+# Max 3 Claude builds per session to preserve quota for daytime manual work
+MAX_BUILDS=3
 
 if [ "$MODE" = "stop" ]; then
     if [ -f "$LOCK_FILE" ]; then
@@ -131,8 +130,7 @@ while true; do
         break
     fi
 
-    echo "  Waiting 10 min. $(time_remaining)min left. Stop: bash scripts/continuous-build.sh stop" | tee -a "$LOG_FILE"
-    sleep 600
+    echo "  Starting next build immediately..." | tee -a "$LOG_FILE"
 done
 
 # Final summary
