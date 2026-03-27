@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Packing List Generator — Teamz Lab Tools</title>
+  <meta name="description" content="Generate a custom packing list for any trip. Smart checklist based on destination, weather, duration, and activities. Free, no signup needed.">
+  <meta property="og:title" content="Packing List Generator — Teamz Lab Tools">
+  <meta property="og:description" content="Generate a custom packing list for any trip. Smart checklist based on destination, weather, duration, and activities.">
+  <meta property="og:url" content="https://tool.teamzlab.com/travel/packing-list-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Packing List Generator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Generate a custom packing list for any trip. Smart checklist based on destination, weather, duration, and activities.">
+  <link rel="canonical" href="https://tool.teamzlab.com/travel/packing-list-generator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .pack-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .pack-form label { display: block; font-weight: 600; color: var(--heading); margin-bottom: 0.25rem; font-size: var(--text-sm); }
+    .pack-form select { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-md); }
+    .pack-activities { grid-column: 1 / -1; }
+    .pack-activities-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .pack-activity-label { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-size: var(--text-sm); cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+    .pack-activity-label:has(input:checked) { border-color: var(--heading); background: var(--bg); font-weight: 600; }
+    .pack-activity-label input { display: none; }
+    .pack-actions { grid-column: 1 / -1; display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+    .pack-actions button { padding: 0.7rem 1.5rem; border-radius: 999px; font-weight: 600; font-size: var(--text-md); border: none; cursor: pointer; transition: opacity 0.2s; }
+    .pack-btn-generate { background: var(--heading); color: var(--bg); }
+    .pack-btn-generate:hover { opacity: 0.85; }
+    .pack-result { display: none; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .pack-category { margin-bottom: 1.25rem; }
+    .pack-category-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .pack-category-count { font-size: var(--text-sm); color: var(--text-muted); font-weight: 400; }
+    .pack-items { list-style: none; padding: 0; margin: 0; }
+    .pack-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-md); color: var(--text); }
+    .pack-item:last-child { border-bottom: none; }
+    .pack-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--heading); cursor: pointer; flex-shrink: 0; }
+    .pack-item.checked label { text-decoration: line-through; color: var(--text-muted); }
+    .pack-item label { cursor: pointer; flex: 1; }
+    .pack-item-note { font-size: var(--text-sm); color: var(--text-muted); margin-left: 0.25rem; }
+    .pack-summary { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .pack-summary-stat { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; text-align: center; min-width: 100px; }
+    .pack-summary-stat .stat-val { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+    .pack-summary-stat .stat-label { font-size: var(--text-sm); color: var(--text-muted); }
+    .pack-result-actions { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+    .pack-result-actions button { padding: 0.6rem 1.25rem; border-radius: 999px; font-weight: 600; font-size: var(--text-sm); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: border-color 0.2s; }
+    .pack-result-actions button:hover { border-color: var(--heading); }
+    .pack-progress { margin-bottom: 1rem; }
+    .pack-progress-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+    .pack-progress-fill { height: 100%; border-radius: 4px; background: var(--heading); transition: width 0.3s; }
+    .pack-progress-text { font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.25rem; }
+    @media (max-width: 600px) {
+      .pack-form { grid-template-columns: 1fr; }
+      .pack-actions { flex-direction: column; }
+      .pack-actions button { width: 100%; }
+      .pack-result-actions { flex-direction: column; }
+      .pack-result-actions button { width: 100%; }
+      .pack-summary { flex-direction: column; }
+      .pack-summary-stat { min-width: auto; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+    @media print {
+      .site-header, .site-footer, .ad-slot, #tool-faqs, #related-tools, .tool-content, .pack-form, .pack-actions, .pack-result-actions, .pack-progress, #breadcrumbs { display: none !important; }
+      .pack-result { display: block !important; border: none !important; padding: 0 !important; }
+      .pack-item input[type="checkbox"] { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Travel Tools", "item": "https://tool.teamzlab.com/travel/"}, {"@type": "ListItem", "position": 3, "name": "Packing List Generator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I customize the packing list?", "acceptedAnswer": {"@type": "Answer", "text": "Select your destination type, climate, trip duration, and planned activities. The generator combines these factors to create a tailored checklist. Each combination produces a different list, so adjust the inputs to match your specific trip."}}, {"@type": "Question", "name": "What is a coolcation?", "acceptedAnswer": {"@type": "Answer", "text": "A coolcation is a summer holiday in a cool-climate destination, typically Scandinavia, Iceland, Scotland, or the Baltics. Instead of beach heat, travelers enjoy midnight sun, hiking, lake swimming, saunas, and mild temperatures. The packing list includes items like mosquito repellent, an eye mask for the midnight sun, a sauna towel, and layering pieces for unpredictable Nordic weather."}}, {"@type": "Question", "name": "Should I pack everything in carry-on or checked luggage?", "acceptedAnswer": {"@type": "Answer", "text": "For trips under a week, a carry-on is often sufficient if you use packing cubes and the layering system. For longer trips or activity-heavy itineraries with bulky gear (ski equipment, hiking boots), checked luggage may be necessary. Always keep documents, medication, electronics, and one change of clothes in your carry-on in case checked bags are delayed."}}, {"@type": "Question", "name": "How do packing cubes help?", "acceptedAnswer": {"@type": "Answer", "text": "Packing cubes compress clothing and organize items by category. They let you see everything at a glance, prevent overpacking by limiting space per category, and keep your bag tidy throughout the trip. Most travelers find they can pack 20-30% more efficiently with cubes compared to loose packing."}}, {"@type": "Question", "name": "What should I NOT pack?", "acceptedAnswer": {"@type": "Answer", "text": "Avoid packing valuables you would be devastated to lose, large quantities of liquids (buy at your destination), items easily available at hotels (hair dryers, irons), too many \"just in case\" outfits, and anything prohibited by airlines or your destination country. Also skip heavy guidebooks — use offline maps and digital guides instead."}}, {"@type": "Question", "name": "How many outfits do I need for a two-week trip?", "acceptedAnswer": {"@type": "Answer", "text": "With the layering system and mix-and-match basics, 5-7 tops, 3-4 bottoms, and 2-3 outer layers can cover a two-week trip. Choose neutral colors that coordinate with each other. Plan to do laundry once during the trip. This approach keeps your luggage manageable while providing variety."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Packing List Generator", "description": "Generate a custom packing list for any trip. Smart checklist based on destination, weather, duration, and activities. Free, no signup needed.", "url": "https://tool.teamzlab.com/travel/packing-list-generator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"><a href="/" class="header-logo teamz-logo" aria-label="Teamz Lab Tools Home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Teamz Lab Tools</span></a><nav class="header-nav" aria-label="Main navigation"><a href="/" class="nav-link">Home</a><a href="/about/" class="nav-link">About</a><a href="/contact/" class="nav-link">Contact</a><div class="lang-selector notranslate" translate="no"><button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span id="current-lang" class="notranslate" translate="no">EN</span></button><div class="lang-dropdown notranslate" id="lang-dropdown" translate="no"></div></div><div class="fav-header-wrap"><button id="fav-header-btn" class="header-icon-btn nav-link--icon" aria-label="Favorites" title="Your Favourites"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="fav-badge" class="fav-badge" style="display:none;">0</span></button><div id="fav-dropdown" class="fav-dropdown" style="display:none;"></div></div><button id="theme-toggle" class="header-icon-btn nav-link--icon" aria-label="Toggle theme" title="Toggle dark/light mode"><svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></nav></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Packing List Generator</h1>
+      <p class="tool-description">Generate a personalized packing list for any trip. Choose your destination type, climate, trip length, and activities to get a smart checklist. Tick items off as you pack. Everything runs in your browser — free, private, no signup.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="pack-form">
+        <div>
+          <label for="destination-type">Destination Type</label>
+          <select id="destination-type">
+            <option value="beach">Beach / Tropical</option>
+            <option value="city">City Break</option>
+            <option value="mountain">Mountain / Hiking</option>
+            <option value="winter">Winter / Snow</option>
+            <option value="coolcation">Coolcation (Nordic Summer)</option>
+            <option value="safari">Safari / Adventure</option>
+            <option value="business">Business Trip</option>
+          </select>
+        </div>
+        <div>
+          <label for="climate">Climate</label>
+          <select id="climate">
+            <option value="hot">Hot (30&deg;C+)</option>
+            <option value="warm">Warm (20-30&deg;C)</option>
+            <option value="mild">Mild (10-20&deg;C)</option>
+            <option value="cold">Cold (0-10&deg;C)</option>
+            <option value="freezing">Freezing (Below 0&deg;C)</option>
+          </select>
+        </div>
+        <div>
+          <label for="duration">Duration</label>
+          <select id="duration">
+            <option value="weekend">Weekend (1-3 days)</option>
+            <option value="short">Short Trip (4-7 days)</option>
+            <option value="week">Week+ (8-14 days)</option>
+            <option value="extended">Extended (15+ days)</option>
+          </select>
+        </div>
+        <div class="pack-activities">
+          <label>Activities</label>
+          <div class="pack-activities-grid">
+            <label class="pack-activity-label"><input type="checkbox" id="act-hiking" value="hiking"> Hiking</label>
+            <label class="pack-activity-label"><input type="checkbox" id="act-swimming" value="swimming"> Swimming</label>
+            <label class="pack-activity-label"><input type="checkbox" id="act-sightseeing" value="sightseeing"> Sightseeing</label>
+            <label class="pack-activity-label"><input type="checkbox" id="act-business" value="business"> Business Meetings</label>
+            <label class="pack-activity-label"><input type="checkbox" id="act-sauna" value="sauna"> Sauna</label>
+            <label class="pack-activity-label"><input type="checkbox" id="act-photography" value="photography"> Photography</label>
+            <label class="pack-activity-label"><input type="checkbox" id="act-skiing" value="skiing"> Skiing / Snowboard</label>
+          </div>
+        </div>
+        <div class="pack-actions">
+          <button class="pack-btn-generate" id="generate-btn" type="button">Generate Packing List</button>
+        </div>
+      </div>
+
+      <div class="pack-result" id="pack-result">
+        <div class="pack-progress" id="pack-progress">
+          <div class="pack-progress-bar"><div class="pack-progress-fill" id="progress-fill" style="width:0%"></div></div>
+          <div class="pack-progress-text" id="progress-text">0 of 0 items packed</div>
+        </div>
+        <div class="pack-summary" id="pack-summary"></div>
+        <div id="pack-categories"></div>
+        <div class="pack-result-actions">
+          <button type="button" id="copy-list-btn">Copy List</button>
+          <button type="button" id="print-list-btn">Print List</button>
+          <button type="button" id="clear-checks-btn">Uncheck All</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Packing List Generator Works</h2>
+      <p>This packing list generator creates a tailored checklist by combining four factors: your destination type, the expected climate, trip duration, and planned activities. A base set of essentials (passport, phone charger, medication, wallet) is always included. The tool then layers on destination-specific clothing, climate-appropriate gear, duration-adjusted quantities, and activity-specific equipment. The result is a comprehensive yet focused list that avoids both over-packing and forgetting critical items.</p>
+
+      <h2>Coolcation Packing: What to Pack for Nordic Travel</h2>
+      <p>A coolcation is a summer holiday in a cool-climate destination, typically Scandinavia, Iceland, Scotland, or the Baltics. Nordic summers bring midnight sun, unpredictable weather, and unique experiences like wild swimming and wood-fired saunas. Essential coolcation items include layering pieces (merino base layer, fleece mid-layer, waterproof shell), a sleep mask or blackout eye mask for the midnight sun, mosquito repellent for lakeside evenings, a quick-dry sauna towel, sturdy hiking boots for trails, and a compact rain jacket. Pack a swimsuit even in cool climates — lake and fjord swimming is a Nordic tradition. The layering system lets you adapt to temperatures that can swing from warm sunshine to chilly rain within the same day.</p>
+
+      <h2>Essential Packing Tips by Trip Type</h2>
+      <p>Beach trips demand reef-safe sunscreen, a wide-brim hat, and quick-dry clothing. City breaks prioritize comfortable walking shoes, a crossbody bag for security, and versatile outfits that work for daytime exploration and evening dining. Mountain and hiking trips require proper boots, trekking poles, a first aid kit, and moisture-wicking layers. Winter holidays need thermal underwear, insulated boots, hand warmers, and lip balm to prevent chapping. Business travelers should pack wrinkle-resistant formal wear, a laptop with charger, presentation tools, and backup copies of important documents. Safari trips call for neutral-colored clothing, binoculars, and dust protection for camera gear.</p>
+
+      <h2>How to Pack Light: The Layering System</h2>
+      <p>The most effective packing strategy is the layering system. Instead of packing heavy single-purpose garments, bring lightweight pieces that combine for different temperatures. Start with a moisture-wicking base layer, add an insulating mid-layer like a fleece or down jacket, and top with a waterproof outer shell. This three-layer approach works from mild to freezing conditions and dramatically reduces luggage volume. Choose fabrics that dry quickly, resist wrinkles, and pack down small. Roll clothes instead of folding to save space, and use packing cubes to organize categories. A well-packed carry-on using the layering system can cover a two-week trip comfortably.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* ── Packing data ── */
+    var BASE_ITEMS = {
+      Documents: [
+        { name: 'Passport / ID', note: '' },
+        { name: 'Travel insurance documents', note: 'digital or print' },
+        { name: 'Boarding passes / tickets', note: '' },
+        { name: 'Hotel confirmation', note: '' },
+        { name: 'Copies of important documents', note: 'separate from originals' },
+        { name: 'Wallet / credit cards / cash', note: '' }
+      ],
+      Electronics: [
+        { name: 'Phone + charger', note: '' },
+        { name: 'Power bank', note: '' },
+        { name: 'Universal power adapter', note: 'check destination plugs' },
+        { name: 'Headphones / earbuds', note: '' }
+      ],
+      Toiletries: [
+        { name: 'Toothbrush + toothpaste', note: '' },
+        { name: 'Deodorant', note: '' },
+        { name: 'Shampoo + conditioner', note: 'travel size' },
+        { name: 'Razor / shaving kit', note: '' },
+        { name: 'Medications / prescriptions', note: '' },
+        { name: 'Sunscreen', note: '' },
+        { name: 'Hand sanitizer', note: '' }
+      ],
+      Extras: [
+        { name: 'Reusable water bottle', note: '' },
+        { name: 'Snacks for travel', note: '' },
+        { name: 'Small day bag / backpack', note: '' },
+        { name: 'Luggage lock', note: '' },
+        { name: 'Pen (for customs forms)', note: '' }
+      ]
+    };
+
+    /* ── Clothing by climate ── */
+    var CLIMATE_CLOTHING = {
+      hot: [
+        { name: 'Lightweight t-shirts', qty: true },
+        { name: 'Shorts', qty: true },
+        { name: 'Sundress / light outfit', note: '' },
+        { name: 'Sandals', note: '' },
+        { name: 'Wide-brim sun hat', note: '' },
+        { name: 'Sunglasses', note: '' },
+        { name: 'Light pajamas', note: '' }
+      ],
+      warm: [
+        { name: 'T-shirts / tops', qty: true },
+        { name: 'Light trousers / shorts', qty: true },
+        { name: 'Light jacket / cardigan', note: 'for evenings' },
+        { name: 'Comfortable walking shoes', note: '' },
+        { name: 'Sunglasses', note: '' },
+        { name: 'Pajamas', note: '' }
+      ],
+      mild: [
+        { name: 'Long-sleeve shirts / tops', qty: true },
+        { name: 'Trousers / jeans', qty: true },
+        { name: 'Light sweater / fleece', note: '' },
+        { name: 'Waterproof jacket', note: '' },
+        { name: 'Comfortable walking shoes', note: '' },
+        { name: 'Warm pajamas', note: '' }
+      ],
+      cold: [
+        { name: 'Warm sweaters', qty: true },
+        { name: 'Thermal base layers', qty: true },
+        { name: 'Warm trousers', qty: true },
+        { name: 'Insulated jacket', note: '' },
+        { name: 'Scarf', note: '' },
+        { name: 'Gloves', note: '' },
+        { name: 'Warm hat / beanie', note: '' },
+        { name: 'Warm boots', note: '' },
+        { name: 'Warm pajamas', note: '' }
+      ],
+      freezing: [
+        { name: 'Thermal underwear tops', qty: true },
+        { name: 'Thermal underwear bottoms', qty: true },
+        { name: 'Heavy wool sweaters', qty: true },
+        { name: 'Insulated warm trousers', qty: true },
+        { name: 'Heavy winter coat', note: '' },
+        { name: 'Insulated waterproof boots', note: '' },
+        { name: 'Thick wool socks', qty: true },
+        { name: 'Insulated gloves', note: '' },
+        { name: 'Scarf / neck gaiter', note: '' },
+        { name: 'Warm hat / beanie', note: '' },
+        { name: 'Hand warmers', note: 'disposable packs' },
+        { name: 'Lip balm', note: 'prevent chapping' },
+        { name: 'Warm pajamas', note: '' }
+      ]
+    };
+
+    /* ── Destination-specific extras ── */
+    var DESTINATION_EXTRAS = {
+      beach: [
+        { name: 'Swimsuit(s)', note: '' },
+        { name: 'Beach towel', note: '' },
+        { name: 'Reef-safe sunscreen', note: 'SPF 50+' },
+        { name: 'After-sun lotion / aloe vera', note: '' },
+        { name: 'Flip-flops / water shoes', note: '' },
+        { name: 'Waterproof phone pouch', note: '' }
+      ],
+      city: [
+        { name: 'Comfortable walking shoes', note: 'broken in' },
+        { name: 'Crossbody bag', note: 'anti-theft' },
+        { name: 'Smart casual evening outfit', note: '' },
+        { name: 'Compact umbrella', note: '' },
+        { name: 'City guidebook / offline maps', note: '' }
+      ],
+      mountain: [
+        { name: 'Hiking boots', note: 'broken in' },
+        { name: 'Hiking socks', note: 'merino or synthetic' },
+        { name: 'Rain jacket / shell', note: 'waterproof + breathable' },
+        { name: 'Daypack (20-30L)', note: '' },
+        { name: 'Trekking poles', note: '' },
+        { name: 'First aid kit', note: '' },
+        { name: 'Trail snacks / energy bars', note: '' },
+        { name: 'Headlamp / flashlight', note: '' },
+        { name: 'Insect repellent', note: '' }
+      ],
+      winter: [
+        { name: 'Snow boots', note: 'waterproof + insulated' },
+        { name: 'Ski goggles / snow goggles', note: '' },
+        { name: 'Neck warmer / balaclava', note: '' },
+        { name: 'Hand warmers', note: 'disposable packs' },
+        { name: 'Thermal socks', note: '' },
+        { name: 'Moisturizer', note: 'cold air dries skin' },
+        { name: 'Lip balm with SPF', note: '' }
+      ],
+      coolcation: [
+        { name: 'Merino base layer top', note: '' },
+        { name: 'Merino base layer bottom', note: '' },
+        { name: 'Fleece mid-layer', note: '' },
+        { name: 'Waterproof rain jacket', note: 'packable' },
+        { name: 'Hiking boots', note: 'waterproof' },
+        { name: 'Mosquito repellent', note: 'essential for Nordic lakes' },
+        { name: 'Eye mask / blackout mask', note: 'for midnight sun' },
+        { name: 'Quick-dry sauna towel', note: '' },
+        { name: 'Swimsuit', note: 'lake / fjord swimming' },
+        { name: 'Warm hat', note: '' },
+        { name: 'Compact rain trousers', note: '' },
+        { name: 'Reusable insect-repellent bracelet', note: 'optional' }
+      ],
+      safari: [
+        { name: 'Neutral-colored clothing', note: 'khaki, tan, olive' },
+        { name: 'Long-sleeve shirts', note: 'sun + insect protection' },
+        { name: 'Long trousers', note: 'zip-off are ideal' },
+        { name: 'Wide-brim safari hat', note: '' },
+        { name: 'Binoculars', note: '' },
+        { name: 'Dust cover for camera', note: '' },
+        { name: 'Insect repellent (DEET)', note: '' },
+        { name: 'Anti-malaria medication', note: 'consult doctor' },
+        { name: 'Closed-toe shoes', note: '' },
+        { name: 'Headlamp / flashlight', note: '' }
+      ],
+      business: [
+        { name: 'Suit / formal outfit', note: 'wrinkle-resistant' },
+        { name: 'Dress shoes', note: '' },
+        { name: 'Laptop + charger', note: '' },
+        { name: 'Business cards', note: '' },
+        { name: 'Presentation clicker / laser pointer', note: '' },
+        { name: 'USB drive with backup files', note: '' },
+        { name: 'Ironing kit / wrinkle spray', note: '' },
+        { name: 'Tie / formal accessories', note: '' },
+        { name: 'Notebook + pen', note: '' }
+      ]
+    };
+
+    /* ── Activity-specific items ── */
+    var ACTIVITY_ITEMS = {
+      hiking: [
+        { name: 'Daypack', note: '' },
+        { name: 'Reusable water bottle (1L+)', note: '' },
+        { name: 'First aid kit', note: '' },
+        { name: 'Trail snacks / energy bars', note: '' },
+        { name: 'Hiking poles', note: 'collapsible' },
+        { name: 'Moisture-wicking socks', note: '' },
+        { name: 'Blister plasters', note: '' },
+        { name: 'Trail map / offline GPS', note: '' }
+      ],
+      swimming: [
+        { name: 'Swimsuit', note: '' },
+        { name: 'Goggles', note: '' },
+        { name: 'Quick-dry towel', note: '' },
+        { name: 'Waterproof sunscreen', note: '' },
+        { name: 'Dry bag for valuables', note: '' }
+      ],
+      sightseeing: [
+        { name: 'Comfortable walking shoes', note: '' },
+        { name: 'Portable phone charger', note: '' },
+        { name: 'Compact umbrella', note: '' },
+        { name: 'Crossbody bag', note: 'for valuables' },
+        { name: 'Offline maps / guidebook', note: '' }
+      ],
+      business: [
+        { name: 'Laptop + charger', note: '' },
+        { name: 'Business cards', note: '' },
+        { name: 'Presentation clicker', note: '' },
+        { name: 'Portable battery pack', note: '' },
+        { name: 'Notepad + quality pen', note: '' }
+      ],
+      sauna: [
+        { name: 'Quick-dry sauna towel', note: '' },
+        { name: 'Swimsuit', note: 'for mixed saunas' },
+        { name: 'Flip-flops / shower shoes', note: '' },
+        { name: 'Moisturizer', note: 'post-sauna skin care' },
+        { name: 'Water bottle', note: 'stay hydrated' }
+      ],
+      photography: [
+        { name: 'Camera + lenses', note: '' },
+        { name: 'Extra memory cards', note: '' },
+        { name: 'Camera batteries + charger', note: '' },
+        { name: 'Tripod (compact / travel)', note: '' },
+        { name: 'Lens cleaning kit', note: '' },
+        { name: 'Waterproof camera bag', note: '' }
+      ],
+      skiing: [
+        { name: 'Ski jacket', note: 'waterproof + insulated' },
+        { name: 'Ski trousers', note: '' },
+        { name: 'Thermal base layers', note: '' },
+        { name: 'Ski socks', note: 'tall, cushioned' },
+        { name: 'Ski goggles', note: '' },
+        { name: 'Helmet', note: 'or rent at resort' },
+        { name: 'Neck warmer / balaclava', note: '' },
+        { name: 'Ski gloves', note: 'waterproof' },
+        { name: 'Hand warmers', note: '' },
+        { name: 'Lip balm with SPF', note: '' },
+        { name: 'Sunscreen (high SPF)', note: 'snow reflects UV' }
+      ]
+    };
+
+    /* ── Quantity multiplier by duration ── */
+    var DURATION_MULTIPLIER = { weekend: 2, short: 5, week: 7, extended: 10 };
+
+    /* ── Underwear / socks base ── */
+    function getBasicClothing(dur) {
+      var m = DURATION_MULTIPLIER[dur] || 5;
+      return [
+        { name: 'Underwear', note: m + ' pairs' },
+        { name: 'Socks', note: m + ' pairs' },
+        { name: 'Bras / undershirts', note: Math.ceil(m * 0.7) + ' pieces' }
+      ];
+    }
+
+    /* ── Deduplicate items by name ── */
+    function dedup(items) {
+      var seen = {};
+      var result = [];
+      items.forEach(function(item) {
+        var key = item.name.toLowerCase().trim();
+        if (!seen[key]) {
+          seen[key] = true;
+          result.push(item);
+        }
+      });
+      return result;
+    }
+
+    /* ── Generate the list ── */
+    function generateList() {
+      var dest = document.getElementById('destination-type').value;
+      var climate = document.getElementById('climate').value;
+      var duration = document.getElementById('duration').value;
+      var activities = [];
+      document.querySelectorAll('.pack-activities-grid input:checked').forEach(function(cb) {
+        activities.push(cb.value);
+      });
+
+      var multiplier = DURATION_MULTIPLIER[duration] || 5;
+
+      /* Build categories */
+      var categories = {};
+
+      /* Documents */
+      categories['Documents'] = (BASE_ITEMS.Documents || []).slice();
+
+      /* Clothing */
+      var clothing = getBasicClothing(duration);
+      var climateClothes = (CLIMATE_CLOTHING[climate] || []).map(function(item) {
+        if (item.qty) {
+          return { name: item.name, note: Math.min(multiplier, 10) + ' pieces' };
+        }
+        return { name: item.name, note: item.note || '' };
+      });
+      clothing = clothing.concat(climateClothes);
+
+      /* Destination extras go into clothing or their own category */
+      var destItems = (DESTINATION_EXTRAS[dest] || []).slice();
+      categories['Clothing'] = clothing;
+      categories['Destination Gear'] = destItems;
+
+      /* Toiletries */
+      categories['Toiletries'] = (BASE_ITEMS.Toiletries || []).slice();
+
+      /* Electronics */
+      categories['Electronics'] = (BASE_ITEMS.Electronics || []).slice();
+
+      /* Activity gear */
+      var activityGear = [];
+      activities.forEach(function(act) {
+        if (ACTIVITY_ITEMS[act]) {
+          activityGear = activityGear.concat(ACTIVITY_ITEMS[act]);
+        }
+      });
+      if (activityGear.length > 0) {
+        categories['Activity Gear'] = activityGear;
+      }
+
+      /* Extras */
+      categories['Extras'] = (BASE_ITEMS.Extras || []).slice();
+
+      /* Deduplicate within each category */
+      Object.keys(categories).forEach(function(cat) {
+        categories[cat] = dedup(categories[cat]);
+      });
+
+      /* Cross-category dedup: if an item appears in Activity Gear AND another category, remove from the other */
+      if (categories['Activity Gear']) {
+        var actNames = {};
+        categories['Activity Gear'].forEach(function(item) {
+          actNames[item.name.toLowerCase().trim()] = true;
+        });
+        ['Destination Gear', 'Clothing', 'Electronics', 'Extras'].forEach(function(cat) {
+          if (categories[cat]) {
+            categories[cat] = categories[cat].filter(function(item) {
+              return !actNames[item.name.toLowerCase().trim()];
+            });
+          }
+        });
+      }
+
+      /* Remove empty categories */
+      Object.keys(categories).forEach(function(cat) {
+        if (categories[cat].length === 0) delete categories[cat];
+      });
+
+      return categories;
+    }
+
+    /* ── Render result ── */
+    function renderResult(categories) {
+      var container = document.getElementById('pack-categories');
+      var summary = document.getElementById('pack-summary');
+      var html = '';
+      var totalItems = 0;
+      var catCount = 0;
+
+      Object.keys(categories).forEach(function(cat) {
+        var items = categories[cat];
+        totalItems += items.length;
+        catCount++;
+        html += '<div class="pack-category">';
+        html += '<div class="pack-category-title">' + cat + ' <span class="pack-category-count">(' + items.length + ' items)</span></div>';
+        html += '<ul class="pack-items">';
+        items.forEach(function(item, idx) {
+          var uid = 'item-' + cat.replace(/\s+/g, '-').toLowerCase() + '-' + idx;
+          html += '<li class="pack-item" data-uid="' + uid + '">';
+          html += '<input type="checkbox" id="' + uid + '">';
+          html += '<label for="' + uid + '">' + item.name;
+          if (item.note) html += ' <span class="pack-item-note">(' + item.note + ')</span>';
+          html += '</label></li>';
+        });
+        html += '</ul></div>';
+      });
+
+      container.innerHTML = html;
+
+      summary.innerHTML =
+        '<div class="pack-summary-stat"><div class="stat-val">' + totalItems + '</div><div class="stat-label">Total Items</div></div>' +
+        '<div class="pack-summary-stat"><div class="stat-val">' + catCount + '</div><div class="stat-label">Categories</div></div>' +
+        '<div class="pack-summary-stat"><div class="stat-val">0</div><div class="stat-label">Packed</div></div>';
+
+      window.showEl(document.getElementById('pack-result'));
+      updateProgress();
+      wireCheckboxes();
+    }
+
+    /* ── Checkbox + progress ── */
+    function wireCheckboxes() {
+      document.querySelectorAll('.pack-item input[type="checkbox"]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var li = this.closest('.pack-item');
+          if (this.checked) {
+            li.classList.add('checked');
+          } else {
+            li.classList.remove('checked');
+          }
+          updateProgress();
+          saveCheckedState();
+        });
+      });
+    }
+
+    function updateProgress() {
+      var all = document.querySelectorAll('.pack-item input[type="checkbox"]');
+      var checked = document.querySelectorAll('.pack-item input[type="checkbox"]:checked');
+      var total = all.length;
+      var done = checked.length;
+      var pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-text').textContent = done + ' of ' + total + ' items packed (' + pct + '%)';
+
+      /* Update summary packed count */
+      var stats = document.querySelectorAll('.pack-summary-stat .stat-val');
+      if (stats.length >= 3) stats[2].textContent = done;
+    }
+
+    /* ── Save/restore checked state ── */
+    function saveCheckedState() {
+      var state = {};
+      document.querySelectorAll('.pack-item input[type="checkbox"]').forEach(function(cb) {
+        if (cb.checked) state[cb.id] = true;
+      });
+      try { localStorage.setItem('pack-checked', JSON.stringify(state)); } catch(e) {}
+    }
+
+    function restoreCheckedState() {
+      try {
+        var state = JSON.parse(localStorage.getItem('pack-checked') || '{}');
+        Object.keys(state).forEach(function(id) {
+          var cb = document.getElementById(id);
+          if (cb) {
+            cb.checked = true;
+            var li = cb.closest('.pack-item');
+            if (li) li.classList.add('checked');
+          }
+        });
+        updateProgress();
+      } catch(e) {}
+    }
+
+    /* ── Copy list as text ── */
+    function copyList() {
+      var cats = document.querySelectorAll('.pack-category');
+      var lines = [];
+      lines.push('Packing List — Generated at tool.teamzlab.com/travel/packing-list-generator/');
+      lines.push('');
+      cats.forEach(function(cat) {
+        var title = cat.querySelector('.pack-category-title').textContent.trim();
+        lines.push(title.toUpperCase());
+        cat.querySelectorAll('.pack-item').forEach(function(item) {
+          var cb = item.querySelector('input[type="checkbox"]');
+          var label = item.querySelector('label').textContent.trim();
+          lines.push((cb.checked ? '[x] ' : '[ ] ') + label);
+        });
+        lines.push('');
+      });
+      var text = lines.join('\n');
+      navigator.clipboard.writeText(text).then(function() {
+        if (window.showToast) window.showToast('Packing list copied to clipboard');
+      }).catch(function() {
+        if (window.showToast) window.showToast('Could not copy — try selecting and copying manually');
+      });
+    }
+
+    /* ── Print ── */
+    function printList() {
+      window.print();
+    }
+
+    /* ── Uncheck all ── */
+    function uncheckAll() {
+      document.querySelectorAll('.pack-item input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = false;
+        var li = cb.closest('.pack-item');
+        if (li) li.classList.remove('checked');
+      });
+      updateProgress();
+      try { localStorage.removeItem('pack-checked'); } catch(e) {}
+      if (window.showToast) window.showToast('All items unchecked');
+    }
+
+    /* ── Breadcrumbs, FAQs, schemas, related tools ── */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Travel Tools', url: '/travel/' },
+      { name: 'Packing List Generator' }
+    ];
+
+    var FAQS = [
+      { q: 'How do I customize the packing list?', a: 'Select your destination type, climate, trip duration, and planned activities. The generator combines these factors to create a tailored checklist. Each combination produces a different list, so adjust the inputs to match your specific trip.' },
+      { q: 'What is a coolcation?', a: 'A coolcation is a summer holiday in a cool-climate destination, typically Scandinavia, Iceland, Scotland, or the Baltics. Instead of beach heat, travelers enjoy midnight sun, hiking, lake swimming, saunas, and mild temperatures. The packing list includes items like mosquito repellent, an eye mask for the midnight sun, a sauna towel, and layering pieces for unpredictable Nordic weather.' },
+      { q: 'Should I pack everything in carry-on or checked luggage?', a: 'For trips under a week, a carry-on is often sufficient if you use packing cubes and the layering system. For longer trips or activity-heavy itineraries with bulky gear (ski equipment, hiking boots), checked luggage may be necessary. Always keep documents, medication, electronics, and one change of clothes in your carry-on in case checked bags are delayed.' },
+      { q: 'How do packing cubes help?', a: 'Packing cubes compress clothing and organize items by category. They let you see everything at a glance, prevent overpacking by limiting space per category, and keep your bag tidy throughout the trip. Most travelers find they can pack 20-30% more efficiently with cubes compared to loose packing.' },
+      { q: 'What should I NOT pack?', a: 'Avoid packing valuables you would be devastated to lose, large quantities of liquids (buy at your destination), items easily available at hotels (hair dryers, irons), too many "just in case" outfits, and anything prohibited by airlines or your destination country. Also skip heavy guidebooks — use offline maps and digital guides instead.' },
+      { q: 'How many outfits do I need for a two-week trip?', a: 'With the layering system and mix-and-match basics, 5-7 tops, 3-4 bottoms, and 2-3 outer layers can cover a two-week trip. Choose neutral colors that coordinate with each other. Plan to do laundry once during the trip. This approach keeps your luggage manageable while providing variety.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/travel-cost-calculator', name: 'Travel Cost Calculator', description: 'Estimate total trip costs including flights, hotels, food, and activities.' },
+      { slug: 'weather/clothing-suggester', name: 'What to Wear Today', description: 'Get clothing suggestions based on temperature and weather conditions.' },
+      { slug: 'weather/uv-exposure-timer', name: 'UV Exposure Timer', description: 'Calculate safe sun exposure time based on UV index and skin type.' },
+      { slug: 'tools/time-zone-converter', name: 'Time Zone Converter', description: 'Convert times between world time zones for trip planning.' },
+      { slug: 'weather/outdoor-activity-planner', name: 'Outdoor Activity Planner', description: 'Find the best outdoor activities based on weather conditions.' },
+      { slug: 'pest/travel-disease-risk', name: 'Travel Disease Risk Checker', description: 'Check health risks and vaccination recommendations for your destination.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'travel/packing-list-generator',
+        title: 'Packing List Generator',
+        description: 'Generate a custom packing list for any trip. Smart checklist based on destination, weather, duration, and activities. Free, no signup needed.'
+      });
+
+      document.getElementById('generate-btn').addEventListener('click', function() {
+        var categories = generateList();
+        renderResult(categories);
+        restoreCheckedState();
+        document.getElementById('pack-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+
+      document.getElementById('copy-list-btn').addEventListener('click', copyList);
+      document.getElementById('print-list-btn').addEventListener('click', printList);
+      document.getElementById('clear-checks-btn').addEventListener('click', uncheckAll);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sauna Timer — Session Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Free sauna session timer with wellness zones. Track duration, rounds, and cool-down periods. Health benefits guide included. No app needed.">
+  <meta property="og:title" content="Sauna Timer — Session Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Free sauna session timer with wellness zones. Track duration, rounds, and cool-down periods. Health benefits guide included.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/sauna-timer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Sauna Timer — Session Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Free sauna session timer with wellness zones. Track duration, rounds, and cool-down periods. Health benefits guide included.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/sauna-timer/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sauna-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .sauna-field { display: flex; flex-direction: column; gap: 0.25rem; }
+    .sauna-field label { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .sauna-field select,
+    .sauna-field input { padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-md); }
+    .sauna-custom-fields { display: none; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem; }
+    .sauna-custom-fields.visible { display: grid; }
+
+    .sauna-timer-display { text-align: center; padding: 2rem 1rem; }
+    .sauna-phase-label { font-size: var(--text-lg); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; transition: color 0.3s; }
+    .sauna-phase-label.phase-sauna { color: var(--heading); }
+    .sauna-phase-label.phase-cool { color: var(--text-muted); }
+    .sauna-phase-label.phase-done { color: var(--heading); }
+    .sauna-countdown { font-size: clamp(2.5rem, 10vw, 5rem); font-weight: 800; color: var(--heading); font-variant-numeric: tabular-nums; line-height: 1.1; margin-bottom: 0.5rem; }
+    .sauna-round-label { font-size: var(--text-md); color: var(--text-muted); margin-bottom: 1rem; }
+
+    .sauna-progress-bar { width: 100%; max-width: 320px; height: 8px; border-radius: 4px; background: var(--border); margin: 0 auto 1.5rem; overflow: hidden; }
+    .sauna-progress-fill { height: 100%; border-radius: 4px; background: var(--heading); transition: width 0.3s ease; width: 0%; }
+
+    .sauna-round-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .sauna-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border); transition: background 0.3s, transform 0.3s; }
+    .sauna-dot.done { background: var(--heading); }
+    .sauna-dot.current { background: var(--heading); transform: scale(1.3); }
+
+    .sauna-controls { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .sauna-controls button { padding: 0.7rem 1.8rem; border-radius: 999px; font-weight: 600; font-size: var(--text-md); border: none; cursor: pointer; transition: opacity 0.2s; }
+    .sauna-btn-start { background: var(--heading); color: var(--bg); }
+    .sauna-btn-pause { background: var(--heading); color: var(--bg); }
+    .sauna-btn-reset { background: var(--surface); color: var(--text); border: 1px solid var(--border) !important; }
+    .sauna-btn-start:disabled,
+    .sauna-btn-pause:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .sauna-summary { display: none; margin-top: 1.5rem; }
+    .sauna-summary.visible { display: block; }
+    .sauna-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .sauna-stat-card { padding: 1rem; border-radius: 8px; border: 1px solid var(--border); text-align: center; }
+    .sauna-stat-card h4 { margin: 0 0 0.25rem; font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; }
+    .sauna-stat-val { font-size: var(--text-h3); font-weight: 700; color: var(--heading); }
+    .sauna-stat-sub { font-size: var(--text-sm); color: var(--text-muted); margin-top: 0.25rem; }
+    .sauna-wellness-zone { text-align: center; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem; }
+    .sauna-wellness-zone h4 { margin: 0 0 0.25rem; font-size: var(--text-sm); color: var(--text-muted); font-weight: 600; }
+    .sauna-zone-val { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+
+    .sauna-log { margin-top: 1rem; }
+    .sauna-log h4 { font-size: var(--text-md); font-weight: 600; color: var(--heading); margin-bottom: 0.5rem; }
+    .sauna-log-list { list-style: none; padding: 0; margin: 0; }
+    .sauna-log-list li { padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); color: var(--text); display: flex; justify-content: space-between; }
+    .sauna-log-list li:last-child { border-bottom: none; }
+    .sauna-log-time { color: var(--text-muted); }
+
+    .sauna-idle-msg { font-size: var(--text-md); color: var(--text-muted); margin-top: 0.5rem; }
+
+    @media (max-width: 600px) {
+      .sauna-settings { grid-template-columns: 1fr; }
+      .sauna-custom-fields { grid-template-columns: 1fr; }
+      .sauna-summary-grid { grid-template-columns: 1fr; }
+      .sauna-controls { flex-direction: column; align-items: center; }
+      .sauna-controls button { width: 100%; max-width: 280px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Health", "item": "https://tool.teamzlab.com/health/"}, {"@type": "ListItem", "position": 3, "name": "Sauna Timer"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the optimal sauna session duration?", "acceptedAnswer": {"@type": "Answer", "text": "For most healthy adults, 15 to 20 minutes per round is optimal. Beginners should start with 8 to 10 minutes and gradually increase. Never stay longer than 20 minutes in a single round, and always cool down between rounds."}}, {"@type": "Question", "name": "How many sauna rounds should I do?", "acceptedAnswer": {"@type": "Answer", "text": "Two to three rounds is the standard recommendation for a full sauna session. Finnish tradition typically includes three rounds with cool-down periods in between. One round is fine for beginners, and experienced users may do up to four or five rounds."}}, {"@type": "Question", "name": "What are the benefits of cold plunges between sauna rounds?", "acceptedAnswer": {"@type": "Answer", "text": "Cold plunges or cold showers between rounds enhance the cardiovascular benefits by training blood vessels to constrict and dilate rapidly. This contrast therapy can improve circulation, reduce inflammation, boost immune function, and increase alertness through norepinephrine release."}}, {"@type": "Question", "name": "Who should avoid using a sauna?", "acceptedAnswer": {"@type": "Answer", "text": "People with uncontrolled high blood pressure, recent heart attack or stroke, unstable angina, or severe aortic stenosis should avoid saunas. Pregnant women should consult their doctor first. Anyone feeling unwell, dehydrated, or under the influence of alcohol should not use a sauna."}}, {"@type": "Question", "name": "How many calories does a sauna session burn?", "acceptedAnswer": {"@type": "Answer", "text": "A sauna session burns roughly 1.5 calories per minute per kilogram of body weight. For a 75 kg person, a 15-minute round burns approximately 170 calories. However, most of this is due to increased heart rate and sweating rather than fat metabolism. Sauna use complements exercise but does not replace it."}}, {"@type": "Question", "name": "What is proper Finnish sauna etiquette?", "acceptedAnswer": {"@type": "Answer", "text": "In Finland, saunas are typically used nude with a towel to sit on. Speak quietly and respect the peaceful atmosphere. Pour water on the stones (loyly) only with others permission. Shower before entering. Do not wear swimwear in traditional Finnish saunas as the chemicals and fabric are considered unhygienic in the heat."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Sauna Timer", "description": "Free sauna session timer with wellness zones. Track duration, rounds, and cool-down periods. Health benefits guide included.", "url": "https://tool.teamzlab.com/health/sauna-timer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"><a href="/" class="header-logo teamz-logo" aria-label="Teamz Lab Tools Home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Teamz Lab Tools</span></a><nav class="header-nav" aria-label="Main navigation"><a href="/" class="nav-link">Home</a><a href="/about/" class="nav-link">About</a><a href="/contact/" class="nav-link">Contact</a><div class="lang-selector notranslate" translate="no"><button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span id="current-lang" class="notranslate" translate="no">EN</span></button><div class="lang-dropdown notranslate" id="lang-dropdown" translate="no"></div></div><div class="fav-header-wrap"><button id="fav-header-btn" class="header-icon-btn nav-link--icon" aria-label="Favorites" title="Your Favourites"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="fav-badge" class="fav-badge" style="display:none;">0</span></button><div id="fav-dropdown" class="fav-dropdown" style="display:none;"></div></div><button id="theme-toggle" class="header-icon-btn nav-link--icon" aria-label="Toggle theme" title="Toggle dark/light mode"><svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></nav></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Sauna Timer — Session Tracker</h1>
+      <p class="tool-description">Track your sauna sessions with timed rounds, cool-down periods, and wellness zone feedback. Set your temperature, choose a session type, and let the timer guide you through each phase. Everything runs in your browser — no app needed.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="sauna-settings">
+        <div class="sauna-field">
+          <label for="sauna_temp">Sauna Temperature</label>
+          <select id="sauna_temp">
+            <option value="moderate">Moderate (60–70°C)</option>
+            <option value="medium">Medium (70–80°C)</option>
+            <option value="hot" selected>Hot (80–90°C)</option>
+            <option value="very_hot">Very Hot (90°C+)</option>
+          </select>
+        </div>
+        <div class="sauna-field">
+          <label for="session_type">Session Type</label>
+          <select id="session_type">
+            <option value="beginner">Beginner (8 min sauna, 2 min cool)</option>
+            <option value="standard" selected>Standard (15 min sauna, 5 min cool)</option>
+            <option value="finnish">Finnish (20 min sauna, 10 min cool)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="sauna-field">
+          <label for="rounds">Number of Rounds</label>
+          <input type="number" id="rounds" min="1" max="5" value="3">
+        </div>
+      </div>
+      <div class="sauna-custom-fields" id="custom-fields">
+        <div class="sauna-field">
+          <label for="sauna_mins">Sauna Duration (min)</label>
+          <input type="number" id="sauna_mins" min="1" max="30" value="15">
+        </div>
+        <div class="sauna-field">
+          <label for="cool_mins">Cool-Down Duration (min)</label>
+          <input type="number" id="cool_mins" min="1" max="15" value="5">
+        </div>
+      </div>
+
+      <div class="sauna-timer-display" id="timer-display">
+        <div class="sauna-phase-label phase-sauna" id="phase-label">READY</div>
+        <div class="sauna-countdown" id="countdown">00:00</div>
+        <div class="sauna-round-label" id="round-label">Configure your session above</div>
+        <div class="sauna-progress-bar"><div class="sauna-progress-fill" id="progress-fill"></div></div>
+        <div class="sauna-round-dots" id="round-dots"></div>
+        <div class="sauna-controls">
+          <button class="sauna-btn-start" id="btn-start" type="button">Start</button>
+          <button class="sauna-btn-pause" id="btn-pause" type="button" style="display:none;">Pause</button>
+          <button class="sauna-btn-reset" id="btn-reset" type="button">Reset</button>
+        </div>
+      </div>
+
+      <div class="sauna-summary" id="session-summary">
+        <h3 style="color:var(--heading);margin-bottom:1rem;">Session Complete</h3>
+        <div class="sauna-wellness-zone" id="wellness-zone">
+          <h4>Wellness Zone Reached</h4>
+          <div class="sauna-zone-val" id="zone-val">—</div>
+        </div>
+        <div class="sauna-summary-grid">
+          <div class="sauna-stat-card">
+            <h4>Total Sauna Time</h4>
+            <div class="sauna-stat-val" id="stat-sauna-time">—</div>
+          </div>
+          <div class="sauna-stat-card">
+            <h4>Total Cool-Down</h4>
+            <div class="sauna-stat-val" id="stat-cool-time">—</div>
+          </div>
+          <div class="sauna-stat-card">
+            <h4>Estimated Calories</h4>
+            <div class="sauna-stat-val" id="stat-calories">—</div>
+            <div class="sauna-stat-sub">Based on 75 kg body weight</div>
+          </div>
+          <div class="sauna-stat-card">
+            <h4>Rounds Completed</h4>
+            <div class="sauna-stat-val" id="stat-rounds">—</div>
+          </div>
+        </div>
+        <div class="sauna-log" id="session-log">
+          <h4>Session Log</h4>
+          <ul class="sauna-log-list" id="log-list"></ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Use the Sauna Timer</h2>
+      <p>Select your sauna temperature range and session type from the settings panel. Beginners should start with shorter sessions at moderate temperatures. Choose the number of rounds you want to complete, then press Start. The timer will guide you through each sauna phase and cool-down period automatically. An audio beep signals each phase transition so you do not need to watch the screen constantly. You can pause and resume at any time.</p>
+
+      <h2>Health Benefits of Regular Sauna Use</h2>
+      <p>Regular sauna bathing has been linked to numerous health benefits supported by research. Studies from Finland, where sauna use is deeply embedded in culture, show that frequent sauna sessions can improve cardiovascular health by lowering blood pressure and improving vascular function. The heat exposure triggers a mild stress response that strengthens the body over time, similar to moderate exercise. Sauna use promotes muscle recovery after workouts by increasing blood flow to tired muscles. The deep sweating also helps flush toxins and can improve skin clarity. Mental health benefits include reduced stress hormones, improved mood through endorphin release, and better sleep quality when used in the evening.</p>
+
+      <h2>Finnish Sauna Tradition</h2>
+      <p>The Finnish sauna tradition dates back thousands of years and remains a central part of Finnish culture today. A traditional Finnish session involves multiple rounds of dry heat at 80 to 100 degrees Celsius, each lasting 15 to 20 minutes, followed by cooling periods in cold water, snow, or fresh air. Finns often add water to hot stones (loyly) to create bursts of steam that intensify the heat sensation. The sauna is considered a place for physical and mental cleansing, relaxation, and social connection. Finland has roughly 3.3 million saunas for a population of 5.5 million people.</p>
+
+      <h2>Sauna Safety Guidelines</h2>
+      <p>Always stay hydrated before, during, and after sauna sessions. Drink at least 500 ml of water before entering and replenish fluids after each round. Avoid alcohol before or during sauna use as it increases dehydration and cardiovascular strain. Leave the sauna immediately if you feel dizzy, nauseous, or lightheaded. Beginners should start with shorter sessions at lower temperatures and gradually increase duration over several weeks. People with cardiovascular conditions, pregnant women, and those on certain medications should consult a doctor before regular sauna use. Cool down gradually rather than shocking your body with extreme cold if you are new to the practice.</p>
+
+      <h2>Beginner vs Advanced Sessions</h2>
+      <p>Beginners should start with 5 to 10 minute sauna rounds at moderate temperatures (60 to 70 degrees Celsius) with 2 to 3 minute cool-down periods between rounds. Two rounds per session is sufficient when starting out. As your body adapts over several weeks, gradually increase session duration to 15 to 20 minutes and temperature to 80 to 90 degrees. Advanced users who have been practicing regularly for months can handle the traditional Finnish protocol of 20 minute rounds at 90 degrees or above with longer 10 minute cool-down periods including cold plunges. Always listen to your body and never compete with others on duration or temperature endurance.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* ── Presets ────────────────────────────────────── */
+    var PRESETS = {
+      beginner: { sauna: 8, cool: 2 },
+      standard: { sauna: 15, cool: 5 },
+      finnish:  { sauna: 20, cool: 10 }
+    };
+
+    /* ── State ──────────────────────────────────────── */
+    var timerInterval = null;
+    var running = false;
+    var paused = false;
+    var currentPhase = 'idle';   // idle | sauna | cool | done
+    var currentRound = 0;
+    var totalRounds = 3;
+    var saunaSecs = 0;
+    var coolSecs = 0;
+    var secondsLeft = 0;
+    var phaseTotal = 0;
+    var totalSaunaTime = 0;
+    var totalCoolTime = 0;
+    var sessionLog = [];
+    var phaseStartTime = null;
+    var audioCtx = null;
+
+    /* ── DOM refs ───────────────────────────────────── */
+    var elSessionType = document.getElementById('session_type');
+    var elRounds = document.getElementById('rounds');
+    var elSaunaMins = document.getElementById('sauna_mins');
+    var elCoolMins = document.getElementById('cool_mins');
+    var elCustomFields = document.getElementById('custom-fields');
+    var elPhaseLabel = document.getElementById('phase-label');
+    var elCountdown = document.getElementById('countdown');
+    var elRoundLabel = document.getElementById('round-label');
+    var elProgressFill = document.getElementById('progress-fill');
+    var elRoundDots = document.getElementById('round-dots');
+    var elBtnStart = document.getElementById('btn-start');
+    var elBtnPause = document.getElementById('btn-pause');
+    var elBtnReset = document.getElementById('btn-reset');
+    var elSummary = document.getElementById('session-summary');
+
+    /* ── Audio beep (Web Audio API) ─────────────────── */
+    function playBeep(freq, duration) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq || 880;
+        gain.gain.value = 0.3;
+        osc.start();
+        osc.stop(audioCtx.currentTime + (duration || 0.3));
+      } catch (e) { /* silent fail if audio blocked */ }
+    }
+
+    function playTransitionBeep() {
+      playBeep(880, 0.15);
+      setTimeout(function() { playBeep(1100, 0.15); }, 200);
+    }
+
+    function playDoneBeep() {
+      playBeep(880, 0.12);
+      setTimeout(function() { playBeep(1100, 0.12); }, 180);
+      setTimeout(function() { playBeep(1320, 0.25); }, 360);
+    }
+
+    /* ── Helpers ─────────────────────────────────────── */
+    function formatTime(secs) {
+      var m = Math.floor(secs / 60);
+      var s = secs % 60;
+      return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function nowStr() {
+      var d = new Date();
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function getTimings() {
+      var type = elSessionType.value;
+      if (type === 'custom') {
+        return {
+          sauna: Math.max(1, parseInt(elSaunaMins.value) || 15) * 60,
+          cool: Math.max(1, parseInt(elCoolMins.value) || 5) * 60
+        };
+      }
+      var p = PRESETS[type] || PRESETS.standard;
+      return { sauna: p.sauna * 60, cool: p.cool * 60 };
+    }
+
+    /* ── Custom field toggle ─────────────────────────── */
+    elSessionType.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        elCustomFields.classList.add('visible');
+      } else {
+        elCustomFields.classList.remove('visible');
+      }
+    });
+
+    /* ── Round dots ──────────────────────────────────── */
+    function renderDots() {
+      var html = '';
+      for (var i = 1; i <= totalRounds; i++) {
+        var cls = 'sauna-dot';
+        if (i < currentRound) cls += ' done';
+        else if (i === currentRound) cls += ' current';
+        html += '<div class="' + cls + '"></div>';
+      }
+      elRoundDots.innerHTML = html;
+    }
+
+    /* ── Timer tick ──────────────────────────────────── */
+    function tick() {
+      if (secondsLeft <= 0) {
+        logPhaseEnd();
+        advancePhase();
+        return;
+      }
+      secondsLeft--;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      elCountdown.textContent = formatTime(secondsLeft);
+      var pct = phaseTotal > 0 ? ((phaseTotal - secondsLeft) / phaseTotal) * 100 : 0;
+      elProgressFill.style.width = pct + '%';
+    }
+
+    /* ── Phase management ────────────────────────────── */
+    function startSession() {
+      totalRounds = Math.max(1, Math.min(5, parseInt(elRounds.value) || 3));
+      var timings = getTimings();
+      saunaSecs = timings.sauna;
+      coolSecs = timings.cool;
+      totalSaunaTime = 0;
+      totalCoolTime = 0;
+      sessionLog = [];
+      currentRound = 1;
+      currentPhase = 'sauna';
+
+      if (window.hideEl) window.hideEl(elSummary);
+      elSummary.classList.remove('visible');
+
+      beginPhase('sauna');
+      running = true;
+      paused = false;
+      elBtnStart.style.display = 'none';
+      if (window.showEl) window.showEl(elBtnPause);
+      else elBtnPause.style.display = 'inline-block';
+      elBtnPause.textContent = 'Pause';
+      renderDots();
+
+      // Resume audio context if suspended
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function beginPhase(phase) {
+      currentPhase = phase;
+      phaseStartTime = new Date();
+      if (phase === 'sauna') {
+        secondsLeft = saunaSecs;
+        phaseTotal = saunaSecs;
+        elPhaseLabel.textContent = 'SAUNA';
+        elPhaseLabel.className = 'sauna-phase-label phase-sauna';
+        elRoundLabel.textContent = 'Round ' + currentRound + ' of ' + totalRounds;
+        sessionLog.push({ type: 'Sauna Round ' + currentRound, start: nowStr(), end: '' });
+      } else {
+        secondsLeft = coolSecs;
+        phaseTotal = coolSecs;
+        elPhaseLabel.textContent = 'COOL DOWN';
+        elPhaseLabel.className = 'sauna-phase-label phase-cool';
+        elRoundLabel.textContent = 'Cool-down after Round ' + currentRound;
+        sessionLog.push({ type: 'Cool-Down ' + currentRound, start: nowStr(), end: '' });
+      }
+      updateDisplay();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function logPhaseEnd() {
+      if (sessionLog.length > 0) {
+        sessionLog[sessionLog.length - 1].end = nowStr();
+      }
+      if (currentPhase === 'sauna') {
+        totalSaunaTime += saunaSecs;
+      } else {
+        totalCoolTime += coolSecs;
+      }
+    }
+
+    function advancePhase() {
+      clearInterval(timerInterval);
+      if (currentPhase === 'sauna') {
+        // Move to cool-down
+        playTransitionBeep();
+        beginPhase('cool');
+      } else {
+        // End of cool-down — move to next round or finish
+        if (currentRound < totalRounds) {
+          currentRound++;
+          playTransitionBeep();
+          renderDots();
+          beginPhase('sauna');
+        } else {
+          // Session complete
+          playDoneBeep();
+          finishSession();
+        }
+      }
+    }
+
+    function finishSession() {
+      clearInterval(timerInterval);
+      running = false;
+      paused = false;
+      currentPhase = 'done';
+      elPhaseLabel.textContent = 'SESSION COMPLETE';
+      elPhaseLabel.className = 'sauna-phase-label phase-done';
+      elCountdown.textContent = '00:00';
+      elRoundLabel.textContent = totalRounds + ' round' + (totalRounds > 1 ? 's' : '') + ' completed';
+      elProgressFill.style.width = '100%';
+      renderDots();
+
+      elBtnPause.style.display = 'none';
+      if (window.showEl) window.showEl(elBtnStart);
+      else elBtnStart.style.display = 'inline-block';
+      elBtnStart.textContent = 'Start New';
+
+      showSummary();
+    }
+
+    /* ── Summary ─────────────────────────────────────── */
+    function showSummary() {
+      var saunaMins = totalSaunaTime / 60;
+      var coolMins = totalCoolTime / 60;
+      var calories = Math.round(saunaMins * 1.5 * 75);
+
+      document.getElementById('stat-sauna-time').textContent = Math.round(saunaMins) + ' min';
+      document.getElementById('stat-cool-time').textContent = Math.round(coolMins) + ' min';
+      document.getElementById('stat-calories').textContent = calories + ' kcal';
+      document.getElementById('stat-rounds').textContent = totalRounds;
+
+      // Wellness zone based on total sauna time and temperature
+      var temp = document.getElementById('sauna_temp').value;
+      var zone = 'Recovery';
+      if (saunaMins >= 30 && (temp === 'hot' || temp === 'very_hot')) {
+        zone = 'Deep Heat';
+      } else if (saunaMins >= 15 || temp === 'hot' || temp === 'very_hot') {
+        zone = 'Cardiovascular';
+      }
+      document.getElementById('zone-val').textContent = zone;
+
+      // Session log
+      var logHtml = '';
+      for (var i = 0; i < sessionLog.length; i++) {
+        var entry = sessionLog[i];
+        logHtml += '<li><span>' + entry.type + '</span><span class="sauna-log-time">' + entry.start + ' — ' + entry.end + '</span></li>';
+      }
+      document.getElementById('log-list').innerHTML = logHtml;
+
+      if (window.showEl) window.showEl(elSummary);
+      else elSummary.style.display = 'block';
+      elSummary.classList.add('visible');
+    }
+
+    /* ── Button handlers ─────────────────────────────── */
+    elBtnStart.addEventListener('click', function() {
+      if (!running || currentPhase === 'done') {
+        startSession();
+      }
+    });
+
+    elBtnPause.addEventListener('click', function() {
+      if (!running) return;
+      if (paused) {
+        // Resume
+        timerInterval = setInterval(tick, 1000);
+        paused = false;
+        elBtnPause.textContent = 'Pause';
+      } else {
+        // Pause
+        clearInterval(timerInterval);
+        paused = true;
+        elBtnPause.textContent = 'Resume';
+      }
+    });
+
+    elBtnReset.addEventListener('click', function() {
+      clearInterval(timerInterval);
+      running = false;
+      paused = false;
+      currentPhase = 'idle';
+      currentRound = 0;
+      secondsLeft = 0;
+      phaseTotal = 0;
+      totalSaunaTime = 0;
+      totalCoolTime = 0;
+      sessionLog = [];
+
+      elPhaseLabel.textContent = 'READY';
+      elPhaseLabel.className = 'sauna-phase-label phase-sauna';
+      elCountdown.textContent = '00:00';
+      elRoundLabel.textContent = 'Configure your session above';
+      elProgressFill.style.width = '0%';
+      elRoundDots.innerHTML = '';
+
+      elBtnPause.style.display = 'none';
+      if (window.showEl) window.showEl(elBtnStart);
+      else elBtnStart.style.display = 'inline-block';
+      elBtnStart.textContent = 'Start';
+
+      if (window.hideEl) window.hideEl(elSummary);
+      else elSummary.style.display = 'none';
+      elSummary.classList.remove('visible');
+    });
+
+    /* ── Schemas, FAQs, Related ──────────────────────── */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Health', url: '/health/' },
+      { name: 'Sauna Timer' }
+    ];
+
+    var FAQS = [
+      { q: 'What is the optimal sauna session duration?', a: 'For most healthy adults, 15 to 20 minutes per round is optimal. Beginners should start with 8 to 10 minutes and gradually increase. Never stay longer than 20 minutes in a single round, and always cool down between rounds.' },
+      { q: 'How many sauna rounds should I do?', a: 'Two to three rounds is the standard recommendation for a full sauna session. Finnish tradition typically includes three rounds with cool-down periods in between. One round is fine for beginners, and experienced users may do up to four or five rounds.' },
+      { q: 'What are the benefits of cold plunges between sauna rounds?', a: 'Cold plunges or cold showers between rounds enhance the cardiovascular benefits by training blood vessels to constrict and dilate rapidly. This contrast therapy can improve circulation, reduce inflammation, boost immune function, and increase alertness through norepinephrine release.' },
+      { q: 'Who should avoid using a sauna?', a: 'People with uncontrolled high blood pressure, recent heart attack or stroke, unstable angina, or severe aortic stenosis should avoid saunas. Pregnant women should consult their doctor first. Anyone feeling unwell, dehydrated, or under the influence of alcohol should not use a sauna.' },
+      { q: 'How many calories does a sauna session burn?', a: 'A sauna session burns roughly 1.5 calories per minute per kilogram of body weight. For a 75 kg person, a 15-minute round burns approximately 170 calories. However, most of this is due to increased heart rate and sweating rather than fat metabolism. Sauna use complements exercise but does not replace it.' },
+      { q: 'What is proper Finnish sauna etiquette?', a: 'In Finland, saunas are typically used nude with a towel to sit on. Speak quietly and respect the peaceful atmosphere. Pour water on the stones (loyly) only with others permission. Shower before entering. Do not wear swimwear in traditional Finnish saunas as the chemicals and fabric are considered unhygienic in the heat.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'health/breathing-exercise', name: 'Breathing Exercise', description: 'Guided breathing exercises for relaxation and stress relief.' },
+      { slug: 'health/sleep-calculator', name: 'Sleep Calculator', description: 'Calculate optimal bedtime and wake time for better rest.' },
+      { slug: 'health/stress-level-test', name: 'Stress Level Test', description: 'Measure your perceived stress level with the PSS-10.' },
+      { slug: 'health/heart-rate-checker', name: 'Heart Rate Checker', description: 'Check and track your resting heart rate.' },
+      { slug: 'health/water-intake-calculator', name: 'Water Intake Calculator', description: 'Calculate your daily water intake needs.' },
+      { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate your daily calorie needs based on activity level.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS); TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS); TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      TeamzTools.injectWebAppSchema({ slug: 'health/sauna-timer', title: 'Sauna Timer', description: 'Free sauna session timer with wellness zones. Track duration, rounds, and cool-down periods. Health benefits guide included.' });
+    });
+  </script>
+</body>
+</html>

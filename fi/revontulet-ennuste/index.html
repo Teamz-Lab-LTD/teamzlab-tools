@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Revontulet-ennuste Suomi — Teamz Lab Tools</title>
+  <meta name="description" content="Tarkista revontulien näkyvyys tänään. KP-indeksi, todennäköisyys ja parhaat katseluajat Suomessa. Ilmainen ja yksityinen.">
+  <meta property="og:title" content="Revontulet-ennuste Suomi — Teamz Lab Tools">
+  <meta property="og:description" content="Tarkista revontulien näkyvyys tänään. KP-indeksi, todennäköisyys ja parhaat katseluajat Suomessa. Ilmainen ja yksityinen.">
+  <meta property="og:url" content="https://tool.teamzlab.com/fi/revontulet-ennuste/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/fi.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Revontulet-ennuste Suomi — Teamz Lab Tools">
+  <meta name="twitter:description" content="Tarkista revontulien näkyvyys tänään. KP-indeksi, todennäköisyys ja parhaat katseluajat Suomessa. Ilmainen ja yksityinen.">
+  <link rel="canonical" href="https://tool.teamzlab.com/fi/revontulet-ennuste/">
+  <link rel="alternate" hreflang="fi" href="https://tool.teamzlab.com/fi/revontulet-ennuste/">
+  <link rel="alternate" hreflang="x-default" href="https://tool.teamzlab.com/fi/revontulet-ennuste/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .aurora-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .aurora-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--heading);
+      font-size: var(--text-sm);
+    }
+    .aurora-form select,
+    .aurora-form input[type="date"] {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+    }
+    .aurora-btn {
+      grid-column: 1 / -1;
+      padding: 12px 24px;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-size: var(--text-base);
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .aurora-btn:hover {
+      opacity: 0.85;
+    }
+    .aurora-results {
+      display: none;
+      margin-top: 24px;
+    }
+    .aurora-results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .aurora-card {
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      text-align: center;
+    }
+    .aurora-card-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .aurora-card-value {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .aurora-card-full {
+      grid-column: 1 / -1;
+    }
+    .kp-gauge {
+      width: 100%;
+      height: 16px;
+      border-radius: 8px;
+      background: var(--border);
+      margin-top: 12px;
+      overflow: hidden;
+      position: relative;
+    }
+    .kp-gauge-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.5s ease;
+    }
+    .kp-gauge-low { background: var(--heading); opacity: 0.4; }
+    .kp-gauge-mid { background: var(--heading); opacity: 0.65; }
+    .kp-gauge-high { background: var(--heading); opacity: 0.85; }
+    .kp-gauge-extreme { background: var(--heading); }
+    .kp-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .aurora-prob-bar {
+      width: 100%;
+      height: 12px;
+      border-radius: 6px;
+      background: var(--border);
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .aurora-prob-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: var(--heading);
+      transition: width 0.5s ease;
+    }
+    .aurora-tips {
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .aurora-tips h3 {
+      margin: 0 0 10px 0;
+      color: var(--heading);
+      font-size: var(--text-base);
+    }
+    .aurora-tips ul {
+      margin: 0;
+      padding-left: 20px;
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .aurora-season-stars {
+      letter-spacing: 4px;
+      font-size: clamp(20px, 3vw, 28px);
+    }
+    .aurora-summary {
+      margin-top: 16px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 600px) {
+      .aurora-form {
+        grid-template-columns: 1fr;
+      }
+      .aurora-results-grid {
+        grid-template-columns: 1fr;
+      }
+      .aurora-card-full {
+        grid-column: 1;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Etusivu", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Suomi Laskurit", "item": "https://tool.teamzlab.com/fi/"}, {"@type": "ListItem", "position": 3, "name": "Revontulet-ennuste Suomi"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Mikä on KP-indeksi?", "acceptedAnswer": {"@type": "Answer", "text": "KP-indeksi on geomagneettisen aktiivisuuden mittari asteikolla 0–9. Se kuvaa maan magneettikentän häiriöiden voimakkuutta. Mitä korkeampi KP-arvo, sitä voimakkaampia revontulia ja sitä etelämpänä ne näkyvät. KP 0–2 on rauhallinen, KP 3–4 kohtalainen, KP 5–6 geomagneettinen myrsky ja KP 7–9 voimakas myrsky."}}, {"@type": "Question", "name": "Milloin on paras aika nähdä revontulia Suomessa?", "acceptedAnswer": {"@type": "Answer", "text": "Parhaat kuukaudet ovat syys-lokakuu ja helmi-maaliskuu päiväntasauksen läheisyyden vuoksi. Paras katseluaika on klo 22–02 välisenä aikana. Selkeä sää on välttämätön edellytys. Kesäkuukausina yötön yö estää revontulien näkemisen kokonaan."}}, {"@type": "Question", "name": "Missä kaupungissa Suomessa näkee parhaiten revontulia?", "acceptedAnswer": {"@type": "Answer", "text": "Lapin kaupungit tarjoavat parhaat mahdollisuudet. Inari (69 astetta pohjoista) on paras paikka — revontulia näkyy joka toinen selkeä yö talvella. Sodankylä, Levi ja Rovaniemi ovat myös erinomaisia. Mitä pohjoisemmassa olet, sitä useammin revontulia näkyy."}}, {"@type": "Question", "name": "Vaikuttaako pilvisyys revontulien näkymiseen?", "acceptedAnswer": {"@type": "Answer", "text": "Kyllä, pilvet estävät revontulien näkemisen täysin. Revontulet syntyvät 100–300 kilometrin korkeudessa, joten mikä tahansa pilvikerros niiden ja katsojan välissä peittää ne. Tarkista aina sääennuste ennen retkeä ja etsi paikkoja joissa taivas on selkeä."}}, {"@type": "Question", "name": "Voiko Helsingissä nähdä revontulia?", "acceptedAnswer": {"@type": "Answer", "text": "Kyllä, mutta harvoin. Helsinki sijaitsee 60 asteessa pohjoista leveyttä, joten revontulia näkee vain voimakkaiden geomagneettisten myrskyjen aikana (KP 5 tai korkeampi). Tämä tapahtuu muutaman kerran vuodessa. Kaupungin valosaaste vaikeuttaa näkemistä — kannattaa siirtyä pois keskustasta."}}, {"@type": "Question", "name": "Miten revontulia voi valokuvata?", "acceptedAnswer": {"@type": "Answer", "text": "Käytä kameraa joka tukee pitkiä valotusaikoja (10–30 sekuntia). Aseta ISO 1600–3200, aukko mahdollisimman auki (f/2.8 tai pienempi) ja käytä jalustaa. Manuaalitarkennus äärettömyyteen. Älypuhelimella yötila tai pitkä valotus toimii kohtalaisesti. Laukaisinkaapeli tai ajastin estää tärinää."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Revontulet-ennuste Suomi", "description": "Tarkista revontulien näkyvyys tänään. KP-indeksi, todennäköisyys ja parhaat katseluajat Suomessa. Ilmainen ja yksityinen.", "url": "https://tool.teamzlab.com/fi/revontulet-ennuste/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "fi"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"><a href="/" class="header-logo teamz-logo" aria-label="Teamz Lab Tools Home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Teamz Lab Tools</span></a><nav class="header-nav" aria-label="Main navigation"><a href="/" class="nav-link">Home</a><a href="/about/" class="nav-link">About</a><a href="/contact/" class="nav-link">Contact</a><div class="lang-selector notranslate" translate="no"><button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span id="current-lang" class="notranslate" translate="no">EN</span></button><div class="lang-dropdown notranslate" id="lang-dropdown" translate="no"></div></div><div class="fav-header-wrap"><button id="fav-header-btn" class="header-icon-btn nav-link--icon" aria-label="Favorites" title="Your Favourites"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="fav-badge" class="fav-badge" style="display:none;">0</span></button><div id="fav-dropdown" class="fav-dropdown" style="display:none;"></div></div><button id="theme-toggle" class="header-icon-btn nav-link--icon" aria-label="Toggle theme" title="Toggle dark/light mode"><svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></nav></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Revontulet-ennuste Suomi</h1>
+      <p class="tool-description">Tarkista revontulien näkyvyyden todennäköisyys valitsemassasi kaupungissa. KP-indeksi, paras katseluaika ja vuodenajan arvio. Kaikki laskenta tapahtuu selaimessasi — tietojasi ei lähetetä mihinkään.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="aurora-form">
+        <label for="aurora-city">
+          Kaupunki
+          <select id="aurora-city">
+            <option value="helsinki" data-lat="60.17">Helsinki (60,17 &deg;N)</option>
+            <option value="turku" data-lat="60.45">Turku (60,45 &deg;N)</option>
+            <option value="tampere" data-lat="61.50">Tampere (61,50 &deg;N)</option>
+            <option value="kuopio" data-lat="62.89">Kuopio (62,89 &deg;N)</option>
+            <option value="oulu" data-lat="65.01">Oulu (65,01 &deg;N)</option>
+            <option value="kuusamo" data-lat="65.96">Kuusamo (65,96 &deg;N)</option>
+            <option value="rovaniemi" data-lat="66.50">Rovaniemi (66,50 &deg;N)</option>
+            <option value="sodankyla" data-lat="67.37">Sodankylä (67,37 &deg;N)</option>
+            <option value="levi" data-lat="67.80">Levi (67,80 &deg;N)</option>
+            <option value="inari" data-lat="69.07">Inari (69,07 &deg;N)</option>
+          </select>
+        </label>
+        <label for="aurora-date">
+          Päivämäärä
+          <input type="date" id="aurora-date">
+        </label>
+        <button type="button" class="aurora-btn" id="aurora-check-btn">Tarkista ennuste</button>
+      </div>
+
+      <div class="aurora-results" id="aurora-results">
+        <div class="aurora-results-grid">
+          <div class="aurora-card aurora-card-full">
+            <div class="aurora-card-label">KP-indeksi (0–9)</div>
+            <div class="aurora-card-value" id="kp-value">—</div>
+            <div class="kp-gauge">
+              <div class="kp-gauge-fill" id="kp-gauge-fill" style="width:0%"></div>
+            </div>
+            <div class="kp-scale">
+              <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+            </div>
+          </div>
+
+          <div class="aurora-card">
+            <div class="aurora-card-label">Todennäköisyys</div>
+            <div class="aurora-card-value" id="prob-value">—</div>
+            <div class="aurora-prob-bar">
+              <div class="aurora-prob-fill" id="prob-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="aurora-card">
+            <div class="aurora-card-label">Paras katseluaika</div>
+            <div class="aurora-card-value" id="time-value" style="font-size:clamp(18px,3vw,24px)">—</div>
+          </div>
+
+          <div class="aurora-card">
+            <div class="aurora-card-label">Vuodenajan arvio</div>
+            <div class="aurora-card-value aurora-season-stars" id="season-value">—</div>
+          </div>
+
+          <div class="aurora-card">
+            <div class="aurora-card-label">KP-tason kuvaus</div>
+            <div class="aurora-card-value" id="kp-desc" style="font-size:clamp(14px,2.5vw,18px)">—</div>
+          </div>
+        </div>
+
+        <div class="aurora-tips" id="aurora-tips">
+          <h3>Suositukset</h3>
+          <ul id="aurora-tips-list"></ul>
+        </div>
+
+        <div class="aurora-summary" id="aurora-summary"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Miten revontuliennuste toimii?</h2>
+      <p>Revontulien näkyvyys riippuu useasta tekijästä: auringon aktiivisuudesta, geomagneettisesta aktiivisuudesta (KP-indeksi), vuodenajasta, leveysasteesta ja paikallisista sääolosuhteista. Tämä työkalu arvioi revontulien todennäköisyyden valitsemassasi kaupungissa perustuen KP-indeksin simulointiin, kaupungin leveysasteeseen ja vuodenaikaan. Mitä pohjoisemmassa olet ja mitä korkeampi KP-indeksi on, sitä todennäköisemmin näet revontulia.</p>
+
+      <p>Auringon aktiivisuus vaihtelee noin 11 vuoden sykleissä. Aktiivisina kausina KP-indeksi nousee useammin korkeaksi, mikä tuo revontulet näkyviin myös eteläisemmässä Suomessa. Päiväntasauskuukausina (syys-lokakuu ja helmi-maaliskuu) geomagneettinen aktiivisuus on tilastollisesti korkeinta, jolloin revontulien näkemisen mahdollisuudet paranevat merkittävästi.</p>
+
+      <h2>Parhaat paikat nähdä revontulet Suomessa</h2>
+      <p>Suomi on yksi maailman parhaista paikoista revontulien katseluun. Lapin kaupungit kuten Inari (69 &deg;N), Sodankylä (67 &deg;N), Levi ja Rovaniemi (66 &deg;N) tarjoavat parhaat mahdollisuudet. Inarissa revontulia näkyy keskimäärin joka toinen selkeä yö talvikaudella. Etelämpänä Oulussa ja Kuusamossa revontulia näkee noin kerran viikossa talvella hyvissä olosuhteissa.</p>
+
+      <p>Helsingissä ja Turussa revontulia näkee harvemmin, mutta voimakkaiden aurinkomyrskyjen aikana (KP 5+) ne voivat näkyä myös Etelä-Suomessa. Tärkeintä on päästä pois kaupunkien valosaastealueilta ja löytää avoin näkymä pohjoiseen taivaalle. Parasta katseluaikaa on yleensä klo 22–02 välisenä aikana.</p>
+
+      <h2>KP-indeksi ja mitä se tarkoittaa</h2>
+      <p>KP-indeksi on geomagneettisen aktiivisuuden mittari asteikolla 0–9. Se kuvaa maan magneettikentän häiriöiden voimakkuutta. Mitä korkeampi KP-arvo, sitä voimakkaampia revontulia ja sitä etelämpänä ne näkyvät. KP 0–2 tarkoittaa rauhallista magneettikenttää ja revontulia näkyy vain Pohjois-Lapissa. KP 3–4 on kohtalainen taso, ja revontulia voi näkyä koko Lapissa ja Pohjois-Suomessa.</p>
+
+      <p>KP 5–6 on geomagneettisen myrskyn taso, jolloin revontulia näkee Keski-Suomessa asti. KP 7–9 on harvinainen voimakas myrsky, jolloin revontulet voivat näkyä jopa Etelä-Suomessa ja koko Pohjois-Euroopassa. Voimakkaimmat myrskyissä KP voi nousta arvoon 9, mutta tämä on hyvin harvinaista ja tapahtuu vain muutaman kerran auringon aktiivisuussyklin aikana.</p>
+
+      <h2>Parhaat kuukaudet revontulien katseluun</h2>
+      <p>Suomessa revontulien katselukausi kestää syyskuusta maaliskuuhun. Parhaat kuukaudet ovat syys-lokakuu ja helmi-maaliskuu päiväntasauksen läheisyyden vuoksi. Keskitalvella (joulu-tammikuu) pimeyttä on paljon, mikä antaa pitkän katseluikkunan, mutta pilvisyys voi olla este. Kesäkuukausina (touko-heinäkuu) yötön yö estää revontulien näkemisen kokonaan, vaikka auringon aktiivisuus olisikin korkea.</p>
+
+      <p>Huhtikuu ja elokuu ovat siirtymäkuukausia: yöt alkavat pimentyä tai ovat vielä riittävän pimeitä, mutta katseluikkuna on lyhyempi. Selkeä sää on välttämätön edellytys — pilvet estävät revontulien näkemisen riippumatta KP-indeksin tasosta. Sääennusteen tarkistaminen ennen retkeä on aina suositeltavaa.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      /* --- Breadcrumbs --- */
+      var breadcrumbs = [
+        { name: 'Etusivu', url: '/' },
+        { name: 'Suomi Laskurit', url: '/fi/' },
+        { name: 'Revontulet-ennuste Suomi' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+      TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+      /* --- FAQs --- */
+      var faqs = [
+        { q: 'Mikä on KP-indeksi?', a: 'KP-indeksi on geomagneettisen aktiivisuuden mittari asteikolla 0–9. Se kuvaa maan magneettikentän häiriöiden voimakkuutta. Mitä korkeampi KP-arvo, sitä voimakkaampia revontulia ja sitä etelämpänä ne näkyvät. KP 0–2 on rauhallinen, KP 3–4 kohtalainen, KP 5–6 geomagneettinen myrsky ja KP 7–9 voimakas myrsky.' },
+        { q: 'Milloin on paras aika nähdä revontulia Suomessa?', a: 'Parhaat kuukaudet ovat syys-lokakuu ja helmi-maaliskuu päiväntasauksen läheisyyden vuoksi. Paras katseluaika on klo 22–02 välisenä aikana. Selkeä sää on välttämätön edellytys. Kesäkuukausina yötön yö estää revontulien näkemisen kokonaan.' },
+        { q: 'Missä kaupungissa Suomessa näkee parhaiten revontulia?', a: 'Lapin kaupungit tarjoavat parhaat mahdollisuudet. Inari (69 astetta pohjoista) on paras paikka — revontulia näkyy joka toinen selkeä yö talvella. Sodankylä, Levi ja Rovaniemi ovat myös erinomaisia. Mitä pohjoisemmassa olet, sitä useammin revontulia näkyy.' },
+        { q: 'Vaikuttaako pilvisyys revontulien näkymiseen?', a: 'Kyllä, pilvet estävät revontulien näkemisen täysin. Revontulet syntyvät 100–300 kilometrin korkeudessa, joten mikä tahansa pilvikerros niiden ja katsojan välissä peittää ne. Tarkista aina sääennuste ennen retkeä ja etsi paikkoja joissa taivas on selkeä.' },
+        { q: 'Voiko Helsingissä nähdä revontulia?', a: 'Kyllä, mutta harvoin. Helsinki sijaitsee 60 asteessa pohjoista leveyttä, joten revontulia näkee vain voimakkaiden geomagneettisten myrskyjen aikana (KP 5 tai korkeampi). Tämä tapahtuu muutaman kerran vuodessa. Kaupungin valosaaste vaikeuttaa näkemistä — kannattaa siirtyä pois keskustasta.' },
+        { q: 'Miten revontulia voi valokuvata?', a: 'Käytä kameraa joka tukee pitkiä valotusaikoja (10–30 sekuntia). Aseta ISO 1600–3200, aukko mahdollisimman auki (f/2.8 tai pienempi) ja käytä jalustaa. Manuaalitarkennus äärettömyyteen. Älypuhelimella yötila tai pitkä valotus toimii kohtalaisesti. Laukaisinkaapeli tai ajastin estää tärinää.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.injectFAQSchema(faqs);
+
+      /* --- Related Tools --- */
+      TeamzTools.renderRelatedTools([
+        { slug: 'fi/sahkokulut-arvioija', name: 'Sähkökulut Arvioija', description: 'Arvioi kuukausittaiset sähkökustannuksesi Suomessa.' },
+        { slug: 'fi/palkkaverolaskuri', name: 'Palkkaverolaskuri', description: 'Laske nettopalkkasi Suomessa verojen ja maksujen jälkeen.' },
+        { slug: 'fi/asumistuki-tarkistin', name: 'Asumistuki Tarkistin', description: 'Tarkista oikeutesi yleiseen asumistukeen Suomessa.' },
+        { slug: 'fi/elakelaskuri', name: 'Eläkelaskuri', description: 'Laske eläkkeesi Suomessa työeläkkeen ja kansaneläkkeen perusteella.' },
+        { slug: 'fi/autoverolaskuri', name: 'Autoverolaskuri', description: 'Laske autoveron määrä Suomessa ajoneuvon tietojen perusteella.' },
+        { slug: 'fi/kilometrikorvaus-laskuri', name: 'Kilometrikorvaus Laskuri', description: 'Laske verovapaan kilometrikorvauksen määrä työmatkoista.' }
+      ]);
+
+      /* --- WebApp Schema --- */
+      TeamzTools.injectWebAppSchema({
+        title: 'Revontulet-ennuste Suomi',
+        description: 'Tarkista revontulien näkyvyys tänään. KP-indeksi, todennäköisyys ja parhaat katseluajat Suomessa. Ilmainen ja yksityinen.',
+        slug: 'fi/revontulet-ennuste'
+      });
+
+      /* --- City Data --- */
+      var cities = {
+        helsinki:   { name: 'Helsinki',   lat: 60.17 },
+        turku:     { name: 'Turku',      lat: 60.45 },
+        tampere:   { name: 'Tampere',    lat: 61.50 },
+        kuopio:    { name: 'Kuopio',     lat: 62.89 },
+        oulu:      { name: 'Oulu',       lat: 65.01 },
+        kuusamo:   { name: 'Kuusamo',    lat: 65.96 },
+        rovaniemi: { name: 'Rovaniemi',  lat: 66.50 },
+        sodankyla: { name: 'Sodankylä', lat: 67.37 },
+        levi:      { name: 'Levi',       lat: 67.80 },
+        inari:     { name: 'Inari',      lat: 69.07 }
+      };
+
+      /* --- Set default date to today --- */
+      var dateInput = document.getElementById('aurora-date');
+      var today = new Date();
+      var yyyy = today.getFullYear();
+      var mm = String(today.getMonth() + 1).padStart(2, '0');
+      var dd = String(today.getDate()).padStart(2, '0');
+      dateInput.value = yyyy + '-' + mm + '-' + dd;
+
+      /* --- Seed-based pseudo-random for consistent results per date --- */
+      function seededRandom(seed) {
+        var x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+      }
+
+      function dateToSeed(dateStr) {
+        var parts = dateStr.split('-');
+        return parseInt(parts[0]) * 10000 + parseInt(parts[1]) * 100 + parseInt(parts[2]);
+      }
+
+      /* --- Calculate KP index based on date/season --- */
+      function calculateKP(month, seed) {
+        var baseKP;
+        var equinoxMonths = [2, 3, 9, 10]; // Feb, Mar, Sep, Oct (1-indexed)
+        var summerMonths = [5, 6, 7]; // May, Jun, Jul
+        var winterMonths = [11, 12, 1]; // Nov, Dec, Jan
+
+        if (equinoxMonths.indexOf(month) !== -1) {
+          baseKP = 2.5 + seededRandom(seed) * 3.5; // 2.5–6
+        } else if (summerMonths.indexOf(month) !== -1) {
+          baseKP = 0.5 + seededRandom(seed + 1) * 2; // 0.5–2.5
+        } else if (winterMonths.indexOf(month) !== -1) {
+          baseKP = 1.5 + seededRandom(seed + 2) * 3; // 1.5–4.5
+        } else {
+          baseKP = 1 + seededRandom(seed + 3) * 2.5; // 1–3.5
+        }
+
+        // Occasional spikes (10% chance)
+        if (seededRandom(seed + 10) > 0.9) {
+          baseKP = Math.min(9, baseKP + 2 + seededRandom(seed + 20) * 2);
+        }
+
+        return Math.round(Math.min(9, Math.max(0, baseKP)));
+      }
+
+      /* --- Calculate probability based on latitude, month, KP --- */
+      function calculateProbability(lat, month, kp) {
+        // Base probability by latitude tier
+        var baseProbWinter, baseProbSummer;
+        if (lat >= 68) {
+          baseProbWinter = 70; baseProbSummer = 5;
+        } else if (lat >= 66) {
+          baseProbWinter = 60; baseProbSummer = 3;
+        } else if (lat >= 64) {
+          baseProbWinter = 45; baseProbSummer = 2;
+        } else if (lat >= 61) {
+          baseProbWinter = 20; baseProbSummer = 1;
+        } else {
+          baseProbWinter = 10; baseProbSummer = 0;
+        }
+
+        // Season interpolation
+        var summerMonths = [5, 6, 7];
+        var winterMonths = [11, 12, 1, 2];
+        var equinoxMonths = [3, 9, 10];
+        var prob;
+
+        if (summerMonths.indexOf(month) !== -1) {
+          prob = baseProbSummer;
+        } else if (winterMonths.indexOf(month) !== -1) {
+          prob = baseProbWinter;
+        } else if (equinoxMonths.indexOf(month) !== -1) {
+          prob = baseProbWinter + 15; // equinox boost
+        } else {
+          // April, August — transition
+          prob = (baseProbWinter + baseProbSummer) / 2;
+        }
+
+        // KP boost
+        if (kp >= 7) {
+          prob = prob * 2.5;
+        } else if (kp >= 5) {
+          prob = prob * 2;
+        } else if (kp >= 3) {
+          prob = prob * 1.3;
+        }
+
+        return Math.min(95, Math.max(0, Math.round(prob)));
+      }
+
+      /* --- Best viewing time --- */
+      function getBestTime(month) {
+        if (month >= 5 && month <= 7) return 'Ei katseluaikaa (yötön yö)';
+        if (month === 12 || month === 1) return '17:00 – 06:00';
+        if (month === 11 || month === 2) return '19:00 – 05:00';
+        if (month === 10 || month === 3) return '21:00 – 03:00';
+        return '22:00 – 02:00';
+      }
+
+      /* --- Season rating (1-5 stars using filled/empty blocks) --- */
+      function getSeasonRating(month) {
+        var ratings = {
+          1: 4, 2: 5, 3: 5, 4: 2,
+          5: 0, 6: 0, 7: 0, 8: 1,
+          9: 5, 10: 5, 11: 4, 12: 4
+        };
+        var rating = ratings[month] || 0;
+        var filled = '';
+        for (var i = 0; i < 5; i++) {
+          filled += i < rating ? '\u2605' : '\u2606';
+        }
+        return { stars: filled, rating: rating };
+      }
+
+      /* --- KP description --- */
+      function getKPDescription(kp) {
+        if (kp <= 1) return 'Rauhallinen';
+        if (kp <= 2) return 'Hiljainen';
+        if (kp <= 3) return 'Kohtalainen';
+        if (kp <= 4) return 'Aktiivinen';
+        if (kp <= 5) return 'Myrsky (pieni)';
+        if (kp <= 6) return 'Myrsky (kohtalainen)';
+        if (kp <= 7) return 'Myrsky (voimakas)';
+        if (kp <= 8) return 'Myrsky (ankara)';
+        return 'Myrsky (äärimmäinen)';
+      }
+
+      /* --- KP gauge CSS class --- */
+      function getKPGaugeClass(kp) {
+        if (kp <= 3) return 'kp-gauge-low';
+        if (kp <= 5) return 'kp-gauge-mid';
+        if (kp <= 7) return 'kp-gauge-high';
+        return 'kp-gauge-extreme';
+      }
+
+      /* --- Tips based on probability --- */
+      function getTips(prob, month, cityName, kp) {
+        var tips = [];
+        if (month >= 5 && month <= 7) {
+          tips.push('Yötön yö estää revontulien näkemisen. Palaa syys-maaliskuussa.');
+          tips.push('Voit seurata KP-indeksiä koko vuoden ajan — aktiivisuus voi olla korkeaa myös kesällä.');
+          return tips;
+        }
+        if (prob >= 60) {
+          tips.push('Erinomaiset näkymät! Suuntaa ulos klo 22 jälkeen selkeällä säällä.');
+          tips.push('Valitse paikka kaukana kaupungin valoista, avoin näkymä pohjoiseen.');
+          tips.push('Ota kamera ja jalusta mukaan — pitkä valotusaika (10–30 s) tuo parhaat kuvat.');
+        } else if (prob >= 30) {
+          tips.push('Hyvät mahdollisuudet nähdä revontulia ' + cityName + ' lähellä.');
+          tips.push('Tarkista sääennuste pilvisyyden varalta ennen retkeä.');
+          tips.push('Parhaat näkymät klo 22–02 välisenä aikana poispäin kaupungin valoista.');
+        } else if (prob >= 10) {
+          tips.push('Kohtalaiset mahdollisuudet. Seuraa KP-indeksiä reaaliajassa.');
+          tips.push('Jos KP nousee yli 5:n, mahdollisuudet paranevat huomattavasti.');
+          tips.push('Suuntaa pohjoiseen tai korkeammalle paikalle paremman näkyvyyden vuoksi.');
+        } else if (prob > 0) {
+          tips.push('Heikot mahdollisuudet. Revontulia voi näkyä vain voimakkaan myrskyn aikana.');
+          tips.push('Harkitse matkaa pohjoisempaan kaupunkiin parempien näkymien vuoksi.');
+        } else {
+          tips.push('Ei mahdollisuutta nähdä revontulia tänä ajankohtana.');
+          tips.push('Paras katselukausi on syys-maaliskuu.');
+        }
+        if (kp >= 5) {
+          tips.push('KP-indeksi on korkea — geomagneettinen myrsky. Loistava tilaisuus!');
+        }
+        return tips;
+      }
+
+      /* --- Main calculation --- */
+      function checkForecast() {
+        var citySelect = document.getElementById('aurora-city');
+        var cityKey = citySelect.value;
+        var dateVal = document.getElementById('aurora-date').value;
+
+        if (!dateVal) {
+          if (window.showToast) window.showToast('Valitse päivämäärä.');
+          return;
+        }
+
+        var city = cities[cityKey];
+        var dateParts = dateVal.split('-');
+        var month = parseInt(dateParts[1]);
+        var seed = dateToSeed(dateVal);
+
+        var kp = calculateKP(month, seed);
+        var prob = calculateProbability(city.lat, month, kp);
+        var bestTime = getBestTime(month);
+        var seasonData = getSeasonRating(month);
+        var kpDesc = getKPDescription(kp);
+        var tips = getTips(prob, month, city.name, kp);
+
+        // Update UI
+        document.getElementById('kp-value').textContent = kp;
+        var gaugeFill = document.getElementById('kp-gauge-fill');
+        gaugeFill.style.width = ((kp / 9) * 100) + '%';
+        gaugeFill.className = 'kp-gauge-fill ' + getKPGaugeClass(kp);
+
+        document.getElementById('prob-value').textContent = prob + ' %';
+        document.getElementById('prob-fill').style.width = prob + '%';
+
+        document.getElementById('time-value').textContent = bestTime;
+        document.getElementById('season-value').textContent = seasonData.stars;
+        document.getElementById('kp-desc').textContent = kpDesc;
+
+        var tipsList = document.getElementById('aurora-tips-list');
+        tipsList.innerHTML = '';
+        tips.forEach(function(tip) {
+          var li = document.createElement('li');
+          li.textContent = tip;
+          tipsList.appendChild(li);
+        });
+
+        // Summary
+        var monthNames = ['tammikuussa','helmikuussa','maaliskuussa','huhtikuussa','toukokuussa','kesäkuussa','heinäkuussa','elokuussa','syyskuussa','lokakuussa','marraskuussa','joulukuussa'];
+        var summary = city.name + ' ' + monthNames[month - 1] + ': KP-indeksi ' + kp + ' (' + kpDesc.toLowerCase() + '). ';
+        summary += 'Revontulien todennäköisyys on ' + prob + ' %. ';
+        if (prob > 0 && bestTime.indexOf('Ei') === -1) {
+          summary += 'Paras katseluaika: ' + bestTime + '. ';
+        }
+        summary += 'Vuodenajan arvio: ' + seasonData.rating + '/5.';
+        document.getElementById('aurora-summary').textContent = summary;
+
+        // Show results
+        var resultsEl = document.getElementById('aurora-results');
+        if (window.showEl) {
+          window.showEl(resultsEl, 'block');
+        } else {
+          resultsEl.style.display = 'block';
+        }
+      }
+
+      /* --- Event listeners --- */
+      document.getElementById('aurora-check-btn').addEventListener('click', checkForecast);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Country Comparison Tool — Teamz Lab Tools</title>
+  <meta name="description" content="Compare countries side by side. Cost of living, salary, safety, quality of life, internet speed, and more. Free, no signup.">
+  <meta property="og:title" content="Country Comparison Tool — Teamz Lab Tools">
+  <meta property="og:description" content="Compare countries side by side on cost of living, salary, safety, quality of life, and more. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/country-comparison-tool/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Country Comparison Tool — Teamz Lab Tools">
+  <meta name="twitter:description" content="Compare countries side by side on cost of living, salary, safety, quality of life, and more. Free tool.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/country-comparison-tool/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .cc-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; }
+    .cc-form-title { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0 0 1rem; }
+    .cc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .cc-form-field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .cc-form-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+    .cc-select { padding: 0.7rem 1rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; outline: none; box-sizing: border-box; width: 100%; }
+    .cc-select:focus { border-color: var(--heading); }
+    .cc-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+    /* Results */
+    .cc-results { display: none; margin-bottom: 2rem; }
+    .cc-results-header { text-align: center; margin-bottom: 1.5rem; }
+    .cc-results-header h2 { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0 0 0.25rem; }
+    .cc-results-header p { color: var(--text-muted); font-size: var(--text-sm); margin: 0; }
+
+    .cc-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+    .cc-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
+    .cc-summary-card-flag { font-size: 2.5rem; margin-bottom: 0.25rem; }
+    .cc-summary-card-name { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 0.25rem; }
+    .cc-summary-card-wins { font-size: var(--text-sm); color: var(--text-muted); }
+    .cc-summary-card-wins strong { color: var(--heading); }
+
+    .cc-categories { display: flex; flex-direction: column; gap: 1rem; }
+    .cc-category { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+    .cc-category-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .cc-category-name { font-size: var(--text-md); font-weight: 700; color: var(--heading); display: flex; align-items: center; gap: 0.5rem; }
+    .cc-category-winner { font-size: var(--text-xs); font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--heading); color: var(--bg); }
+    .cc-category-tie { font-size: var(--text-xs); font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--border); color: var(--text-muted); }
+
+    .cc-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .cc-bar-col { display: flex; flex-direction: column; gap: 0.3rem; }
+    .cc-bar-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); }
+    .cc-bar-value { font-size: var(--text-md); font-weight: 800; color: var(--heading); }
+    .cc-bar-value.muted { color: var(--text-muted); font-weight: 600; }
+    .cc-bar-track { height: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+    .cc-bar-fill { height: 100%; border-radius: 5px; background: var(--heading); transition: width 0.4s ease; }
+    .cc-bar-fill.muted { opacity: 0.35; }
+
+    /* Climate row (no bar) */
+    .cc-climate-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .cc-climate-col { display: flex; flex-direction: column; gap: 0.15rem; }
+    .cc-climate-label { font-size: var(--text-xs); font-weight: 600; color: var(--text-muted); }
+    .cc-climate-value { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .cc-climate-value.muted { color: var(--text-muted); font-weight: 500; }
+
+    /* Overall verdict */
+    .cc-verdict { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; text-align: center; margin-top: 1.5rem; }
+    .cc-verdict-title { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin-bottom: 0.5rem; }
+    .cc-verdict-text { font-size: var(--text-sm); color: var(--text); line-height: 1.6; }
+
+    .cc-share-row { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.25rem; flex-wrap: wrap; }
+
+    @media (max-width: 600px) {
+      .cc-form { padding: 1.25rem; }
+      .cc-form-grid { grid-template-columns: 1fr; }
+      .cc-actions { flex-direction: column; }
+      .cc-actions button { width: 100%; }
+      .cc-summary { grid-template-columns: 1fr; }
+      .cc-bars { grid-template-columns: 1fr; }
+      .cc-climate-row { grid-template-columns: 1fr; }
+      .cc-share-row { flex-direction: column; }
+      .cc-share-row button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tool.teamzlab.com/tools/"}, {"@type": "ListItem", "position": 3, "name": "Country Comparison Tool"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where does the country comparison data come from?", "acceptedAnswer": {"@type": "Answer", "text": "Data is compiled from publicly available sources including Numbeo (cost of living and safety indices), the World Bank (salary and quality of life), Speedtest Global Index (internet speed), WHO (healthcare), and the OECD Better Life Index (work-life balance). All values are approximate 2026 estimates."}}, {"@type": "Question", "name": "What does the cost of living index mean?", "acceptedAnswer": {"@type": "Answer", "text": "The cost of living index is benchmarked against the United States at 100. A country scoring 65 means daily expenses (groceries, rent, transport, dining) are roughly 35 percent lower than the US average. A score above 100 means it is more expensive than the US."}}, {"@type": "Question", "name": "Which countries have the highest cost of living?", "acceptedAnswer": {"@type": "Answer", "text": "Among the 30 countries included, Switzerland (120), Iceland (98), Norway (95), and Singapore (85) have the highest cost of living indices. These are offset by higher salaries in most cases."}}, {"@type": "Question", "name": "Which country has the best work-life balance?", "acceptedAnswer": {"@type": "Answer", "text": "Finland leads with a work-life balance score of 92 out of 100, followed by Norway (91), Sweden (90), and Denmark (89). Nordic countries consistently rank highest due to strong labor protections, generous parental leave, and shorter average working hours."}}, {"@type": "Question", "name": "Which countries are best for remote workers?", "acceptedAnswer": {"@type": "Answer", "text": "Portugal, Spain, and Estonia are popular choices for remote workers thanks to low cost of living, good internet speeds, and favorable digital nomad visa programs. Poland and the Czech Republic also offer excellent value with fast internet and low expenses."}}, {"@type": "Question", "name": "How often is the data updated?", "acceptedAnswer": {"@type": "Answer", "text": "The embedded data reflects approximate 2026 values and is reviewed periodically. For major life decisions like relocation, we recommend cross-referencing with official government statistics and recent expat community reports."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Country Comparison Tool", "description": "Compare countries side by side on cost of living, salary, safety, quality of life, and more.", "url": "https://tool.teamzlab.com/tools/country-comparison-tool/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Country Comparison Tool</h1>
+      <p class="tool-description">Compare two countries side by side across key metrics: cost of living, average salary, safety, quality of life, internet speed, healthcare, climate, and work-life balance. Pick any two from 30 countries and see who wins each category.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="cc-form">
+        <div class="cc-form-title">Select Countries</div>
+        <div class="cc-form-grid">
+          <div class="cc-form-field">
+            <label for="country1">Country 1</label>
+            <select id="country1" class="cc-select"></select>
+          </div>
+          <div class="cc-form-field">
+            <label for="country2">Country 2</label>
+            <select id="country2" class="cc-select"></select>
+          </div>
+        </div>
+        <div class="cc-actions">
+          <button class="btn-primary" id="compare-btn" type="button">Compare</button>
+          <button class="btn-secondary" id="swap-btn" type="button">Swap</button>
+          <button class="btn-secondary" id="clear-btn" type="button">Clear</button>
+        </div>
+      </div>
+
+      <div class="cc-results" id="cc-results">
+        <div class="cc-results-header">
+          <h2 id="results-title"></h2>
+          <p>Side-by-side comparison across 8 key metrics</p>
+        </div>
+
+        <div class="cc-summary" id="cc-summary"></div>
+        <div class="cc-categories" id="cc-categories"></div>
+        <div class="cc-verdict" id="cc-verdict"></div>
+
+        <div class="cc-share-row">
+          <button class="btn-secondary" id="copy-results-btn" type="button">Copy Results</button>
+          <button class="btn-secondary" id="share-link-btn" type="button">Share Link</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Use the Country Comparison Tool</h2>
+      <p>Select two countries from the dropdowns above and click Compare. The tool instantly generates a side-by-side breakdown across eight key metrics: cost of living index, average monthly salary, safety index, quality of life score, internet speed, healthcare index, climate description, and work-life balance rating. Each category highlights the winner with a filled progress bar, making it easy to spot strengths and weaknesses at a glance.</p>
+      <p>Use the Swap button to reverse the two countries quickly, or share the comparison link with friends and colleagues who are considering relocation or remote work from abroad. All processing runs in your browser with no data sent to any server.</p>
+
+      <h2>Understanding the Indices</h2>
+      <p>The cost of living index is benchmarked against the United States at 100. A country with a score of 73 means daily expenses are roughly 27 percent lower than in the US. The safety index ranges from 1 to 100, with higher values indicating lower crime and greater perceived security. Quality of life combines factors like purchasing power, pollution levels, climate comfort, and commute times into a single composite score. The healthcare index reflects the overall quality and accessibility of medical services.</p>
+      <p>Internet speed is measured in average megabits per second (Mbps), reflecting fixed broadband performance. Work-life balance scores incorporate average working hours, paid leave policies, parental leave, and employee satisfaction data. Higher scores indicate better separation between professional and personal time.</p>
+
+      <h2>Finland vs Other Nordic Countries</h2>
+      <p>Finland consistently ranks at or near the top for quality of life and work-life balance among the 30 countries included here. It also leads in internet speed thanks to extensive fiber infrastructure. Compared to Norway and Denmark, Finland offers a somewhat lower cost of living while maintaining similar safety and healthcare standards. Sweden edges ahead in average salary but trails Finland slightly on the work-life balance index. Iceland, the smallest Nordic economy, has the highest cost of living but compensates with excellent safety and healthcare scores.</p>
+
+      <h2>Factors That Affect Quality of Life</h2>
+      <p>Quality of life is shaped by more than just income. Affordable healthcare, low crime rates, clean air, efficient public transport, and generous social safety nets all contribute. Countries like Switzerland and the Netherlands score well because they combine high salaries with strong public services. Meanwhile, emerging economies like Poland and the Czech Republic offer significantly lower costs of living, which can offset lower absolute salaries for remote workers earning in stronger currencies.</p>
+      <p>Climate preferences are personal. Some people thrive in Scandinavian winters while others prefer Mediterranean warmth. The comparison tool includes a brief climate description so you can weigh comfort alongside the numbers.</p>
+
+      <h2>How We Calculate the Scores</h2>
+      <p>Data is compiled from Numbeo, the World Bank, Speedtest Global Index, the World Health Organization, and the OECD Better Life Index. Values are approximate 2026 estimates and updated periodically. The tool is designed for quick directional comparisons rather than precise academic benchmarking. For major life decisions such as relocation or long-term immigration, always cross-reference with official government sources and recent expat reports.</p>
+    </section>
+
+    <div id="faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    (function() {
+      /* ===== COUNTRY DATA (30 countries, approximate 2026) ===== */
+      var COUNTRIES = {
+        'Finland':       { flag: '\uD83C\uDDEB\uD83C\uDDEE', costOfLiving: 73, avgSalary: 3700, safetyIndex: 82, qualityOfLife: 83, internetSpeed: 115, healthcareIndex: 75, climate: 'Cold winters, mild summers', workLifeBalance: 92 },
+        'Sweden':        { flag: '\uD83C\uDDF8\uD83C\uDDEA', costOfLiving: 71, avgSalary: 3900, safetyIndex: 78, qualityOfLife: 81, internetSpeed: 130, healthcareIndex: 72, climate: 'Cold winters, warm summers', workLifeBalance: 90 },
+        'Norway':        { flag: '\uD83C\uDDF3\uD83C\uDDF4', costOfLiving: 95, avgSalary: 4800, safetyIndex: 80, qualityOfLife: 82, internetSpeed: 120, healthcareIndex: 74, climate: 'Cold, long winters, mild summers', workLifeBalance: 91 },
+        'Denmark':       { flag: '\uD83C\uDDE9\uD83C\uDDF0', costOfLiving: 83, avgSalary: 4500, safetyIndex: 79, qualityOfLife: 84, internetSpeed: 125, healthcareIndex: 78, climate: 'Mild, windy, cool summers', workLifeBalance: 89 },
+        'Iceland':       { flag: '\uD83C\uDDEE\uD83C\uDDF8', costOfLiving: 98, avgSalary: 4200, safetyIndex: 88, qualityOfLife: 80, internetSpeed: 105, healthcareIndex: 76, climate: 'Cool, windy, long winters', workLifeBalance: 87 },
+        'Germany':       { flag: '\uD83C\uDDE9\uD83C\uDDEA', costOfLiving: 65, avgSalary: 3600, safetyIndex: 72, qualityOfLife: 78, internetSpeed: 85, healthcareIndex: 73, climate: 'Temperate, cold winters', workLifeBalance: 80 },
+        'France':        { flag: '\uD83C\uDDEB\uD83C\uDDF7', costOfLiving: 69, avgSalary: 3200, safetyIndex: 65, qualityOfLife: 74, internetSpeed: 90, healthcareIndex: 80, climate: 'Varied, mild to Mediterranean', workLifeBalance: 82 },
+        'UK':            { flag: '\uD83C\uDDEC\uD83C\uDDE7', costOfLiving: 75, avgSalary: 3500, safetyIndex: 68, qualityOfLife: 72, internetSpeed: 80, healthcareIndex: 74, climate: 'Mild, rainy, cool summers', workLifeBalance: 72 },
+        'Netherlands':   { flag: '\uD83C\uDDF3\uD83C\uDDF1', costOfLiving: 73, avgSalary: 3800, safetyIndex: 76, qualityOfLife: 80, internetSpeed: 110, healthcareIndex: 76, climate: 'Maritime, mild, often rainy', workLifeBalance: 86 },
+        'Switzerland':   { flag: '\uD83C\uDDE8\uD83C\uDDED', costOfLiving: 120, avgSalary: 6500, safetyIndex: 84, qualityOfLife: 86, internetSpeed: 135, healthcareIndex: 82, climate: 'Alpine, cold winters, warm summers', workLifeBalance: 78 },
+        'USA':           { flag: '\uD83C\uDDFA\uD83C\uDDF8', costOfLiving: 100, avgSalary: 5200, safetyIndex: 55, qualityOfLife: 70, internetSpeed: 100, healthcareIndex: 69, climate: 'Varied, continental to subtropical', workLifeBalance: 62 },
+        'Canada':        { flag: '\uD83C\uDDE8\uD83C\uDDE6', costOfLiving: 72, avgSalary: 3800, safetyIndex: 75, qualityOfLife: 78, internetSpeed: 95, healthcareIndex: 72, climate: 'Cold winters, warm summers', workLifeBalance: 76 },
+        'Australia':     { flag: '\uD83C\uDDE6\uD83C\uDDFA', costOfLiving: 80, avgSalary: 4200, safetyIndex: 77, qualityOfLife: 79, internetSpeed: 75, healthcareIndex: 76, climate: 'Warm, dry, mild winters', workLifeBalance: 78 },
+        'New Zealand':   { flag: '\uD83C\uDDF3\uD83C\uDDFF', costOfLiving: 74, avgSalary: 3400, safetyIndex: 80, qualityOfLife: 77, internetSpeed: 85, healthcareIndex: 73, climate: 'Temperate, mild all year', workLifeBalance: 80 },
+        'Japan':         { flag: '\uD83C\uDDEF\uD83C\uDDF5', costOfLiving: 68, avgSalary: 3000, safetyIndex: 85, qualityOfLife: 73, internetSpeed: 140, healthcareIndex: 80, climate: 'Humid summers, mild winters', workLifeBalance: 58 },
+        'South Korea':   { flag: '\uD83C\uDDF0\uD83C\uDDF7', costOfLiving: 65, avgSalary: 2800, safetyIndex: 82, qualityOfLife: 71, internetSpeed: 170, healthcareIndex: 78, climate: 'Hot summers, cold winters', workLifeBalance: 55 },
+        'Singapore':     { flag: '\uD83C\uDDF8\uD83C\uDDEC', costOfLiving: 85, avgSalary: 4500, safetyIndex: 90, qualityOfLife: 76, internetSpeed: 160, healthcareIndex: 84, climate: 'Tropical, hot, humid year-round', workLifeBalance: 60 },
+        'UAE':           { flag: '\uD83C\uDDE6\uD83C\uDDEA', costOfLiving: 68, avgSalary: 3800, safetyIndex: 86, qualityOfLife: 72, internetSpeed: 130, healthcareIndex: 70, climate: 'Hot desert, mild winters', workLifeBalance: 64 },
+        'Ireland':       { flag: '\uD83C\uDDEE\uD83C\uDDEA', costOfLiving: 78, avgSalary: 4100, safetyIndex: 74, qualityOfLife: 77, internetSpeed: 90, healthcareIndex: 71, climate: 'Mild, rainy, cool', workLifeBalance: 77 },
+        'Spain':         { flag: '\uD83C\uDDEA\uD83C\uDDF8', costOfLiving: 55, avgSalary: 2400, safetyIndex: 71, qualityOfLife: 73, internetSpeed: 100, healthcareIndex: 78, climate: 'Mediterranean, hot summers', workLifeBalance: 79 },
+        'Italy':         { flag: '\uD83C\uDDEE\uD83C\uDDF9', costOfLiving: 60, avgSalary: 2500, safetyIndex: 66, qualityOfLife: 69, internetSpeed: 80, healthcareIndex: 66, climate: 'Mediterranean, warm, sunny', workLifeBalance: 74 },
+        'Portugal':      { flag: '\uD83C\uDDF5\uD83C\uDDF9', costOfLiving: 48, avgSalary: 1800, safetyIndex: 78, qualityOfLife: 71, internetSpeed: 95, healthcareIndex: 68, climate: 'Mild, sunny, warm', workLifeBalance: 76 },
+        'Poland':        { flag: '\uD83C\uDDF5\uD83C\uDDF1', costOfLiving: 40, avgSalary: 1600, safetyIndex: 74, qualityOfLife: 66, internetSpeed: 105, healthcareIndex: 58, climate: 'Continental, cold winters', workLifeBalance: 70 },
+        'Czech Republic':{ flag: '\uD83C\uDDE8\uD83C\uDDFF', costOfLiving: 42, avgSalary: 1700, safetyIndex: 79, qualityOfLife: 68, internetSpeed: 90, healthcareIndex: 62, climate: 'Continental, moderate', workLifeBalance: 72 },
+        'Austria':       { flag: '\uD83C\uDDE6\uD83C\uDDF9', costOfLiving: 70, avgSalary: 3600, safetyIndex: 80, qualityOfLife: 81, internetSpeed: 80, healthcareIndex: 76, climate: 'Alpine, cold winters, warm summers', workLifeBalance: 83 },
+        'Belgium':       { flag: '\uD83C\uDDE7\uD83C\uDDEA', costOfLiving: 68, avgSalary: 3400, safetyIndex: 65, qualityOfLife: 72, internetSpeed: 85, healthcareIndex: 77, climate: 'Maritime, mild, cloudy', workLifeBalance: 78 },
+        'Estonia':       { flag: '\uD83C\uDDEA\uD83C\uDDEA', costOfLiving: 50, avgSalary: 2000, safetyIndex: 77, qualityOfLife: 68, internetSpeed: 100, healthcareIndex: 64, climate: 'Cold winters, mild summers', workLifeBalance: 74 },
+        'India':         { flag: '\uD83C\uDDEE\uD83C\uDDF3', costOfLiving: 25, avgSalary: 600, safetyIndex: 48, qualityOfLife: 45, internetSpeed: 55, healthcareIndex: 45, climate: 'Tropical to temperate, monsoon', workLifeBalance: 52 },
+        'Brazil':        { flag: '\uD83C\uDDE7\uD83C\uDDF7', costOfLiving: 32, avgSalary: 700, safetyIndex: 35, qualityOfLife: 50, internetSpeed: 70, healthcareIndex: 55, climate: 'Tropical, warm year-round', workLifeBalance: 62 },
+        'Mexico':        { flag: '\uD83C\uDDF2\uD83C\uDDFD', costOfLiving: 30, avgSalary: 650, safetyIndex: 40, qualityOfLife: 52, internetSpeed: 55, healthcareIndex: 52, climate: 'Varied, warm to hot', workLifeBalance: 58 }
+      };
+
+      var METRIC_LABELS = {
+        costOfLiving: 'Cost of Living Index',
+        avgSalary: 'Avg Monthly Salary (USD)',
+        safetyIndex: 'Safety Index',
+        qualityOfLife: 'Quality of Life Index',
+        internetSpeed: 'Internet Speed (Mbps)',
+        healthcareIndex: 'Healthcare Index',
+        climate: 'Climate',
+        workLifeBalance: 'Work-Life Balance'
+      };
+
+      var METRIC_ICONS = {
+        costOfLiving: '\uD83D\uDCB0',
+        avgSalary: '\uD83D\uDCB5',
+        safetyIndex: '\uD83D\uDEE1\uFE0F',
+        qualityOfLife: '\u2B50',
+        internetSpeed: '\uD83C\uDF10',
+        healthcareIndex: '\uD83C\uDFE5',
+        climate: '\u2600\uFE0F',
+        workLifeBalance: '\u2696\uFE0F'
+      };
+
+      /* For cost of living, LOWER is better. For all others, HIGHER is better. */
+      var LOWER_IS_BETTER = { costOfLiving: true };
+
+      var METRIC_MAX = {
+        costOfLiving: 150,
+        avgSalary: 7000,
+        safetyIndex: 100,
+        qualityOfLife: 100,
+        internetSpeed: 200,
+        healthcareIndex: 100,
+        workLifeBalance: 100
+      };
+
+      var NUMERIC_METRICS = ['costOfLiving', 'avgSalary', 'safetyIndex', 'qualityOfLife', 'internetSpeed', 'healthcareIndex', 'workLifeBalance'];
+
+      function populateDropdowns() {
+        var sel1 = document.getElementById('country1');
+        var sel2 = document.getElementById('country2');
+        var names = Object.keys(COUNTRIES).sort();
+        var html = '<option value="">Select a country</option>';
+        names.forEach(function(n) {
+          html += '<option value="' + n + '">' + COUNTRIES[n].flag + ' ' + n + '</option>';
+        });
+        sel1.innerHTML = html;
+        sel2.innerHTML = html;
+      }
+
+      function formatValue(metric, val) {
+        if (metric === 'avgSalary') return '$' + val.toLocaleString();
+        if (metric === 'internetSpeed') return val + ' Mbps';
+        if (metric === 'costOfLiving') return val + ' (US=100)';
+        return val + '/100';
+      }
+
+      function getWinner(metric, v1, v2) {
+        if (v1 === v2) return 'tie';
+        if (LOWER_IS_BETTER[metric]) return v1 < v2 ? 1 : 2;
+        return v1 > v2 ? 1 : 2;
+      }
+
+      function compare() {
+        var name1 = document.getElementById('country1').value;
+        var name2 = document.getElementById('country2').value;
+        if (!name1 || !name2) {
+          if (window.showToast) window.showToast('Please select two countries.');
+          return;
+        }
+        if (name1 === name2) {
+          if (window.showToast) window.showToast('Please select two different countries.');
+          return;
+        }
+
+        var c1 = COUNTRIES[name1];
+        var c2 = COUNTRIES[name2];
+        var wins1 = 0;
+        var wins2 = 0;
+
+        NUMERIC_METRICS.forEach(function(m) {
+          var w = getWinner(m, c1[m], c2[m]);
+          if (w === 1) wins1++;
+          else if (w === 2) wins2++;
+        });
+
+        /* Title */
+        document.getElementById('results-title').textContent = c1.flag + ' ' + name1 + '  vs  ' + c2.flag + ' ' + name2;
+
+        /* Summary cards */
+        var summaryHtml = '';
+        summaryHtml += '<div class="cc-summary-card"><div class="cc-summary-card-flag">' + c1.flag + '</div><div class="cc-summary-card-name">' + name1 + '</div><div class="cc-summary-card-wins">Wins <strong>' + wins1 + '</strong> of 7 categories</div></div>';
+        summaryHtml += '<div class="cc-summary-card"><div class="cc-summary-card-flag">' + c2.flag + '</div><div class="cc-summary-card-name">' + name2 + '</div><div class="cc-summary-card-wins">Wins <strong>' + wins2 + '</strong> of 7 categories</div></div>';
+        document.getElementById('cc-summary').innerHTML = summaryHtml;
+
+        /* Category cards */
+        var catHtml = '';
+        Object.keys(METRIC_LABELS).forEach(function(m) {
+          catHtml += '<div class="cc-category">';
+          catHtml += '<div class="cc-category-header">';
+          catHtml += '<span class="cc-category-name">' + METRIC_ICONS[m] + ' ' + METRIC_LABELS[m] + '</span>';
+
+          if (m === 'climate') {
+            catHtml += '</div>';
+            var cw = 'tie';
+            catHtml += '<div class="cc-climate-row">';
+            catHtml += '<div class="cc-climate-col"><div class="cc-climate-label">' + name1 + '</div><div class="cc-climate-value">' + c1.climate + '</div></div>';
+            catHtml += '<div class="cc-climate-col"><div class="cc-climate-label">' + name2 + '</div><div class="cc-climate-value">' + c2.climate + '</div></div>';
+            catHtml += '</div>';
+          } else {
+            var w = getWinner(m, c1[m], c2[m]);
+            if (w === 'tie') {
+              catHtml += '<span class="cc-category-tie">Tie</span>';
+            } else {
+              catHtml += '<span class="cc-category-winner">' + (w === 1 ? name1 : name2) + ' wins</span>';
+            }
+            catHtml += '</div>';
+
+            var max = METRIC_MAX[m];
+            var pct1 = Math.min((c1[m] / max) * 100, 100);
+            var pct2 = Math.min((c2[m] / max) * 100, 100);
+            var isWinner1 = w === 1;
+            var isWinner2 = w === 2;
+
+            catHtml += '<div class="cc-bars">';
+            catHtml += '<div class="cc-bar-col"><div class="cc-bar-label">' + name1 + '</div><div class="cc-bar-value' + (!isWinner1 && w !== 'tie' ? ' muted' : '') + '">' + formatValue(m, c1[m]) + '</div><div class="cc-bar-track"><div class="cc-bar-fill' + (!isWinner1 && w !== 'tie' ? ' muted' : '') + '" style="width:' + pct1 + '%"></div></div></div>';
+            catHtml += '<div class="cc-bar-col"><div class="cc-bar-label">' + name2 + '</div><div class="cc-bar-value' + (!isWinner2 && w !== 'tie' ? ' muted' : '') + '">' + formatValue(m, c2[m]) + '</div><div class="cc-bar-track"><div class="cc-bar-fill' + (!isWinner2 && w !== 'tie' ? ' muted' : '') + '" style="width:' + pct2 + '%"></div></div></div>';
+            catHtml += '</div>';
+          }
+
+          catHtml += '</div>';
+        });
+        document.getElementById('cc-categories').innerHTML = catHtml;
+
+        /* Verdict */
+        var verdictTitle = '';
+        var verdictText = '';
+        if (wins1 > wins2) {
+          verdictTitle = c1.flag + ' ' + name1 + ' leads overall';
+          verdictText = name1 + ' wins ' + wins1 + ' out of 7 measurable categories against ' + name2 + '. ';
+          if (LOWER_IS_BETTER.costOfLiving && c1.costOfLiving < c2.costOfLiving) {
+            verdictText += name1 + ' also has a lower cost of living. ';
+          }
+          verdictText += 'Keep in mind that climate preference and personal priorities can shift the best choice for your situation.';
+        } else if (wins2 > wins1) {
+          verdictTitle = c2.flag + ' ' + name2 + ' leads overall';
+          verdictText = name2 + ' wins ' + wins2 + ' out of 7 measurable categories against ' + name1 + '. ';
+          if (LOWER_IS_BETTER.costOfLiving && c2.costOfLiving < c1.costOfLiving) {
+            verdictText += name2 + ' also has a lower cost of living. ';
+          }
+          verdictText += 'Keep in mind that climate preference and personal priorities can shift the best choice for your situation.';
+        } else {
+          verdictTitle = 'It\'s a tie!';
+          verdictText = name1 + ' and ' + name2 + ' each win ' + wins1 + ' categories. The best choice depends on what matters most to you — salary, safety, climate, or work-life balance.';
+        }
+        document.getElementById('cc-verdict').innerHTML = '<div class="cc-verdict-title">' + verdictTitle + '</div><div class="cc-verdict-text">' + verdictText + '</div>';
+
+        /* Show results */
+        if (window.showEl) window.showEl(document.getElementById('cc-results'), 'block');
+        else document.getElementById('cc-results').style.display = 'block';
+
+        /* Scroll to results */
+        document.getElementById('cc-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function swapCountries() {
+        var sel1 = document.getElementById('country1');
+        var sel2 = document.getElementById('country2');
+        var tmp = sel1.value;
+        sel1.value = sel2.value;
+        sel2.value = tmp;
+        if (sel1.value && sel2.value && sel1.value !== sel2.value) compare();
+      }
+
+      function clearResults() {
+        document.getElementById('country1').selectedIndex = 0;
+        document.getElementById('country2').selectedIndex = 0;
+        if (window.hideEl) window.hideEl(document.getElementById('cc-results'));
+        else document.getElementById('cc-results').style.display = 'none';
+        if (window.showToast) window.showToast('Cleared.');
+      }
+
+      function copyResults() {
+        var name1 = document.getElementById('country1').value;
+        var name2 = document.getElementById('country2').value;
+        if (!name1 || !name2) return;
+
+        var c1 = COUNTRIES[name1];
+        var c2 = COUNTRIES[name2];
+        var text = name1 + ' vs ' + name2 + ' — Country Comparison\n';
+        text += '='.repeat(40) + '\n\n';
+
+        NUMERIC_METRICS.forEach(function(m) {
+          var w = getWinner(m, c1[m], c2[m]);
+          var winner = w === 'tie' ? 'Tie' : (w === 1 ? name1 : name2);
+          text += METRIC_LABELS[m] + ':\n';
+          text += '  ' + name1 + ': ' + formatValue(m, c1[m]) + '\n';
+          text += '  ' + name2 + ': ' + formatValue(m, c2[m]) + '\n';
+          text += '  Winner: ' + winner + '\n\n';
+        });
+
+        text += 'Climate:\n';
+        text += '  ' + name1 + ': ' + c1.climate + '\n';
+        text += '  ' + name2 + ': ' + c2.climate + '\n\n';
+        text += 'Compare at tool.teamzlab.com/tools/country-comparison-tool/';
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            if (window.showToast) window.showToast('Comparison copied to clipboard!');
+          }).catch(function() {
+            if (window.showToast) window.showToast('Could not copy. Try again.');
+          });
+        } else {
+          if (window.showToast) window.showToast('Clipboard not available in this browser.');
+        }
+      }
+
+      function shareLink() {
+        var name1 = document.getElementById('country1').value;
+        var name2 = document.getElementById('country2').value;
+        if (!name1 || !name2) return;
+
+        var url = 'https://tool.teamzlab.com/tools/country-comparison-tool/?c1=' + encodeURIComponent(name1) + '&c2=' + encodeURIComponent(name2);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(function() {
+            if (window.showToast) window.showToast('Share link copied!');
+          }).catch(function() {
+            if (window.showToast) window.showToast('Could not copy link.');
+          });
+        } else {
+          if (window.showToast) window.showToast('Clipboard not available.');
+        }
+      }
+
+      function decodeShareParams() {
+        var params = new URLSearchParams(window.location.search);
+        var c1 = params.get('c1');
+        var c2 = params.get('c2');
+        if (c1 && c2 && COUNTRIES[c1] && COUNTRIES[c2]) {
+          document.getElementById('country1').value = c1;
+          document.getElementById('country2').value = c2;
+          compare();
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        populateDropdowns();
+
+        document.getElementById('compare-btn').addEventListener('click', compare);
+        document.getElementById('swap-btn').addEventListener('click', swapCountries);
+        document.getElementById('clear-btn').addEventListener('click', clearResults);
+        document.getElementById('copy-results-btn').addEventListener('click', copyResults);
+        document.getElementById('share-link-btn').addEventListener('click', shareLink);
+
+        /* Decode share link if present */
+        decodeShareParams();
+
+        /* Schemas and common components */
+        var BREADCRUMBS = [
+          { name: 'Home', url: '/' },
+          { name: 'Tools', url: '/tools/' },
+          { name: 'Country Comparison Tool' }
+        ];
+
+        var FAQS = [
+          { q: 'Where does the country comparison data come from?', a: 'Data is compiled from publicly available sources including Numbeo (cost of living and safety indices), the World Bank (salary and quality of life), Speedtest Global Index (internet speed), WHO (healthcare), and the OECD Better Life Index (work-life balance). All values are approximate 2026 estimates.' },
+          { q: 'What does the cost of living index mean?', a: 'The cost of living index is benchmarked against the United States at 100. A country scoring 65 means daily expenses (groceries, rent, transport, dining) are roughly 35 percent lower than the US average. A score above 100 means it is more expensive than the US.' },
+          { q: 'Which countries have the highest cost of living?', a: 'Among the 30 countries included, Switzerland (120), Iceland (98), Norway (95), and Singapore (85) have the highest cost of living indices. These are offset by higher salaries in most cases.' },
+          { q: 'Which country has the best work-life balance?', a: 'Finland leads with a work-life balance score of 92 out of 100, followed by Norway (91), Sweden (90), and Denmark (89). Nordic countries consistently rank highest due to strong labor protections, generous parental leave, and shorter average working hours.' },
+          { q: 'Which countries are best for remote workers?', a: 'Portugal, Spain, and Estonia are popular choices for remote workers thanks to low cost of living, good internet speeds, and favorable digital nomad visa programs. Poland and the Czech Republic also offer excellent value with fast internet and low expenses.' },
+          { q: 'How often is the data updated?', a: 'The embedded data reflects approximate 2026 values and is reviewed periodically. For major life decisions like relocation, we recommend cross-referencing with official government statistics and recent expat community reports.' }
+        ];
+
+        var RELATED_TOOLS = [
+          { slug: 'evergreen/cost-of-living-calculator', name: 'Cost of Living Calculator', description: 'Calculate and compare living costs between cities.' },
+          { slug: 'evergreen/salary-comparison-by-city', name: 'Salary Comparison by City', description: 'Compare salaries across major cities worldwide.' },
+          { slug: 'freelance/remote-work-cost-calculator', name: 'Remote Work Cost Calculator', description: 'Calculate your remote work costs and savings.' },
+          { slug: 'tools/time-zone-converter', name: 'Time Zone Converter', description: 'Convert times between any time zones instantly.' },
+          { slug: 'tools/world-clock', name: 'World Clock', description: 'See current time in cities around the globe.' },
+          { slug: 'tools/expense-splitter', name: 'Expense Splitter', description: 'Split travel expenses fairly between friends.' }
+        ];
+
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+        TeamzTools.injectFAQSchema(FAQS);
+        TeamzTools.injectWebAppSchema({ slug: 'tools/country-comparison-tool', title: 'Country Comparison Tool', description: 'Compare countries side by side on cost of living, salary, safety, quality of life, and more.' });
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      });
+    })();
+  </script>
+</body>
+</html>
