@@ -1,6 +1,6 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-27 (nightly build #2)*
+*Last updated: 2026-03-27 (nightly build #4)*
 
 ---
 
@@ -107,15 +107,29 @@
 - ES LinkedIn Headline Generator (/es/generador-titular-linkedin/) — native Spanish
 - PT LinkedIn Headline Generator (/pt/gerador-titulo-linkedin/) — native Brazilian Portuguese
 
+## Completed This Nightly Build #4 (2026-03-27 nightly)
+- SG CPF Contribution Calculator (/sg/cpf-contribution-calculator/) — 5 age bands, OW ceiling, OA/SA/MA breakdown
+- AU Salary Sacrifice Calculator (/au/salary-sacrifice-calculator/) — 2024-25 ATO brackets, $30K concessional cap, Div 293
+- AU Negative Gearing Calculator (/au/negative-gearing-calculator/) — rental loss, tax benefit, depreciation, after-tax cost
+- NZ First Home Grant Calculator (/nz/first-home-grant-calculator/) — Kāinga Ora grant, KiwiSaver withdrawal, regional caps
+- IE Employment Permit Calculator (/ie/employment-permit-calculator/) — CSEP, GEP, ICT fees, eligibility, salary checks
+- Client Onboarding Checklist (/freelance/client-onboarding-checklist/) — 6 project types, progress tracking, copy/print
+- ES Remote Work Policy Generator (/es/generador-politica-trabajo-remoto/) — Ley 28/2020, 11 sections
+- PT Remote Work Policy Generator (/pt/gerador-politica-trabalho-remoto/) — CLT, Lei 14.442/2022, 11 sections
+- ES Meeting Cost Calculator (/es/calculadora-costo-reunion/) — live timer, 7 currencies
+- PT Meeting Cost Calculator (/pt/calculadora-custo-reuniao/) — live timer, BRL, Brazilian context
+
 ## Next Build Queue (prioritized by RPM + gap analysis)
 - NZ Income Tax Calculator (/nz/) — IRD PAYE brackets 2025-26 (distinct from PAYE calculator)
-- IE Employment Permit Fee Calculator (/ie/) — Work permit costs and eligibility
-- SG CPF Contribution Calculator (/sg/) — Employee/employer CPF rates by age band
-- AU Rental Yield Calculator (/au/) — Gross/net yield, negative gearing
-- Business Proposal Generator (/work/) — template doc generator, B2B
-- ES Remote Work Policy Generator (/es/) — Spanish version of work policy tool
-- PT Remote Work Policy Generator (/pt/) — Brazilian Portuguese version
+- AU Rental Yield Calculator (/au/) — Gross/net yield, property investment
 - Skincare Routine Builder (/skincare/) — AM/PM routine based on skin type and concerns
+- Small Business NDA Generator (/legal/) — GDPR-compliant, 2026 updated
+- SG Rental Budget Calculator (/sg/) — Affordability check for SG renters
+- IE Self-Employed Tax Calculator (/ie/) — Revenue Commissioners rules, PRSI Class S
+- AU Division 7A Calculator (/au/) — Shareholder loans, benchmark interest rate
+- NZ Student Loan Repayment Calculator (/nz/) — IRD repayment thresholds
+- ES Employment Cost Calculator (/es/) — Spanish SS contributions for employers
+- PT Freelance Rate Calculator (/pt/) — CLT vs PJ comparison
 
 ---
 
