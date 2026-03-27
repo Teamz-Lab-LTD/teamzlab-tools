@@ -95,6 +95,17 @@
 - ES Freelance Contract Generator (/es/generador-contrato-freelance/) — Spanish, 8 countries, 5 payment terms, download
 - PT Freelance Contract Generator (/pt/gerador-contrato-freelance/) — Brazilian PT, MEI/CLT context, 4 countries, download
 
+## Completed This Nightly Build #6 (2026-03-27 nightly)
+- Candle Wick Size Guide (/candle-making/wick-size-guide/) — LX/CD/ECO/RRD series, fragrance/dye adjustment, burn testing tips
+- Candle Container Volume Calculator (/candle-making/container-volume-calculator/) — cylinder + rectangle, wax density, fill %, batches per 500g block
+- Knitting Stitch Counter (/knitting/stitch-counter/) — multi-counter, auto-save localStorage, target rows, progress bar
+- Knitting Needle Size Converter (/knitting/needle-size-converter/) — US/UK/metric/JP, full chart, yarn weight reference
+- Knitting Yardage Estimator (/knitting/yardage-estimator/) — 6 project types, 7 weights, skein count + 10% buy buffer
+- AU WFH Tax Deduction Calculator (/au/wfh-tax-deduction-calculator/) — 67c/hr fixed vs actual cost, tax saving estimate, method comparison
+- Deep Work Focus Calculator (/work/deep-work-focus-calculator/) — Cal Newport framework, chronotype, daily schedule, output estimate
+- ES Job Description Generator (/es/generador-descripcion-puesto/) — Spanish HR tool, 4 tones, 10 sectors, LinkedIn/InfoJobs ready
+- PT Job Description Generator (/pt/gerador-descricao-vaga/) — Brazilian Portuguese HR, CLT/PJ regime, inclusive language tips
+
 ## Completed This Nightly Build #5 (2026-03-27 nightly)
 - Candle Wax Calculator (/candle-making/wax-calculator/) — soy/paraffin/beeswax/coconut density, fill %, fragrance suggestion
 - Candle Fragrance Load Calculator (/candle-making/fragrance-calculator/) — 3-12% range, per-wax-type max, dynamic tip panel
