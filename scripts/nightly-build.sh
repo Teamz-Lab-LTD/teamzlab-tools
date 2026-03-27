@@ -194,53 +194,8 @@ echo ""
 echo "=== Phase 4: Claude Build Agent ==="
 echo "  Starting Sonnet... (live output below)"
 echo "  ─────────────────────────────────────"
-claude --print --verbose --dangerously-skip-permissions --model sonnet "$(cat <<'PROMPT'
-Print your progress as you work. After EACH step print a status line. After EACH tool print: Built [name] at /[hub]/[slug]/. After EACH commit print: Committed [message]. If something fails print: Failed [what] [why].
-
-Now begin:
-You are the nightly build agent for tool.teamzlab.com (1680+ tools).
-
-FIRST: Read these files for context:
-- CLAUDE.md (all build rules)
-- .claude-memory/MEMORY.md (feedback + project context)
-- .claude-memory/feedback_idea_generation_framework.md (country/language targeting)
-- .claude-memory/feedback_programmatic_seo.md (variant generation)
-- .claude-memory/feedback_multilang_strategy.md (ES/PT rules)
-- .claude-memory/project_hub_building_queue.md (hub queue)
-- docs/tool-backlog.md (pending keywords)
-- /tmp/nightly-suggestions.txt (Google Autocomplete results — pre-researched)
-- /tmp/nightly-trends.txt (trending keywords — pre-researched)
-- /tmp/nightly-multilang.txt (tools needing ES/PT versions — pre-researched)
-- /tmp/nightly-research.txt (keyword volumes, cannibalization, seasonal info)
-
-CONTENT RESTRICTIONS: Owner is Muslim. NEVER build alcohol, gambling, betting, casino, lottery tools.
-
-## DECISION LAYERS — Apply ALL of these when picking what to build:
-
-1. COUNTRY RPM: Target Tier S first (AU, NZ, SG, IE, CH $190-350/capita), then Tier A (US, UK, CA, DE, JP). AVOID BD, IN, PK (RPM $0.05-0.20).
-2. TOOL TYPE DIVERSITY: Build generators ($15+ RPM), planners ($10+), analyzers ($8+), checkers ($6+) — NOT just calculators ($5+). Never build fun/joke tools ($1-2).
-3. HUB CLUSTER: Add tools to EXISTING thin hubs (<10 tools) to build topical authority. 10 tools in one hub ranks faster than 10 scattered tools.
-4. FREE ALTERNATIVE: Check if the tool replaces a paid product. "Free alternative to X" = highest conversion intent keywords.
-5. COMPARISON PAGES: Build "X vs Y" tools (rent vs buy, Roth vs traditional). These are high-intent search queries.
-6. EVERGREEN FIRST: Prefer tools with year-round traffic over seasonal spikes.
-7. TREND-JACK: Check /tmp/nightly-trends.txt for rising keywords. Build if breakout + high RPM.
-8. VIRALITY: Prefer tools where results are screenshot-worthy and shareable.
-9. PINTEREST FIT: Finance/health/budget tools perform well on Pinterest. Build pin-worthy tools.
-11. AI SEARCH: Frame tool as answering a question (ChatGPT/Perplexity recommend tools that answer questions). We have llms.txt advantage.
-12. FEATURED SNIPPET: Structure results to match Google's featured snippet format (tables, bullet lists).
-13. E-E-A-T: All tools already have author byline + About page link. Ensure content mentions methodology/sources.
-
-## THEN DO:
-1. BUILD 5-8 new tools using the decision layers above. Check /tmp/nightly-suggestions.txt for validated keywords. Check duplicates BEFORE each (find . -path '*keyword*'). Follow ALL CLAUDE.md rules. Commit each tool immediately.
-2. PROGRAMMATIC SEO: If any new tool has location-varying data, write a Python generator script and run it (zero cost). Examples: tax by state, cost by city.
-3. MULTILANG: For finance/career/business tools, also build Spanish (/es/) + Portuguese (/pt/) versions natively. Not machine translation. Target 2-4 each.
-4. QA: Run build-static-schema.py, build-search-index.sh, build-fix-orphans.py fix. Fix issues. Commit.
-5. BACKLOG: Save any good keyword ideas you found to docs/tool-backlog.md with columns: keyword | hub | region | RPM tier | programmatic? | multilang? | source.
-6. Push all changes: git push origin main
-
-TARGET: 5-8 base tools + variants + 4-8 multilang + QA fixes + backlog update.
-PROMPT
-)" 2>&1
+PROMPT_FILE="$PROJECT_DIR/scripts/nightly-build-prompt.md"
+claude --print --verbose --dangerously-skip-permissions --model sonnet -p "$(cat "$PROMPT_FILE")" 2>&1
 BUILD_EXIT=$?
 
 if [ "$BUILD_EXIT" -ne 0 ]; then
