@@ -1,15 +1,14 @@
-# Indexing Report — 2026-03-27 10:46
+# Indexing Report — 2026-03-27 10:54
 
 Total pages: 30
 Checked: 30
-Indexed: 30 (100%)
+Indexed: 29 (96%)
 Not indexed: 0
-Errors: 0
+Errors: 1
 
-## Indexed Pages (30)
+## Indexed Pages (29)
 
 - /
-- /diagnostic/dns-leak-test/
 - /design/logo-text-maker/
 - /bd/electricity-bill-calculator/
 - /career/resume-job-match-checker/
