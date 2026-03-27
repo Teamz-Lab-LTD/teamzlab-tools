@@ -1,6 +1,19 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-27 (nightly build #5)*
+*Last updated: 2026-03-27 (nightly build #7)*
+
+---
+
+## Completed This Build (nightly build #7)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| NZ Rental Yield Calculator | /nz/ | ✅ Built |
+| NZ Bright-Line Tax Calculator 2025 | /nz/ | ✅ Built |
+| Australian EOFY Tax Checklist 2025 | /au/ | ✅ Built |
+| UK Universal Credit Calculator 2025 | /uk/ | ✅ Built |
+| Ireland Mortgage Interest Relief Calculator 2025 | /ie/ | ✅ Built |
+| Calculadora CLT vs PJ 2025 (Brazilian PT) | /pt/ | ✅ Built |
 
 ---
 
@@ -12,6 +25,12 @@
 |-----------|-----|----------------|----------|----------|
 | NZ Mortgage Fix vs Float Calculator | /nz/ | NZ | "fix or float nz", "nz mortgage rate calculator", "fixed vs floating mortgage nz" | HIGH |
 | NZ Income Tax Calculator | /nz/ | NZ | "nz income tax calculator", "paye calculator nz 2026", "new zealand take home pay" | HIGH |
+| NZ KiwiSaver Retirement Withdrawal Planner | /nz/ | NZ | "kiwisaver withdrawal calculator", "kiwisaver retirement income nz", "how much kiwisaver per year" | HIGH |
+| UK Child Benefit Calculator 2025/26 | /uk/ | UK | "child benefit calculator 2025", "hicbc calculator uk", "high income child benefit charge" | HIGH |
+| IE Help-to-Buy Scheme Calculator | /ie/ | IE | "help to buy ireland", "htb scheme calculator", "first home scheme calculator ireland" | HIGH |
+| AU PAYG Instalment Calculator (2025-26) | /au/ | AU | "payg instalment calculator", "ato payg variation", "how to vary payg instalments" | MEDIUM |
+| ES Finiquito / Redundancy Calculator | /es/ | ES | "calculadora finiquito", "calculo indemnizacion despido españa", "liquidacion laboral" | HIGH |
+| PT Simulador Rescisão Trabalhista | /pt/ | PT/BR | "calculadora rescisão CLT", "simulador rescisão trabalhista", "quanto recebo rescisão" | HIGH |
 | Singapore HDB Affordability Calculator | /sg/ | SG | "hdb affordability calculator", "cpf housing calculator", "how much hdb can i afford" | HIGH |
 | Singapore TDSR/MSR Calculator | /sg/ | SG | "tdsr calculator singapore", "msr calculator hdb", "total debt servicing ratio" | HIGH |
 | UK Self-Assessment Tax Set-Aside Planner (26/27) | /uk/ | UK | "self assessment tax 2026", "hmrc payment on account", "uk tax self employed 2026" | HIGH |
