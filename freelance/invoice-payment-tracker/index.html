@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Payment Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track outstanding invoices, payment status, and overdue amounts. Free private invoice tracker with aging reports and CSV export for freelancers.">
+  <meta property="og:title" content="Invoice Payment Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Track outstanding invoices, payment status, and overdue amounts. Free private invoice tracker with aging reports and CSV export.">
+  <meta property="og:url" content="https://tool.teamzlab.com/freelance/invoice-payment-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/freelance.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Invoice Payment Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track outstanding invoices, payment status, and overdue amounts. Free private tracker with aging reports.">
+  <link rel="canonical" href="https://tool.teamzlab.com/freelance/invoice-payment-tracker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ipt-dashboard {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .ipt-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .ipt-card-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .ipt-card-value {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .ipt-card--overdue {
+      border-left: 4px solid var(--accent);
+    }
+    .ipt-actions-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .ipt-btn {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .ipt-btn:hover {
+      background: var(--border);
+    }
+    .ipt-btn--primary {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .ipt-btn--primary:hover {
+      opacity: 0.9;
+    }
+    .ipt-filter-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .ipt-filter-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .ipt-filter-btn:hover {
+      background: var(--border);
+    }
+    .ipt-filter-btn.ipt-active {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .ipt-table-wrap {
+      overflow-x: auto;
+      margin-bottom: 24px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .ipt-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: var(--text-sm);
+    }
+    .ipt-table th,
+    .ipt-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .ipt-table th {
+      background: var(--surface);
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .ipt-table th:hover {
+      color: var(--heading);
+    }
+    .ipt-table tr:last-child td {
+      border-bottom: none;
+    }
+    .ipt-table tr.ipt-row-overdue {
+      border-left: 4px solid var(--accent);
+    }
+    .ipt-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .ipt-badge--pending {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .ipt-badge--paid {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--heading);
+    }
+    .ipt-badge--overdue {
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+    .ipt-badge--partial {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .ipt-row-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .ipt-row-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ipt-row-btn:hover {
+      background: var(--border);
+    }
+    .ipt-row-btn--danger {
+      color: var(--heading);
+    }
+    .ipt-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+    .ipt-empty p {
+      margin-bottom: 12px;
+    }
+    .ipt-aging {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .ipt-aging-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .ipt-aging-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .ipt-aging-value {
+      font-size: clamp(16px, 2.5vw, 22px);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .ipt-aging-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    /* Modal */
+    .ipt-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .ipt-overlay.ipt-visible {
+      display: flex;
+    }
+    .ipt-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      width: 90%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .ipt-modal h3 {
+      margin: 0 0 18px 0;
+      color: var(--heading);
+      font-size: var(--text-lg);
+    }
+    .ipt-form-group {
+      margin-bottom: 14px;
+    }
+    .ipt-form-group label {
+      display: block;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+    .ipt-form-group input,
+    .ipt-form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      box-sizing: border-box;
+    }
+    .ipt-form-group input:focus,
+    .ipt-form-group select:focus {
+      outline: none;
+      border-color: var(--heading);
+    }
+    .ipt-modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .ipt-section-title {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 12px;
+    }
+    @media (max-width: 600px) {
+      .ipt-dashboard {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .ipt-aging {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .ipt-actions-bar {
+        flex-direction: column;
+      }
+      .ipt-btn {
+        width: 100%;
+        text-align: center;
+      }
+      .ipt-filter-bar {
+        flex-wrap: wrap;
+      }
+      .ipt-modal {
+        padding: 20px;
+        width: 95%;
+      }
+      .ipt-modal-actions {
+        flex-direction: column;
+      }
+      .ipt-modal-actions .ipt-btn {
+        width: 100%;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Freelance Tools", "item": "https://tool.teamzlab.com/freelance/"}, {"@type": "ListItem", "position": 3, "name": "Invoice Payment Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is my invoice data stored securely?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All data is stored exclusively in your browser's localStorage. Nothing is sent to any server. Your invoice records remain completely private on your device. If you clear your browser data, the records will be erased, so consider exporting a CSV backup periodically."}}, {"@type": "Question", "name": "What are standard freelance payment terms?", "acceptedAnswer": {"@type": "Answer", "text": "The most common payment terms are Net 15, Net 30, and Net 60, meaning payment is due 15, 30, or 60 days after the invoice date. Net 30 is the industry standard for most freelance work. Some freelancers offer early payment discounts (such as 2/10 Net 30, meaning a 2% discount if paid within 10 days) to incentivize faster payment."}}, {"@type": "Question", "name": "When should I follow up on an unpaid invoice?", "acceptedAnswer": {"@type": "Answer", "text": "Send a polite reminder on the due date or the day after. If there is no response, follow up at 7 days and 14 days past due. At 30 days, escalate with a firmer message and consider applying a late fee. At 60 days, a phone call or formal demand letter may be appropriate. Consistent, professional follow-up is the key to collecting overdue payments."}}, {"@type": "Question", "name": "How does the aging report work?", "acceptedAnswer": {"@type": "Answer", "text": "The aging report categorizes your unpaid invoices into four time buckets: 0 to 30 days, 31 to 60 days, 61 to 90 days, and over 90 days past due. Each bucket shows the total outstanding amount and the number of invoices. This helps you prioritize collection efforts and identify potential bad debts early."}}, {"@type": "Question", "name": "Can I track invoices in multiple currencies?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each invoice can have its own currency (USD, EUR, GBP, AUD, CAD, NZD, or SGD). Dashboard totals are shown per invoice in the table. Note that the dashboard summary cards display values in your most-used currency for simplicity. For multi-currency analysis, use the CSV export to review amounts by currency."}}, {"@type": "Question", "name": "What does the auto-detect overdue feature do?", "acceptedAnswer": {"@type": "Answer", "text": "Every time you open the tracker, it automatically checks all pending invoices against today's date. If any invoice's due date has passed and the status is still pending, it is automatically highlighted as overdue. This ensures you never miss a late invoice even if you forget to update the status manually."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Invoice Payment Tracker", "description": "Track outstanding invoices, payment status, and overdue amounts. Free private invoice tracker with aging reports and CSV export for freelancers.", "url": "https://tool.teamzlab.com/freelance/invoice-payment-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"><a href="/" class="header-logo teamz-logo" aria-label="Teamz Lab Tools Home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Teamz Lab Tools</span></a><nav class="header-nav" aria-label="Main navigation"><a href="/" class="nav-link">Home</a><a href="/about/" class="nav-link">About</a><a href="/contact/" class="nav-link">Contact</a><div class="lang-selector notranslate" translate="no"><button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span id="current-lang" class="notranslate" translate="no">EN</span></button><div class="lang-dropdown notranslate" id="lang-dropdown" translate="no"></div></div><div class="fav-header-wrap"><button id="fav-header-btn" class="header-icon-btn nav-link--icon" aria-label="Favorites" title="Your Favourites"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="fav-badge" class="fav-badge" style="display:none;">0</span></button><div id="fav-dropdown" class="fav-dropdown" style="display:none;"></div></div><button id="theme-toggle" class="header-icon-btn nav-link--icon" aria-label="Toggle theme" title="Toggle dark/light mode"><svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></nav></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Invoice Payment Tracker</h1>
+      <p class="tool-description">Track outstanding invoices, monitor payment status, and identify overdue amounts. All data stays private in your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Dashboard -->
+      <div class="ipt-dashboard" data-ipt="dashboard">
+        <div class="ipt-card">
+          <div class="ipt-card-label">Total Outstanding</div>
+          <div class="ipt-card-value" data-ipt="total-outstanding">$0</div>
+        </div>
+        <div class="ipt-card ipt-card--overdue">
+          <div class="ipt-card-label">Total Overdue</div>
+          <div class="ipt-card-value" data-ipt="total-overdue">$0</div>
+        </div>
+        <div class="ipt-card">
+          <div class="ipt-card-label">Paid This Month</div>
+          <div class="ipt-card-value" data-ipt="paid-month">$0</div>
+        </div>
+        <div class="ipt-card">
+          <div class="ipt-card-label">Avg Days to Pay</div>
+          <div class="ipt-card-value" data-ipt="avg-days">0</div>
+        </div>
+      </div>
+
+      <!-- Aging Report -->
+      <div class="ipt-section-title">Aging Report</div>
+      <div class="ipt-aging" data-ipt="aging">
+        <div class="ipt-aging-card">
+          <div class="ipt-aging-label">0 &ndash; 30 Days</div>
+          <div class="ipt-aging-value" data-ipt="aging-30">$0</div>
+          <div class="ipt-aging-count" data-ipt="aging-30-count">0 invoices</div>
+        </div>
+        <div class="ipt-aging-card">
+          <div class="ipt-aging-label">31 &ndash; 60 Days</div>
+          <div class="ipt-aging-value" data-ipt="aging-60">$0</div>
+          <div class="ipt-aging-count" data-ipt="aging-60-count">0 invoices</div>
+        </div>
+        <div class="ipt-aging-card">
+          <div class="ipt-aging-label">61 &ndash; 90 Days</div>
+          <div class="ipt-aging-value" data-ipt="aging-90">$0</div>
+          <div class="ipt-aging-count" data-ipt="aging-90-count">0 invoices</div>
+        </div>
+        <div class="ipt-aging-card">
+          <div class="ipt-aging-label">90+ Days</div>
+          <div class="ipt-aging-value" data-ipt="aging-over">$0</div>
+          <div class="ipt-aging-count" data-ipt="aging-over-count">0 invoices</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="ipt-actions-bar">
+        <button class="ipt-btn ipt-btn--primary" data-ipt="add-btn">+ Add Invoice</button>
+        <button class="ipt-btn" data-ipt="export-btn">Export CSV</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="ipt-filter-bar">
+        <button class="ipt-filter-btn ipt-active" data-filter="all">All</button>
+        <button class="ipt-filter-btn" data-filter="pending">Pending</button>
+        <button class="ipt-filter-btn" data-filter="overdue">Overdue</button>
+        <button class="ipt-filter-btn" data-filter="partial">Partial</button>
+        <button class="ipt-filter-btn" data-filter="paid">Paid</button>
+      </div>
+
+      <!-- Invoice Table -->
+      <div class="ipt-table-wrap">
+        <table class="ipt-table">
+          <thead>
+            <tr>
+              <th data-sort="client">Client</th>
+              <th data-sort="invoiceNumber">Invoice #</th>
+              <th data-sort="amount">Amount</th>
+              <th data-sort="issueDate">Issued</th>
+              <th data-sort="dueDate">Due</th>
+              <th data-sort="status">Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody data-ipt="invoice-body">
+          </tbody>
+        </table>
+      </div>
+      <div class="ipt-empty" data-ipt="empty-state">
+        <p>No invoices yet. Add your first invoice to start tracking payments.</p>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why Freelancers Need an Invoice Tracker</h2>
+      <p>Cash flow is the lifeblood of any freelance business, and the single biggest threat to healthy cash flow is unpaid invoices. According to industry surveys, the average freelancer has over $6,000 in outstanding invoices at any given time, and nearly half of all invoices are paid late. Without a structured tracking system, it is easy to lose sight of which clients owe what, which invoices are overdue, and how much revenue you can actually count on.</p>
+      <p>An invoice payment tracker gives you a clear, real-time view of your receivables. Instead of digging through email threads and spreadsheets, you can see at a glance how much money is outstanding, how much is overdue, and which clients need follow-up. This visibility is essential for making informed decisions about when to take on new work, when to invest in your business, and when to tighten your belt. Professional freelancers treat invoice tracking not as administrative busywork but as a core business function that directly impacts their income and sustainability.</p>
+
+      <h2>Understanding Payment Aging Reports</h2>
+      <p>An aging report categorizes your outstanding invoices by how long they have been unpaid. The standard buckets are 0 to 30 days, 31 to 60 days, 61 to 90 days, and over 90 days. This breakdown is critical because the probability of collecting an invoice drops sharply the longer it remains unpaid. Invoices in the 0 to 30 day range are usually still within normal payment terms and rarely require action beyond a friendly reminder. Once an invoice crosses 30 days, however, proactive follow-up becomes important.</p>
+      <p>Invoices in the 61 to 90 day range should trigger escalation: a firmer reminder, a phone call, or a conversation about payment plans. Invoices over 90 days may need to be written off as bad debt or referred to a collection agency. By reviewing your aging report weekly, you catch problems early and maintain a healthy collection rate. The goal is to keep the vast majority of your outstanding balance in the 0 to 30 day bucket and to minimize anything beyond 60 days.</p>
+
+      <h2>How to Handle Late-Paying Clients</h2>
+      <p>Late payments are an unfortunate reality of freelance work, but how you handle them can make the difference between recovering your money and losing a client. Start with a professional, friendly reminder the day after the due date. Many late payments are simply oversights, and a polite nudge is enough to trigger payment. If the first reminder goes unanswered, follow up at 7 days and 14 days with increasingly direct messages that reference the specific invoice number and amount owed.</p>
+      <p>At 30 days past due, consider applying a late fee if your contract includes one, and communicate this to the client in writing. At 60 days, it may be time for a phone call or a final written demand. Document every communication in case you need to pursue the matter further. Throughout this process, remain professional and factual. Emotional messages rarely help and can damage your reputation. The goal is always to recover the payment while preserving the relationship where possible.</p>
+
+      <h2>Cash Flow Management for Freelancers</h2>
+      <p>Effective cash flow management starts with knowing exactly how much money is coming in and when. Your invoice tracker is a key part of this picture. By monitoring your outstanding balance, aging report, and average days to payment, you can forecast your income for the coming weeks and months. This allows you to plan expenses, set aside money for taxes, and avoid the feast-or-famine cycle that plagues many freelancers.</p>
+      <p>Best practices include invoicing promptly when work is delivered, offering multiple payment methods to reduce friction, and setting clear payment terms upfront. Consider requiring deposits for large projects and structuring milestone payments for long engagements. The faster you invoice and the clearer your terms, the faster you get paid. Tracking your average days to payment over time also helps you identify which clients are reliably prompt and which ones consistently pay late, allowing you to adjust your terms or client mix accordingly.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <!-- Add / Edit Invoice Modal -->
+  <div class="ipt-overlay" data-ipt="modal-overlay">
+    <div class="ipt-modal">
+      <h3 data-ipt="modal-title">Add Invoice</h3>
+      <div class="ipt-form-group">
+        <label>Client Name</label>
+        <input type="text" data-field="client" placeholder="e.g. Acme Corp">
+      </div>
+      <div class="ipt-form-group">
+        <label>Invoice Number</label>
+        <input type="text" data-field="invoiceNumber" placeholder="e.g. INV-001">
+      </div>
+      <div class="ipt-form-group">
+        <label>Amount</label>
+        <input type="number" data-field="amount" placeholder="e.g. 5000" min="0" step="0.01">
+      </div>
+      <div class="ipt-form-group">
+        <label>Currency</label>
+        <select data-field="currency">
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (&euro;)</option>
+          <option value="GBP">GBP (&pound;)</option>
+          <option value="AUD">AUD (A$)</option>
+          <option value="CAD">CAD (C$)</option>
+          <option value="NZD">NZD (NZ$)</option>
+          <option value="SGD">SGD (S$)</option>
+        </select>
+      </div>
+      <div class="ipt-form-group">
+        <label>Issue Date</label>
+        <input type="date" data-field="issueDate">
+      </div>
+      <div class="ipt-form-group">
+        <label>Due Date</label>
+        <input type="date" data-field="dueDate">
+      </div>
+      <div class="ipt-form-group">
+        <label>Status</label>
+        <select data-field="status">
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="overdue">Overdue</option>
+          <option value="partial">Partial</option>
+        </select>
+      </div>
+      <div class="ipt-form-group" data-ipt="paid-amount-group" style="display:none;">
+        <label>Amount Received</label>
+        <input type="number" data-field="paidAmount" placeholder="e.g. 2500" min="0" step="0.01">
+      </div>
+      <div class="ipt-form-group" data-ipt="paid-date-group" style="display:none;">
+        <label>Payment Date</label>
+        <input type="date" data-field="paidDate">
+      </div>
+      <div class="ipt-modal-actions">
+        <button class="ipt-btn ipt-btn--primary" data-ipt="modal-save">Save Invoice</button>
+        <button class="ipt-btn" data-ipt="modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mark Paid Modal -->
+  <div class="ipt-overlay" data-ipt="paid-overlay">
+    <div class="ipt-modal">
+      <h3>Mark as Paid</h3>
+      <div class="ipt-form-group">
+        <label>Payment Date</label>
+        <input type="date" data-field="markPaidDate">
+      </div>
+      <div class="ipt-modal-actions">
+        <button class="ipt-btn ipt-btn--primary" data-ipt="paid-confirm">Confirm Payment</button>
+        <button class="ipt-btn" data-ipt="paid-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mark Partial Modal -->
+  <div class="ipt-overlay" data-ipt="partial-overlay">
+    <div class="ipt-modal">
+      <h3>Record Partial Payment</h3>
+      <div class="ipt-form-group">
+        <label>Amount Received</label>
+        <input type="number" data-field="partialAmount" placeholder="e.g. 2500" min="0" step="0.01">
+      </div>
+      <div class="ipt-form-group">
+        <label>Payment Date</label>
+        <input type="date" data-field="partialDate">
+      </div>
+      <div class="ipt-modal-actions">
+        <button class="ipt-btn ipt-btn--primary" data-ipt="partial-confirm">Confirm</button>
+        <button class="ipt-btn" data-ipt="partial-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div class="ipt-overlay" data-ipt="delete-overlay">
+    <div class="ipt-modal">
+      <h3>Delete Invoice</h3>
+      <p data-ipt="delete-msg">Are you sure you want to delete this invoice?</p>
+      <div class="ipt-modal-actions">
+        <button class="ipt-btn ipt-btn--primary" data-ipt="delete-confirm">Delete</button>
+        <button class="ipt-btn" data-ipt="delete-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var SLUG = 'invoice-payment-tracker';
+    var TITLE = 'Invoice Payment Tracker';
+    var DESCRIPTION = 'Track outstanding invoices, payment status, and overdue amounts. Free private invoice tracker with aging reports and CSV export for freelancers.';
+    var STORAGE_KEY = 'ipt_invoices';
+
+    // Currency symbols
+    var CURRENCY_SYMBOLS = {
+      USD: '$', EUR: '\u20AC', GBP: '\u00A3', AUD: 'A$', CAD: 'C$', NZD: 'NZ$', SGD: 'S$'
+    };
+
+    // State
+    var invoices = [];
+    var currentFilter = 'all';
+    var sortField = 'dueDate';
+    var sortAsc = true;
+    var editingId = null;
+    var actionInvoiceId = null;
+
+    // Selectors via data attributes
+    function q(attr) { return document.querySelector('[data-ipt="' + attr + '"]'); }
+    function qAll(sel) { return document.querySelectorAll(sel); }
+    function field(name) { return document.querySelector('[data-field="' + name + '"]'); }
+
+    // Breadcrumbs
+    var breadcrumbs = [
+      { name: 'Home', url: '/' },
+      { name: 'Freelance Tools', url: '/freelance/' },
+      { name: 'Invoice Payment Tracker' }
+    ];
+    TeamzTools.renderBreadcrumbs(breadcrumbs);
+    TeamzTools.injectBreadcrumbSchema(breadcrumbs);
+
+    // FAQs
+    var faqs = [
+      {
+        q: 'Is my invoice data stored securely?',
+        a: 'Yes. All data is stored exclusively in your browser\'s localStorage. Nothing is sent to any server. Your invoice records remain completely private on your device. If you clear your browser data, the records will be erased, so consider exporting a CSV backup periodically.'
+      },
+      {
+        q: 'What are standard freelance payment terms?',
+        a: 'The most common payment terms are Net 15, Net 30, and Net 60, meaning payment is due 15, 30, or 60 days after the invoice date. Net 30 is the industry standard for most freelance work. Some freelancers offer early payment discounts (such as 2/10 Net 30, meaning a 2% discount if paid within 10 days) to incentivize faster payment.'
+      },
+      {
+        q: 'When should I follow up on an unpaid invoice?',
+        a: 'Send a polite reminder on the due date or the day after. If there is no response, follow up at 7 days and 14 days past due. At 30 days, escalate with a firmer message and consider applying a late fee. At 60 days, a phone call or formal demand letter may be appropriate. Consistent, professional follow-up is the key to collecting overdue payments.'
+      },
+      {
+        q: 'How does the aging report work?',
+        a: 'The aging report categorizes your unpaid invoices into four time buckets: 0 to 30 days, 31 to 60 days, 61 to 90 days, and over 90 days past due. Each bucket shows the total outstanding amount and the number of invoices. This helps you prioritize collection efforts and identify potential bad debts early.'
+      },
+      {
+        q: 'Can I track invoices in multiple currencies?',
+        a: 'Yes. Each invoice can have its own currency (USD, EUR, GBP, AUD, CAD, NZD, or SGD). Dashboard totals are shown per invoice in the table. Note that the dashboard summary cards display values in your most-used currency for simplicity. For multi-currency analysis, use the CSV export to review amounts by currency.'
+      },
+      {
+        q: 'What does the auto-detect overdue feature do?',
+        a: 'Every time you open the tracker, it automatically checks all pending invoices against today\'s date. If any invoice\'s due date has passed and the status is still pending, it is automatically highlighted as overdue. This ensures you never miss a late invoice even if you forget to update the status manually.'
+      }
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    // Web App Schema
+    TeamzTools.injectWebAppSchema({
+      title: TITLE,
+      description: DESCRIPTION,
+      slug: SLUG
+    });
+
+    // Related Tools
+    TeamzTools.renderRelatedTools([
+      { slug: 'freelance/proposal-generator', name: 'Proposal Generator', description: 'Create professional freelance proposals with scope, timeline, and pricing.' },
+      { slug: 'freelance/break-even-calculator', name: 'Break-Even Calculator', description: 'Calculate how many billable hours or projects you need to break even.' },
+      { slug: 'freelance/scope-creep-cost-calculator', name: 'Scope Creep Cost Calculator', description: 'Quantify the hidden cost of scope creep on your freelance projects.' },
+      { slug: 'freelance/client-onboarding-checklist', name: 'Client Onboarding Checklist', description: 'Generate a step-by-step onboarding checklist for new freelance clients.' },
+      { slug: 'freelance/remote-work-cost-calculator', name: 'Remote Work Cost Calculator', description: 'Calculate the true cost of working remotely including internet, equipment, and utilities.' },
+      { slug: 'career/salary-negotiation-script-generator', name: 'Salary Negotiation Script', description: 'Generate a personalized negotiation script based on your role and market data.' }
+    ]);
+
+    // --- Data Layer ---
+    function loadInvoices() {
+      try {
+        var data = localStorage.getItem(STORAGE_KEY);
+        invoices = data ? JSON.parse(data) : [];
+      } catch(e) {
+        invoices = [];
+      }
+    }
+
+    function saveInvoices() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+      } catch(e) {
+        if (window.showToast) window.showToast('Could not save data. Storage may be full.');
+      }
+    }
+
+    function genId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    }
+
+    // --- Auto-detect overdue ---
+    function autoDetectOverdue() {
+      var today = new Date();
+      today.setHours(0,0,0,0);
+      var changed = false;
+      for (var i = 0; i < invoices.length; i++) {
+        if (invoices[i].status === 'pending') {
+          var due = new Date(invoices[i].dueDate);
+          due.setHours(0,0,0,0);
+          if (due < today) {
+            invoices[i].status = 'overdue';
+            changed = true;
+          }
+        }
+      }
+      if (changed) saveInvoices();
+    }
+
+    // --- Formatting ---
+    function formatCurrency(amount, currency) {
+      var sym = CURRENCY_SYMBOLS[currency] || '$';
+      var num = parseFloat(amount) || 0;
+      return sym + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      var d = new Date(dateStr);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function daysBetween(d1, d2) {
+      var a = new Date(d1); a.setHours(0,0,0,0);
+      var b = new Date(d2); b.setHours(0,0,0,0);
+      return Math.round((b - a) / 86400000);
+    }
+
+    // --- Dashboard ---
+    function renderDashboard() {
+      var totalOutstanding = 0;
+      var totalOverdue = 0;
+      var paidMonth = 0;
+      var daysToPay = [];
+      var now = new Date();
+      var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      for (var i = 0; i < invoices.length; i++) {
+        var inv = invoices[i];
+        var remaining = (parseFloat(inv.amount) || 0) - (parseFloat(inv.paidAmount) || 0);
+        if (inv.status === 'pending' || inv.status === 'overdue' || inv.status === 'partial') {
+          totalOutstanding += remaining;
+        }
+        if (inv.status === 'overdue') {
+          totalOverdue += remaining;
+        }
+        if (inv.status === 'paid' && inv.paidDate) {
+          var pd = new Date(inv.paidDate);
+          if (pd >= monthStart && pd <= now) {
+            paidMonth += parseFloat(inv.amount) || 0;
+          }
+          var issued = new Date(inv.issueDate);
+          var dtp = daysBetween(issued, pd);
+          if (dtp >= 0) daysToPay.push(dtp);
+        }
+      }
+
+      var avgDays = daysToPay.length ? Math.round(daysToPay.reduce(function(a,b){return a+b;},0) / daysToPay.length) : 0;
+
+      q('total-outstanding').textContent = formatCurrency(totalOutstanding, 'USD');
+      q('total-overdue').textContent = formatCurrency(totalOverdue, 'USD');
+      q('paid-month').textContent = formatCurrency(paidMonth, 'USD');
+      q('avg-days').textContent = avgDays + 'd';
+    }
+
+    // --- Aging Report ---
+    function renderAging() {
+      var buckets = { 30: {total:0,count:0}, 60: {total:0,count:0}, 90: {total:0,count:0}, over: {total:0,count:0} };
+      var today = new Date(); today.setHours(0,0,0,0);
+
+      for (var i = 0; i < invoices.length; i++) {
+        var inv = invoices[i];
+        if (inv.status === 'paid') continue;
+        var due = new Date(inv.dueDate); due.setHours(0,0,0,0);
+        var daysOverdue = daysBetween(due, today);
+        if (daysOverdue < 0) daysOverdue = 0;
+        var remaining = (parseFloat(inv.amount) || 0) - (parseFloat(inv.paidAmount) || 0);
+        if (daysOverdue <= 30) { buckets[30].total += remaining; buckets[30].count++; }
+        else if (daysOverdue <= 60) { buckets[60].total += remaining; buckets[60].count++; }
+        else if (daysOverdue <= 90) { buckets[90].total += remaining; buckets[90].count++; }
+        else { buckets.over.total += remaining; buckets.over.count++; }
+      }
+
+      q('aging-30').textContent = formatCurrency(buckets[30].total, 'USD');
+      q('aging-30-count').textContent = buckets[30].count + ' invoice' + (buckets[30].count !== 1 ? 's' : '');
+      q('aging-60').textContent = formatCurrency(buckets[60].total, 'USD');
+      q('aging-60-count').textContent = buckets[60].count + ' invoice' + (buckets[60].count !== 1 ? 's' : '');
+      q('aging-90').textContent = formatCurrency(buckets[90].total, 'USD');
+      q('aging-90-count').textContent = buckets[90].count + ' invoice' + (buckets[90].count !== 1 ? 's' : '');
+      q('aging-over').textContent = formatCurrency(buckets.over.total, 'USD');
+      q('aging-over-count').textContent = buckets.over.count + ' invoice' + (buckets.over.count !== 1 ? 's' : '');
+    }
+
+    // --- Invoice Table ---
+    function getFilteredInvoices() {
+      var list = invoices.slice();
+      if (currentFilter !== 'all') {
+        list = list.filter(function(inv) { return inv.status === currentFilter; });
+      }
+      list.sort(function(a, b) {
+        var va = a[sortField] || '';
+        var vb = b[sortField] || '';
+        if (sortField === 'amount') {
+          va = parseFloat(va) || 0;
+          vb = parseFloat(vb) || 0;
+        }
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+      });
+      return list;
+    }
+
+    function renderTable() {
+      var tbody = q('invoice-body');
+      var empty = q('empty-state');
+      var list = getFilteredInvoices();
+
+      if (list.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+        return;
+      }
+      empty.style.display = 'none';
+
+      var html = '';
+      for (var i = 0; i < list.length; i++) {
+        var inv = list[i];
+        var rowClass = inv.status === 'overdue' ? ' class="ipt-row-overdue"' : '';
+        var badgeClass = 'ipt-badge ipt-badge--' + inv.status;
+        var statusLabel = inv.status.charAt(0).toUpperCase() + inv.status.slice(1);
+        var displayAmount = formatCurrency(inv.amount, inv.currency);
+        if (inv.status === 'partial' && inv.paidAmount) {
+          displayAmount += ' (' + formatCurrency(inv.paidAmount, inv.currency) + ' received)';
+        }
+        html += '<tr' + rowClass + ' data-id="' + inv.id + '">';
+        html += '<td>' + escapeHtml(inv.client) + '</td>';
+        html += '<td>' + escapeHtml(inv.invoiceNumber) + '</td>';
+        html += '<td>' + displayAmount + '</td>';
+        html += '<td>' + formatDate(inv.issueDate) + '</td>';
+        html += '<td>' + formatDate(inv.dueDate) + '</td>';
+        html += '<td><span class="' + badgeClass + '">' + statusLabel + '</span></td>';
+        html += '<td><div class="ipt-row-actions">';
+        if (inv.status !== 'paid') {
+          html += '<button class="ipt-row-btn" data-action="paid" data-id="' + inv.id + '">Paid</button>';
+          html += '<button class="ipt-row-btn" data-action="partial" data-id="' + inv.id + '">Partial</button>';
+        }
+        html += '<button class="ipt-row-btn" data-action="edit" data-id="' + inv.id + '">Edit</button>';
+        html += '<button class="ipt-row-btn ipt-row-btn--danger" data-action="delete" data-id="' + inv.id + '">Delete</button>';
+        html += '</div></td>';
+        html += '</tr>';
+      }
+      tbody.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str || ''));
+      return div.innerHTML;
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderAging();
+      renderTable();
+    }
+
+    // --- Modal: Add / Edit ---
+    function openAddModal() {
+      editingId = null;
+      q('modal-title').textContent = 'Add Invoice';
+      field('client').value = '';
+      field('invoiceNumber').value = '';
+      field('amount').value = '';
+      field('currency').selectedIndex = 0;
+      field('issueDate').value = new Date().toISOString().split('T')[0];
+      field('dueDate').value = '';
+      field('status').value = 'pending';
+      field('paidAmount').value = '';
+      field('paidDate').value = '';
+      q('paid-amount-group').style.display = 'none';
+      q('paid-date-group').style.display = 'none';
+      q('modal-overlay').classList.add('ipt-visible');
+    }
+
+    function openEditModal(id) {
+      var inv = invoices.find(function(x) { return x.id === id; });
+      if (!inv) return;
+      editingId = id;
+      q('modal-title').textContent = 'Edit Invoice';
+      field('client').value = inv.client || '';
+      field('invoiceNumber').value = inv.invoiceNumber || '';
+      field('amount').value = inv.amount || '';
+      field('currency').value = inv.currency || 'USD';
+      field('issueDate').value = inv.issueDate || '';
+      field('dueDate').value = inv.dueDate || '';
+      field('status').value = inv.status || 'pending';
+      field('paidAmount').value = inv.paidAmount || '';
+      field('paidDate').value = inv.paidDate || '';
+      togglePaidFields(inv.status);
+      q('modal-overlay').classList.add('ipt-visible');
+    }
+
+    function togglePaidFields(status) {
+      var showPaid = (status === 'paid' || status === 'partial');
+      q('paid-amount-group').style.display = showPaid ? 'block' : 'none';
+      q('paid-date-group').style.display = showPaid ? 'block' : 'none';
+    }
+
+    function closeAddModal() {
+      q('modal-overlay').classList.remove('ipt-visible');
+      editingId = null;
+    }
+
+    function saveInvoiceFromModal() {
+      var client = field('client').value.trim();
+      var invoiceNumber = field('invoiceNumber').value.trim();
+      var amount = parseFloat(field('amount').value);
+      var currency = field('currency').value;
+      var issueDate = field('issueDate').value;
+      var dueDate = field('dueDate').value;
+      var status = field('status').value;
+      var paidAmount = parseFloat(field('paidAmount').value) || 0;
+      var paidDate = field('paidDate').value || '';
+
+      if (!client) { if (window.showToast) window.showToast('Please enter a client name.'); return; }
+      if (!invoiceNumber) { if (window.showToast) window.showToast('Please enter an invoice number.'); return; }
+      if (isNaN(amount) || amount <= 0) { if (window.showToast) window.showToast('Please enter a valid amount.'); return; }
+      if (!issueDate) { if (window.showToast) window.showToast('Please select an issue date.'); return; }
+      if (!dueDate) { if (window.showToast) window.showToast('Please select a due date.'); return; }
+
+      var data = {
+        client: client,
+        invoiceNumber: invoiceNumber,
+        amount: amount,
+        currency: currency,
+        issueDate: issueDate,
+        dueDate: dueDate,
+        status: status,
+        paidAmount: (status === 'paid') ? amount : (status === 'partial' ? paidAmount : 0),
+        paidDate: (status === 'paid' || status === 'partial') ? paidDate : ''
+      };
+
+      if (editingId) {
+        var idx = invoices.findIndex(function(x) { return x.id === editingId; });
+        if (idx !== -1) {
+          data.id = editingId;
+          invoices[idx] = data;
+        }
+      } else {
+        data.id = genId();
+        invoices.push(data);
+      }
+
+      saveInvoices();
+      closeAddModal();
+      renderAll();
+      if (window.showToast) window.showToast(editingId ? 'Invoice updated.' : 'Invoice added.');
+    }
+
+    // --- Modal: Mark Paid ---
+    function openPaidModal(id) {
+      actionInvoiceId = id;
+      var dateField = document.querySelector('[data-field="markPaidDate"]');
+      dateField.value = new Date().toISOString().split('T')[0];
+      q('paid-overlay').classList.add('ipt-visible');
+    }
+
+    function closePaidModal() {
+      q('paid-overlay').classList.remove('ipt-visible');
+      actionInvoiceId = null;
+    }
+
+    function confirmPaid() {
+      if (!actionInvoiceId) return;
+      var dateField = document.querySelector('[data-field="markPaidDate"]');
+      var paidDate = dateField.value;
+      if (!paidDate) { if (window.showToast) window.showToast('Please select a payment date.'); return; }
+      var inv = invoices.find(function(x) { return x.id === actionInvoiceId; });
+      if (inv) {
+        inv.status = 'paid';
+        inv.paidAmount = inv.amount;
+        inv.paidDate = paidDate;
+        saveInvoices();
+        renderAll();
+        if (window.showToast) window.showToast('Invoice marked as paid.');
+      }
+      closePaidModal();
+    }
+
+    // --- Modal: Mark Partial ---
+    function openPartialModal(id) {
+      actionInvoiceId = id;
+      var amountField = document.querySelector('[data-field="partialAmount"]');
+      var dateField = document.querySelector('[data-field="partialDate"]');
+      amountField.value = '';
+      dateField.value = new Date().toISOString().split('T')[0];
+      q('partial-overlay').classList.add('ipt-visible');
+    }
+
+    function closePartialModal() {
+      q('partial-overlay').classList.remove('ipt-visible');
+      actionInvoiceId = null;
+    }
+
+    function confirmPartial() {
+      if (!actionInvoiceId) return;
+      var amountField = document.querySelector('[data-field="partialAmount"]');
+      var dateField = document.querySelector('[data-field="partialDate"]');
+      var amt = parseFloat(amountField.value);
+      var pDate = dateField.value;
+      if (isNaN(amt) || amt <= 0) { if (window.showToast) window.showToast('Please enter a valid amount.'); return; }
+      if (!pDate) { if (window.showToast) window.showToast('Please select a payment date.'); return; }
+      var inv = invoices.find(function(x) { return x.id === actionInvoiceId; });
+      if (inv) {
+        inv.status = 'partial';
+        inv.paidAmount = (parseFloat(inv.paidAmount) || 0) + amt;
+        inv.paidDate = pDate;
+        if (inv.paidAmount >= inv.amount) {
+          inv.status = 'paid';
+          inv.paidAmount = inv.amount;
+        }
+        saveInvoices();
+        renderAll();
+        if (window.showToast) window.showToast('Partial payment recorded.');
+      }
+      closePartialModal();
+    }
+
+    // --- Modal: Delete ---
+    function openDeleteModal(id) {
+      actionInvoiceId = id;
+      var inv = invoices.find(function(x) { return x.id === id; });
+      q('delete-msg').textContent = inv
+        ? 'Delete invoice ' + inv.invoiceNumber + ' for ' + inv.client + '?'
+        : 'Are you sure you want to delete this invoice?';
+      q('delete-overlay').classList.add('ipt-visible');
+    }
+
+    function closeDeleteModal() {
+      q('delete-overlay').classList.remove('ipt-visible');
+      actionInvoiceId = null;
+    }
+
+    function confirmDelete() {
+      if (!actionInvoiceId) return;
+      invoices = invoices.filter(function(x) { return x.id !== actionInvoiceId; });
+      saveInvoices();
+      renderAll();
+      closeDeleteModal();
+      if (window.showToast) window.showToast('Invoice deleted.');
+    }
+
+    // --- CSV Export ---
+    function exportCSV() {
+      if (invoices.length === 0) {
+        if (window.showToast) window.showToast('No invoices to export.');
+        return;
+      }
+      var headers = ['Client', 'Invoice #', 'Amount', 'Currency', 'Issue Date', 'Due Date', 'Status', 'Paid Amount', 'Payment Date'];
+      var rows = [headers.join(',')];
+      for (var i = 0; i < invoices.length; i++) {
+        var inv = invoices[i];
+        var row = [
+          '"' + (inv.client || '').replace(/"/g, '""') + '"',
+          '"' + (inv.invoiceNumber || '').replace(/"/g, '""') + '"',
+          inv.amount || 0,
+          inv.currency || 'USD',
+          inv.issueDate || '',
+          inv.dueDate || '',
+          inv.status || '',
+          inv.paidAmount || 0,
+          inv.paidDate || ''
+        ];
+        rows.push(row.join(','));
+      }
+      var csv = rows.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoices-' + new Date().toISOString().split('T')[0] + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('CSV exported.');
+    }
+
+    // --- Event Listeners ---
+
+    // Add Invoice button
+    q('add-btn').addEventListener('click', openAddModal);
+
+    // Export CSV button
+    q('export-btn').addEventListener('click', exportCSV);
+
+    // Modal save / cancel
+    q('modal-save').addEventListener('click', saveInvoiceFromModal);
+    q('modal-cancel').addEventListener('click', closeAddModal);
+
+    // Status change in add/edit modal toggles paid fields
+    field('status').addEventListener('change', function() {
+      togglePaidFields(this.value);
+    });
+
+    // Close add modal on overlay click
+    q('modal-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeAddModal();
+    });
+
+    // Paid modal
+    q('paid-confirm').addEventListener('click', confirmPaid);
+    q('paid-cancel').addEventListener('click', closePaidModal);
+    q('paid-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closePaidModal();
+    });
+
+    // Partial modal
+    q('partial-confirm').addEventListener('click', confirmPartial);
+    q('partial-cancel').addEventListener('click', closePartialModal);
+    q('partial-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closePartialModal();
+    });
+
+    // Delete modal
+    q('delete-confirm').addEventListener('click', confirmDelete);
+    q('delete-cancel').addEventListener('click', closeDeleteModal);
+    q('delete-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closeDeleteModal();
+    });
+
+    // Filter buttons
+    var filterBtns = qAll('.ipt-filter-btn');
+    for (var f = 0; f < filterBtns.length; f++) {
+      filterBtns[f].addEventListener('click', function() {
+        for (var j = 0; j < filterBtns.length; j++) filterBtns[j].classList.remove('ipt-active');
+        this.classList.add('ipt-active');
+        currentFilter = this.getAttribute('data-filter');
+        renderTable();
+      });
+    }
+
+    // Sort headers
+    var sortHeaders = qAll('.ipt-table th[data-sort]');
+    for (var s = 0; s < sortHeaders.length; s++) {
+      sortHeaders[s].addEventListener('click', function() {
+        var field = this.getAttribute('data-sort');
+        if (sortField === field) {
+          sortAsc = !sortAsc;
+        } else {
+          sortField = field;
+          sortAsc = true;
+        }
+        renderTable();
+      });
+    }
+
+    // Table row action buttons (delegated)
+    q('invoice-body').addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      var id = btn.getAttribute('data-id');
+      if (action === 'paid') openPaidModal(id);
+      else if (action === 'partial') openPartialModal(id);
+      else if (action === 'edit') openEditModal(id);
+      else if (action === 'delete') openDeleteModal(id);
+    });
+
+    // --- Init ---
+    loadInvoices();
+    autoDetectOverdue();
+    renderAll();
+  });
+  </script>
+</body>
+</html>
