@@ -177,6 +177,15 @@ python3 build-static-schema.py 2>&1 | tail -3
 python3 scripts/build-fix-orphans.py fix 2>&1 | tail -3
 ./build-seo-audit.sh --fix 2>&1 | tail -5
 
+echo "  Checking freshness (stale data)..."
+./build-validate-freshness.sh 2>&1 | tail -10
+
+echo "  Checking internal link health..."
+scripts/build-internal-links.sh --quick 2>&1 | tail -5
+
+echo "  Running QA check..."
+./build-qa-check.sh 2>&1 | tail -10
+
 # Phase 2: Request indexing for any new pages
 echo ""
 echo "=== Phase 2: Request Indexing ==="
@@ -189,6 +198,8 @@ echo "=== Phase 3: Pull Data (local tokens) ==="
 ./build-analytics.sh --all 2>&1 | tail -20
 ./build-adsense.sh 2>&1 | tail -10
 ./build-clarity.sh 1 2>&1 | tail -20
+./build-pagespeed.sh 2>&1 | tail -10
+python3 scripts/distribute/distribute.py list 2>&1 | tail -10
 
 # Phase 4: Run Claude to build tools (uses quota)
 echo ""
@@ -235,7 +246,11 @@ with open('$f','w') as fh: fh.write(c)
     fi
 
     # 2. Fix hardcoded header (should be empty for common.js to render)
-    if grep -q '<header id="site-header" class="site-header"></header>', '<header id=\"site-header\" class=\"site-header\"></header>', c, flags=re.DOTALL)
+    if grep -q '<header id="site-header" class="site-header"><a' "$f" 2>/dev/null; then
+        python3 -c "
+import re
+with open('$f','r') as fh: c=fh.read()
+c=re.sub(r'<header id=\"site-header\" class=\"site-header\">.*?</header>', '<header id=\"site-header\" class=\"site-header\"></header>', c, flags=re.DOTALL)
 with open('$f','w') as fh: fh.write(c)
 "
         echo "    Fixed: hardcoded header in $f"
