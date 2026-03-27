@@ -110,17 +110,106 @@ print("=" * 70)
 if MODE in ('--status', '--all'):
     print("\n📊 INDEXING STATUS")
     print("-" * 50)
+
+    # 1) Sitemap submission info
     r = requests.get(f'{API_BASE}/sitemaps', headers=headers)
     sitemaps = r.json()
+    sitemap_submitted = 0
     if 'sitemap' in sitemaps:
         for s in sitemaps['sitemap']:
             contents = s.get('contents', [{}])[0]
+            sitemap_submitted = contents.get('submitted', 0)
             print(f"  Sitemap: {s.get('path','?')}")
-            print(f"  Submitted: {contents.get('submitted','?')} URLs")
-            print(f"  Indexed:   {contents.get('indexed','?')} URLs")
+            print(f"  Submitted URLs: {sitemap_submitted}")
             print(f"  Last downloaded: {s.get('lastDownloaded','?')}")
     else:
         print("  No sitemaps found")
+
+    # 2) Count pages with search presence (impressions > 0 = definitely indexed)
+    print()
+    all_pages_rows = query_search(['page'], row_limit=2000, start=start_date)
+    pages_with_presence = len(all_pages_rows)
+    total_page_clicks = sum(r.get('clicks', 0) for r in all_pages_rows)
+    total_page_impr = sum(r.get('impressions', 0) for r in all_pages_rows)
+    print(f"  Pages with search presence: {pages_with_presence}")
+    print(f"  Total clicks (90 days):     {total_page_clicks}")
+    print(f"  Total impressions (90 days): {total_page_impr}")
+
+    # 3) Sample URL Inspection API for real indexing verdicts
+    INSPECT_URL = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect'
+    import random, math
+
+    # Get sample URLs from sitemap.xml if available
+    sample_urls = []
+    SAMPLE_SIZE = 20  # Balance between accuracy and speed (~20 sec)
+    import os, re as regex
+    # Script is in scripts/, sitemap.xml is in project root
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    for candidate in [
+        os.path.join(script_dir, '..', 'sitemap.xml'),
+        os.path.join(script_dir, 'sitemap.xml'),
+        'sitemap.xml',
+    ]:
+        if os.path.exists(candidate):
+            sitemap_path = candidate
+            break
+    else:
+        sitemap_path = None
+    if sitemap_path:
+        with open(sitemap_path) as sf:
+            sitemap_content = sf.read()
+        all_urls = regex.findall(r'<loc>(https://tool\.teamzlab\.com/[^<]+)</loc>', sitemap_content)
+        if len(all_urls) > SAMPLE_SIZE:
+            sample_urls = random.sample(all_urls, SAMPLE_SIZE)
+        else:
+            sample_urls = all_urls
+
+    if sample_urls:
+        indexed_count = 0
+        not_indexed_count = 0
+        errors = 0
+        not_indexed_reasons = {}
+        for url in sample_urls:
+            try:
+                ir = requests.post(INSPECT_URL, headers=headers, json={
+                    'inspectionUrl': url,
+                    'siteUrl': SITE_URL
+                })
+                if ir.status_code == 200:
+                    result = ir.json().get('inspectionResult', {})
+                    index_status = result.get('indexStatusResult', {})
+                    verdict = index_status.get('verdict', 'UNKNOWN')
+                    if verdict == 'PASS':
+                        indexed_count += 1
+                    else:
+                        not_indexed_count += 1
+                        reason = index_status.get('indexingState', verdict)
+                        not_indexed_reasons[reason] = not_indexed_reasons.get(reason, 0) + 1
+                elif ir.status_code == 429:
+                    # Rate limited — stop sampling
+                    break
+                else:
+                    errors += 1
+            except Exception:
+                errors += 1
+
+        total_sampled = indexed_count + not_indexed_count + errors
+        if total_sampled > 0:
+            pct = indexed_count / (indexed_count + not_indexed_count) * 100 if (indexed_count + not_indexed_count) > 0 else 0
+            total_pages = sitemap_submitted if sitemap_submitted else len(all_urls)
+            estimated_indexed = int(total_pages * pct / 100) if total_pages else '?'
+            print(f"\n  URL Inspection (sampled {total_sampled} of {total_pages} pages):")
+            print(f"    Indexed:     {indexed_count}/{total_sampled} ({pct:.0f}%)")
+            print(f"    Not indexed: {not_indexed_count}/{total_sampled}")
+            if errors:
+                print(f"    Errors:      {errors}")
+            print(f"    Estimated total indexed: ~{estimated_indexed} / {total_pages}")
+            if not_indexed_reasons:
+                print(f"    Not-indexed reasons:")
+                for reason, count in sorted(not_indexed_reasons.items(), key=lambda x: -x[1]):
+                    print(f"      {reason}: {count}")
+    else:
+        print("\n  (Could not read sitemap.xml for URL inspection sampling)")
 
 # --- Top Queries ---
 if MODE in ('--queries', '--all'):
