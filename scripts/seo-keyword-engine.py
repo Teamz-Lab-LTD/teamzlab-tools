@@ -41,6 +41,7 @@ import sys
 import json
 import html
 import glob
+import unicodedata
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -642,13 +643,22 @@ def is_long_tail(keyword):
 
 
 def normalize_for_match(text):
-    """Normalize text for keyword matching — strips punctuation, lowercases."""
+    """Normalize text for keyword matching across ASCII and accented Latin slugs."""
+    text = unicodedata.normalize('NFKD', text)
+    text = ''.join(ch for ch in text if not unicodedata.combining(ch))
+    text = (text
+            .replace('ß', 'ss')
+            .replace('æ', 'ae')
+            .replace('œ', 'oe')
+            .replace('ø', 'o')
+            .replace('å', 'a')
+            .replace('ł', 'l'))
     text = text.lower()
     # Replace & with space, strip commas, periods, colons, question marks, hyphens used as words
     text = re.sub(r'[&,.:;!?/+]', ' ', text)
     text = re.sub(r"['\"]", '', text)
-    # Normalize hyphens between words to spaces for matching
-    text = re.sub(r'(?<=[a-z])-(?=[a-z])', ' ', text)
+    # Normalize hyphens between letter sequences to spaces for matching
+    text = re.sub(r'(?<=[^\W\d_])-(?=[^\W\d_])', ' ', text, flags=re.UNICODE)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
@@ -737,9 +747,9 @@ def audit_keyword_placement(meta):
     # 2. URL slug — contains keyword words (15 points)
     max_score += 15
     slug = meta.get('slug', '').lower()
-    slug_words = set(slug.split('-'))
+    slug_words = set(normalize_for_match(slug).split())
     # Hyphen-aware: "self-employment" → {"self", "employment"} for matching
-    kw_words = set(w for word in primary_kw.split() for w in word.split('-'))
+    kw_words = set(normalize_for_match(primary_kw).split())
     # Filter out very short words (1-2 chars) that cause false matches
     kw_words = set(w for w in kw_words if len(w) > 2)
     overlap = kw_words & slug_words
@@ -840,7 +850,9 @@ def audit_keyword_placement(meta):
     body = meta.get('body_text', '').lower()
     word_count = meta.get('word_count', 0)
     if word_count > 0:
-        kw_count = body.count(primary_kw)
+        body_norm = normalize_for_match(body)
+        primary_kw_norm = normalize_for_match(primary_kw)
+        kw_count = body_norm.count(primary_kw_norm)
         density = (kw_count * len(primary_kw.split()) / word_count) * 100
         if is_non_latin:
             # Non-Latin: slug keyword density in native text is irrelevant — give full credit
