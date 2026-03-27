@@ -981,6 +981,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Alat Indonesia',d:'Alat gratis untuk Indonesia — cek kesiapan Coretax DJP dan checklist persiapan untuk wajib pajak.',h:'/id/'},
   {t:'Capital Gains Tax Calculator Ireland',d:'Calculate CGT on property, shares and investments in Ireland. 33% rate with annual exemption. Free, private CGT calculator.',h:'/ie/capital-gains-tax-ireland/'},
   {t:'Ireland Employment Permit Calculator',d:'Calculate Ireland employment permit fees and check eligibility for CSEP, General, ICT and other work permits. Free, private, instant results.',h:'/ie/employment-permit-calculator/'},
+  {t:'Help to Buy Ireland Calculator',d:'Calculate your Irish Help-to-Buy (HTB) tax refund. Up to €30,000 back on income tax and DIRT paid. First-time buyers only. Free and private.',h:'/ie/help-to-buy-calculator/'},
   {t:'Irish Income Tax Calculator 2025',d:'Calculate your Irish take-home pay after Income Tax, USC, and PRSI with 2025 rates. Free PAYE calculator for single and married. Private, no signup.',h:'/ie/income-tax-calculator/'},
   {t:'Ireland Finance Tools',d:'Free Irish finance calculators — salary, mortgage, stamp duty, rental income tax, CGT, inheritance tax, pension relief, and USC. 2026 rates.',h:'/ie/'},
   {t:'Inheritance Tax Calculator Ireland (CAT)',d:'Calculate Capital Acquisitions Tax (CAT) on inheritance in Ireland. Group thresholds A, B, C and 33% rate. Free, private calculator.',h:'/ie/inheritance-tax-calculator/'},
