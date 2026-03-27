@@ -201,9 +201,29 @@ print(f'TOTAL:{total}')
   fi
 fi
 
-# 9. Broken internal link check + related tools validation
+# 9. Schema/layout consistency check
 echo ""
-echo "[9/10] Checking for broken internal links..."
+echo "[9/11] Checking schema/layout consistency..."
+if [ -f "$SCRIPTS/qa-schema-layout.py" ] && command -v python3 &>/dev/null; then
+  SCHEMA_OUTPUT=$(python3 "$SCRIPTS/qa-schema-layout.py" 2>&1)
+  SCHEMA_ERRORS=$(echo "$SCHEMA_OUTPUT" | grep "Error pages:" | grep -o '[0-9]*')
+  SCHEMA_WARNINGS=$(echo "$SCHEMA_OUTPUT" | grep "Warning pages:" | grep -o '[0-9]*')
+  if [ -n "$SCHEMA_ERRORS" ] && [ "$SCHEMA_ERRORS" -gt 0 ] 2>/dev/null; then
+    echo "$SCHEMA_OUTPUT" | grep -A 20 "Errors:"
+    ERRORS=$((ERRORS + SCHEMA_ERRORS))
+  else
+    echo "  No duplicate schemas or layout issues!"
+  fi
+  if [ -n "$SCHEMA_WARNINGS" ] && [ "$SCHEMA_WARNINGS" -gt 0 ] 2>/dev/null; then
+    echo "  Warnings: $SCHEMA_WARNINGS pages have redundant JS inject calls"
+  fi
+else
+  echo "  SKIPPED: qa-schema-layout.py or python3 not found"
+fi
+
+# 10. Broken internal link check + related tools validation
+echo ""
+echo "[10/11] Checking for broken internal links..."
 BROKEN=0
 BROKEN_OUTPUT=$(grep -roh 'href="/[^"]*/"' --include="*.html" "$BASE" 2>/dev/null | sort -u | sed 's/href="//;s/"$//' | while IFS= read -r link; do
   DIR="${link#/}"
@@ -223,7 +243,7 @@ fi
 
 # 10. Related tools & internal link health
 echo ""
-echo "[10/10] Related tools & internal link health..."
+echo "[11/11] Related tools & internal link health..."
 LINK_HEALTH=$(bash "$SCRIPTS/build-internal-links.sh" --quick 2>&1)
 LINK_BROKEN=$(echo "$LINK_HEALTH" | grep "Broken related slugs:" | grep -oP '\d+')
 LINK_ORPHANS=$(echo "$LINK_HEALTH" | grep "Orphan pages" | grep -oP '\d+' | head -1)
