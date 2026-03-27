@@ -1,6 +1,6 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-27 (nightly build)*
+*Last updated: 2026-03-27 (nightly build #2)*
 
 ---
 
@@ -85,15 +85,25 @@
 - ES Salary Negotiation Generator (/es/generador-negociacion-salarial/) — native Spanish, 7 currencies
 - PT Salary Negotiation Generator (/pt/gerador-negociacao-salarial/) — native Brazilian Portuguese
 
+## Completed This Nightly Build #2 (2026-03-27 nightly)
+- SG Stamp Duty Calculator (/sg/stamp-duty-calculator/) — BSD + ABSD, 2025 IRAS rates, 4 buyer types, residential/non-residential
+- AU Employee True Cost Calculator (/au/employee-true-cost-calculator/) — Super 11.5%, payroll tax by state, workers comp, leave loading, on-cost multiplier
+- Interview Answer Generator (/career/interview-answer-generator/) — STAR method, 8 quick-pick questions, 3 tones, copy button
+- Job Offer Equity & RSU Calculator (/career/job-offer-equity-calculator/) — 5 vesting schedules, 4yr total comp, sign-on, benefits
+- Skin Moisture Barrier Repair Guide (/skincare/moisture-barrier-guide/) — health score, AM/PM repair routine, ingredients guide
+- Remote Work Burnout Risk Score (/health/remote-work-burnout-score/) — 20Q MBI-based, 3 dimensions, recovery strategies
+- ES Freelance Contract Generator (/es/generador-contrato-freelance/) — Spanish, 8 countries, 5 payment terms, download
+- PT Freelance Contract Generator (/pt/gerador-contrato-freelance/) — Brazilian PT, MEI/CLT context, 4 countries, download
+
 ## Next Build Queue (prioritized by RPM + gap analysis)
-- Job Offer Comparison with Equity (/career/) — RSU/stock options comparison (US/UK tech market)
-- Small Business Payroll Tax Estimator (/work/) — US employer payroll costs $10+ RPM
-- AI Interview Answer Generator (/career/) — STAR method answer generator, high search volume
-- Skincare Moisture Barrier Guide (/skincare/) — hub expansion, fragrance-free routine generator
-- SG Stamp Duty Calculator (/sg/) — property purchase, BSD/ABSD rates
-- AU Employee True Cost Calculator (/au/) — superannuation + payroll tax + workers comp
+- Small Business Payroll Tax Estimator (/work/payroll-tax-estimator/) — US employer FICA/FUTA/SUTA costs, $10+ RPM
+- LinkedIn Headline Generator (/career/) — ATS-optimized, 2026 searcher intent
+- Deep Work Focus Time Calculator (/health/ or /work/) — chronotype + deep work hours optimizer
+- IE Income Tax Calculator (/ie/) — Irish PAYE/USC/PRSI, 2025 rates
+- NZ Income Tax Calculator (/nz/) — IRD PAYE brackets 2025-26 (distinct from PAYE calculator)
 - UK Self-Assessment Tax Set-Aside Planner (/uk/) — 26/27 rates, payment on account
-- ES Freelance Contract Generator (/es/generador-contrato-freelance/) — multilang variant
+- ES Invoice Generator (/es/generador-factura/) — autónomo invoice generator, native Spanish
+- PT Invoice Generator (/pt/gerador-fatura/) — MEI recibo verde generator, native Portuguese
 
 ---
 
