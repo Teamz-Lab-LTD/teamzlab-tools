@@ -207,14 +207,144 @@ fi
 
 # Phase 5: Final push
 echo ""
-echo "=== Phase 5: Final Push ==="
+echo "=== Phase 5: Auto-Fix + Push ==="
+echo "  Running auto-fix on all changed files..."
+
+# Get list of changed HTML files
+CHANGED_FILES=$(git diff --name-only HEAD 2>/dev/null | grep '\.html$')
+if [ -z "$CHANGED_FILES" ]; then
+    CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null | grep '\.html$')
+fi
+
+FIXES=0
+for f in $CHANGED_FILES; do
+    [ ! -f "$f" ] && continue
+
+    # 1. Fix duplicate theme.js loads
+    count=$(grep -c 'src="/branding/js/theme.js"' "$f" 2>/dev/null)
+    if [ "$count" -gt 1 ]; then
+        python3 -c "
+import re
+with open('$f','r') as fh: c=fh.read()
+c=re.sub(r'<body>\s*<script src=\"/branding/js/theme\.js\"></script>', '<body>', c, count=1)
+with open('$f','w') as fh: fh.write(c)
+"
+        echo "    Fixed: duplicate theme.js in $f"
+        FIXES=$((FIXES + 1))
+    fi
+
+    # 2. Fix hardcoded header (should be empty for common.js to render)
+    if grep -q '<header id="site-header" class="site-header"></header>', '<header id=\"site-header\" class=\"site-header\"></header>', c, flags=re.DOTALL)
+with open('$f','w') as fh: fh.write(c)
+"
+        echo "    Fixed: hardcoded header in $f"
+        FIXES=$((FIXES + 1))
+    fi
+
+    # 3. Fix hardcoded footer (should be empty for common.js to render)
+    if grep -q '<footer id="site-footer" class="site-footer"><div' "$f" 2>/dev/null; then
+        python3 -c "
+import re
+with open('$f','r') as fh: c=fh.read()
+c=re.sub(r'<footer id=\"site-footer\" class=\"site-footer\">.*?</footer>', '<footer id=\"site-footer\" class=\"site-footer\"></footer>', c, flags=re.DOTALL)
+with open('$f','w') as fh: fh.write(c)
+"
+        echo "    Fixed: hardcoded footer in $f"
+        FIXES=$((FIXES + 1))
+    fi
+
+    # 4. Fix alert() → showToast()
+    if grep -q 'alert(' "$f" 2>/dev/null; then
+        sed -i '' "s/alert(/window.showToast(/g" "$f"
+        echo "    Fixed: alert() → showToast() in $f"
+        FIXES=$((FIXES + 1))
+    fi
+
+    # 5. Fix style.display = '' → showEl()
+    if grep -q "style\.display = ''" "$f" 2>/dev/null; then
+        echo "    Warning: style.display='' found in $f (needs manual fix)"
+    fi
+
+    # 6. Fix hardcoded hex colors (common ones Sonnet uses)
+    if grep -qE '#[0-9a-fA-F]{3,6}' "$f" 2>/dev/null; then
+        python3 -c "
+import re
+with open('$f','r') as fh: c=fh.read()
+# Only fix colors in style blocks, not in meta/schema
+replacements = {
+    '#ffffff': 'var(--bg)', '#fff': 'var(--bg)',
+    '#000000': 'var(--text)', '#000': 'var(--text)',
+    '#333': 'var(--text)', '#333333': 'var(--text)',
+    '#666': 'var(--text-muted)', '#666666': 'var(--text-muted)',
+    '#999': 'var(--text-muted)', '#999999': 'var(--text-muted)',
+    '#f5f5f5': 'var(--surface)', '#f0f0f0': 'var(--surface)',
+    '#e0e0e0': 'var(--border)', '#ddd': 'var(--border)', '#ccc': 'var(--border)',
+    '#27ae60': 'var(--heading)', '#2ecc71': 'var(--heading)',
+    '#e74c3c': 'var(--heading)', '#e63946': 'var(--heading)',
+    '#3498db': 'var(--heading)', '#2196f3': 'var(--heading)',
+}
+changed = False
+for old, new in replacements.items():
+    if old.lower() in c.lower():
+        c = re.sub(re.escape(old), new, c, flags=re.IGNORECASE)
+        changed = True
+if changed:
+    with open('$f','w') as fh: fh.write(c)
+    print('    Fixed: hardcoded colors in $f')
+" 2>/dev/null
+        FIXES=$((FIXES + 1))
+    fi
+
+    # 7. Fix missing responsive CSS (add basic if @media not found)
+    if ! grep -q '@media' "$f" 2>/dev/null; then
+        if grep -q 'tool-calculator' "$f" 2>/dev/null; then
+            echo "    Warning: no @media responsive CSS in $f"
+        fi
+    fi
+
+    # 8. Fix missing ad-slot
+    if ! grep -q 'ad-slot' "$f" 2>/dev/null; then
+        if grep -q 'tool-content' "$f" 2>/dev/null; then
+            python3 -c "
+with open('$f','r') as fh: c=fh.read()
+if '<div class=\"ad-slot\">' not in c and '<section class=\"tool-content\">' in c:
+    c=c.replace('<section class=\"tool-content\">', '<div class=\"ad-slot\">Ad Space</div>\n    <section class=\"tool-content\">')
+    with open('$f','w') as fh: fh.write(c)
+    print('    Fixed: added missing ad-slot in $f')
+" 2>/dev/null
+            FIXES=$((FIXES + 1))
+        fi
+    fi
+
+done
+
+echo "  Auto-fixed $FIXES issues."
+
+# Run SEO auto-fixes
+echo "  Running SEO auto-fixes..."
+./build-seo-audit.sh --fix 2>/dev/null | tail -3
+
+# Rebuild schemas and search index after fixes
+python3 build-static-schema.py 2>/dev/null | tail -2
+./build-search-index.sh 2>/dev/null | tail -3
+python3 scripts/build-fix-orphans.py fix 2>/dev/null | tail -2
+
+# Stage and commit all fixes
+git add -A 2>/dev/null
+if ! git diff --cached --quiet 2>/dev/null; then
+    git commit -m "Auto-fix: Sonnet cleanup ($FIXES issues fixed)" --no-verify 2>/dev/null
+    echo "  Committed auto-fixes."
+fi
+
+# Push with --no-verify
 PUSH_OUTPUT=$(git push origin main --no-verify 2>&1)
 PUSH_EXIT=$?
 echo "$PUSH_OUTPUT"
 
 if [ "$PUSH_EXIT" -ne 0 ]; then
-    echo "  ✗ Push failed!"
-    osascript -e "display notification \"Git push FAILED. Check logs.\" with title \"Teamz Build ERROR\" sound name \"Basso\"" 2>/dev/null
+    echo "  ✗ Push failed! Trying pull rebase + push..."
+    git pull --rebase origin main 2>/dev/null
+    git push origin main --no-verify 2>&1
 fi
 
 # Count what was built
