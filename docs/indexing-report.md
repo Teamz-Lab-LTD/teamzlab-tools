@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-27 10:54
+# Indexing Report — 2026-03-27 11:02
 
 Total pages: 30
 Checked: 30
@@ -9,6 +9,7 @@ Errors: 1
 ## Indexed Pages (29)
 
 - /
+- /diagnostic/dns-leak-test/
 - /design/logo-text-maker/
 - /bd/electricity-bill-calculator/
 - /career/resume-job-match-checker/
@@ -31,7 +32,6 @@ Errors: 1
 - /bd/cgpa-calculator/
 - /cricket/economy-rate-calculator/
 - /cricket/dls-calculator/
-- /ramadan/eid-salami-scratch-challenge/
 - /bd/freelancer-tax-calculator/
 - /au/student-visa-cost-calculator/
 - /football/ucl-group-stage-simulator/
