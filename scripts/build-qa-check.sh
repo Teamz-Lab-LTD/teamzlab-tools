@@ -36,7 +36,7 @@ echo ""
 # Build tool list (only actual tool pages, not hubs or redirects)
 TMPFILE=$(mktemp)
 if [ -n "$HUB_FILTER" ] && [ "$HUB_FILTER" != "next" ]; then
-  find "$HUB_FILTER" -name "index.html" -not -path "*/index.html" 2>/dev/null | sort > "$TMPFILE"
+  find "$HUB_FILTER" -mindepth 2 -maxdepth 2 -name "index.html" 2>/dev/null | sort > "$TMPFILE"
 else
   find . -name "index.html" -not -path "./index.html" \
     -not -path "./shared/*" -not -path "./branding/*" -not -path "./docs/*" \
@@ -124,8 +124,20 @@ while IFS= read -r f; do
   fi
 
   # Low content
-  words=$(sed -n '/<section class="tool-content">/,/<\/section>/p' "$f" 2>/dev/null | sed 's/<[^>]*>//g' | wc -w | tr -d ' ')
-  if [ "$words" -lt 150 ] 2>/dev/null; then
+  # Accept either tool-content or tool-content-section and avoid penalizing
+  # CJK-heavy content where whitespace word counts are misleading.
+  content_metrics=$(printf '%s' "$CONTENT" | python3 -c '
+import re, sys
+content = sys.stdin.read()
+match = re.search(r"<section class=\"(?:tool-content|tool-content-section)\">([\s\S]*?)</section>", content, re.I)
+text = re.sub(r"<[^>]*>", " ", match.group(1)) if match else ""
+words = len(text.split())
+cjk = len(re.findall(r"[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]", text))
+print(f"{words}:{cjk}")
+')
+  words=${content_metrics%%:*}
+  cjk_chars=${content_metrics##*:}
+  if [ "$words" -lt 150 ] 2>/dev/null && [ "$cjk_chars" -lt 400 ] 2>/dev/null; then
     LOW_CONTENT=$((LOW_CONTENT + 1))
     ISSUES_SEO="$ISSUES_SEO
   ${YEL}LOW CONTENT (${words}w):${NC} $SLUG"
@@ -176,10 +188,18 @@ while IFS= read -r f; do
   ${YEL}NULL BG:${NC} $SLUG"
   fi
 
-  # style.display='' on elements with CSS display:none (element stays hidden)
+  # style.display='' on elements hidden by stylesheet rules can be a real bug.
+  # Do not flag pages that only hide elements inline, because clearing the inline
+  # style is a valid way to reveal them.
   has_display_empty=$(echo "$CONTENT" | grep -c "style\.display\s*=\s*['\"]['\"]" 2>/dev/null || true)
-  has_css_display_none=$(echo "$CONTENT" | grep -c 'display:\s*none' 2>/dev/null || true)
-  if [ "$has_display_empty" -gt 0 ] && [ "$has_css_display_none" -gt 0 ]; then
+  has_stylesheet_display_none=$(printf '%s' "$CONTENT" | python3 -c '
+import re, sys
+content = sys.stdin.read()
+styles = "\n".join(re.findall(r"<style[^>]*>([\s\S]*?)</style>", content, re.I))
+print(1 if re.search(r"display\s*:\s*none", styles) else 0)
+')
+  has_inline_display_none=$(echo "$CONTENT" | grep -c "style=['\"][^>]*display:none" 2>/dev/null || true)
+  if [ "$has_display_empty" -gt 0 ] && [ "$has_stylesheet_display_none" -gt 0 ] && [ "$has_inline_display_none" -eq 0 ]; then
     DISPLAY_EMPTY=$((DISPLAY_EMPTY + 1))
     ISSUES_RUNTIME="$ISSUES_RUNTIME
   ${RED}DISPLAY BUG:${NC} $SLUG — style.display='' with CSS display:none (use block/flex/grid)"
@@ -187,8 +207,8 @@ while IFS= read -r f; do
 
   # ===== UX USABILITY =====
 
-  # Missing tool-hero section
-  has_hero=$(echo "$CONTENT" | grep -c 'tool-hero' 2>/dev/null || true)
+  # Missing hero / intro section
+  has_hero=$(echo "$CONTENT" | grep -c 'tool-hero\|class="hero"\|tool-intro' 2>/dev/null || true)
   if [ "$has_hero" -eq 0 ]; then
     NO_HERO=$((NO_HERO + 1))
     ISSUES_UX="$ISSUES_UX

@@ -25,8 +25,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ROOT = Path(__file__).resolve().parent.parent
 SERVER_PORT = 9091
-MAX_WORKERS = 5  # parallel browser tabs
-PAGE_TIMEOUT = 12000  # ms per page (increased from 8s to handle slow loads under load)
+MAX_WORKERS = int(os.environ.get('QA_RUNTIME_MAX_WORKERS', '5'))  # parallel browser tabs
+PAGE_TIMEOUT = int(os.environ.get('QA_RUNTIME_PAGE_TIMEOUT', '12000'))  # ms per page
 
 # ── Collect tool pages ──────────────────────────────────────────────
 

@@ -1,18 +1,19 @@
-# Indexing Report — 2026-03-27 06:51
+# Indexing Report — 2026-03-27 08:06
 
 Total pages: 30
 Checked: 30
-Indexed: 29 (96%)
+Indexed: 30 (100%)
 Not indexed: 0
-Errors: 1
+Errors: 0
 
-## Indexed Pages (29)
+## Indexed Pages (30)
 
 - /
 - /diagnostic/dns-leak-test/
 - /design/logo-text-maker/
 - /bd/electricity-bill-calculator/
 - /career/resume-job-match-checker/
+- /career/resume-keyword-scanner/
 - /tools/number-typing-practice/
 - /football/football-salary-calculator/
 - /text/passive-voice-checker/
