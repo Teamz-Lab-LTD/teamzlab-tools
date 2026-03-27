@@ -95,15 +95,27 @@
 - ES Freelance Contract Generator (/es/generador-contrato-freelance/) — Spanish, 8 countries, 5 payment terms, download
 - PT Freelance Contract Generator (/pt/gerador-contrato-freelance/) — Brazilian PT, MEI/CLT context, 4 countries, download
 
+## Completed This Nightly Build #3 (2026-03-27 nightly)
+- IE Income Tax Calculator (/ie/income-tax-calculator/) — PAYE+USC+PRSI 2025 rates, single/married
+- LinkedIn Headline Generator (/career/linkedin-headline-generator/) — 8 formulas, ATS-optimized, character count
+- Meeting Cost Calculator (/work/meeting-cost-calculator/) — live timer, shareable cost, currency support
+- Remote Work Policy Generator (/work/remote-work-policy-generator/) — 11-section doc, 5 work models
+- Employment Contract Checklist (/legal/employment-contract-checklist/) — 25+ clauses, 8 countries
+- Cost Per Hire Calculator (/work/cost-per-hire-calculator/) — SHRM formula, internal/external costs, benchmarks
+- ES Invoice Generator (/es/generador-factura/) — IVA, 7 currencies, autónomos
+- PT Invoice Generator (/pt/gerador-fatura/) — PIX, MEI, Brazilian market
+- ES LinkedIn Headline Generator (/es/generador-titular-linkedin/) — native Spanish
+- PT LinkedIn Headline Generator (/pt/gerador-titulo-linkedin/) — native Brazilian Portuguese
+
 ## Next Build Queue (prioritized by RPM + gap analysis)
-- Small Business Payroll Tax Estimator (/work/payroll-tax-estimator/) — US employer FICA/FUTA/SUTA costs, $10+ RPM
-- LinkedIn Headline Generator (/career/) — ATS-optimized, 2026 searcher intent
-- Deep Work Focus Time Calculator (/health/ or /work/) — chronotype + deep work hours optimizer
-- IE Income Tax Calculator (/ie/) — Irish PAYE/USC/PRSI, 2025 rates
 - NZ Income Tax Calculator (/nz/) — IRD PAYE brackets 2025-26 (distinct from PAYE calculator)
-- UK Self-Assessment Tax Set-Aside Planner (/uk/) — 26/27 rates, payment on account
-- ES Invoice Generator (/es/generador-factura/) — autónomo invoice generator, native Spanish
-- PT Invoice Generator (/pt/gerador-fatura/) — MEI recibo verde generator, native Portuguese
+- IE Employment Permit Fee Calculator (/ie/) — Work permit costs and eligibility
+- SG CPF Contribution Calculator (/sg/) — Employee/employer CPF rates by age band
+- AU Rental Yield Calculator (/au/) — Gross/net yield, negative gearing
+- Business Proposal Generator (/work/) — template doc generator, B2B
+- ES Remote Work Policy Generator (/es/) — Spanish version of work policy tool
+- PT Remote Work Policy Generator (/pt/) — Brazilian Portuguese version
+- Skincare Routine Builder (/skincare/) — AM/PM routine based on skin type and concerns
 
 ---
 
