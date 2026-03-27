@@ -36,6 +36,27 @@ ARTICLES_DIR = SCRIPT_DIR / "articles"
 
 ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "gitlab", "substack", "telegraph", "pinterest"]
 
+# Localized footer text — article language should match tool language
+LOCALIZED_FOOTERS = {
+    "en": "Originally published at",
+    "de": "Ursprünglich veröffentlicht auf",
+    "nl": "Oorspronkelijk gepubliceerd op",
+    "fr": "Publié à l'origine sur",
+    "es": "Publicado originalmente en",
+    "pt": "Publicado originalmente em",
+    "pl": "Pierwotnie opublikowano na",
+    "cs": "Původně publikováno na",
+    "fi": "Alun perin julkaistu osoitteessa",
+    "sv": "Ursprungligen publicerad på",
+    "nb": "Opprinnelig publisert på",
+    "da": "Oprindeligt udgivet på",
+    "ja": "初出掲載",
+    "it": "Pubblicato originariamente su",
+    "ar": "نُشر في الأصل على",
+    "id": "Pertama kali diterbitkan di",
+    "vi": "Được xuất bản lần đầu tại",
+}
+
 # SSL context for HTTPS requests
 SSL_CTX = ssl.create_default_context()
 
@@ -1141,7 +1162,11 @@ def update_github_blog_readme(history):
             ("🇺🇸 United States", hub_counts.get("us", 0), "tax, finance, military", "us"),
             ("🇬🇧 United Kingdom", hub_counts.get("uk", 0), "tax, MTD, leave, childcare", "uk"),
             ("🇩🇪 Germany", hub_counts.get("de", 0), "Brutto-Netto, Grundsteuer, Elterngeld", "de"),
-            ("🇫🇷 France", hub_counts.get("fr", 0), "APL, Prime d'activite, CROUS", "fr"),
+            ("🇫🇷 France", hub_counts.get("fr", 0), "APL, Prime d'activité, CROUS", "fr"),
+            ("🇧🇪 Belgium", hub_counts.get("be", 0), "bruto-netto, registratierechten, erfbelasting", "be"),
+            ("🇱🇺 Luxembourg", hub_counts.get("lu", 0), "Gehaltsrechner, Steuer, Grenzgänger", "lu"),
+            ("🇵🇱 Poland", hub_counts.get("pl", 0), "wynagrodzenia, kredyt, PIT", "pl"),
+            ("🇨🇿 Czech Republic", hub_counts.get("cz", 0), "mzdy, hypotéky, daně", "cz"),
             ("🇯🇵 Japan", hub_counts.get("jp", 0), "Tedori, Furusato Nozei, housing loan", "jp"),
             ("🇸🇬 Singapore", hub_counts.get("sg", 0), "TDSR, HDB, CPF, SPL", "sg"),
             ("🇳🇿 New Zealand", hub_counts.get("nz", 0), "KiwiSaver, PAYE, mortgage", "nz"),
@@ -1150,6 +1175,13 @@ def update_github_blog_readme(history):
             ("🇦🇺 Australia", hub_counts.get("au", 0), "HECS, super, MLS, CGT", "au"),
             ("🇨🇦 Canada", hub_counts.get("ca", 0), "TFSA, RRSP, EI, CCB", "ca"),
             ("🇮🇳 India", hub_counts.get("in", 0), "GST, EMI, PPF, SIP", "in"),
+            ("🇪🇸 Spain", hub_counts.get("es", 0), "hipoteca, finiquito, nómina", "es"),
+            ("🇵🇹 Portugal", hub_counts.get("pt", 0), "CLT vs PJ, empréstimo, IMC", "pt"),
+            ("🇳🇱 Netherlands", hub_counts.get("nl", 0), "30%-ruling, hypotheek, loon", "nl"),
+            ("🇫🇮 Finland", hub_counts.get("fi", 0), "verolaskuri, asumistuki, eläke", "fi"),
+            ("🇸🇪 Sweden", hub_counts.get("se", 0), "skatt, pension, bolån", "se"),
+            ("🇳🇴 Norway", hub_counts.get("no", 0), "skatt, boliglån, feriepenger", "no"),
+            ("🇮🇹 Italy", hub_counts.get("it", 0), "stipendio, mutuo, TFR", "it"),
         ]
         country_table = "\n".join(
             f"| {name} | {count} | {focus} | [Browse →](https://tool.teamzlab.com/{slug}/) |"
@@ -1440,6 +1472,7 @@ def cmd_post(title, filepath, platforms):
     slug = meta.get("slug", slugify(title))
     tags = [t.strip() for t in meta.get("tags", "tools,free,web").split(",")]
     canonical_url = meta.get("canonical_url", meta.get("canonical", ""))
+    language = meta.get("language", meta.get("lang", "en"))
 
     # Use defaults from config
     defaults = config.get("defaults", {})
@@ -1449,14 +1482,16 @@ def cmd_post(title, filepath, platforms):
     print(f"\n{'=' * 60}")
     print(f"  Distributing: {title}")
     print(f"  Slug: {slug}")
+    print(f"  Language: {language}")
     print(f"  Tags: {', '.join(tags)}")
     print(f"  Canonical: {canonical_url or '(none)'}")
     print(f"  Platforms: {', '.join(platforms)}")
     print(f"{'=' * 60}\n")
 
-    # Add backlink footer to body
+    # Add localized backlink footer to body
     site_url = defaults.get("site_url", "https://tool.teamzlab.com")
-    body_with_footer = body + f"\n\n---\n\n*Originally published at [{site_url}]({site_url})*"
+    footer_text = LOCALIZED_FOOTERS.get(language, LOCALIZED_FOOTERS["en"])
+    body_with_footer = body + f"\n\n---\n\n*{footer_text} [{site_url}]({site_url})*"
 
     # Find or create history entry for this slug
     entry = None
