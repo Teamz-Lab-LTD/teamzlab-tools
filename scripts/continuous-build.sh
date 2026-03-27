@@ -3,12 +3,13 @@
 # Continuous Build — Builds tools while you're away
 #
 # Usage:
-#   bash scripts/continuous-build.sh 3h           # Build for 3 hours then stop
-#   bash scripts/continuous-build.sh 90m          # Build for 90 minutes then stop
-#   bash scripts/continuous-build.sh --scripts 2h # Only maintenance, no Claude, for 2h
-#   bash scripts/continuous-build.sh stop         # Stop from another terminal
+#   bash scripts/continuous-build.sh 3h             # Sonnet, 3 hours (default)
+#   bash scripts/continuous-build.sh 5h opus         # Opus, 5 hours (higher quality)
+#   bash scripts/continuous-build.sh 90m             # Sonnet, 90 minutes
+#   bash scripts/continuous-build.sh --scripts 2h   # Only maintenance, no Claude
+#   bash scripts/continuous-build.sh stop            # Stop from another terminal
 #
-# Smart quota: 1 Claude build per hour, maintenance in between. Stops before you return.
+# Smart quota: max 3 builds per session. Maintenance in between.
 # =============================================================================
 
 PROJECT_DIR="/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
@@ -18,11 +19,14 @@ LOG_FILE="$PROJECT_DIR/logs/continuous-build.log"
 # Parse arguments
 MODE="safe"
 DURATION_MIN=0
+MODEL="sonnet"
 for arg in "$@"; do
     case "$arg" in
         --scripts) MODE="scripts" ;;
         --max) MODE="max" ;;
         stop) MODE="stop" ;;
+        opus) MODEL="opus" ;;
+        sonnet) MODEL="sonnet" ;;
         *h) DURATION_MIN=$(( ${arg%h} * 60 )) ;;
         *m) DURATION_MIN=${arg%m} ;;
     esac
@@ -66,7 +70,7 @@ cd "$PROJECT_DIR" || exit 1
 echo "============================================================" | tee -a "$LOG_FILE"
 echo "  CONTINUOUS BUILD — $(date '+%Y-%m-%d %H:%M %Z')" | tee -a "$LOG_FILE"
 echo "  Duration: ${DURATION_MIN} minutes | Stops at: $RETURN_TIME" | tee -a "$LOG_FILE"
-echo "  Mode: $MODE | Max builds: $MAX_BUILDS" | tee -a "$LOG_FILE"
+echo "  Mode: $MODE | Model: $MODEL | Max builds: $MAX_BUILDS" | tee -a "$LOG_FILE"
 echo "============================================================" | tee -a "$LOG_FILE"
 
 BUILDS_DONE=0
@@ -95,7 +99,7 @@ while true; do
         echo "=== Claude Build #$BUILDS_DONE/$MAX_BUILDS — $(time_remaining)min left ===" | tee -a "$LOG_FILE"
 
         git pull origin main 2>/dev/null
-        bash scripts/nightly-build.sh 2>&1 | tee -a "$LOG_FILE"
+        MODEL=$MODEL bash scripts/nightly-build.sh 2>&1 | tee -a "$LOG_FILE"
     fi
 
     # Check time again after build

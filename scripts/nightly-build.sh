@@ -195,7 +195,9 @@ echo "=== Phase 4: Claude Build Agent ==="
 echo "  Starting Sonnet... (live output below)"
 echo "  ─────────────────────────────────────"
 PROMPT_FILE="$PROJECT_DIR/scripts/nightly-build-prompt.md"
-claude --print --verbose --dangerously-skip-permissions --model sonnet -p "$(cat "$PROMPT_FILE")" 2>&1
+BUILD_MODEL="${MODEL:-sonnet}"
+echo "  Model: $BUILD_MODEL"
+claude --print --verbose --dangerously-skip-permissions --model "$BUILD_MODEL" -p "$(cat "$PROMPT_FILE")" 2>&1
 BUILD_EXIT=$?
 
 if [ "$BUILD_EXIT" -ne 0 ]; then
