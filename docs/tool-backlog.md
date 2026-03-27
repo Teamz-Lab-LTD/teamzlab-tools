@@ -66,6 +66,22 @@
 - Job Description Generator (/career/job-description-generator/)
 - Remote Work Cost Calculator (/freelance/remote-work-cost-calculator/)
 - Swiss AHV Pension Calculator (/ch/swiss-ahv-pension-calculator/)
+- NZ PAYE Tax Calculator (/nz/paye-calculator/) — IRD 2025-26 brackets, ACC, KiwiSaver, student loan
+- NZ Mortgage Fix vs Float Calculator (/nz/mortgage-fix-vs-float/) — amortization comparison
+- IE Rent Tax Credit Calculator (/ie/rent-tax-credit-calculator/) — 2022-2025 back-claims
+- UK Class 4 NI Calculator (/uk/class-4-national-insurance-calculator/)
+- Skincare Hub (/skincare/) — 4 tools: SPF calculator, skin type quiz, sunscreen timer, retinol guide
+- ES Employee Cost Calculator (/es/calculadora-costo-empleado/) — Spain SS rates, native Spanish
+- PT Employee Cost Calculator (/pt/calculadora-custo-funcionario/) — Brazil CLT, native Portuguese
+
+## Next Build Queue (prioritized by RPM + gap analysis)
+- Singapore HDB Affordability Calculator (/sg/) — HIGH priority, SG Tier S
+- Singapore TDSR/MSR Calculator (/sg/) — HIGH
+- AU CGT Discount Calculator (/au/) — spike May-June EOFY
+- Salary Negotiation Script Generator (/career/) — high RPM career tool
+- Job Offer Comparison with Equity (/career/) — RSU/stock options comparison
+- Small Business Payroll Tax Estimator (/work/) — US $10+ RPM
+- Skincare hub expansion: ingredient checker, moisture barrier guide, product expiry tracker
 
 ---
 
