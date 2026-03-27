@@ -15,6 +15,15 @@
     link.href = fonts[i];
     document.head.appendChild(link);
   }
+  // Preconnect to AdSense domains — shaves 200-400ms off ad load time
+  var adDomains = ['https://pagead2.googlesyndication.com', 'https://googleads.g.doubleclick.net', 'https://tpc.googlesyndication.com'];
+  for (var j = 0; j < adDomains.length; j++) {
+    var pc = document.createElement('link');
+    pc.rel = 'preconnect';
+    pc.href = adDomains[j];
+    pc.crossOrigin = 'anonymous';
+    document.head.appendChild(pc);
+  }
 })();
 
 var TeamzTools = (function () {

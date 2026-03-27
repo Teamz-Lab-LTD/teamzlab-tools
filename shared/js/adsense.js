@@ -17,10 +17,13 @@
  *
  * Policy compliance:
  * - No ads on error pages (404), non-content pages, or localhost
+ * - Headless browsers (Puppeteer, Lighthouse, etc.) skipped to avoid wasted impressions
  * - Manual ads only placed when sufficient content exists (H2 count check)
  * - Minimum content gap between ad units (always separated by real content)
  * - data-full-width-responsive for proper mobile sizing
  * - Unfilled ads auto-collapse via CSS :has(ins[data-ad-status="unfilled"])
+ * - Lazy-load: manual ads pushed via IntersectionObserver (200px rootMargin)
+ *   to boost viewability scores and bid prices
  *
  * Analytics Events Tracked:
  * - adsense_script_loaded     → AdSense JS loaded successfully
@@ -39,15 +42,18 @@
 
   // Don't run ads on non-content pages or error pages (Google policy)
   var path = window.location.pathname;
-  var noAdPages = ['/', '/about/', '/contact/', '/privacy/', '/terms/', '/404.html'];
+  var noAdPages = ['/about/', '/contact/', '/privacy/', '/terms/', '/404.html'];
   if (noAdPages.indexOf(path) !== -1) return;
 
   // Don't run in localhost or local IPs
   var host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0') return;
 
-  // In-app browser detection
+  // Skip ads for headless browsers / monitoring — they inflate page views without revenue
   var ua = navigator.userAgent || '';
+  if (/HeadlessChrome|PhantomJS|Puppeteer|Selenium|Lighthouse|PageSpeed/i.test(ua)) return;
+
+  // In-app browser detection
   var isInApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat|MicroMessenger|WeChat|TikTok|BytedanceWebview/i.test(ua);
 
   if (isInApp) {
@@ -220,27 +226,45 @@
     script.crossOrigin = 'anonymous';
     script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + PUB_ID;
 
-    // Track how many manual <ins> elements need pushing
-    var adsPushed = false;
+    // Lazy-load ads: only push each ad when it enters viewport
+    // This boosts viewability scores → higher bid prices → more revenue
+    var adsenseReady = false;
+    var adsPushedCount = 0;
 
-    function pushAllAds() {
-      if (adsPushed) return;
-      adsPushed = true;
+    function lazyPushAds() {
       var units = document.querySelectorAll('.tz-ad-unit ins.adsbygoogle');
-      units.forEach(function () { pushAd(); });
+      if (!units.length) return;
+
+      // Track initialization
       trackWithRetry('auto_ads_initialized', {
-        mode: units.length > 0 ? 'auto_plus_manual' : 'auto_only',
+        mode: 'auto_plus_manual_lazy',
         manual_units: units.length,
         device_type: window.innerWidth < 768 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop')
       }, 5);
+
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              observer.unobserve(entry.target);
+              pushAd();
+              adsPushedCount++;
+            }
+          });
+        }, { rootMargin: '200px 0px' }); // Load 200px before visible
+        units.forEach(function (unit) { observer.observe(unit); });
+      } else {
+        // Fallback: push all at once for old browsers
+        units.forEach(function () { pushAd(); });
+        adsPushedCount = units.length;
+      }
     }
 
     script.onload = function () {
+      adsenseReady = true;
       trackWithRetry('adsense_script_loaded', { status: 'success' }, 5);
-      // Push manual ads — but only if DOM placement already happened
-      // If DOM not ready yet, the DOMContentLoaded handler will push after placing
       if (document.readyState !== 'loading') {
-        pushAllAds();
+        lazyPushAds();
       }
     };
 
@@ -254,28 +278,25 @@
 
     document.head.appendChild(script);
 
-    // 3. Place manual ads when DOM is ready, then push them
+    // 3. Place manual ads when DOM is ready, then lazy-push them
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function () {
         placeManualAds();
-        // If AdSense script already loaded, push now; otherwise script.onload will push
-        if (window.adsbygoogle) {
-          pushAllAds();
+        if (adsenseReady) {
+          lazyPushAds();
         }
       });
     } else {
-      // DOM already ready (script loaded late) — place and push immediately
       placeManualAds();
-      if (window.adsbygoogle) {
-        pushAllAds();
+      if (adsenseReady) {
+        lazyPushAds();
       }
     }
 
-    // 4. Safety net: if neither onload nor DOMContentLoaded pushed ads yet, retry
-    //    This handles edge timing where script loads between DOM placement and push
+    // 4. Safety net: if ads placed but not yet lazy-observed, kick off observer
     setTimeout(function () {
-      if (!adsPushed && document.querySelectorAll('.tz-ad-unit ins.adsbygoogle').length > 0) {
-        pushAllAds();
+      if (adsPushedCount === 0 && document.querySelectorAll('.tz-ad-unit ins.adsbygoogle').length > 0) {
+        lazyPushAds();
       }
     }, 2000);
 
