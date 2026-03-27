@@ -59,7 +59,7 @@ echo ""
 # --- Counters ---
 TOTAL=0
 # SEO
-NO_JS=0; LOW_CONTENT=0; NO_FAQS=0; NO_RELATED=0; NO_SCHEMA=0; NO_COPY_HANDLER=0
+NO_JS=0; LOW_CONTENT=0; NO_FAQS=0; NO_RELATED=0; NO_SCHEMA=0; NO_COPY_HANDLER=0; BAD_FAQ_ID=0
 # Runtime
 ALERT_COUNT=0; AI_NO_ENGINE=0; NULL_BG=0; DISPLAY_EMPTY=0
 # UX
@@ -146,6 +146,15 @@ print(f"{words}:{cjk}")
   # Missing FAQs
   has_faq=$(echo "$CONTENT" | grep -c 'renderFAQs\|injectFAQSchema\|FAQPage' 2>/dev/null || true)
   if [ "$has_faq" -eq 0 ]; then NO_FAQS=$((NO_FAQS + 1)); fi
+
+  # Wrong FAQ container ID (renderFAQs expects id="tool-faqs", not "faqs-section" etc.)
+  calls_renderFAQs=$(echo "$CONTENT" | grep -c 'renderFAQs' 2>/dev/null || true)
+  has_tool_faqs_id=$(echo "$CONTENT" | grep -c 'id="tool-faqs"' 2>/dev/null || true)
+  if [ "$calls_renderFAQs" -gt 0 ] && [ "$has_tool_faqs_id" -eq 0 ]; then
+    BAD_FAQ_ID=$((BAD_FAQ_ID + 1))
+    ISSUES_SEO="$ISSUES_SEO
+  ${RED}WRONG FAQ ID:${NC} $SLUG — calls renderFAQs() but missing id=\"tool-faqs\""
+  fi
 
   # Missing related tools
   has_related=$(echo "$CONTENT" | grep -c 'renderRelatedTools\|related-tools' 2>/dev/null || true)
@@ -264,6 +273,7 @@ printf "    Low content (<150w):  %s%d%s\n" "$YEL" "$LOW_CONTENT" "$NC"
 printf "    Missing FAQs:         %s%d%s\n" "$YEL" "$NO_FAQS" "$NC"
 printf "    Missing related:      %s%d%s\n" "$YEL" "$NO_RELATED" "$NC"
 printf "    Missing WebApp:       %s%d%s\n" "$YEL" "$NO_SCHEMA" "$NC"
+printf "    Wrong FAQ container:  %s%d%s\n" "$RED" "$BAD_FAQ_ID" "$NC"
 printf "    Broken Copy Image:    %s%d%s\n" "$RED" "$NO_COPY_HANDLER" "$NC"
 echo ""
 
@@ -283,7 +293,7 @@ printf "    White on accent:      %s%d%s\n" "$RED" "$WHITE_ACCENT" "$NC"
 printf "    No loading state:     %s%d%s\n" "$YEL" "$NO_LOADING" "$NC"
 echo ""
 
-TOTAL_ISSUES=$((NO_JS + LOW_CONTENT + NO_FAQS + NO_RELATED + NO_SCHEMA + NO_COPY_HANDLER + AI_NO_ENGINE + NULL_BG + DISPLAY_EMPTY + NO_HERO + NO_LABELS + WHITE_ACCENT))
+TOTAL_ISSUES=$((NO_JS + LOW_CONTENT + NO_FAQS + NO_RELATED + NO_SCHEMA + NO_COPY_HANDLER + BAD_FAQ_ID + AI_NO_ENGINE + NULL_BG + DISPLAY_EMPTY + NO_HERO + NO_LABELS + WHITE_ACCENT))
 printf "  Total tools:  %d\n" "$TOTAL"
 printf "  Key issues:   %s%d%s\n" "$RED" "$TOTAL_ISSUES" "$NC"
 echo ""

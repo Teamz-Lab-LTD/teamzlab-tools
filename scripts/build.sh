@@ -258,6 +258,18 @@ if [ -n "$LINK_BROKEN" ] && [ "$LINK_BROKEN" -gt 0 ] 2>/dev/null; then
   echo "$LINK_HEALTH" | grep "BROKEN RELATED" -A 20 | head -15
   ERRORS=$((ERRORS + LINK_BROKEN))
 fi
+# Auto-fix orphan pages if any found
+if [ -n "$LINK_ORPHANS" ] && [ "$LINK_ORPHANS" -gt 0 ] 2>/dev/null; then
+  echo ""
+  echo "  Auto-fixing $LINK_ORPHANS orphan pages..."
+  python3 "$SCRIPTS/build-fix-orphans.py" fix 2>/dev/null | tail -5
+fi
+# Warn about hub-unlinked tools
+LINK_HUBUNLINKED=$(echo "$LINK_HEALTH" | grep "Hub unlinked tools" | grep -oP '\d+' | head -1)
+if [ -n "$LINK_HUBUNLINKED" ] && [ "$LINK_HUBUNLINKED" -gt 0 ] 2>/dev/null; then
+  echo "  ⚠ $LINK_HUBUNLINKED tool(s) not linked from their hub page!"
+  echo "  Run: scripts/build-internal-links.sh --full | grep 'NOT LINKED' -A99"
+fi
 
 echo ""
 echo "============================================="

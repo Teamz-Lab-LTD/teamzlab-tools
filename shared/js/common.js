@@ -411,7 +411,7 @@ var TeamzTools = (function () {
             '<span>New tools, tips &amp; trending picks &mdash; every Thursday.</span>' +
           '</div>' +
           (_nlSub
-            ? '<div class="newsletter-form newsletter-done"><span class="newsletter-check">&#10003;</span> You\'re subscribed!</div>'
+            ? '<div class="newsletter-form newsletter-done"><span class="newsletter-check">&#10003;</span> You\'re subscribed! <a href="#" class="newsletter-add-another">Add another</a></div>'
             : '<form class="newsletter-form" id="newsletter-form">' +
                 '<input type="email" class="newsletter-input" id="newsletter-email" placeholder="your@email.com" required autocomplete="email">' +
                 '<button type="submit" class="newsletter-btn">Subscribe</button>' +
@@ -674,9 +674,31 @@ var TeamzTools = (function () {
     } catch (e) {}
   }
 
+  // --- Auto-find or auto-create a container by trying multiple IDs, then fallback to creating one ---
+  function _findOrCreateContainer(ids, tagName) {
+    var container;
+    for (var i = 0; i < ids.length; i++) {
+      container = document.getElementById(ids[i]);
+      if (container) return container;
+    }
+    // Not found — create and insert before footer or at end of main
+    container = document.createElement(tagName || 'div');
+    container.id = ids[0]; // canonical ID
+    var main = document.querySelector('.site-main') || document.querySelector('main');
+    var footer = document.getElementById('site-footer');
+    if (footer && footer.parentNode) {
+      footer.parentNode.insertBefore(container, footer);
+    } else if (main) {
+      main.appendChild(container);
+    } else {
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
   function renderRelatedTools(tools) {
-    var container = document.getElementById('related-tools');
-    if (!container || !tools || !tools.length) return;
+    if (!tools || !tools.length) return;
+    var container = _findOrCreateContainer(['related-tools', 'related', 'related-tools-section'], 'div');
 
     var html = '<h2 class="section-title">Related Tools</h2>';
     html += '<div class="related-tools-grid">';
@@ -691,8 +713,8 @@ var TeamzTools = (function () {
   }
 
   function renderFAQs(faqs) {
-    var container = document.getElementById('tool-faqs');
-    if (!container || !faqs || !faqs.length) return;
+    if (!faqs || !faqs.length) return;
+    var container = _findOrCreateContainer(['tool-faqs', 'faqs-section', 'faqs', 'faq-section', 'faq-list'], 'div');
 
     var html = '<h2 class="section-title">Frequently Asked Questions</h2>';
     faqs.forEach(function (faq) {
@@ -1088,12 +1110,7 @@ var TeamzTools = (function () {
       return;
     }
 
-    try {
-      if (localStorage.getItem('tz_newsletter') === '1') {
-        if (window.showToast) window.showToast('You\'re already subscribed!');
-        return;
-      }
-    } catch(e) {}
+    // Allow adding multiple emails — no early return for existing subscribers
 
     var btn = document.querySelector('.newsletter-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Subscribing\u2026'; }
@@ -1103,7 +1120,7 @@ var TeamzTools = (function () {
       if (window.showToast) window.showToast('Subscribed! Weekly digest coming soon.');
       var form = document.getElementById('newsletter-form');
       if (form) {
-        form.innerHTML = '<span class="newsletter-check">&#10003;</span> You\'re subscribed!';
+        form.innerHTML = '<span class="newsletter-check">&#10003;</span> You\'re subscribed! <a href="#" class="newsletter-add-another">Add another</a>';
         form.classList.add('newsletter-done');
       }
       if (typeof window.gtag === 'function') {
@@ -1152,6 +1169,62 @@ var TeamzTools = (function () {
     renderFeedback: renderFeedback,
     SITE_NAME: SITE_NAME,
     SITE_URL: SITE_URL,
+
+    // ─── CENTRAL TOOL INIT — one config, everything rendered ───
+    /**
+     * Initialize a tool page from a single config object.
+     * Handles: breadcrumbs, FAQs, related tools, WebApp schema, FAQ schema, ad slot.
+     *
+     * Usage:
+     *   TeamzTools.initTool({
+     *     slug: 'tools/sop-maker',
+     *     title: 'Free SOP Maker',
+     *     description: 'Create SOPs with screenshots...',
+     *     faqs: [{ q: '...', a: '...' }, ...],
+     *     relatedTools: [{ slug: '/tools/foo/', name: 'Foo', description: '...' }, ...],
+     *   });
+     *
+     * All fields optional — skips what's missing.
+     * Auto-creates missing DOM containers (tool-faqs, related-tools, ad-slot).
+     */
+    initTool: function(config) {
+      if (!config) return;
+
+      // 1. Breadcrumbs
+      renderBreadcrumbs();
+
+      // 2. Ad slot — ensure one exists after .tool-calculator
+      var existingAd = document.querySelector('.ad-slot');
+      if (!existingAd) {
+        var calc = document.querySelector('.tool-calculator');
+        if (calc && calc.parentNode) {
+          var ad = document.createElement('div');
+          ad.className = 'ad-slot';
+          ad.textContent = 'Ad Space';
+          calc.parentNode.insertBefore(ad, calc.nextSibling);
+        }
+      }
+
+      // 3. FAQs
+      if (config.faqs && config.faqs.length) {
+        renderFAQs(config.faqs);
+        injectFAQSchema(config.faqs);
+      }
+
+      // 4. Related tools
+      if (config.relatedTools && config.relatedTools.length) {
+        renderRelatedTools(config.relatedTools);
+      }
+
+      // 5. WebApp schema
+      if (config.slug) {
+        injectWebAppSchema({
+          slug: config.slug,
+          title: config.title || document.title.replace(' — Teamz Lab Tools', ''),
+          description: config.description || (document.querySelector('meta[name="description"]') || {}).content || ''
+        });
+      }
+    },
 
     // ─── VIRAL SHARE LINKS — encode/decode tool data in URL params ───
     /**
@@ -1608,7 +1681,14 @@ var TeamzAnalytics = (function () {
           // Load Firestore (for ratings, feedback, newsletter)
           var fbFirestore = document.createElement('script');
           fbFirestore.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js';
-          fbFirestore.onload = function() { _initFirebaseApp(); };
+          fbFirestore.onload = function() {
+            // Load Performance Monitoring (auto-collects page load + network traces)
+            var fbPerf = document.createElement('script');
+            fbPerf.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-performance-compat.js';
+            fbPerf.onload = function() { _initFirebaseApp(); };
+            fbPerf.onerror = function() { _initFirebaseApp(); };
+            document.head.appendChild(fbPerf);
+          };
           fbFirestore.onerror = function() { _initFirebaseApp(); };
           document.head.appendChild(fbFirestore);
         };
@@ -1638,6 +1718,15 @@ var TeamzAnalytics = (function () {
         var analytics = firebase.analytics(app);
         window._fbAnalytics = analytics;
         _firebaseReady = true;
+
+        // Initialize Performance Monitoring (auto-collects page load + HTTP request traces)
+        if (firebase.performance) {
+          try {
+            window._fbPerf = firebase.performance(app);
+          } catch (e) {
+            console.warn('Firebase Performance init error:', e);
+          }
+        }
 
         // Signal Firestore ready for rating/feedback widgets
         window._firestoreReady = true;
@@ -2129,6 +2218,38 @@ document.addEventListener('DOMContentLoaded', function () {
       if (input) TeamzTools.subscribeNewsletter(input.value.trim());
     });
   }
+
+  // "Add another" link — revert done state back to form
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('newsletter-add-another')) return;
+    e.preventDefault();
+    var done = e.target.closest('.newsletter-done');
+    if (!done) return;
+    done.classList.remove('newsletter-done');
+    done.id = 'newsletter-form';
+    done.innerHTML = '<input type="email" class="newsletter-input" id="newsletter-email" placeholder="another@email.com" required autocomplete="email">' +
+      '<button type="submit" class="newsletter-btn">Subscribe</button>';
+    // Convert to form element behavior
+    done.addEventListener('submit', function(ev) {
+      ev.preventDefault();
+      var input = document.getElementById('newsletter-email');
+      if (input) TeamzTools.subscribeNewsletter(input.value.trim());
+    });
+    // Wrap in form if it's a div
+    if (done.tagName !== 'FORM') {
+      var frm = document.createElement('form');
+      frm.className = 'newsletter-form';
+      frm.id = 'newsletter-form';
+      frm.innerHTML = done.innerHTML;
+      done.parentNode.replaceChild(frm, done);
+      frm.addEventListener('submit', function(ev) {
+        ev.preventDefault();
+        var input = document.getElementById('newsletter-email');
+        if (input) TeamzTools.subscribeNewsletter(input.value.trim());
+      });
+      frm.querySelector('.newsletter-input').focus();
+    }
+  });
   TeamzTranslate.init();
 
   // Render favorites section on homepage + hub pages

@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free SOP Maker — Teamz Lab Tools</title>
+  <meta name="description" content="Create step-by-step SOPs and process guides in your browser. Upload screenshots, add annotations, reorder steps, and export as PDF or PNG. Free and private.">
+  <meta property="og:title" content="Free SOP Maker — Teamz Lab Tools">
+  <meta property="og:description" content="Build standard operating procedures with screenshots, annotations, and step-by-step instructions. Export as PDF. 100% browser-based.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/sop-maker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Free SOP Maker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Create SOPs with screenshots and annotations. Export as PDF. Free, private, browser-based.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/sop-maker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sop-steps-list { display: flex; flex-direction: column; gap: 1.5rem; }
+    .sop-step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; position: relative; transition: box-shadow 0.2s, border-color 0.2s; }
+    .sop-step-card.dragging { opacity: 0.5; border-color: var(--accent); }
+    .sop-step-card.drag-over { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+    .sop-step-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .sop-step-number { background: var(--heading); color: var(--bg); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; flex-shrink: 0; }
+    .sop-step-drag { cursor: grab; color: var(--text-muted); padding: 4px; flex-shrink: 0; }
+    .sop-step-drag:active { cursor: grabbing; }
+    .sop-step-title-input { flex: 1; font-size: 1rem; font-weight: 600; background: transparent; border: 1px solid var(--border); color: var(--heading); padding: 0.5rem 0.75rem; border-radius: 8px; }
+    .sop-step-title-input:focus { outline: none; border-color: var(--accent); }
+    .sop-step-delete { color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 6px; border-radius: 6px; flex-shrink: 0; }
+    .sop-step-delete:hover { background: var(--surface); color: var(--heading); }
+    .sop-step-body { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .sop-step-desc { width: 100%; min-height: 80px; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.75rem; border-radius: 8px; font-family: inherit; font-size: 0.875rem; resize: vertical; }
+    .sop-step-desc:focus { outline: none; border-color: var(--accent); }
+    .sop-screenshot-area { position: relative; background: var(--bg); border: 2px dashed var(--border); border-radius: 8px; min-height: 120px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; transition: border-color 0.2s; }
+    .sop-screenshot-area:hover, .sop-screenshot-area.drag-hover { border-color: var(--accent); }
+    .sop-screenshot-area img { max-width: 100%; max-height: 300px; object-fit: contain; display: block; margin: 0 auto; }
+    .sop-screenshot-placeholder { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 1rem; }
+    .sop-screenshot-placeholder svg { display: block; margin: 0 auto 0.5rem; }
+    .sop-screenshot-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
+    .sop-screenshot-actions button { background: var(--surface); border: 1px solid var(--border); color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+    .sop-screenshot-actions button:hover { background: var(--heading); color: var(--bg); }
+    .sop-annotate-bar { display: flex; gap: 0.5rem; padding: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 0.5rem; align-items: center; flex-wrap: wrap; }
+    .sop-annotate-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 0.35rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+    .sop-annotate-btn.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .sop-annotate-btn:hover { border-color: var(--heading); }
+    .sop-canvas-wrap { position: relative; margin-top: 0.5rem; text-align: center; }
+    .sop-canvas-wrap canvas { max-width: 100%; border-radius: 6px; cursor: crosshair; }
+    .sop-meta-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .sop-export-preview { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; }
+    .sop-export-preview h3 { color: var(--heading); margin-bottom: 1rem; font-size: 1.1rem; }
+    .sop-preview-step { display: flex; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+    .sop-preview-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .sop-preview-num { background: var(--heading); color: var(--bg); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; margin-top: 2px; }
+    .sop-preview-content { flex: 1; }
+    .sop-preview-content h4 { color: var(--heading); margin: 0 0 0.35rem; font-size: 0.95rem; }
+    .sop-preview-content p { color: var(--text); margin: 0 0 0.5rem; font-size: 0.85rem; line-height: 1.5; }
+    .sop-preview-content img { max-width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+    .sop-empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+    .sop-empty-state svg { margin-bottom: 1rem; }
+    .sop-color-input { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 2px; }
+    .sop-stroke-input { width: 60px; }
+    @media (max-width: 600px) {
+      .sop-step-body { grid-template-columns: 1fr; }
+      .sop-meta-form { grid-template-columns: 1fr; }
+      .sop-step-header { flex-wrap: wrap; }
+      .sop-step-title-input { min-width: 0; }
+      .sop-annotate-bar { justify-content: center; }
+      h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is this SOP maker really free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely free with no signup, no watermark, and no usage limits. The tool runs entirely in your browser — we do not store your data or charge for exports."}}, {"@type": "Question", "name": "Are my screenshots uploaded to a server?", "acceptedAnswer": {"@type": "Answer", "text": "No. All images are processed locally using the HTML5 FileReader API. Your screenshots never leave your device. This makes it the most private SOP maker available online."}}, {"@type": "Question", "name": "Can I export my SOP as a PDF?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Click \"Export PDF\" to generate a professionally formatted PDF document with all your steps, descriptions, and annotated screenshots. The PDF is generated client-side using jsPDF."}}, {"@type": "Question", "name": "How do I annotate screenshots?", "acceptedAnswer": {"@type": "Answer", "text": "Upload a screenshot to any step, then click the pencil icon. You can draw rectangles to highlight areas, arrows to point at elements, and add text labels. Choose your color and click Done when finished."}}, {"@type": "Question", "name": "Can I reorder the steps?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each step card has a drag handle (the dots icon on the left). Click and drag it to move the step to a different position in the guide."}}, {"@type": "Question", "name": "What is an SOP?", "acceptedAnswer": {"@type": "Answer", "text": "SOP stands for Standard Operating Procedure. It is a documented step-by-step guide that describes how to perform a specific task or process. SOPs are used for training, onboarding, quality assurance, and ensuring consistency across teams."}}, {"@type": "Question", "name": "Does this work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Once the page has loaded, the core functionality works offline. Screenshot upload, annotation, and preview all work without an internet connection. PDF and PNG export require the CDN libraries to be cached."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Free SOP Maker — Step-by-Step Guide Builder", "description": "Create standard operating procedures with screenshots, annotations, and step-by-step instructions. Export as PDF or PNG. 100% browser-based and private.", "url": "https://tool.teamzlab.com/tools/sop-maker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <span style="display: inline-block; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem;">100% Private — Browser-Only</span>
+      <h1>Free SOP Maker — Step-by-Step Guide Builder</h1>
+      <p class="tool-description">Create standard operating procedures and step-by-step guides with screenshots and annotations. Upload images, add descriptions, reorder steps, then export as PDF or PNG. Everything runs in your browser — no signup, no upload, completely free.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- SOP Meta -->
+      <div class="sop-meta-form">
+        <div class="tool-field">
+          <label for="sop-title" class="tool-label">SOP / Guide Title</label>
+          <input type="text" id="sop-title" class="tool-input" placeholder="e.g., How to Set Up a New Employee Account">
+        </div>
+        <div class="tool-field">
+          <label for="sop-author" class="tool-label">Author (optional)</label>
+          <input type="text" id="sop-author" class="tool-input" placeholder="e.g., John Smith">
+        </div>
+      </div>
+
+      <!-- Steps List -->
+      <div id="sop-steps" class="sop-steps-list"></div>
+
+      <!-- Empty State -->
+      <div id="sop-empty" class="sop-empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <p>No steps yet. Click "Add Step" to start building your SOP.</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="tool-actions" style="margin-top: 1.5rem;">
+        <button type="button" id="add-step-btn" class="btn-pill tool-calculate-btn">+ Add Step</button>
+        <button type="button" id="preview-btn" class="btn-pill-ghost tool-copy-btn">Preview Guide</button>
+        <button type="button" id="export-pdf-btn" class="btn-pill-ghost tool-copy-btn" disabled>Export PDF</button>
+        <button type="button" id="export-png-btn" class="btn-pill-ghost tool-copy-btn" disabled>Export PNG</button>
+        <button type="button" id="copy-img-btn" class="btn-pill-ghost tool-copy-btn" disabled>Copy Image</button>
+        <button type="button" id="clear-all-btn" class="btn-pill-ghost tool-clear-btn">Clear All</button>
+      </div>
+
+      <!-- Preview -->
+      <div id="sop-preview" class="sop-export-preview" style="display: none;">
+        <h3 id="preview-title">Preview</h3>
+        <div id="preview-content"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How This Free SOP Maker Works</h2>
+      <p>This SOP maker runs entirely in your browser using JavaScript, HTML5 Canvas, and the File API. When you upload a screenshot, it is read locally using <code>FileReader</code> — the file never leaves your device. Annotations are drawn on an HTML5 Canvas overlay, and the final guide is rendered client-side using <code>html2canvas</code> for PNG export or <code>jsPDF</code> for PDF generation. No server, no account, no data collection.</p>
+      <p>Standard Operating Procedures (SOPs) are essential for onboarding new team members, documenting internal processes, creating training materials, and ensuring consistency across your organization. This tool replaces expensive SaaS alternatives like Scribe, Tango, and Loom by giving you a free, private way to build visual step-by-step guides.</p>
+
+      <h2>SOP Maker for Teams and Freelancers</h2>
+      <p>Whether you are documenting a software workflow, writing a recipe, creating a troubleshooting guide, or building training materials, this SOP maker adapts to your needs. Each step supports a title, description, and annotated screenshot — the three elements that make any guide effective. Drag and drop to reorder steps as your process evolves.</p>
+      <p>Freelancers use SOPs to hand off processes to clients. Operations managers use them to standardize workflows. IT teams use them to document server setup procedures. This tool works for all of these use cases — and it is completely free with no watermarks or branding on exports.</p>
+
+      <h2>Tips for Writing Effective SOPs</h2>
+      <p>Start each step with an action verb: "Click", "Navigate", "Enter", "Select". Keep descriptions concise — one action per step. Use screenshots to show exactly where to click or what the screen should look like. Add annotations (arrows, rectangles) to highlight the important areas. Number your steps sequentially and give your SOP a clear, searchable title.</p>
+      <p>Good SOPs reduce support tickets, speed up onboarding, and create institutional knowledge that survives employee turnover. The investment in documenting a process once pays dividends every time someone new needs to follow it.</p>
+
+      <h2>SOP Maker vs Scribe vs Tango</h2>
+      <p>Scribe ($23/month) and Tango ($10/month) automatically capture browser actions via extensions. This free SOP maker takes a different approach: you upload your own screenshots and write your own descriptions, giving you full control over what appears in the guide. There is no extension to install, no account to create, and no monthly fee. Your data stays on your device — these paid tools upload your screenshots to their servers.</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    var steps = [];
+    var stepIdCounter = 0;
+    var stepsContainer = document.getElementById('sop-steps');
+    var emptyState = document.getElementById('sop-empty');
+    var previewSection = document.getElementById('sop-preview');
+    var previewContent = document.getElementById('preview-content');
+    var previewTitle = document.getElementById('preview-title');
+    var addStepBtn = document.getElementById('add-step-btn');
+    var previewBtn = document.getElementById('preview-btn');
+    var exportPdfBtn = document.getElementById('export-pdf-btn');
+    var exportPngBtn = document.getElementById('export-png-btn');
+    var copyImgBtn = document.getElementById('copy-img-btn');
+    var clearAllBtn = document.getElementById('clear-all-btn');
+    var sopTitleInput = document.getElementById('sop-title');
+
+    // Drag state
+    var draggedEl = null;
+    var draggedIdx = -1;
+
+    function generateId() { return ++stepIdCounter; }
+
+    function createStep(data) {
+      var id = generateId();
+      var step = {
+        id: id,
+        title: (data && data.title) || '',
+        description: (data && data.description) || '',
+        imageDataUrl: (data && data.imageDataUrl) || null,
+        annotations: (data && data.annotations) || []
+      };
+      steps.push(step);
+      renderSteps();
+      updateButtons();
+      return step;
+    }
+
+    function deleteStep(id) {
+      steps = steps.filter(function(s) { return s.id !== id; });
+      renderSteps();
+      updateButtons();
+    }
+
+    function updateButtons() {
+      var hasSteps = steps.length > 0;
+      exportPdfBtn.disabled = !hasSteps;
+      exportPngBtn.disabled = !hasSteps;
+      copyImgBtn.disabled = !hasSteps;
+      if (hasSteps) { window.hideEl(emptyState); }
+      else { window.showEl(emptyState); window.hideEl(previewSection); }
+    }
+
+    function syncStepData(id) {
+      var step = steps.find(function(s) { return s.id === id; });
+      if (!step) return;
+      var card = document.querySelector('[data-step-id="' + id + '"]');
+      if (!card) return;
+      var titleInput = card.querySelector('.sop-step-title-input');
+      var descInput = card.querySelector('.sop-step-desc');
+      if (titleInput) step.title = titleInput.value;
+      if (descInput) step.description = descInput.value;
+    }
+
+    function renderSteps() {
+      stepsContainer.innerHTML = '';
+      steps.forEach(function(step, idx) {
+        var card = document.createElement('div');
+        card.className = 'sop-step-card';
+        card.setAttribute('data-step-id', step.id);
+        card.setAttribute('draggable', 'true');
+
+        // Header
+        var header = document.createElement('div');
+        header.className = 'sop-step-header';
+
+        var dragHandle = document.createElement('span');
+        dragHandle.className = 'sop-step-drag';
+        dragHandle.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg>';
+        dragHandle.title = 'Drag to reorder';
+
+        var num = document.createElement('span');
+        num.className = 'sop-step-number';
+        num.textContent = idx + 1;
+
+        var titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.className = 'sop-step-title-input';
+        titleInput.placeholder = 'Step title (e.g., Click the Settings icon)';
+        titleInput.value = step.title;
+        titleInput.addEventListener('input', function() { step.title = this.value; });
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'sop-step-delete';
+        deleteBtn.title = 'Delete step';
+        deleteBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+        deleteBtn.addEventListener('click', function() { deleteStep(step.id); });
+
+        header.appendChild(dragHandle);
+        header.appendChild(num);
+        header.appendChild(titleInput);
+        header.appendChild(deleteBtn);
+
+        // Body
+        var body = document.createElement('div');
+        body.className = 'sop-step-body';
+
+        // Description
+        var descWrap = document.createElement('div');
+        var descTextarea = document.createElement('textarea');
+        descTextarea.className = 'sop-step-desc';
+        descTextarea.placeholder = 'Describe what to do in this step...';
+        descTextarea.value = step.description;
+        descTextarea.addEventListener('input', function() { step.description = this.value; });
+        descWrap.appendChild(descTextarea);
+
+        // Screenshot area
+        var ssWrap = document.createElement('div');
+        var ssArea = document.createElement('div');
+        ssArea.className = 'sop-screenshot-area';
+        ssArea.setAttribute('data-step-id', step.id);
+
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', function(e) {
+          handleFileSelect(e.target.files[0], step);
+        });
+
+        if (step.imageDataUrl) {
+          var img = document.createElement('img');
+          img.src = step.imageDataUrl;
+          img.alt = 'Step ' + (idx + 1) + ' screenshot';
+          ssArea.appendChild(img);
+
+          var actions = document.createElement('div');
+          actions.className = 'sop-screenshot-actions';
+
+          var annotateBtn = document.createElement('button');
+          annotateBtn.type = 'button';
+          annotateBtn.title = 'Annotate';
+          annotateBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+          annotateBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openAnnotator(step);
+          });
+
+          var removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.title = 'Remove image';
+          removeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+          removeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            step.imageDataUrl = null;
+            step.annotations = [];
+            renderSteps();
+          });
+
+          actions.appendChild(annotateBtn);
+          actions.appendChild(removeBtn);
+          ssArea.appendChild(actions);
+        } else {
+          var placeholder = document.createElement('div');
+          placeholder.className = 'sop-screenshot-placeholder';
+          placeholder.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span>Click or drag image here</span>';
+          ssArea.appendChild(placeholder);
+        }
+
+        ssArea.appendChild(fileInput);
+        ssArea.addEventListener('click', function(e) {
+          if (e.target.closest('.sop-screenshot-actions')) return;
+          fileInput.click();
+        });
+
+        // Drag-and-drop file on screenshot area
+        ssArea.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.classList.add('drag-hover');
+        });
+        ssArea.addEventListener('dragleave', function(e) {
+          e.stopPropagation();
+          this.classList.remove('drag-hover');
+        });
+        ssArea.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.classList.remove('drag-hover');
+          var files = e.dataTransfer.files;
+          if (files.length && files[0].type.startsWith('image/')) {
+            handleFileSelect(files[0], step);
+          }
+        });
+
+        ssWrap.appendChild(ssArea);
+
+        // Annotation canvas area (if annotating)
+        if (step._annotating) {
+          var annotBar = buildAnnotateBar(step);
+          ssWrap.appendChild(annotBar);
+          var canvasWrap = document.createElement('div');
+          canvasWrap.className = 'sop-canvas-wrap';
+          canvasWrap.id = 'canvas-wrap-' + step.id;
+          ssWrap.appendChild(canvasWrap);
+          // Canvas will be initialized after DOM append
+          requestAnimationFrame(function() { initAnnotationCanvas(step); });
+        }
+
+        body.appendChild(descWrap);
+        body.appendChild(ssWrap);
+
+        card.appendChild(header);
+        card.appendChild(body);
+
+        // Drag events for reorder
+        card.addEventListener('dragstart', function(e) {
+          // Don't reorder if dragging a file
+          if (e.dataTransfer.types.indexOf('Files') !== -1) return;
+          draggedEl = card;
+          draggedIdx = idx;
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', String(idx));
+        });
+        card.addEventListener('dragend', function() {
+          card.classList.remove('dragging');
+          draggedEl = null;
+          draggedIdx = -1;
+          Array.from(stepsContainer.children).forEach(function(c) { c.classList.remove('drag-over'); });
+        });
+        card.addEventListener('dragover', function(e) {
+          if (!draggedEl) return;
+          e.preventDefault();
+          card.classList.add('drag-over');
+        });
+        card.addEventListener('dragleave', function() {
+          card.classList.remove('drag-over');
+        });
+        card.addEventListener('drop', function(e) {
+          if (!draggedEl) return;
+          e.preventDefault();
+          card.classList.remove('drag-over');
+          var fromIdx = draggedIdx;
+          var toIdx = idx;
+          if (fromIdx !== toIdx) {
+            var moved = steps.splice(fromIdx, 1)[0];
+            steps.splice(toIdx, 0, moved);
+            renderSteps();
+          }
+        });
+
+        stepsContainer.appendChild(card);
+      });
+    }
+
+    function handleFileSelect(file, step) {
+      if (!file || !file.type.startsWith('image/')) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        step.imageDataUrl = e.target.result;
+        step.annotations = [];
+        renderSteps();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ---- Annotation System ----
+    var annotationState = {
+      tool: 'rect', // rect, arrow, text
+      color: '#FF3B30',
+      strokeWidth: 3,
+      drawing: false,
+      startX: 0, startY: 0,
+      currentStep: null
+    };
+
+    function openAnnotator(step) {
+      step._annotating = true;
+      renderSteps();
+    }
+
+    function closeAnnotator(step) {
+      step._annotating = false;
+      // Flatten canvas to imageDataUrl
+      var canvasWrap = document.getElementById('canvas-wrap-' + step.id);
+      if (canvasWrap) {
+        var canvas = canvasWrap.querySelector('canvas');
+        if (canvas) {
+          step.imageDataUrl = canvas.toDataURL('image/png');
+        }
+      }
+      renderSteps();
+    }
+
+    function buildAnnotateBar(step) {
+      var bar = document.createElement('div');
+      bar.className = 'sop-annotate-bar';
+
+      var tools = [
+        { id: 'rect', label: 'Rectangle', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>' },
+        { id: 'arrow', label: 'Arrow', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' },
+        { id: 'text', label: 'Text', icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>' }
+      ];
+
+      tools.forEach(function(t) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sop-annotate-btn' + (annotationState.tool === t.id ? ' active' : '');
+        btn.innerHTML = t.icon + ' ' + t.label;
+        btn.addEventListener('click', function() {
+          annotationState.tool = t.id;
+          bar.querySelectorAll('.sop-annotate-btn').forEach(function(b) { b.classList.remove('active'); });
+          // Re-add active to tool buttons only (first 3)
+          var toolBtns = Array.from(bar.querySelectorAll('.sop-annotate-btn'));
+          toolBtns.forEach(function(b, i) {
+            if (i < tools.length && tools[i].id === t.id) b.classList.add('active');
+          });
+        });
+        bar.appendChild(btn);
+      });
+
+      // Color picker
+      var colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.className = 'sop-color-input';
+      colorInput.value = annotationState.color;
+      colorInput.title = 'Annotation color';
+      colorInput.addEventListener('input', function() { annotationState.color = this.value; });
+      bar.appendChild(colorInput);
+
+      // Undo button
+      var undoBtn = document.createElement('button');
+      undoBtn.type = 'button';
+      undoBtn.className = 'sop-annotate-btn';
+      undoBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Undo';
+      undoBtn.addEventListener('click', function() {
+        if (step.annotations.length > 0) {
+          step.annotations.pop();
+          redrawCanvas(step);
+        }
+      });
+      bar.appendChild(undoBtn);
+
+      // Done button
+      var doneBtn = document.createElement('button');
+      doneBtn.type = 'button';
+      doneBtn.className = 'sop-annotate-btn';
+      doneBtn.style.cssText = 'background: var(--heading); color: var(--bg); border-color: var(--heading);';
+      doneBtn.textContent = 'Done';
+      doneBtn.addEventListener('click', function() { closeAnnotator(step); });
+      bar.appendChild(doneBtn);
+
+      return bar;
+    }
+
+    function initAnnotationCanvas(step) {
+      var wrap = document.getElementById('canvas-wrap-' + step.id);
+      if (!wrap || !step.imageDataUrl) return;
+
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d');
+      wrap.appendChild(canvas);
+
+      var img = new Image();
+      img.onload = function() {
+        // Scale down for large images
+        var maxW = wrap.clientWidth || 600;
+        var scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas._imgScale = scale;
+        canvas._img = img;
+        redrawCanvas(step);
+
+        // Mouse events
+        var rect;
+        canvas.addEventListener('mousedown', function(e) {
+          rect = canvas.getBoundingClientRect();
+          annotationState.drawing = true;
+          annotationState.startX = e.clientX - rect.left;
+          annotationState.startY = e.clientY - rect.top;
+          annotationState.currentStep = step;
+
+          if (annotationState.tool === 'text') {
+            var text = prompt('Enter annotation text:');
+            if (text) {
+              step.annotations.push({
+                type: 'text',
+                x: annotationState.startX,
+                y: annotationState.startY,
+                text: text,
+                color: annotationState.color
+              });
+              redrawCanvas(step);
+            }
+            annotationState.drawing = false;
+          }
+        });
+        canvas.addEventListener('mousemove', function(e) {
+          if (!annotationState.drawing || annotationState.tool === 'text') return;
+          rect = canvas.getBoundingClientRect();
+          var cx = e.clientX - rect.left;
+          var cy = e.clientY - rect.top;
+          redrawCanvas(step);
+          // Draw preview
+          ctx.strokeStyle = annotationState.color;
+          ctx.lineWidth = annotationState.strokeWidth;
+          if (annotationState.tool === 'rect') {
+            ctx.strokeRect(annotationState.startX, annotationState.startY, cx - annotationState.startX, cy - annotationState.startY);
+          } else if (annotationState.tool === 'arrow') {
+            drawArrow(ctx, annotationState.startX, annotationState.startY, cx, cy, annotationState.color, annotationState.strokeWidth);
+          }
+        });
+        canvas.addEventListener('mouseup', function(e) {
+          if (!annotationState.drawing || annotationState.tool === 'text') return;
+          annotationState.drawing = false;
+          rect = canvas.getBoundingClientRect();
+          var cx = e.clientX - rect.left;
+          var cy = e.clientY - rect.top;
+          // Only save if there was actual movement
+          if (Math.abs(cx - annotationState.startX) > 3 || Math.abs(cy - annotationState.startY) > 3) {
+            step.annotations.push({
+              type: annotationState.tool,
+              x1: annotationState.startX, y1: annotationState.startY,
+              x2: cx, y2: cy,
+              color: annotationState.color,
+              strokeWidth: annotationState.strokeWidth
+            });
+          }
+          redrawCanvas(step);
+        });
+
+        // Touch events
+        canvas.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          var touch = e.touches[0];
+          rect = canvas.getBoundingClientRect();
+          annotationState.drawing = true;
+          annotationState.startX = touch.clientX - rect.left;
+          annotationState.startY = touch.clientY - rect.top;
+          annotationState.currentStep = step;
+        }, { passive: false });
+        canvas.addEventListener('touchmove', function(e) {
+          e.preventDefault();
+          if (!annotationState.drawing) return;
+          var touch = e.touches[0];
+          rect = canvas.getBoundingClientRect();
+          var cx = touch.clientX - rect.left;
+          var cy = touch.clientY - rect.top;
+          redrawCanvas(step);
+          ctx.strokeStyle = annotationState.color;
+          ctx.lineWidth = annotationState.strokeWidth;
+          if (annotationState.tool === 'rect') {
+            ctx.strokeRect(annotationState.startX, annotationState.startY, cx - annotationState.startX, cy - annotationState.startY);
+          } else if (annotationState.tool === 'arrow') {
+            drawArrow(ctx, annotationState.startX, annotationState.startY, cx, cy, annotationState.color, annotationState.strokeWidth);
+          }
+        }, { passive: false });
+        canvas.addEventListener('touchend', function(e) {
+          if (!annotationState.drawing) return;
+          annotationState.drawing = false;
+          if (e.changedTouches.length) {
+            var touch = e.changedTouches[0];
+            rect = canvas.getBoundingClientRect();
+            var cx = touch.clientX - rect.left;
+            var cy = touch.clientY - rect.top;
+            if (Math.abs(cx - annotationState.startX) > 3 || Math.abs(cy - annotationState.startY) > 3) {
+              step.annotations.push({
+                type: annotationState.tool,
+                x1: annotationState.startX, y1: annotationState.startY,
+                x2: cx, y2: cy,
+                color: annotationState.color,
+                strokeWidth: annotationState.strokeWidth
+              });
+            }
+          }
+          redrawCanvas(step);
+        });
+      };
+      img.src = step.imageDataUrl;
+    }
+
+    function redrawCanvas(step) {
+      var wrap = document.getElementById('canvas-wrap-' + step.id);
+      if (!wrap) return;
+      var canvas = wrap.querySelector('canvas');
+      if (!canvas) return;
+      var ctx = canvas.getContext('2d');
+      var img = canvas._img;
+      if (!img) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      step.annotations.forEach(function(a) {
+        if (a.type === 'rect') {
+          ctx.strokeStyle = a.color;
+          ctx.lineWidth = a.strokeWidth || 3;
+          ctx.strokeRect(a.x1, a.y1, a.x2 - a.x1, a.y2 - a.y1);
+        } else if (a.type === 'arrow') {
+          drawArrow(ctx, a.x1, a.y1, a.x2, a.y2, a.color, a.strokeWidth || 3);
+        } else if (a.type === 'text') {
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillStyle = a.color;
+          // Text background
+          var metrics = ctx.measureText(a.text);
+          ctx.fillStyle = 'rgba(0,0,0,0.6)';
+          ctx.fillRect(a.x - 2, a.y - 16, metrics.width + 8, 22);
+          ctx.fillStyle = a.color;
+          ctx.fillText(a.text, a.x + 2, a.y);
+        }
+      });
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width) {
+      var headLen = 12;
+      var angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      // Arrowhead
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // ---- Preview ----
+    function showPreview() {
+      // Sync all step data
+      steps.forEach(function(s) { syncStepData(s.id); });
+
+      var title = sopTitleInput.value || 'Untitled SOP';
+      previewTitle.textContent = title;
+      previewContent.innerHTML = '';
+
+      if (steps.length === 0) {
+        previewContent.innerHTML = '<p style="color:var(--text-muted);">No steps to preview.</p>';
+        window.showEl(previewSection);
+        return;
+      }
+
+      steps.forEach(function(step, idx) {
+        var div = document.createElement('div');
+        div.className = 'sop-preview-step';
+
+        var numEl = document.createElement('span');
+        numEl.className = 'sop-preview-num';
+        numEl.textContent = idx + 1;
+
+        var content = document.createElement('div');
+        content.className = 'sop-preview-content';
+
+        var h4 = document.createElement('h4');
+        h4.textContent = step.title || 'Step ' + (idx + 1);
+        content.appendChild(h4);
+
+        if (step.description) {
+          var p = document.createElement('p');
+          p.textContent = step.description;
+          content.appendChild(p);
+        }
+
+        if (step.imageDataUrl) {
+          var img = document.createElement('img');
+          img.src = step.imageDataUrl;
+          img.alt = 'Step ' + (idx + 1);
+          content.appendChild(img);
+        }
+
+        div.appendChild(numEl);
+        div.appendChild(content);
+        previewContent.appendChild(div);
+      });
+
+      window.showEl(previewSection);
+      previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ---- Export PDF ----
+    function exportPdf() {
+      steps.forEach(function(s) { syncStepData(s.id); });
+      if (steps.length === 0) return;
+
+      exportPdfBtn.disabled = true;
+      exportPdfBtn.textContent = 'Generating...';
+
+      try {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pageW = doc.internal.pageSize.getWidth();
+        var pageH = doc.internal.pageSize.getHeight();
+        var margin = 15;
+        var contentW = pageW - margin * 2;
+        var y = margin;
+
+        // Title
+        var title = sopTitleInput.value || 'Untitled SOP';
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text(title, margin, y + 7);
+        y += 14;
+
+        // Author and date
+        var author = document.getElementById('sop-author').value;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(120);
+        var meta = 'Created: ' + new Date().toLocaleDateString();
+        if (author) meta = 'Author: ' + author + '  |  ' + meta;
+        doc.text(meta, margin, y);
+        y += 8;
+        doc.setTextColor(0);
+
+        // Line separator
+        doc.setDrawColor(200);
+        doc.line(margin, y, pageW - margin, y);
+        y += 6;
+
+        steps.forEach(function(step, idx) {
+          // Check if we need a new page
+          if (y > pageH - 40) { doc.addPage(); y = margin; }
+
+          // Step number + title
+          doc.setFontSize(13);
+          doc.setFont(undefined, 'bold');
+          doc.text('Step ' + (idx + 1) + ': ' + (step.title || 'Untitled'), margin, y + 5);
+          y += 10;
+
+          // Description
+          if (step.description) {
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            var lines = doc.splitTextToSize(step.description, contentW);
+            if (y + lines.length * 5 > pageH - 20) { doc.addPage(); y = margin; }
+            doc.text(lines, margin, y);
+            y += lines.length * 5 + 3;
+          }
+
+          // Screenshot
+          if (step.imageDataUrl) {
+            try {
+              var imgData = step.imageDataUrl;
+              // Calculate image dimensions to fit
+              var imgW = contentW;
+              var maxImgH = pageH * 0.4; // Max 40% of page
+              // Create temp image to get aspect ratio
+              var tempImg = new Image();
+              tempImg.src = imgData;
+              var aspectRatio = tempImg.naturalHeight / tempImg.naturalWidth || 0.6;
+              var imgH = imgW * aspectRatio;
+              if (imgH > maxImgH) { imgH = maxImgH; imgW = imgH / aspectRatio; }
+
+              if (y + imgH > pageH - 10) { doc.addPage(); y = margin; }
+              doc.addImage(imgData, 'PNG', margin, y, imgW, imgH);
+              y += imgH + 5;
+            } catch (e) { /* skip image on error */ }
+          }
+
+          y += 5;
+          // Step separator
+          if (idx < steps.length - 1) {
+            doc.setDrawColor(220);
+            doc.line(margin, y, pageW - margin, y);
+            y += 6;
+          }
+        });
+
+        var filename = (sopTitleInput.value || 'sop').replace(/\s+/g, '-').toLowerCase() + '.pdf';
+        doc.save(filename);
+        if (window.showToast) window.showToast('PDF downloaded!');
+      } catch (err) {
+        if (window.showToast) window.showToast('PDF export failed. Try again.');
+      } finally {
+        exportPdfBtn.disabled = false;
+        exportPdfBtn.textContent = 'Export PDF';
+      }
+    }
+
+    // ---- Export PNG ----
+    function exportPng() {
+      showPreview();
+      exportPngBtn.disabled = true;
+      exportPngBtn.textContent = 'Generating...';
+
+      setTimeout(function() {
+        html2canvas(previewSection, { backgroundColor: '#ffffff', useCORS: true, scale: 2 }).then(function(canvas) {
+          var link = document.createElement('a');
+          link.download = (sopTitleInput.value || 'sop').replace(/\s+/g, '-').toLowerCase() + '.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          if (window.showToast) window.showToast('PNG downloaded!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('PNG export failed. Try again.');
+        }).finally(function() {
+          exportPngBtn.disabled = false;
+          exportPngBtn.textContent = 'Export PNG';
+        });
+      }, 300);
+    }
+
+    // ---- Copy Image ----
+    function copyImage() {
+      showPreview();
+      copyImgBtn.disabled = true;
+      copyImgBtn.textContent = 'Copying...';
+
+      setTimeout(function() {
+        html2canvas(previewSection, { backgroundColor: '#ffffff', useCORS: true, scale: 2 }).then(function(canvas) {
+          canvas.toBlob(function(blob) {
+            if (!blob) {
+              if (window.showToast) window.showToast('Copy failed — use Download instead.');
+              return;
+            }
+            try {
+              navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+                if (window.showToast) window.showToast('Image copied to clipboard!');
+              }).catch(function() {
+                if (window.showToast) window.showToast('Copy not supported — use Download instead.');
+              });
+            } catch (e) {
+              if (window.showToast) window.showToast('Copy not supported — use Download instead.');
+            }
+          }, 'image/png');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Copy failed. Try Download instead.');
+        }).finally(function() {
+          copyImgBtn.disabled = false;
+          copyImgBtn.textContent = 'Copy Image';
+        });
+      }, 300);
+    }
+
+    // ---- Clear All ----
+    function clearAll() {
+      steps = [];
+      stepIdCounter = 0;
+      sopTitleInput.value = '';
+      document.getElementById('sop-author').value = '';
+      window.hideEl(previewSection);
+      renderSteps();
+      updateButtons();
+      if (window.showToast) window.showToast('All steps cleared.');
+    }
+
+    // ---- Event Listeners ----
+    addStepBtn.addEventListener('click', function() { createStep(); });
+    previewBtn.addEventListener('click', showPreview);
+    exportPdfBtn.addEventListener('click', exportPdf);
+    exportPngBtn.addEventListener('click', exportPng);
+    copyImgBtn.addEventListener('click', copyImage);
+    clearAllBtn.addEventListener('click', clearAll);
+
+    // Init
+    updateButtons();
+
+    // ---- Central init — one call handles breadcrumbs, FAQs, schemas, related tools ----
+    TeamzTools.initTool({
+      slug: 'tools/sop-maker',
+      title: 'Free SOP Maker — Step-by-Step Guide Builder',
+      description: 'Create standard operating procedures with screenshots, annotations, and step-by-step instructions. Export as PDF or PNG. 100% browser-based and private.',
+      faqs: [
+        { q: 'Is this SOP maker really free?', a: 'Yes, completely free with no signup, no watermark, and no usage limits. The tool runs entirely in your browser — we do not store your data or charge for exports.' },
+        { q: 'Are my screenshots uploaded to a server?', a: 'No. All images are processed locally using the HTML5 FileReader API. Your screenshots never leave your device. This makes it the most private SOP maker available online.' },
+        { q: 'Can I export my SOP as a PDF?', a: 'Yes. Click "Export PDF" to generate a professionally formatted PDF document with all your steps, descriptions, and annotated screenshots. The PDF is generated client-side using jsPDF.' },
+        { q: 'How do I annotate screenshots?', a: 'Upload a screenshot to any step, then click the pencil icon. You can draw rectangles to highlight areas, arrows to point at elements, and add text labels. Choose your color and click Done when finished.' },
+        { q: 'Can I reorder the steps?', a: 'Yes. Each step card has a drag handle (the dots icon on the left). Click and drag it to move the step to a different position in the guide.' },
+        { q: 'What is an SOP?', a: 'SOP stands for Standard Operating Procedure. It is a documented step-by-step guide that describes how to perform a specific task or process. SOPs are used for training, onboarding, quality assurance, and ensuring consistency across teams.' },
+        { q: 'Does this work offline?', a: 'Once the page has loaded, the core functionality works offline. Screenshot upload, annotation, and preview all work without an internet connection. PDF and PNG export require the CDN libraries to be cached.' }
+      ],
+      relatedTools: [
+        { slug: '/tools/incident-report-template/', name: 'Incident Report Template', description: 'Generate professional incident reports for workplace safety documentation.' },
+        { slug: '/tools/risk-assessment-template/', name: 'Risk Assessment Template', description: 'Create health and safety risk assessments with hazard identification.' },
+        { slug: '/tools/privacy-policy-generator/', name: 'Privacy Policy Generator', description: 'Generate a free privacy policy for your website or app.' },
+        { slug: '/tools/terms-of-service-generator/', name: 'Terms of Service Generator', description: 'Create professional terms of service for your website or SaaS.' },
+        { slug: '/tools/product-comparison-maker/', name: 'Product Comparison Maker', description: 'Build side-by-side product comparison tables for informed decisions.' },
+        { slug: '/image/meme-maker/', name: 'Meme Maker', description: 'Create memes privately with custom text and image overlay tools.' }
+      ]
+    });
+
+  })();
+  </script>
+</body>
+</html>

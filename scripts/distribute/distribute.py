@@ -196,7 +196,7 @@ def post_devto(config, title, body, tags, canonical_url):
             "title": title,
             "body_markdown": body,
             "published": True,
-            "tags": tags[:4],  # Dev.to max 4 tags
+            "tags": [re.sub(r'[^a-zA-Z0-9]', '', t) for t in tags[:4]],  # Dev.to: alphanumeric only, max 4
         }
     }
     if canonical_url:

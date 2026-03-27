@@ -36,6 +36,11 @@
 - [feedback_never_regex_minify.md](feedback_never_regex_minify.md) — NEVER use regex CSS minifiers. NEVER switch HTML refs to files that don't exist on production. Pre-push hook now catches broken refs.
 - [feedback_validate_redirect_pages.md](feedback_validate_redirect_pages.md) — NEVER skip redirect pages during validation. Bing flags missing meta descriptions even on noindex stubs. build-qa-check.sh now checks them.
 - [feedback_multilang_strategy.md](feedback_multilang_strategy.md) — MANDATORY: High-RPM tools (finance/tax/career) get Spanish + Portuguese versions. Script: build-multilang.py.
+- [feedback_act_on_script_output.md](feedback_act_on_script_output.md) — CRITICAL: Don't just run scripts — ACT on what they reveal. If existing non-English hub found, prioritize local-language tools FIRST over English volume chasing.
+- [feedback_distribute_in_tool_language.md](feedback_distribute_in_tool_language.md) — MANDATORY: Distribution articles MUST match tool language (French tools → French article). Set `language: XX` in frontmatter.
+- [feedback_correct_element_ids.md](feedback_correct_element_ids.md) — CRITICAL: Use exact IDs from common.js: tool-faqs, related-tools, breadcrumbs. NEVER guess.
+- [feedback_broader_duplicate_search.md](feedback_broader_duplicate_search.md) — Search broadly for duplicates before building. Check concept overlap not just slug names.
+- [feedback_quota_management.md](feedback_quota_management.md) — Reserve Claude quota for office hours productivity.
 
 ## Core Web Vitals (2026-03-26)
 - [project_cwv_fixes_2026_03.md](project_cwv_fixes_2026_03.md) — CWV deployed: CSS bundle, self-hosted fonts, static header, deferred analytics. Minification reverted (regex broke CSS). Pre-push now checks broken refs.
@@ -61,8 +66,12 @@
 - [feedback_pull_data_before_answering.md](feedback_pull_data_before_answering.md) — MANDATORY: When user asks about trends/status/performance, pull Search Console + Analytics + SEO data FIRST before answering.
 - [reference_distribution_system.md](reference_distribution_system.md) — 7-platform content distribution: Dev.to, Hashnode, WordPress, Blogger, Tumblr, Bluesky, Mastodon. Script at scripts/distribute/distribute.py.
 
+## Reference
+- [reference_clarity_api.md](reference_clarity_api.md) — Microsoft Clarity bot detection API. Token at ~/.config/teamzlab/clarity-token.txt. Script: ./build-clarity.sh.
+
 ## Data Scripts Available
 - `./build-search-console.sh` — Google Search Console (queries, clicks, indexing)
 - `./build-analytics.sh --all` — GA4 Analytics (users, pages, sources, devices, ads)
+- `./build-clarity.sh` — Microsoft Clarity (bot vs human traffic, engagement, UX issues)
 - `./build-seo-audit.sh --report` — SEO keyword audit
 - `python3 scripts/distribute/distribute.py list` — Distribution history + Dev.to stats

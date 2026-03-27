@@ -14,7 +14,7 @@ find "$BASE" -path "*/*/index.html" \
   -not -path "*/about/*" -not -path "*/contact/*" \
   -not -path "*/privacy/*" -not -path "*/terms/*" \
   -not -path "*/docs/*" -not -path "*/node_modules/*" \
-  -not -path "*/.git/*" \
+  -not -path "*/.git/*" -not -path "*/.claude/*" \
   | sort | while read f; do
 
   slug=$(echo "$f" | sed "s|$BASE/||" | sed 's|/index.html||')
@@ -53,7 +53,7 @@ for hub in ai evergreen dev text image uidesign tools freelance work diagnostic 
 done
 
 # Update search placeholder count
-total_tools=$(find "$BASE" -path "*/*/index.html" -not -path "*/about/*" -not -path "*/contact/*" -not -path "*/privacy/*" -not -path "*/terms/*" -not -path "*/docs/*" -not -path "*/node_modules/*" -not -path "*/.git/*" | wc -l | tr -d ' ')
+total_tools=$(find "$BASE" -path "*/*/index.html" -not -path "*/about/*" -not -path "*/contact/*" -not -path "*/privacy/*" -not -path "*/terms/*" -not -path "*/docs/*" -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/.claude/*" | wc -l | tr -d ' ')
 sed -i '' "s|Search [0-9]*+ tools|Search ${total_tools}+ tools|" "$BASE/index.html" 2>/dev/null
 echo "  Homepage: updated all card counts + search shows ${total_tools}+ tools"
 
