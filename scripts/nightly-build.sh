@@ -188,6 +188,7 @@ echo "=== Phase 3: Pull Data (local tokens) ==="
 ./build-search-console.sh --status 2>&1 | tail -10
 ./build-analytics.sh --all 2>&1 | tail -20
 ./build-adsense.sh 2>&1 | tail -10
+./build-clarity.sh 1 2>&1 | tail -20
 
 # Phase 4: Run Claude to build tools (uses quota)
 echo ""
