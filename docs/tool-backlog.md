@@ -1,6 +1,6 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-27 (nightly build #4)*
+*Last updated: 2026-03-27 (nightly build #5)*
 
 ---
 
@@ -94,6 +94,20 @@
 - Remote Work Burnout Risk Score (/health/remote-work-burnout-score/) — 20Q MBI-based, 3 dimensions, recovery strategies
 - ES Freelance Contract Generator (/es/generador-contrato-freelance/) — Spanish, 8 countries, 5 payment terms, download
 - PT Freelance Contract Generator (/pt/gerador-contrato-freelance/) — Brazilian PT, MEI/CLT context, 4 countries, download
+
+## Completed This Nightly Build #5 (2026-03-27 nightly)
+- Candle Wax Calculator (/candle-making/wax-calculator/) — soy/paraffin/beeswax/coconut density, fill %, fragrance suggestion
+- Candle Fragrance Load Calculator (/candle-making/fragrance-calculator/) — 3-12% range, per-wax-type max, dynamic tip panel
+- Candle Cost & Pricing Calculator (/candle-making/cost-pricing-calculator/) — 9 cost inputs, markup%, batch totals, profit per unit
+- Candle Burn Time Estimator (/candle-making/burn-time-estimator/) — diameter tiers, wick size, wax type multipliers, label recommendation
+- Knitting Yarn Calculator (/knitting/yarn-calculator/) — 14 project types, 7 yarn weights, size modifiers, skein count
+- Knitting Gauge Calculator (/knitting/gauge-calculator/) — 2-mode (gauge checker + stitch adjuster), needle size suggestion
+- CA RRSP vs TFSA Calculator (/ca/rrsp-vs-tfsa-calculator/) — FV annuity formula, winner recommendation, side-by-side comparison
+- Business Break-Even Calculator (/work/break-even-calculator/) — BEP units/revenue, contribution margin, current profit/loss
+- ES Break-Even Calculator (/es/calculadora-punto-equilibrio/) — native Spanish, hreflang, 4 result cards
+- PT Break-Even Calculator (/pt/calculadora-ponto-equilibrio/) — native Brazilian Portuguese, pt-BR locale formatting
+- Candle Making Hub (/candle-making/index.html) — new hub, 4 tools
+- Knitting Hub (/knitting/index.html) — new hub, 2 tools
 
 ## Completed This Nightly Build #3 (2026-03-27 nightly)
 - IE Income Tax Calculator (/ie/income-tax-calculator/) — PAYE+USC+PRSI 2025 rates, single/married
