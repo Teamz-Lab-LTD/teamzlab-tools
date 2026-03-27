@@ -926,6 +926,7 @@
     const cardMessage = document.getElementById('cardMessage');
     const cardPreviewWrapper = document.getElementById('cardPreviewWrapper');
     const btnDownload = document.getElementById('btnDownload');
+    const btnCopyImg = document.getElementById('btnCopyImg');
     const btnWhatsApp = document.getElementById('btnWhatsApp');
     const btnCopyLink = document.getElementById('btnCopyLink');
     const generatedCards = document.getElementById('generatedCards');
@@ -1042,8 +1043,9 @@
 
     // ====== CANVAS DOWNLOAD ======
     btnDownload.addEventListener('click', downloadCard);
+    btnCopyImg.addEventListener('click', copyCardImage);
 
-    function downloadCard() {
+    function buildCardCanvas() {
       const canvas = document.createElement('canvas');
       const W = 1200, H = 800;
       canvas.width = W;
@@ -1107,6 +1109,12 @@
       ctx.fillText('tool.teamzlab.com', W/2, H - 25);
       ctx.globalAlpha = 1;
 
+      return canvas;
+    }
+
+    function downloadCard() {
+      const canvas = buildCardCanvas();
+
       // Download
       const link = document.createElement('a');
       const recipientSlug = recipient.toLowerCase().replace(/\s+/g, '-');
@@ -1117,6 +1125,35 @@
       // Save to list
       saveCard(recipient, sender, symbol, amount, currentStyle, currency, message);
       showToast('Card downloaded!');
+    }
+
+    function copyCardImage() {
+      if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+        showToast('Copy image is not supported here. Use Download instead.');
+        return;
+      }
+
+      const canvas = buildCardCanvas();
+      btnCopyImg.disabled = true;
+      btnCopyImg.textContent = 'Copying...';
+
+      canvas.toBlob(function(blob) {
+        if (!blob) {
+          btnCopyImg.disabled = false;
+          btnCopyImg.textContent = 'Copy Image';
+          showToast('Could not prepare the image. Try Download instead.');
+          return;
+        }
+
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function() {
+          showToast('Card image copied!');
+        }).catch(function() {
+          showToast('Copy image failed. Use Download instead.');
+        }).finally(function() {
+          btnCopyImg.disabled = false;
+          btnCopyImg.textContent = 'Copy Image';
+        });
+      }, 'image/png');
     }
 
     function drawCardBackground(ctx, W, H, style) {

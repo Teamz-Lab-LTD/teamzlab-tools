@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HDB Affordability Calculator Singapore — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how much HDB flat you can afford in Singapore. Estimates MSR cap, CPF OA usage, HDB grants, and maximum loan — free and private.">
+  <meta property="og:title" content="HDB Affordability Calculator Singapore — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate how much HDB flat you can afford in Singapore. Estimates MSR cap, CPF OA usage, HDB grants, and maximum loan — free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/sg/hdb-affordability-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/sg.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="HDB Affordability Calculator Singapore — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate how much HDB flat you can afford in Singapore. Estimates MSR cap, CPF OA usage, HDB grants, and maximum loan — free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/sg/hdb-affordability-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .hdb-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .hdb-form-grid .form-group--full {
+      grid-column: 1 / -1;
+    }
+    .hdb-result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .hdb-result-item {
+      border-top: 2px solid var(--border);
+      padding-top: 10px;
+    }
+    .hdb-result-item.hdb-result-item--highlight {
+      border-top-color: var(--accent);
+    }
+    .hdb-result-item__label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .hdb-result-item__value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .hdb-result-item--highlight .hdb-result-item__value {
+      color: var(--heading);
+    }
+    .hdb-result-total {
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .hdb-result-total__label {
+      font-size: var(--text-base);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .hdb-result-total__value {
+      font-size: var(--text-xl);
+      font-weight: 800;
+      color: var(--heading);
+    }
+    .hdb-grants-breakdown {
+      grid-column: 1 / -1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+    .hdb-grants-breakdown__title {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .hdb-grants-breakdown__row {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-sm);
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .hdb-grants-breakdown__row:last-child {
+      border-bottom: none;
+    }
+    .hdb-grants-breakdown__row--nil {
+      color: var(--text-muted);
+    }
+    .hdb-notice {
+      grid-column: 1 / -1;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      border-left: 3px solid var(--border);
+      padding-left: 12px;
+      margin-top: 4px;
+    }
+    .hdb-msr-bar-wrap {
+      grid-column: 1 / -1;
+    }
+    .hdb-msr-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .hdb-msr-bar-track {
+      height: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .hdb-msr-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: var(--accent);
+      transition: width 0.4s ease;
+    }
+    .hdb-msr-bar-fill--over {
+      background: var(--border);
+    }
+    .formula-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+    .formula-box h3 {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 10px;
+    }
+    .formula {
+      font-family: monospace;
+      font-size: var(--text-sm);
+      color: var(--text);
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+    .example-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 12px 0;
+    }
+    .example-box h4 {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .example-box ul {
+      padding-left: 20px;
+      color: var(--text);
+      font-size: var(--text-sm);
+      line-height: 1.8;
+    }
+
+    @media (max-width: 600px) {
+      .hdb-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .hdb-result-grid {
+        grid-template-columns: 1fr;
+      }
+      .hdb-result-total {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      .hdb-result-total__value {
+        font-size: var(--text-lg);
+      }
+      .tool-calculator {
+        padding: 18px;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Singapore Tools", "item": "https://tool.teamzlab.com/sg/"}, {"@type": "ListItem", "position": 3, "name": "HDB Affordability Calculator Singapore"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is the MSR rule for HDB loans?", "acceptedAnswer": {"@type": "Answer", "text": "MSR stands for Mortgage Servicing Ratio. For HDB flats, your monthly mortgage payment cannot exceed 30% of your gross monthly income. This applies to both HDB loans and bank loans used to purchase HDB flats."}}, {"@type": "Question", "name": "Can I use CPF OA for HDB down payment?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your CPF Ordinary Account balance can be used for the down payment and stamp duty on HDB purchases, subject to the Valuation Limit and Withdrawal Limit rules. CPF OA savings can cover the full down payment for an HDB loan (20%), eliminating the need for cash."}}, {"@type": "Question", "name": "What is the Enhanced CPF Housing Grant (EHG)?", "acceptedAnswer": {"@type": "Answer", "text": "EHG is an income-based grant for first-timer families or singles buying BTO or resale HDB flats. The maximum EHG is $80,000 for household income up to $1,500 per month, scaling down to $5,000 for household income up to $9,000. Households earning above $9,000 per month are not eligible."}}, {"@type": "Question", "name": "What is the difference between HDB loan and bank loan for HDB flats?", "acceptedAnswer": {"@type": "Answer", "text": "HDB loans have a fixed 2.6% p.a. interest rate, allow up to 80% LTV, and require a 20% down payment which can be fully paid from CPF OA. Bank loans offer potentially lower rates but are variable, require at least 25% down with a minimum 5% in cash, and carry market rate risk."}}, {"@type": "Question", "name": "How much HDB loan can I get?", "acceptedAnswer": {"@type": "Answer", "text": "The maximum HDB loan is 80% of the flat purchase price or value (whichever is lower). You must also pass the MSR test (monthly payment at most 30% of gross income) and the TDSR test (all debts at most 55% of gross income). This calculator uses the MSR test to estimate the loan maximum."}}, {"@type": "Question", "name": "Are CPF Housing Grants included in the CPF Withdrawal Limit?", "acceptedAnswer": {"@type": "Answer", "text": "Most CPF Housing Grants are credited to your CPF OA first, then applied towards the purchase price. They generally count towards the CPF Withdrawal Limit for the property. For new BTO flats, there is typically no Withdrawal Limit cap under current HDB rules."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "HDB Affordability Calculator Singapore", "description": "Calculate how much HDB flat you can afford in Singapore. Estimates MSR cap, CPF OA usage, HDB grants, and maximum loan.", "url": "https://tool.teamzlab.com/sg/hdb-affordability-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"><a href="/" class="header-logo teamz-logo" aria-label="Teamz Lab Tools Home"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Teamz Lab Tools</span></a><nav class="header-nav" aria-label="Main navigation"><a href="/" class="nav-link">Home</a><a href="/about/" class="nav-link">About</a><a href="/contact/" class="nav-link">Contact</a><div class="lang-selector notranslate" translate="no"><button class="lang-btn notranslate" id="lang-toggle" type="button" aria-label="Change language" title="Change language" translate="no"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <span id="current-lang" class="notranslate" translate="no">EN</span></button><div class="lang-dropdown notranslate" id="lang-dropdown" translate="no"></div></div><div class="fav-header-wrap"><button id="fav-header-btn" class="header-icon-btn nav-link--icon" aria-label="Favorites" title="Your Favourites"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span id="fav-badge" class="fav-badge" style="display:none;">0</span></button><div id="fav-dropdown" class="fav-dropdown" style="display:none;"></div></div><button id="theme-toggle" class="header-icon-btn nav-link--icon" aria-label="Toggle theme" title="Toggle dark/light mode"><svg id="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><svg id="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button></nav></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>HDB Affordability Calculator Singapore</h1>
+      <p class="tool-description">Estimate how much HDB flat you can afford in Singapore. Enter your gross monthly income, CPF Ordinary Account balance, loan type, and flat type to see your MSR cap, applicable grants (EHG, Family Grant, Singles Grant), maximum loan quantum, and total buying power.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="hdb-form-grid">
+        <div class="form-group">
+          <label for="hdb-income" class="form-label">Gross Monthly Income (SGD)</label>
+          <input type="number" id="hdb-income" class="form-input" placeholder="e.g. 6000" min="1" step="100">
+          <span class="form-hint">For couples, enter combined household income</span>
+        </div>
+        <div class="form-group">
+          <label for="hdb-household" class="form-label">Household Type</label>
+          <select id="hdb-household" class="form-input">
+            <option value="couple">Couple (First-timer)</option>
+            <option value="single">Single</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="hdb-cpf-oa" class="form-label">CPF OA Balance (SGD)</label>
+          <input type="number" id="hdb-cpf-oa" class="form-input" placeholder="e.g. 50000" min="0" step="1000" value="0">
+        </div>
+        <div class="form-group">
+          <label for="hdb-flat-type" class="form-label">Flat Type</label>
+          <select id="hdb-flat-type" class="form-input">
+            <option value="bto">New BTO</option>
+            <option value="resale2">Resale 2-Room</option>
+            <option value="resale3">Resale 3-Room</option>
+            <option value="resale4">Resale 4-Room</option>
+            <option value="resale5">Resale 5-Room</option>
+            <option value="ec">Executive Condo (EC)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="hdb-loan-type" class="form-label">Loan Type</label>
+          <select id="hdb-loan-type" class="form-input">
+            <option value="hdb">HDB Loan (2.6% p.a.)</option>
+            <option value="bank">Bank Loan (est. 3.5% p.a.)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="hdb-tenure" class="form-label">Loan Tenure (Years)</label>
+          <input type="number" id="hdb-tenure" class="form-input" placeholder="e.g. 25" min="5" max="30" step="1" value="25">
+          <span class="form-hint">HDB loan max 25 yrs; bank loan max 30 yrs</span>
+        </div>
+        <div class="form-group form-group--full">
+          <button id="hdb-calculate-btn" class="btn-primary" type="button">Calculate Affordability</button>
+        </div>
+      </div>
+
+      <div id="hdb-results" style="display:none;">
+        <div class="hdb-result-grid">
+          <div class="hdb-msr-bar-wrap">
+            <div class="hdb-msr-bar-label">
+              <span>MSR Usage</span>
+              <span id="hdb-msr-pct-label">0%</span>
+            </div>
+            <div class="hdb-msr-bar-track">
+              <div id="hdb-msr-bar-fill" class="hdb-msr-bar-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="hdb-result-item">
+            <div class="hdb-result-item__label">Max Monthly Payment (MSR 30%)</div>
+            <div class="hdb-result-item__value" id="hdb-res-msr-cap">—</div>
+          </div>
+          <div class="hdb-result-item">
+            <div class="hdb-result-item__label">Est. Monthly Instalment</div>
+            <div class="hdb-result-item__value" id="hdb-res-instalment">—</div>
+          </div>
+          <div class="hdb-result-item hdb-result-item--highlight">
+            <div class="hdb-result-item__label">Maximum Loan Quantum</div>
+            <div class="hdb-result-item__value" id="hdb-res-max-loan">—</div>
+          </div>
+          <div class="hdb-result-item hdb-result-item--highlight">
+            <div class="hdb-result-item__label">CPF OA Available</div>
+            <div class="hdb-result-item__value" id="hdb-res-cpf">—</div>
+          </div>
+
+          <div class="hdb-grants-breakdown">
+            <div class="hdb-grants-breakdown__title">Applicable Grants</div>
+            <div class="hdb-grants-breakdown__row" id="hdb-grant-ehg-row">
+              <span>Enhanced CPF Housing Grant (EHG)</span>
+              <span id="hdb-grant-ehg">—</span>
+            </div>
+            <div class="hdb-grants-breakdown__row" id="hdb-grant-family-row">
+              <span>Family Grant (Resale)</span>
+              <span id="hdb-grant-family">—</span>
+            </div>
+            <div class="hdb-grants-breakdown__row" id="hdb-grant-singles-row">
+              <span>CPF Housing Grant (Singles)</span>
+              <span id="hdb-grant-singles">—</span>
+            </div>
+            <div class="hdb-grants-breakdown__row" style="font-weight:700;border-top:2px solid var(--border);margin-top:4px;padding-top:6px;">
+              <span>Total Grants</span>
+              <span id="hdb-grant-total">—</span>
+            </div>
+          </div>
+
+          <div class="hdb-result-total">
+            <div class="hdb-result-total__label">Total Estimated Buying Power</div>
+            <div class="hdb-result-total__value" id="hdb-res-total">—</div>
+          </div>
+
+          <div class="hdb-notice" id="hdb-msr-notice"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Much HDB Can You Afford in Singapore?</h2>
+      <p>Buying an HDB flat in Singapore involves three funding buckets that must be added together to arrive at your maximum purchase price: your mortgage loan, your CPF Ordinary Account (OA) savings, and any housing grants you qualify for. The hard constraint on the loan side is the Mortgage Servicing Ratio (MSR), which caps your monthly instalment at 30% of your gross household income for HDB flat purchases. This is a stricter test than the broader 55% TDSR cap that applies to all debt combined.</p>
+      <p>The formula is straightforward: your maximum monthly payment is income multiplied by 0.30. Reverse-amortising that figure at the loan's interest rate over the chosen tenure gives your maximum loan quantum. Add your CPF OA balance (which can cover the down payment and reduce borrowing) and any grants you receive, and you arrive at the total flat price you can target.</p>
+      <p>HDB loans require a 20% down payment (all of which can come from CPF OA). Bank loans require at least 25% down, with a minimum 5% in cash. This means your CPF OA balance matters differently depending on which loan route you take.</p>
+
+      <div class="formula-box">
+        <h3>Key Formulas Used</h3>
+        <p class="formula">Max Monthly Payment = Gross Income x 30% (MSR cap)</p>
+        <p class="formula">Monthly Instalment = P x [r(1+r)^n] / [(1+r)^n – 1]</p>
+        <p class="formula">Max Loan = Reverse amortise Max Monthly Payment at chosen rate and tenure</p>
+        <p class="formula">Total Buying Power = Max Loan + CPF OA + All Applicable Grants</p>
+      </div>
+
+      <h2>HDB Grants Explained: EHG, Family Grant, and CPF Single Grant</h2>
+      <p>Singapore offers multiple housing grants that can significantly boost your buying power. The most valuable is the Enhanced CPF Housing Grant (EHG), which is available to first-timer families and singles buying any HDB flat — new BTO or resale. The EHG is income-tested: households earning up to SGD 1,500 per month receive the maximum SGD 80,000, and the amount scales down by SGD 5,000 for every SGD 500 increase in income, reaching SGD 5,000 for income up to SGD 9,000 and zero above that threshold.</p>
+      <p>For first-timer couples buying a resale flat, the Family Grant adds a further SGD 50,000 for 2- to 4-room flats or SGD 40,000 for 5-room and larger. If one partner is a second-timer, the Half-Housing Grant applies at SGD 25,000 or SGD 20,000 respectively (not modelled in this simplified version — the calculator assumes a pure first-timer couple).</p>
+      <p>Singles buying a resale 2- to 4-room flat with a monthly income at or below SGD 7,000 can claim the CPF Housing Grant for Singles of SGD 40,000. Note that singles are not eligible for EHG on a BTO purchase unless buying a 2-room Flexi flat; this calculator applies EHG for singles on resale transactions only.</p>
+
+      <div class="example-box">
+        <h4>Example: Couple earning SGD 6,000/month, CPF OA SGD 40,000, HDB loan, 25 years, 4-room resale</h4>
+        <ul>
+          <li>MSR cap: SGD 1,800/month</li>
+          <li>Max loan at 2.6% p.a., 25 yrs: approx. SGD 387,000</li>
+          <li>EHG (income SGD 6,000 → bracket ≤6,000): SGD 35,000</li>
+          <li>Family Grant (4-room resale, first-timer couple): SGD 50,000</li>
+          <li>Total grants: SGD 85,000</li>
+          <li>Total buying power: SGD 387,000 + 40,000 + 85,000 = SGD 512,000</li>
+        </ul>
+      </div>
+
+      <h2>HDB Loan vs Bank Loan: Which Is Right for You?</h2>
+      <p>The HDB concessionary loan at 2.6% per annum (pegged at 0.1% above the CPF OA interest rate) offers stability and simplicity. The rate does not change with market conditions, which makes financial planning predictable. It allows up to 80% Loan-to-Value (LTV), and the entire 20% down payment can come from CPF OA — meaning no cash out of pocket if your CPF balance is sufficient.</p>
+      <p>Bank loans can offer lower rates during low-rate environments, but they are typically variable or fixed only for an initial 2- to 5-year period. After the lock-in, rates can increase substantially. Bank loans cap LTV at 75%, requiring a 25% down payment, of which at least 5% must be in cash. The lower LTV means you borrow less, but the cash requirement is a real constraint for first-time buyers.</p>
+      <p>For most first-time HDB buyers, particularly those with limited cash savings, the HDB loan offers better downside protection. Consider a bank loan only if you have the cash buffer to cover the extra down payment and the discipline to refinance before the initial fixed period ends.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    // ---- Utility: standard amortisation ----
+    function calcMonthlyPayment(principal, annualRatePct, years) {
+      if (years <= 0 || principal <= 0) return 0;
+      var r = (annualRatePct / 100) / 12;
+      var n = years * 12;
+      if (r === 0) return principal / n;
+      var pow = Math.pow(1 + r, n);
+      return principal * r * pow / (pow - 1);
+    }
+
+    // ---- Utility: reverse amortisation ----
+    function calcMaxLoan(monthlyPayment, annualRatePct, years) {
+      if (years <= 0 || monthlyPayment <= 0) return 0;
+      var r = (annualRatePct / 100) / 12;
+      var n = years * 12;
+      if (r === 0) return monthlyPayment * n;
+      var pow = Math.pow(1 + r, n);
+      return monthlyPayment * (pow - 1) / (r * pow);
+    }
+
+    // ---- Format SGD ----
+    function fmtSGD(val) {
+      return 'SGD ' + Math.round(val).toLocaleString('en-SG');
+    }
+
+    // ---- EHG grant table ----
+    function getEHG(income) {
+      var table = [
+        [1500, 80000], [2000, 75000], [2500, 70000], [3000, 65000],
+        [3500, 60000], [4000, 55000], [4500, 50000], [5000, 45000],
+        [5500, 40000], [6000, 35000], [6500, 30000], [7000, 25000],
+        [7500, 20000], [8000, 15000], [8500, 10000], [9000, 5000]
+      ];
+      for (var i = 0; i < table.length; i++) {
+        if (income <= table[i][0]) return table[i][1];
+      }
+      return 0;
+    }
+
+    // ---- Main calculate ----
+    document.getElementById('hdb-calculate-btn').addEventListener('click', function () {
+      var income    = parseFloat(document.getElementById('hdb-income').value);
+      var household = document.getElementById('hdb-household').value;
+      var cpfOA     = parseFloat(document.getElementById('hdb-cpf-oa').value) || 0;
+      var flatType  = document.getElementById('hdb-flat-type').value;
+      var loanType  = document.getElementById('hdb-loan-type').value;
+      var tenure    = parseInt(document.getElementById('hdb-tenure').value, 10);
+
+      if (!income || income <= 0) {
+        if (window.showToast) window.showToast('Please enter your gross monthly income.');
+        return;
+      }
+      if (!tenure || tenure < 5 || tenure > 30) {
+        if (window.showToast) window.showToast('Please enter a valid tenure between 5 and 30 years.');
+        return;
+      }
+
+      // Cap tenure to loan-type limits
+      var maxTenure = loanType === 'hdb' ? 25 : 30;
+      if (tenure > maxTenure) tenure = maxTenure;
+
+      var interestRate = loanType === 'hdb' ? 2.6 : 3.5;
+
+      // MSR cap
+      var msrCap = income * 0.30;
+
+      // Max loan via reverse amortisation
+      var maxLoan = calcMaxLoan(msrCap, interestRate, tenure);
+
+      // Grant logic
+      var isResale = flatType !== 'bto' && flatType !== 'ec';
+      var isBTO    = flatType === 'bto';
+      var isEC     = flatType === 'ec';
+      var isCouple = household === 'couple';
+      var isSingle = household === 'single';
+
+      // EHG: first-timers buying BTO or resale (not EC)
+      var ehg = 0;
+      if (!isEC) {
+        if (isCouple) {
+          ehg = getEHG(income);
+        } else if (isSingle && isResale) {
+          // Singles eligible for EHG on resale only (simplified)
+          ehg = getEHG(income);
+        } else if (isSingle && isBTO) {
+          // Singles can buy 2-room Flexi BTO — EHG still applies
+          ehg = getEHG(income);
+        }
+      }
+
+      // Family Grant (resale only, couple first-timer)
+      var familyGrant = 0;
+      if (isResale && isCouple) {
+        if (flatType === 'resale2' || flatType === 'resale3' || flatType === 'resale4') {
+          familyGrant = 50000;
+        } else if (flatType === 'resale5') {
+          familyGrant = 40000;
+        }
+      }
+
+      // CPF Housing Grant for Singles (resale 2-4 room, income ≤7000)
+      var singlesGrant = 0;
+      if (isSingle && isResale && income <= 7000) {
+        if (flatType === 'resale2' || flatType === 'resale3' || flatType === 'resale4') {
+          singlesGrant = 40000;
+        }
+      }
+
+      var totalGrants = ehg + familyGrant + singlesGrant;
+      var totalBuyingPower = maxLoan + cpfOA + totalGrants;
+
+      // Estimated monthly instalment on max loan
+      var estInstalment = calcMonthlyPayment(maxLoan, interestRate, tenure);
+
+      // MSR usage
+      var msrUsagePct = Math.min((estInstalment / income) * 100, 100);
+      var msrOver = estInstalment > msrCap;
+
+      // Update DOM
+      document.getElementById('hdb-res-msr-cap').textContent     = fmtSGD(msrCap) + '/mo';
+      document.getElementById('hdb-res-instalment').textContent  = fmtSGD(estInstalment) + '/mo';
+      document.getElementById('hdb-res-max-loan').textContent    = fmtSGD(maxLoan);
+      document.getElementById('hdb-res-cpf').textContent         = fmtSGD(cpfOA);
+      document.getElementById('hdb-res-total').textContent       = fmtSGD(totalBuyingPower);
+
+      document.getElementById('hdb-grant-ehg').textContent    = ehg > 0 ? fmtSGD(ehg) : 'Not eligible';
+      document.getElementById('hdb-grant-family').textContent = familyGrant > 0 ? fmtSGD(familyGrant) : 'Not applicable';
+      document.getElementById('hdb-grant-singles').textContent = singlesGrant > 0 ? fmtSGD(singlesGrant) : 'Not applicable';
+      document.getElementById('hdb-grant-total').textContent  = fmtSGD(totalGrants);
+
+      var ehgRow = document.getElementById('hdb-grant-ehg-row');
+      var famRow = document.getElementById('hdb-grant-family-row');
+      var sinRow = document.getElementById('hdb-grant-singles-row');
+
+      if (ehg === 0) ehgRow.classList.add('hdb-grants-breakdown__row--nil');
+      else ehgRow.classList.remove('hdb-grants-breakdown__row--nil');
+
+      if (familyGrant === 0) famRow.classList.add('hdb-grants-breakdown__row--nil');
+      else famRow.classList.remove('hdb-grants-breakdown__row--nil');
+
+      if (singlesGrant === 0) sinRow.classList.add('hdb-grants-breakdown__row--nil');
+      else sinRow.classList.remove('hdb-grants-breakdown__row--nil');
+
+      // MSR bar
+      var barFill = document.getElementById('hdb-msr-bar-fill');
+      document.getElementById('hdb-msr-pct-label').textContent = msrUsagePct.toFixed(1) + '% of MSR cap';
+      barFill.style.width = msrUsagePct.toFixed(1) + '%';
+      if (msrOver) {
+        barFill.classList.add('hdb-msr-bar-fill--over');
+      } else {
+        barFill.classList.remove('hdb-msr-bar-fill--over');
+      }
+
+      // Notice
+      var notice = document.getElementById('hdb-msr-notice');
+      if (isEC) {
+        notice.textContent = 'ECs are not eligible for CPF Housing Grants (EHG/Family Grant). Bank loan required; LTV 75%, min 5% cash down payment.';
+      } else {
+        notice.textContent = 'This is an estimate for planning purposes only. Actual loan eligibility depends on your CPF Withdrawal Limit, age, TDSR, and HDB/bank assessment. Grant eligibility is subject to HDB approval and income verification.';
+      }
+
+      showEl(document.getElementById('hdb-results'), 'block');
+    });
+
+    // ---- Breadcrumbs, FAQs, related tools, schemas ----
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Singapore Tools', url: '/sg/' },
+      { name: 'HDB Affordability Calculator Singapore' }
+    ];
+
+    var FAQS = [
+      {
+        q: 'What is the MSR rule for HDB loans?',
+        a: 'MSR stands for Mortgage Servicing Ratio. For HDB flats, your monthly mortgage payment cannot exceed 30% of your gross monthly income. This applies to both HDB loans and bank loans used to purchase HDB flats.'
+      },
+      {
+        q: 'Can I use CPF OA for HDB down payment?',
+        a: 'Yes. Your CPF Ordinary Account balance can be used for the down payment and stamp duty on HDB purchases, subject to the Valuation Limit and Withdrawal Limit rules. CPF OA savings can cover the full down payment for an HDB loan (20%), eliminating the need for cash.'
+      },
+      {
+        q: 'What is the Enhanced CPF Housing Grant (EHG)?',
+        a: 'EHG is an income-based grant for first-timer families or singles buying BTO or resale HDB flats. The maximum EHG is $80,000 for household income up to $1,500 per month, scaling down to $5,000 for household income up to $9,000. Households earning above $9,000 per month are not eligible.'
+      },
+      {
+        q: 'What is the difference between HDB loan and bank loan for HDB flats?',
+        a: 'HDB loans have a fixed 2.6% p.a. interest rate, allow up to 80% LTV, and require a 20% down payment which can be fully paid from CPF OA. Bank loans offer potentially lower rates but are variable, require at least 25% down with a minimum 5% in cash, and carry market rate risk.'
+      },
+      {
+        q: 'How much HDB loan can I get?',
+        a: 'The maximum HDB loan is 80% of the flat purchase price or value (whichever is lower). You must also pass the MSR test (monthly payment at most 30% of gross income) and the TDSR test (all debts at most 55% of gross income). This calculator uses the MSR test to estimate the loan maximum.'
+      },
+      {
+        q: 'Are CPF Housing Grants included in the CPF Withdrawal Limit?',
+        a: 'Most CPF Housing Grants are credited to your CPF OA first, then applied towards the purchase price. They generally count towards the CPF Withdrawal Limit for the property. For new BTO flats, there is typically no Withdrawal Limit cap under current HDB rules.'
+      }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'sg/tdsr-calculator-singapore', name: 'TDSR Calculator Singapore', description: 'Check if your income and debt load pass Singapore\'s 55% TDSR cap' },
+      { slug: 'sg/cpf-retirement-calculator', name: 'CPF Retirement Calculator', description: 'Estimate your CPF retirement payout at age 55 or 65' },
+      { slug: 'au/stamp-duty-calculator', name: 'Stamp Duty Calculator Australia', description: 'Calculate stamp duty on property purchases across all Australian states' },
+      { slug: 'nz/mortgage-fix-vs-float', name: 'NZ Mortgage Fix vs Float', description: 'Compare fixed and floating rate mortgages over the full loan term' },
+      { slug: 'career/take-home-pay-estimator', name: 'Take-Home Pay Estimator', description: 'Estimate your after-tax take-home pay' },
+      { slug: 'career/take-home-pay-estimator', name: 'Take-Home Pay Estimator', description: 'Estimate how much salary you actually keep after tax and deductions' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function () {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'sg/hdb-affordability-calculator',
+        title: 'HDB Affordability Calculator Singapore',
+        description: 'Calculate how much HDB flat you can afford in Singapore. Estimates MSR cap, CPF OA usage, HDB grants, and maximum loan.'
+      });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

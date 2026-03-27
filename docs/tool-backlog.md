@@ -1,6 +1,6 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-27*
+*Last updated: 2026-03-27 (nightly build)*
 
 ---
 
@@ -74,14 +74,26 @@
 - ES Employee Cost Calculator (/es/calculadora-costo-empleado/) — Spain SS rates, native Spanish
 - PT Employee Cost Calculator (/pt/calculadora-custo-funcionario/) — Brazil CLT, native Portuguese
 
+## Completed This Nightly Build (2026-03-27 nightly)
+- SG HDB Affordability Calculator (/sg/hdb-affordability-calculator/) — MSR, EHG, Family Grant, CPF OA
+- AU Capital Gains Tax Calculator (/au/capital-gains-tax-calculator/) — 50% CGT discount, YA 2026 brackets
+- Salary Negotiation Script Generator (/career/salary-negotiation-script-generator/) — STAR method, 3 tones
+- Freelance Contract Generator (/legal/freelance-contract-generator/) — 10-section contract, 8 jurisdictions
+- Skincare Ingredient Checker (/skincare/ingredient-checker/) — 6 category database, 100+ flags
+- Skincare Product Expiry Tracker (/skincare/product-expiry-tracker/) — PAO-based, localStorage
+- SG Income Tax Calculator (/sg/singapore-income-tax-calculator/) — YA 2026, CPF relief, EIR, SRS
+- ES Salary Negotiation Generator (/es/generador-negociacion-salarial/) — native Spanish, 7 currencies
+- PT Salary Negotiation Generator (/pt/gerador-negociacao-salarial/) — native Brazilian Portuguese
+
 ## Next Build Queue (prioritized by RPM + gap analysis)
-- Singapore HDB Affordability Calculator (/sg/) — HIGH priority, SG Tier S
-- Singapore TDSR/MSR Calculator (/sg/) — HIGH
-- AU CGT Discount Calculator (/au/) — spike May-June EOFY
-- Salary Negotiation Script Generator (/career/) — high RPM career tool
-- Job Offer Comparison with Equity (/career/) — RSU/stock options comparison
-- Small Business Payroll Tax Estimator (/work/) — US $10+ RPM
-- Skincare hub expansion: ingredient checker, moisture barrier guide, product expiry tracker
+- Job Offer Comparison with Equity (/career/) — RSU/stock options comparison (US/UK tech market)
+- Small Business Payroll Tax Estimator (/work/) — US employer payroll costs $10+ RPM
+- AI Interview Answer Generator (/career/) — STAR method answer generator, high search volume
+- Skincare Moisture Barrier Guide (/skincare/) — hub expansion, fragrance-free routine generator
+- SG Stamp Duty Calculator (/sg/) — property purchase, BSD/ABSD rates
+- AU Employee True Cost Calculator (/au/) — superannuation + payroll tax + workers comp
+- UK Self-Assessment Tax Set-Aside Planner (/uk/) — 26/27 rates, payment on account
+- ES Freelance Contract Generator (/es/generador-contrato-freelance/) — multilang variant
 
 ---
 
