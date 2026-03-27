@@ -1122,6 +1122,41 @@ def update_github_blog_readme(history):
     try:
         import subprocess
 
+        repo_root = SCRIPT_DIR.parent.parent
+        excluded_hubs = {
+            "branding", "shared", "docs", "scripts", "logs", ".github",
+            "__pycache__", "icons", "fonts", "images", "assets", "node_modules"
+        }
+        hub_counts = {}
+        for hub_dir in repo_root.iterdir():
+            if not hub_dir.is_dir() or hub_dir.name.startswith(".") or hub_dir.name in excluded_hubs:
+                continue
+            tool_count = len(list(hub_dir.glob("*/index.html")))
+            if tool_count:
+                hub_counts[hub_dir.name] = tool_count
+
+        total_tools = sum(hub_counts.values())
+        live_hubs = len(hub_counts)
+        country_rows = [
+            ("🇺🇸 United States", hub_counts.get("us", 0), "tax, finance, military", "us"),
+            ("🇬🇧 United Kingdom", hub_counts.get("uk", 0), "tax, MTD, leave, childcare", "uk"),
+            ("🇩🇪 Germany", hub_counts.get("de", 0), "Brutto-Netto, Grundsteuer, Elterngeld", "de"),
+            ("🇫🇷 France", hub_counts.get("fr", 0), "APL, Prime d'activite, CROUS", "fr"),
+            ("🇯🇵 Japan", hub_counts.get("jp", 0), "Tedori, Furusato Nozei, housing loan", "jp"),
+            ("🇸🇬 Singapore", hub_counts.get("sg", 0), "TDSR, HDB, CPF, SPL", "sg"),
+            ("🇳🇿 New Zealand", hub_counts.get("nz", 0), "KiwiSaver, PAYE, mortgage", "nz"),
+            ("🇦🇪 UAE", hub_counts.get("ae", 0), "gratuity, Salik, visa fines", "ae"),
+            ("🇧🇩 Bangladesh", hub_counts.get("bd", 0), "bKash, Nagad, tax, CGPA", "bd"),
+            ("🇦🇺 Australia", hub_counts.get("au", 0), "HECS, super, MLS, CGT", "au"),
+            ("🇨🇦 Canada", hub_counts.get("ca", 0), "TFSA, RRSP, EI, CCB", "ca"),
+            ("🇮🇳 India", hub_counts.get("in", 0), "GST, EMI, PPF, SIP", "in"),
+        ]
+        country_table = "\n".join(
+            f"| {name} | {count} | {focus} | [Browse →](https://tool.teamzlab.com/{slug}/) |"
+            for name, count, focus, slug in country_rows
+            if count
+        )
+
         # Build articles table from history
         rows = []
         for post in history.get("posts", []):
@@ -1150,7 +1185,7 @@ def update_github_blog_readme(history):
 
         readme = f"""# Awesome Free Browser Tools [![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
 
-> A curated collection of **1,680+ free browser-based tools** — no signup, no downloads, 100% private. Everything runs client-side; your data never leaves your device.
+> A curated collection of **{total_tools:,} free browser-based tools** across **{live_hubs} live hubs** — no signup, no downloads, 100% private. Everything runs client-side; your data never leaves your device.
 
 **[tool.teamzlab.com](https://tool.teamzlab.com)** — Built by [Teamz Lab](https://teamzlab.com)
 
@@ -1161,6 +1196,7 @@ def update_github_blog_readme(history):
 - [Finance & Money](#finance--money)
 - [Developer Tools](#developer-tools)
 - [Health & Wellness](#health--wellness)
+- [Beauty & Skincare](#beauty--skincare)
 - [AI-Powered Tools](#ai-powered-tools)
 - [Design & Images](#design--images)
 - [Home & Housing](#home--housing)
@@ -1188,7 +1224,7 @@ def update_github_blog_readme(history):
 - [Net Worth Calculator](https://tool.teamzlab.com/evergreen/net-worth-calculator/) — Track assets minus liabilities
 - [Side Hustle Profit Calculator](https://tool.teamzlab.com/evergreen/side-hustle-profit-calculator/) — Real hourly rate after expenses
 
-**[Browse all 178+ finance tools →](https://tool.teamzlab.com/evergreen/)**
+**[Browse all {hub_counts.get("evergreen", 0)} finance tools →](https://tool.teamzlab.com/evergreen/)**
 
 ## Developer Tools
 
@@ -1202,7 +1238,7 @@ def update_github_blog_readme(history):
 - [UUID Generator](https://tool.teamzlab.com/dev/uuid-generator/) — Generate v4 UUIDs in bulk
 - [Subnet Calculator](https://tool.teamzlab.com/dev/subnet-calculator/) — CIDR, network ranges, host counts
 
-**[Browse all 71+ developer tools →](https://tool.teamzlab.com/dev/)**
+**[Browse all {hub_counts.get("dev", 0)} developer tools →](https://tool.teamzlab.com/dev/)**
 
 ## Health & Wellness
 
@@ -1215,7 +1251,17 @@ def update_github_blog_readme(history):
 - [Body Fat Calculator](https://tool.teamzlab.com/health/body-fat-calculator/) — Estimate from measurements
 - [Phone Addiction Test](https://tool.teamzlab.com/health/phone-addiction-test/) — Screen time assessment
 
-**[Browse all 93+ health tools →](https://tool.teamzlab.com/health/)**
+**[Browse all {hub_counts.get("health", 0)} health tools →](https://tool.teamzlab.com/health/)**
+
+## Beauty & Skincare
+
+- [Ingredient Checker](https://tool.teamzlab.com/skincare/ingredient-checker/) — Flag irritants, comedogenic ingredients, fragrance, and pregnancy-unsafe actives
+- [Product Expiry Tracker](https://tool.teamzlab.com/skincare/product-expiry-tracker/) — Track PAO dates and know what to use up first
+- [SPF Calculator](https://tool.teamzlab.com/skincare/spf-calculator/) — Estimate the SPF level you need by skin tone and UV exposure
+- [Sunscreen Reapply Timer](https://tool.teamzlab.com/skincare/sunscreen-reapply-timer/) — Time your next sunscreen reapplication by activity
+- [Skin Type Quiz](https://tool.teamzlab.com/skincare/skin-type-quiz/) — Get a simple skincare starting point based on your skin profile
+
+**[Browse all {hub_counts.get("skincare", 0)} skincare tools →](https://tool.teamzlab.com/skincare/)**
 
 ## AI-Powered Tools
 
@@ -1254,9 +1300,10 @@ def update_github_blog_readme(history):
 - [ATS Resume Checker](https://tool.teamzlab.com/career/ats-resume-checker/) — Check if your resume passes ATS filters
 - [Resume Keyword Scanner](https://tool.teamzlab.com/career/resume-keyword-scanner/) — Match resume keywords to job descriptions
 - [LinkedIn Summary Generator](https://tool.teamzlab.com/career/linkedin-summary-generator/) — Professional LinkedIn About section
+- [Salary Negotiation Script Generator](https://tool.teamzlab.com/career/salary-negotiation-script-generator/) — Generate negotiation scripts in multiple tones and currencies
 - [Offer Comparison Calculator](https://tool.teamzlab.com/career/offer-comparison-calculator/) — Compare job offers with total compensation
 
-**[Browse all career tools →](https://tool.teamzlab.com/career/)**
+**[Browse all {hub_counts.get("career", 0)} career tools →](https://tool.teamzlab.com/career/)**
 
 ## Math & Science
 
@@ -1265,7 +1312,7 @@ def update_github_blog_readme(history):
 - [Matrix Calculator](https://tool.teamzlab.com/math/matrix-calculator/) — Operations up to 10x10 matrices
 - [Standard Deviation Calculator](https://tool.teamzlab.com/math/standard-deviation-calculator/) — Mean, median, variance
 
-**[Browse all 29+ math tools →](https://tool.teamzlab.com/math/)**
+**[Browse all {hub_counts.get("math", 0)} math tools →](https://tool.teamzlab.com/math/)**
 
 ## Gaming
 
@@ -1274,7 +1321,7 @@ def update_github_blog_readme(history):
 - [DPI Calculator](https://tool.teamzlab.com/gaming/dpi-calculator/) — Effective DPI and sensitivity converter
 - [PC Bottleneck Calculator](https://tool.teamzlab.com/gaming/pc-bottleneck-calculator/) — CPU vs GPU bottleneck analysis
 
-**[Browse all gaming tools →](https://tool.teamzlab.com/gaming/)**
+**[Browse all {hub_counts.get("gaming", 0)} gaming tools →](https://tool.teamzlab.com/gaming/)**
 
 ## Privacy & Security
 
@@ -1283,7 +1330,7 @@ def update_github_blog_readme(history):
 - [Browser Fingerprint Checker](https://tool.teamzlab.com/diagnostic/browser-fingerprint-checker/) — See how trackable you are
 - [WebRTC Leak Checker](https://tool.teamzlab.com/diagnostic/webrtc-leak-checker/) — Detect IP leaks through WebRTC
 
-**[Browse all 30+ diagnostic tools →](https://tool.teamzlab.com/diagnostic/)**
+**[Browse all {hub_counts.get("diagnostic", 0)} diagnostic tools →](https://tool.teamzlab.com/diagnostic/)**
 
 ## Food & Drink
 
@@ -1307,16 +1354,7 @@ def update_github_blog_readme(history):
 
 | Country | Tools | Link |
 |---------|-------|------|
-| \\U0001f1fa\\U0001f1f8 United States | 80+ tax, finance, military | [Browse →](https://tool.teamzlab.com/us/) |
-| \\U0001f1ec\\U0001f1e7 United Kingdom | Tax, pension, NHS tools | [Browse →](https://tool.teamzlab.com/uk/) |
-| \\U0001f1e9\\U0001f1ea Germany | Brutto-Netto, Elterngeld, KFZ | [Browse →](https://tool.teamzlab.com/de/) |
-| \\U0001f1eb\\U0001f1f7 France | APL, Prime d'activite, CROUS | [Browse →](https://tool.teamzlab.com/fr/) |
-| \\U0001f1ef\\U0001f1f5 Japan | Tedori, Furusato Nozei, Housing Loan | [Browse →](https://tool.teamzlab.com/jp/) |
-| \\U0001f1e6\\U0001f1ea UAE | Gratuity, Salik, Visa fines | [Browse →](https://tool.teamzlab.com/ae/) |
-| \\U0001f1e7\\U0001f1e9 Bangladesh | bKash, Nagad, Tax, CGPA | [Browse →](https://tool.teamzlab.com/bd/) |
-| \\U0001f1e6\\U0001f1fa Australia | HECS, Super, PR Points | [Browse →](https://tool.teamzlab.com/au/) |
-| \\U0001f1e8\\U0001f1e6 Canada | TFSA, RRSP, EI, CCB | [Browse →](https://tool.teamzlab.com/ca/) |
-| \\U0001f1ee\\U0001f1f3 India | GST, EMI, PPF, SIP | [Browse →](https://tool.teamzlab.com/in/) |
+{country_table}
 
 ---
 
@@ -1332,7 +1370,7 @@ def update_github_blog_readme(history):
 
 ## Full Tool Index
 
-**[View all 1,680+ tools organized by category → TOOLS.md](TOOLS.md)**
+**[View all {total_tools:,} tools organized by category → TOOLS.md](TOOLS.md)**
 
 Every tool with a direct link — searchable, browsable, and all dofollow.
 
