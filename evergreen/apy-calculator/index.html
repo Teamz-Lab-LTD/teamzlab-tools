@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APY Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate annual percentage yield on savings, CDs, and money market accounts. Convert APR to APY instantly. Free, private calculator.">
+  <meta property="og:title" content="APY Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate APY on savings and CDs. Convert APR to APY and compare rates side by side. Free calculator.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/apy-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="APY Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate APY on savings and CDs. Convert APR to APY and compare rates side by side. Free calculator.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/apy-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .apy-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .apy-tab { padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 600; font-size: var(--text-sm); transition: all 0.2s; }
+    .apy-tab:hover { border-color: var(--heading); }
+    .apy-tab.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .apy-mode { display: none; }
+    .apy-mode.active { display: block; }
+    .apy-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .apy-form label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: var(--text-sm); color: var(--text); }
+    .apy-form input, .apy-form select { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-base); }
+    .apy-form input:focus, .apy-form select:focus { outline: none; border-color: var(--heading); }
+    .apy-form .full-width { grid-column: 1 / -1; }
+    .apy-btn { padding: 12px 28px; border: none; border-radius: 8px; background: var(--heading); color: var(--bg); font-weight: 700; font-size: var(--text-base); cursor: pointer; transition: opacity 0.2s; }
+    .apy-btn:hover { opacity: 0.85; }
+    .apy-result { display: none; margin-top: 24px; border-top: 2px solid var(--border); padding-top: 20px; }
+    .apy-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .apy-result-card { padding: 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); }
+    .apy-result-card .label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 4px; }
+    .apy-result-card .value { font-size: clamp(20px, 4vw, 28px); font-weight: 700; color: var(--heading); }
+    .apy-result-card.highlight { border-color: var(--heading); }
+    .apy-summary { padding: 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); font-size: var(--text-sm); color: var(--text); line-height: 1.6; }
+    .apy-table-wrap { overflow-x: auto; margin-top: 16px; }
+    .apy-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .apy-table th, .apy-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    .apy-table th { font-weight: 700; color: var(--heading); background: var(--surface); }
+    .apy-table td { color: var(--text); }
+    .apy-table tr:hover td { background: var(--surface); }
+    .apy-table .best { font-weight: 700; color: var(--heading); }
+    .compare-account { padding: 20px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 16px; }
+    .compare-account h3 { margin: 0 0 12px; font-size: var(--text-base); color: var(--heading); }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .compare-grid label { display: flex; flex-direction: column; gap: 4px; font-size: var(--text-sm); color: var(--text); font-weight: 600; }
+    .compare-grid input, .compare-grid select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: var(--text-sm); }
+    .compare-grid input:focus, .compare-grid select:focus { outline: none; border-color: var(--heading); }
+    .compare-results-table { margin-top: 20px; }
+    .compare-winner { padding: 12px 16px; border-radius: 8px; background: var(--surface); border: 1px solid var(--heading); margin-top: 16px; font-weight: 600; color: var(--heading); text-align: center; }
+    .formula-box { padding: 16px 20px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); margin: 16px 0; }
+    .formula-box h3 { margin: 0 0 8px; font-size: var(--text-base); color: var(--heading); }
+    .formula-box .formula { font-family: monospace; font-size: var(--text-base); color: var(--heading); margin: 0; }
+    .formula-box p:last-child { margin: 8px 0 0; font-size: var(--text-sm); color: var(--text-muted); }
+    @media (max-width: 600px) {
+      .apy-tabs { flex-direction: column; }
+      .apy-tab { text-align: center; }
+      .apy-form { grid-template-columns: 1fr; }
+      .apy-result-grid { grid-template-columns: 1fr; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .apy-table th, .apy-table td { padding: 8px 10px; font-size: 13px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "APY Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is APY and how is it different from APR?", "acceptedAnswer": {"@type": "Answer", "text": "APY (Annual Percentage Yield) is the effective annual return accounting for compound interest. APR (Annual Percentage Rate) is the base interest rate without compounding. APY is always equal to or higher than APR because it includes the compounding effect."}}, {"@type": "Question", "name": "How does compounding frequency affect APY?", "acceptedAnswer": {"@type": "Answer", "text": "More frequent compounding produces a higher APY. Daily compounding yields slightly more than monthly, which yields more than quarterly or annual compounding. The difference grows with higher interest rates."}}, {"@type": "Question", "name": "What is a good APY for a savings account?", "acceptedAnswer": {"@type": "Answer", "text": "As of 2026, competitive high-yield savings accounts offer APYs between 4.00% and 5.25%. Online banks typically offer higher rates than traditional banks due to lower overhead costs."}}, {"@type": "Question", "name": "Why do banks advertise APY instead of APR?", "acceptedAnswer": {"@type": "Answer", "text": "Banks are required by the Truth in Savings Act to disclose APY on deposit accounts so consumers can make accurate comparisons. APY reflects actual earnings including compounding, making it a fairer comparison metric."}}, {"@type": "Question", "name": "How much will I earn with 5% APY on $10,000?", "acceptedAnswer": {"@type": "Answer", "text": "With 5% APY on a $10,000 deposit, you would earn $500 in the first year, bringing your total to $10,500. After 5 years with no additional deposits, you would have approximately $12,762.82."}}, {"@type": "Question", "name": "Does APY include fees?", "acceptedAnswer": {"@type": "Answer", "text": "No, APY only reflects the interest earned through compounding. It does not account for account fees, minimum balance requirements, or penalties. Always check the full fee schedule alongside the advertised APY."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "APY Calculator", "description": "Calculate annual percentage yield on savings, CDs, and money market accounts.", "url": "https://tool.teamzlab.com/evergreen/apy-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>APY Calculator</h1>
+      <p class="tool-description">Calculate annual percentage yield on savings accounts, CDs, and money market accounts. Convert APR to APY, see how compounding frequency affects your earnings, and compare rates side by side.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="apy-tabs">
+        <button class="apy-tab active" data-mode="calculate" id="tab-calculate">Calculate APY</button>
+        <button class="apy-tab" data-mode="convert" id="tab-convert">APR to APY Converter</button>
+        <button class="apy-tab" data-mode="compare" id="tab-compare">Compare Rates</button>
+      </div>
+
+      <!-- Mode 1: Calculate APY -->
+      <div class="apy-mode active" id="mode-calculate">
+        <div class="apy-form">
+          <label>Nominal Interest Rate (APR %)
+            <input type="number" id="calc-apr" placeholder="e.g. 5.0" min="0" max="100" step="0.01">
+          </label>
+          <label>Compounding Frequency
+            <select id="calc-compound">
+              <option value="365">Daily (365x/year)</option>
+              <option value="12" selected>Monthly (12x/year)</option>
+              <option value="4">Quarterly (4x/year)</option>
+              <option value="2">Semi-annually (2x/year)</option>
+              <option value="1">Annually (1x/year)</option>
+            </select>
+          </label>
+          <label>Deposit Amount ($) <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(optional — to show earnings)</span>
+            <input type="number" id="calc-deposit" placeholder="e.g. 10000" min="0" step="100">
+          </label>
+          <div class="full-width">
+            <button class="apy-btn" id="calc-btn">Calculate APY</button>
+          </div>
+        </div>
+        <div class="apy-result" id="calc-result">
+          <div class="apy-result-grid" id="calc-result-grid"></div>
+          <div class="apy-summary" id="calc-summary"></div>
+        </div>
+      </div>
+
+      <!-- Mode 2: APR to APY Converter -->
+      <div class="apy-mode" id="mode-convert">
+        <div class="apy-form">
+          <label class="full-width">Enter APR (%)
+            <input type="number" id="convert-apr" placeholder="e.g. 5.0" min="0" max="100" step="0.01">
+          </label>
+          <div class="full-width">
+            <button class="apy-btn" id="convert-btn">Convert to APY</button>
+          </div>
+        </div>
+        <div class="apy-result" id="convert-result">
+          <div class="apy-table-wrap">
+            <table class="apy-table" id="convert-table">
+              <thead>
+                <tr>
+                  <th>Compounding Frequency</th>
+                  <th>APY</th>
+                  <th>Extra Earned on $10,000</th>
+                </tr>
+              </thead>
+              <tbody id="convert-tbody"></tbody>
+            </table>
+          </div>
+          <div class="apy-summary" id="convert-summary"></div>
+        </div>
+      </div>
+
+      <!-- Mode 3: Compare Rates -->
+      <div class="apy-mode" id="mode-compare">
+        <div id="compare-accounts">
+          <div class="compare-account" data-index="0">
+            <h3>Account 1</h3>
+            <div class="compare-grid">
+              <label>Account Name
+                <input type="text" id="cmp-name-0" placeholder="e.g. Ally Savings" maxlength="30">
+              </label>
+              <label>APR (%)
+                <input type="number" id="cmp-apr-0" placeholder="e.g. 4.5" min="0" max="100" step="0.01">
+              </label>
+              <label>Compounding
+                <select id="cmp-compound-0">
+                  <option value="365">Daily</option>
+                  <option value="12" selected>Monthly</option>
+                  <option value="4">Quarterly</option>
+                  <option value="2">Semi-annually</option>
+                  <option value="1">Annually</option>
+                </select>
+              </label>
+              <label>Deposit ($)
+                <input type="number" id="cmp-deposit-0" placeholder="e.g. 10000" min="0" step="100">
+              </label>
+            </div>
+          </div>
+          <div class="compare-account" data-index="1">
+            <h3>Account 2</h3>
+            <div class="compare-grid">
+              <label>Account Name
+                <input type="text" id="cmp-name-1" placeholder="e.g. Marcus Savings" maxlength="30">
+              </label>
+              <label>APR (%)
+                <input type="number" id="cmp-apr-1" placeholder="e.g. 4.25" min="0" max="100" step="0.01">
+              </label>
+              <label>Compounding
+                <select id="cmp-compound-1">
+                  <option value="365">Daily</option>
+                  <option value="12" selected>Monthly</option>
+                  <option value="4">Quarterly</option>
+                  <option value="2">Semi-annually</option>
+                  <option value="1">Annually</option>
+                </select>
+              </label>
+              <label>Deposit ($)
+                <input type="number" id="cmp-deposit-1" placeholder="e.g. 10000" min="0" step="100">
+              </label>
+            </div>
+          </div>
+          <div class="compare-account" data-index="2">
+            <h3>Account 3</h3>
+            <div class="compare-grid">
+              <label>Account Name
+                <input type="text" id="cmp-name-2" placeholder="e.g. Discover Savings" maxlength="30">
+              </label>
+              <label>APR (%)
+                <input type="number" id="cmp-apr-2" placeholder="e.g. 4.0" min="0" max="100" step="0.01">
+              </label>
+              <label>Compounding
+                <select id="cmp-compound-2">
+                  <option value="365">Daily</option>
+                  <option value="12" selected>Monthly</option>
+                  <option value="4">Quarterly</option>
+                  <option value="2">Semi-annually</option>
+                  <option value="1">Annually</option>
+                </select>
+              </label>
+              <label>Deposit ($)
+                <input type="number" id="cmp-deposit-2" placeholder="e.g. 10000" min="0" step="100">
+              </label>
+            </div>
+          </div>
+        </div>
+        <button class="apy-btn" id="compare-btn">Compare Accounts</button>
+        <div class="apy-result" id="compare-result">
+          <div class="apy-table-wrap compare-results-table">
+            <table class="apy-table" id="compare-table">
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>APR</th>
+                  <th>APY</th>
+                  <th>1-Year Earnings</th>
+                  <th>5-Year Earnings</th>
+                </tr>
+              </thead>
+              <tbody id="compare-tbody"></tbody>
+            </table>
+          </div>
+          <div class="compare-winner" id="compare-winner"></div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How APY Works</h2>
+      <p>Annual Percentage Yield (APY) represents the real rate of return you earn on a deposit over one year, accounting for the effect of compound interest. Unlike a simple interest rate, APY factors in how often interest is compounded, giving you an accurate picture of your actual earnings. Banks and credit unions are required by the Truth in Savings Act to disclose APY so consumers can make fair comparisons between accounts. The formula is straightforward: APY = (1 + r/n)^n - 1, where r is the nominal annual rate (APR) and n is the number of compounding periods per year. A savings account with a 5% APR compounded daily yields an APY of approximately 5.13%, meaning you earn slightly more than the stated rate thanks to daily compounding.</p>
+      <div class="formula-box">
+        <h3>APY Formula</h3>
+        <p class="formula">APY = (1 + r/n)<sup>n</sup> &minus; 1</p>
+        <p>Where: r = nominal annual interest rate (APR as decimal), n = number of compounding periods per year</p>
+      </div>
+
+      <h2>APY vs APR Explained</h2>
+      <p>APR (Annual Percentage Rate) is the base interest rate without compounding. APY is the effective annual rate after compounding is applied. The difference between them grows as the compounding frequency increases and as the base rate rises. For a 5% APR compounded monthly, the APY is 5.12%. Compounded daily, it becomes 5.13%. At lower rates the difference is negligible, but at higher rates the gap widens significantly. For example, a 12% APR compounded daily yields an APY of 12.75%, a difference of 0.75 percentage points. When comparing savings accounts, always use APY since it reflects what you will actually earn. When evaluating loans, the APR is typically quoted, and the effective cost may be higher once compounding is included.</p>
+
+      <h2>How Compounding Frequency Affects Your Earnings</h2>
+      <p>Compounding frequency determines how often earned interest is added to your balance and begins earning interest itself. Daily compounding adds interest every day, monthly compounding adds it once a month, and annual compounding adds it once a year. More frequent compounding means your interest starts earning interest sooner, resulting in a higher effective yield. On a $10,000 deposit at 5% APR, daily compounding earns $512.67 in the first year compared to $500.00 with annual compounding, a difference of $12.67. Over five years the gap grows to about $65 on the same deposit. Most online savings accounts and CDs compound daily, while some traditional banks compound monthly or quarterly. When comparing accounts, the APY already accounts for compounding frequency, making it the most reliable metric for comparison.</p>
+
+      <h2>What Is a Good APY for Savings in 2026?</h2>
+      <p>As of 2026, competitive high-yield savings accounts offer APYs between 4.00% and 5.25%, depending on the institution and current Federal Reserve interest rate environment. Online banks typically offer higher APYs than traditional brick-and-mortar banks because they have lower overhead costs. CDs generally offer slightly higher rates for locking your money in for a fixed term, with 12-month CDs ranging from 4.25% to 5.50%. Money market accounts fall somewhere between savings and CDs, offering competitive rates with more flexible access. To maximize your returns, compare APYs across multiple institutions, consider CDs for money you will not need short-term, and watch for promotional rates that may decrease after an introductory period.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    function calcAPY(apr, n) {
+      if (apr <= 0 || n <= 0) return 0;
+      var r = apr / 100;
+      return Math.pow(1 + r / n, n) - 1;
+    }
+
+    function fmtPct(val) {
+      return (val * 100).toFixed(4) + '%';
+    }
+
+    function fmtMoney(val) {
+      return '$' + val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function compoundLabel(n) {
+      if (n == 365) return 'Daily';
+      if (n == 12) return 'Monthly';
+      if (n == 4) return 'Quarterly';
+      if (n == 2) return 'Semi-annually';
+      if (n == 1) return 'Annually';
+      return n + 'x/year';
+    }
+
+    // Tab switching
+    var tabs = document.querySelectorAll('.apy-tab');
+    var modes = document.querySelectorAll('.apy-mode');
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        modes.forEach(function(m) { m.classList.remove('active'); });
+        tab.classList.add('active');
+        var target = document.getElementById('mode-' + tab.getAttribute('data-mode'));
+        if (target) target.classList.add('active');
+      });
+    });
+
+    // Mode 1: Calculate APY
+    document.getElementById('calc-btn').addEventListener('click', function() {
+      var apr = parseFloat(document.getElementById('calc-apr').value);
+      var n = parseInt(document.getElementById('calc-compound').value);
+      var deposit = parseFloat(document.getElementById('calc-deposit').value) || 0;
+
+      if (isNaN(apr) || apr <= 0) {
+        if (window.showToast) window.showToast('Please enter a valid APR.');
+        return;
+      }
+
+      var apy = calcAPY(apr, n);
+      var resultGrid = document.getElementById('calc-result-grid');
+      var summary = document.getElementById('calc-summary');
+      var resultEl = document.getElementById('calc-result');
+
+      var cards = [
+        { label: 'APY (Annual Percentage Yield)', value: fmtPct(apy), highlight: true },
+        { label: 'APR (Nominal Rate)', value: apr.toFixed(2) + '%' },
+        { label: 'Compounding', value: compoundLabel(n) },
+        { label: 'APY - APR Difference', value: '+' + ((apy * 100) - apr).toFixed(4) + '%' }
+      ];
+
+      if (deposit > 0) {
+        var dailyEarn = deposit * apy / 365;
+        var monthlyEarn = deposit * apy / 12;
+        var yearlyEarn = deposit * apy;
+        cards.push({ label: 'Daily Earnings', value: fmtMoney(dailyEarn) });
+        cards.push({ label: 'Monthly Earnings', value: fmtMoney(monthlyEarn) });
+        cards.push({ label: 'Yearly Earnings', value: fmtMoney(yearlyEarn), highlight: true });
+        cards.push({ label: 'Balance After 1 Year', value: fmtMoney(deposit + yearlyEarn) });
+      }
+
+      var html = '';
+      cards.forEach(function(c) {
+        html += '<div class="apy-result-card' + (c.highlight ? ' highlight' : '') + '">';
+        html += '<div class="label">' + c.label + '</div>';
+        html += '<div class="value">' + c.value + '</div>';
+        html += '</div>';
+      });
+      resultGrid.innerHTML = html;
+
+      var summaryText = 'A ' + apr.toFixed(2) + '% APR compounded ' + compoundLabel(n).toLowerCase() + ' gives you an APY of ' + fmtPct(apy) + '.';
+      if (deposit > 0) {
+        summaryText += ' On a ' + fmtMoney(deposit) + ' deposit, you would earn ' + fmtMoney(deposit * apy) + ' in the first year.';
+      }
+      summaryText += ' The compounding effect adds ' + ((apy * 100) - apr).toFixed(4) + ' percentage points above the nominal rate.';
+      summary.textContent = summaryText;
+
+      if (window.showEl) window.showEl(resultEl);
+      else resultEl.style.display = 'block';
+    });
+
+    // Mode 2: APR to APY Converter
+    document.getElementById('convert-btn').addEventListener('click', function() {
+      var apr = parseFloat(document.getElementById('convert-apr').value);
+      if (isNaN(apr) || apr <= 0) {
+        if (window.showToast) window.showToast('Please enter a valid APR.');
+        return;
+      }
+
+      var frequencies = [
+        { n: 365, label: 'Daily (365x/year)' },
+        { n: 12, label: 'Monthly (12x/year)' },
+        { n: 4, label: 'Quarterly (4x/year)' },
+        { n: 2, label: 'Semi-annually (2x/year)' },
+        { n: 1, label: 'Annually (1x/year)' }
+      ];
+
+      var tbody = document.getElementById('convert-tbody');
+      var baseEarnings = 10000 * (apr / 100);
+      var bestApy = 0;
+      var bestLabel = '';
+      var worstApy = Infinity;
+      var worstLabel = '';
+
+      var rows = '';
+      frequencies.forEach(function(f) {
+        var apy = calcAPY(apr, f.n);
+        var earnings = 10000 * apy;
+        var extra = earnings - baseEarnings;
+        if (apy > bestApy) { bestApy = apy; bestLabel = f.label; }
+        if (apy < worstApy) { worstApy = apy; worstLabel = f.label; }
+        var isBest = f.n === 365;
+        rows += '<tr>';
+        rows += '<td>' + f.label + '</td>';
+        rows += '<td class="' + (isBest ? 'best' : '') + '">' + fmtPct(apy) + '</td>';
+        rows += '<td class="' + (isBest ? 'best' : '') + '">' + (extra > 0 ? '+' : '') + fmtMoney(extra) + '</td>';
+        rows += '</tr>';
+      });
+      tbody.innerHTML = rows;
+
+      var diff = (bestApy - worstApy) * 10000;
+      var summaryEl = document.getElementById('convert-summary');
+      summaryEl.textContent = 'At ' + apr.toFixed(2) + '% APR, daily compounding earns ' + fmtMoney(diff) + ' more per year on $10,000 compared to annual compounding. The APY ranges from ' + fmtPct(worstApy) + ' (annual) to ' + fmtPct(bestApy) + ' (daily).';
+
+      var resultEl = document.getElementById('convert-result');
+      if (window.showEl) window.showEl(resultEl);
+      else resultEl.style.display = 'block';
+    });
+
+    // Mode 3: Compare Rates
+    document.getElementById('compare-btn').addEventListener('click', function() {
+      var accounts = [];
+      for (var i = 0; i < 3; i++) {
+        var name = document.getElementById('cmp-name-' + i).value.trim() || ('Account ' + (i + 1));
+        var apr = parseFloat(document.getElementById('cmp-apr-' + i).value);
+        var n = parseInt(document.getElementById('cmp-compound-' + i).value);
+        var deposit = parseFloat(document.getElementById('cmp-deposit-' + i).value) || 0;
+        if (!isNaN(apr) && apr > 0 && deposit > 0) {
+          var apy = calcAPY(apr, n);
+          var earn1 = deposit * apy;
+          var earn5 = deposit * (Math.pow(1 + apr / 100 / n, n * 5) - 1);
+          accounts.push({ name: name, apr: apr, n: n, deposit: deposit, apy: apy, earn1: earn1, earn5: earn5 });
+        }
+      }
+
+      if (accounts.length < 2) {
+        if (window.showToast) window.showToast('Please fill in at least 2 accounts with APR and deposit amount.');
+        return;
+      }
+
+      var best1 = accounts.reduce(function(a, b) { return a.earn1 > b.earn1 ? a : b; });
+      var tbody = document.getElementById('compare-tbody');
+      var rows = '';
+      accounts.forEach(function(acc) {
+        var isBest = acc === best1;
+        rows += '<tr>';
+        rows += '<td class="' + (isBest ? 'best' : '') + '">' + acc.name + '</td>';
+        rows += '<td>' + acc.apr.toFixed(2) + '%</td>';
+        rows += '<td class="' + (isBest ? 'best' : '') + '">' + fmtPct(acc.apy) + '</td>';
+        rows += '<td class="' + (isBest ? 'best' : '') + '">' + fmtMoney(acc.earn1) + '</td>';
+        rows += '<td class="' + (isBest ? 'best' : '') + '">' + fmtMoney(acc.earn5) + '</td>';
+        rows += '</tr>';
+      });
+      tbody.innerHTML = rows;
+
+      var worst1 = accounts.reduce(function(a, b) { return a.earn1 < b.earn1 ? a : b; });
+      var winnerEl = document.getElementById('compare-winner');
+      var diff = best1.earn1 - worst1.earn1;
+      winnerEl.textContent = best1.name + ' wins with ' + fmtPct(best1.apy) + ' APY, earning ' + fmtMoney(diff) + ' more per year than ' + worst1.name + '.';
+
+      var resultEl = document.getElementById('compare-result');
+      if (window.showEl) window.showEl(resultEl);
+      else resultEl.style.display = 'block';
+    });
+
+    // Breadcrumbs, FAQs, Related Tools, Schemas
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'APY Calculator' }
+    ];
+
+    var TOOL_CONFIG = {
+      slug: 'evergreen/apy-calculator',
+      title: 'APY Calculator',
+      description: 'Calculate annual percentage yield on savings, CDs, and money market accounts.'
+    };
+
+    var FAQS = [
+      { q: 'What is APY and how is it different from APR?', a: 'APY (Annual Percentage Yield) is the effective annual return accounting for compound interest. APR (Annual Percentage Rate) is the base interest rate without compounding. APY is always equal to or higher than APR because it includes the compounding effect.' },
+      { q: 'How does compounding frequency affect APY?', a: 'More frequent compounding produces a higher APY. Daily compounding yields slightly more than monthly, which yields more than quarterly or annual compounding. The difference grows with higher interest rates.' },
+      { q: 'What is a good APY for a savings account?', a: 'As of 2026, competitive high-yield savings accounts offer APYs between 4.00% and 5.25%. Online banks typically offer higher rates than traditional banks due to lower overhead costs.' },
+      { q: 'Why do banks advertise APY instead of APR?', a: 'Banks are required by the Truth in Savings Act to disclose APY on deposit accounts so consumers can make accurate comparisons. APY reflects actual earnings including compounding, making it a fairer comparison metric.' },
+      { q: 'How much will I earn with 5% APY on $10,000?', a: 'With 5% APY on a $10,000 deposit, you would earn $500 in the first year, bringing your total to $10,500. After 5 years with no additional deposits, you would have approximately $12,762.82.' },
+      { q: 'Does APY include fees?', a: 'No, APY only reflects the interest earned through compounding. It does not account for account fees, minimum balance requirements, or penalties. Always check the full fee schedule alongside the advertised APY.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/cd-calculator', name: 'CD Calculator', description: 'Calculate certificate of deposit earnings with custom APY and term.' },
+      { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'Calculate compound interest on any investment with custom rates.' },
+      { slug: 'evergreen/cd-ladder-calculator', name: 'CD Ladder Calculator', description: 'Build a CD laddering strategy for optimal returns.' },
+      { slug: 'evergreen/savings-calculator', name: 'Savings Calculator', description: 'Plan your savings growth with regular deposits and interest.' },
+      { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal Calculator', description: 'Calculate how long to reach your savings target.' },
+      { slug: 'evergreen/bond-yield-calculator', name: 'Bond Yield Calculator', description: 'Calculate bond yield to maturity and current yield.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema(TOOL_CONFIG);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

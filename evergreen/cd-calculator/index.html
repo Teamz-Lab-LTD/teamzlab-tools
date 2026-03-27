@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CD Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate certificate of deposit earnings with custom APY, term, and compounding. Compare CDs side-by-side. Free, private, no signup.">
+  <meta property="og:title" content="CD Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate certificate of deposit earnings with custom APY, term, and compounding. Compare CDs side-by-side. Free, private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/cd-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="CD Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate certificate of deposit earnings with custom APY, term, and compounding. Compare CDs side-by-side. Free, private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/cd-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .cd-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .cd-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cd-form-group label {
+      font-weight: 600;
+      font-size: var(--text-sm);
+      color: var(--heading);
+    }
+    .cd-form-group input,
+    .cd-form-group select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+    }
+    .cd-form-group input:focus,
+    .cd-form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .cd-form-full {
+      grid-column: 1 / -1;
+    }
+    .cd-custom-term-wrap {
+      display: none;
+    }
+    .cd-btn-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .cd-btn-row button {
+      flex: 1;
+    }
+    .cd-results {
+      display: none;
+    }
+    .cd-summary-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .cd-summary-card {
+      text-align: center;
+      padding: 20px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .cd-summary-card .cd-card-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .cd-summary-card .cd-card-value {
+      font-size: clamp(20px, 3vw, 28px);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    .cd-chart-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 24px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .cd-chart-wrap canvas {
+      max-width: 200px;
+      max-height: 200px;
+    }
+    .cd-chart-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .cd-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--text-sm);
+    }
+    .cd-legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cd-legend-label {
+      color: var(--text-muted);
+    }
+    .cd-legend-value {
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .cd-growth-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: var(--text-sm);
+    }
+    .cd-growth-table th,
+    .cd-growth-table td {
+      padding: 10px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    .cd-growth-table th {
+      text-align: right;
+      font-weight: 600;
+      color: var(--heading);
+      background: var(--surface);
+    }
+    .cd-growth-table th:first-child,
+    .cd-growth-table td:first-child {
+      text-align: left;
+    }
+    .cd-growth-table tr:hover td {
+      background: var(--surface);
+    }
+    .cd-section-title {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 16px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Comparison mode */
+    .cd-compare-section {
+      display: none;
+      margin-top: 24px;
+    }
+    .cd-compare-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cd-compare-header h3 {
+      font-size: var(--text-lg);
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    .cd-compare-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .cd-compare-slot {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: var(--surface);
+    }
+    .cd-compare-slot h4 {
+      font-size: var(--text-base);
+      color: var(--heading);
+      margin-bottom: 12px;
+      line-height: 1.3;
+    }
+    .cd-compare-slot .cd-form-group {
+      margin-bottom: 10px;
+    }
+    .cd-compare-results {
+      display: none;
+    }
+    .cd-compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .cd-compare-table th,
+    .cd-compare-table td {
+      padding: 10px 12px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    .cd-compare-table th {
+      font-weight: 600;
+      color: var(--heading);
+      background: var(--surface);
+    }
+    .cd-compare-table th:first-child,
+    .cd-compare-table td:first-child {
+      text-align: left;
+    }
+    .cd-compare-best {
+      font-weight: 700;
+      color: var(--heading);
+    }
+
+    /* Early withdrawal */
+    .cd-penalty-section {
+      display: none;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .cd-penalty-result {
+      display: none;
+      margin-top: 16px;
+    }
+    .cd-penalty-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .cd-penalty-card {
+      text-align: center;
+      padding: 16px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .cd-penalty-card .cd-card-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .cd-penalty-card .cd-card-value {
+      font-size: clamp(18px, 2.5vw, 24px);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+
+    /* Toggle switch */
+    .cd-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .cd-toggle-label {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--heading);
+      cursor: pointer;
+    }
+    .cd-toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      cursor: pointer;
+    }
+    .cd-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .cd-toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: background 0.2s;
+    }
+    .cd-toggle-slider::before {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      background: var(--bg);
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .cd-toggle input:checked + .cd-toggle-slider {
+      background: var(--accent);
+    }
+    .cd-toggle input:checked + .cd-toggle-slider::before {
+      transform: translateX(20px);
+      background: var(--accent-text);
+    }
+    .cd-table-scroll {
+      overflow-x: auto;
+    }
+
+    @media (max-width: 600px) {
+      .cd-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .cd-summary-cards {
+        grid-template-columns: 1fr;
+      }
+      .cd-chart-wrap {
+        flex-direction: column;
+      }
+      .cd-compare-slots {
+        grid-template-columns: 1fr;
+      }
+      .cd-penalty-cards {
+        grid-template-columns: 1fr;
+      }
+      .cd-btn-row {
+        flex-direction: column;
+      }
+      .cd-btn-row button {
+        width: 100%;
+      }
+      .tool-calculator h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Evergreen Tools", "item": "https://tool.teamzlab.com/evergreen/"}, {"@type": "ListItem", "position": 3, "name": "CD Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How is CD interest calculated?", "acceptedAnswer": {"@type": "Answer", "text": "CD interest is calculated using the compound interest formula: A = P \\u00d7 (1 + r/n)^(n\\u00d7t), where P is the principal deposit, r is the annual interest rate, n is the number of compounding periods per year, and t is the term in years. The interest earned is the final amount minus the original deposit."}}, {"@type": "Question", "name": "What is compounding frequency and why does it matter?", "acceptedAnswer": {"@type": "Answer", "text": "Compounding frequency is how often interest is added to your balance \\u2014 daily, monthly, quarterly, or annually. More frequent compounding means interest starts earning its own interest sooner, resulting in slightly higher total returns. Daily compounding earns the most, though the difference is typically small for short-term CDs."}}, {"@type": "Question", "name": "How much will my CD earn in 12 months?", "acceptedAnswer": {"@type": "Answer", "text": "The amount depends on your deposit size, APY, and compounding frequency. For example, a $10,000 CD at 4.50% APY compounded monthly will earn approximately $459 in interest over 12 months. Use the calculator above to see exact figures for your specific deposit and rate."}}, {"@type": "Question", "name": "What happens if I withdraw early from a CD?", "acceptedAnswer": {"@type": "Answer", "text": "Most banks charge an early withdrawal penalty, typically calculated as a certain number of months of interest (for example, 3 months for a 1-year CD or 6 months for a 5-year CD). This penalty is deducted from your earnings, and in some cases may even reduce your principal if interest earned is less than the penalty amount."}}, {"@type": "Question", "name": "Is a CD better than a savings account?", "acceptedAnswer": {"@type": "Answer", "text": "CDs typically offer higher APYs than savings accounts in exchange for locking up your money for a fixed term. CDs are better for money you will not need before the maturity date. Savings accounts offer more flexibility with lower returns. Many people use both \\u2014 a savings account for accessible funds and CDs for money they can set aside."}}, {"@type": "Question", "name": "What APY should I look for in 2026?", "acceptedAnswer": {"@type": "Answer", "text": "As of 2026, competitive CD rates from online banks and credit unions typically range from 4.00% to 5.25% APY depending on the term length. Compare offers from multiple institutions and check whether the rate is for a promotional period or the full term. Our CD comparison feature above makes it easy to evaluate different options side by side."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "CD Calculator", "description": "Calculate certificate of deposit earnings with custom APY, term, and compounding. Compare CDs side-by-side.", "url": "https://tool.teamzlab.com/evergreen/cd-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>CD Calculator</h1>
+      <p class="tool-description">Calculate how much your certificate of deposit will earn based on your deposit amount, APY, term length, and compounding frequency. Compare multiple CDs side-by-side and estimate early withdrawal penalties.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="cd-form-grid">
+        <div class="cd-form-group">
+          <label for="cd-deposit">Initial Deposit ($)</label>
+          <input type="number" id="cd-deposit" placeholder="e.g. 10000" min="1" step="100">
+        </div>
+        <div class="cd-form-group">
+          <label for="cd-apy">APY (%)</label>
+          <input type="number" id="cd-apy" placeholder="e.g. 4.50" min="0.01" step="0.01">
+        </div>
+        <div class="cd-form-group">
+          <label for="cd-term">CD Term</label>
+          <select id="cd-term">
+            <option value="3">3 Months</option>
+            <option value="6">6 Months</option>
+            <option value="9">9 Months</option>
+            <option value="12" selected>1 Year</option>
+            <option value="18">18 Months</option>
+            <option value="24">2 Years</option>
+            <option value="36">3 Years</option>
+            <option value="48">4 Years</option>
+            <option value="60">5 Years</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="cd-form-group cd-custom-term-wrap" id="cd-custom-term-wrap">
+          <label for="cd-custom-term">Custom Term (months)</label>
+          <input type="number" id="cd-custom-term" placeholder="e.g. 15" min="1" step="1">
+        </div>
+        <div class="cd-form-group">
+          <label for="cd-compound">Compounding Frequency</label>
+          <select id="cd-compound">
+            <option value="365">Daily</option>
+            <option value="12" selected>Monthly</option>
+            <option value="4">Quarterly</option>
+            <option value="1">Annually</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cd-btn-row">
+        <button class="btn-primary" id="cd-calculate-btn">Calculate</button>
+        <button class="btn-secondary" id="cd-clear-btn">Clear</button>
+      </div>
+
+      <!-- Results -->
+      <div class="cd-results" id="cd-results">
+        <div class="cd-summary-cards">
+          <div class="cd-summary-card">
+            <div class="cd-card-label">Total Interest Earned</div>
+            <div class="cd-card-value" id="cd-total-interest">$0.00</div>
+          </div>
+          <div class="cd-summary-card">
+            <div class="cd-card-label">Final Balance</div>
+            <div class="cd-card-value" id="cd-final-balance">$0.00</div>
+          </div>
+          <div class="cd-summary-card">
+            <div class="cd-card-label">Effective Annual Rate</div>
+            <div class="cd-card-value" id="cd-effective-rate">0.00%</div>
+          </div>
+        </div>
+
+        <!-- Pie Chart -->
+        <div class="cd-chart-wrap">
+          <canvas id="cd-pie-chart" width="200" height="200"></canvas>
+          <div class="cd-chart-legend" id="cd-chart-legend"></div>
+        </div>
+
+        <!-- Growth Table -->
+        <h3 class="cd-section-title">Growth Over Time</h3>
+        <div class="cd-table-scroll">
+          <table class="cd-growth-table" id="cd-growth-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <!-- Early Withdrawal Penalty -->
+        <div class="cd-penalty-section" id="cd-penalty-section">
+          <h3 class="cd-section-title" style="border-top:none;padding-top:0">Early Withdrawal Penalty</h3>
+          <div class="cd-form-grid">
+            <div class="cd-form-group">
+              <label for="cd-penalty-months">Penalty (months of interest)</label>
+              <input type="number" id="cd-penalty-months" placeholder="e.g. 3" min="0" step="1" value="3">
+            </div>
+            <div class="cd-form-group">
+              <label for="cd-withdraw-month">Withdraw After (months)</label>
+              <input type="number" id="cd-withdraw-month" placeholder="e.g. 6" min="1" step="1">
+            </div>
+          </div>
+          <button class="btn-secondary" id="cd-penalty-btn" style="margin-bottom:16px">Calculate Penalty</button>
+          <div class="cd-penalty-result" id="cd-penalty-result">
+            <div class="cd-penalty-cards">
+              <div class="cd-penalty-card">
+                <div class="cd-card-label">Penalty Amount</div>
+                <div class="cd-card-value" id="cd-penalty-amount">$0.00</div>
+              </div>
+              <div class="cd-penalty-card">
+                <div class="cd-card-label">Interest Earned by Then</div>
+                <div class="cd-card-value" id="cd-penalty-interest">$0.00</div>
+              </div>
+              <div class="cd-penalty-card">
+                <div class="cd-card-label">You Receive</div>
+                <div class="cd-card-value" id="cd-penalty-net">$0.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compare Mode -->
+      <div class="cd-toggle-wrap">
+        <label class="cd-toggle">
+          <input type="checkbox" id="cd-compare-toggle">
+          <span class="cd-toggle-slider"></span>
+        </label>
+        <span class="cd-toggle-label" id="cd-compare-label">Compare CDs Side-by-Side</span>
+      </div>
+
+      <div class="cd-compare-section" id="cd-compare-section">
+        <div class="cd-compare-slots" id="cd-compare-slots">
+          <div class="cd-compare-slot">
+            <h4>CD Option A</h4>
+            <div class="cd-form-group">
+              <label for="cmp-deposit-a">Deposit ($)</label>
+              <input type="number" id="cmp-deposit-a" placeholder="10000" min="1" step="100">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-apy-a">APY (%)</label>
+              <input type="number" id="cmp-apy-a" placeholder="4.50" min="0.01" step="0.01">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-term-a">Term (months)</label>
+              <input type="number" id="cmp-term-a" placeholder="12" min="1" step="1">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-compound-a">Compounding</label>
+              <select id="cmp-compound-a">
+                <option value="365">Daily</option>
+                <option value="12" selected>Monthly</option>
+                <option value="4">Quarterly</option>
+                <option value="1">Annually</option>
+              </select>
+            </div>
+          </div>
+          <div class="cd-compare-slot">
+            <h4>CD Option B</h4>
+            <div class="cd-form-group">
+              <label for="cmp-deposit-b">Deposit ($)</label>
+              <input type="number" id="cmp-deposit-b" placeholder="10000" min="1" step="100">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-apy-b">APY (%)</label>
+              <input type="number" id="cmp-apy-b" placeholder="4.25" min="0.01" step="0.01">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-term-b">Term (months)</label>
+              <input type="number" id="cmp-term-b" placeholder="24" min="1" step="1">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-compound-b">Compounding</label>
+              <select id="cmp-compound-b">
+                <option value="365">Daily</option>
+                <option value="12" selected>Monthly</option>
+                <option value="4">Quarterly</option>
+                <option value="1">Annually</option>
+              </select>
+            </div>
+          </div>
+          <div class="cd-compare-slot">
+            <h4>CD Option C</h4>
+            <div class="cd-form-group">
+              <label for="cmp-deposit-c">Deposit ($)</label>
+              <input type="number" id="cmp-deposit-c" placeholder="10000" min="1" step="100">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-apy-c">APY (%)</label>
+              <input type="number" id="cmp-apy-c" placeholder="5.00" min="0.01" step="0.01">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-term-c">Term (months)</label>
+              <input type="number" id="cmp-term-c" placeholder="36" min="1" step="1">
+            </div>
+            <div class="cd-form-group">
+              <label for="cmp-compound-c">Compounding</label>
+              <select id="cmp-compound-c">
+                <option value="365">Daily</option>
+                <option value="12" selected>Monthly</option>
+                <option value="4">Quarterly</option>
+                <option value="1">Annually</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" id="cd-compare-btn">Compare All</button>
+        <div class="cd-compare-results" id="cd-compare-results">
+          <h3 class="cd-section-title">Comparison Results</h3>
+          <div class="cd-table-scroll">
+            <table class="cd-compare-table" id="cd-compare-table">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How CD Interest Compounds</h2>
+      <p>A certificate of deposit (CD) grows your money through compound interest. The formula A = P &times; (1 + r/n)<sup>n&times;t</sup> determines your final balance, where P is your initial deposit, r is the annual interest rate, n is the number of compounding periods per year, and t is the term in years. Compounding frequency matters because more frequent compounding means interest earns interest sooner.</p>
+      <p>For example, a $10,000 CD at 4.50% APY compounded daily will earn slightly more than the same CD compounded annually. The difference is small for short terms but becomes more significant over longer periods. Daily compounding is most common at online banks, while traditional banks may compound monthly or quarterly.</p>
+
+      <div class="formula-box">
+        <h3>CD Interest Formula</h3>
+        <p><strong>A = P &times; (1 + r/n)<sup>n&times;t</sup></strong></p>
+        <p>P = Principal (deposit), r = Annual rate, n = Compounding periods/year, t = Term in years</p>
+        <p><strong>Interest Earned = A - P</strong></p>
+        <p><strong>Effective Rate = (A/P)<sup>1/t</sup> - 1</strong></p>
+      </div>
+
+      <h2>Choosing the Right CD Term</h2>
+      <p>CD terms typically range from 3 months to 5 years. Shorter terms (3-12 months) offer more flexibility and are ideal when you expect interest rates to rise or need access to funds soon. Longer terms (2-5 years) generally offer higher APYs and work best when you want to lock in a favorable rate for an extended period.</p>
+      <p>Consider your financial goals when choosing a term. Emergency fund reserves work well in short-term CDs or a CD ladder. Saving for a down payment in two years might suit a 24-month CD. Retirement savings you will not need for years could benefit from the higher rates of 4 or 5-year CDs. The key is matching the CD maturity date to when you will actually need the money.</p>
+
+      <h2>CD Calculator for Different Goals</h2>
+      <p>This CD calculator helps you plan for various savings scenarios. Use the single calculator to quickly see how much a specific CD will earn, or switch to comparison mode to evaluate offers from different banks side by side. The early withdrawal penalty section helps you understand the cost of breaking a CD early, so you can make informed decisions about liquidity versus yield.</p>
+      <p>Financial advisors often recommend spreading deposits across multiple CDs with different terms, a strategy called CD laddering. Our <a href="/evergreen/cd-ladder-calculator/">CD Ladder Calculator</a> is purpose-built for that strategy. Together, these tools give you a complete picture of CD investing options.</p>
+
+      <h2>Understanding Early Withdrawal Penalties</h2>
+      <p>Most banks charge a penalty if you withdraw funds from a CD before the maturity date. The penalty is typically expressed as a number of months of interest, commonly 3 months for short-term CDs and 6-12 months for longer terms. Some banks may charge penalties that exceed the interest earned, meaning you could lose part of your principal.</p>
+      <p>Before opening a CD, always check the early withdrawal penalty terms. Some online banks have started offering no-penalty CDs that let you withdraw without fees, though these typically offer slightly lower APYs. Use the penalty calculator section above to estimate your costs if you need to withdraw early, so you can weigh the risk against the higher yield.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* ---- Helpers ---- */
+    function fmtCurrency(v) {
+      return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calcCD(principal, apyPct, termMonths, compoundPerYear) {
+      var r = apyPct / 100;
+      var t = termMonths / 12;
+      var n = compoundPerYear;
+      var A = principal * Math.pow(1 + r / n, n * t);
+      var interest = A - principal;
+      var effectiveRate = t > 0 ? (Math.pow(A / principal, 1 / t) - 1) * 100 : 0;
+      return { finalBalance: A, interest: interest, effectiveRate: effectiveRate };
+    }
+
+    /* ---- Pie Chart ---- */
+    function drawPieChart(canvas, principal, interest) {
+      var ctx = canvas.getContext('2d');
+      var dpr = window.devicePixelRatio || 1;
+      var size = 200;
+      canvas.width = size * dpr;
+      canvas.height = size * dpr;
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      ctx.scale(dpr, dpr);
+
+      var total = principal + interest;
+      var cx = size / 2, cy = size / 2, radius = size / 2 - 10;
+
+      var styles = getComputedStyle(document.documentElement);
+      var accentColor = styles.getPropertyValue('--accent').trim();
+      var borderColor = styles.getPropertyValue('--border').trim();
+      var surfaceColor = styles.getPropertyValue('--surface').trim();
+      var headingColor = styles.getPropertyValue('--heading').trim();
+
+      // Clear
+      ctx.clearRect(0, 0, size, size);
+
+      if (total <= 0) return;
+
+      var principalAngle = (principal / total) * 2 * Math.PI;
+      var interestAngle = (interest / total) * 2 * Math.PI;
+
+      // Principal slice
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + principalAngle);
+      ctx.closePath();
+      ctx.fillStyle = borderColor;
+      ctx.fill();
+
+      // Interest slice
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, -Math.PI / 2 + principalAngle, -Math.PI / 2 + principalAngle + interestAngle);
+      ctx.closePath();
+      ctx.fillStyle = accentColor;
+      ctx.fill();
+
+      // Center hole (donut)
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 0.55, 0, 2 * Math.PI);
+      ctx.fillStyle = surfaceColor;
+      ctx.fill();
+
+      // Center text
+      ctx.fillStyle = headingColor;
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fmtCurrency(total), cx, cy);
+    }
+
+    function updateLegend(principal, interest) {
+      var legend = document.getElementById('cd-chart-legend');
+      var total = principal + interest;
+      var pPct = total > 0 ? ((principal / total) * 100).toFixed(1) : '0.0';
+      var iPct = total > 0 ? ((interest / total) * 100).toFixed(1) : '0.0';
+
+      var styles = getComputedStyle(document.documentElement);
+      var accentColor = styles.getPropertyValue('--accent').trim();
+      var borderColor = styles.getPropertyValue('--border').trim();
+
+      legend.innerHTML =
+        '<div class="cd-legend-item"><span class="cd-legend-dot" style="background:' + borderColor + '"></span><span class="cd-legend-label">Principal (' + pPct + '%)</span><span class="cd-legend-value">' + fmtCurrency(principal) + '</span></div>' +
+        '<div class="cd-legend-item"><span class="cd-legend-dot" style="background:' + accentColor + '"></span><span class="cd-legend-label">Interest (' + iPct + '%)</span><span class="cd-legend-value">' + fmtCurrency(interest) + '</span></div>';
+    }
+
+    /* ---- Growth Table ---- */
+    function buildGrowthTable(principal, apyPct, termMonths, compoundPerYear) {
+      var table = document.getElementById('cd-growth-table');
+      var thead = table.querySelector('thead');
+      var tbody = table.querySelector('tbody');
+
+      var useMonthly = termMonths <= 12;
+
+      if (useMonthly) {
+        thead.innerHTML = '<tr><th>Month</th><th>Balance</th><th>Interest Earned</th><th>Cumulative Interest</th></tr>';
+      } else {
+        thead.innerHTML = '<tr><th>Year</th><th>Balance</th><th>Interest Earned</th><th>Cumulative Interest</th></tr>';
+      }
+
+      var r = apyPct / 100;
+      var n = compoundPerYear;
+      var rows = '';
+
+      if (useMonthly) {
+        var prevBalance = principal;
+        for (var m = 1; m <= termMonths; m++) {
+          var t = m / 12;
+          var balance = principal * Math.pow(1 + r / n, n * t);
+          var periodInterest = balance - prevBalance;
+          var cumInterest = balance - principal;
+          rows += '<tr><td>' + m + '</td><td>' + fmtCurrency(balance) + '</td><td>' + fmtCurrency(periodInterest) + '</td><td>' + fmtCurrency(cumInterest) + '</td></tr>';
+          prevBalance = balance;
+        }
+      } else {
+        var totalYears = Math.ceil(termMonths / 12);
+        var prevBalance = principal;
+        for (var y = 1; y <= totalYears; y++) {
+          var months = Math.min(y * 12, termMonths);
+          var t = months / 12;
+          var balance = principal * Math.pow(1 + r / n, n * t);
+          var periodInterest = balance - prevBalance;
+          var cumInterest = balance - principal;
+          rows += '<tr><td>' + y + '</td><td>' + fmtCurrency(balance) + '</td><td>' + fmtCurrency(periodInterest) + '</td><td>' + fmtCurrency(cumInterest) + '</td></tr>';
+          prevBalance = balance;
+        }
+      }
+
+      tbody.innerHTML = rows;
+    }
+
+    /* ---- Main Calculate ---- */
+    function calculateMain() {
+      var deposit = parseFloat(document.getElementById('cd-deposit').value);
+      var apy = parseFloat(document.getElementById('cd-apy').value);
+      var termSel = document.getElementById('cd-term').value;
+      var compound = parseInt(document.getElementById('cd-compound').value);
+
+      var termMonths;
+      if (termSel === 'custom') {
+        termMonths = parseInt(document.getElementById('cd-custom-term').value);
+      } else {
+        termMonths = parseInt(termSel);
+      }
+
+      if (!deposit || deposit <= 0) { window.showToast('Please enter a valid deposit amount.'); return; }
+      if (!apy || apy <= 0) { window.showToast('Please enter a valid APY.'); return; }
+      if (!termMonths || termMonths <= 0) { window.showToast('Please enter a valid term.'); return; }
+
+      var result = calcCD(deposit, apy, termMonths, compound);
+
+      document.getElementById('cd-total-interest').textContent = fmtCurrency(result.interest);
+      document.getElementById('cd-final-balance').textContent = fmtCurrency(result.finalBalance);
+      document.getElementById('cd-effective-rate').textContent = result.effectiveRate.toFixed(3) + '%';
+
+      drawPieChart(document.getElementById('cd-pie-chart'), deposit, result.interest);
+      updateLegend(deposit, result.interest);
+      buildGrowthTable(deposit, apy, termMonths, compound);
+
+      showEl(document.getElementById('cd-results'));
+      showEl(document.getElementById('cd-penalty-section'));
+    }
+
+    /* ---- Early Withdrawal Penalty ---- */
+    function calculatePenalty() {
+      var deposit = parseFloat(document.getElementById('cd-deposit').value);
+      var apy = parseFloat(document.getElementById('cd-apy').value);
+      var termSel = document.getElementById('cd-term').value;
+      var compound = parseInt(document.getElementById('cd-compound').value);
+
+      var termMonths;
+      if (termSel === 'custom') {
+        termMonths = parseInt(document.getElementById('cd-custom-term').value);
+      } else {
+        termMonths = parseInt(termSel);
+      }
+
+      var penaltyMonthsInput = parseInt(document.getElementById('cd-penalty-months').value);
+      var withdrawMonth = parseInt(document.getElementById('cd-withdraw-month').value);
+
+      if (!deposit || !apy || !termMonths) { window.showToast('Calculate your CD first.'); return; }
+      if (!penaltyMonthsInput || penaltyMonthsInput < 0) { window.showToast('Enter penalty months.'); return; }
+      if (!withdrawMonth || withdrawMonth <= 0 || withdrawMonth > termMonths) {
+        window.showToast('Enter a valid withdrawal month (1-' + termMonths + ').');
+        return;
+      }
+
+      // Interest earned up to withdrawal month
+      var resultAtWithdraw = calcCD(deposit, apy, withdrawMonth, compound);
+      var interestEarned = resultAtWithdraw.interest;
+
+      // Penalty = penalty_months * (total interest / total term months)
+      var fullResult = calcCD(deposit, apy, termMonths, compound);
+      var monthlyInterestRate = fullResult.interest / termMonths;
+      var penaltyAmount = penaltyMonthsInput * monthlyInterestRate;
+
+      var netReceived = deposit + interestEarned - penaltyAmount;
+      if (netReceived < 0) netReceived = 0;
+
+      document.getElementById('cd-penalty-amount').textContent = fmtCurrency(penaltyAmount);
+      document.getElementById('cd-penalty-interest').textContent = fmtCurrency(interestEarned);
+      document.getElementById('cd-penalty-net').textContent = fmtCurrency(netReceived);
+
+      showEl(document.getElementById('cd-penalty-result'));
+    }
+
+    /* ---- Compare Mode ---- */
+    function calculateCompare() {
+      var slots = ['a', 'b', 'c'];
+      var results = [];
+      var valid = false;
+
+      for (var i = 0; i < slots.length; i++) {
+        var s = slots[i];
+        var dep = parseFloat(document.getElementById('cmp-deposit-' + s).value);
+        var apyVal = parseFloat(document.getElementById('cmp-apy-' + s).value);
+        var term = parseInt(document.getElementById('cmp-term-' + s).value);
+        var comp = parseInt(document.getElementById('cmp-compound-' + s).value);
+
+        if (dep > 0 && apyVal > 0 && term > 0) {
+          var r = calcCD(dep, apyVal, term, comp);
+          results.push({
+            label: 'CD ' + s.toUpperCase(),
+            deposit: dep,
+            apy: apyVal,
+            term: term,
+            compound: comp,
+            interest: r.interest,
+            finalBalance: r.finalBalance,
+            effectiveRate: r.effectiveRate
+          });
+          valid = true;
+        }
+      }
+
+      if (!valid) { window.showToast('Fill in at least one CD option to compare.'); return; }
+
+      // Find best interest
+      var maxInterest = 0;
+      var maxRate = 0;
+      for (var j = 0; j < results.length; j++) {
+        if (results[j].interest > maxInterest) maxInterest = results[j].interest;
+        if (results[j].effectiveRate > maxRate) maxRate = results[j].effectiveRate;
+      }
+
+      var compTable = document.getElementById('cd-compare-table');
+      var cThead = compTable.querySelector('thead');
+      var cTbody = compTable.querySelector('tbody');
+
+      var headerCols = '<th>Metric</th>';
+      for (var k = 0; k < results.length; k++) {
+        headerCols += '<th>' + results[k].label + '</th>';
+      }
+      cThead.innerHTML = '<tr>' + headerCols + '</tr>';
+
+      var metrics = [
+        { key: 'deposit', label: 'Deposit', fmt: function(v) { return fmtCurrency(v); } },
+        { key: 'apy', label: 'APY', fmt: function(v) { return v.toFixed(2) + '%'; } },
+        { key: 'term', label: 'Term', fmt: function(v) { return v + ' months'; } },
+        { key: 'interest', label: 'Interest Earned', fmt: function(v) { return fmtCurrency(v); }, best: maxInterest },
+        { key: 'finalBalance', label: 'Final Balance', fmt: function(v) { return fmtCurrency(v); } },
+        { key: 'effectiveRate', label: 'Effective Rate', fmt: function(v) { return v.toFixed(3) + '%'; }, best: maxRate }
+      ];
+
+      var bodyRows = '';
+      for (var m = 0; m < metrics.length; m++) {
+        var row = '<td>' + metrics[m].label + '</td>';
+        for (var n = 0; n < results.length; n++) {
+          var val = results[n][metrics[m].key];
+          var cls = (metrics[m].best !== undefined && val === metrics[m].best) ? ' class="cd-compare-best"' : '';
+          row += '<td' + cls + '>' + metrics[m].fmt(val) + '</td>';
+        }
+        bodyRows += '<tr>' + row + '</tr>';
+      }
+      cTbody.innerHTML = bodyRows;
+
+      showEl(document.getElementById('cd-compare-results'));
+    }
+
+    /* ---- Clear ---- */
+    function clearAll() {
+      document.getElementById('cd-deposit').value = '';
+      document.getElementById('cd-apy').value = '';
+      document.getElementById('cd-term').selectedIndex = 3;
+      document.getElementById('cd-custom-term').value = '';
+      document.getElementById('cd-compound').selectedIndex = 1;
+      document.getElementById('cd-penalty-months').value = '3';
+      document.getElementById('cd-withdraw-month').value = '';
+
+      hideEl(document.getElementById('cd-results'));
+      hideEl(document.getElementById('cd-penalty-section'));
+      hideEl(document.getElementById('cd-penalty-result'));
+      hideEl(document.getElementById('cd-custom-term-wrap'));
+      hideEl(document.getElementById('cd-compare-results'));
+    }
+
+    /* ---- Init ---- */
+    document.addEventListener('DOMContentLoaded', function() {
+      // Breadcrumbs + schemas
+      var BREADCRUMBS = [
+        { name: 'Home', url: '/' },
+        { name: 'Evergreen Tools', url: '/evergreen/' },
+        { name: 'CD Calculator' }
+      ];
+
+      var FAQS = [
+        {
+          q: 'How is CD interest calculated?',
+          a: 'CD interest is calculated using the compound interest formula: A = P \u00d7 (1 + r/n)^(n\u00d7t), where P is the principal deposit, r is the annual interest rate, n is the number of compounding periods per year, and t is the term in years. The interest earned is the final amount minus the original deposit.'
+        },
+        {
+          q: 'What is compounding frequency and why does it matter?',
+          a: 'Compounding frequency is how often interest is added to your balance \u2014 daily, monthly, quarterly, or annually. More frequent compounding means interest starts earning its own interest sooner, resulting in slightly higher total returns. Daily compounding earns the most, though the difference is typically small for short-term CDs.'
+        },
+        {
+          q: 'How much will my CD earn in 12 months?',
+          a: 'The amount depends on your deposit size, APY, and compounding frequency. For example, a $10,000 CD at 4.50% APY compounded monthly will earn approximately $459 in interest over 12 months. Use the calculator above to see exact figures for your specific deposit and rate.'
+        },
+        {
+          q: 'What happens if I withdraw early from a CD?',
+          a: 'Most banks charge an early withdrawal penalty, typically calculated as a certain number of months of interest (for example, 3 months for a 1-year CD or 6 months for a 5-year CD). This penalty is deducted from your earnings, and in some cases may even reduce your principal if interest earned is less than the penalty amount.'
+        },
+        {
+          q: 'Is a CD better than a savings account?',
+          a: 'CDs typically offer higher APYs than savings accounts in exchange for locking up your money for a fixed term. CDs are better for money you will not need before the maturity date. Savings accounts offer more flexibility with lower returns. Many people use both \u2014 a savings account for accessible funds and CDs for money they can set aside.'
+        },
+        {
+          q: 'What APY should I look for in 2026?',
+          a: 'As of 2026, competitive CD rates from online banks and credit unions typically range from 4.00% to 5.25% APY depending on the term length. Compare offers from multiple institutions and check whether the rate is for a promotional period or the full term. Our CD comparison feature above makes it easy to evaluate different options side by side.'
+        }
+      ];
+
+      var RELATED_TOOLS = [
+        { slug: '/evergreen/cd-ladder-calculator/', name: 'CD Ladder Calculator', description: 'Build a CD laddering strategy for optimal returns and liquidity.' },
+        { slug: '/evergreen/compound-interest-calculator/', name: 'Compound Interest Calculator', description: 'Calculate compound interest on any investment with custom rates.' },
+        { slug: '/evergreen/savings-calculator/', name: 'Savings Calculator', description: 'Plan your savings growth with regular deposits and interest.' },
+        { slug: '/evergreen/savings-goal-calculator/', name: 'Savings Goal Calculator', description: 'Calculate how long to reach your savings target.' },
+        { slug: '/evergreen/bond-yield-calculator/', name: 'Bond Yield Calculator', description: 'Calculate bond yield to maturity and current yield.' },
+        { slug: '/evergreen/down-payment-savings-calculator/', name: 'Down Payment Calculator', description: 'Plan your down payment savings timeline.' }
+      ];
+
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.injectBreadcrumbSchema(BREADCRUMBS);
+      TeamzTools.injectFAQSchema(FAQS);
+      TeamzTools.injectWebAppSchema({
+        slug: 'evergreen/cd-calculator',
+        title: 'CD Calculator',
+        description: 'Calculate certificate of deposit earnings with custom APY, term, and compounding. Compare CDs side-by-side.'
+      });
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      // Event listeners
+      document.getElementById('cd-calculate-btn').addEventListener('click', calculateMain);
+      document.getElementById('cd-clear-btn').addEventListener('click', clearAll);
+      document.getElementById('cd-penalty-btn').addEventListener('click', calculatePenalty);
+      document.getElementById('cd-compare-btn').addEventListener('click', calculateCompare);
+
+      // Custom term toggle
+      document.getElementById('cd-term').addEventListener('change', function() {
+        var wrap = document.getElementById('cd-custom-term-wrap');
+        if (this.value === 'custom') {
+          showEl(wrap);
+        } else {
+          hideEl(wrap);
+        }
+      });
+
+      // Compare mode toggle
+      document.getElementById('cd-compare-toggle').addEventListener('change', function() {
+        var section = document.getElementById('cd-compare-section');
+        if (this.checked) {
+          showEl(section);
+        } else {
+          hideEl(section);
+          hideEl(document.getElementById('cd-compare-results'));
+        }
+      });
+    });
+  </script>
+</body>
+</html>
