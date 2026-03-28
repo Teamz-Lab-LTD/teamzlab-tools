@@ -1,33 +1,43 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #15)*
+*Last updated: 2026-03-28 (nightly build #16)*
 
 ---
 
-## Completed This Build (nightly build #15)
+## Completed This Build (nightly build #16)
 
 | Tool | Hub | Status |
 |------|-----|--------|
-| SG HDB BTO Eligibility Checker | /sg/ | ✅ Built |
-| NZ KiwiSaver Fund Selector Quiz | /nz/ | ✅ Built |
-| CA Alberta Income Tax Calculator 2025 | /ca/ | ✅ Built |
-| UK Self-Employed Expenses Planner 2026 | /uk/ | ✅ Built |
-| CH Swiss Inheritance Tax Calculator (English) | /ch/ | ✅ Built |
-| AU Redundancy Pay Calculator 2025 | /au/ | ✅ Built |
-| ES Calculadora Rendimiento Neto Autónomo 2026 (multilang) | /es/ | ✅ Built |
-| PT Calculadora Simples Nacional 2025 (multilang) | /pt/ | ✅ Built |
+| IE Rent-a-Room Relief Calculator | /ie/ | ✅ Built |
+| SG HDB Resale COV Estimator | /sg/ | ✅ Built |
+| SG CPF FIRE Calculator | /sg/ | ✅ Built |
+| CA Ontario vs BC Tax Calculator 2025 | /ca/ | ✅ Built |
+| DE Freiberufler Steuerrechner 2026 | /de/ | ✅ Built |
+| DE Schenkungsteuer-Rechner 2026 | /de/ | ✅ Built |
+| US Quarterly Tax Estimator 2025 | /us/ | ✅ Built |
+| UK ISA Allowance Tracker 2025/26 | /uk/ | ✅ Built |
+| NL Hypotheekrenteaftrek Calculator 2026 | /nl/ | ✅ Built |
+| AU Division 293 Tax Calculator | /au/ | ✅ Built |
+| ES Calculadora IRPF Alquiler 2026 (multilang) | /es/ | ✅ Built |
+| ES Calculadora ISR Freelancer México 2026 (multilang) | /es/ | ✅ Built |
+| ES Calculadora IRPF Autónomo España 2026 (multilang) | /es/ | ✅ Built |
+| PT Calculadora Carnê-Leão 2026 (multilang) | /pt/ | ✅ Built |
+| PT Calculadora IRS Arrendamento 2026 (multilang) | /pt/ | ✅ Built |
+| PT Calculadora ITCMD Herança Brasil (multilang) | /pt/ | ✅ Built |
 
 ---
 
 ## Next Build Queue (prioritized by RPM + gap analysis)
-- NL Hypotheekrenteaftrek Calculator (/nl/) — Dutch mortgage interest deduction, no NL hub exists yet
-- AU CGT Discount Comparison Tool (/au/) — side-by-side with/without 12-month discount, EOFY spike
-- SG HDB Resale COV Calculator (/sg/) — Cash Over Valuation for resale HDB flats
-- IE Rent-a-Room Relief Calculator (/ie/) — €14,000 annual exemption, distinct from rental income tax
-- CA Ontario vs BC Tax Comparison (/ca/) — province-switcher comparison tool
-- NZ Property Brightline Tax Calculator 2025 (/nz/) — 2-year rule restored April 2024
-- DE Steuerrechner Freiberufler (/de/) — German freelancer income tax (Freiberufler vs Gewerbetreibende)
+- NZ Property Brightline Tax Calculator 2025 (/nz/) — 2-year rule restored April 2024, high search volume
 - CH Quellensteuer C vs B permit (/ch/) — withholding tax comparison for permit holders
+- AT Einkommensteuer Rechner 2026 (/at/) — Austria tax calculator, no calculator yet in AT hub
+- BE Belasting Berekenen (/be/) — Belgium income tax, Tier A country, zero tools
+- IL Income Tax Calculator (/il/) — Israel Tier S, zero English tools
+- UK CGT Calculator 2025/26 (/uk/) — Capital gains tax for shares and property
+- AU Employer Cost Calculator (/au/) — true cost of hiring including super, payroll tax, WorkCover
+- US Self-Directed IRA Calculator (/us/) — alternative investments, high RPM ($15+)
+- SG FIRE Savings Rate Calculator (/sg/) — FIRE movement tools for Singapore
+- IE Remote Work Tax Relief Calculator (/ie/) — e-worker relief €3.20/day, new 2024 rules
 - US Freelancer Quarterly Tax Calculator (/us/) — estimated payments, safe harbor rules
 - UK ISA Allowance Tracker (/uk/) — remaining ISA allowance for tax year, S&S vs Cash comparison
 
