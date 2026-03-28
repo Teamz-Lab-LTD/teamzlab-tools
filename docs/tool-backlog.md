@@ -1,6 +1,20 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #13)*
+*Last updated: 2026-03-28 (nightly build #14)*
+
+---
+
+## Completed This Build (nightly build #14)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| RSU Vesting Tax Calculator (US/UK/CA) | /career/ | ✅ Built |
+| Swiss Wealth Tax Calculator (English) | /ch/ | ✅ Built |
+| UK Rent vs Buy Calculator 2025 | /uk/ | ✅ Built |
+| Belgisch Pensioen Calculator 2025 | /be/ | ✅ Built |
+| BC Property Transfer Tax Calculator | /ca/ | ✅ Built |
+| Calculadora Impuesto RSU España (multilang) | /es/ | ✅ Built |
+| Calculadora Imposto RSU Brasil (multilang) | /pt/ | ✅ Built |
 
 ---
 
@@ -270,16 +284,16 @@ Note: NZ Mortgage Fix vs Float (/nz/mortgage-fix-vs-float/), SG HDB Affordabilit
 - PT Meeting Cost Calculator (/pt/calculadora-custo-reuniao/) — live timer, BRL, Brazilian context
 
 ## Next Build Queue (prioritized by RPM + gap analysis)
-- NZ Income Tax Calculator (/nz/) — IRD PAYE brackets 2025-26 (distinct from PAYE calculator)
-- AU Rental Yield Calculator (/au/) — Gross/net yield, property investment
-- Skincare Routine Builder (/skincare/) — AM/PM routine based on skin type and concerns
-- Small Business NDA Generator (/legal/) — GDPR-compliant, 2026 updated
-- SG Rental Budget Calculator (/sg/) — Affordability check for SG renters
-- IE Self-Employed Tax Calculator (/ie/) — Revenue Commissioners rules, PRSI Class S
-- AU Division 7A Calculator (/au/) — Shareholder loans, benchmark interest rate
-- NZ Student Loan Repayment Calculator (/nz/) — IRD repayment thresholds
-- ES Employment Cost Calculator (/es/) — Spanish SS contributions for employers
-- PT Freelance Rate Calculator (/pt/) — CLT vs PJ comparison
+- AU Stamp Duty Comparison Tool (/au/) — All 8 states compared side by side (programmatic SEO value)
+- SG HDB BTO Eligibility Checker (/sg/) — First-timer eligibility, quota rules, income ceiling
+- IE Capital Acquisitions Tax Calculator (/ie/) — CAT gift/inheritance tax, thresholds Groups A/B/C
+- NZ KiwiSaver Fund Selector Quiz (/nz/) — Defensive/balanced/growth based on age and risk
+- CH Swiss Inheritance Tax Calculator (English) (/ch/) — Cantonal inheritance tax for expats
+- DE Schenkungssteuer Rechner (/de/) — German gift tax calculator
+- BE Wettelijk Samenwonen Belastingvoordeel (/be/) — Cohabitation tax benefit calculator
+- ES Calculadora IRPF 2026 Autónomo (/es/) — Self-employed IRPF for freelancers
+- PT Calculadora Simples Nacional 2025 (/pt/) — Simples Nacional tax for MEI/ME/EPP
+- CA Alberta Personal Income Tax Calculator (/ca/) — Province-specific, 10% flat rate angle
 
 ---
 
