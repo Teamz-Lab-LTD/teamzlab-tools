@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-29 03:08
+# Indexing Report — 2026-03-29 03:15
 
 Total pages: 1
 Checked: 1
@@ -8,4 +8,4 @@ Errors: 0
 
 ## Indexed Pages (1)
 
-- /dev/query-string-parser/
+- /nz/kiwisaver-employer-contribution-calculator/
