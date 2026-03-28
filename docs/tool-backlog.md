@@ -1,6 +1,21 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #12)*
+*Last updated: 2026-03-28 (nightly build #13)*
+
+---
+
+## Completed This Build (nightly build #13)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| NZ Rental Income Tax Calculator 2025-26 | /nz/ | ✅ Built |
+| AU Investment Tax Calculator 2025-26 (CGT + dividends) | /au/ | ✅ Built |
+| DE Rentenrechner 2026 (pension projector) | /de/ | ✅ Built |
+| PT Simulador NHR/IFICI Portugal 2025 | /pt/ | ✅ Built |
+| US Medicare Part D Cost Calculator 2025 | /us/ | ✅ Built |
+| SG ABSD Calculator Singapore 2025 | /sg/ | ✅ Built |
+| ES Calculadora Plusvalía Inversiones 2025 (multilang) | /es/ | ✅ Built |
+| PT Calculadora Ganhos de Capital 2025 Brasil (multilang) | /pt/ | ✅ Built |
 
 ---
 
@@ -25,16 +40,16 @@
 
 | Keyword | Hub | Priority | Notes |
 |---------|-----|----------|-------|
-| NZ rental property tax calculator | /nz/ | High | Tier S, not built yet |
-| AU tax on investments calculator | /au/ | High | CGT discounts + dividends |
-| US Medicare Part D plan comparison | /us/ | High | Senior audience, high RPM |
-| IE pension tax relief calculator | /ie/ | High | Tier A, Ireland hub |
-| SG property stamp duty comparison | /sg/ | Medium | ABSD for foreigners |
-| CH AHV voluntarily insured calculator | /ch/ | Medium | Gap year / expat |
-| PT Simulador NHR Portugal | /pt/ | Medium | Expat/high-income |
-| DE Rentenrechner 2026 | /de/ | Medium | German pension calc |
-| AU Division 293 tax calculator | /au/ | Medium | High-income super tax |
-| US Self-directed IRA comparison | /us/ | Low | SDIRA vs traditional |
+| AU Division 293 tax calculator | /au/ | High | High-income super tax (>$250K income) |
+| IE pension tax relief calculator | /ie/ | High | Tier A, Ireland — check if exists first |
+| CH AHV voluntarily insured calculator | /ch/ | Medium | Gap year / expat, ahv-renten-rechner exists |
+| US Self-directed IRA comparison | /us/ | Medium | SDIRA vs traditional IRA |
+| NZ Landlord compliance cost estimator | /nz/ | Medium | Healthy Homes, rental compliance costs |
+| SG CPF FIRE calculator | /sg/ | Medium | Early retirement with CPF withdrawal planning |
+| DE Schenkungsteuer-Rechner | /de/ | Medium | Gift tax calculator Germany |
+| AU FBT calculator 2025-26 | /au/ | Low | Fringe Benefits Tax for employees |
+| BE hypotheek simulator België | /be/ | Low | Tier A, Belgium hub not yet built |
+| IT IRPEF calculator | /it/ | Low | Italy income tax, new Tier A hub opportunity |
 
 ---
 
