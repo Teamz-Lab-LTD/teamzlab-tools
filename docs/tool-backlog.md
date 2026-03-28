@@ -1,6 +1,23 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #10)*
+*Last updated: 2026-03-28 (nightly build #11)*
+
+---
+
+## Completed This Build (nightly build #11)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| NZ Income Tax Calculator 2025-26 | /nz/ | ✅ Built |
+| ETF vs Mutual Fund Calculator | /evergreen/ | ✅ Built |
+| HSA vs FSA Calculator 2026 | /us/ | ✅ Built |
+| Fixed vs Variable Mortgage Calculator | /housing/ | ✅ Built |
+| UK Sole Trader vs Limited Company Calculator | /uk/ | ✅ Built |
+| AU Super Co-Contribution Calculator 2025-26 | /au/ | ✅ Built |
+| ES ETF vs Fondo de Inversión (multilang) | /es/ | ✅ Built |
+| ES Hipoteca Fija vs Variable (multilang) | /es/ | ✅ Built |
+| PT ETF vs Fundo de Investimento (multilang) | /pt/ | ✅ Built |
+| PT Financiamento Fixo vs Variável (multilang) | /pt/ | ✅ Built |
 
 ---
 
@@ -64,7 +81,7 @@ Note: NZ Mortgage Fix vs Float (/nz/mortgage-fix-vs-float/), SG HDB Affordabilit
 | Tool Idea | Hub | Country Target | Keywords | Priority |
 |-----------|-----|----------------|----------|----------|
 | NZ Mortgage Fix vs Float Calculator | /nz/ | NZ | "fix or float nz", "nz mortgage rate calculator", "fixed vs floating mortgage nz" | ✅ BUILT (/nz/mortgage-fix-vs-float/) |
-| NZ Income Tax Calculator | /nz/ | NZ | "nz income tax calculator", "paye calculator nz 2026", "new zealand take home pay" | HIGH |
+| NZ Income Tax Calculator | /nz/ | NZ | "nz income tax calculator", "paye calculator nz 2026", "new zealand take home pay" | ✅ BUILT (/nz/income-tax-calculator/) |
 | NZ KiwiSaver Retirement Withdrawal Planner | /nz/ | NZ | "kiwisaver withdrawal calculator", "kiwisaver retirement income nz", "how much kiwisaver per year" | HIGH |
 | UK Child Benefit Calculator 2025/26 | /uk/ | UK | "child benefit calculator 2025", "hicbc calculator uk", "high income child benefit charge" | ✅ BUILT |
 | IE Help-to-Buy Scheme Calculator | /ie/ | IE | "help to buy ireland", "htb scheme calculator", "first home scheme calculator ireland" | ✅ BUILT |
