@@ -294,6 +294,16 @@ def process_file(filepath):
             flags=re.DOTALL,
         )
 
+    # Remove redundant runtime JS inject calls that duplicate the static schemas
+    # (Google flags "Duplicate field FAQPage" etc. when both static + runtime exist)
+    if faq:
+        content = re.sub(r'\s*TeamzTools\.injectFAQSchema\([^)]*\);?', '', content)
+        content = re.sub(r'\s*if\s*\([^)]*injectFAQSchema[^;]*;', '', content)
+    if bc:
+        content = re.sub(r'\s*TeamzTools\.injectBreadcrumbSchema\([^)]*\);?', '', content)
+    if webapp:
+        content = re.sub(r'\n?\s*TeamzTools\.injectWebAppSchema\([^;]*;', '', content)
+
     # Build the injection block
     lines = [MARKER]
     for schema_json in schema_blocks:
