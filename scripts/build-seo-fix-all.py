@@ -151,8 +151,15 @@ def extract_meta(content):
     # Has display='' bug
     meta['display_empty'] = "style.display = ''" in content or 'style.display=""' in content
 
-    # FAQ count
-    meta['faq_count'] = len(re.findall(r"q:\s*'", content)) + len(re.findall(r'"q":\s*"', content))
+    # FAQ count — detect both q:'...' and question:'...' patterns
+    meta['faq_count'] = (
+        len(re.findall(r"q:\s*'", content)) +
+        len(re.findall(r'"q":\s*"', content)) +
+        len(re.findall(r"question:\s*'", content)) +
+        len(re.findall(r'"question":\s*"', content))
+    )
+    # Track which FAQ format is used
+    meta['faq_format'] = 'question' if re.search(r"question:\s*'", content) or re.search(r'"question":\s*"', content) else 'q'
 
     return meta
 
@@ -458,24 +465,50 @@ def fix_low_faqs(content, meta):
     if not extra_faqs:
         return content, False
 
-    # Find the last FAQ entry in the JS array and append new ones
-    # Pattern: look for the closing ]; of the faqs array
-    # Common patterns: { q: '...', a: '...' }\n        ];  or  }\n      ];
-    faq_insert = re.search(r"(\{\s*q:\s*'[^']*',\s*a:\s*'[^']*'\s*\})\s*\n(\s*\];)", content)
+    # Detect FAQ format: q/a or question/answer
+    faq_format = meta.get('faq_format', 'q')
+
+    # Find the last FAQ entry in the JS array
+    if faq_format == 'question':
+        # question/answer format (multi-line)
+        faq_insert = re.search(r"(answer:\s*'[^']*'\s*\})\s*\n(\s*\];)", content)
+        if not faq_insert:
+            faq_insert = re.search(r'(answer:\s*"[^"]*"\s*\})\s*\n(\s*\];)', content)
+    else:
+        # q/a format (single line)
+        faq_insert = re.search(r"(\{\s*q:\s*'[^']*',\s*a:\s*'[^']*'\s*\})\s*\n(\s*\];)", content)
+        if not faq_insert:
+            faq_insert = re.search(r'(\{\s*q:\s*"[^"]*",\s*a:\s*"[^"]*"\s*\})\s*\n(\s*\];)', content)
+
     if not faq_insert:
-        # Try double-quote pattern
-        faq_insert = re.search(r'(\{\s*q:\s*"[^"]*",\s*a:\s*"[^"]*"\s*\})\s*\n(\s*\];)', content)
+        # Try multiline patterns (answer on separate line)
+        faq_insert = re.search(r"(answer:\s*'(?:[^'\\]|\\.)*'\s*\})\s*\n(\s*\];)", content, re.DOTALL)
+        if not faq_insert:
+            faq_insert = re.search(r'(answer:\s*"(?:[^"\\]|\\.)*"\s*\})\s*\n(\s*\];)', content, re.DOTALL)
+
+    if not faq_insert:
+        # Try single-line FAQ arrays: { q: '...', a: '...' }];
+        faq_insert = re.search(r"(a:\s*'(?:[^'\\]|\\.)*'\s*\})\s*(\];)", content)
+        if not faq_insert:
+            faq_insert = re.search(r'(a:\s*"(?:[^"\\]|\\.)*"\s*\})\s*(\];)', content)
+
+    if not faq_insert:
+        # Last resort: find any }]; near renderFAQs
+        faq_insert = re.search(r'(\})\s*(\];\s*\n\s*(?:TeamzTools\.)?renderFAQs)', content)
 
     if not faq_insert:
         return content, False
 
-    # Build new FAQ entries
+    # Build new FAQ entries matching the page's format
     indent = '        '
     new_entries = ''
     for faq in extra_faqs:
         q = faq['q'].replace("'", "\\'")
         a = faq['a'].replace("'", "\\'")
-        new_entries += f",\n{indent}{{ q: '{q}', a: '{a}' }}"
+        if faq_format == 'question':
+            new_entries += f",\n{indent}{{\n{indent}  question: '{q}',\n{indent}  answer: '{a}'\n{indent}}}"
+        else:
+            new_entries += f",\n{indent}{{ q: '{q}', a: '{a}' }}"
 
     # Insert before the ];
     insert_pos = faq_insert.end(1)
@@ -505,6 +538,10 @@ def run(dry_run=True, hub_filter=None, stats_only=False):
         meta = extract_meta(original)
         content = original
         fixes_for_file = []
+
+        # Skip redirect stubs
+        if 'http-equiv' in original and 'refresh' in original:
+            continue
 
         # Fix 1: Meta description verb — DISABLED (too risky for auto-fix, needs manual review)
         # content, fixed = fix_meta_description_verb(content, meta)
