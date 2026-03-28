@@ -1,6 +1,21 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #9)*
+*Last updated: 2026-03-28 (nightly build #10)*
+
+---
+
+## Completed This Build (nightly build #10)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| US 1099 Self-Employment Tax Calculator 2026 | /us/ | ✅ Built |
+| NZ KiwiSaver Retirement Income Calculator | /nz/ | ✅ Built |
+| AU Superannuation Balance Projector 2026 | /au/ | ✅ Built |
+| Skincare Ingredient Conflict Checker | /skincare/ | ✅ Built |
+| Skincare Routine Builder AM/PM | /skincare/ | ✅ Built |
+| Knitting Project Time Estimator | /knitting/ | ✅ Built |
+| ES Simulador IRPF 2026 | /es/ | ✅ Built |
+| PT Simulador IRS Portugal 2026 | /pt/ | ✅ Built |
 
 ---
 
