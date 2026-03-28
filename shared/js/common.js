@@ -561,10 +561,20 @@ var TeamzTools = (function () {
   function injectFAQSchema(faqs) {
     if (!faqs || !faqs.length) return;
     // Skip if static FAQPage schema already exists (injected by build-static-schema.py)
+    // Google flagged "Duplicate field FAQPage" on 64+ pages — this dedup MUST be bulletproof
     var existing = document.querySelectorAll('script[type="application/ld+json"]');
     for (var i = 0; i < existing.length; i++) {
-      if (existing[i].textContent.indexOf('"FAQPage"') !== -1) return;
+      try {
+        var txt = existing[i].textContent || '';
+        // Check both raw string match AND parsed JSON
+        if (txt.indexOf('"FAQPage"') !== -1 || txt.indexOf('FAQPage') !== -1) return;
+        var parsed = JSON.parse(txt);
+        if (parsed['@type'] === 'FAQPage') return;
+      } catch (e) {}
     }
+    // Also check innerHTML of head for static schema (belt + suspenders)
+    var headHTML = document.head ? document.head.innerHTML : '';
+    if (headHTML.indexOf('"FAQPage"') !== -1) return;
 
     _injectSchema({
       "@context": "https://schema.org",
@@ -614,6 +624,9 @@ var TeamzTools = (function () {
     for (var i = 0; i < existing.length; i++) {
       if (existing[i].textContent.indexOf('"WebApplication"') !== -1) return;
     }
+    // Belt + suspenders: also check head innerHTML (fixes Google "duplicate field" errors)
+    var headHTML = document.head ? document.head.innerHTML : '';
+    if (headHTML.indexOf('"WebApplication"') !== -1) return;
 
     _injectSchema({
       "@context": "https://schema.org",
@@ -686,14 +699,23 @@ var TeamzTools = (function () {
   function _injectSchema(schema) {
     try {
       // Skip if static schema already exists (injected by build-static-schema.py)
-      var existing = document.querySelectorAll('script[type="application/ld+json"]');
+      // Google flagged "Duplicate field" errors — dedup MUST catch all cases
       var schemaType = schema['@type'];
+      var typeStr = '"' + schemaType + '"';
+      var existing = document.querySelectorAll('script[type="application/ld+json"]');
       for (var i = 0; i < existing.length; i++) {
+        var txt = existing[i].textContent || '';
+        // Fast string check first (handles both parsed and unparsed JSON)
+        if (txt.indexOf(typeStr) !== -1) return;
         try {
-          var parsed = JSON.parse(existing[i].textContent);
-          if (parsed['@type'] === schemaType) return; // already present
+          var parsed = JSON.parse(txt);
+          if (parsed['@type'] === schemaType) return;
         } catch (e) {}
       }
+      // Final check: scan head innerHTML for static schemas not yet in DOM querySelectorAll
+      var headHTML = document.head ? document.head.innerHTML : '';
+      if (headHTML.indexOf(typeStr) !== -1) return;
+
       var script = document.createElement('script');
       script.type = 'application/ld+json';
       script.textContent = JSON.stringify(schema);
