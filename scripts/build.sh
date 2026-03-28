@@ -221,6 +221,26 @@ else
   echo "  SKIPPED: qa-schema-layout.py or python3 not found"
 fi
 
+# 9b. SEO bulk fix stats (informational — shows what build-seo-fix-all.py can auto-fix)
+echo ""
+echo "[9b] SEO bulk fix opportunities..."
+if [ -f "$SCRIPTS/build-seo-fix-all.py" ] && command -v python3 &>/dev/null; then
+  FIX_OUTPUT=$(python3 "$SCRIPTS/build-seo-fix-all.py" --stats 2>&1)
+  FIX_DISPLAY=$(echo "$FIX_OUTPUT" | grep "display.*bug" | grep -o '[0-9]*')
+  FIX_CONTENT=$(echo "$FIX_OUTPUT" | grep "Low content" | grep -o '[0-9]*')
+  FIX_H2=$(echo "$FIX_OUTPUT" | grep "How Works" | grep -o '[0-9]*')
+  FIX_FAQ=$(echo "$FIX_OUTPUT" | grep "Low FAQ" | grep -o '[0-9]*')
+  echo "  display='' bugs:     ${FIX_DISPLAY:-0} pages (auto-fixable)"
+  echo "  Low content (<300w): ${FIX_CONTENT:-0} pages (needs content)"
+  echo "  Missing How Works:   ${FIX_H2:-0} pages (needs content)"
+  echo "  Low FAQs (<5):       ${FIX_FAQ:-0} pages (needs content)"
+  if [ -n "$FIX_DISPLAY" ] && [ "$FIX_DISPLAY" -gt 0 ] 2>/dev/null; then
+    echo "  → Run: python3 scripts/build-seo-fix-all.py --apply"
+  fi
+else
+  echo "  SKIPPED: build-seo-fix-all.py or python3 not found"
+fi
+
 # 10. Broken internal link check + related tools validation
 echo ""
 echo "[10/11] Checking for broken internal links..."
