@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiwiSaver Retirement Income Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate how much retirement income your KiwiSaver will provide. See monthly projections, NZ Super combined, and how long your savings will last. Free.">
+  <meta property="og:title" content="KiwiSaver Retirement Income Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate how much retirement income your KiwiSaver will provide. See monthly projections, NZ Super combined, and how long your savings will last. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/nz/kiwisaver-retirement-income-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/nz.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="KiwiSaver Retirement Income Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate how much retirement income your KiwiSaver will provide. See monthly income projections, NZ Super combined, and how long your savings will last. Free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/nz/kiwisaver-retirement-income-calculator/">
+  <link rel="alternate" hreflang="en" href="https://tool.teamzlab.com/nz/kiwisaver-retirement-income-calculator/">
+  <link rel="alternate" hreflang="x-default" href="https://tool.teamzlab.com/nz/kiwisaver-retirement-income-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .kri-results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+    .kri-result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      text-align: center;
+    }
+    .kri-result-card--primary {
+      grid-column: 1 / -1;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .kri-result-card--primary .kri-label {
+      color: var(--accent-text);
+      opacity: 0.8;
+    }
+    .kri-result-card--primary .kri-value {
+      color: var(--accent-text);
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .kri-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: var(--space-1);
+    }
+    .kri-value {
+      font-size: clamp(1.1rem, 3vw, 1.5rem);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .kri-breakdown {
+      margin-top: var(--space-4);
+      border-top: 1px solid var(--border);
+      padding-top: var(--space-4);
+    }
+    .kri-breakdown h3 {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: var(--space-3);
+      line-height: 1.3;
+    }
+    .kri-breakdown table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .kri-breakdown td {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--text-sm);
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .kri-breakdown td:last-child {
+      text-align: right;
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .kri-breakdown tr:last-child td {
+      border-bottom: none;
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .kri-longevity-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-3);
+      margin-top: var(--space-3);
+    }
+    .kri-longevity-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      text-align: center;
+    }
+    .kri-longevity-card .kri-label {
+      font-size: var(--text-xs);
+      margin-bottom: var(--space-1);
+    }
+    .kri-longevity-card .kri-value {
+      font-size: clamp(0.95rem, 2.5vw, 1.2rem);
+    }
+    .kri-gap-banner {
+      margin-top: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .kri-gap-banner--surplus {
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    .kri-gap-banner--deficit {
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    .kri-gap-banner strong {
+      color: var(--heading);
+    }
+    #kri-target-group {
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .kri-results-grid {
+        grid-template-columns: 1fr;
+      }
+      .kri-result-card--primary {
+        grid-column: 1;
+      }
+      .kri-longevity-grid {
+        grid-template-columns: 1fr;
+      }
+      .tool-calculator h2 {
+        font-size: var(--text-lg);
+      }
+      .kri-breakdown td {
+        padding: var(--space-1) var(--space-2);
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-actions {
+        flex-direction: column;
+        width: 100%;
+      }
+      .form-actions .btn-primary,
+      .form-actions .btn-secondary {
+        width: 100%;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "KiwiSaver Retirement Income Calculator", "description": "Calculate how much retirement income your KiwiSaver will provide, combined with NZ Super. Free and private.", "url": "https://tool.teamzlab.com//nz/kiwisaver-retirement-income-calculator//", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>KiwiSaver Retirement Income Calculator</h1>
+      <p class="tool-description">See exactly how much monthly retirement income your KiwiSaver will generate, combined with NZ Super. Enter your current balance, salary, contribution rate, and fund type to project your balance at 65 and calculate sustainable drawdown income. All calculations run privately in your browser — no data is ever sent to a server.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="calculator-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="kri-current-age">Current Age</label>
+            <input type="number" id="kri-current-age" min="16" max="64" step="1" placeholder="35" value="35">
+          </div>
+          <div class="form-group">
+            <label for="kri-retirement-age">Retirement Age</label>
+            <select id="kri-retirement-age">
+              <option value="65" selected>65 (NZ Super age)</option>
+              <option value="66">66</option>
+              <option value="67">67</option>
+              <option value="68">68</option>
+              <option value="69">69</option>
+              <option value="70">70</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kri-current-balance">Current KiwiSaver Balance (NZD)</label>
+            <input type="number" id="kri-current-balance" min="0" step="100" placeholder="20000" value="20000">
+          </div>
+          <div class="form-group">
+            <label for="kri-annual-salary">Annual Salary (NZD)</label>
+            <input type="number" id="kri-annual-salary" min="0" max="500000" step="1000" placeholder="75000" value="75000">
+          </div>
+          <div class="form-group">
+            <label for="kri-employee-rate">Employee Contribution Rate</label>
+            <select id="kri-employee-rate">
+              <option value="0.03" selected>3%</option>
+              <option value="0.04">4%</option>
+              <option value="0.06">6%</option>
+              <option value="0.08">8%</option>
+              <option value="0.10">10%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kri-employer-rate">Employer Contribution Rate</label>
+            <select id="kri-employer-rate">
+              <option value="0.03" selected>3% (minimum)</option>
+              <option value="0.04">4%</option>
+              <option value="0.05">5%</option>
+              <option value="0.06">6%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kri-fund-type">Fund Type</label>
+            <select id="kri-fund-type">
+              <option value="0.04">Conservative (4% p.a.)</option>
+              <option value="0.06" selected>Balanced (6% p.a.)</option>
+              <option value="0.08">Growth (8% p.a.)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kri-life-expectancy">Life Expectancy</label>
+            <select id="kri-life-expectancy">
+              <option value="80">80 years</option>
+              <option value="85" selected>85 years</option>
+              <option value="90">90 years</option>
+              <option value="95">95 years</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: var(--space-3);">
+          <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;">
+            <input type="checkbox" id="kri-has-target" style="width:18px;height:18px;cursor:pointer;">
+            <span>I have a monthly retirement income target</span>
+          </label>
+        </div>
+        <div class="form-group" id="kri-target-group">
+          <label for="kri-target-income">Target Monthly Income (NZD)</label>
+          <input type="number" id="kri-target-income" min="0" step="100" placeholder="4000">
+          <small style="color:var(--text-muted);font-size:var(--text-xs);">Combined KiwiSaver drawdown + NZ Super</small>
+        </div>
+
+        <div class="form-actions">
+          <button id="kri-calculate-btn" class="btn-primary" type="button">Calculate Retirement Income</button>
+          <button id="kri-reset-btn" class="btn-secondary tool-clear-btn" type="button">Reset</button>
+        </div>
+      </div>
+
+      <div id="kri-result" style="display:none;">
+        <!-- Primary banner: combined monthly income -->
+        <div class="kri-results-grid">
+          <div class="kri-result-card kri-result-card--primary">
+            <div class="kri-label">Combined Monthly Retirement Income (KiwiSaver + NZ Super)</div>
+            <div class="kri-value" id="kri-combined-monthly">NZD $0/mo</div>
+          </div>
+          <div class="kri-result-card">
+            <div class="kri-label">KiwiSaver Balance at Retirement</div>
+            <div class="kri-value" id="kri-balance-at-retirement">NZD $0</div>
+          </div>
+          <div class="kri-result-card">
+            <div class="kri-label">Annual KiwiSaver Income (4% drawdown)</div>
+            <div class="kri-value" id="kri-annual-kiwisaver-income">NZD $0</div>
+          </div>
+          <div class="kri-result-card">
+            <div class="kri-label">NZ Super (annual, single living alone)</div>
+            <div class="kri-value" id="kri-annual-super">NZD $25,811</div>
+          </div>
+          <div class="kri-result-card">
+            <div class="kri-label">Total Annual Retirement Income</div>
+            <div class="kri-value" id="kri-total-annual">NZD $0</div>
+          </div>
+        </div>
+
+        <!-- Longevity: how long will the balance last -->
+        <div class="kri-breakdown">
+          <h3>How Long Will Your KiwiSaver Last?</h3>
+          <div class="kri-longevity-grid">
+            <div class="kri-longevity-card">
+              <div class="kri-label">At 3% withdrawal rate</div>
+              <div class="kri-value" id="kri-longevity-3">— yrs</div>
+            </div>
+            <div class="kri-longevity-card">
+              <div class="kri-label">At 4% withdrawal rate</div>
+              <div class="kri-value" id="kri-longevity-4">— yrs</div>
+            </div>
+            <div class="kri-longevity-card">
+              <div class="kri-label">At 5% withdrawal rate</div>
+              <div class="kri-value" id="kri-longevity-5">— yrs</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breakdown table -->
+        <div class="kri-breakdown">
+          <h3>Retirement Income Breakdown</h3>
+          <table>
+            <tbody>
+              <tr><td>Years until retirement</td><td id="kri-years-to-retire">—</td></tr>
+              <tr><td>Retirement years (age 65 to life expectancy)</td><td id="kri-retirement-years">—</td></tr>
+              <tr><td>Monthly KiwiSaver drawdown (4% rule)</td><td id="kri-monthly-kiwisaver">NZD $0</td></tr>
+              <tr><td>Monthly NZ Super (single, living alone)</td><td id="kri-monthly-super">NZD $2,151</td></tr>
+              <tr><td>Employee contributions (total)</td><td id="kri-total-employee">NZD $0</td></tr>
+              <tr><td>Employer contributions (total)</td><td id="kri-total-employer">NZD $0</td></tr>
+              <tr><td>Investment growth</td><td id="kri-total-growth">NZD $0</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Gap analysis (only shown if target entered) -->
+        <div id="kri-gap-section" style="display:none;">
+          <div class="kri-gap-banner" id="kri-gap-banner"></div>
+        </div>
+
+        <p id="kri-summary" style="margin-top:var(--space-4);font-size:var(--text-sm);color:var(--text-muted);line-height:1.6;"></p>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How KiwiSaver Retirement Income Works in New Zealand</h2>
+      <p>The KiwiSaver Retirement Income Calculator projects how much income your KiwiSaver account will generate once you reach retirement at age 65. Unlike Australian superannuation, New Zealand has no mandatory drawdown rules — you can take your balance as a full lump sum, make gradual withdrawals at any pace, or leave it invested indefinitely. This flexibility makes it important to model your own drawdown strategy rather than relying on a one-size-fits-all figure.</p>
+      <p>This calculator uses the 4% rule as a baseline for sustainable withdrawals. Applied to your projected balance at retirement, 4% gives you an annual KiwiSaver income that should, in theory, sustain your portfolio for 30 or more years depending on investment returns. The tool then adds your NZ Super entitlement — NZD $496.36 per week (NZD $25,811/year) for a single person living alone in 2025-26 — to show your total combined monthly retirement income. NZ Super is paid to all eligible NZ residents from age 65 regardless of savings history.</p>
+      <p>Your projected balance at retirement is calculated using compound growth on your current balance, plus annual contributions from yourself, your employer, and the government MTC (member tax credit), all compounding at your chosen fund's return rate across the years until retirement.</p>
+
+      <h2>Choosing a KiwiSaver Fund for Retirement Planning</h2>
+      <p>Fund selection is the single biggest lever for long-term KiwiSaver growth, ahead of even contribution rate for younger members. A growth fund targeting 8% annual returns compounded over 30 years on a NZD $20,000 balance with regular contributions produces dramatically more than a conservative fund at 4% — the difference can easily exceed NZD $300,000–$500,000 on an average salary. The trade-off is short-term volatility: growth funds can drop 20–30% in a bad year, which matters enormously if you retire at the bottom of a market cycle.</p>
+      <p>The widely used rule of thumb is to be in growth until at least 10 years before retirement, then switch to balanced, then conservative in the 5 years before you plan to stop working. Many KiwiSaver providers offer lifecycle or target-date funds that do this switching automatically based on your age. These are sensible for hands-off investors, though active switchers can often optimise their timing using market valuations. Use this calculator to compare all three scenarios and see the difference in projected retirement income across Conservative, Balanced, and Growth assumptions.</p>
+
+      <h2>NZ Super and the Combined Retirement Income Picture</h2>
+      <p>New Zealand Superannuation is available to all eligible NZ residents from age 65 regardless of how much KiwiSaver they have accumulated. For the 2025-26 year, the after-tax weekly rate for a single person living alone is NZD $496.36 — approximately NZD $2,151 per month or NZD $25,811 per year. Couples receive a lower combined per-person rate. NZ Super alone sits above the poverty line but well below what most people consider a comfortable retirement income, making KiwiSaver a critical supplement.</p>
+      <p>For a rough benchmark: Massey University's NZ Retirement Expenditure Guidelines suggest a comfortable (not lavish) city retirement for a single person costs approximately NZD $42,000–$48,000 per year. After NZ Super covers NZD $25,811, you need approximately NZD $16,000–$22,000/year from KiwiSaver — which at the 4% rule requires a retirement balance of NZD $400,000–$550,000. This calculator shows exactly whether your projected balance meets that gap, and what actions (higher contributions, longer working years, fund switching) can close a shortfall.</p>
+
+      <h2>Understanding the 4% Withdrawal Rule</h2>
+      <p>The 4% rule — also called the Bengen Rule — originated from a 1994 study of US stock and bond portfolio survival rates. It suggests that withdrawing 4% of your starting retirement balance per year, adjusted annually for inflation, should sustain a balanced portfolio for at least 30 years. While originally derived from US data, the principle is widely applied in New Zealand retirement planning as a practical starting point.</p>
+      <p>For KiwiSaver, the 4% rule works differently because you are not constrained to a specific schedule. You can draw more in early active retirement years when travel and lifestyle costs are higher, and draw less in later years. The longevity table in this calculator shows how long your balance would last at 3%, 4%, and 5% annual withdrawal rates, assuming a 5% average investment return during drawdown. This helps you understand the trade-offs between higher income now versus making your savings last longer. As a general guide: if your KiwiSaver lasts to age 90 or beyond under the 4% rule, you are in a strong retirement position.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      // Breadcrumbs
+      var breadcrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'New Zealand Tools', url: '/nz/' },
+        { name: 'KiwiSaver Retirement Income Calculator' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+
+      // FAQs
+      var faqs = [
+        {
+          q: 'What age can I access my KiwiSaver?',
+          a: 'You can withdraw your full KiwiSaver balance from age 65, which aligns with the New Zealand Superannuation (NZ Super) eligibility age. There is no mandatory drawdown rule — you can take your balance as a lump sum, make gradual withdrawals, or leave it invested for as long as you wish. You can also make a first-home withdrawal after 3 years of membership if you meet the criteria, but this is separate from retirement access.'
+        },
+        {
+          q: 'How much KiwiSaver do I need to retire comfortably in NZ?',
+          a: 'A commonly cited figure for a comfortable retirement in New Zealand is NZD $500,000–$750,000 for a single person in addition to NZ Super. At a 4% drawdown rate, $500,000 provides $20,000/year from KiwiSaver alone. Combined with NZ Super of approximately $25,811/year (single, living alone, 2025-26), total annual income would be around $45,811. Your actual needs depend on lifestyle, housing costs, and health expenses.'
+        },
+        {
+          q: 'Can I withdraw my KiwiSaver at 65?',
+          a: 'Yes. From age 65 you can withdraw your entire KiwiSaver balance at once, set up regular withdrawals, or leave it invested. There is no requirement to withdraw at 65 — many people keep their money invested and draw it down gradually over retirement. Unlike Australian superannuation, New Zealand has no mandatory drawdown rules. You can also continue contributing to KiwiSaver after age 65 if you choose.'
+        },
+        {
+          q: 'What is the 4% withdrawal rule for KiwiSaver?',
+          a: 'The 4% rule is a widely used retirement planning guideline suggesting that withdrawing 4% of your balance in the first year of retirement is a sustainable rate that your portfolio should survive for 30 or more years. For example, a $500,000 KiwiSaver balance would provide $20,000 per year or approximately $1,667 per month at the 4% rate. It is a rule of thumb, not a guarantee — actual outcomes depend on investment returns during retirement and the length of your retirement.'
+        },
+        {
+          q: 'How much is NZ Super in 2025-2026?',
+          a: 'For the 2025-2026 year, NZ Super is NZD $496.36 per week for a single person living alone, after tax at the M tax code. This equals approximately NZD $25,811 per year or NZD $2,151 per month. NZ Super is paid from age 65 to all eligible NZ residents regardless of employment or savings history, and this calculator adds it to your KiwiSaver drawdown to show your total combined retirement income.'
+        },
+        {
+          q: 'Should I choose a conservative, balanced, or growth KiwiSaver fund?',
+          a: 'Growth funds (targeting ~8% p.a.) are generally best for those more than 10 years from retirement, as long-term compounding maximises the final balance despite short-term volatility. Balanced funds (~6%) suit those 5-10 years away. Conservative funds (~4%) are better for those within 5 years of retirement where protecting accumulated savings matters more than maximising growth. Many providers offer lifecycle funds that automatically shift from growth to conservative as you approach 65.'
+        }
+      ];
+      TeamzTools.renderFAQs(faqs);
+
+      // Related tools
+      TeamzTools.renderRelatedTools([
+        { slug: '/nz/kiwisaver-calculator/', name: 'KiwiSaver Calculator', description: 'Project your KiwiSaver balance at retirement with employer contributions and government tax credits.' },
+        { slug: '/nz/paye-calculator/', name: 'NZ PAYE Tax Calculator', description: 'Calculate your take-home pay after income tax, ACC levy, and KiwiSaver deductions.' },
+        { slug: '/nz/bright-line-tax-calculator/', name: 'NZ Bright-Line Tax Calculator', description: 'Calculate capital gains tax on NZ property sales under bright-line rules.' },
+        { slug: '/nz/rental-yield-calculator/', name: 'NZ Rental Yield Calculator', description: 'Calculate gross and net rental yield on New Zealand investment properties.' },
+        { slug: '/nz/student-loan-repayment-calculator/', name: 'Student Loan Repayment Calculator', description: 'See how long your NZ student loan will take to repay and total interest costs.' },
+        { slug: '/nz/first-home-grant-calculator/', name: 'First Home Grant Calculator', description: 'Check your eligibility and estimate your KiwiSaver First Home Grant amount.' }
+      ]);
+
+      // WebApp schema
+
+      // Show/hide target income field
+      var hasTargetCheck = document.getElementById('kri-has-target');
+      var targetGroup = document.getElementById('kri-target-group');
+      hasTargetCheck.addEventListener('change', function () {
+        if (this.checked) {
+          showEl(targetGroup, 'block');
+        } else {
+          hideEl(targetGroup);
+        }
+      });
+
+      // Helpers
+      function formatNZD(amount) {
+        return 'NZD $' + Math.round(amount).toLocaleString('en-NZ');
+      }
+
+      // How long does a balance last at a given annual withdrawal rate and assumed return?
+      // Uses simple loop: deduct withdrawal each year, apply remaining return
+      function calcLongevity(balance, annualWithdrawalRate, annualReturnDuringDrawdown) {
+        var annual = balance * annualWithdrawalRate;
+        var bal = balance;
+        var years = 0;
+        while (bal > 0 && years < 200) {
+          bal = bal * (1 + annualReturnDuringDrawdown) - annual;
+          years++;
+        }
+        return years >= 200 ? '200+' : years;
+      }
+
+      function longevityLabel(years) {
+        if (years === '200+') return '200+ yrs';
+        if (years <= 0) return '< 1 yr';
+        return years + ' yrs';
+      }
+
+      // NZ Super constants (2025-26)
+      var NZ_SUPER_ANNUAL = 25811;  // single, living alone, after tax M code
+      var NZ_SUPER_MONTHLY = NZ_SUPER_ANNUAL / 12;
+      var DRAWDOWN_RETURN = 0.05; // assumed 5% return during drawdown
+
+      document.getElementById('kri-calculate-btn').addEventListener('click', function () {
+        var currentAge = parseInt(document.getElementById('kri-current-age').value, 10);
+        var retirementAge = parseInt(document.getElementById('kri-retirement-age').value, 10);
+        var currentBalance = parseFloat(document.getElementById('kri-current-balance').value) || 0;
+        var annualSalary = parseFloat(document.getElementById('kri-annual-salary').value) || 0;
+        var employeeRate = parseFloat(document.getElementById('kri-employee-rate').value);
+        var employerRate = parseFloat(document.getElementById('kri-employer-rate').value);
+        var fundReturn = parseFloat(document.getElementById('kri-fund-type').value);
+        var lifeExpectancy = parseInt(document.getElementById('kri-life-expectancy').value, 10);
+        var hasTarget = document.getElementById('kri-has-target').checked;
+        var targetMonthly = hasTarget ? (parseFloat(document.getElementById('kri-target-income').value) || 0) : 0;
+
+        // Validation
+        if (!currentAge || currentAge < 16 || currentAge >= retirementAge) {
+          window.showToast('Please enter a valid current age (16 to ' + (retirementAge - 1) + ').');
+          return;
+        }
+        if (!annualSalary || annualSalary <= 0) {
+          window.showToast('Please enter a valid annual salary.');
+          return;
+        }
+        if (lifeExpectancy <= retirementAge) {
+          window.showToast('Life expectancy must be greater than retirement age.');
+          return;
+        }
+
+        var yearsToRetire = retirementAge - currentAge;
+        var retirementYears = lifeExpectancy - retirementAge;
+
+        // Annual contributions
+        var annualEmployeeContrib = annualSalary * employeeRate;
+        var annualEmployerContrib = annualSalary * employerRate;
+        // Government MTC: 25c per $1 up to $260.72/yr (eligible if salary <= $180k)
+        var annualMTC = annualSalary <= 180000 ? Math.min(annualEmployeeContrib * 0.25, 260.72) : 0;
+        var annualTotalContrib = annualEmployeeContrib + annualEmployerContrib + annualMTC;
+
+        // Projected balance at retirement: FV formula
+        // FV = PV*(1+r)^n + C * ((1+r)^n - 1) / r
+        var balanceAtRetirement;
+        if (fundReturn === 0) {
+          balanceAtRetirement = currentBalance + annualTotalContrib * yearsToRetire;
+        } else {
+          var gf = Math.pow(1 + fundReturn, yearsToRetire);
+          balanceAtRetirement = currentBalance * gf + annualTotalContrib * ((gf - 1) / fundReturn);
+        }
+
+        // Contribution totals (simple, not compounded — for breakdown display)
+        var totalEmployee = annualEmployeeContrib * yearsToRetire;
+        var totalEmployer = annualEmployerContrib * yearsToRetire;
+        var totalMTC = annualMTC * yearsToRetire;
+        var totalContributions = currentBalance + totalEmployee + totalEmployer + totalMTC;
+        var totalGrowth = balanceAtRetirement - totalContributions;
+        if (totalGrowth < 0) totalGrowth = 0;
+
+        // 4% drawdown income
+        var annualKiwiSaverIncome = balanceAtRetirement * 0.04;
+        var monthlyKiwiSaverIncome = annualKiwiSaverIncome / 12;
+
+        // Combined income
+        var totalAnnualIncome = annualKiwiSaverIncome + NZ_SUPER_ANNUAL;
+        var combinedMonthly = monthlyKiwiSaverIncome + NZ_SUPER_MONTHLY;
+
+        // Longevity at different rates (5% return during drawdown)
+        var longevity3 = calcLongevity(balanceAtRetirement, 0.03, DRAWDOWN_RETURN);
+        var longevity4 = calcLongevity(balanceAtRetirement, 0.04, DRAWDOWN_RETURN);
+        var longevity5 = calcLongevity(balanceAtRetirement, 0.05, DRAWDOWN_RETURN);
+
+        // Populate results
+        document.getElementById('kri-combined-monthly').textContent = formatNZD(combinedMonthly) + '/mo';
+        document.getElementById('kri-balance-at-retirement').textContent = formatNZD(balanceAtRetirement);
+        document.getElementById('kri-annual-kiwisaver-income').textContent = formatNZD(annualKiwiSaverIncome) + '/yr';
+        document.getElementById('kri-annual-super').textContent = formatNZD(NZ_SUPER_ANNUAL) + '/yr';
+        document.getElementById('kri-total-annual').textContent = formatNZD(totalAnnualIncome) + '/yr';
+
+        document.getElementById('kri-longevity-3').textContent = longevityLabel(longevity3);
+        document.getElementById('kri-longevity-4').textContent = longevityLabel(longevity4);
+        document.getElementById('kri-longevity-5').textContent = longevityLabel(longevity5);
+
+        document.getElementById('kri-years-to-retire').textContent = yearsToRetire + ' years';
+        document.getElementById('kri-retirement-years').textContent = retirementYears + ' years (to age ' + lifeExpectancy + ')';
+        document.getElementById('kri-monthly-kiwisaver').textContent = formatNZD(monthlyKiwiSaverIncome) + '/mo';
+        document.getElementById('kri-monthly-super').textContent = formatNZD(NZ_SUPER_MONTHLY) + '/mo';
+        document.getElementById('kri-total-employee').textContent = formatNZD(totalEmployee);
+        document.getElementById('kri-total-employer').textContent = formatNZD(totalEmployer);
+        document.getElementById('kri-total-growth').textContent = formatNZD(totalGrowth);
+
+        // Gap analysis
+        var gapSection = document.getElementById('kri-gap-section');
+        var gapBanner = document.getElementById('kri-gap-banner');
+        if (hasTarget && targetMonthly > 0) {
+          var gap = combinedMonthly - targetMonthly;
+          if (gap >= 0) {
+            gapBanner.innerHTML = '<strong>On track:</strong> Your projected combined income of ' +
+              formatNZD(combinedMonthly) + '/month exceeds your target of ' + formatNZD(targetMonthly) +
+              '/month by <strong>' + formatNZD(gap) + '/month</strong>. Well positioned for retirement.';
+          } else {
+            var shortfall = Math.abs(gap);
+            // Extra KiwiSaver balance needed to close gap (at 4% drawdown)
+            var extraNeeded = (shortfall * 12) / 0.04;
+            gapBanner.innerHTML = '<strong>Shortfall:</strong> Your projected combined income of ' +
+              formatNZD(combinedMonthly) + '/month is <strong>' + formatNZD(shortfall) +
+              '/month short</strong> of your ' + formatNZD(targetMonthly) + '/month target. ' +
+              'To close this gap you would need approximately ' + formatNZD(extraNeeded) +
+              ' more in your KiwiSaver balance at retirement. Consider increasing your contribution rate, working longer, or switching to a higher-growth fund.';
+          }
+          showEl(gapSection, 'block');
+        } else {
+          hideEl(gapSection);
+        }
+
+        // Summary text
+        var fundLabel = document.getElementById('kri-fund-type').options[document.getElementById('kri-fund-type').selectedIndex].text;
+        document.getElementById('kri-summary').textContent =
+          'Based on a ' + formatNZD(annualSalary) + ' salary with ' + (employeeRate * 100) + '% employee and ' +
+          (employerRate * 100) + '% employer KiwiSaver contributions in a ' + fundLabel + ' fund, your projected balance at age ' +
+          retirementAge + ' is ' + formatNZD(balanceAtRetirement) + '. At the 4% drawdown rule this provides ' +
+          formatNZD(monthlyKiwiSaverIncome) + '/month from KiwiSaver plus NZ Super of ' +
+          formatNZD(NZ_SUPER_MONTHLY) + '/month — a combined retirement income of ' +
+          formatNZD(combinedMonthly) + '/month. NZ Super rate is $496.36/week (single, living alone, 2025-26).';
+
+        showEl(document.getElementById('kri-result'), 'block');
+      });
+
+      document.getElementById('kri-reset-btn').addEventListener('click', function () {
+        document.getElementById('kri-current-age').value = '35';
+        document.getElementById('kri-retirement-age').selectedIndex = 0;
+        document.getElementById('kri-current-balance').value = '20000';
+        document.getElementById('kri-annual-salary').value = '75000';
+        document.getElementById('kri-employee-rate').selectedIndex = 0;
+        document.getElementById('kri-employer-rate').selectedIndex = 0;
+        document.getElementById('kri-fund-type').selectedIndex = 1;
+        document.getElementById('kri-life-expectancy').selectedIndex = 1;
+        document.getElementById('kri-has-target').checked = false;
+        document.getElementById('kri-target-income').value = '';
+        hideEl(document.getElementById('kri-target-group'));
+        hideEl(document.getElementById('kri-result'));
+      });
+
+    });
+  </script>
+</body>
+</html>

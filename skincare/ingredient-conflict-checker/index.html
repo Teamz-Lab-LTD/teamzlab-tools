@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skincare Ingredient Conflict Checker — Teamz Lab Tools</title>
+  <meta name="description" content="Check which skincare ingredients clash before mixing. Avoid irritation with our free conflict checker. Retinol, AHA, vitamin C combinations explained.">
+  <meta property="og:title" content="Skincare Ingredient Conflict Checker — Teamz Lab Tools">
+  <meta property="og:description" content="Check which skincare ingredients clash before mixing. Avoid irritation with our free conflict checker. Retinol, AHA, vitamin C combinations explained.">
+  <meta property="og:url" content="https://tool.teamzlab.com/skincare/ingredient-conflict-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/skincare.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Skincare Ingredient Conflict Checker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Check which skincare ingredients clash before mixing. Avoid irritation with our free conflict checker. Retinol, AHA, vitamin C combinations explained.">
+  <link rel="canonical" href="https://tool.teamzlab.com/skincare/ingredient-conflict-checker/">
+  <link rel="alternate" hreflang="en" href="https://tool.teamzlab.com/skincare/ingredient-conflict-checker/">
+  <link rel="alternate" hreflang="x-default" href="https://tool.teamzlab.com/skincare/ingredient-conflict-checker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* sicc- prefix: Skincare Ingredient Conflict Checker */
+    .sicc-ingredient-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+    }
+    .sicc-ingredient-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2) var(--space-3);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+      user-select: none;
+      line-height: 1.4;
+    }
+    .sicc-ingredient-label input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .sicc-ingredient-label:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--bg);
+    }
+    .sicc-selected-count {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: var(--space-2);
+      min-height: 1.5em;
+    }
+    .sicc-results {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      margin-top: var(--space-4);
+    }
+    .sicc-empty-state {
+      text-align: center;
+      padding: var(--space-6) var(--space-4);
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .sicc-empty-icon {
+      font-size: 2.5rem;
+      line-height: 1;
+      margin-bottom: var(--space-2);
+    }
+    .sicc-empty-text {
+      font-size: var(--text-sm);
+      line-height: 1.5;
+    }
+    .sicc-all-safe-banner {
+      background: var(--accent);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5) var(--space-4);
+      text-align: center;
+    }
+    .sicc-all-safe-icon {
+      font-size: 2.5rem;
+      line-height: 1;
+      margin-bottom: var(--space-2);
+    }
+    .sicc-all-safe-title {
+      font-size: var(--text-lg);
+      font-weight: 800;
+      color: var(--accent-text);
+      line-height: 1.3;
+    }
+    .sicc-all-safe-sub {
+      font-size: var(--text-sm);
+      color: var(--accent-text);
+      margin-top: var(--space-1);
+      opacity: 0.85;
+    }
+    .sicc-conflict-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+    .sicc-conflict-header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+    .sicc-conflict-names {
+      flex: 1;
+      min-width: 0;
+    }
+    .sicc-conflict-pair {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    .sicc-conflict-sep {
+      color: var(--text-muted);
+      font-weight: 400;
+      margin: 0 var(--space-1);
+    }
+    .sicc-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sicc-status-badge--safe {
+      background: var(--bg);
+      color: var(--heading);
+      border-color: var(--border);
+    }
+    .sicc-status-badge--caution {
+      background: var(--surface);
+      color: var(--heading);
+      border-color: var(--border);
+    }
+    .sicc-status-badge--avoid {
+      background: var(--bg);
+      color: var(--heading);
+      border-color: var(--border);
+      font-weight: 800;
+    }
+    .sicc-status-icon {
+      font-size: 0.85rem;
+    }
+    .sicc-conflict-tip {
+      margin-top: var(--space-2);
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.5;
+      padding-top: var(--space-2);
+      border-top: 1px solid var(--border);
+    }
+    .sicc-conflict-tip-label {
+      font-weight: 600;
+      color: var(--heading);
+      margin-right: var(--space-1);
+    }
+    .sicc-summary-bar {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-3);
+    }
+    .sicc-summary-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-2) var(--space-4);
+      text-align: center;
+      flex: 1;
+      min-width: 80px;
+    }
+    .sicc-summary-num {
+      font-size: var(--text-xl);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .sicc-summary-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+    .sicc-section-heading {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+    .sicc-results-section {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    @media (max-width: 600px) {
+      .sicc-ingredient-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-2);
+      }
+      .sicc-conflict-header {
+        flex-direction: column;
+        gap: var(--space-2);
+      }
+      .sicc-status-badge {
+        align-self: flex-start;
+      }
+      .sicc-summary-bar {
+        gap: var(--space-2);
+      }
+      .sicc-summary-stat {
+        padding: var(--space-2);
+        min-width: 60px;
+      }
+      .sicc-summary-num {
+        font-size: var(--text-lg);
+      }
+      .tool-calculator h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Skincare Tools", "item": "https://tool.teamzlab.com/skincare/"}, {"@type": "ListItem", "position": 3, "name": "Skincare Ingredient Conflict Checker", "item": "https://tool.teamzlab.com/skincare/ingredient-conflict-checker/"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Can I use retinol and vitamin C together?", "acceptedAnswer": {"@type": "Answer", "text": "Use with caution. Retinol works best at a neutral pH while vitamin C (L-ascorbic acid) is most effective at a low pH (2.5–3.5). Layering them together forces a compromise that reduces the efficacy of both. The recommended approach is to apply vitamin C in the morning — where it also provides antioxidant protection against UV damage — and retinol in the evening."}}, {"@type": "Question", "name": "Why can't I use AHA and retinol at the same time?", "acceptedAnswer": {"@type": "Answer", "text": "AHAs (glycolic and lactic acid) and retinol are both exfoliants. Using them together in the same session causes over-exfoliation — removing too much of the skin's protective barrier at once. This can lead to redness, flakiness, stinging, and increased sensitivity to the sun. The safest approach is to alternate: use AHA on one evening and retinol on the next."}}, {"@type": "Question", "name": "Is niacinamide and vitamin C a bad combination?", "acceptedAnswer": {"@type": "Answer", "text": "At very high concentrations, niacinamide and vitamin C can interact to form niacin, which may cause temporary flushing. However, most modern skincare formulations contain concentrations low enough that this reaction is minimal or non-existent. If you're sensitive, apply them separately with a 30-minute gap, or use vitamin C in the morning and niacinamide in the evening."}}, {"@type": "Question", "name": "What ingredients conflict with benzoyl peroxide?", "acceptedAnswer": {"@type": "Answer", "text": "Benzoyl peroxide is a potent oxidising agent that degrades both retinol and vitamin C on contact, significantly reducing their effectiveness. Avoid using benzoyl peroxide in the same session as either of these ingredients. A common schedule is: benzoyl peroxide in the morning routine, retinol or vitamin C in the evening."}}, {"@type": "Question", "name": "Can copper peptides be used with vitamin C?", "acceptedAnswer": {"@type": "Answer", "text": "No — this is one of the most important conflicts to avoid. Vitamin C (ascorbic acid) is a reducing agent that reacts with copper ions in copper peptides, breaking apart the peptide complex and reducing the effectiveness of both ingredients. Use vitamin C in your morning routine and copper peptides in the evening for best results."}}, {"@type": "Question", "name": "What is the safest skincare ingredient to combine with everything?", "acceptedAnswer": {"@type": "Answer", "text": "Hyaluronic acid is universally compatible and can be safely combined with virtually every skincare ingredient, including retinol, AHAs, BHAs, vitamin C, niacinamide, and peptides. It acts purely as a humectant — attracting and retaining moisture — with no chemical reactivity that would interfere with other actives."}}, {"@type": "Question", "name": "Is bakuchiol a safe alternative to retinol without the conflicts?", "acceptedAnswer": {"@type": "Answer", "text": "Bakuchiol offers retinol-like benefits (cell turnover, collagen stimulation) with a gentler profile. Unlike retinol, it does not conflict with vitamin C, niacinamide, or AHAs. However, if you stack bakuchiol with actual retinol or tretinoin, you risk compounding the retinoid effect and causing irritation. Use bakuchiol as a replacement for retinol, not in addition to it."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Skincare Ingredient Conflict Checker", "description": "Check which skincare ingredients clash before mixing. Avoid irritation with our free ingredient conflict checker. Retinol, AHA, vitamin C combinations explained.", "url": "https://tool.teamzlab.com/skincare/ingredient-conflict-checker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <div id="breadcrumbs"></div>
+
+  <main class="site-main">
+    <header class="tool-header">
+      <h1>Skincare Ingredient Conflict Checker</h1>
+      <p class="tool-intro">Select the active ingredients in your skincare routine to instantly check for conflicts, irritation risks, and mixing tips. Free, private, no sign-up required.</p>
+    </header>
+
+    <section class="tool-calculator">
+      <div class="form-group">
+        <label class="form-label">Select your skincare ingredients</label>
+        <p style="font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-1); margin-bottom: var(--space-1);">Choose all actives you use or plan to combine in your routine.</p>
+        <div class="sicc-ingredient-grid" id="sicc-ingredient-grid">
+          <!-- checkboxes injected by JS -->
+        </div>
+        <p class="sicc-selected-count" id="sicc-selected-count">Select 2 or more ingredients to check for conflicts.</p>
+      </div>
+
+      <div class="tool-actions" style="margin-top: var(--space-4);">
+        <button class="btn-primary" id="sicc-check-btn" type="button">Check Conflicts</button>
+        <button class="btn-secondary tool-clear-btn" id="sicc-reset-btn" type="button">Reset</button>
+      </div>
+
+      <div id="sicc-results-wrap" style="display: none;">
+        <div class="sicc-summary-bar" id="sicc-summary-bar"></div>
+        <div id="sicc-results" class="sicc-results"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Skincare Ingredient Layering Works</h2>
+      <p>Skincare products are more than a collection of individual actives — the <strong>order, combination, and pH level</strong> of each ingredient determines whether your routine heals or harms your skin. Two highly effective ingredients can cancel each other out, cause excessive irritation, or chemically deactivate one another when used together.</p>
+      <p>The key factor is <strong>pH compatibility</strong>. Vitamin C (L-ascorbic acid) is most stable and effective at pH 2.5–3.5, while retinol works best at a neutral pH. Layering them together forces a compromise that weakens both actives. AHAs (glycolic, lactic acid) and BHAs (salicylic acid) work at low pH values similar to vitamin C — combining them with retinol in the same session creates over-exfoliation, stripping the skin's protective barrier faster than it can regenerate.</p>
+      <p>Other conflicts involve <strong>oxidation reactions</strong>. Benzoyl peroxide is a powerful oxidising agent — it reacts with both vitamin C and retinol on contact, degrading them before they can absorb into skin. Copper peptides similarly react poorly with vitamin C, because ascorbic acid reduces copper ions and destabilises the peptide complex.</p>
+
+      <h2>Common Conflict Categories in Skincare</h2>
+      <p>Most conflicts fall into one of three categories:</p>
+      <ul style="margin: var(--space-3) 0; padding-left: var(--space-5); color: var(--text); line-height: 1.8; font-size: var(--text-base);">
+        <li><strong>Over-exfoliation</strong> — stacking multiple exfoliants (retinol + AHA, retinol + BHA, or AHA + BHA at high concentration) removes too much of the skin barrier in one session, causing redness, sensitivity, and micro-tears.</li>
+        <li><strong>pH incompatibility</strong> — some actives need acidic environments (vitamin C, AHAs) while others need neutral pH (retinol, niacinamide). Mixing them together reduces efficacy of one or both actives.</li>
+        <li><strong>Chemical deactivation</strong> — benzoyl peroxide oxidises retinol and vitamin C, rendering them less effective before they can be absorbed. Acids can degrade certain peptide structures by cleaving peptide bonds.</li>
+      </ul>
+      <p>Safe combinations exist too. Niacinamide pairs well with almost every ingredient and can actually buffer the irritation caused by retinol — making it an ideal partner for retinol users who experience sensitivity. Hyaluronic acid is universally compatible and helps maintain hydration regardless of what else is in your routine.</p>
+
+      <h2>Building a Conflict-Free Routine</h2>
+      <p>The most effective strategy is to <strong>split conflicting actives across AM and PM routines</strong>, or alternate them on different nights. Vitamin C is best used in the morning because it provides antioxidant protection against UV-induced free radicals when paired with SPF. Retinol and AHAs/BHAs are better reserved for evenings, as they increase photosensitivity.</p>
+      <p>For the retinol + AHA combination, many dermatologists recommend using AHAs one night and retinol the next, allowing the skin barrier time to recover between exfoliation sessions. Always apply SPF the following morning after any exfoliant use.</p>
+      <p>When introducing new actives, <strong>start low and slow</strong> — lower percentages, less frequent application — and use a patch test (24–48 hours on the inner arm) before full-face use. This approach lets your skin adapt and reduces the risk of a compromised barrier from stacking too many potent ingredients at once.</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+
+  <!-- STATIC-SCHEMA -->
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    // ── Ingredient Data ──────────────────────────────────────────────────────
+    var INGREDIENTS = [
+      { id: 'retinol',       name: 'Retinol' },
+      { id: 'aha-glycolic',  name: 'AHA (Glycolic Acid)' },
+      { id: 'aha-lactic',    name: 'AHA (Lactic Acid)' },
+      { id: 'bha-salicylic', name: 'BHA (Salicylic Acid)' },
+      { id: 'vitamin-c',     name: 'Vitamin C (L-Ascorbic Acid)' },
+      { id: 'niacinamide',   name: 'Niacinamide' },
+      { id: 'benzoyl-peroxide', name: 'Benzoyl Peroxide' },
+      { id: 'copper-peptides', name: 'Copper Peptides' },
+      { id: 'hyaluronic-acid', name: 'Hyaluronic Acid' },
+      { id: 'peptides',      name: 'Peptides' },
+      { id: 'bakuchiol',     name: 'Bakuchiol' },
+      { id: 'alpha-arbutin', name: 'Alpha Arbutin' },
+      { id: 'azelaic-acid',  name: 'Azelaic Acid' },
+      { id: 'tretinoin',     name: 'Tretinoin' }
+    ];
+
+    // status: 'safe' | 'caution' | 'avoid'
+    var CONFLICTS = [
+      // Retinol conflicts
+      {
+        a: 'retinol', b: 'aha-glycolic',
+        status: 'avoid',
+        tip: 'Both exfoliate — using together causes over-exfoliation and barrier damage. Alternate nights: AHA one evening, retinol the next.'
+      },
+      {
+        a: 'retinol', b: 'aha-lactic',
+        status: 'avoid',
+        tip: 'Same issue as glycolic acid — double exfoliation risks redness and sensitivity. Use on alternate evenings with at least 48h between.'
+      },
+      {
+        a: 'retinol', b: 'bha-salicylic',
+        status: 'avoid',
+        tip: 'Stacking retinol with salicylic acid strips the skin barrier. Use BHA one night, retinol the next, never both together.'
+      },
+      {
+        a: 'retinol', b: 'vitamin-c',
+        status: 'caution',
+        tip: 'Different pH needs reduce efficacy when layered. Best practice: Vitamin C in the AM (antioxidant + SPF), Retinol in the PM.'
+      },
+      {
+        a: 'retinol', b: 'benzoyl-peroxide',
+        status: 'avoid',
+        tip: 'Benzoyl peroxide oxidises retinol on contact, rendering both less effective. Use benzoyl peroxide AM, retinol PM only.'
+      },
+      {
+        a: 'retinol', b: 'niacinamide',
+        status: 'safe',
+        tip: 'Niacinamide and retinol work well together. Niacinamide can buffer retinol-induced irritation — ideal for sensitive skin beginners.'
+      },
+      // Tretinoin conflicts (prescription-strength retinoid — same conflicts as retinol, amplified)
+      {
+        a: 'tretinoin', b: 'aha-glycolic',
+        status: 'avoid',
+        tip: 'Tretinoin is prescription-strength — stacking with AHAs causes serious over-exfoliation. Use on strictly alternate nights or as directed by your dermatologist.'
+      },
+      {
+        a: 'tretinoin', b: 'aha-lactic',
+        status: 'avoid',
+        tip: 'Do not combine. Tretinoin already exfoliates at the cell level — adding lactic acid increases irritation risk significantly.'
+      },
+      {
+        a: 'tretinoin', b: 'bha-salicylic',
+        status: 'avoid',
+        tip: 'Do not combine. Both are potent exfoliants. Consult your dermatologist about alternating schedules.'
+      },
+      {
+        a: 'tretinoin', b: 'vitamin-c',
+        status: 'caution',
+        tip: 'pH mismatch reduces efficacy. Use Vitamin C in the morning, Tretinoin at night. Do not layer directly.'
+      },
+      {
+        a: 'tretinoin', b: 'benzoyl-peroxide',
+        status: 'avoid',
+        tip: 'Benzoyl peroxide degrades tretinoin. Use in strictly separate routines (AM vs PM) if both are prescribed.'
+      },
+      {
+        a: 'tretinoin', b: 'niacinamide',
+        status: 'safe',
+        tip: 'Niacinamide helps reduce tretinoin-induced irritation and dryness. A supportive combination — apply niacinamide first, then tretinoin.'
+      },
+      {
+        a: 'tretinoin', b: 'retinol',
+        status: 'avoid',
+        tip: 'Never layer two retinoids. Tretinoin is already a potent retinoid — adding retinol causes severe irritation with no added benefit.'
+      },
+      // Vitamin C conflicts
+      {
+        a: 'vitamin-c', b: 'niacinamide',
+        status: 'caution',
+        tip: 'At high concentrations, mixing can produce niacin which causes temporary flushing. Modern stable formulas are usually fine. Use separately or wait 30 minutes between applications.'
+      },
+      {
+        a: 'vitamin-c', b: 'aha-glycolic',
+        status: 'caution',
+        tip: 'Both acidic actives can be irritating when combined. Use at low concentrations or apply at different times. Together they can over-exfoliate sensitive skin.'
+      },
+      {
+        a: 'vitamin-c', b: 'aha-lactic',
+        status: 'caution',
+        tip: 'Acidic pH overlap may work synergistically but increases irritation risk. Use low concentrations and monitor skin tolerance carefully.'
+      },
+      {
+        a: 'vitamin-c', b: 'benzoyl-peroxide',
+        status: 'avoid',
+        tip: 'Benzoyl peroxide oxidises vitamin C, breaking it down before it can absorb. Use vitamin C in your morning routine, benzoyl peroxide in the evening.'
+      },
+      {
+        a: 'vitamin-c', b: 'copper-peptides',
+        status: 'avoid',
+        tip: 'Vitamin C (ascorbic acid) reduces copper ions and destabilises copper peptide complexes. Use copper peptides in the evening and vitamin C in the morning.'
+      },
+      // AHA conflicts
+      {
+        a: 'aha-glycolic', b: 'copper-peptides',
+        status: 'avoid',
+        tip: 'Acids can break down the copper peptide structure. Apply copper peptides at a separate time, ideally the next morning after an AHA evening.'
+      },
+      {
+        a: 'aha-lactic', b: 'copper-peptides',
+        status: 'avoid',
+        tip: 'Same as glycolic acid — acids deactivate copper peptides. Use them in completely separate routines.'
+      },
+      {
+        a: 'aha-glycolic', b: 'peptides',
+        status: 'caution',
+        tip: 'Acidic environment may partially degrade some peptide bonds. Use peptides at a different time or choose acid-stable peptide formulas.'
+      },
+      {
+        a: 'aha-lactic', b: 'peptides',
+        status: 'caution',
+        tip: 'Low pH from lactic acid may affect peptide stability. Apply peptides in a separate session or wait until skin pH normalises (20–30 minutes).'
+      },
+      {
+        a: 'bha-salicylic', b: 'copper-peptides',
+        status: 'avoid',
+        tip: 'BHA acids deactivate copper peptides. Use salicylic acid in the evening and copper peptides in the morning for best results.'
+      },
+      {
+        a: 'bha-salicylic', b: 'peptides',
+        status: 'caution',
+        tip: 'Salicylic acid at low pH may partially compromise peptide integrity. Use in separate routines or wait 20 minutes between applications.'
+      },
+      // Niacinamide — mostly safe
+      {
+        a: 'niacinamide', b: 'aha-glycolic',
+        status: 'safe',
+        tip: 'Niacinamide is stable across a wide pH range and does not conflict with AHAs. Safe to use together.'
+      },
+      {
+        a: 'niacinamide', b: 'aha-lactic',
+        status: 'safe',
+        tip: 'No conflict. Niacinamide can even help soothe the minor irritation sometimes caused by lactic acid.'
+      },
+      {
+        a: 'niacinamide', b: 'bha-salicylic',
+        status: 'safe',
+        tip: 'No conflict. Niacinamide complements BHA well — niacinamide reduces redness while BHA clears pores.'
+      },
+      // Hyaluronic acid — safe with everything
+      {
+        a: 'hyaluronic-acid', b: 'retinol',
+        status: 'safe',
+        tip: 'Hyaluronic acid is universally compatible. Applying it after retinol helps counteract dryness and keeps skin hydrated.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'vitamin-c',
+        status: 'safe',
+        tip: 'Great pairing. Hyaluronic acid hydrates while vitamin C brightens. Apply vitamin C first, then hyaluronic acid on slightly damp skin.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'aha-glycolic',
+        status: 'safe',
+        tip: 'No conflict. Apply hyaluronic acid after AHA to restore moisture lost through exfoliation.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'aha-lactic',
+        status: 'safe',
+        tip: 'No conflict. Layering hyaluronic acid after lactic acid helps lock in moisture post-exfoliation.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'niacinamide',
+        status: 'safe',
+        tip: 'Excellent combination. Both ingredients are gentle and work synergistically for hydration and barrier support.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'bha-salicylic',
+        status: 'safe',
+        tip: 'No conflict. Hyaluronic acid helps restore moisture after BHA exfoliation.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'copper-peptides',
+        status: 'safe',
+        tip: 'No conflict. Hyaluronic acid and copper peptides work well together for plumping and repair.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'peptides',
+        status: 'safe',
+        tip: 'Excellent hydration + repair pairing. Both are gentle and well-tolerated by all skin types.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'benzoyl-peroxide',
+        status: 'safe',
+        tip: 'No conflict. Hyaluronic acid can help offset dryness caused by benzoyl peroxide treatments.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'azelaic-acid',
+        status: 'safe',
+        tip: 'No conflict. A good pairing — azelaic acid targets hyperpigmentation while hyaluronic acid keeps skin hydrated.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'alpha-arbutin',
+        status: 'safe',
+        tip: 'No conflict. Combine freely for hydration and brightening benefits.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'bakuchiol',
+        status: 'safe',
+        tip: 'No conflict. Bakuchiol is gentle and pairs well with hyaluronic acid for moisturised, retinol-like results.'
+      },
+      {
+        a: 'hyaluronic-acid', b: 'tretinoin',
+        status: 'safe',
+        tip: 'Hyaluronic acid is recommended alongside tretinoin to manage dryness and irritation. Apply tretinoin first, HA after.'
+      },
+      // Bakuchiol — plant-based retinol alternative, gentle
+      {
+        a: 'bakuchiol', b: 'retinol',
+        status: 'caution',
+        tip: 'Both have retinol-like exfoliating effects. Stacking may increase sensitivity. Use one or the other — bakuchiol is a gentler alternative for those who react to retinol.'
+      },
+      {
+        a: 'bakuchiol', b: 'tretinoin',
+        status: 'caution',
+        tip: 'Tretinoin is already a potent retinoid. Adding bakuchiol may compound irritation. Consult your dermatologist.'
+      },
+      {
+        a: 'bakuchiol', b: 'vitamin-c',
+        status: 'safe',
+        tip: 'No conflict. A gentle, plant-based combination — use vitamin C in the morning and bakuchiol in the evening.'
+      },
+      {
+        a: 'bakuchiol', b: 'niacinamide',
+        status: 'safe',
+        tip: 'No conflict. Niacinamide and bakuchiol are both gentle actives that complement each other well.'
+      },
+      // Alpha arbutin
+      {
+        a: 'alpha-arbutin', b: 'vitamin-c',
+        status: 'safe',
+        tip: 'Excellent brightening stack. Vitamin C and alpha arbutin both target hyperpigmentation through different mechanisms — use together freely.'
+      },
+      {
+        a: 'alpha-arbutin', b: 'niacinamide',
+        status: 'safe',
+        tip: 'Great brightening combination. Both are gentle and have complementary anti-pigmentation effects.'
+      },
+      {
+        a: 'alpha-arbutin', b: 'retinol',
+        status: 'safe',
+        tip: 'No conflict. Alpha arbutin and retinol can be combined — apply retinol first, then alpha arbutin.'
+      },
+      {
+        a: 'alpha-arbutin', b: 'aha-glycolic',
+        status: 'safe',
+        tip: 'No significant conflict. Alpha arbutin is stable at low pH. Some experts suggest applying alpha arbutin before AHA.'
+      },
+      // Azelaic acid
+      {
+        a: 'azelaic-acid', b: 'niacinamide',
+        status: 'safe',
+        tip: 'A powerful brightening and anti-redness combination. Both are gentle and highly effective together for rosacea or hyperpigmentation.'
+      },
+      {
+        a: 'azelaic-acid', b: 'vitamin-c',
+        status: 'safe',
+        tip: 'No conflict. Both target pigmentation via different pathways — a strong brightening duo.'
+      },
+      {
+        a: 'azelaic-acid', b: 'retinol',
+        status: 'safe',
+        tip: 'Generally well tolerated together. Some mild sensitivity possible — start on alternate nights if new to either ingredient.'
+      },
+      {
+        a: 'azelaic-acid', b: 'aha-glycolic',
+        status: 'caution',
+        tip: 'Both are exfoliating acids. Using together increases irritation risk. Use on alternate evenings if both are needed.'
+      },
+      {
+        a: 'azelaic-acid', b: 'bha-salicylic',
+        status: 'caution',
+        tip: 'Combining two exfoliating acids can cause sensitivity. Use on alternate nights to avoid over-exfoliation.'
+      }
+    ];
+
+    // ── Build Ingredient Grid ────────────────────────────────────────────────
+    var grid = document.getElementById('sicc-ingredient-grid');
+    INGREDIENTS.forEach(function (ing) {
+      var label = document.createElement('label');
+      label.className = 'sicc-ingredient-label';
+      label.htmlFor = 'sicc-cb-' + ing.id;
+      label.innerHTML =
+        '<input type="checkbox" id="sicc-cb-' + ing.id + '" name="sicc-ingredient" value="' + ing.id + '">' +
+        ing.name;
+      grid.appendChild(label);
+    });
+
+    // ── Update selected count ────────────────────────────────────────────────
+    function getSelectedIds() {
+      var checked = document.querySelectorAll('#sicc-ingredient-grid input[type="checkbox"]:checked');
+      return Array.prototype.map.call(checked, function (cb) { return cb.value; });
+    }
+
+    function updateCount() {
+      var sel = getSelectedIds();
+      var countEl = document.getElementById('sicc-selected-count');
+      if (sel.length === 0) {
+        countEl.textContent = 'Select 2 or more ingredients to check for conflicts.';
+      } else if (sel.length === 1) {
+        countEl.textContent = '1 ingredient selected — add at least one more to check conflicts.';
+      } else {
+        countEl.textContent = sel.length + ' ingredients selected.';
+      }
+    }
+
+    grid.addEventListener('change', updateCount);
+
+    // ── Check Logic ──────────────────────────────────────────────────────────
+    function getIngredientName(id) {
+      for (var i = 0; i < INGREDIENTS.length; i++) {
+        if (INGREDIENTS[i].id === id) return INGREDIENTS[i].name;
+      }
+      return id;
+    }
+
+    function findConflict(idA, idB) {
+      for (var i = 0; i < CONFLICTS.length; i++) {
+        var c = CONFLICTS[i];
+        if ((c.a === idA && c.b === idB) || (c.a === idB && c.b === idA)) {
+          return c;
+        }
+      }
+      return null;
+    }
+
+    function checkConflicts() {
+      var selected = getSelectedIds();
+      if (selected.length < 2) {
+        window.showToast('Please select at least 2 ingredients to check conflicts.');
+        return;
+      }
+
+      var allPairs = [];
+      for (var i = 0; i < selected.length; i++) {
+        for (var j = i + 1; j < selected.length; j++) {
+          var conflict = findConflict(selected[i], selected[j]);
+          if (conflict) {
+            allPairs.push({
+              nameA: getIngredientName(selected[i]),
+              nameB: getIngredientName(selected[j]),
+              status: conflict.status,
+              tip: conflict.tip
+            });
+          } else {
+            // No known conflict data — treat as safe
+            allPairs.push({
+              nameA: getIngredientName(selected[i]),
+              nameB: getIngredientName(selected[j]),
+              status: 'safe',
+              tip: 'No known conflict between these ingredients. Safe to use together.'
+            });
+          }
+        }
+      }
+
+      // Count by status
+      var avoidCount = 0, cautionCount = 0, safeCount = 0;
+      allPairs.forEach(function (p) {
+        if (p.status === 'avoid') avoidCount++;
+        else if (p.status === 'caution') cautionCount++;
+        else safeCount++;
+      });
+
+      // Sort: avoid first, then caution, then safe
+      allPairs.sort(function (a, b) {
+        var order = { avoid: 0, caution: 1, safe: 2 };
+        return order[a.status] - order[b.status];
+      });
+
+      // ── Render Summary Bar ──
+      var summaryBar = document.getElementById('sicc-summary-bar');
+      summaryBar.innerHTML =
+        '<div class="sicc-summary-stat">' +
+          '<div class="sicc-summary-num">' + avoidCount + '</div>' +
+          '<div class="sicc-summary-label">&#9940; Avoid</div>' +
+        '</div>' +
+        '<div class="sicc-summary-stat">' +
+          '<div class="sicc-summary-num">' + cautionCount + '</div>' +
+          '<div class="sicc-summary-label">&#9888; Caution</div>' +
+        '</div>' +
+        '<div class="sicc-summary-stat">' +
+          '<div class="sicc-summary-num">' + safeCount + '</div>' +
+          '<div class="sicc-summary-label">&#10003; Safe</div>' +
+        '</div>' +
+        '<div class="sicc-summary-stat">' +
+          '<div class="sicc-summary-num">' + allPairs.length + '</div>' +
+          '<div class="sicc-summary-label">Total Pairs</div>' +
+        '</div>';
+
+      // ── Render Results ──
+      var resultsEl = document.getElementById('sicc-results');
+
+      if (avoidCount === 0 && cautionCount === 0) {
+        // All safe
+        resultsEl.innerHTML =
+          '<div class="sicc-all-safe-banner">' +
+            '<div class="sicc-all-safe-icon">&#9989;</div>' +
+            '<div class="sicc-all-safe-title">No conflicts found!</div>' +
+            '<div class="sicc-all-safe-sub">All ' + allPairs.length + ' ingredient pair' + (allPairs.length !== 1 ? 's' : '') + ' in your selection are safe to use together.</div>' +
+          '</div>';
+      } else {
+        var html = '';
+
+        if (avoidCount > 0) {
+          html += '<div class="sicc-section-heading">&#9940; Combinations to Avoid (' + avoidCount + ')</div>';
+          html += '<div class="sicc-results-section">';
+          allPairs.forEach(function (p) {
+            if (p.status !== 'avoid') return;
+            html += renderConflictCard(p);
+          });
+          html += '</div>';
+        }
+
+        if (cautionCount > 0) {
+          html += '<div class="sicc-section-heading" style="margin-top: var(--space-3);">&#9888; Use With Caution (' + cautionCount + ')</div>';
+          html += '<div class="sicc-results-section">';
+          allPairs.forEach(function (p) {
+            if (p.status !== 'caution') return;
+            html += renderConflictCard(p);
+          });
+          html += '</div>';
+        }
+
+        if (safeCount > 0) {
+          html += '<div class="sicc-section-heading" style="margin-top: var(--space-3);">&#10003; Safe Combinations (' + safeCount + ')</div>';
+          html += '<div class="sicc-results-section">';
+          allPairs.forEach(function (p) {
+            if (p.status !== 'safe') return;
+            html += renderConflictCard(p);
+          });
+          html += '</div>';
+        }
+
+        resultsEl.innerHTML = html;
+      }
+
+      showEl(document.getElementById('sicc-results-wrap'));
+      document.getElementById('sicc-results-wrap').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function renderConflictCard(p) {
+      var badgeClass, badgeIcon, badgeText;
+      if (p.status === 'avoid') {
+        badgeClass = 'sicc-status-badge--avoid';
+        badgeIcon = '&#9940;';
+        badgeText = 'Avoid';
+      } else if (p.status === 'caution') {
+        badgeClass = 'sicc-status-badge--caution';
+        badgeIcon = '&#9888;';
+        badgeText = 'Use Caution';
+      } else {
+        badgeClass = 'sicc-status-badge--safe';
+        badgeIcon = '&#10003;';
+        badgeText = 'Safe';
+      }
+
+      return '<div class="sicc-conflict-card">' +
+        '<div class="sicc-conflict-header">' +
+          '<div class="sicc-conflict-names">' +
+            '<span class="sicc-conflict-pair">' +
+              escapeHtml(p.nameA) +
+              '<span class="sicc-conflict-sep">+</span>' +
+              escapeHtml(p.nameB) +
+            '</span>' +
+          '</div>' +
+          '<span class="sicc-status-badge ' + badgeClass + '">' +
+            '<span class="sicc-status-icon">' + badgeIcon + '</span>' +
+            badgeText +
+          '</span>' +
+        '</div>' +
+        '<div class="sicc-conflict-tip">' +
+          '<span class="sicc-conflict-tip-label">Tip:</span>' +
+          escapeHtml(p.tip) +
+        '</div>' +
+      '</div>';
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Reset ────────────────────────────────────────────────────────────────
+    function resetTool() {
+      var checkboxes = document.querySelectorAll('#sicc-ingredient-grid input[type="checkbox"]');
+      checkboxes.forEach(function (cb) { cb.checked = false; });
+      updateCount();
+      hideEl(document.getElementById('sicc-results-wrap'));
+    }
+
+    // ── Event Listeners ──────────────────────────────────────────────────────
+    document.getElementById('sicc-check-btn').addEventListener('click', checkConflicts);
+    document.getElementById('sicc-reset-btn').addEventListener('click', resetTool);
+
+    // ── FAQs ─────────────────────────────────────────────────────────────────
+    var faqs = [
+      {
+        q: 'Can I use retinol and vitamin C together?',
+        a: 'Use with caution. Retinol works best at a neutral pH while vitamin C (L-ascorbic acid) is most effective at a low pH (2.5–3.5). Layering them together forces a compromise that reduces the efficacy of both. The recommended approach is to apply vitamin C in the morning — where it also provides antioxidant protection against UV damage — and retinol in the evening.'
+      },
+      {
+        q: 'Why can\'t I use AHA and retinol at the same time?',
+        a: 'AHAs (glycolic and lactic acid) and retinol are both exfoliants. Using them together in the same session causes over-exfoliation — removing too much of the skin\'s protective barrier at once. This can lead to redness, flakiness, stinging, and increased sensitivity to the sun. The safest approach is to alternate: use AHA on one evening and retinol on the next.'
+      },
+      {
+        q: 'Is niacinamide and vitamin C a bad combination?',
+        a: 'At very high concentrations, niacinamide and vitamin C can interact to form niacin, which may cause temporary flushing. However, most modern skincare formulations contain concentrations low enough that this reaction is minimal or non-existent. If you\'re sensitive, apply them separately with a 30-minute gap, or use vitamin C in the morning and niacinamide in the evening.'
+      },
+      {
+        q: 'What ingredients conflict with benzoyl peroxide?',
+        a: 'Benzoyl peroxide is a potent oxidising agent that degrades both retinol and vitamin C on contact, significantly reducing their effectiveness. Avoid using benzoyl peroxide in the same session as either of these ingredients. A common schedule is: benzoyl peroxide in the morning routine, retinol or vitamin C in the evening.'
+      },
+      {
+        q: 'Can copper peptides be used with vitamin C?',
+        a: 'No — this is one of the most important conflicts to avoid. Vitamin C (ascorbic acid) is a reducing agent that reacts with copper ions in copper peptides, breaking apart the peptide complex and reducing the effectiveness of both ingredients. Use vitamin C in your morning routine and copper peptides in the evening for best results.'
+      },
+      {
+        q: 'What is the safest skincare ingredient to combine with everything?',
+        a: 'Hyaluronic acid is universally compatible and can be safely combined with virtually every skincare ingredient, including retinol, AHAs, BHAs, vitamin C, niacinamide, and peptides. It acts purely as a humectant — attracting and retaining moisture — with no chemical reactivity that would interfere with other actives.'
+      },
+      {
+        q: 'Is bakuchiol a safe alternative to retinol without the conflicts?',
+        a: 'Bakuchiol offers retinol-like benefits (cell turnover, collagen stimulation) with a gentler profile. Unlike retinol, it does not conflict with vitamin C, niacinamide, or AHAs. However, if you stack bakuchiol with actual retinol or tretinoin, you risk compounding the retinoid effect and causing irritation. Use bakuchiol as a replacement for retinol, not in addition to it.'
+      }
+    ];
+
+    TeamzTools.renderFAQs(faqs);
+
+    // ── Related Tools ─────────────────────────────────────────────────────────
+    var relatedTools = [
+      { slug: 'skincare/ingredient-checker', name: 'Skincare Ingredient Checker', description: 'Analyse individual ingredients for irritants, comedogenic substances, and pregnancy-unsafe compounds.' },
+      { slug: 'skincare/skin-type-quiz', name: 'Skin Type Quiz', description: 'Find out if you have oily, dry, combination, or sensitive skin to build the right routine.' },
+      { slug: 'skincare/retinol-percentage-guide', name: 'Retinol Percentage Guide', description: 'Understand retinol strengths from 0.025% to 1% and find the right concentration for your skin.' },
+      { slug: 'skincare/spf-calculator', name: 'SPF Calculator', description: 'Calculate how much SPF protection you actually need based on UV index and skin type.' },
+      { slug: 'skincare/routine-builder', name: 'Skincare Routine Builder', description: 'Build a complete AM and PM skincare routine with correct layering order for your skin type.' },
+      { slug: 'skincare/patch-test-timer', name: 'Patch Test Timer', description: 'Track skincare patch tests with 24h, 48h, and 72h check-in reminders before full-face use.' }
+    ];
+
+    TeamzTools.renderRelatedTools(relatedTools);
+
+    // ── Breadcrumbs ────────────────────────────────────────────────────────────
+    TeamzTools.renderBreadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Skincare Tools', url: '/skincare/' },
+      { name: 'Skincare Ingredient Conflict Checker', url: '/skincare/ingredient-conflict-checker/' }
+    ]);
+
+    // ── WebApp Schema ──────────────────────────────────────────────────────────
+
+  })();
+  </script>
+</body>
+</html>
