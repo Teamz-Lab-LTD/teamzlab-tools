@@ -1,6 +1,40 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #11)*
+*Last updated: 2026-03-28 (nightly build #12)*
+
+---
+
+## Completed This Build (nightly build #12)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| US 401k vs Roth 401k Comparison Calculator | /us/ | ✅ Built |
+| AU EOFY Tax Return Estimator 2025-26 | /au/ | ✅ Built |
+| CH Swiss Pillar 3a Tax Savings Calculator 2026 | /ch/ | ✅ Built |
+| SG CPF Housing Withdrawal Planner | /sg/ | ✅ Built |
+| UK Pension Annual Allowance Calculator 2025/26 | /uk/ | ✅ Built |
+| CA Ontario Land Transfer Tax Calculator | /ca/ | ✅ Built |
+| ES Calculadora Cuota Autónomo 2026 (multilang) | /es/ | ✅ Built |
+| ES Calculadora Nómina y Retención IRPF 2026 (multilang) | /es/ | ✅ Built |
+| PT Calculadora 13º Salário 2026 Brasil (multilang) | /pt/ | ✅ Built |
+| PT Calculadora de Férias Brasil 2026 (multilang) | /pt/ | ✅ Built |
+
+---
+
+## Keyword Backlog (next builds)
+
+| Keyword | Hub | Priority | Notes |
+|---------|-----|----------|-------|
+| NZ rental property tax calculator | /nz/ | High | Tier S, not built yet |
+| AU tax on investments calculator | /au/ | High | CGT discounts + dividends |
+| US Medicare Part D plan comparison | /us/ | High | Senior audience, high RPM |
+| IE pension tax relief calculator | /ie/ | High | Tier A, Ireland hub |
+| SG property stamp duty comparison | /sg/ | Medium | ABSD for foreigners |
+| CH AHV voluntarily insured calculator | /ch/ | Medium | Gap year / expat |
+| PT Simulador NHR Portugal | /pt/ | Medium | Expat/high-income |
+| DE Rentenrechner 2026 | /de/ | Medium | German pension calc |
+| AU Division 293 tax calculator | /au/ | Medium | High-income super tax |
+| US Self-directed IRA comparison | /us/ | Low | SDIRA vs traditional |
 
 ---
 
