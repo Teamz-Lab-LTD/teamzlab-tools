@@ -8,22 +8,15 @@
 
 | Tool | Hub | Status |
 |------|-----|--------|
-| IE Rent-a-Room Relief Calculator | /ie/ | ✅ Built |
-| SG HDB Resale COV Estimator | /sg/ | ✅ Built |
-| SG CPF FIRE Calculator | /sg/ | ✅ Built |
-| CA Ontario vs BC Tax Calculator 2025 | /ca/ | ✅ Built |
-| DE Freiberufler Steuerrechner 2026 | /de/ | ✅ Built |
-| DE Schenkungsteuer-Rechner 2026 | /de/ | ✅ Built |
-| US Quarterly Tax Estimator 2025 | /us/ | ✅ Built |
-| UK ISA Allowance Tracker 2025/26 | /uk/ | ✅ Built |
 | NL Hypotheekrenteaftrek Calculator 2026 | /nl/ | ✅ Built |
-| AU Division 293 Tax Calculator | /au/ | ✅ Built |
-| ES Calculadora IRPF Alquiler 2026 (multilang) | /es/ | ✅ Built |
-| ES Calculadora ISR Freelancer México 2026 (multilang) | /es/ | ✅ Built |
+| IE Rent-a-Room Relief Calculator 2025 | /ie/ | ✅ Built (pre-existing, verified) |
+| AU Division 293 Tax Calculator 2025-26 | /au/ | ✅ Built |
+| CA Ontario vs BC Tax Comparison 2025 | /ca/ | ✅ Built |
+| DE Schenkungsteuer-Rechner 2026 | /de/ | ✅ Built |
+| US Freelancer Quarterly Tax Calculator 2025 | /us/ | ✅ Built |
+| SG CPF FIRE Calculator 2025 | /sg/ | ✅ Built |
 | ES Calculadora IRPF Autónomo España 2026 (multilang) | /es/ | ✅ Built |
-| PT Calculadora Carnê-Leão 2026 (multilang) | /pt/ | ✅ Built |
-| PT Calculadora IRS Arrendamento 2026 (multilang) | /pt/ | ✅ Built |
-| PT Calculadora ITCMD Herança Brasil (multilang) | /pt/ | ✅ Built |
+| PT Calculadora ITCMD Herança Brasil 2025 (multilang) | /pt/ | ✅ Built |
 
 ---
 
@@ -33,6 +26,9 @@
 - AT Einkommensteuer Rechner 2026 (/at/) — Austria tax calculator, no calculator yet in AT hub
 - BE Belasting Berekenen (/be/) — Belgium income tax, Tier A country, zero tools
 - IL Income Tax Calculator (/il/) — Israel Tier S, zero English tools
+- IE Pension Tax Relief Calculator (/ie/) — Tier A, age-based relief bands (skipped this session — already exists)
+- US Self-Directed IRA Comparison (/us/) — SDIRA vs traditional IRA comparison
+- DE Freiberufler Steuerrechner 2026 (/de/) — German freelancer income tax (Freiberufler vs Gewerbetreibende)
 - UK CGT Calculator 2025/26 (/uk/) — Capital gains tax for shares and property
 - AU Employer Cost Calculator (/au/) — true cost of hiring including super, payroll tax, WorkCover
 - US Self-Directed IRA Calculator (/us/) — alternative investments, high RPM ($15+)
