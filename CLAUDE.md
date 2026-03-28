@@ -563,31 +563,16 @@ Missing any step = broken feature. Trace the data flow before marking done.
 
 ### Rule 19: Tool completeness checklist (enforced by pre-commit)
 Every tool MUST have ALL of these before committing:
-1. **`TeamzTools.initTool(config)`** — ONE call that handles FAQs, schemas, related tools, breadcrumbs, ad slot
-2. `<section class="tool-content">` — 300-600 words, keyword density 1-2%
-3. At least 3 H2 headings inside tool-content (for mid-content ad slots)
-4. `addEventListener` or JS functions (real tool logic, not just HTML)
-5. `@media (max-width: 600px)` responsive rules
-
-**NEW TOOLS MUST use `TeamzTools.initTool()` instead of calling 5 functions separately:**
-```javascript
-TeamzTools.initTool({
-  slug: 'hub/tool-slug',
-  title: 'Tool Title',
-  description: 'Meta description for WebApp schema.',
-  faqs: [
-    { q: 'Question?', a: 'Answer.' },
-    // 5+ FAQs required
-  ],
-  relatedTools: [
-    { slug: '/hub/tool/', name: 'Tool Name', description: 'Short description.' },
-    // 3-6 related tools required
-  ]
-});
-```
-This auto-creates missing containers (tool-faqs, related-tools, ad-slot), renders breadcrumbs, injects all schemas.
-No need for `<div id="tool-faqs">` or `<div id="related-tools">` in HTML — initTool creates them if missing.
-Old tools using individual calls (renderFAQs, injectWebAppSchema, etc.) still work.
+1. `TeamzTools.renderFAQs(faqs)` + `TeamzTools.injectFAQSchema(faqs)` — 5+ FAQs
+2. `TeamzTools.injectWebAppSchema({slug, title, description})` — WebApplication schema
+3. `TeamzTools.renderRelatedTools([...])` — 3-6 related tools with internal links
+4. `<section class="tool-content">` — 300-600 words, keyword density 1-2%
+5. At least 3 H2 headings inside tool-content (for mid-content ad slots)
+6. `addEventListener` or JS functions (real tool logic, not just HTML)
+7. `TeamzTools.renderBreadcrumbs()` + `injectBreadcrumbSchema()`
+8. `@media (max-width: 600px)` responsive rules
+9. `<div id="tool-faqs"></div>` — MUST use exact ID `tool-faqs` (pre-commit validates this)
+10. `<div id="related-tools"></div>` — MUST use exact ID `related-tools`
 
 ### Rule 20: Share link URL params — handle messaging app pollution
 - When platforms (WhatsApp, Messenger) share URLs, they append text to the last URL param

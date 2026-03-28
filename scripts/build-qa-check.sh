@@ -17,9 +17,11 @@ NC='\033[0m'
 
 HUB_FILTER=""
 VERBOSE=false
+FIX_MODE=false
 for arg in "$@"; do
   case "$arg" in
     --verbose) VERBOSE=true ;;
+    --fix) FIX_MODE=true ;;
     --hub) HUB_FILTER="next" ;;
     *)
       if [ "$HUB_FILTER" = "next" ]; then HUB_FILTER="$arg"; fi
@@ -59,7 +61,7 @@ echo ""
 # --- Counters ---
 TOTAL=0
 # SEO
-NO_JS=0; LOW_CONTENT=0; NO_FAQS=0; NO_RELATED=0; NO_SCHEMA=0; NO_COPY_HANDLER=0; BAD_FAQ_ID=0
+NO_JS=0; LOW_CONTENT=0; NO_FAQS=0; NO_RELATED=0; NO_SCHEMA=0; NO_COPY_HANDLER=0; BAD_FAQ_ID=0; BAD_RELATED_ID=0; BAD_BREADCRUMB_ID=0; NO_OG_IMAGE=0; NO_HREFLANG=0
 # Runtime
 ALERT_COUNT=0; AI_NO_ENGINE=0; NULL_BG=0; DISPLAY_EMPTY=0
 # UX
@@ -152,17 +154,91 @@ print(f"{words}:{cjk}")
   has_tool_faqs_id=$(echo "$CONTENT" | grep -c 'id="tool-faqs"' 2>/dev/null || true)
   if [ "$calls_renderFAQs" -gt 0 ] && [ "$has_tool_faqs_id" -eq 0 ]; then
     BAD_FAQ_ID=$((BAD_FAQ_ID + 1))
-    ISSUES_SEO="$ISSUES_SEO
-  ${RED}WRONG FAQ ID:${NC} $SLUG — calls renderFAQs() but missing id=\"tool-faqs\""
+    if [ "$FIX_MODE" = true ]; then
+      # Auto-fix: replace any wrong FAQ ID with the correct one
+      wrong_faq_id=$(grep -oE 'id="[^"]*faq[^"]*"' "$f" 2>/dev/null | head -1)
+      if [ -n "$wrong_faq_id" ]; then
+        sed -i '' "s|${wrong_faq_id}|id=\"tool-faqs\"|" "$f"
+        ISSUES_SEO="$ISSUES_SEO
+  ${GRN}FIXED FAQ ID:${NC} $SLUG — ${wrong_faq_id} → id=\"tool-faqs\""
+      else
+        # No FAQ div at all — insert one before </main> or before footer
+        sed -i '' 's|</main>|    <div id="tool-faqs"></div>\n  </main>|' "$f"
+        ISSUES_SEO="$ISSUES_SEO
+  ${GRN}ADDED FAQ DIV:${NC} $SLUG — inserted <div id=\"tool-faqs\"></div>"
+      fi
+    else
+      ISSUES_SEO="$ISSUES_SEO
+  ${RED}WRONG FAQ ID:${NC} $SLUG — calls renderFAQs() but missing id=\"tool-faqs\" (run --fix to auto-repair)"
+    fi
   fi
 
   # Missing related tools
   has_related=$(echo "$CONTENT" | grep -c 'renderRelatedTools\|related-tools' 2>/dev/null || true)
   if [ "$has_related" -eq 0 ]; then NO_RELATED=$((NO_RELATED + 1)); fi
 
+  # Wrong related-tools container ID (renderRelatedTools expects id="related-tools")
+  calls_renderRelated=$(echo "$CONTENT" | grep -c 'renderRelatedTools' 2>/dev/null || true)
+  has_related_id=$(echo "$CONTENT" | grep -c 'id="related-tools"' 2>/dev/null || true)
+  if [ "$calls_renderRelated" -gt 0 ] && [ "$has_related_id" -eq 0 ]; then
+    BAD_RELATED_ID=$((BAD_RELATED_ID + 1))
+    if [ "$FIX_MODE" = true ]; then
+      wrong_rel_id=$(grep -oE 'id="[a-zA-Z0-9_-]*related[a-zA-Z0-9_-]*"' "$f" 2>/dev/null | head -1)
+      if [ -n "$wrong_rel_id" ]; then
+        sed -i '' "s|${wrong_rel_id}|id=\"related-tools\"|" "$f"
+        ISSUES_SEO="$ISSUES_SEO
+  ${GRN}FIXED RELATED ID:${NC} $SLUG — ${wrong_rel_id} → id=\"related-tools\""
+      else
+        sed -i '' 's|</main>|    <div id="related-tools"></div>\n  </main>|' "$f"
+        ISSUES_SEO="$ISSUES_SEO
+  ${GRN}ADDED RELATED DIV:${NC} $SLUG — inserted <div id=\"related-tools\"></div>"
+      fi
+    else
+      ISSUES_SEO="$ISSUES_SEO
+  ${RED}WRONG RELATED ID:${NC} $SLUG — calls renderRelatedTools() but missing id=\"related-tools\" (run --fix to auto-repair)"
+    fi
+  fi
+
+  # Wrong breadcrumbs container ID (renderBreadcrumbs expects id="breadcrumbs")
+  calls_renderBreadcrumbs=$(echo "$CONTENT" | grep -c 'renderBreadcrumbs' 2>/dev/null || true)
+  has_breadcrumbs_id=$(echo "$CONTENT" | grep -c 'id="breadcrumbs"' 2>/dev/null || true)
+  if [ "$calls_renderBreadcrumbs" -gt 0 ] && [ "$has_breadcrumbs_id" -eq 0 ]; then
+    BAD_BREADCRUMB_ID=$((BAD_BREADCRUMB_ID + 1))
+    if [ "$FIX_MODE" = true ]; then
+      wrong_bc_id=$(grep -oE 'id="[a-zA-Z0-9_-]*bread[a-zA-Z0-9_-]*"' "$f" 2>/dev/null | head -1)
+      if [ -n "$wrong_bc_id" ]; then
+        sed -i '' "s|${wrong_bc_id}|id=\"breadcrumbs\"|" "$f"
+        ISSUES_SEO="$ISSUES_SEO
+  ${GRN}FIXED BREADCRUMB ID:${NC} $SLUG — ${wrong_bc_id} → id=\"breadcrumbs\""
+      fi
+    else
+      ISSUES_SEO="$ISSUES_SEO
+  ${RED}WRONG BREADCRUMB ID:${NC} $SLUG — calls renderBreadcrumbs() but missing id=\"breadcrumbs\" (run --fix to auto-repair)"
+    fi
+  fi
+
   # Missing WebApp schema
   has_webapp=$(echo "$CONTENT" | grep -c 'injectWebAppSchema\|WebApplication' 2>/dev/null || true)
   if [ "$has_webapp" -eq 0 ]; then NO_SCHEMA=$((NO_SCHEMA + 1)); fi
+
+  # Missing og:image
+  has_og_image=$(echo "$CONTENT" | grep -c 'og:image' 2>/dev/null || true)
+  if [ "$has_og_image" -eq 0 ]; then
+    NO_OG_IMAGE=$((NO_OG_IMAGE + 1))
+    ISSUES_SEO="$ISSUES_SEO
+  ${RED}NO OG:IMAGE:${NC} $SLUG"
+  fi
+
+  # Non-English tools missing hreflang
+  page_lang=$(echo "$CONTENT" | grep -oP 'html lang="\K[^"]+' 2>/dev/null | head -1)
+  if [ -n "$page_lang" ] && [ "$page_lang" != "en" ]; then
+    has_hreflang=$(echo "$CONTENT" | grep -c 'hreflang' 2>/dev/null || true)
+    if [ "$has_hreflang" -eq 0 ]; then
+      NO_HREFLANG=$((NO_HREFLANG + 1))
+      ISSUES_SEO="$ISSUES_SEO
+  ${RED}NO HREFLANG:${NC} $SLUG (lang=$page_lang)"
+    fi
+  fi
 
   # Broken Copy Image
   has_copy_img=$(echo "$CONTENT" | grep -ci 'Copy Image' 2>/dev/null || true)
@@ -274,6 +350,10 @@ printf "    Missing FAQs:         %s%d%s\n" "$YEL" "$NO_FAQS" "$NC"
 printf "    Missing related:      %s%d%s\n" "$YEL" "$NO_RELATED" "$NC"
 printf "    Missing WebApp:       %s%d%s\n" "$YEL" "$NO_SCHEMA" "$NC"
 printf "    Wrong FAQ container:  %s%d%s\n" "$RED" "$BAD_FAQ_ID" "$NC"
+printf "    Wrong related ID:     %s%d%s\n" "$RED" "$BAD_RELATED_ID" "$NC"
+printf "    Wrong breadcrumb ID:  %s%d%s\n" "$RED" "$BAD_BREADCRUMB_ID" "$NC"
+printf "    Missing og:image:     %s%d%s\n" "$RED" "$NO_OG_IMAGE" "$NC"
+printf "    Missing hreflang:     %s%d%s\n" "$RED" "$NO_HREFLANG" "$NC"
 printf "    Broken Copy Image:    %s%d%s\n" "$RED" "$NO_COPY_HANDLER" "$NC"
 echo ""
 
@@ -293,7 +373,7 @@ printf "    White on accent:      %s%d%s\n" "$RED" "$WHITE_ACCENT" "$NC"
 printf "    No loading state:     %s%d%s\n" "$YEL" "$NO_LOADING" "$NC"
 echo ""
 
-TOTAL_ISSUES=$((NO_JS + LOW_CONTENT + NO_FAQS + NO_RELATED + NO_SCHEMA + NO_COPY_HANDLER + BAD_FAQ_ID + AI_NO_ENGINE + NULL_BG + DISPLAY_EMPTY + NO_HERO + NO_LABELS + WHITE_ACCENT))
+TOTAL_ISSUES=$((NO_JS + LOW_CONTENT + NO_FAQS + NO_RELATED + NO_SCHEMA + NO_COPY_HANDLER + BAD_FAQ_ID + BAD_RELATED_ID + BAD_BREADCRUMB_ID + NO_OG_IMAGE + NO_HREFLANG + AI_NO_ENGINE + NULL_BG + DISPLAY_EMPTY + NO_HERO + NO_LABELS + WHITE_ACCENT))
 printf "  Total tools:  %d\n" "$TOTAL"
 printf "  Key issues:   %s%d%s\n" "$RED" "$TOTAL_ISSUES" "$NC"
 echo ""
@@ -315,6 +395,8 @@ echo ""
 echo "  Run: ./build-qa-check.sh               (all tools)"
 echo "  Run: ./build-qa-check.sh --hub ai       (one hub)"
 echo "  Run: ./build-qa-check.sh --verbose      (show all issues)"
+echo "  Run: ./build-qa-check.sh --fix          (auto-fix FAQ IDs)"
+echo "  Run: ./build-qa-check.sh --fix --verbose (fix + show details)"
 echo "============================================"
 
 rm -f "$TMPFILE"

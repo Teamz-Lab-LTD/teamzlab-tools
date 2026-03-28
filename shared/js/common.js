@@ -674,31 +674,9 @@ var TeamzTools = (function () {
     } catch (e) {}
   }
 
-  // --- Auto-find or auto-create a container by trying multiple IDs, then fallback to creating one ---
-  function _findOrCreateContainer(ids, tagName) {
-    var container;
-    for (var i = 0; i < ids.length; i++) {
-      container = document.getElementById(ids[i]);
-      if (container) return container;
-    }
-    // Not found — create and insert before footer or at end of main
-    container = document.createElement(tagName || 'div');
-    container.id = ids[0]; // canonical ID
-    var main = document.querySelector('.site-main') || document.querySelector('main');
-    var footer = document.getElementById('site-footer');
-    if (footer && footer.parentNode) {
-      footer.parentNode.insertBefore(container, footer);
-    } else if (main) {
-      main.appendChild(container);
-    } else {
-      document.body.appendChild(container);
-    }
-    return container;
-  }
-
   function renderRelatedTools(tools) {
-    if (!tools || !tools.length) return;
-    var container = _findOrCreateContainer(['related-tools', 'related', 'related-tools-section'], 'div');
+    var container = document.getElementById('related-tools');
+    if (!container || !tools || !tools.length) return;
 
     var html = '<h2 class="section-title">Related Tools</h2>';
     html += '<div class="related-tools-grid">';
@@ -713,8 +691,8 @@ var TeamzTools = (function () {
   }
 
   function renderFAQs(faqs) {
-    if (!faqs || !faqs.length) return;
-    var container = _findOrCreateContainer(['tool-faqs', 'faqs-section', 'faqs', 'faq-section', 'faq-list'], 'div');
+    var container = document.getElementById('tool-faqs');
+    if (!container || !faqs || !faqs.length) return;
 
     var html = '<h2 class="section-title">Frequently Asked Questions</h2>';
     faqs.forEach(function (faq) {
@@ -1169,62 +1147,6 @@ var TeamzTools = (function () {
     renderFeedback: renderFeedback,
     SITE_NAME: SITE_NAME,
     SITE_URL: SITE_URL,
-
-    // ─── CENTRAL TOOL INIT — one config, everything rendered ───
-    /**
-     * Initialize a tool page from a single config object.
-     * Handles: breadcrumbs, FAQs, related tools, WebApp schema, FAQ schema, ad slot.
-     *
-     * Usage:
-     *   TeamzTools.initTool({
-     *     slug: 'tools/sop-maker',
-     *     title: 'Free SOP Maker',
-     *     description: 'Create SOPs with screenshots...',
-     *     faqs: [{ q: '...', a: '...' }, ...],
-     *     relatedTools: [{ slug: '/tools/foo/', name: 'Foo', description: '...' }, ...],
-     *   });
-     *
-     * All fields optional — skips what's missing.
-     * Auto-creates missing DOM containers (tool-faqs, related-tools, ad-slot).
-     */
-    initTool: function(config) {
-      if (!config) return;
-
-      // 1. Breadcrumbs
-      renderBreadcrumbs();
-
-      // 2. Ad slot — ensure one exists after .tool-calculator
-      var existingAd = document.querySelector('.ad-slot');
-      if (!existingAd) {
-        var calc = document.querySelector('.tool-calculator');
-        if (calc && calc.parentNode) {
-          var ad = document.createElement('div');
-          ad.className = 'ad-slot';
-          ad.textContent = 'Ad Space';
-          calc.parentNode.insertBefore(ad, calc.nextSibling);
-        }
-      }
-
-      // 3. FAQs
-      if (config.faqs && config.faqs.length) {
-        renderFAQs(config.faqs);
-        injectFAQSchema(config.faqs);
-      }
-
-      // 4. Related tools
-      if (config.relatedTools && config.relatedTools.length) {
-        renderRelatedTools(config.relatedTools);
-      }
-
-      // 5. WebApp schema
-      if (config.slug) {
-        injectWebAppSchema({
-          slug: config.slug,
-          title: config.title || document.title.replace(' — Teamz Lab Tools', ''),
-          description: config.description || (document.querySelector('meta[name="description"]') || {}).content || ''
-        });
-      }
-    },
 
     // ─── VIRAL SHARE LINKS — encode/decode tool data in URL params ───
     /**
