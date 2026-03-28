@@ -3,10 +3,10 @@
 build-static-schema.py
 Extracts schema data from each page's inline JS and injects
 static <script type="application/ld+json"> into <head>.
-Runs via build-static-schema.sh (called by pre-commit hook).
+Called directly by pre-commit hook and nightly/continuous build scripts.
 """
 
-import os, re, json, html, glob
+import os, re, json, html, glob, sys, subprocess
 
 SITE_URL = "https://tool.teamzlab.com"
 TEAMZ_URL = "https://teamzlab.com"
@@ -326,17 +326,64 @@ def process_file(filepath):
 def main():
     print("=== Building static schema ===")
 
-    for filepath in sorted(glob.glob("**/index.html", recursive=True)):
-        # Skip root-level non-tool pages
-        parts = filepath.split("/")
-        if len(parts) < 2:
-            continue  # skip root index.html
-        if parts[0] in SKIP_DIRS:
-            continue
-        if filepath == "404.html":
-            continue
+    # Support targeted runs:
+    #   python3 build-static-schema.py                → all tools
+    #   python3 build-static-schema.py --staged        → only git-staged files (used by pre-commit)
+    #   python3 build-static-schema.py ai/grammar-checker  → specific tool path
+    #   python3 build-static-schema.py ai/ health/     → specific hubs
 
-        process_file(filepath)
+    args = sys.argv[1:]
+    staged_only = "--staged" in args
+    targets = [a for a in args if a != "--staged"]
+
+    if staged_only:
+        # Only process staged index.html files
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--cached", "--name-only", "--diff-filter=ACM"],
+                capture_output=True, text=True, timeout=10,
+            )
+            files = [f for f in result.stdout.strip().split("\n") if f.endswith("index.html")]
+        except Exception:
+            files = []
+        if not files:
+            print("  No staged index.html files — skipping")
+            print("=== Done ===")
+            return
+        print(f"  Targeted: {len(files)} staged file(s)")
+        for filepath in sorted(files):
+            parts = filepath.split("/")
+            if len(parts) < 2 or parts[0] in SKIP_DIRS:
+                continue
+            process_file(filepath)
+    elif targets:
+        # Process specific paths (tool or hub)
+        files = []
+        for t in targets:
+            t = t.rstrip("/")
+            idx = os.path.join(t, "index.html")
+            if os.path.isfile(idx):
+                files.append(idx)
+            elif os.path.isdir(t):
+                for f in sorted(glob.glob(os.path.join(t, "**/index.html"), recursive=True)):
+                    files.append(f)
+        print(f"  Targeted: {len(files)} file(s)")
+        for filepath in sorted(files):
+            parts = filepath.split("/")
+            if len(parts) < 2 or parts[0] in SKIP_DIRS:
+                continue
+            process_file(filepath)
+    else:
+        # Process all tools
+        for filepath in sorted(glob.glob("**/index.html", recursive=True)):
+            parts = filepath.split("/")
+            if len(parts) < 2:
+                continue
+            if parts[0] in SKIP_DIRS:
+                continue
+            if filepath == "404.html":
+                continue
+            process_file(filepath)
 
     print(f"  Static schema: {count} pages updated, {skip} skipped")
     if twitter_fixed:
