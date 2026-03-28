@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KiwiSaver Fund Selector Quiz — Teamz Lab Tools</title>
+  <meta name="description" content="Find your ideal KiwiSaver fund type fast. Answer 6 questions on age, goals and risk tolerance to get a free personalised recommendation. 100% private.">
+  <meta property="og:title" content="KiwiSaver Fund Selector Quiz — Teamz Lab Tools">
+  <meta property="og:description" content="Find your ideal KiwiSaver fund type fast. Answer 6 questions on age, goals and risk tolerance to get a free personalised recommendation. 100% private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/nz/kiwisaver-fund-selector/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/nz.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="KiwiSaver Fund Selector Quiz — Teamz Lab Tools">
+  <meta name="twitter:description" content="Find your ideal KiwiSaver fund type in 2 minutes. Answer 6 questions about your age, goals and risk tolerance to get a personalised fund recommendation.">
+  <meta name="twitter:image" content="https://tool.teamzlab.com/og-images/nz.png">
+  <link rel="canonical" href="https://tool.teamzlab.com/nz/kiwisaver-fund-selector/">
+  <link rel="alternate" hreflang="en" href="https://tool.teamzlab.com/nz/kiwisaver-fund-selector/">
+  <link rel="alternate" hreflang="x-default" href="https://tool.teamzlab.com/nz/kiwisaver-fund-selector/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* Quiz question cards */
+    .quiz-question {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-bottom: var(--space-3);
+    }
+    .quiz-question-number {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--space-1);
+    }
+    .quiz-question-text {
+      font-size: var(--text-base);
+      font-weight: 600;
+      color: var(--heading);
+      margin-bottom: var(--space-3);
+      line-height: 1.4;
+    }
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    .quiz-option {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      cursor: pointer;
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color 0.15s, background 0.15s;
+      background: var(--bg);
+    }
+    .quiz-option:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+    .quiz-option input[type="radio"] {
+      margin-top: 2px;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+    }
+    .quiz-option input[type="radio"]:checked + .quiz-option-label {
+      color: var(--heading);
+      font-weight: 600;
+    }
+    .quiz-option:has(input[type="radio"]:checked) {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+    .quiz-option-label {
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    /* Progress bar */
+    .quiz-progress-wrap {
+      margin-bottom: var(--space-4);
+    }
+    .quiz-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-bottom: var(--space-1);
+    }
+    .quiz-progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .quiz-progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* Result card */
+    .kfs-result {
+      display: none;
+      margin-top: var(--space-4);
+    }
+    .kfs-result-card {
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .kfs-result-card--accent {
+      background: var(--accent);
+    }
+    .kfs-fund-label {
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-text);
+      opacity: 0.75;
+      margin-bottom: var(--space-1);
+    }
+    .kfs-fund-name {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      color: var(--accent-text);
+      line-height: 1.15;
+      margin-bottom: var(--space-2);
+    }
+    .kfs-fund-tagline {
+      font-size: var(--text-sm);
+      color: var(--accent-text);
+      opacity: 0.85;
+      margin-bottom: var(--space-4);
+    }
+    .kfs-score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.15);
+      border-radius: 99px;
+      padding: 4px 14px;
+      font-size: var(--text-xs);
+      font-weight: 700;
+      color: var(--accent-text);
+      margin-bottom: var(--space-4);
+    }
+    .kfs-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+    .kfs-stat {
+      background: rgba(0,0,0,0.12);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+      text-align: center;
+    }
+    .kfs-stat-label {
+      font-size: var(--text-xs);
+      color: var(--accent-text);
+      opacity: 0.75;
+      margin-bottom: 2px;
+    }
+    .kfs-stat-value {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--accent-text);
+    }
+
+    /* Result details below card */
+    .kfs-details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-top: var(--space-3);
+    }
+    .kfs-details-title {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: var(--space-2);
+    }
+    .kfs-providers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      margin-bottom: var(--space-3);
+    }
+    .kfs-provider-tag {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px 10px;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--text);
+    }
+    .kfs-switch-tip {
+      background: var(--bg);
+      border-left: 3px solid var(--accent);
+      padding: var(--space-2) var(--space-3);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .kfs-switch-tip strong {
+      color: var(--heading);
+    }
+    .kfs-retake-btn {
+      margin-top: var(--space-4);
+      width: 100%;
+    }
+
+    /* Validation hint */
+    .quiz-hint {
+      display: none;
+      color: var(--text);
+      font-size: var(--text-xs);
+      margin-top: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--surface);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      .kfs-stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .kfs-result-card {
+        padding: var(--space-4);
+      }
+      .quiz-question {
+        padding: var(--space-3);
+      }
+      .kfs-details {
+        padding: var(--space-3);
+      }
+      .quiz-options {
+        gap: var(--space-1);
+      }
+      .quiz-option {
+        padding: var(--space-2);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "KiwiSaver Fund Selector Quiz", "description": "Quiz-style tool that recommends the ideal KiwiSaver fund type based on your age, risk tolerance, and retirement goals.", "url": "https://tool.teamzlab.com//nz/kiwisaver-fund-selector//", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div class="tool-container">
+      <nav class="breadcrumb" id="breadcrumbs" aria-label="Breadcrumb"></nav>
+
+      <h1>KiwiSaver Fund Selector Quiz</h1>
+      <p class="tool-intro">Answer 6 quick questions about your age, investment horizon, and risk tolerance to find the right KiwiSaver fund type for you — Defensive, Conservative, Balanced, Growth, or Aggressive Growth.</p>
+
+      <section class="tool-calculator">
+        <!-- Progress bar -->
+        <div class="quiz-progress-wrap">
+          <div class="quiz-progress-label">
+            <span id="progress-text">Answer all questions below</span>
+            <span id="progress-count">0 / 6 answered</span>
+          </div>
+          <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Quiz form -->
+        <form id="quiz-form" novalidate>
+
+          <!-- Q1: Age -->
+          <div class="quiz-question">
+            <div class="quiz-question-number">Question 1 of 6</div>
+            <div class="quiz-question-text">How old are you?</div>
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" id="q1_a" name="q1" value="3">
+                <span class="quiz-option-label">Under 30</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q1_b" name="q1" value="2">
+                <span class="quiz-option-label">30 – 39</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q1_c" name="q1" value="1">
+                <span class="quiz-option-label">40 – 49</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q1_d" name="q1" value="0">
+                <span class="quiz-option-label">50 – 59</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q1_e" name="q1" value="-2">
+                <span class="quiz-option-label">60 or over</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Q2: Withdrawal timeframe -->
+          <div class="quiz-question">
+            <div class="quiz-question-number">Question 2 of 6</div>
+            <div class="quiz-question-text">When do you plan to withdraw your KiwiSaver primarily?</div>
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" id="q2_a" name="q2" value="3">
+                <span class="quiz-option-label">More than 30 years away</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q2_b" name="q2" value="2">
+                <span class="quiz-option-label">20 – 30 years away</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q2_c" name="q2" value="1">
+                <span class="quiz-option-label">10 – 20 years away</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q2_d" name="q2" value="0">
+                <span class="quiz-option-label">Within 10 years</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q2_e" name="q2" value="-2">
+                <span class="quiz-option-label">Within 5 years (first home or retirement soon)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Q3: Market drop reaction -->
+          <div class="quiz-question">
+            <div class="quiz-question-number">Question 3 of 6</div>
+            <div class="quiz-question-text">How would you react if your KiwiSaver balance dropped 20% in a year?</div>
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" id="q3_a" name="q3" value="3">
+                <span class="quiz-option-label">Invest more — great buying opportunity</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q3_b" name="q3" value="2">
+                <span class="quiz-option-label">Stay calm, I'd leave it as is</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q3_c" name="q3" value="1">
+                <span class="quiz-option-label">Slightly worried, but I wouldn't change funds</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q3_d" name="q3" value="-1">
+                <span class="quiz-option-label">I'd probably move to a safer fund</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q3_e" name="q3" value="-3">
+                <span class="quiz-option-label">Immediately switch to cash or a defensive fund</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Q4: Primary goal -->
+          <div class="quiz-question">
+            <div class="quiz-question-number">Question 4 of 6</div>
+            <div class="quiz-question-text">What is your primary goal for KiwiSaver?</div>
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" id="q4_a" name="q4" value="3">
+                <span class="quiz-option-label">Maximum long-term growth for retirement</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q4_b" name="q4" value="1">
+                <span class="quiz-option-label">Balanced growth for retirement</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q4_c" name="q4" value="-1">
+                <span class="quiz-option-label">First home purchase</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q4_d" name="q4" value="-2">
+                <span class="quiz-option-label">Short-term savings with some growth</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q4_e" name="q4" value="-3">
+                <span class="quiz-option-label">Capital preservation (don't want to lose money)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Q5: Financial situation -->
+          <div class="quiz-question">
+            <div class="quiz-question-number">Question 5 of 6</div>
+            <div class="quiz-question-text">What is your current financial situation?</div>
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" id="q5_a" name="q5" value="2">
+                <span class="quiz-option-label">High income, no debt, emergency fund in place</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q5_b" name="q5" value="1">
+                <span class="quiz-option-label">Comfortable income, small mortgage</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q5_c" name="q5" value="0">
+                <span class="quiz-option-label">Average income, some debt</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q5_d" name="q5" value="-1">
+                <span class="quiz-option-label">Lower income, KiwiSaver is my main savings</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q5_e" name="q5" value="-2">
+                <span class="quiz-option-label">Financial stress — I may need this money in an emergency</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Q6: Investment experience -->
+          <div class="quiz-question">
+            <div class="quiz-question-number">Question 6 of 6</div>
+            <div class="quiz-question-text">How familiar are you with investing?</div>
+            <div class="quiz-options">
+              <label class="quiz-option">
+                <input type="radio" id="q6_a" name="q6" value="2">
+                <span class="quiz-option-label">Very experienced investor</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q6_b" name="q6" value="1">
+                <span class="quiz-option-label">Some investing knowledge</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q6_c" name="q6" value="0">
+                <span class="quiz-option-label">Learning as I go</span>
+              </label>
+              <label class="quiz-option">
+                <input type="radio" id="q6_d" name="q6" value="-1">
+                <span class="quiz-option-label">Not confident with investing</span>
+              </label>
+            </div>
+          </div>
+
+          <p class="quiz-hint" id="quiz-hint">Please answer all 6 questions to get your recommendation.</p>
+
+          <button type="button" class="btn-primary" id="get-recommendation-btn" style="width:100%;margin-top:var(--space-3);">
+            Get My Fund Recommendation
+          </button>
+        </form>
+
+        <!-- Result -->
+        <div class="kfs-result" id="kfs-result">
+          <div class="kfs-result-card kfs-result-card--accent" id="result-card">
+            <div class="kfs-fund-label">Your Recommended KiwiSaver Fund</div>
+            <div class="kfs-fund-name" id="result-fund-name"></div>
+            <div class="kfs-fund-tagline" id="result-fund-tagline"></div>
+            <div class="kfs-score-badge" id="result-score-badge"></div>
+            <div class="kfs-stats-grid">
+              <div class="kfs-stat">
+                <div class="kfs-stat-label">Growth Assets</div>
+                <div class="kfs-stat-value" id="result-growth-pct"></div>
+              </div>
+              <div class="kfs-stat">
+                <div class="kfs-stat-label">Expected Return</div>
+                <div class="kfs-stat-value" id="result-return-range"></div>
+              </div>
+              <div class="kfs-stat">
+                <div class="kfs-stat-label">Risk Level</div>
+                <div class="kfs-stat-value" id="result-risk-level"></div>
+              </div>
+              <div class="kfs-stat">
+                <div class="kfs-stat-label">Best For</div>
+                <div class="kfs-stat-value" id="result-best-for"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="kfs-details">
+            <div class="kfs-details-title">Providers that offer this fund type</div>
+            <div class="kfs-providers" id="result-providers"></div>
+            <div class="kfs-details-title" style="margin-top:var(--space-3);">How to switch</div>
+            <div class="kfs-switch-tip" id="result-switch-tip"></div>
+          </div>
+
+          <button type="button" class="btn-secondary kfs-retake-btn" id="retake-btn">
+            Retake Quiz
+          </button>
+        </div>
+      </section>
+
+      <div class="ad-slot">Ad Space</div>
+
+      <section class="tool-content">
+        <h2>Understanding KiwiSaver Fund Types</h2>
+        <p>KiwiSaver offers five main fund types, each designed for a different risk tolerance and investment timeframe. The core difference is the split between <strong>growth assets</strong> (shares, listed property) and <strong>income assets</strong> (bonds, cash). Growth assets deliver higher long-term returns but fluctuate more in the short term. Income assets are more stable but grow more slowly. Choosing the right fund type is one of the most important KiwiSaver decisions you can make — it can mean tens of thousands of dollars difference at retirement.</p>
+        <p>Based on Sorted NZ research, a 25-year-old in a Balanced fund instead of a Growth fund could retire with roughly $50,000–$100,000 less, simply because of the more conservative asset split over 40 years. The good news is you can switch at any time, and this quiz helps you start in the right place.</p>
+
+        <h2>How the Five Fund Types Compare</h2>
+        <p>Here is a quick comparison of all five KiwiSaver fund types so you know what you are choosing between:</p>
+        <ul style="padding-left:var(--space-4);line-height:1.9;color:var(--text);">
+          <li><strong>Defensive fund:</strong> 10–20% growth assets, 80–90% income assets. Expected return: 3–5% p.a. Best for: people within 1–3 years of retirement or first home purchase. Lowest volatility.</li>
+          <li><strong>Conservative fund:</strong> 20–35% growth assets, 65–80% income assets. Expected return: 4–6% p.a. Best for: people within 5–10 years of needing the money.</li>
+          <li><strong>Balanced fund:</strong> 50–60% growth assets, 40–50% income assets. Expected return: 5–8% p.a. Best for: medium-term investors with 10–20 years until withdrawal. The IRD default since 2021.</li>
+          <li><strong>Growth fund:</strong> 70–85% growth assets, 15–30% income assets. Expected return: 6–10% p.a. Best for: investors with 20+ years and moderate-to-high risk tolerance. Most popular for under-40s.</li>
+          <li><strong>Aggressive Growth fund:</strong> 85–100% growth assets, 0–15% income assets. Expected return: 7–12% p.a. Best for: young investors with 30+ years and high risk tolerance who can handle big short-term drops.</li>
+        </ul>
+        <p>Note: Return ranges are approximate historical averages and are not guaranteed. Past performance does not guarantee future returns. All returns are before fees and taxes.</p>
+
+        <h2>When to Consider Switching KiwiSaver Funds</h2>
+        <p>Your ideal KiwiSaver fund should change as your life changes. Here are the key triggers to review your fund type:</p>
+        <ul style="padding-left:var(--space-4);line-height:1.9;color:var(--text);">
+          <li><strong>Approaching retirement:</strong> As you near 65, shift gradually from Growth toward Conservative or Defensive to protect your balance from a market drop just before you withdraw.</li>
+          <li><strong>Planning to buy a first home:</strong> If you plan to use KiwiSaver within 3–5 years, switch to Conservative or Defensive well in advance. A market correction the year before your purchase could reduce your deposit significantly.</li>
+          <li><strong>Big life changes:</strong> A new job with higher income, paying off debt, or receiving an inheritance can all change your risk capacity — revisit your fund type.</li>
+          <li><strong>Market crashes:</strong> Switching to Defensive after a crash and back to Growth after recovery is "panic switching" and typically hurts returns. Sorted NZ data shows staying put during downturns outperforms market timing in the long run.</li>
+        </ul>
+        <p>Last updated: March 2026. Fund return estimates are based on Sorted NZ and Morningstar NZ data for the 2015–2025 period. Always confirm current rates with your provider.</p>
+      </section>
+
+      <div id="tool-faqs"></div>
+      <div id="related-tools"></div>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    // Breadcrumbs
+    TeamzTools.renderBreadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'New Zealand Tools', url: '/nz/' },
+      { name: 'KiwiSaver Fund Selector Quiz' }
+    ]);
+
+    // FAQs
+    var faqs = [
+      {
+        question: 'What is the difference between KiwiSaver fund types?',
+        answer: 'KiwiSaver fund types differ by how much they invest in growth assets (shares, property) versus income assets (bonds, cash). Defensive funds hold mostly income assets (80–90%) for stability, while Aggressive Growth funds hold mostly growth assets (85–100%) for higher long-term returns. Balanced funds sit in the middle. The key trade-off is short-term volatility versus potential long-term return.'
+      },
+      {
+        question: 'Which KiwiSaver fund type is best for under 30s?',
+        answer: 'For most people under 30, a Growth or Aggressive Growth fund is typically recommended. With 35+ years until retirement, you have time to ride out short-term market drops and benefit from higher long-term compound growth. IRD and Sorted NZ both note that younger members often benefit from higher-growth funds. Use this quiz to confirm based on your personal risk tolerance and goals.'
+      },
+      {
+        question: 'Should I change my KiwiSaver fund if I\'m buying a first home?',
+        answer: 'Yes — if you plan to use your KiwiSaver for a first home purchase within 1–5 years, you should consider moving to a Conservative or Defensive fund. This protects your balance from short-term market drops right before you need to withdraw. A market dip just before settlement could reduce your deposit significantly if you\'re in a Growth fund.'
+      },
+      {
+        question: 'How often can I change my KiwiSaver fund?',
+        answer: 'You can change your KiwiSaver fund type at any time, though providers may take 10–30 business days to process the switch. Some providers allow same-provider fund switches for free. There is no IRD restriction on how often you can switch — but frequent switching based on market timing is generally not recommended and often reduces long-term returns.'
+      },
+      {
+        question: 'What is the default KiwiSaver fund and is it suitable for me?',
+        answer: 'If you joined KiwiSaver without choosing a fund, you were placed in a default fund. Since 2021, IRD default funds are Balanced funds (roughly 50–60% growth assets). While Balanced is a reasonable middle ground, it may not be optimal — younger members often benefit from Growth funds, while those near retirement may prefer Conservative or Defensive. Use this quiz to check if your current fund suits your risk profile.'
+      },
+      {
+        question: 'Do KiwiSaver fees matter when choosing a fund type?',
+        answer: 'Yes — fees compound significantly over decades. A 1% annual fee difference on a $100,000 balance costs $1,000 per year. When comparing fund types, also compare fund managers: Simplicity and SuperLife are known for low fees, while active managers like Milford and Fisher Funds charge higher fees for actively managed Growth funds. The right fund type at a low-fee provider often outperforms a higher-fee provider.'
+      }
+    ];
+    TeamzTools.renderFAQs(faqs);
+    TeamzTools.injectFAQSchema(faqs);
+
+    // Related tools
+    TeamzTools.renderRelatedTools([
+      { slug: '/nz/kiwisaver-calculator/', name: 'KiwiSaver Balance Calculator', description: 'Project your KiwiSaver balance at retirement based on contributions' },
+      { slug: '/nz/kiwisaver-retirement-income-calculator/', name: 'KiwiSaver Retirement Income Calculator', description: 'Estimate your weekly retirement income from KiwiSaver savings' },
+      { slug: '/nz/income-tax-calculator/', name: 'NZ Income Tax Calculator', description: 'Calculate your take-home pay and income tax in New Zealand' },
+      { slug: '/nz/paye-calculator/', name: 'PAYE Tax Calculator New Zealand', description: 'Calculate PAYE, ACC, and KiwiSaver deductions from your salary' },
+      { slug: '/nz/mortgage-fix-vs-float/', name: 'NZ Mortgage Fix vs Float Calculator', description: 'Compare fixed and floating mortgage rates for NZ home loans' },
+      { slug: '/nz/first-home-grant-calculator/', name: 'First Home Grant Calculator NZ', description: 'Calculate your Kainga Ora First Home Grant eligibility' }
+    ]);
+
+    // WebApp schema
+
+    // ---- Quiz logic ----
+
+    var FUNDS = {
+      aggressive: {
+        name: 'Aggressive Growth Fund',
+        tagline: 'Maximum growth for the long term — ride the market for 30+ years',
+        growthPct: '85–100%',
+        returnRange: '7–12% p.a.',
+        riskLevel: 'Very High',
+        bestFor: '30+ year horizon',
+        providers: ['Simplicity', 'SuperLife', 'Milford', 'InvestNow', 'Fisher Funds', 'Booster'],
+        switchTip: '<strong>To switch:</strong> Log in to your provider\'s website or app and select your new fund. Switches typically take 10–20 business days. Your contributions will also move to the new fund. Compare fees before switching providers.'
+      },
+      growth: {
+        name: 'Growth Fund',
+        tagline: 'High growth with some income assets — most popular for investors under 40',
+        growthPct: '70–85%',
+        returnRange: '6–10% p.a.',
+        riskLevel: 'High',
+        bestFor: '20+ year horizon',
+        providers: ['Simplicity', 'Milford', 'Fisher Funds', 'SuperLife', 'InvestNow', 'Generate'],
+        switchTip: '<strong>To switch:</strong> Log in to your provider\'s website or app and select your new fund. Switches typically take 10–20 business days. Simplicity and SuperLife offer low-cost Growth funds. Milford and Generate are actively managed options.'
+      },
+      balanced: {
+        name: 'Balanced Fund',
+        tagline: 'Half growth, half stability — the IRD default since 2021',
+        growthPct: '50–60%',
+        returnRange: '5–8% p.a.',
+        riskLevel: 'Medium',
+        bestFor: '10–20 year horizon',
+        providers: ['Simplicity', 'SuperLife', 'ANZ', 'Fisher Funds', 'Milford', 'BNZ'],
+        switchTip: '<strong>To switch:</strong> Contact your provider or log in online to change your fund type. Most major banks (ANZ, BNZ, Westpac) offer Balanced funds. Consider moving to a low-cost provider like Simplicity if fees are high.'
+      },
+      conservative: {
+        name: 'Conservative Fund',
+        tagline: 'Mostly income assets with modest growth — for those within 10 years of withdrawal',
+        growthPct: '20–35%',
+        returnRange: '4–6% p.a.',
+        riskLevel: 'Low–Medium',
+        bestFor: 'Within 10 years',
+        providers: ['Simplicity', 'SuperLife', 'ANZ', 'Fisher Funds', 'Westpac', 'ASB'],
+        switchTip: '<strong>To switch:</strong> Log in to your provider\'s website or app. If you\'re within 5 years of buying a first home or retiring, switch sooner rather than later to protect your balance from a market drop.'
+      },
+      defensive: {
+        name: 'Defensive Fund',
+        tagline: 'Capital preservation with minimal market risk — for near-term withdrawals',
+        growthPct: '10–20%',
+        returnRange: '3–5% p.a.',
+        riskLevel: 'Very Low',
+        bestFor: 'Within 1–5 years',
+        providers: ['Simplicity', 'SuperLife', 'ANZ', 'ASB', 'Westpac', 'BNZ'],
+        switchTip: '<strong>To switch:</strong> Contact your provider as soon as possible if you need the money within 1–3 years. Most major banks and providers offer Defensive or Cash-equivalent funds. Confirm the switch has settled before your withdrawal date.'
+      }
+    };
+
+    var progressFill = document.getElementById('progress-fill');
+    var progressCount = document.getElementById('progress-count');
+    var quizHint = document.getElementById('quiz-hint');
+
+    function countAnswered() {
+      var count = 0;
+      for (var i = 1; i <= 6; i++) {
+        if (document.querySelector('input[name="q' + i + '"]:checked')) count++;
+      }
+      return count;
+    }
+
+    function updateProgress() {
+      var answered = countAnswered();
+      var pct = Math.round((answered / 6) * 100);
+      progressFill.style.width = pct + '%';
+      progressCount.textContent = answered + ' / 6 answered';
+    }
+
+    // Listen to all radio changes for progress
+    document.querySelectorAll('.quiz-option input[type="radio"]').forEach(function(radio) {
+      radio.addEventListener('change', function() {
+        updateProgress();
+        hideEl(quizHint);
+        // Highlight selected option label
+        var name = this.name;
+        document.querySelectorAll('input[name="' + name + '"]').forEach(function(r) {
+          r.closest('.quiz-option').style.borderColor = '';
+        });
+      });
+    });
+
+    function getScore() {
+      var total = 0;
+      for (var i = 1; i <= 6; i++) {
+        var sel = document.querySelector('input[name="q' + i + '"]:checked');
+        if (sel) total += parseInt(sel.value, 10);
+      }
+      return total;
+    }
+
+    function getFundKey(score) {
+      if (score >= 10) return 'aggressive';
+      if (score >= 6)  return 'growth';
+      if (score >= 2)  return 'balanced';
+      if (score >= -2) return 'conservative';
+      return 'defensive';
+    }
+
+    document.getElementById('get-recommendation-btn').addEventListener('click', function() {
+      var answered = countAnswered();
+      if (answered < 6) {
+        showEl(quizHint);
+        quizHint.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      hideEl(quizHint);
+
+      var score = getScore();
+      var key = getFundKey(score);
+      var fund = FUNDS[key];
+
+      // Populate result
+      document.getElementById('result-fund-name').textContent = fund.name;
+      document.getElementById('result-fund-tagline').textContent = fund.tagline;
+      document.getElementById('result-score-badge').textContent = 'Risk score: ' + score + (key === 'growth' ? ' ⭐ Most popular for under 40s' : '');
+      document.getElementById('result-growth-pct').textContent = fund.growthPct;
+      document.getElementById('result-return-range').textContent = fund.returnRange;
+      document.getElementById('result-risk-level').textContent = fund.riskLevel;
+      document.getElementById('result-best-for').textContent = fund.bestFor;
+
+      // Providers
+      var providersEl = document.getElementById('result-providers');
+      providersEl.innerHTML = '';
+      fund.providers.forEach(function(p) {
+        var tag = document.createElement('span');
+        tag.className = 'kfs-provider-tag';
+        tag.textContent = p;
+        providersEl.appendChild(tag);
+      });
+
+      document.getElementById('result-switch-tip').innerHTML = fund.switchTip;
+
+      // Show result, hide form
+      showEl(document.getElementById('kfs-result'), 'block');
+      document.getElementById('quiz-form').style.display = 'none';
+      document.getElementById('kfs-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('retake-btn').addEventListener('click', function() {
+      // Reset all radios
+      document.querySelectorAll('input[type="radio"]').forEach(function(r) {
+        r.checked = false;
+      });
+      updateProgress();
+      showEl(document.getElementById('quiz-form'), 'block');
+      hideEl(document.getElementById('kfs-result'));
+      document.getElementById('quiz-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+  }); // end DOMContentLoaded
+  </script>
+</body>
+</html>
