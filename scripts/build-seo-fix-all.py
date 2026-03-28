@@ -392,14 +392,24 @@ def fix_missing_how_works(content, meta):
     """Add 'How X Works' H2 section if missing."""
     h2_lower = ' '.join(meta.get('h2s', [])).lower()
 
-    # Check for "how" + "works" or equivalent patterns
-    has_how_works = ('how' in h2_lower and ('works' in h2_lower or 'calculated' in h2_lower or 'work' in h2_lower))
+    # Check for "how" + "works" or equivalent patterns in ANY language
+    how_patterns = ['how', 'miten', 'wie', 'comment', 'come', 'hur', 'hoe', 'jak', 'hvordan', 'como', 'cómo', 'bagaimana', 'كيف', 'cara', 'hvad', 'wat', 'co', 'що', 'nasıl', 'kaip']
+    works_patterns = ['works', 'work', 'calculated', 'calcul', 'fungerar', 'fungiert', 'funktioniert', 'toimii', 'lasketaan',
+                      'beregn', 'virker', 'funciona', 'funziona', 'werkt', 'działa', 'funguje', 'يعمل', 'bekerja',
+                      'fonctionne', 'marche', 'används', 'beräknas', 'çalışır', 'hoạt', 'berfungsi']
 
-    # Also check non-English equivalents
-    non_en_patterns = ['miten', 'wie', 'comment', 'come', 'hur', 'hoe', 'jak', 'hvordan', 'como', 'cómo', 'bagaimana', 'كيف']
-    for pat in non_en_patterns:
-        if pat in h2_lower:
-            has_how_works = True
+    has_how_works = False
+    for hp in how_patterns:
+        if hp in h2_lower:
+            for wp in works_patterns:
+                if wp in h2_lower:
+                    has_how_works = True
+                    break
+            # Also match "hur [verb]" patterns common in Swedish/Danish/Norwegian
+            if not has_how_works and hp in ('hur', 'hvordan', 'wie', 'comment', 'como', 'cómo', 'miten', 'bagaimana', 'cara'):
+                has_how_works = True  # "Hur fungerar X" = "How X works" — the how-word alone is enough
+                break
+        if has_how_works:
             break
 
     if has_how_works:
@@ -537,7 +547,9 @@ def run(dry_run=True, hub_filter=None, stats_only=False):
             counters['low_faqs'] += 1
 
         h2_lower = ' '.join(meta['h2s']).lower()
-        if 'how' not in h2_lower or 'works' not in h2_lower:
+        how_words = ['how', 'miten', 'wie', 'comment', 'come', 'hur', 'hoe', 'jak', 'hvordan', 'como', 'cómo', 'bagaimana', 'cara', 'hvad', 'wat', 'nasıl']
+        has_any_how = any(hw in h2_lower for hw in how_words)
+        if not has_any_how:
             counters['needs_how_works'] += 1
 
         if fixes_for_file:
