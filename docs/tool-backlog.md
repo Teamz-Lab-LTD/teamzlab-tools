@@ -1,6 +1,35 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #14)*
+*Last updated: 2026-03-28 (nightly build #15)*
+
+---
+
+## Completed This Build (nightly build #15)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| SG HDB BTO Eligibility Checker | /sg/ | ✅ Built |
+| NZ KiwiSaver Fund Selector Quiz | /nz/ | ✅ Built |
+| CA Alberta Income Tax Calculator 2025 | /ca/ | ✅ Built |
+| UK Self-Employed Expenses Planner 2026 | /uk/ | ✅ Built |
+| CH Swiss Inheritance Tax Calculator (English) | /ch/ | ✅ Built |
+| AU Redundancy Pay Calculator 2025 | /au/ | ✅ Built |
+| ES Calculadora Rendimiento Neto Autónomo 2026 (multilang) | /es/ | ✅ Built |
+| PT Calculadora Simples Nacional 2025 (multilang) | /pt/ | ✅ Built |
+
+---
+
+## Next Build Queue (prioritized by RPM + gap analysis)
+- NL Hypotheekrenteaftrek Calculator (/nl/) — Dutch mortgage interest deduction, no NL hub exists yet
+- AU CGT Discount Comparison Tool (/au/) — side-by-side with/without 12-month discount, EOFY spike
+- SG HDB Resale COV Calculator (/sg/) — Cash Over Valuation for resale HDB flats
+- IE Rent-a-Room Relief Calculator (/ie/) — €14,000 annual exemption, distinct from rental income tax
+- CA Ontario vs BC Tax Comparison (/ca/) — province-switcher comparison tool
+- NZ Property Brightline Tax Calculator 2025 (/nz/) — 2-year rule restored April 2024
+- DE Steuerrechner Freiberufler (/de/) — German freelancer income tax (Freiberufler vs Gewerbetreibende)
+- CH Quellensteuer C vs B permit (/ch/) — withholding tax comparison for permit holders
+- US Freelancer Quarterly Tax Calculator (/us/) — estimated payments, safe harbor rules
+- UK ISA Allowance Tracker (/uk/) — remaining ISA allowance for tax year, S&S vs Cash comparison
 
 ---
 
