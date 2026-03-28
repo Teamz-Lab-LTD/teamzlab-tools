@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-29 03:15
+# Indexing Report — 2026-03-29 03:22
 
 Total pages: 1
 Checked: 1
@@ -8,4 +8,4 @@ Errors: 0
 
 ## Indexed Pages (1)
 
-- /nz/kiwisaver-employer-contribution-calculator/
+- /evergreen/student-loan-repayment-calculator/

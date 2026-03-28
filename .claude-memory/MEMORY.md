@@ -3,9 +3,11 @@
 ## User
 - [user_business_mindset.md](user_business_mindset.md) — Follows Marc Lou + Adam Lyttle playbook: portfolio model, trend-jacking, SEO niche targeting, monetization-first thinking.
 - [user_work_schedule.md](user_work_schedule.md) — Office 11AM-9PM BD, break 9-12, light 12-2AM, sleep 2-11AM. Weekend Sat/Sun. Reserve Claude quota for office hours.
+- [user_muslim_content_restrictions.md](user_muslim_content_restrictions.md) — Muslim — NEVER build alcohol, gambling, or haram-related tools. Skip cocktail/drink/wine/beer/betting categories.
 
 ## Feedback
 - [feedback_health_check.md](feedback_health_check.md) — MANDATORY: Run health check at START of every conversation. Tell user what's broken/stale before doing any work.
+- [feedback_fix_issues_immediately.md](feedback_fix_issues_immediately.md) — CRITICAL: When scripts show broken links/orphans/unlinked tools, FIX them immediately — never just report numbers.
 - [feedback_common_mistakes.md](feedback_common_mistakes.md) — Recurring build mistakes to avoid: forgotten counts, missing links, hardcoded colors, nested padding. Run `./build.sh` after every change.
 - [feedback_local_server.md](feedback_local_server.md) — ALWAYS test UI changes on localhost:9090 before committing. Tell user to verify.
 - [feedback_trend_research_before_building.md](feedback_trend_research_before_building.md) — MANDATORY: Before building ANY new tool, research Google Trends + Reddit for trending topics, check duplicates, present findings to user first.
@@ -26,6 +28,9 @@
 - [feedback_auto_save_central.md](feedback_auto_save_central.md) — Auto-save is CENTRAL in common.js. NEVER add per-tool localStorage for basic inputs. Every input MUST have an id attribute. Works on all 1000+ tools automatically.
 - [feedback_always_check_duplicates.md](feedback_always_check_duplicates.md) — MANDATORY: Search broadly (*meme* not *meme-generator*) BEFORE building. Check concepts not just slugs. Never launch agents without duplicate check.
 - [feedback_tool_building_mistakes.md](feedback_tool_building_mistakes.md) — CRITICAL: Full checklist of 7 mistakes to never repeat: duplicate checking, feature merging, hub link cleanup, git tracking, URL verification, concept overlap.
+- [feedback_always_git_add.md](feedback_always_git_add.md) — CRITICAL: New tool files must be git add-ed. Untracked files are 404 on live site. Pre-commit warns about untracked tool files.
+- [feedback_duplicate_strategy.md](feedback_duplicate_strategy.md) — When duplicate found: improve if it has traffic, skip if no traffic and build new keyword instead. Revenue-first approach.
+- [feedback_quota_management.md](feedback_quota_management.md) — Track agent usage during session. Warn user before quota runs out. Max 2-3 parallel agents. Save quota for manual work.
 - [feedback_always_rebuild_llms.md](feedback_always_rebuild_llms.md) — MANDATORY: After adding/changing/removing ANY tool, verify llms.txt + llms-full.txt are updated. Spec: llms.txt <10KB (categories only), llms-full.txt has all tools.
 - [feedback_usability_qa.md](feedback_usability_qa.md) — MANDATORY: Run full usability QA on every new tool. Clipboard .catch(), button re-enable in finally{}, Array.from() for Unicode, html2canvas white bg, all tones implemented, clear resets selects.
 - [feedback_request_indexing_after_changes.md](feedback_request_indexing_after_changes.md) — MANDATORY: After creating/updating ANY tool, run build-request-indexing.py to check Google indexing + submit to Bing/Yandex via IndexNow.
@@ -37,10 +42,12 @@
 - [feedback_validate_redirect_pages.md](feedback_validate_redirect_pages.md) — NEVER skip redirect pages during validation. Bing flags missing meta descriptions even on noindex stubs. build-qa-check.sh now checks them.
 - [feedback_multilang_strategy.md](feedback_multilang_strategy.md) — MANDATORY: High-RPM tools (finance/tax/career) get Spanish + Portuguese versions. Script: build-multilang.py.
 - [feedback_act_on_script_output.md](feedback_act_on_script_output.md) — CRITICAL: Don't just run scripts — ACT on what they reveal. If existing non-English hub found, prioritize local-language tools FIRST over English volume chasing.
-- [feedback_distribute_in_tool_language.md](feedback_distribute_in_tool_language.md) — MANDATORY: Distribution articles MUST match tool language (French tools → French article). Set `language: XX` in frontmatter.
 - [feedback_correct_element_ids.md](feedback_correct_element_ids.md) — CRITICAL: Use exact IDs from common.js: tool-faqs, related-tools, breadcrumbs. NEVER guess.
-- [feedback_broader_duplicate_search.md](feedback_broader_duplicate_search.md) — Search broadly for duplicates before building. Check concept overlap not just slug names.
-- [feedback_quota_management.md](feedback_quota_management.md) — Reserve Claude quota for office hours productivity.
+- [feedback_distribute_in_tool_language.md](feedback_distribute_in_tool_language.md) — MANDATORY: Distribution articles MUST match tool language (French tools → French article). Set `language: XX` in frontmatter.
+- [feedback_research_before_content.md](feedback_research_before_content.md) — MANDATORY: Run --suggest, --trends, and Search Console per-page queries BEFORE writing content. Research first, write second.
+- [feedback_run_fix_scripts_not_just_report.md](feedback_run_fix_scripts_not_just_report.md) — CRITICAL: When scripts report fixable issues, FIX them immediately with --apply. Never just report counts as "planned."
+- [feedback_never_git_checkout_dot.md](feedback_never_git_checkout_dot.md) — CRITICAL: NEVER run git checkout -- . with uncommitted work. Use git stash or target specific files.
+- [feedback_test_regex_before_bulk_apply.md](feedback_test_regex_before_bulk_apply.md) — CRITICAL: Test auto-generated content on 3-5 samples before bulk applying to hundreds of files.
 
 ## Core Web Vitals (2026-03-26)
 - [project_cwv_fixes_2026_03.md](project_cwv_fixes_2026_03.md) — CWV deployed: CSS bundle, self-hosted fonts, static header, deferred analytics. Minification reverted (regex broke CSS). Pre-push now checks broken refs.
@@ -58,6 +65,9 @@
 ## Hub Building Queue
 - [project_hub_building_queue.md](project_hub_building_queue.md) — Planned hubs to build: Cocktails → Skincare → Candle Making → Knitting. Distribute 1 article per 2-3 days. Completed: Coffee, Tea, Baking (2026-03-24).
 
+## Automation
+- [project_auto_build_plan.md](project_auto_build_plan.md) — Auto Build Plan: 25 tools/night, revenue-first priority, Opus model, local-only execution. Target 750 tools/month.
+
 ## Pending
 - [project_google_ads_api_pending.md](project_google_ads_api_pending.md) — Applied 2026-03-20 for Google Ads API Basic Access. Once approved: run auth, test --volume flag. Scripts ready in scripts/build-keyword-volume.py.
 
@@ -65,8 +75,6 @@
 - [reference_search_console.md](reference_search_console.md) — Search Console API setup: run ./build-search-console.sh for indexing status, queries, pages.
 - [feedback_pull_data_before_answering.md](feedback_pull_data_before_answering.md) — MANDATORY: When user asks about trends/status/performance, pull Search Console + Analytics + SEO data FIRST before answering.
 - [reference_distribution_system.md](reference_distribution_system.md) — 7-platform content distribution: Dev.to, Hashnode, WordPress, Blogger, Tumblr, Bluesky, Mastodon. Script at scripts/distribute/distribute.py.
-
-## Reference
 - [reference_clarity_api.md](reference_clarity_api.md) — Microsoft Clarity bot detection API. Token at ~/.config/teamzlab/clarity-token.txt. Script: ./build-clarity.sh.
 
 ## Data Scripts Available
