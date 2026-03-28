@@ -135,6 +135,16 @@ def extract_meta(content):
     text = re.sub(r'<[^>]+>', ' ', tool_content)
     meta['content_words'] = len(text.split())
 
+    # Also check variant class name (tool-content-section)
+    if not tool_content:
+        m2 = re.search(r'<section\s+class="tool-content-section">(.*?)</section>', content, re.DOTALL)
+        if m2:
+            tool_content = m2.group(1)
+            meta['h2s'] = re.findall(r'<h2[^>]*>(.*?)</h2>', tool_content, re.DOTALL)
+            meta['h2s'] = [re.sub(r'<[^>]+>', '', h).strip() for h in meta['h2s']]
+            text = re.sub(r'<[^>]+>', ' ', tool_content)
+            meta['content_words'] = len(text.split())
+
     # Has freshness signal
     meta['has_freshness'] = bool(re.search(r'last\s+updated|updated?\s*:?\s*\w+\s+20\d{2}', content, re.IGNORECASE))
 
