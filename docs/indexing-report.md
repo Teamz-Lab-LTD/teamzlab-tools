@@ -1,8 +1,8 @@
-# Indexing Report — 2026-03-28 07:42
+# Indexing Report — 2026-03-28 15:52
 
-Total pages: 30
-Checked: 30
+Total pages: 1
+Checked: 1
 Indexed: 0 (0%)
 Not indexed: 0
-Errors: 30
+Errors: 1
 
