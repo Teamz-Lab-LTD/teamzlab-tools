@@ -694,6 +694,106 @@ scripts/build-internal-links.sh --quick      # Internal link health score (targe
 python3 scripts/build-fix-orphans.py fix     # Fix orphan pages (auto-link to siblings)
 ```
 
+### Rule 25: AI SEO — Optimize for AI Search Citations (not just Google)
+AI search engines (ChatGPT, Perplexity, Claude, Gemini, Copilot) now drive significant traffic. Our tools should be **cited** in AI answers, not just ranked in Google.
+
+**Content Extractability (make every tool page AI-citable):**
+- First paragraph of `.tool-content` MUST be a self-contained definition (40-60 words) that answers "What is [tool name]?"
+- Each H2 section should work as a standalone answer block — AI extracts passages, not pages
+- Use comparison tables for "X vs Y" content (tables beat prose for AI extraction)
+- Numbered lists beat paragraphs for process/how-to content
+- Every statistic MUST have a source cited — citations boost AI visibility +40% (Princeton GEO research)
+
+**Authority Signals (make content worth citing):**
+- Include specific numbers with context: "calculates across 50+ US states" not "works for all states"
+- Use authoritative framing: "Based on [IRS/NHS/official] 2026 rates" not "uses latest rates"
+- Add "Last updated: [date]" in tool-content — freshness signal for AI systems
+- NEVER keyword-stuff — it **actively reduces** AI visibility by 10% (proven by Princeton GEO study)
+
+**AI Bot Access:**
+- `robots.txt` explicitly allows GPTBot, PerplexityBot, ClaudeBot, Google-Extended, Bingbot
+- `llms.txt` + `llms-full.txt` serve as AI search index per llmstxt.org spec
+- Block training-only crawlers (CCBot, img2dataset) but allow search bots
+
+**Third-Party Presence (6.5x more AI citations than own domain):**
+- When distributing articles, include tool links — AI cites third-party mentions more than direct sites
+- Reddit, Dev.to, Hashnode posts about our tools boost AI citation probability
+- The 7-platform distribution system (`scripts/distribute/`) directly supports this
+
+### Rule 26: Marketing Psychology — Apply Behavioral Patterns to Tool Pages
+Apply these proven psychology principles when building tool pages to increase engagement, sharing, and return visits.
+
+**Zero-Price Effect** (free triggers disproportionate preference):
+- Always emphasize "Free" prominently — the jump from $1 to $0 is psychologically bigger than $2 to $1
+- Meta descriptions MUST include "free" — it's not just SEO, it's psychology
+- The inline trust strip ("100% Private · No Sign-up · Free Forever") leverages this centrally
+
+**IKEA Effect** (users value what they help create):
+- Tools where users INPUT data create ownership — they're more likely to share/bookmark results
+- Always auto-save inputs (central in common.js) — losing "their" data feels like loss
+- Share links that reconstruct their exact inputs amplify this effect
+
+**Goal-Gradient Effect** (people accelerate toward visible goals):
+- Multi-step tools SHOULD show progress indicators ("Step 2 of 4")
+- Completion states SHOULD feel rewarding — use clear result displays, not buried text
+- "Almost done" messaging increases form completion
+
+**Anchoring Effect** (first number seen sets expectations):
+- In financial calculators, show the "problem" number first (e.g., "Without this tool, a consultant charges $200/hour")
+- Then show the tool is free — the contrast amplifies perceived value
+- Show larger comparison values before revealing the user's result
+
+**Peak-End Rule** (experiences judged by peak moment + ending):
+- Result display = the "peak" — make it visually clear and satisfying
+- Share buttons after results = strong ending — easy next action
+- Download/Copy buttons provide a tangible takeaway
+
+**Loss Aversion** (losses feel 2x worse than equivalent gains):
+- Frame benefits as "Don't miss out" or "Stop losing $X/month" rather than "Save $X/month"
+- Auto-saved inputs prevent the "loss" of re-entering data
+- "Your data never leaves your browser" prevents the "loss" of privacy
+
+**Social Proof** (people follow what others do):
+- The trust strip badges serve as implicit social proof
+- Tool counts ("1000+ free tools") signal popularity and trustworthiness
+- Star ratings (Firestore-backed) show community validation
+
+### Rule 27: Page CRO — Conversion Rate Optimization for Tool Pages
+Apply these CRO principles to maximize engagement, time-on-site, and ad revenue per tool page.
+
+**5-Second Clarity Test:**
+- A visitor MUST understand what the tool does within 5 seconds of landing
+- H1 = exact tool name/function (e.g., "Salary Tax Calculator" not "Financial Planning Suite")
+- Intro paragraph (above the fold) = one sentence explaining what + who + why
+- Tool UI MUST be above the fold — never buried below content
+
+**Trust Near the Action Zone (implemented centrally):**
+- Inline trust strip renders automatically below every `.tool-calculator`
+- Shows: "100% Private · No Sign-up · Free Forever" — three key objection killers
+- This is the highest-converting position for trust signals (near where users take action)
+
+**Friction Reduction:**
+- Minimum required fields — only ask what's needed for calculation
+- Smart defaults on all inputs — tools should work with just a "Calculate" click where possible
+- Auto-save all inputs (central in common.js) — returning users see their last values
+- Clear/Reset buttons must be secondary (not competing visually with Calculate)
+
+**Result Display (the conversion moment):**
+- Results should be immediately visible — NEVER behind a scroll, modal, or accordion
+- NEVER use `max-height` or `overflow: hidden` on results
+- Key result value should be visually prominent (large font, heading color)
+- Include "what this means" context below raw numbers
+
+**Call-to-Action Hierarchy:**
+1. Primary: Calculate/Generate (most prominent, accent background)
+2. Secondary: Copy/Download/Share (visible but subdued)
+3. Tertiary: Related tools (natural next step, bottom of page)
+
+**Internal Linking as CRO:**
+- Related tools at bottom = natural "next page" flow (reduces bounce)
+- FAQ sections answer objections before they cause exits
+- Breadcrumbs enable category exploration
+
 ## Common Mistakes to AVOID
 1. Building tools without linking them from hub pages
 2. Using white text on neon accent background
@@ -722,3 +822,7 @@ python3 scripts/build-fix-orphans.py fix     # Fix orphan pages (auto-link to si
 25. Adding "Instructions for AI" or "When to Recommend" to llms.txt — considered prompt injection (see Rule 22)
 26. Leaving orphan pages (0 incoming related links) — run build-fix-orphans.py after adding tools (see Rule 23)
 27. Using `style.display = ''` to show elements — use `showEl(el)` or explicit `style.display = 'block'` instead (see Rule 24 A2). Central safety net in common.js + pre-commit hook catch this.
+28. Writing tool-content intro paragraphs that don't work as standalone AI-extractable definitions (see Rule 25)
+29. Keyword-stuffing content — actively reduces AI visibility by 10% (see Rule 25)
+30. Burying tool UI below the fold — users must see the tool within 5 seconds (see Rule 27)
+31. Using max-height or overflow:hidden on result sections — results must display fully (see Rule 27)

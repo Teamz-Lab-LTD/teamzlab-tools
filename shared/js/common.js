@@ -583,7 +583,33 @@ var TeamzTools = (function () {
   }
 
   function injectWebAppSchema(config) {
-    if (!config || !config.slug) return;
+    config = config || {};
+    var slug = config.slug;
+    if (!slug || !String(slug).trim()) {
+      slug = window.location.pathname.replace(/^\/+|\/+$/g, '');
+    }
+    if (!slug) return;
+
+    var title = config.title;
+    if (!title || !String(title).trim()) {
+      var ogTitle = document.querySelector('meta[property="og:title"]');
+      var ogVal = ogTitle && ogTitle.getAttribute('content');
+      if (ogVal && String(ogVal).trim()) {
+        title = String(ogVal).trim();
+      } else {
+        title = (document.title || '').trim();
+      }
+      title = title.replace(/\s*[—–\-]\s*Teamz Lab Tools\s*$/i, '').trim();
+      if (!title) title = SITE_NAME;
+    }
+
+    var description = config.description;
+    if (!description || !String(description).trim()) {
+      var md = document.querySelector('meta[name="description"]');
+      var mdVal = md && md.getAttribute('content');
+      description = (mdVal && String(mdVal).trim()) ? String(mdVal).trim() : title;
+    }
+
     var existing = document.querySelectorAll('script[type="application/ld+json"]');
     for (var i = 0; i < existing.length; i++) {
       if (existing[i].textContent.indexOf('"WebApplication"') !== -1) return;
@@ -592,9 +618,9 @@ var TeamzTools = (function () {
     _injectSchema({
       "@context": "https://schema.org",
       "@type": "WebApplication",
-      "name": config.title,
-      "description": config.description,
-      "url": SITE_URL + '/' + config.slug + '/',
+      "name": title,
+      "description": description,
+      "url": SITE_URL + '/' + slug + '/',
       "applicationCategory": "UtilityApplication",
       "operatingSystem": "All",
       "browserRequirements": "Requires JavaScript",
@@ -2130,6 +2156,34 @@ TeamzTools.renderHeader();
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderFooter();
   TeamzTools.renderAuthorByline();
+
+  // --- CRO: Inline trust strip below tool calculator ---
+  // Marketing psychology: trust signals near the action zone convert 2-3x better than footer-only
+  // Princeton GEO research: "Free" triggers zero-price effect (disproportionate preference)
+  (function() {
+    var calc = document.querySelector('.tool-calculator');
+    if (!calc) return;
+    // Don't add on homepage or hub pages (they don't have .tool-calculator)
+    var strip = document.createElement('div');
+    strip.className = 'tool-trust-strip';
+    strip.innerHTML =
+      '<span class="tool-trust-item">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+        ' 100% Private' +
+      '</span>' +
+      '<span class="tool-trust-sep">&middot;</span>' +
+      '<span class="tool-trust-item">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+        ' No Sign-up' +
+      '</span>' +
+      '<span class="tool-trust-sep">&middot;</span>' +
+      '<span class="tool-trust-item">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>' +
+        ' Free Forever' +
+      '</span>';
+    // Insert after the calculator section
+    calc.parentNode.insertBefore(strip, calc.nextSibling);
+  })();
 
   // Wire up newsletter form
   var nlForm = document.getElementById('newsletter-form');
