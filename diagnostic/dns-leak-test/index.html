@@ -42,6 +42,9 @@
     .app-banner .desc { margin: 0 0 1rem; color: var(--text-muted); }
     .app-banner .store-links { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
     .app-banner .store-links a { display: inline-block; padding: 0.6rem 1.5rem; background: transparent; color: var(--text); border: 2px solid var(--border); border-radius: 2rem; text-decoration: none; font-weight: 600; }
+    .dns-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--heading); border-radius: 50%; animation: dns-spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes dns-spin { to { transform: rotate(360deg); } }
+    .dns-progress { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 1rem; color: var(--text-muted); font-size: 0.95rem; }
   </style>
 <!-- STATIC-SCHEMA -->
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Diagnostic Tools", "item": "https://tool.teamzlab.com/diagnostic/"}, {"@type": "ListItem", "position": 3, "name": "DNS Leak Test"}]}</script>
@@ -121,7 +124,6 @@
         processLabel: 'Run DNS Test',
         inputs: [],
         process: function () {
-          var container = null;
           var results = {
             ip: 'Checking...',
             isp: 'Checking...',
@@ -130,12 +132,31 @@
             cloudflare: 'Testing...',
             google: 'Testing...',
             status: 'Analyzing...',
-            statusClass: 'warning'
+            statusClass: 'warning',
+            testsComplete: 0,
+            totalTests: 3
           };
+
+          function fetchWithTimeout(url, options, timeoutMs) {
+            return new Promise(function (resolve, reject) {
+              var timer = setTimeout(function () { reject(new Error('Timeout')); }, timeoutMs);
+              fetch(url, options).then(function (r) {
+                clearTimeout(timer);
+                resolve(r);
+              }).catch(function (e) {
+                clearTimeout(timer);
+                reject(e);
+              });
+            });
+          }
 
           function buildHTML() {
             var html = '<div class="tool-result-card">';
             html += '<h3 style="margin-bottom:1.5rem;">DNS Leak Test Results</h3>';
+
+            if (results.testsComplete < results.totalTests) {
+              html += '<div class="dns-progress"><span class="dns-spinner"></span> Running tests... (' + results.testsComplete + '/' + results.totalTests + ' complete)</div>';
+            }
 
             html += '<div style="text-align:center;margin-bottom:1.5rem;">';
             html += '<div class="dns-badge ' + results.statusClass + '">' + results.status + '</div>';
@@ -151,15 +172,17 @@
             html += '<table class="diag-table">';
             html += '<tr><th>Resolver</th><th>Status</th></tr>';
 
-            var cfClass = results.cloudflare === 'Reachable' ? 'dns-status-success' : (results.cloudflare === 'Not Reachable' ? 'dns-status-danger' : 'dns-status-warning');
+            var cfClass = results.cloudflare === 'Reachable' ? 'dns-status-success' : (results.cloudflare === 'Not Reachable' || results.cloudflare === 'Timeout' ? 'dns-status-danger' : 'dns-status-warning');
             html += '<tr><td>Cloudflare DNS (1.1.1.1)</td><td class="' + cfClass + '">' + results.cloudflare + '</td></tr>';
 
-            var gClass = results.google === 'Reachable' ? 'dns-status-success' : (results.google === 'Not Reachable' ? 'dns-status-danger' : 'dns-status-warning');
+            var gClass = results.google === 'Reachable' ? 'dns-status-success' : (results.google === 'Not Reachable' || results.google === 'Timeout' ? 'dns-status-danger' : 'dns-status-warning');
             html += '<tr><td>Google DNS (8.8.8.8)</td><td class="' + gClass + '">' + results.google + '</td></tr>';
             html += '</table>';
 
             html += '<div class="dns-analysis"><h4 style="margin:0 0 0.5rem;">Analysis</h4>';
-            if (results.status === 'DNS Appears Secure') {
+            if (results.testsComplete < results.totalTests) {
+              html += '<p style="margin:0;">Waiting for all tests to complete...</p>';
+            } else if (results.status === 'DNS Appears Secure') {
               html += '<p style="margin:0;">Your DNS configuration appears to use a custom DNS resolver or VPN that properly handles DNS queries. Your DNS requests do not appear to be going through a standard ISP resolver, which reduces the risk of DNS leaks.</p>';
             } else if (results.status === 'Potentially Leaking') {
               html += '<p style="margin:0;">Your DNS queries may be routed through your ISP default DNS servers. If you are using a VPN, this suggests a potential DNS leak. Consider enabling DNS leak protection in your VPN settings or manually configuring encrypted DNS (DoH/DoT).</p>';
@@ -181,7 +204,7 @@
           }
 
           function updateUI() {
-            var el = document.querySelector('.utility-output-content');
+            var el = document.querySelector('.tool-output--preview');
             if (el) el.innerHTML = buildHTML();
           }
 
@@ -192,41 +215,64 @@
           function checkAllDone() {
             if (!ipDone || !cfDone || !gDone) return;
             var ispLower = results.isp.toLowerCase();
-            var isVpn = ispLower.indexOf('vpn') !== -1 || ispLower.indexOf('private') !== -1 || ispLower.indexOf('relay') !== -1;
+            var isVpn = ispLower.indexOf('vpn') !== -1 || ispLower.indexOf('private') !== -1 || ispLower.indexOf('relay') !== -1 || ispLower.indexOf('mullvad') !== -1 || ispLower.indexOf('nord') !== -1 || ispLower.indexOf('express') !== -1 || ispLower.indexOf('surfshark') !== -1 || ispLower.indexOf('proton') !== -1;
             var hasCustomDNS = results.cloudflare === 'Reachable' || results.google === 'Reachable';
 
             if (isVpn && hasCustomDNS) { results.status = 'DNS Appears Secure'; results.statusClass = 'success'; }
             else if (!isVpn && hasCustomDNS) { results.status = 'DNS Appears Secure'; results.statusClass = 'success'; }
             else if (isVpn && !hasCustomDNS) { results.status = 'Potentially Leaking'; results.statusClass = 'danger'; }
             else { results.status = 'Unable to Determine'; results.statusClass = 'warning'; }
+
+            var btn = document.getElementById('util-generate');
+            if (btn) { btn.disabled = false; btn.textContent = 'Run DNS Test'; }
             updateUI();
           }
 
-          fetch('https://ipinfo.io/json').then(function (r) { return r.json(); }).then(function (data) {
-            results.ip = data.ip || 'Unknown';
-            results.isp = data.org || 'Unknown';
-            results.city = data.city || '';
-            results.country = data.country || '';
-            ipDone = true; updateUI(); checkAllDone();
-          }).catch(function () {
-            results.ip = 'Could not detect'; results.isp = 'Could not detect';
-            ipDone = true; updateUI(); checkAllDone();
-          });
+          function markDone() {
+            results.testsComplete++;
+            updateUI();
+          }
 
-          fetch('https://cloudflare-dns.com/dns-query?name=example.com&type=A', { headers: { 'Accept': 'application/dns-json' } })
-            .then(function (r) { return r.json(); }).then(function () {
-              results.cloudflare = 'Reachable'; cfDone = true; updateUI(); checkAllDone();
-            }).catch(function () {
-              results.cloudflare = 'Not Reachable'; cfDone = true; updateUI(); checkAllDone();
-            });
+          var btn = document.getElementById('util-generate');
+          if (btn) { btn.disabled = true; btn.textContent = 'Testing...'; }
 
-          fetch('https://dns.google/resolve?name=example.com&type=A').then(function (r) { return r.json(); }).then(function () {
-            results.google = 'Reachable'; gDone = true; updateUI(); checkAllDone();
-          }).catch(function () {
-            results.google = 'Not Reachable'; gDone = true; updateUI(); checkAllDone();
-          });
+          var TIMEOUT = 8000;
 
-          return { output: buildHTML(), outputType: 'html', title: 'DNS Leak Test', copyText: 'DNS Leak Test running...' };
+          fetchWithTimeout('https://ipinfo.io/json', {}, TIMEOUT)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              results.ip = data.ip || 'Unknown';
+              results.isp = data.org || 'Unknown';
+              results.city = data.city || '';
+              results.country = data.country || '';
+            })
+            .catch(function () {
+              return fetchWithTimeout('https://api.ipify.org?format=json', {}, TIMEOUT)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                  results.ip = data.ip || 'Unknown';
+                  results.isp = 'Unknown (fallback API)';
+                })
+                .catch(function () {
+                  results.ip = 'Could not detect';
+                  results.isp = 'Could not detect';
+                });
+            })
+            .then(function () { ipDone = true; markDone(); checkAllDone(); });
+
+          fetchWithTimeout('https://cloudflare-dns.com/dns-query?name=example.com&type=A', { headers: { 'Accept': 'application/dns-json' } }, TIMEOUT)
+            .then(function (r) { return r.json(); })
+            .then(function () { results.cloudflare = 'Reachable'; })
+            .catch(function (e) { results.cloudflare = e.message === 'Timeout' ? 'Timeout' : 'Not Reachable'; })
+            .then(function () { cfDone = true; markDone(); checkAllDone(); });
+
+          fetchWithTimeout('https://dns.google/resolve?name=example.com&type=A', {}, TIMEOUT)
+            .then(function (r) { return r.json(); })
+            .then(function () { results.google = 'Reachable'; })
+            .catch(function (e) { results.google = e.message === 'Timeout' ? 'Timeout' : 'Not Reachable'; })
+            .then(function () { gDone = true; markDone(); checkAllDone(); });
+
+          return { output: buildHTML(), outputType: 'html', title: 'DNS Leak Test', copyText: 'DNS Leak Test — checking your configuration...' };
         }
       });
     });
