@@ -1484,7 +1484,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Skincare Patch Test Timer',d:'Track skincare patch tests with 24h, 48h, and 72h check-in reminders. Log reactions and stay safe with new products. Free, private, no sign-up.',h:'/skincare/patch-test-timer/'},
   {t:'Skincare Product Expiry Tracker',d:'Track your skincare product expiry dates by PAO period. Know which products are still safe to use and which ones to toss. Free, private, saves in brow',h:'/skincare/product-expiry-tracker/'},
   {t:'Retinol Percentage Guide',d:'Find the right retinol percentage for your skin. Compare 0.025% to 1% retinol strengths, side effects, and how to start retinol safely.',h:'/skincare/retinol-percentage-guide/'},
-  {t:'Skincare Routine Builder',d:'Build your perfect AM and PM skincare routine with correct step sequencing. Auto-sorts products, flags conflicts, and shows the right application orde',h:'/skincare/routine-builder/'},
+  {t:'Skincare Routine Builder',d:'Build your perfect AM and PM skincare routine with correct step order. Auto-sorts products, flags conflicts, shows right application order. Free.',h:'/skincare/routine-builder/'},
   {t:'Skin Type Quiz — What Is My Skin Type?',d:'Take this free skin type quiz to find out if you have dry, oily, combination, sensitive or normal skin. Get a personalised skincare routine.',h:'/skincare/skin-type-quiz/'},
   {t:'SPF Calculator — Find Your Sunscreen',d:'Calculate the minimum SPF you need based on your skin tone, UV index, and time outdoors. Free sunscreen calculator, private.',h:'/skincare/spf-calculator/'},
   {t:'Sunscreen Reapply Timer',d:'Set a sunscreen reapplication reminder based on your activity, sweating, and UV exposure. Free online timer for sun protection.',h:'/skincare/sunscreen-reapply-timer/'},
