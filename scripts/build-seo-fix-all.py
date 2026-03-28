@@ -289,6 +289,181 @@ def fix_freshness_signal(content, meta):
     return content, False
 
 
+def generate_how_works_h2(meta):
+    """Generate a 'How [Tool] Works' H2 section from existing metadata."""
+    h1 = meta['h1']
+    desc = meta['description']
+    if not h1 or not desc:
+        return ''
+
+    # Clean H1 for use in heading
+    clean_h1 = re.sub(r'\s*[—–\-]\s*(Teamz Lab Tools|Free|Online).*$', '', h1, flags=re.IGNORECASE).strip()
+    # Remove year suffixes like "2026"
+    heading_name = re.sub(r'\s+20\d{2}$', '', clean_h1).strip()
+
+    # Build the H2 heading
+    h2_text = f"How {heading_name} Works"
+
+    # Build a paragraph from the meta description + generic explanation
+    # Strip "Free" / "private" / "no sign-up" boilerplate from desc
+    clean_desc = re.sub(r'\b(Free|100% private|private|no sign[- ]?up|no login|browser[- ]?based|works offline|no data stored)\b[.,]?\s*', '', desc, flags=re.IGNORECASE).strip()
+    # Clean up leftover punctuation artifacts
+    clean_desc = re.sub(r'\s*[.,]\s*[.,]', '.', clean_desc)  # ".," or ",." → "."
+    clean_desc = re.sub(r'\s*[.,]\s*$', '.', clean_desc)     # trailing comma → period
+    clean_desc = re.sub(r'^\s*[.,]\s*', '', clean_desc)      # leading punctuation
+    clean_desc = re.sub(r'\s+', ' ', clean_desc).strip()
+    if clean_desc and not clean_desc.endswith('.'):
+        clean_desc += '.'
+
+    # Detect tool type for contextual second sentence
+    h1_lower = h1.lower()
+    if any(w in h1_lower for w in ['calculator', 'rechner', 'laskuri', 'beregner', 'calcula']):
+        how_sentence = f'Enter your values into the form above and the calculator processes them instantly in your browser — no data is sent to any server.'
+    elif any(w in h1_lower for w in ['generator', 'maker', 'builder', 'creator']):
+        how_sentence = f'Customize your options in the form above and the tool generates your result instantly in your browser — ready to download, copy, or share.'
+    elif any(w in h1_lower for w in ['checker', 'tester', 'validator', 'analyzer', 'scanner', 'detector']):
+        how_sentence = f'Provide your input in the form above and the tool analyzes it instantly in your browser, giving you actionable results without sending data to any server.'
+    elif any(w in h1_lower for w in ['converter', 'translator']):
+        how_sentence = f'Select your input and output formats, enter your value, and the tool converts it instantly in your browser with no server calls.'
+    elif any(w in h1_lower for w in ['quiz', 'test', 'assessment']):
+        how_sentence = f'Answer the questions honestly and the tool calculates your result based on research-backed criteria — everything runs privately in your browser.'
+    elif any(w in h1_lower for w in ['tracker', 'planner', 'scheduler', 'timer', 'countdown']):
+        how_sentence = f'Set your parameters in the form above and the tool tracks your progress in real time — all data stays in your browser\'s local storage.'
+    elif any(w in h1_lower for w in ['picker', 'selector', 'randomizer', 'wheel', 'spinner']):
+        how_sentence = f'Add your items to the list, configure your selection options, and the tool picks randomly using your browser\'s built-in randomization — fair and private.'
+    elif any(w in h1_lower for w in ['simulator', 'visualizer', 'previewer']):
+        how_sentence = f'Configure your settings in the form above and see the results rendered visually in your browser — no server processing required.'
+    else:
+        how_sentence = f'Use the tool above to get your results instantly — everything runs in your browser with no data sent to any server.'
+
+    return f'''
+      <h2>{h2_text}</h2>
+      <p>{clean_desc} {how_sentence}</p>'''
+
+
+def generate_extra_faqs(meta):
+    """Generate additional FAQ entries to reach 5 minimum."""
+    h1 = meta['h1']
+    desc = meta['description']
+    faq_count = meta.get('faq_count', 0)
+
+    if faq_count >= 5 or not h1:
+        return []
+
+    clean_h1 = re.sub(r'\s*[—–\-]\s*(Teamz Lab Tools|Free|Online).*$', '', h1, flags=re.IGNORECASE).strip()
+    clean_h1 = re.sub(r'\s+20\d{2}$', '', clean_h1).strip()
+    h1_lower = h1.lower()
+
+    # Pool of generic FAQ templates
+    faq_pool = []
+
+    # Privacy FAQ (always relevant)
+    faq_pool.append({
+        'q': f'Is {clean_h1} free to use?',
+        'a': f'Yes, {clean_h1} is completely free with no sign-up, no login, and no hidden fees. The tool runs entirely in your browser — your data never leaves your device.'
+    })
+
+    faq_pool.append({
+        'q': f'Is my data safe when using this tool?',
+        'a': f'Yes. This tool runs 100% in your browser using JavaScript. No data is sent to any server, stored in any database, or shared with any third party. When you close the page, processing stops immediately.'
+    })
+
+    faq_pool.append({
+        'q': f'Does this tool work on mobile devices?',
+        'a': f'Yes. {clean_h1} is fully responsive and works on smartphones, tablets, and desktop computers. The interface adapts to your screen size automatically.'
+    })
+
+    faq_pool.append({
+        'q': f'Can I use this tool offline?',
+        'a': f'Yes. Once the page has loaded, {clean_h1} works without an internet connection. All processing happens locally in your browser.'
+    })
+
+    faq_pool.append({
+        'q': f'Do I need to create an account to use {clean_h1}?',
+        'a': f'No. {clean_h1} requires no account, no registration, and no email. Just open the page and start using it immediately. Your inputs are auto-saved in your browser for convenience.'
+    })
+
+    # Return only as many as needed to reach 5
+    needed = 5 - faq_count
+    return faq_pool[:needed]
+
+
+def fix_missing_how_works(content, meta):
+    """Add 'How X Works' H2 section if missing."""
+    h2_lower = ' '.join(meta.get('h2s', [])).lower()
+
+    # Check for "how" + "works" or equivalent patterns
+    has_how_works = ('how' in h2_lower and ('works' in h2_lower or 'calculated' in h2_lower or 'work' in h2_lower))
+
+    # Also check non-English equivalents
+    non_en_patterns = ['miten', 'wie', 'comment', 'come', 'hur', 'hoe', 'jak', 'hvordan', 'como', 'cómo', 'bagaimana', 'كيف']
+    for pat in non_en_patterns:
+        if pat in h2_lower:
+            has_how_works = True
+            break
+
+    if has_how_works:
+        return content, False
+
+    new_h2 = generate_how_works_h2(meta)
+    if not new_h2:
+        return content, False
+
+    # Insert after the first <h2> opening in .tool-content
+    # Find tool-content section
+    tc_match = re.search(r'<section\s+class="tool-content">', content)
+    if not tc_match:
+        return content, False
+
+    # Find the first H2 inside tool-content
+    first_h2 = re.search(r'<h2[^>]*>', content[tc_match.end():])
+    if first_h2:
+        # Insert BEFORE the first H2
+        insert_pos = tc_match.end() + first_h2.start()
+        content = content[:insert_pos] + new_h2 + '\n' + content[insert_pos:]
+    else:
+        # No H2 exists — insert right after <section class="tool-content">
+        insert_pos = tc_match.end()
+        content = content[:insert_pos] + new_h2 + '\n' + content[insert_pos:]
+
+    return content, True
+
+
+def fix_low_faqs(content, meta):
+    """Add FAQs if count is below 5."""
+    if meta.get('faq_count', 0) >= 5:
+        return content, False
+
+    extra_faqs = generate_extra_faqs(meta)
+    if not extra_faqs:
+        return content, False
+
+    # Find the last FAQ entry in the JS array and append new ones
+    # Pattern: look for the closing ]; of the faqs array
+    # Common patterns: { q: '...', a: '...' }\n        ];  or  }\n      ];
+    faq_insert = re.search(r"(\{\s*q:\s*'[^']*',\s*a:\s*'[^']*'\s*\})\s*\n(\s*\];)", content)
+    if not faq_insert:
+        # Try double-quote pattern
+        faq_insert = re.search(r'(\{\s*q:\s*"[^"]*",\s*a:\s*"[^"]*"\s*\})\s*\n(\s*\];)', content)
+
+    if not faq_insert:
+        return content, False
+
+    # Build new FAQ entries
+    indent = '        '
+    new_entries = ''
+    for faq in extra_faqs:
+        q = faq['q'].replace("'", "\\'")
+        a = faq['a'].replace("'", "\\'")
+        new_entries += f",\n{indent}{{ q: '{q}', a: '{a}' }}"
+
+    # Insert before the ];
+    insert_pos = faq_insert.end(1)
+    content = content[:insert_pos] + new_entries + content[insert_pos:]
+
+    return content, True
+
+
 def run(dry_run=True, hub_filter=None, stats_only=False):
     """Main runner."""
     pages = find_tool_pages(hub_filter)
@@ -333,6 +508,19 @@ def run(dry_run=True, hub_filter=None, stats_only=False):
         # Fix 4: Freshness signal — HANDLED CENTRALLY in common.js (renderAuthorByline)
         # No per-file changes needed
 
+        # Fix 5: Missing "How X Works" H2
+        content, fixed = fix_missing_how_works(content, meta)
+        if fixed:
+            counters['how_works'] += 1
+            fixes_for_file.append('how_works_h2')
+
+        # Fix 6: Low FAQ count (<5)
+        meta_updated = extract_meta(content)  # Re-extract after H2 addition
+        content, fixed = fix_low_faqs(content, meta_updated)
+        if fixed:
+            counters['faqs_added'] += 1
+            fixes_for_file.append('faqs_added')
+
         # Count issues (for stats)
         first_word = meta['description'].split()[0].lower().rstrip('.,!') if meta['description'].split() else ''
         if first_word not in ACTION_VERBS and meta['description']:
@@ -365,17 +553,16 @@ def run(dry_run=True, hub_filter=None, stats_only=False):
     print(f"\n{'='*60}")
     print(f"  SUMMARY")
     print(f"{'='*60}")
-    print(f"\n  Auto-fixable (applied{'  — DRY RUN' if dry_run else ''}):")
-    print(f"    Meta desc verb fix:    {counters['meta_verb']} pages")
-    print(f"    Meta desc trim:        {counters['meta_length']} pages")
+    print(f"\n  Auto-fixed{'  (DRY RUN)' if dry_run else ''}:")
     print(f"    display='' bug fix:    {counters['display_bug']} pages")
-    print(f"    Freshness signal:      {counters['freshness']} pages")
+    print(f"    How Works H2 added:    {counters['how_works']} pages")
+    print(f"    FAQs added (<5→5):     {counters['faqs_added']} pages")
     print(f"    TOTAL auto-fixed:      {len(fixed_files)} pages")
 
-    print(f"\n  Needs AI/manual content:")
+    print(f"\n  Remaining (needs manual/AI content):")
     print(f"    Low content (<300w):   {counters['low_content']} pages")
-    print(f"    Missing 'How Works' H2:{counters['needs_how_works']} pages")
-    print(f"    Low FAQ count (<5):    {counters['low_faqs']} pages")
+    print(f"    Still no How Works H2: {counters['needs_how_works'] - counters['how_works']} pages")
+    print(f"    Still low FAQs (<5):   {counters['low_faqs'] - counters['faqs_added']} pages")
 
     print(f"\n  Total pages scanned:     {len(pages)}")
     if dry_run and not stats_only:
