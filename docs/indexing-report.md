@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-30 01:39
+# Indexing Report — 2026-03-30 02:27
 
 Total pages: 1
 Checked: 1
@@ -10,5 +10,5 @@ Errors: 0
 
 | Page | Reason |
 |---|---|
-| /health/recipe-finder/ | URL is unknown to Google |
+| /health/food-additive-checker/ | URL is unknown to Google |
 

@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAM Latency Calculator — CAS to ns — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate real RAM latency in nanoseconds from CAS latency and speed. Compare DDR4 vs DDR5 kits to find which is actually faster. Free tool.">
+  <meta property="og:title" content="RAM Latency Calculator — CAS to ns — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate real RAM latency in nanoseconds from CAS latency and speed. Compare DDR4 vs DDR5 kits to find which is actually faster.">
+  <meta property="og:url" content="https://tool.teamzlab.com/gaming/ram-latency-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/gaming.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="RAM Latency Calculator — CAS to ns — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate real RAM latency in nanoseconds from CAS latency and speed. Compare DDR4 vs DDR5 kits to find which is actually faster.">
+  <link rel="canonical" href="https://tool.teamzlab.com/gaming/ram-latency-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .kit-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .kit-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .kit-panel h3 {
+      margin: 0 0 1rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+      font-size: 0.875rem;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--heading);
+    }
+    .btn-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .btn-row button {
+      padding: 0.7rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .rlc-btn-primary {
+      background: var(--heading);
+      color: var(--bg);
+    }
+    .rlc-btn-secondary {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border) !important;
+    }
+    .result-section { display: none; }
+    .latency-results {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .latency-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .latency-card .lat-kit-name {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0 0 0.5rem;
+      font-weight: 600;
+    }
+    .latency-card .lat-ns {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--heading);
+      margin: 0;
+      line-height: 1.1;
+    }
+    .latency-card .lat-unit {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin: 0.2rem 0 0;
+    }
+    .latency-card .lat-bw {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 0.5rem 0 0;
+    }
+    .latency-card.winner-card {
+      border-color: var(--heading);
+    }
+    .winner-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      text-align: center;
+      color: var(--heading);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .winner-badge .winner-sub {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 0.3rem;
+    }
+    .rlc-copy-btn {
+      display: block;
+      margin: 0 auto 1.25rem;
+      padding: 0.55rem 1.25rem;
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .ref-table-wrap {
+      overflow-x: auto;
+      margin-top: 0.5rem;
+    }
+    .ref-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    .ref-table th {
+      background: var(--surface);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .ref-table td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .ref-table tr:last-child td {
+      border-bottom: none;
+    }
+    .ref-table tr.row-highlight td {
+      background: var(--surface);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .rating-badge {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 2rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+    }
+    .bw-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .bw-section h4 {
+      margin: 0 0 0.6rem;
+      font-size: 0.9rem;
+      color: var(--heading);
+    }
+    .bw-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+    .bw-row span:last-child {
+      font-weight: 700;
+      color: var(--heading);
+    }
+    @media (max-width: 600px) {
+      .kit-compare-grid { grid-template-columns: 1fr; }
+      .latency-results { grid-template-columns: 1fr; }
+      .latency-card .lat-ns { font-size: 2rem; }
+      .btn-row { flex-direction: column; }
+      .btn-row button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Gaming Tools", "item": "https://tool.teamzlab.com/gaming/"}, {"@type": "ListItem", "position": 3, "name": "RAM Latency Calculator", "item": "https://tool.teamzlab.com/gaming/ram-latency-calculator/"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is CAS latency in RAM?", "acceptedAnswer": {"@type": "Answer", "text": "CAS latency (Column Address Strobe, or CL) is the number of clock cycles the RAM module takes to deliver data after receiving a request. A lower CL number means fewer wait cycles. However, CL alone doesn't determine speed — you must combine it with the clock speed to get the real latency in nanoseconds. Formula: (CL × 2000) ÷ Speed MT/s = nanoseconds. Lower nanoseconds = faster RAM response."}}, {"@type": "Question", "name": "Is DDR5 faster than DDR4 in real latency?", "acceptedAnswer": {"@type": "Answer", "text": "It depends entirely on the specific kit. Cheap or early DDR5 kits (DDR5-4800 CL40 = 16.67ns) are actually slower than most DDR4 kits. High-end DDR5 kits (DDR5-6000 CL28 = 9.33ns, DDR5-7200 CL34 = 9.44ns) are faster than all DDR4 options. The best DDR4 kits (DDR4-4000 CL16 = 8.00ns) rival entry-level DDR5 performance. Always calculate nanoseconds for any kit you're considering."}}, {"@type": "Question", "name": "What is the best CAS latency for gaming?", "acceptedAnswer": {"@type": "Answer", "text": "For DDR4: CL16 at 3200–3600 MT/s (8.89–10.00ns) is excellent. CL18 at 3600 MT/s achieves 10.00ns — identical to DDR4-3200 CL16. For DDR5 on AM5: CL30 at 6000 MT/s (10.00ns) or CL28 at 6000 MT/s (9.33ns) are the recommended gaming sweet spots. On Intel platforms, CL34 at 7200 MT/s (9.44ns) performs very well. Going lower than CL16 for DDR4 or CL28 for DDR5 has diminishing returns unless you're a competitive enthusiast."}}, {"@type": "Question", "name": "Does RAM latency matter for 4K gaming?", "acceptedAnswer": {"@type": "Answer", "text": "At 4K, the GPU becomes the dominant bottleneck — it must render 8.3 million pixels per frame. RAM latency contributes less than 1–3% to overall frame times at this resolution, even between the fastest and slowest RAM kits. RAM latency matters most at 1080p with a fast CPU (like Ryzen 7 7800X3D), where the CPU can process frames faster than the GPU renders them and RAM access time becomes the limiter."}}, {"@type": "Question", "name": "How do I know what CAS latency my RAM is running at?", "acceptedAnswer": {"@type": "Answer", "text": "Open CPU-Z (free download) or HWiNFO64, go to the Memory tab. You'll see the DRAM Frequency (half the MT/s rate for DDR RAM) and CAS Latency. Alternatively, check your BIOS under the memory settings. If you see JEDEC settings, your RAM is running at its default speed; if XMP/EXPO is enabled, it's running at the rated overclock speed on the box."}}, {"@type": "Question", "name": "What does the Infinity Fabric ratio mean for DDR5 on AMD?", "acceptedAnswer": {"@type": "Answer", "text": "AMD's Infinity Fabric (FCLK) ideally runs synchronously with the memory controller (UCLK) for minimum latency. On AM5, the FCLK targets 2000 MHz, which synchronizes with DDR5-4000 MT/s base clock. DDR5-6000 MT/s uses a 2:1 FCLK:UCLK ratio (FCLK 2000 MHz, UCLK 3000 MHz) — AMD's tested and validated target for Ryzen 7000 series. Faster DDR5 beyond 6000 on standard kits can cause async operation, sometimes increasing latency. Always verify with BIOS-reported values."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "RAM Latency Calculator", "description": "Calculate real RAM latency in nanoseconds from CAS latency and speed. Compare any two RAM kits.", "url": "https://tool.teamzlab.com/gaming/ram-latency-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>RAM Latency Calculator</h1>
+      <p class="tool-description">Convert CAS latency and RAM speed to real nanosecond latency. Compare two RAM kits side-by-side and discover which is actually faster — because DDR5's higher MHz number doesn't always mean lower latency.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="kit-compare-grid">
+        <!-- Kit A -->
+        <div class="kit-panel">
+          <h3>Kit A</h3>
+          <div class="form-group">
+            <label for="kit-a-name">Kit Name (optional)</label>
+            <input type="text" id="kit-a-name" placeholder="e.g. My current DDR4">
+          </div>
+          <div class="form-group">
+            <label for="kit-a-type">DDR Type</label>
+            <select id="kit-a-type">
+              <option value="DDR3">DDR3</option>
+              <option value="DDR4" selected>DDR4</option>
+              <option value="DDR5">DDR5</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kit-a-speed">Speed (MT/s)</label>
+            <input type="number" id="kit-a-speed" placeholder="e.g. 3200" value="3200" min="800" max="12000">
+          </div>
+          <div class="form-group">
+            <label for="kit-a-cl">CAS Latency (CL)</label>
+            <input type="number" id="kit-a-cl" placeholder="e.g. 16" value="16" min="5" max="60">
+          </div>
+        </div>
+
+        <!-- Kit B -->
+        <div class="kit-panel">
+          <h3>Kit B</h3>
+          <div class="form-group">
+            <label for="kit-b-name">Kit Name (optional)</label>
+            <input type="text" id="kit-b-name" placeholder="e.g. Target DDR5 kit">
+          </div>
+          <div class="form-group">
+            <label for="kit-b-type">DDR Type</label>
+            <select id="kit-b-type">
+              <option value="DDR3">DDR3</option>
+              <option value="DDR4">DDR4</option>
+              <option value="DDR5" selected>DDR5</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="kit-b-speed">Speed (MT/s)</label>
+            <input type="number" id="kit-b-speed" placeholder="e.g. 6000" value="6000" min="800" max="12000">
+          </div>
+          <div class="form-group">
+            <label for="kit-b-cl">CAS Latency (CL)</label>
+            <input type="number" id="kit-b-cl" placeholder="e.g. 30" value="30" min="5" max="60">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="calc-btn" class="rlc-btn-primary" onclick="calcLatency()">Calculate Latency</button>
+        <button id="reset-btn" class="rlc-btn-secondary" onclick="resetForm()">Reset</button>
+      </div>
+
+      <p class="tool-trust-strip">100% Private · No Sign-up · Free Forever</p>
+
+      <div class="result-section" id="results">
+        <div class="latency-results">
+          <div class="latency-card" id="card-a">
+            <p class="lat-kit-name" id="label-a">Kit A</p>
+            <p class="lat-ns" id="ns-a">—</p>
+            <p class="lat-unit">nanoseconds</p>
+            <p class="lat-bw" id="bw-a"></p>
+          </div>
+          <div class="latency-card" id="card-b">
+            <p class="lat-kit-name" id="label-b">Kit B</p>
+            <p class="lat-ns" id="ns-b">—</p>
+            <p class="lat-unit">nanoseconds</p>
+            <p class="lat-bw" id="bw-b"></p>
+          </div>
+        </div>
+
+        <div class="winner-badge" id="winner-badge">
+          <span id="winner-text">—</span>
+          <span class="winner-sub">Lower nanoseconds = faster RAM response time</span>
+        </div>
+
+        <button class="rlc-copy-btn" id="copy-result-btn" onclick="copyResult()">Copy Result</button>
+
+        <div class="bw-section">
+          <h4>Bandwidth Context</h4>
+          <div class="bw-row">
+            <span id="bw-label-a">Kit A bandwidth</span>
+            <span id="bw-val-a">—</span>
+          </div>
+          <div class="bw-row">
+            <span id="bw-label-b">Kit B bandwidth</span>
+            <span id="bw-val-b">—</span>
+          </div>
+          <p style="margin:0.6rem 0 0;font-size:0.78rem;color:var(--text-muted);">Theoretical single-channel bandwidth. DDR5 DIMMs have two 32-bit channels internally, doubling effective bandwidth.</p>
+        </div>
+
+        <h4 style="margin:0 0 0.75rem;color:var(--heading);font-size:0.95rem;">Common RAM Kits — Reference Table</h4>
+        <div class="ref-table-wrap">
+          <table class="ref-table" id="ref-table">
+            <thead>
+              <tr>
+                <th>Kit</th>
+                <th>Speed</th>
+                <th>CL</th>
+                <th>Latency (ns)</th>
+                <th>Rating</th>
+              </tr>
+            </thead>
+            <tbody id="ref-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why MHz Alone Doesn't Tell You RAM Speed</h2>
+      <p>RAM marketing uses MHz (or MT/s) as the headline number, but it only tells half the story. The other half is CAS latency (CL) — the number of clock cycles the RAM takes to respond to a request. At higher clock speeds, each cycle is shorter, so CAS latency in nanoseconds requires the formula: (CL × 2000) ÷ Speed MT/s. This reveals the shocking truth: a DDR5-4800 CL40 kit (16.67ns) is 67% slower in real latency than DDR4-3600 CL16 (8.89ns) — despite having a higher MHz on the box. Always calculate nanoseconds before comparing any two kits. Last updated: March 2026.</p>
+
+      <h2>DDR5 vs DDR4 Latency — The Real Numbers</h2>
+      <p>The DDR5 generation transition reveals a recurring pattern: early or budget DDR5 kits often have worse real-world latency than well-tuned DDR4. DDR5-4800 CL40 at 16.67ns is worse than DDR4-2666 CL18 at 13.50ns. However, high-end DDR5 kits flip the script: DDR5-6000 CL28 at 9.33ns and DDR5-7200 CL34 at 9.44ns beat even the best DDR4 kits. The sweet spot for DDR5 on AMD AM5 is 6000 MT/s at CL30 or lower, which matches the 2:1 Infinity Fabric ratio. On Intel platforms, 7200–8000 MT/s at low CL delivers the best results.</p>
+
+      <h2>How CAS Latency Affects Gaming and Workloads</h2>
+      <p>Lower nanosecond latency means the CPU waits less time for data from RAM. In gaming at 1080p with fast CPUs (Ryzen 7 7800X3D), latency differences of 2–3ns can translate to 3–8% FPS differences in CPU-limited scenarios. At 1440p and 4K, the GPU becomes the bottleneck and RAM latency impact shrinks to 1–3%. For content creation — video rendering, 3D animation, large dataset operations — bandwidth (GB/s) often matters more than latency, where DDR5's higher bandwidth wins decisively. For programming and general use, differences under 1ns have no perceptible impact.</p>
+
+      <h2>How to Choose the Best RAM for Your Budget</h2>
+      <p>Prioritize value-per-nanosecond, not MHz-per-dollar. For DDR4 systems: DDR4-3600 CL16 hits the sweet spot (8.89ns at reasonable cost). Avoid DDR4 over 4000 MHz unless overclocking — the cost premium rarely pays off. For DDR5 on AM5: target 6000 MT/s at CL28–CL30 (around $80–120 for 32GB as of March 2026 after recent price drops). Avoid budget DDR5 kits below DDR5-5600 CL36 — their latency is worse than DDR4. For content creation, prioritize capacity (32GB or 64GB) over speed, since bandwidth scales with capacity in dual and quad-channel configurations.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  // Reference table data
+  var refKits = [
+    {label:'DDR4-2133 CL15', speed:2133, cl:15, type:'DDR4'},
+    {label:'DDR4-2666 CL18', speed:2666, cl:18, type:'DDR4'},
+    {label:'DDR4-3200 CL16', speed:3200, cl:16, type:'DDR4'},
+    {label:'DDR4-3600 CL16', speed:3600, cl:16, type:'DDR4'},
+    {label:'DDR4-3600 CL18', speed:3600, cl:18, type:'DDR4'},
+    {label:'DDR4-4000 CL16', speed:4000, cl:16, type:'DDR4'},
+    {label:'DDR5-4800 CL40', speed:4800, cl:40, type:'DDR5'},
+    {label:'DDR5-5600 CL36', speed:5600, cl:36, type:'DDR5'},
+    {label:'DDR5-6000 CL30', speed:6000, cl:30, type:'DDR5'},
+    {label:'DDR5-6000 CL28', speed:6000, cl:28, type:'DDR5'},
+    {label:'DDR5-6400 CL32', speed:6400, cl:32, type:'DDR5'},
+    {label:'DDR5-7200 CL34', speed:7200, cl:34, type:'DDR5'},
+    {label:'DDR5-8000 CL38', speed:8000, cl:38, type:'DDR5'}
+  ];
+
+  function calcNs(cl, speed) {
+    return (cl * 2000) / speed;
+  }
+
+  function getRating(ns) {
+    if (ns < 9) return 'Excellent';
+    if (ns < 10) return 'Great';
+    if (ns < 11) return 'Good';
+    if (ns < 13) return 'Below Avg';
+    return 'Poor';
+  }
+
+  function calcBandwidth(speed) {
+    // speed_MT/s * 8 bytes / 1000 = GB/s per channel
+    return (speed * 8 / 1000).toFixed(1);
+  }
+
+  function isMatchingKit(speed, cl, kitSpeed, kitCl) {
+    return Math.abs(speed - kitSpeed) <= 100 && Math.abs(cl - kitCl) <= 1;
+  }
+
+  var lastResult = null;
+
+  function calcLatency() {
+    var nameA = document.getElementById('kit-a-name').value.trim() || 'Kit A';
+    var typeA = document.getElementById('kit-a-type').value;
+    var speedA = parseFloat(document.getElementById('kit-a-speed').value);
+    var clA = parseFloat(document.getElementById('kit-a-cl').value);
+
+    var nameB = document.getElementById('kit-b-name').value.trim() || 'Kit B';
+    var typeB = document.getElementById('kit-b-type').value;
+    var speedB = parseFloat(document.getElementById('kit-b-speed').value);
+    var clB = parseFloat(document.getElementById('kit-b-cl').value);
+
+    if (!speedA || !clA || !speedB || !clB || speedA < 800 || speedB < 800) {
+      window.showToast('Please fill in all speed and CAS latency fields.');
+      return;
+    }
+
+    var nsA = calcNs(clA, speedA);
+    var nsB = calcNs(clB, speedB);
+    var bwA = calcBandwidth(speedA);
+    var bwB = calcBandwidth(speedB);
+
+    // Update kit labels
+    document.getElementById('label-a').textContent = nameA + ' (' + typeA + '-' + speedA + ' CL' + clA + ')';
+    document.getElementById('label-b').textContent = nameB + ' (' + typeB + '-' + speedB + ' CL' + clB + ')';
+    document.getElementById('ns-a').textContent = nsA.toFixed(2);
+    document.getElementById('ns-b').textContent = nsB.toFixed(2);
+    document.getElementById('bw-a').textContent = 'BW: ' + bwA + ' GB/s';
+    document.getElementById('bw-b').textContent = 'BW: ' + bwB + ' GB/s';
+
+    // Bandwidth section
+    document.getElementById('bw-label-a').textContent = nameA + ' (' + typeA + '-' + speedA + ')';
+    document.getElementById('bw-val-a').textContent = bwA + ' GB/s';
+    document.getElementById('bw-label-b').textContent = nameB + ' (' + typeB + '-' + speedB + ')';
+    document.getElementById('bw-val-b').textContent = bwB + ' GB/s';
+
+    // Winner logic
+    var cardA = document.getElementById('card-a');
+    var cardB = document.getElementById('card-b');
+    cardA.classList.remove('winner-card');
+    cardB.classList.remove('winner-card');
+
+    var diff = Math.abs(nsA - nsB);
+    var winnerText;
+    if (diff <= 0.1) {
+      winnerText = 'Both kits have identical latency';
+    } else if (nsA < nsB) {
+      var pct = (((nsB - nsA) / nsB) * 100).toFixed(1);
+      winnerText = nameA + ' is ' + diff.toFixed(2) + ' ns faster (' + pct + '% lower latency)';
+      cardA.classList.add('winner-card');
+    } else {
+      var pct = (((nsA - nsB) / nsA) * 100).toFixed(1);
+      winnerText = nameB + ' is ' + diff.toFixed(2) + ' ns faster (' + pct + '% lower latency)';
+      cardB.classList.add('winner-card');
+    }
+    document.getElementById('winner-text').textContent = winnerText;
+
+    // Store for copy
+    lastResult = {
+      nameA: nameA, typeA: typeA, speedA: speedA, clA: clA, nsA: nsA,
+      nameB: nameB, typeB: typeB, speedB: speedB, clB: clB, nsB: nsB,
+      winnerText: winnerText
+    };
+
+    // Rebuild reference table with highlights
+    buildRefTable(speedA, clA, speedB, clB);
+
+    // Show results
+    document.getElementById('results').style.display = 'block';
+  }
+
+  function buildRefTable(speedA, clA, speedB, clB) {
+    var tbody = document.getElementById('ref-table-body');
+    tbody.innerHTML = '';
+    for (var i = 0; i < refKits.length; i++) {
+      var kit = refKits[i];
+      var ns = calcNs(kit.cl, kit.speed);
+      var rating = getRating(ns);
+      var matchA = isMatchingKit(speedA, clA, kit.speed, kit.cl);
+      var matchB = isMatchingKit(speedB, clB, kit.speed, kit.cl);
+      var tr = document.createElement('tr');
+      if (matchA || matchB) {
+        tr.className = 'row-highlight';
+      }
+      var labelCell = kit.label;
+      if (matchA) labelCell += ' ← Kit A';
+      if (matchB) labelCell += ' ← Kit B';
+      tr.innerHTML =
+        '<td>' + labelCell + '</td>' +
+        '<td>' + kit.speed.toLocaleString() + ' MT/s</td>' +
+        '<td>' + kit.cl + '</td>' +
+        '<td>' + ns.toFixed(2) + ' ns</td>' +
+        '<td><span class="rating-badge">' + rating + '</span></td>';
+      tbody.appendChild(tr);
+    }
+  }
+
+  function copyResult() {
+    if (!lastResult) return;
+    var text = lastResult.nameA + ' (' + lastResult.typeA + '-' + lastResult.speedA + ' CL' + lastResult.clA + '): ' +
+      lastResult.nsA.toFixed(2) + 'ns vs ' +
+      lastResult.nameB + ' (' + lastResult.typeB + '-' + lastResult.speedB + ' CL' + lastResult.clB + '): ' +
+      lastResult.nsB.toFixed(2) + 'ns — ' + lastResult.winnerText;
+    navigator.clipboard.writeText(text)
+      .then(function() { window.showToast('Result copied!'); })
+      .catch(function() { window.showToast('Copy failed — please copy manually.'); });
+  }
+
+  function resetForm() {
+    document.getElementById('kit-a-name').value = '';
+    document.getElementById('kit-a-type').selectedIndex = 1; // DDR4
+    document.getElementById('kit-a-speed').value = '3200';
+    document.getElementById('kit-a-cl').value = '16';
+    document.getElementById('kit-b-name').value = '';
+    document.getElementById('kit-b-type').selectedIndex = 2; // DDR5
+    document.getElementById('kit-b-speed').value = '6000';
+    document.getElementById('kit-b-cl').value = '30';
+    document.getElementById('results').style.display = 'none';
+    lastResult = null;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs([
+      {name:'Home', url:'/'},
+      {name:'Gaming Tools', url:'/gaming/'},
+      {name:'RAM Latency Calculator'}
+    ]);
+
+    var faqs = [
+      {
+        q: 'What is CAS latency in RAM?',
+        a: 'CAS latency (Column Address Strobe, or CL) is the number of clock cycles the RAM module takes to deliver data after receiving a request. A lower CL number means fewer wait cycles. However, CL alone doesn\'t determine speed — you must combine it with the clock speed to get the real latency in nanoseconds. Formula: (CL × 2000) ÷ Speed MT/s = nanoseconds. Lower nanoseconds = faster RAM response.'
+      },
+      {
+        q: 'Is DDR5 faster than DDR4 in real latency?',
+        a: 'It depends entirely on the specific kit. Cheap or early DDR5 kits (DDR5-4800 CL40 = 16.67ns) are actually slower than most DDR4 kits. High-end DDR5 kits (DDR5-6000 CL28 = 9.33ns, DDR5-7200 CL34 = 9.44ns) are faster than all DDR4 options. The best DDR4 kits (DDR4-4000 CL16 = 8.00ns) rival entry-level DDR5 performance. Always calculate nanoseconds for any kit you\'re considering.'
+      },
+      {
+        q: 'What is the best CAS latency for gaming?',
+        a: 'For DDR4: CL16 at 3200–3600 MT/s (8.89–10.00ns) is excellent. CL18 at 3600 MT/s achieves 10.00ns — identical to DDR4-3200 CL16. For DDR5 on AM5: CL30 at 6000 MT/s (10.00ns) or CL28 at 6000 MT/s (9.33ns) are the recommended gaming sweet spots. On Intel platforms, CL34 at 7200 MT/s (9.44ns) performs very well. Going lower than CL16 for DDR4 or CL28 for DDR5 has diminishing returns unless you\'re a competitive enthusiast.'
+      },
+      {
+        q: 'Does RAM latency matter for 4K gaming?',
+        a: 'At 4K, the GPU becomes the dominant bottleneck — it must render 8.3 million pixels per frame. RAM latency contributes less than 1–3% to overall frame times at this resolution, even between the fastest and slowest RAM kits. RAM latency matters most at 1080p with a fast CPU (like Ryzen 7 7800X3D), where the CPU can process frames faster than the GPU renders them and RAM access time becomes the limiter.'
+      },
+      {
+        q: 'How do I know what CAS latency my RAM is running at?',
+        a: 'Open CPU-Z (free download) or HWiNFO64, go to the Memory tab. You\'ll see the DRAM Frequency (half the MT/s rate for DDR RAM) and CAS Latency. Alternatively, check your BIOS under the memory settings. If you see JEDEC settings, your RAM is running at its default speed; if XMP/EXPO is enabled, it\'s running at the rated overclock speed on the box.'
+      },
+      {
+        q: 'What does the Infinity Fabric ratio mean for DDR5 on AMD?',
+        a: 'AMD\'s Infinity Fabric (FCLK) ideally runs synchronously with the memory controller (UCLK) for minimum latency. On AM5, the FCLK targets 2000 MHz, which synchronizes with DDR5-4000 MT/s base clock. DDR5-6000 MT/s uses a 2:1 FCLK:UCLK ratio (FCLK 2000 MHz, UCLK 3000 MHz) — AMD\'s tested and validated target for Ryzen 7000 series. Faster DDR5 beyond 6000 on standard kits can cause async operation, sometimes increasing latency. Always verify with BIOS-reported values.'
+      }
+    ];
+    TeamzTools.renderFAQs(faqs);
+
+    TeamzTools.renderRelatedTools([
+      {slug:'gaming/ddr5-vs-ddr4-calculator', name:'DDR5 vs DDR4 Calculator', description:'Compare DDR5 and DDR4 performance and find out if upgrading is worth it.'},
+      {slug:'gaming/ram-upgrade-advisor', name:'RAM Upgrade Advisor', description:'Get a clear recommendation on whether upgrading your RAM is worth it.'},
+      {slug:'gaming/pc-bottleneck-calculator', name:'PC Bottleneck Calculator', description:'Check if your CPU or GPU is creating a performance bottleneck.'},
+      {slug:'gaming/pc-psu-calculator', name:'PC PSU Calculator', description:'Find the right power supply wattage for your gaming PC build.'},
+      {slug:'gaming/fps-calculator', name:'FPS Calculator', description:'Estimate your expected FPS based on GPU, CPU and resolution.'},
+      {slug:'gaming/edpi-calculator', name:'eDPI Calculator', description:'Calculate your effective DPI for optimal mouse sensitivity in games.'}
+    ]);
+  });
+  </script>
+</body>
+</html>
