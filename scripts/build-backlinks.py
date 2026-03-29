@@ -10,7 +10,7 @@ Usage:
     python3 scripts/build-backlinks.py ping              # Ping blog/indexing services (automated)
     python3 scripts/build-backlinks.py status            # Show submission status
     python3 scripts/build-backlinks.py next              # Show next pending directories to work
-    python3 scripts/build-backlinks.py clipboard [id]    # Copy submission details to clipboard
+    python3 scripts/build-backlinks.py clipboard [id|n]  # Copy targeted submission details by directory id or queue number
 
 Directories are categorized by link type:
     - DoFollow: Pass SEO authority (most valuable)
@@ -51,6 +51,107 @@ SITE = {
     "email": "teamz.lab.contact@gmail.com",
     "twitter": "@teamzlab",
     "github": "https://github.com/Teamz-Lab-LTD",
+}
+
+SUBMISSION_PROFILES = {
+    "hackernews": {
+        "listing_title": "Show HN: I built 1900+ free browser-based tools that run locally",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Privacy-first browser-based tool library with no signup and client-side execution.",
+        "short_pitch": "A large collection of free browser-based tools across calculators, developer utilities, SEO helpers, converters, and workflow tools. No signup and no server-side data collection.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "trustpilot": {
+        "listing_title": "Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Business profile for the tool collection and brand entity.",
+        "short_pitch": "A privacy-first library of 1900+ browser-based tools for finance, health, design, SEO, developer workflows, and everyday calculations.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "behance": {
+        "listing_title": "Teamz Lab Tools — Browser-Based Creative Utilities",
+        "destination_url": "https://tool.teamzlab.com/design/logo-text-maker/",
+        "primary_angle": "Portfolio-style showcase starting from a visually demonstrable design tool.",
+        "short_pitch": "Showcase the design side of Teamz Lab Tools through a browser-based text logo maker and related creative utilities.",
+        "support_asset": "scripts/distribute/articles/free-logo-design-tools.md",
+    },
+    "sourceforge": {
+        "listing_title": "Text Logo Maker by Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/design/logo-text-maker/",
+        "primary_angle": "Free, browser-based logo text maker with transparent PNG export and no watermark.",
+        "short_pitch": "A fast text logo maker for founders, side projects, and internal tools. Runs in the browser, exports clean PNG logos, and avoids heavyweight design suites.",
+        "support_asset": "scripts/distribute/articles/free-logo-design-tools.md",
+    },
+    "g2": {
+        "listing_title": "Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Broad browser-based utility suite for everyday workflows.",
+        "short_pitch": "A browser-based collection of calculators, generators, and workflow helpers with no signup requirement and privacy-first execution.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "producthunt": {
+        "listing_title": "Amazon Seller Calculator Pack",
+        "destination_url": "https://tool.teamzlab.com/amazon/acos-calculator/",
+        "primary_angle": "Focused launch around a narrow commercial use case instead of a generic all-tools listing.",
+        "short_pitch": "A free browser-based pack of Amazon seller calculators covering ACOS, BSR, fees, and profit estimation without login friction.",
+        "support_asset": "scripts/distribute/articles/amazon-seller-tools-2026.md",
+    },
+    "capterra": {
+        "listing_title": "Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Software directory profile for the main tool suite.",
+        "short_pitch": "A browser-based suite of free calculators, generators, converters, and operations tools for teams, individuals, and small businesses.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "crunchbase": {
+        "listing_title": "Teamz Lab LTD",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Company profile and brand-level listing.",
+        "short_pitch": "Teamz Lab LTD builds privacy-first browser-based software tools and utility products with strong organic search coverage across many niches.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "wellfound": {
+        "listing_title": "Teamz Lab LTD",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Company profile for startup and brand visibility.",
+        "short_pitch": "A startup building a large free browser-based tool platform with SEO-led growth and privacy-first product positioning.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "getapp": {
+        "listing_title": "Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/",
+        "primary_angle": "Software directory profile for the broader tool suite.",
+        "short_pitch": "A free browser-based software utility suite covering calculators, generators, SEO tools, health tools, and developer utilities.",
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    },
+    "alternativeto": {
+        "listing_title": "Text Logo Maker by Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/design/logo-text-maker/",
+        "primary_angle": "Alternative to Canva text-logo workflows and other quick logo makers.",
+        "short_pitch": "A free text logo maker with transparent export, no watermark, and no signup. Good fit for lightweight founder and side-project workflows.",
+        "support_asset": "scripts/distribute/articles/free-logo-design-tools.md",
+    },
+    "futurepedia": {
+        "listing_title": "Text Logo Maker by Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/design/logo-text-maker/",
+        "primary_angle": "Light automation angle for fast browser-based logo generation.",
+        "short_pitch": "A quick browser-based tool for generating text-led logos and exporting them fast for prototypes, launches, and lightweight brand kits.",
+        "support_asset": "scripts/distribute/articles/free-logo-design-tools.md",
+    },
+    "saashub": {
+        "listing_title": "Signature Background Remover by Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/tools/signature-background-remover/",
+        "primary_angle": "Narrow browser-based workflow tool with immediate business utility.",
+        "short_pitch": "Remove the background from a handwritten signature and export a transparent PNG for forms, PDFs, and documents without uploading to a server.",
+        "support_asset": "scripts/distribute/articles/signature-tools-collection.md",
+    },
+    "stackshare": {
+        "listing_title": "Number Typing Practice by Teamz Lab Tools",
+        "destination_url": "https://tool.teamzlab.com/tools/number-typing-practice/",
+        "primary_angle": "Operator and workflow utility for 10-key and data-entry training.",
+        "short_pitch": "A browser-based 10-key and number typing practice tool for data-entry, cashier, and operations workflows.",
+        "support_asset": "scripts/distribute/articles/career-resume-tools.md",
+    },
 }
 
 # ──────────────────────────────────────────────────────────────
@@ -581,7 +682,8 @@ def show_status():
     print("    python3 scripts/build-backlinks.py submit --auto   # Auto-ping indexing services")
     print("    python3 scripts/build-backlinks.py ping            # Alias for --auto ping")
     print("    python3 scripts/build-backlinks.py next 5 1        # Show next 5 pending Priority 1 directories")
-    print("    python3 scripts/build-backlinks.py clipboard 1     # Copy details for directory #1")
+    print("    python3 scripts/build-backlinks.py clipboard 1     # Copy details for queue item #1")
+    print("    python3 scripts/build-backlinks.py clipboard sourceforge")
     print("    python3 scripts/build-backlinks.py done <id>       # Mark as submitted")
     print("    python3 scripts/build-backlinks.py approved <id>   # Mark as approved")
     print()
@@ -606,8 +708,40 @@ def get_pending(priority=None):
     return pending
 
 
-def generate_clipboard_text():
+def resolve_directory(selector):
+    if selector is None:
+        return None
+
+    if selector.isdigit():
+        queue = get_pending()
+        idx = int(selector) - 1
+        if 0 <= idx < len(queue):
+            return queue[idx]
+        return None
+
+    return next((d for d in DIRECTORIES if d["id"] == selector), None)
+
+
+def get_submission_profile(directory):
+    base = {
+        "listing_title": SITE["name"],
+        "destination_url": SITE["url"],
+        "primary_angle": SITE["tagline"],
+        "short_pitch": SITE["short_description"],
+        "support_asset": "docs/research/backlink-priority-batch-2026-03-29.md",
+    }
+    if not directory:
+        return base
+    profile = SUBMISSION_PROFILES.get(directory["id"], {})
+    merged = dict(base)
+    merged.update(profile)
+    return merged
+
+
+def generate_clipboard_text(selector=None):
     """Generate copy-paste text for directory submissions."""
+    directory = resolve_directory(selector) if selector else None
+    profile = get_submission_profile(directory)
     text = f"""
 Site Name: {SITE['name']}
 URL: {SITE['url']}
@@ -638,6 +772,21 @@ Key Features:
 - Dark/Light mode
 - Mobile responsive
 """
+    text = text.strip()
+
+    if directory:
+        text += f"""
+
+Directory Submission Target:
+- Directory: {directory['name']} ({directory['id']})
+- Listing Title: {profile['listing_title']}
+- Destination URL: {profile['destination_url']}
+- Primary Angle: {profile['primary_angle']}
+- Short Pitch: {profile['short_pitch']}
+- Support Asset: {profile['support_asset']}
+- Directory Notes: {directory['notes']}
+""".rstrip()
+
     return text.strip()
 
 
@@ -754,9 +903,12 @@ def show_next(limit=5, priority=None):
 
     for idx, d in enumerate(pending[:limit], start=1):
         pri = {1: "P1", 2: "P2", 3: "P3"}.get(d["priority"], "P?")
+        profile = get_submission_profile(d)
         print(f"  {idx}. [{pri}] {d['name']} ({d['id']})")
         print(f"     DA: {d['da']} | Link: {d['link_type']} | Category: {d['category']}")
         print(f"     URL: {d['url']}")
+        print(f"     Target: {profile['destination_url']}")
+        print(f"     Listing: {profile['listing_title']}")
         print(f"     Notes: {d['notes']}")
         print()
 
@@ -766,14 +918,9 @@ def show_next(limit=5, priority=None):
         print()
 
 
-def do_clipboard(dir_id=None):
-    clip_text = generate_clipboard_text()
-
-    if dir_id:
-        # Find directory and add specific notes
-        d = next((d for d in DIRECTORIES if d["id"] == dir_id), None)
-        if d:
-            clip_text += f"\n\nSubmitting to: {d['name']}\nNotes: {d['notes']}"
+def do_clipboard(selector=None):
+    clip_text = generate_clipboard_text(selector)
+    directory = resolve_directory(selector) if selector else None
 
     try:
         proc = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
@@ -781,6 +928,12 @@ def do_clipboard(dir_id=None):
         print(f"\n  Submission details copied to clipboard!\n")
     except Exception:
         print(clip_text)
+
+    if directory:
+        profile = get_submission_profile(directory)
+        print(f"  Ready for: {directory['name']} ({directory['id']})")
+        print(f"  Suggested target: {profile['destination_url']}")
+        print(f"  Suggested listing: {profile['listing_title']}\n")
 
 
 def do_mark(dir_id, status="submitted"):
