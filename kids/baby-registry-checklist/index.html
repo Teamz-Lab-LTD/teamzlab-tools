@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baby Registry Checklist — Teamz Lab Tools</title>
+  <meta name="description" content="Create your complete baby registry checklist with essential items organized by category. Track progress and estimate costs. Free and private.">
+  <meta property="og:title" content="Baby Registry Checklist — Teamz Lab Tools">
+  <meta property="og:description" content="Create your complete baby registry checklist with essential items organized by category. Track progress and estimate costs.">
+  <meta property="og:url" content="https://tool.teamzlab.com/kids/baby-registry-checklist/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/kids.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Baby Registry Checklist — Teamz Lab Tools">
+  <meta name="twitter:description" content="Create your complete baby registry checklist with essential items organized by category. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/kids/baby-registry-checklist/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .registry-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+    .registry-filter { padding: 0.5rem 1rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.9rem; cursor: pointer; font-weight: 600; transition: border-color 0.2s; }
+    .registry-filter:hover { border-color: var(--heading); }
+    .registry-filter.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .registry-actions { margin-left: auto; display: flex; gap: 0.5rem; }
+    .registry-action-btn { padding: 0.5rem 1rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--heading); font-size: 0.85rem; cursor: pointer; font-weight: 600; }
+    .registry-action-btn:hover { border-color: var(--heading); }
+
+    .registry-progress { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+    .progress-stats { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .progress-stat { text-align: center; }
+    .progress-stat-num { font-size: 1.4rem; font-weight: 800; color: var(--heading); }
+    .progress-stat-label { font-size: 0.8rem; color: var(--text-muted); }
+    .progress-bar-track { width: 100%; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width 0.4s ease; }
+    .progress-pct { font-size: 0.85rem; font-weight: 700; color: var(--heading); margin-top: 0.35rem; }
+
+    .budget-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 2rem; flex-wrap: wrap; }
+    .budget-item { text-align: center; flex: 1; min-width: 120px; }
+    .budget-num { font-size: 1.3rem; font-weight: 800; color: var(--heading); }
+    .budget-label { font-size: 0.8rem; color: var(--text-muted); }
+
+    .registry-category { margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .category-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem; background: var(--surface); cursor: pointer; user-select: none; }
+    .category-header:hover { opacity: 0.85; }
+    .category-icon { font-size: 1.3rem; }
+    .category-title { font-weight: 700; color: var(--heading); font-size: 1rem; flex: 1; }
+    .category-count { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+    .category-toggle { font-size: 1.2rem; color: var(--text-muted); transition: transform 0.2s; }
+    .category-toggle.collapsed { transform: rotate(-90deg); }
+    .category-items { padding: 0 0.5rem 0.5rem; }
+    .category-items.collapsed { display: none; }
+
+    .registry-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--border); }
+    .registry-item:last-child { border-bottom: none; }
+    .registry-item.checked .item-name { text-decoration: line-through; color: var(--text-muted); }
+    .item-check { width: 20px; height: 20px; accent-color: var(--heading); cursor: pointer; flex-shrink: 0; }
+    .item-name { font-weight: 600; color: var(--text); flex: 1; font-size: 0.95rem; }
+    .item-badge { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.03em; }
+    .badge-essential { background: var(--heading); color: var(--bg); }
+    .badge-nice { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .badge-optional { background: transparent; color: var(--text-muted); }
+    .item-cost { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; font-weight: 600; min-width: 70px; text-align: right; }
+
+    @media (max-width: 600px) {
+      .registry-controls { flex-direction: column; align-items: stretch; }
+      .registry-actions { margin-left: 0; justify-content: stretch; }
+      .registry-action-btn { flex: 1; text-align: center; }
+      .progress-stats { gap: 1rem; }
+      .budget-summary { gap: 1rem; }
+      .budget-item { min-width: 80px; }
+      .registry-item { flex-wrap: wrap; gap: 0.4rem; }
+      .item-cost { min-width: auto; }
+      .item-badge { font-size: 0.65rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Kids & Parenting", "item": "https://tool.teamzlab.com/kids/"}, {"@type": "ListItem", "position": 3, "name": "Baby Registry Checklist"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "When should I start my baby registry?", "acceptedAnswer": {"@type": "Answer", "text": "Most parents start their baby registry between 12 and 20 weeks of pregnancy. This gives you time to research products, compare prices, and share your list with family and friends before your baby shower. Starting in the second trimester is ideal because you will know the baby's sex if desired and have time to take advantage of sales."}}, {"@type": "Question", "name": "How much does a baby registry typically cost?", "acceptedAnswer": {"@type": "Answer", "text": "A typical baby registry for essential items costs between $1,500 and $3,000. The total depends on whether you choose budget-friendly or premium products. You can reduce costs significantly by accepting hand-me-downs, buying secondhand, and focusing on essentials first. Many families spend less by skipping nice-to-have items until they know what they actually need."}}, {"@type": "Question", "name": "What are the most important baby registry items?", "acceptedAnswer": {"@type": "Answer", "text": "The most critical items are a car seat (legally required), a safe crib with a firm mattress, diapers and wipes, basic clothing like onesies and sleepers, and feeding supplies. A baby monitor and thermometer are also considered essential for newborn safety. These items cover the fundamental needs of sleeping, eating, diapering, and health monitoring."}}, {"@type": "Question", "name": "Should I register for newborn or larger sizes?", "acceptedAnswer": {"@type": "Answer", "text": "Register for a mix of sizes. Many babies outgrow newborn sizes within the first two to four weeks, so only get a few newborn outfits. Stock up on 0-3 month and 3-6 month sizes instead. For diapers, start with one newborn pack and more size 1 packs since babies move to size 1 quickly."}}, {"@type": "Question", "name": "Can I use this checklist for a second baby?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Reset the checklist and go through each item to check off what you already have from your first child. This helps you identify what needs replacing due to wear, expired car seat dates, or updated safety standards. Second-time parents typically need far fewer items since many products like cribs, strollers, and carriers can be reused."}}, {"@type": "Question", "name": "Is my checklist data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. All checklist data is saved only in your browser's local storage on your device. Nothing is sent to any server. Your registry information remains completely private and is never shared with third parties."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Baby Registry Checklist", "description": "Create your complete baby registry checklist with essential items.", "url": "https://tool.teamzlab.com/kids/baby-registry-checklist/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Baby Registry Checklist</h1>
+      <p class="tool-description">Create your complete baby registry checklist with essential items organized by category. Track what you have acquired, see your progress, and estimate total costs. Everything saves automatically in your browser.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="registry-controls">
+        <button class="registry-filter active" data-filter="all">All Items</button>
+        <button class="registry-filter" data-filter="essential">Essential Only</button>
+        <button class="registry-filter" data-filter="unchecked">Not Yet Acquired</button>
+        <div class="registry-actions">
+          <button class="registry-action-btn" id="copyListBtn">Copy List</button>
+          <button class="registry-action-btn" id="resetBtn">Reset All</button>
+        </div>
+      </div>
+
+      <div class="registry-progress">
+        <div class="progress-stats">
+          <div class="progress-stat"><div class="progress-stat-num" id="statAcquired">0</div><div class="progress-stat-label">Acquired</div></div>
+          <div class="progress-stat"><div class="progress-stat-num" id="statRemaining">0</div><div class="progress-stat-label">Remaining</div></div>
+          <div class="progress-stat"><div class="progress-stat-num" id="statTotal">0</div><div class="progress-stat-label">Total Items</div></div>
+        </div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill"></div></div>
+        <div class="progress-pct" id="progressPct">0% complete</div>
+      </div>
+
+      <div class="budget-summary">
+        <div class="budget-item"><div class="budget-num" id="budgetChecked">$0</div><div class="budget-label">Acquired Cost</div></div>
+        <div class="budget-item"><div class="budget-num" id="budgetRemaining">$0</div><div class="budget-label">Remaining Cost</div></div>
+        <div class="budget-item"><div class="budget-num" id="budgetTotal">$0</div><div class="budget-label">Total Estimated</div></div>
+      </div>
+
+      <div id="registryList"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Use the Baby Registry Checklist</h2>
+      <p>A baby registry checklist is a comprehensive list of items new parents need before their baby arrives. This free interactive checklist organizes everything into eight practical categories covering nursery furniture, feeding supplies, diapering essentials, clothing, bath time products, safety and health gear, travel equipment, and play and development toys. Each item shows its priority level and estimated cost range so you can plan your budget confidently.</p>
+      <p>Simply check off items as you acquire them through gifts, purchases, or hand-me-downs. Use the filter buttons to focus on essential items only or view what you still need to get. Your progress saves automatically in your browser, so you can return anytime to update your list. The copy button lets you share your remaining items with family and friends who want to help.</p>
+
+      <h2>Essential Baby Items Every New Parent Needs</h2>
+      <p>While every family's needs differ, certain items are universally important for newborn care. A safe sleep environment tops the list: a firm-mattress crib that meets current safety standards is non-negotiable. The American Academy of Pediatrics recommends a bare crib with a fitted sheet only. A rear-facing car seat is legally required to bring your baby home from the hospital, so have it installed and inspected before your due date.</p>
+      <p>Feeding supplies depend on your plan: breastfeeding parents need a quality pump and nursing pillow, while formula-feeding families need bottles and a brush. Either way, burp cloths and bibs are daily necessities. Newborns go through 10 to 12 diapers per day, making diapers, wipes, and a changing station essential from day one. Stock up on onesies and sleepers in both newborn and 0-3 month sizes since babies grow quickly.</p>
+
+      <h2>How to Build a Baby Registry on a Budget</h2>
+      <p>Building a baby registry does not have to break the bank. Start by identifying which items are truly essential versus nice-to-have luxuries. Generic store-brand diapers and wipes perform just as well as premium brands at a fraction of the cost. Consider buying secondhand for items like clothing, books, and toys that babies outgrow rapidly. Consignment shops and online marketplaces offer gently used cribs, strollers, and high chairs at significant discounts.</p>
+      <p>Skip the specialized baby products when regular alternatives work fine. A folded towel can replace an expensive changing pad cover, and a simple basket works as well as a designer diaper caddy. Wait on items like high chairs and baby gates until your child actually needs them. Many registry programs offer completion discounts of 10 to 15 percent on remaining items, so register early and buy the rest closer to your due date at a discount.</p>
+
+      <h2>When to Start Your Baby Registry</h2>
+      <p>Most parents begin their baby registry between 12 and 20 weeks of pregnancy. Starting around the second trimester gives you enough time to research products, compare prices, and take advantage of sales. If you plan to have a baby shower, create your registry at least two months before the event so guests have time to browse and purchase gifts. Many retailers offer a registry welcome box with free samples when you sign up early.</p>
+      <p>Keep your registry updated throughout your pregnancy. Remove items you receive as gifts and add things you discover you need as your due date approaches. Most store registries offer a completion discount that activates a few weeks before your due date, so make sure all remaining must-haves are on your list by then. After the baby arrives, you can always add items you realize you need during those first few weeks at home.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var STORAGE_KEY = 'baby-registry-checklist';
+
+    var categories = [
+      { id: 'nursery', name: 'Nursery Furniture', icon: '\uD83D\uDECF\uFE0F', items: [
+        { id: 'crib', name: 'Crib', priority: 'essential', costLow: 150, costHigh: 400 },
+        { id: 'mattress', name: 'Crib Mattress', priority: 'essential', costLow: 50, costHigh: 200 },
+        { id: 'changing-table', name: 'Changing Table', priority: 'nice', costLow: 80, costHigh: 200 },
+        { id: 'dresser', name: 'Dresser', priority: 'nice', costLow: 150, costHigh: 400 },
+        { id: 'glider', name: 'Glider / Rocker', priority: 'nice', costLow: 200, costHigh: 500 },
+        { id: 'bookshelf', name: 'Bookshelf', priority: 'optional', costLow: 40, costHigh: 100 }
+      ]},
+      { id: 'feeding', name: 'Feeding', icon: '\uD83C\uDF7C', items: [
+        { id: 'bottles', name: 'Bottles (4-pack)', priority: 'essential', costLow: 15, costHigh: 30 },
+        { id: 'bottle-brush', name: 'Bottle Brush', priority: 'essential', costLow: 5, costHigh: 10 },
+        { id: 'breast-pump', name: 'Breast Pump', priority: 'nice', costLow: 30, costHigh: 300 },
+        { id: 'nursing-pillow', name: 'Nursing Pillow', priority: 'nice', costLow: 25, costHigh: 50 },
+        { id: 'burp-cloths', name: 'Burp Cloths', priority: 'essential', costLow: 10, costHigh: 20 },
+        { id: 'high-chair', name: 'High Chair', priority: 'nice', costLow: 50, costHigh: 200 },
+        { id: 'bibs', name: 'Bibs', priority: 'essential', costLow: 10, costHigh: 20 }
+      ]},
+      { id: 'diapering', name: 'Diapering', icon: '\uD83E\uDDF7', items: [
+        { id: 'diapers', name: 'Diapers (Newborn Pack)', priority: 'essential', costLow: 20, costHigh: 30 },
+        { id: 'wipes', name: 'Baby Wipes', priority: 'essential', costLow: 10, costHigh: 20 },
+        { id: 'diaper-bag', name: 'Diaper Bag', priority: 'essential', costLow: 30, costHigh: 80 },
+        { id: 'changing-pad', name: 'Changing Pad', priority: 'essential', costLow: 15, costHigh: 40 },
+        { id: 'diaper-cream', name: 'Diaper Cream', priority: 'essential', costLow: 8, costHigh: 15 },
+        { id: 'diaper-pail', name: 'Diaper Pail', priority: 'nice', costLow: 25, costHigh: 50 }
+      ]},
+      { id: 'clothing', name: 'Clothing', icon: '\uD83D\uDC5A', items: [
+        { id: 'onesies', name: 'Onesies (5-pack)', priority: 'essential', costLow: 15, costHigh: 25 },
+        { id: 'sleepers', name: 'Sleepers', priority: 'essential', costLow: 10, costHigh: 20 },
+        { id: 'socks', name: 'Baby Socks', priority: 'essential', costLow: 8, costHigh: 12 },
+        { id: 'hats', name: 'Baby Hats', priority: 'nice', costLow: 5, costHigh: 10 },
+        { id: 'mittens', name: 'Scratch Mittens', priority: 'optional', costLow: 5, costHigh: 8 },
+        { id: 'swaddles', name: 'Swaddle Blankets', priority: 'essential', costLow: 15, costHigh: 30 },
+        { id: 'going-home', name: 'Going-Home Outfit', priority: 'nice', costLow: 10, costHigh: 25 }
+      ]},
+      { id: 'bath', name: 'Bath Time', icon: '\uD83D\uDEC1', items: [
+        { id: 'bathtub', name: 'Baby Bathtub', priority: 'essential', costLow: 20, costHigh: 40 },
+        { id: 'hooded-towels', name: 'Hooded Towels', priority: 'essential', costLow: 10, costHigh: 20 },
+        { id: 'washcloths', name: 'Baby Washcloths', priority: 'essential', costLow: 8, costHigh: 12 },
+        { id: 'shampoo', name: 'Baby Shampoo', priority: 'essential', costLow: 5, costHigh: 10 },
+        { id: 'lotion', name: 'Baby Lotion', priority: 'optional', costLow: 5, costHigh: 10 }
+      ]},
+      { id: 'safety', name: 'Safety & Health', icon: '\u2695\uFE0F', items: [
+        { id: 'monitor', name: 'Baby Monitor', priority: 'essential', costLow: 30, costHigh: 200 },
+        { id: 'thermometer', name: 'Baby Thermometer', priority: 'essential', costLow: 10, costHigh: 25 },
+        { id: 'nail-clippers', name: 'Baby Nail Clippers', priority: 'essential', costLow: 5, costHigh: 8 },
+        { id: 'nasal-aspirator', name: 'Nasal Aspirator', priority: 'essential', costLow: 5, costHigh: 15 },
+        { id: 'first-aid', name: 'Baby First Aid Kit', priority: 'nice', costLow: 15, costHigh: 30 },
+        { id: 'baby-gate', name: 'Baby Gate', priority: 'optional', costLow: 20, costHigh: 50 }
+      ]},
+      { id: 'travel', name: 'Travel & On-the-Go', icon: '\uD83D\uDE97', items: [
+        { id: 'car-seat', name: 'Car Seat (Infant)', priority: 'essential', costLow: 100, costHigh: 350 },
+        { id: 'stroller', name: 'Stroller', priority: 'essential', costLow: 100, costHigh: 500 },
+        { id: 'carrier', name: 'Baby Carrier / Wrap', priority: 'nice', costLow: 25, costHigh: 150 },
+        { id: 'travel-diaper-bag', name: 'Travel Diaper Bag', priority: 'nice', costLow: 30, costHigh: 80 },
+        { id: 'car-mirror', name: 'Car Mirror', priority: 'optional', costLow: 10, costHigh: 20 },
+        { id: 'portable-pad', name: 'Portable Changing Pad', priority: 'optional', costLow: 10, costHigh: 25 }
+      ]},
+      { id: 'play', name: 'Play & Development', icon: '\uD83E\uDDF8', items: [
+        { id: 'play-mat', name: 'Play Mat', priority: 'nice', costLow: 20, costHigh: 50 },
+        { id: 'rattles', name: 'Rattles', priority: 'nice', costLow: 8, costHigh: 15 },
+        { id: 'soft-books', name: 'Soft Books', priority: 'nice', costLow: 10, costHigh: 20 },
+        { id: 'teething-toys', name: 'Teething Toys', priority: 'essential', costLow: 8, costHigh: 15 },
+        { id: 'bouncer', name: 'Bouncer / Swing', priority: 'nice', costLow: 40, costHigh: 150 },
+        { id: 'mobile', name: 'Crib Mobile', priority: 'optional', costLow: 15, costHigh: 40 }
+      ]}
+    ];
+
+    var checkedItems = {};
+    var collapsedCats = {};
+    var currentFilter = 'all';
+
+    function loadState() {
+      try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          var data = JSON.parse(saved);
+          checkedItems = data.checked || {};
+          collapsedCats = data.collapsed || {};
+        }
+      } catch(e) {}
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ checked: checkedItems, collapsed: collapsedCats }));
+      } catch(e) {}
+    }
+
+    function midCost(item) {
+      return Math.round((item.costLow + item.costHigh) / 2);
+    }
+
+    function getAllItems() {
+      var all = [];
+      categories.forEach(function(cat) {
+        cat.items.forEach(function(item) {
+          all.push(item);
+        });
+      });
+      return all;
+    }
+
+    function updateProgress() {
+      var allItems = getAllItems();
+      var visible = getVisibleItems();
+      var acquired = 0;
+      var totalCostAll = 0;
+      var totalCostChecked = 0;
+
+      allItems.forEach(function(item) {
+        var cost = midCost(item);
+        totalCostAll += cost;
+        if (checkedItems[item.id]) {
+          acquired++;
+          totalCostChecked += cost;
+        }
+      });
+
+      var remaining = allItems.length - acquired;
+      var pct = allItems.length > 0 ? Math.round((acquired / allItems.length) * 100) : 0;
+
+      document.getElementById('statAcquired').textContent = acquired;
+      document.getElementById('statRemaining').textContent = remaining;
+      document.getElementById('statTotal').textContent = allItems.length;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressPct').textContent = pct + '% complete';
+      document.getElementById('budgetChecked').textContent = '$' + totalCostChecked.toLocaleString();
+      document.getElementById('budgetRemaining').textContent = '$' + (totalCostAll - totalCostChecked).toLocaleString();
+      document.getElementById('budgetTotal').textContent = '$' + totalCostAll.toLocaleString();
+    }
+
+    function getVisibleItems() {
+      var all = getAllItems();
+      if (currentFilter === 'essential') return all.filter(function(i) { return i.priority === 'essential'; });
+      if (currentFilter === 'unchecked') return all.filter(function(i) { return !checkedItems[i.id]; });
+      return all;
+    }
+
+    function badgeClass(priority) {
+      if (priority === 'essential') return 'badge-essential';
+      if (priority === 'nice') return 'badge-nice';
+      return 'badge-optional';
+    }
+
+    function badgeLabel(priority) {
+      if (priority === 'essential') return 'Essential';
+      if (priority === 'nice') return 'Nice-to-Have';
+      return 'Optional';
+    }
+
+    function renderList() {
+      var container = document.getElementById('registryList');
+      var html = '';
+
+      categories.forEach(function(cat) {
+        var filteredItems = cat.items.filter(function(item) {
+          if (currentFilter === 'essential') return item.priority === 'essential';
+          if (currentFilter === 'unchecked') return !checkedItems[item.id];
+          return true;
+        });
+
+        if (filteredItems.length === 0) return;
+
+        var catChecked = 0;
+        cat.items.forEach(function(item) { if (checkedItems[item.id]) catChecked++; });
+        var isCollapsed = collapsedCats[cat.id] || false;
+
+        html += '<div class="registry-category">';
+        html += '<div class="category-header" data-cat="' + cat.id + '">';
+        html += '<span class="category-icon">' + cat.icon + '</span>';
+        html += '<span class="category-title">' + cat.name + '</span>';
+        html += '<span class="category-count">' + catChecked + '/' + cat.items.length + ' acquired</span>';
+        html += '<span class="category-toggle' + (isCollapsed ? ' collapsed' : '') + '">\u25BC</span>';
+        html += '</div>';
+        html += '<div class="category-items' + (isCollapsed ? ' collapsed' : '') + '">';
+
+        filteredItems.forEach(function(item) {
+          var isChecked = checkedItems[item.id] || false;
+          html += '<div class="registry-item' + (isChecked ? ' checked' : '') + '">';
+          html += '<input type="checkbox" class="item-check" data-item="' + item.id + '"' + (isChecked ? ' checked' : '') + '>';
+          html += '<span class="item-name">' + item.name + '</span>';
+          html += '<span class="item-badge ' + badgeClass(item.priority) + '">' + badgeLabel(item.priority) + '</span>';
+          html += '<span class="item-cost">$' + item.costLow + '-$' + item.costHigh + '</span>';
+          html += '</div>';
+        });
+
+        html += '</div></div>';
+      });
+
+      container.innerHTML = html;
+      updateProgress();
+    }
+
+    function init() {
+      loadState();
+      renderList();
+
+      // Filter buttons
+      document.querySelectorAll('.registry-filter').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.registry-filter').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          currentFilter = btn.getAttribute('data-filter');
+          renderList();
+        });
+      });
+
+      // Delegated events on registry list
+      document.getElementById('registryList').addEventListener('click', function(e) {
+        // Category toggle
+        var header = e.target.closest('.category-header');
+        if (header) {
+          var catId = header.getAttribute('data-cat');
+          collapsedCats[catId] = !collapsedCats[catId];
+          saveState();
+          renderList();
+          return;
+        }
+      });
+
+      document.getElementById('registryList').addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-check')) {
+          var itemId = e.target.getAttribute('data-item');
+          checkedItems[itemId] = e.target.checked;
+          saveState();
+          renderList();
+        }
+      });
+
+      // Copy list
+      document.getElementById('copyListBtn').addEventListener('click', function() {
+        var lines = [];
+        categories.forEach(function(cat) {
+          var unchecked = cat.items.filter(function(i) { return !checkedItems[i.id]; });
+          if (unchecked.length === 0) return;
+          lines.push('\n' + cat.icon + ' ' + cat.name.toUpperCase());
+          unchecked.forEach(function(item) {
+            lines.push('  \u25A1 ' + item.name + ' (' + badgeLabel(item.priority) + ') — $' + item.costLow + '-$' + item.costHigh);
+          });
+        });
+        if (lines.length === 0) {
+          if (window.showToast) window.showToast('All items acquired! Nothing to copy.');
+          return;
+        }
+        var text = 'Baby Registry — Items Still Needed\n' + lines.join('\n');
+        navigator.clipboard.writeText(text).then(function() {
+          if (window.showToast) window.showToast('Checklist copied to clipboard!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Could not copy — try again.');
+        });
+      });
+
+      // Reset all
+      document.getElementById('resetBtn').addEventListener('click', function() {
+        checkedItems = {};
+        saveState();
+        renderList();
+        if (window.showToast) window.showToast('Checklist has been reset.');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    // Breadcrumbs, FAQs, Related Tools, Schemas
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Kids & Parenting', url: '/kids/' },
+      { name: 'Baby Registry Checklist' }
+    ];
+
+    var FAQS = [
+      { q: 'When should I start my baby registry?', a: 'Most parents start their baby registry between 12 and 20 weeks of pregnancy. This gives you time to research products, compare prices, and share your list with family and friends before your baby shower. Starting in the second trimester is ideal because you will know the baby\'s sex if desired and have time to take advantage of sales.' },
+      { q: 'How much does a baby registry typically cost?', a: 'A typical baby registry for essential items costs between $1,500 and $3,000. The total depends on whether you choose budget-friendly or premium products. You can reduce costs significantly by accepting hand-me-downs, buying secondhand, and focusing on essentials first. Many families spend less by skipping nice-to-have items until they know what they actually need.' },
+      { q: 'What are the most important baby registry items?', a: 'The most critical items are a car seat (legally required), a safe crib with a firm mattress, diapers and wipes, basic clothing like onesies and sleepers, and feeding supplies. A baby monitor and thermometer are also considered essential for newborn safety. These items cover the fundamental needs of sleeping, eating, diapering, and health monitoring.' },
+      { q: 'Should I register for newborn or larger sizes?', a: 'Register for a mix of sizes. Many babies outgrow newborn sizes within the first two to four weeks, so only get a few newborn outfits. Stock up on 0-3 month and 3-6 month sizes instead. For diapers, start with one newborn pack and more size 1 packs since babies move to size 1 quickly.' },
+      { q: 'Can I use this checklist for a second baby?', a: 'Yes. Reset the checklist and go through each item to check off what you already have from your first child. This helps you identify what needs replacing due to wear, expired car seat dates, or updated safety standards. Second-time parents typically need far fewer items since many products like cribs, strollers, and carriers can be reused.' },
+      { q: 'Is my checklist data private?', a: 'Yes. All checklist data is saved only in your browser\'s local storage on your device. Nothing is sent to any server. Your registry information remains completely private and is never shared with third parties.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'kids/baby-feeding-calculator', name: 'Baby Feeding Calculator', description: 'Calculate how much your baby should eat per feeding.' },
+      { slug: 'kids/diaper-cost-calculator', name: 'Diaper Cost Calculator', description: 'Estimate total diaper costs until potty training.' },
+      { slug: 'evergreen/baby-cost-calculator', name: 'Baby Cost Calculator', description: 'Calculate the total cost of raising a baby in the first year.' },
+      { slug: 'kids/baby-due-date-calculator', name: 'Baby Due Date Calculator', description: 'Calculate your estimated pregnancy due date.' },
+      { slug: 'kids/baby-age-calculator', name: 'Baby Age Calculator', description: 'Calculate your baby\'s exact age in weeks and months.' },
+      { slug: 'kids/vaccine-schedule-tracker', name: 'Vaccine Schedule Tracker', description: 'Track your child\'s vaccination schedule.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof TeamzTools !== 'undefined') {
+        TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+        TeamzTools.renderFAQs(FAQS);
+        TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
