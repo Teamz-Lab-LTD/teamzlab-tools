@@ -129,6 +129,15 @@
         <div id="cc-rate-alert"></div>
       </div>
 
+      <div id="rate-chart-section" style="display:none; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <h3 id="chart-title" style="margin:0; color:var(--heading); font-size:var(--text-md); font-weight:600;"></h3>
+          <span id="chart-trend" style="font-size:var(--text-sm); color:var(--text-muted);"></span>
+        </div>
+        <div id="rate-chart-svg-wrapper" style="width:100%; overflow-x:auto;"></div>
+        <div id="rate-chart-stats" style="display:flex; gap:16px; margin-top:10px; flex-wrap:wrap;"></div>
+      </div>
+
       <div class="cc-refresh-row">
         <div class="cc-status" id="cc-status">Loading rates...</div>
         <div style="display:flex;gap:0.5rem;">
@@ -201,6 +210,7 @@
       var elTrendSection = document.getElementById('cc-trend-section');
       var elTrendBars = document.getElementById('cc-trend-bars');
       var elTrendTitle = document.getElementById('cc-trend-title');
+      var elRateChartSection = document.getElementById('rate-chart-section');
 
       // --- Cache helpers ---
       function cacheSet(key, data) {
@@ -381,12 +391,108 @@
           }
           showEl(alertEl);
         }
+
+        // Load SVG line chart (non-blocking, silently fails if API unavailable)
+        if (!date) {
+          loadRateChart(from, to).catch(function() {});
+        }
       }
 
       function formatNum(n) {
         if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
         if (n >= 1) return n.toFixed(4);
         return n.toFixed(6);
+      }
+
+      // --- SVG line chart ---
+      async function loadRateChart(fromCurrency, toCurrency) {
+        var chartSection = document.getElementById('rate-chart-section');
+        if (!chartSection) return;
+
+        var from = fromCurrency.toLowerCase();
+        var to = toCurrency.toLowerCase();
+
+        // Generate last 7 dates (oldest first)
+        var dates = [];
+        for (var i = 6; i >= 0; i--) {
+          var d = new Date();
+          d.setDate(d.getDate() - i);
+          var yyyy = d.getFullYear();
+          var mm = String(d.getMonth() + 1).padStart(2, '0');
+          var dd = String(d.getDate()).padStart(2, '0');
+          dates.push(yyyy + '-' + mm + '-' + dd);
+        }
+
+        // Fetch all 7 days in parallel (reuse existing cached data where possible)
+        var results = await Promise.all(dates.map(function(date) {
+          var cacheKey = CACHE_PREFIX + date + '_' + from;
+          var cached = cacheGet(cacheKey, 24 * 60 * 60 * 1000);
+          var dataPromise = cached
+            ? Promise.resolve(cached.data)
+            : fetch(BASE_API + date + '/v1/currencies/' + from + '.json')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { cacheSet(cacheKey, data); return data; });
+          return dataPromise
+            .then(function(data) {
+              var rates = data[from] || data;
+              var rate = rates[to] ? rates[to] : null;
+              return { date: date, rate: rate };
+            })
+            .catch(function() { return { date: date, rate: null }; });
+        }));
+
+        var valid = results.filter(function(r) { return r.rate !== null; });
+        if (valid.length < 2) return; // not enough data, stay hidden
+
+        // Stats
+        var rates = valid.map(function(r) { return r.rate; });
+        var minRate = Math.min.apply(null, rates);
+        var maxRate = Math.max.apply(null, rates);
+        var firstRate = valid[0].rate;
+        var lastRate = valid[valid.length - 1].rate;
+        var trendIcon = lastRate > firstRate * 1.001 ? '↑ Rising' : lastRate < firstRate * 0.999 ? '↓ Falling' : '→ Stable';
+
+        // Build SVG line chart (pure SVG, no library)
+        var W = 560, H = 80, PAD = 8;
+        var n = valid.length;
+        var xStep = (W - PAD * 2) / (n - 1);
+        var range = maxRate - minRate || 1;
+
+        function toX(i) { return PAD + i * xStep; }
+        function toY(r) { return H - PAD - ((r - minRate) / range) * (H - PAD * 2); }
+
+        var points = valid.map(function(r, i) { return toX(i) + ',' + toY(r.rate); }).join(' ');
+        var dayLabels = valid.map(function(r, i) {
+          var d2 = new Date(r.date + 'T00:00:00');
+          var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+          return '<text x="' + toX(i) + '" y="' + (H + 14) + '" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.5">' + days[d2.getDay()] + '</text>';
+        }).join('');
+        var dots = valid.map(function(r, i) {
+          return '<circle cx="' + toX(i) + '" cy="' + toY(r.rate) + '" r="3" fill="var(--heading)"/>';
+        }).join('');
+
+        var svg = '<svg viewBox="0 0 ' + W + ' ' + (H + 20) + '" style="width:100%;height:auto;display:block;" aria-hidden="true">'
+          + '<polyline points="' + points + '" stroke="var(--heading)" stroke-width="2" fill="none" stroke-linejoin="round"/>'
+          + dots + dayLabels + '</svg>';
+
+        document.getElementById('rate-chart-svg-wrapper').innerHTML = svg;
+
+        // Title & trend
+        document.getElementById('chart-title').textContent = '7-Day ' + fromCurrency.toUpperCase() + ' → ' + toCurrency.toUpperCase() + ' Rate';
+        document.getElementById('chart-trend').textContent = trendIcon;
+
+        // Stats row
+        document.getElementById('rate-chart-stats').innerHTML =
+          '<span style="font-size:var(--text-sm);color:var(--text-muted)">Low: <strong style="color:var(--heading)">' + minRate.toFixed(4) + '</strong></span>' +
+          '<span style="font-size:var(--text-sm);color:var(--text-muted)">High: <strong style="color:var(--heading)">' + maxRate.toFixed(4) + '</strong></span>' +
+          '<span style="font-size:var(--text-sm);color:var(--text-muted)">Today: <strong style="color:var(--heading)">' + lastRate.toFixed(4) + '</strong></span>';
+
+        // Show the chart section
+        if (window.showEl) {
+          window.showEl(chartSection);
+        } else {
+          chartSection.style.display = 'block';
+        }
       }
 
       // --- 7-day trend ---
@@ -485,6 +591,7 @@
       elFrom.addEventListener('change', function () {
         trendRates = [];
         hideEl(elTrendSection);
+        hideEl(elRateChartSection);
         hideEl(elRateAlert);
         if (isHistMode) return;
         fetchAndConvert();
@@ -493,6 +600,7 @@
       elTo.addEventListener('change', function () {
         trendRates = [];
         hideEl(elTrendSection);
+        hideEl(elRateChartSection);
         hideEl(elRateAlert);
         if (isHistMode) return;
         fetchAndConvert();
@@ -504,6 +612,7 @@
         elTo.value = tmpVal;
         trendRates = [];
         hideEl(elTrendSection);
+        hideEl(elRateChartSection);
         hideEl(elRateAlert);
         fetchAndConvert();
       });
@@ -534,6 +643,7 @@
         hideEl(document.getElementById('hist-date-row'));
         trendRates = [];
         hideEl(elTrendSection);
+        hideEl(elRateChartSection);
         fetchAndConvert();
         startRefreshTimer();
       });
@@ -552,6 +662,7 @@
         if (!dateVal) { window.showToast && window.showToast('Please select a date.'); return; }
         trendRates = [];
         hideEl(elTrendSection);
+        hideEl(elRateChartSection);
         hideEl(elRateAlert);
         var from = elFrom.value;
         var cacheKey = CACHE_PREFIX + dateVal + '_' + from;
@@ -567,6 +678,7 @@
           elTo.value = to;
           trendRates = [];
           hideEl(elTrendSection);
+          hideEl(elRateChartSection);
           hideEl(elRateAlert);
           isHistMode = false;
           document.getElementById('mode-live').classList.add('active');

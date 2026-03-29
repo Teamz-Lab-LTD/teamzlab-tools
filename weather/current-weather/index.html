@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Weather Checker — Current Weather by City — Teamz Lab</title>
+  <meta name="description" content="Check live weather for any city worldwide. Get current temperature, humidity, wind, and conditions free. Powered by Open-Meteo, no signup needed.">
+  <meta property="og:title" content="Live Weather Checker — Current Weather by City — Teamz Lab Tools">
+  <meta property="og:description" content="Check live weather for any city worldwide. Get current temperature, humidity, wind, and conditions free. Powered by Open-Meteo, no signup needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/weather/current-weather/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/weather.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Live Weather Checker — Current Weather by City — Teamz Lab Tools">
+  <meta name="twitter:description" content="Check live weather for any city worldwide. Get current temperature, humidity, wind, and conditions free. Powered by Open-Meteo, no signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/weather/current-weather/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* ── Weather-specific styles — CSS variables only, zero hex ── */
+    .weather-search-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .weather-search-row input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-md);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .weather-search-row input:focus {
+      border-color: var(--heading);
+    }
+    .weather-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+    .weather-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .weather-icon-big {
+      font-size: clamp(3rem, 8vw, 5rem);
+      line-height: 1;
+    }
+    .weather-city-name {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .weather-condition {
+      color: var(--text-muted);
+      font-size: var(--text-md);
+    }
+    .weather-temp-display {
+      font-size: clamp(2.5rem, 8vw, 4rem);
+      font-weight: 800;
+      color: var(--heading);
+      margin-bottom: 8px;
+    }
+    .weather-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .weather-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    .stat-value {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .weather-updated {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      text-align: right;
+    }
+    #city-suggestions {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    .city-suggestion-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      font-size: var(--text-sm);
+      transition: background 0.15s;
+    }
+    .city-suggestion-item:last-child {
+      border-bottom: none;
+    }
+    .city-suggestion-item:hover {
+      background: var(--surface);
+    }
+    .cw-recent-chip {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      transition: border-color 0.15s;
+    }
+    .cw-recent-chip:hover {
+      border-color: var(--heading);
+    }
+
+    @media (max-width: 600px) {
+      .weather-search-row {
+        flex-direction: column;
+      }
+      .weather-search-row input {
+        min-width: unset;
+        width: 100%;
+      }
+      .weather-search-row .btn-primary,
+      .weather-search-row .btn-secondary {
+        width: 100%;
+      }
+      .weather-stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .weather-card {
+        padding: 16px;
+      }
+      .weather-header {
+        gap: 12px;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How accurate is the weather data?", "acceptedAnswer": {"@type": "Answer", "text": "Data comes from Open-Meteo, which aggregates from NOAA, DWD, and ECMWF. Accuracy is comparable to major weather apps for most cities worldwide."}}, {"@type": "Question", "name": "How often does the data update?", "acceptedAnswer": {"@type": "Answer", "text": "Open-Meteo updates hourly. This tool auto-refreshes every 10 minutes using your last fetched location."}}, {"@type": "Question", "name": "Does this work for any city in the world?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, 300,000+ locations are supported via the Open-Meteo geocoding database. If your exact city is not found, try a nearby larger city."}}, {"@type": "Question", "name": "What are WMO weather codes?", "acceptedAnswer": {"@type": "Answer", "text": "World Meteorological Organization codes standardise weather conditions globally. Code 0 = clear sky, code 3 = overcast, code 95 = thunderstorm. They provide a consistent language for weather data across all systems."}}, {"@type": "Question", "name": "Can I use my device's location?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, click the My Location button. Your coordinates are sent to Open-Meteo only for the weather fetch and are not stored on any server. Nothing is saved beyond your browser's localStorage."}}, {"@type": "Question", "name": "Is this tool free?", "acceptedAnswer": {"@type": "Answer", "text": "100% free. Open-Meteo is open-source with no API key or account required. This tool is also free to use with no sign-up needed."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Live Weather Checker", "description": "Check live current weather for any city worldwide — temperature, humidity, wind, and conditions. Powered by Open-Meteo.", "url": "https://tool.teamzlab.com/weather/current-weather/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Live Weather Checker</h1>
+      <p class="tool-description">Check current weather conditions for any city worldwide — temperature, humidity, wind speed, and sky conditions — instantly in your browser. No sign-up, no API key, 100% free. Powered by Open-Meteo using data from NOAA, DWD, and ECMWF.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Search row -->
+      <div class="weather-search-row">
+        <input type="text" id="city-input" placeholder="Enter city — e.g. Dubai, London, New York" autocomplete="off">
+        <button class="btn-primary" id="get-weather-btn">Get Weather</button>
+        <button class="btn-secondary" id="detect-btn" title="Use my location">&#128205; My Location</button>
+      </div>
+
+      <!-- Recent searches chips -->
+      <div id="recent-chips" style="display:none; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
+
+      <!-- City suggestions dropdown -->
+      <div id="city-suggestions" style="display:none"></div>
+
+      <!-- Weather result card -->
+      <div id="weather-result" style="display:none">
+        <div class="weather-card">
+          <div class="weather-header">
+            <div id="weather-icon" class="weather-icon-big"></div>
+            <div class="weather-main-info">
+              <div id="weather-city" class="weather-city-name"></div>
+              <div id="weather-condition" class="weather-condition"></div>
+            </div>
+          </div>
+          <div id="weather-temp" class="weather-temp-display"></div>
+          <button class="btn-secondary" id="unit-toggle" style="margin-bottom:1rem">Switch to &#176;F</button>
+          <div class="weather-stats-grid">
+            <div class="weather-stat">
+              <span class="stat-label">Feels Like</span>
+              <span id="feels-like" class="stat-value"></span>
+            </div>
+            <div class="weather-stat">
+              <span class="stat-label">Humidity</span>
+              <span id="humidity" class="stat-value"></span>
+            </div>
+            <div class="weather-stat">
+              <span class="stat-label">Wind</span>
+              <span id="wind" class="stat-value"></span>
+            </div>
+            <div class="weather-stat">
+              <span class="stat-label">Rain Chance</span>
+              <span id="precip" class="stat-value"></span>
+            </div>
+          </div>
+          <div id="weather-updated" class="weather-updated"></div>
+        </div>
+      </div>
+
+      <div class="ad-slot">Ad Space</div>
+    </section>
+
+    <section class="tool-content">
+      <h2>How Live Weather Data Works</h2>
+      <p>This tool fetches real-time weather data from <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>, an open-source weather API that aggregates data from the National Oceanic and Atmospheric Administration (NOAA), the German Weather Service (DWD), and the European Centre for Medium-Range Weather Forecasts (ECMWF). When you type a city name, the Open-Meteo geocoding database locates it from over 300,000 global locations, returning the exact latitude and longitude. The tool then queries the forecast API for current temperature, wind speed, wind direction, and WMO weather code. Humidity, feels-like temperature, and precipitation probability are pulled from the hourly forecast for the current hour. Everything runs client-side in your browser — no data is stored on any server. The tool also auto-refreshes every 10 minutes so you always have the latest reading without needing to reload the page. Last updated: March 2026.</p>
+
+      <h2>Understanding Weather Conditions and Codes</h2>
+      <p>Weather data is standardised internationally using WMO (World Meteorological Organization) codes. These numeric codes describe sky and precipitation conditions in a consistent way across all weather systems globally. Code 0 means clear sky, codes 1 to 3 describe cloud coverage from mainly clear through overcast, codes 45 to 48 indicate fog, codes 51 to 67 cover various intensities of drizzle and rain, codes 71 to 77 cover snow, codes 80 to 82 describe rain showers of increasing intensity, and codes 95 to 99 represent thunderstorm conditions with or without hail. The feels-like temperature combines the wind chill effect in cold weather and the heat index in warm, humid weather to give you the most realistic sense of what conditions feel like on exposed skin. Humidity above 70% combined with heat above 30&deg;C significantly increases perceived temperature and health risk. Wind direction is displayed as a compass bearing — N, NE, E, SE, S, SW, W, or NW — for easy interpretation.</p>
+
+      <h2>Check Weather for Any City Worldwide</h2>
+      <p>To check the weather, type any city name into the search box and click Get Weather. If multiple cities share the same name — for example, Springfield exists in many US states — the tool shows a dropdown so you can select the exact location you mean. Each suggestion includes the city name, region, and country code. Once you select a location, results display instantly. You can also click the My Location button to use your device GPS coordinates directly, which skips geocoding entirely and fetches weather for your precise location. Recent searches are saved as clickable chips below the search box so you can switch between favourite cities in one click. Up to five recent searches are remembered. The tool supports both Celsius and Fahrenheit — click the unit toggle button to switch, and your preference is saved across visits. Powered by Open-Meteo (open-meteo.com), an open-source weather API using data from NOAA, DWD, and ECMWF. Updated hourly.</p>
+
+      <h2>Live Weather vs Forecast Apps — What Is the Difference?</h2>
+      <p>This tool focuses on current conditions — what the weather is doing right now. Forecast apps project 7 to 14 days ahead using atmospheric modelling, which introduces increasing uncertainty the further out you look. Current weather data from Open-Meteo is derived from the most recent model run, updated hourly, making it highly accurate for today's conditions. For planning purposes — deciding whether to take an umbrella, check road conditions, or dress appropriately — current weather data is more reliable than a 7-day forecast. The precipitation probability shown reflects the chance of rain in the current hour based on the hourly model. Wind speed is measured at 10 metres above ground, which is the standard meteorological reference height used worldwide. Open-Meteo is open-source and has no rate limits for non-commercial use, making it ideal for privacy-first, server-free tools like this one. Your location data is used only for the weather API request and is never stored on any server.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  // ── WMO code map ──────────────────────────────────────────
+  var WMO = {
+    0:  '\u2600\uFE0F Clear Sky',
+    1:  '\uD83C\uDF24\uFE0F Mainly Clear',
+    2:  '\u26C5 Partly Cloudy',
+    3:  '\u2601\uFE0F Overcast',
+    45: '\uD83C\uDF2B\uFE0F Foggy',
+    48: '\uD83C\uDF2B\uFE0F Icy Fog',
+    51: '\uD83C\uDF26\uFE0F Light Drizzle',
+    53: '\uD83C\uDF26\uFE0F Drizzle',
+    55: '\uD83C\uDF27\uFE0F Heavy Drizzle',
+    61: '\uD83C\uDF27\uFE0F Light Rain',
+    63: '\uD83C\uDF27\uFE0F Rain',
+    65: '\uD83C\uDF27\uFE0F Heavy Rain',
+    71: '\uD83C\uDF28\uFE0F Light Snow',
+    73: '\u2744\uFE0F Snow',
+    75: '\u2744\uFE0F Heavy Snow',
+    77: '\uD83C\uDF28\uFE0F Snow Grains',
+    80: '\uD83C\uDF26\uFE0F Light Showers',
+    81: '\uD83C\uDF27\uFE0F Showers',
+    82: '\u26C8\uFE0F Heavy Showers',
+    85: '\uD83C\uDF28\uFE0F Snow Showers',
+    86: '\u2744\uFE0F Heavy Snow Showers',
+    95: '\u26C8\uFE0F Thunderstorm',
+    96: '\u26C8\uFE0F Thunderstorm + Hail',
+    99: '\u26C8\uFE0F Thunderstorm + Heavy Hail'
+  };
+
+  function getWeatherIcon(code) {
+    var entry = WMO[code] || '\uD83C\uDF21\uFE0F Unknown';
+    return entry.split(' ')[0];
+  }
+
+  function getWeatherLabel(code) {
+    var entry = WMO[code] || '\uD83C\uDF21\uFE0F Unknown';
+    return entry.split(' ').slice(1).join(' ');
+  }
+
+  function windDir(deg) {
+    var dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[Math.round(deg / 45) % 8];
+  }
+
+  // ── State ─────────────────────────────────────────────────
+  var currentWeatherData = null;
+  var currentUnit = localStorage.getItem('weather_unit') || 'c';
+  var lastLat = null;
+  var lastLon = null;
+  var lastLocationName = '';
+  var refreshTimer = null;
+
+  // ── Temperature helpers ───────────────────────────────────
+  function formatTemp(valC) {
+    if (currentUnit === 'f') {
+      return (Math.round((valC * 9 / 5 + 32) * 10) / 10) + '\u00b0F';
+    }
+    return (Math.round(valC * 10) / 10) + '\u00b0C';
+  }
+
+  // ── Render weather result ─────────────────────────────────
+  function renderWeather(data, locationName) {
+    currentWeatherData = data;
+    var cw = data.current_weather;
+    var hourly = data.hourly;
+    var hourIndex = new Date().getHours();
+
+    var tempC = cw.temperature;
+    var windspeed = cw.windspeed;
+    var windDeg = cw.winddirection;
+    var code = cw.weathercode;
+    var humidity = hourly.relativehumidity_2m[hourIndex];
+    var feelsLikeC = hourly.apparent_temperature[hourIndex];
+    var precip = hourly.precipitation_probability[hourIndex];
+
+    document.getElementById('weather-icon').textContent = getWeatherIcon(code);
+    document.getElementById('weather-city').textContent = locationName;
+    document.getElementById('weather-condition').textContent = getWeatherLabel(code);
+    document.getElementById('weather-temp').textContent = formatTemp(tempC);
+    document.getElementById('feels-like').textContent = formatTemp(feelsLikeC);
+    document.getElementById('humidity').textContent = (humidity !== undefined && humidity !== null) ? humidity + '%' : 'N/A';
+    document.getElementById('wind').textContent = Math.round(windspeed) + ' km/h ' + windDir(windDeg);
+    document.getElementById('precip').textContent = (precip !== undefined && precip !== null) ? precip + '%' : 'N/A';
+    document.getElementById('weather-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+
+    var toggleBtn = document.getElementById('unit-toggle');
+    toggleBtn.textContent = currentUnit === 'c' ? 'Switch to \u00b0F' : 'Switch to \u00b0C';
+
+    showEl(document.getElementById('weather-result'), 'block');
+  }
+
+  // ── Fetch weather by lat/lon ──────────────────────────────
+  function fetchWeather(lat, lon, locationName) {
+    var btn = document.getElementById('get-weather-btn');
+    btn.disabled = true;
+    btn.textContent = 'Loading\u2026';
+
+    var url = 'https://api.open-meteo.com/v1/forecast'
+      + '?latitude=' + lat
+      + '&longitude=' + lon
+      + '&current_weather=true'
+      + '&hourly=relativehumidity_2m,apparent_temperature,precipitation_probability'
+      + '&timezone=auto'
+      + '&forecast_days=1';
+
+    fetch(url)
+      .then(function(res) {
+        if (!res.ok) throw new Error('Weather API error ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        lastLat = lat;
+        lastLon = lon;
+        lastLocationName = locationName;
+        renderWeather(data, locationName);
+        saveRecentSearch(locationName, lat, lon);
+        scheduleAutoRefresh();
+      })
+      .catch(function() {
+        if (window.showToast) window.showToast('Failed to load weather. Please try again.');
+      })
+      .finally(function() {
+        btn.disabled = false;
+        btn.textContent = 'Get Weather';
+      });
+  }
+
+  // ── Geocode city name ─────────────────────────────────────
+  function geocodeCity(cityName) {
+    var btn = document.getElementById('get-weather-btn');
+    btn.disabled = true;
+    btn.textContent = 'Searching\u2026';
+
+    var url = 'https://geocoding-api.open-meteo.com/v1/search'
+      + '?name=' + encodeURIComponent(cityName)
+      + '&count=5&language=en&format=json';
+
+    fetch(url)
+      .then(function(res) {
+        if (!res.ok) throw new Error('Geocoding error ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        if (!data.results || data.results.length === 0) {
+          if (window.showToast) window.showToast('City not found. Try a different spelling or nearby city.');
+          return;
+        }
+        if (data.results.length === 1) {
+          var r = data.results[0];
+          var name = r.name + (r.admin1 ? ', ' + r.admin1 : '') + ', ' + r.country_code;
+          fetchWeather(r.latitude, r.longitude, name);
+        } else {
+          showSuggestions(data.results);
+        }
+      })
+      .catch(function() {
+        if (window.showToast) window.showToast('Failed to search city. Please try again.');
+      })
+      .finally(function() {
+        btn.disabled = false;
+        btn.textContent = 'Get Weather';
+      });
+  }
+
+  // ── Suggestions dropdown ──────────────────────────────────
+  function showSuggestions(results) {
+    var container = document.getElementById('city-suggestions');
+    container.innerHTML = '';
+    results.forEach(function(r) {
+      var item = document.createElement('div');
+      item.className = 'city-suggestion-item';
+      item.textContent = r.name + (r.admin1 ? ', ' + r.admin1 : '') + ' \u2014 ' + r.country;
+      item.addEventListener('click', function() {
+        hideEl(container);
+        var name = r.name + (r.admin1 ? ', ' + r.admin1 : '') + ', ' + r.country_code;
+        document.getElementById('city-input').value = r.name;
+        fetchWeather(r.latitude, r.longitude, name);
+      });
+      container.appendChild(item);
+    });
+    showEl(container, 'block');
+  }
+
+  // ── Recent searches ───────────────────────────────────────
+  function saveRecentSearch(name, lat, lon) {
+    var recent = JSON.parse(localStorage.getItem('weather_recent') || '[]');
+    recent = recent.filter(function(r) { return r.name !== name; });
+    recent.unshift({ name: name, lat: lat, lon: lon });
+    if (recent.length > 5) recent = recent.slice(0, 5);
+    localStorage.setItem('weather_recent', JSON.stringify(recent));
+    renderRecentChips();
+  }
+
+  function renderRecentChips() {
+    var recent = JSON.parse(localStorage.getItem('weather_recent') || '[]');
+    var container = document.getElementById('recent-chips');
+    if (!recent.length) {
+      hideEl(container);
+      return;
+    }
+    container.innerHTML = '';
+    recent.forEach(function(r) {
+      var chip = document.createElement('button');
+      chip.className = 'cw-recent-chip';
+      chip.textContent = r.name;
+      chip.addEventListener('click', function() {
+        document.getElementById('city-input').value = r.name;
+        fetchWeather(r.lat, r.lon, r.name);
+      });
+      container.appendChild(chip);
+    });
+    showEl(container, 'flex');
+  }
+
+  // ── Auto-refresh every 10 minutes ────────────────────────
+  function scheduleAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(function() {
+      if (lastLat !== null && lastLon !== null) {
+        fetchWeather(lastLat, lastLon, lastLocationName);
+      }
+    }, 10 * 60 * 1000);
+  }
+
+  // ── Unit toggle ───────────────────────────────────────────
+  document.getElementById('unit-toggle').addEventListener('click', function() {
+    currentUnit = (currentUnit === 'c') ? 'f' : 'c';
+    localStorage.setItem('weather_unit', currentUnit);
+    if (currentWeatherData && lastLocationName) {
+      renderWeather(currentWeatherData, lastLocationName);
+    }
+  });
+
+  // ── Get Weather button ────────────────────────────────────
+  document.getElementById('get-weather-btn').addEventListener('click', function() {
+    var city = document.getElementById('city-input').value.trim();
+    if (!city) {
+      if (window.showToast) window.showToast('Please enter a city name.');
+      return;
+    }
+    hideEl(document.getElementById('city-suggestions'));
+    geocodeCity(city);
+  });
+
+  // ── Enter key on input ────────────────────────────────────
+  document.getElementById('city-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      document.getElementById('get-weather-btn').click();
+    }
+  });
+
+  // ── My Location button ────────────────────────────────────
+  document.getElementById('detect-btn').addEventListener('click', function() {
+    if (!navigator.geolocation) {
+      if (window.showToast) window.showToast('Geolocation is not supported by your browser.');
+      return;
+    }
+    var detectBtn = document.getElementById('detect-btn');
+    detectBtn.disabled = true;
+    detectBtn.textContent = 'Detecting\u2026';
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        detectBtn.disabled = false;
+        detectBtn.innerHTML = '&#128205; My Location';
+        fetchWeather(pos.coords.latitude, pos.coords.longitude, 'My Location');
+      },
+      function() {
+        detectBtn.disabled = false;
+        detectBtn.innerHTML = '&#128205; My Location';
+        if (window.showToast) window.showToast('Location access denied. Enter city manually.');
+      },
+      { timeout: 10000 }
+    );
+  });
+
+  // ── Page init ─────────────────────────────────────────────
+  var BREADCRUMBS = [
+    { name: 'Home', url: '/' },
+    { name: 'Weather Tools', url: '/weather/' },
+    { name: 'Live Weather Checker' }
+  ];
+
+  var FAQS = [
+    { q: 'How accurate is the weather data?', a: 'Data comes from Open-Meteo, which aggregates from NOAA, DWD, and ECMWF. Accuracy is comparable to major weather apps for most cities worldwide.' },
+    { q: 'How often does the data update?', a: 'Open-Meteo updates hourly. This tool auto-refreshes every 10 minutes using your last fetched location.' },
+    { q: 'Does this work for any city in the world?', a: 'Yes, 300,000+ locations are supported via the Open-Meteo geocoding database. If your exact city is not found, try a nearby larger city.' },
+    { q: 'What are WMO weather codes?', a: 'World Meteorological Organization codes standardise weather conditions globally. Code 0 = clear sky, code 3 = overcast, code 95 = thunderstorm. They provide a consistent language for weather data across all systems.' },
+    { q: 'Can I use my device\'s location?', a: 'Yes, click the My Location button. Your coordinates are sent to Open-Meteo only for the weather fetch and are not stored on any server. Nothing is saved beyond your browser\'s localStorage.' },
+    { q: 'Is this tool free?', a: '100% free. Open-Meteo is open-source with no API key or account required. This tool is also free to use with no sign-up needed.' }
+  ];
+
+  var RELATED_TOOLS = [
+    { slug: 'weather/wind-chill-calculator', name: 'Wind Chill Calculator', description: 'How cold does it really feel with wind chill' },
+    { slug: 'weather/feels-like-temperature-calculator', name: 'Feels Like Temperature', description: 'Calculate apparent temperature from humidity and wind' },
+    { slug: 'weather/heat-index-calculator', name: 'Heat Index Calculator', description: 'Calculate heat index from temperature and humidity' },
+    { slug: 'weather/clothing-suggester', name: 'Clothing Suggester', description: 'What to wear based on today\'s temperature' },
+    { slug: 'weather/dew-point-calculator', name: 'Dew Point Calculator', description: 'Calculate dew point from temperature and humidity' },
+    { slug: 'weather/frost-warning-checker', name: 'Frost Warning Checker', description: 'Check if frost is likely tonight' }
+  ];
+
+  document.addEventListener('DOMContentLoaded', function() {
+    TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+    TeamzTools.renderFAQs(FAQS);
+    TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    renderRecentChips();
+  });
+  </script>
+</body>
+</html>
