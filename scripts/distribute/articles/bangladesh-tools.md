@@ -4,50 +4,58 @@ tags: bangladesh, tools, finance, productivity
 canonical_url: https://tool.teamzlab.com/bd/
 ---
 
-If you live in Bangladesh, you've probably Googled things like "bKash charge calculator" or "electricity bill calculator" and landed on sketchy sites full of ads.
+If you live in Bangladesh, you have probably searched for things like "10 lakh loan EMI for 5 years", "Bangladesh customs duty on mobile phone", "CGPA to percentage", or "bKash cash out charge" and landed on ad-heavy sites with outdated numbers.
 
-I built **20+ free tools specifically for Bangladesh** — bKash, Nagad, taxes, CGPA, electricity bills, and more. Everything runs in your browser. No signup, no download, no data collected.
+I built **20+ free Bangladesh tools** that solve those exact jobs: EMI, customs duty, tax, CGPA, salary, bKash, and more. Everything runs in your browser. No signup, no download, no data collection.
+
+## Loan EMI Calculator
+
+This is one of the most practical repeat-use tools in the collection. If you want to compare BRAC Bank, DBBL, Islami Bank, EBL, or other lenders, you can test the same amount and tenure in seconds.
+
+- [Bangladesh Loan EMI Calculator](https://tool.teamzlab.com/bd/loan-emi-calculator/) — calculate EMI for home, car, personal, and education loans
+
+It is especially useful for searches like:
+- 10 lakh loan EMI for 5 years
+- personal loan EMI Bangladesh
+- BRAC Bank loan EMI calculator
+
+## Customs Duty Calculator
+
+Before importing a phone, laptop, electronics item, or even a car, you usually want a quick estimate first and the exact HS code later. This tool gives you that fast first-pass answer.
+
+- [Customs Duty Calculator](https://tool.teamzlab.com/bd/customs-duty-calculator/) — estimate Bangladesh import duty and taxes on common categories
+
+## CGPA, GPA, and Percentage
+
+Students keep needing the same conversions for admissions, scholarships, CVs, and job applications. Instead of guessing formulas, use the calculators directly.
+
+- [Bangladesh CGPA Calculator](https://tool.teamzlab.com/bd/cgpa-calculator/) — calculate semester GPA and cumulative CGPA on the 4-point scale
+- [GPA to Percentage Converter](https://tool.teamzlab.com/student/gpa-to-percentage/) — convert GPA to percentage for 4.0, 5.0, and 10-point systems
 
 ## bKash & Nagad Charge Calculators
 
-Sending money through bKash or Nagad? Use these calculators to know **exactly how much you'll be charged** before you send. No more guessing.
+Sending money through bKash or Nagad? Use these to know **exactly how much you will be charged** before you send.
 
-- [bKash Charge Calculator](https://tool.teamzlab.com/bd/bkash-charge-calculator/) — cash out, send money, payment fees
-- [Nagad Charge Calculator](https://tool.teamzlab.com/bd/nagad-charge-calculator/) — all transaction types with exact fees
+- [bKash Charge Calculator](https://tool.teamzlab.com/bd/bkash-charge-calculator/) — cash out, send money, and payment fees
+- [Nagad Charge Calculator](https://tool.teamzlab.com/bd/nagad-charge-calculator/) — all major transaction types with exact fee estimates
 
-## Electricity Bill Calculator
+## Salary, Tax, and Bills
 
-Enter your meter reading and get your **BPDB electricity bill estimate** instantly. Includes all slabs, demand charge, and VAT. Know your bill before it arrives.
+These are the everyday utility pages people come back to all year:
 
-**Try it:** [Electricity Bill Calculator](https://tool.teamzlab.com/bd/electricity-bill-calculator/)
-
-## CGPA Calculator
-
-University students — calculate your **CGPA from individual course grades**. Supports the standard 4.0 scale used by most Bangladeshi universities.
-
-**Try it:** [CGPA Calculator](https://tool.teamzlab.com/bd/cgpa-calculator/)
-
-## Family Card Generator
-
-Create a **beautiful digital family identity card** with member photos, names, and details. Popular for family events, reunions, and community registrations.
-
-**Try it:** [Family Card Generator](https://tool.teamzlab.com/bd/family-card-generator/)
-
-## Salary & Tax Calculator
-
-Calculate your **Bangladesh income tax** based on current tax slabs. Enter your salary, see your net take-home pay after all deductions.
-
-**Try it:** [Salary Tax Calculator](https://tool.teamzlab.com/bd/salary-tax-calculator/)
+- [Salary Tax Calculator](https://tool.teamzlab.com/bd/salary-tax-calculator/) — estimate Bangladesh income tax with current slabs
+- [Electricity Bill Calculator](https://tool.teamzlab.com/bd/electricity-bill-calculator/) — estimate BPDB electricity bill with slab rates, demand charge, and VAT
 
 ## Why these are different
 
-Most "Bangladeshi tools" online are either:
-- Outdated with wrong rates
-- Full of intrusive ads that make them unusable on mobile
-- Requiring signup or app download
+Most Bangladesh tool sites are:
+- outdated
+- overloaded with ads
+- built for desktop only
+- asking for signup or app install
 
-These tools are **updated with 2026 rates**, work perfectly on mobile, and respect your privacy. Your data never leaves your phone.
+These tools are **updated for 2026 use cases**, work well on mobile, and keep your data on your device.
 
 **Browse all BD tools:** [tool.teamzlab.com/bd](https://tool.teamzlab.com/bd/)
 
-Share with anyone who might find these useful — they're completely free.
+If you know someone comparing loans, checking duty on a new phone, or preparing university application documents, send them this.

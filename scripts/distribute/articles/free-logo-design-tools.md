@@ -4,11 +4,11 @@ tags: design, tools, logo, free, branding
 canonical_url: https://tool.teamzlab.com/design/
 ---
 
-Every "free logo maker" online either slaps a watermark on your download or charges $20 to remove it. I built design tools that are actually free — no watermarks, no branding, no catches.
+Search results for "free text logo maker" are full of tools that either add a watermark or lock the transparent PNG behind a paywall. I built design tools that are actually free — no watermarks, no branding, no catches.
 
 ## Logo & Branding
 
-- **[Logo Text Maker](https://tool.teamzlab.com/design/logo-text-maker/)** — create text-based logos with 4 font styles, custom colors, and transparent PNG export. No watermark, no account
+- **[Logo Text Maker](https://tool.teamzlab.com/design/logo-text-maker/)** — create a free text logo with custom fonts, colors, and transparent PNG export. No watermark, no account
 - **[Color Palette Generator](https://tool.teamzlab.com/design/color-palette-generator/)** — generate beautiful color schemes for your brand
 - **[Gradient Generator](https://tool.teamzlab.com/design/gradient-generator/)** — create CSS gradients visually and copy the code
 
@@ -25,7 +25,7 @@ Every "free logo maker" online either slaps a watermark on your download or char
 
 ## Why these tools are different
 
-**No watermarks.** The logo you create is yours. Download it as a high-res transparent PNG.
+**No watermarks.** The logo you create is yours. Download it as a transparent PNG and use it immediately in a website header, business card, or social profile.
 
 **No signup.** Open the tool, make your design, download it. Done in 60 seconds.
 

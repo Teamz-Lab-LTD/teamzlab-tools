@@ -14,7 +14,7 @@ Most online signature tools upload your handwriting to their servers — the mos
 
 ## Edit & Transform Signatures
 
-- **[Signature Background Remover](https://tool.teamzlab.com/tools/signature-background-remover/)** — upload a photo of your signature and remove the white background. Get a clean transparent PNG using client-side Canvas processing
+- **[Signature Background Remover](https://tool.teamzlab.com/tools/signature-background-remover/)** — remove background from a scanned signature photo and download a clean transparent PNG using client-side Canvas processing
 - **[Signature Stamp Maker](https://tool.teamzlab.com/tools/signature-stamp-maker/)** — turn your signature into a rubber stamp effect with circular/rectangular borders, curved text, and distress aging. Great for notaries, crafters, and branding
 - **[Signature Resize 20KB](https://tool.teamzlab.com/in/signature-resize-20kb/)** — resize scanned signatures to 20KB and 300×80px for Indian government applications (IBPS, SSC, RRB)
 

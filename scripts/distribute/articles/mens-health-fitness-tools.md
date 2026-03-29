@@ -6,7 +6,7 @@ canonical_url: https://tool.teamzlab.com/health/semaglutide-dosage-calculator/
 
 GLP-1 drugs are everywhere in 2026. Men are checking testosterone levels, tracking protein intake, and optimizing gym performance more than ever. But most health calculator sites either want your email, show ads before results, or require a signup.
 
-I built 5 free men's health tools that run entirely in your browser — no account, no data collection, instant results.
+I built free men’s health and self-improvement tools that run entirely in your browser — no account, no data collection, instant results.
 
 ## 1. Semaglutide Dosage Calculator
 
@@ -44,11 +44,17 @@ Creatine is the most researched sports supplement, but dosing varies by body wei
 
 **[Creatine Dosage Calculator](https://tool.teamzlab.com/health/creatine-dosage-calculator/)** — calculates loading and maintenance doses for monohydrate, HCL, ethyl ester, and buffered creatine. Shows a dosing schedule, monthly cost estimate, and how much extra water you should drink.
 
+## Bonus: Attractiveness Test
+
+Looks and self-presentation are part of self-improvement too, but most "how attractive am I" pages are either creepy, photo-based, or built for clicks.
+
+**[Attractiveness Test](https://tool.teamzlab.com/grooming/attractiveness-quiz/)** — answer 15 private questions across grooming, confidence, style, and presentation. No photo upload. Instant score with practical improvement tips.
+
 ---
 
 ## Why These Run in Your Browser
 
-All 5 tools use client-side JavaScript only. Your health data (testosterone levels, weight, medications) never leaves your device. No server, no database, no tracking.
+All of these tools use client-side JavaScript only. Your health data, weight, medication details, or quiz answers never leave your device. No server, no database, no tracking.
 
 **All free at [tool.teamzlab.com/health](https://tool.teamzlab.com/health/)**
 

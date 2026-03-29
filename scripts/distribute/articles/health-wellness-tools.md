@@ -4,7 +4,7 @@ tags: health, wellness, fitness, tools, free
 canonical_url: https://tool.teamzlab.com/health/
 ---
 
-Most health calculator sites want your email before showing results. I made 80+ health tools that work instantly — no signup, no data collection, everything runs in your browser.
+Most health calculator sites want your email before showing results. I made 80+ health and wellness tools that work instantly — no signup, no data collection, everything runs in your browser.
 
 ## Body & Fitness
 
@@ -18,6 +18,12 @@ Most health calculator sites want your email before showing results. I made 80+ 
 - **[Sleep Cycle Calculator](https://tool.teamzlab.com/health/sleep-calculator/)** — find the best bedtime based on 90-minute sleep cycles
 - **[Screen Distance Checker](https://tool.teamzlab.com/health/screen-distance-checker/)** — check if you're sitting too close to your monitor
 - **[Reaction Time Test](https://tool.teamzlab.com/health/reaction-time-test/)** — test your reflexes in seconds
+
+## Connection & Relationship Wellness
+
+- **[36 Questions to Fall in Love](https://tool.teamzlab.com/health/36-questions-to-fall-in-love/)** — go through Arthur Aron’s famous 36-question list in 3 sets with a built-in eye contact timer
+
+This one is useful for date night, deep conversations, or building closeness with a partner or close friend without digging through low-quality listicles.
 
 ## Women's Health
 
