@@ -30,8 +30,22 @@
     .post-copy-btn { cursor: pointer; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.75rem; font-size: 0.8rem; color: var(--text-muted); }
     .post-copy-btn:hover { border-color: var(--heading); color: var(--heading); }
     .variation-count { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .quote-starter { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 1.25rem; overflow: hidden; }
+    .quote-starter-toggle { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.75rem 1rem; background: none; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--heading); text-align: left; }
+    .quote-starter-toggle .qs-arrow { font-size: 0.7rem; color: var(--text-muted); transition: transform 0.2s; }
+    .quote-starter-toggle.open .qs-arrow { transform: rotate(90deg); }
+    .quote-starter-body { display: none; padding: 0 1rem 1rem; }
+    .quote-starter-body.open { display: block; }
+    .qs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .qs-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .qs-btn { padding: 0.45rem 1rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--heading); cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+    .qs-btn.primary { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .qs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .qs-status { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; min-height: 1.1em; }
+    .qs-preview { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.75rem; font-size: 0.88rem; line-height: 1.5; color: var(--text); margin-top: 0.75rem; display: none; }
     @media (max-width: 600px) {
       .input-row { grid-template-columns: 1fr; }
+      .qs-row { grid-template-columns: 1fr; }
       .tool-content h2 { font-size: var(--text-lg); }
     }
   </style>
@@ -55,6 +69,42 @@
       <div class="ai-fallback" id="ai-fallback">
         <strong>Multi-Tier AI:</strong> Chrome AI (fastest) &rarr; Transformers.js AI (works offline) &rarr; Smart post templates with proven engagement formulas.
       </div>
+      <!-- Quote Starter -->
+      <div class="quote-starter" id="quote-starter">
+        <button class="quote-starter-toggle" id="qs-toggle">
+          <span>&#x201C;</span> Start from a Famous Quote (Quotes15 API)
+          <span class="qs-arrow">&#9654;</span>
+        </button>
+        <div class="quote-starter-body" id="qs-body">
+          <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 0.75rem">Fetch a real quote from the Quotes15 database, then generate a social post inspired by it.</p>
+          <div class="qs-row">
+            <div class="tool-field" style="margin-bottom:0">
+              <label class="tool-label" for="qs-language">Language</label>
+              <select id="qs-language" class="tool-input">
+                <option value="en">English</option>
+                <option value="de">German</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="it">Italian</option>
+                <option value="pt">Portuguese</option>
+                <option value="tr">Turkish</option>
+                <option value="ja">Japanese</option>
+              </select>
+            </div>
+            <div class="tool-field" style="margin-bottom:0">
+              <label class="tool-label" for="qs-author">Author (optional)</label>
+              <input type="text" id="qs-author" class="tool-input" placeholder="e.g. Einstein, Rumi">
+            </div>
+          </div>
+          <div class="qs-actions">
+            <button class="qs-btn primary" id="qs-fetch-btn">Fetch Quote</button>
+            <button class="qs-btn" id="qs-use-btn" style="display:none">Use This Quote as Topic</button>
+          </div>
+          <div class="qs-status" id="qs-status"></div>
+          <div class="qs-preview" id="qs-preview"></div>
+        </div>
+      </div>
+
       <div class="tool-field">
         <label for="input-topic" class="tool-label">Topic or Product</label>
         <input type="text" id="input-topic" class="tool-input" placeholder="e.g., Eid sale 50% off, new coffee shop launch, summer fitness challenge">
@@ -117,6 +167,7 @@
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
     function checkAI() {
       try {
@@ -388,8 +439,89 @@
       }
     }
 
+    /* ---- QUOTE STARTER (via TeamzAPI centralized client) ---- */
+    var qsFetchedQuote = null;
+
+    // Small curated fallback pool for offline scenarios
+    var QS_FALLBACK = [
+      {text:'The only way to do great work is to love what you do.',author:'Steve Jobs'},
+      {text:'In the middle of every difficulty lies opportunity.',author:'Albert Einstein'},
+      {text:'It does not matter how slowly you go as long as you do not stop.',author:'Confucius'},
+      {text:'Success is not final, failure is not fatal: it is the courage to continue that counts.',author:'Winston Churchill'},
+      {text:'The future belongs to those who believe in the beauty of their dreams.',author:'Eleanor Roosevelt'},
+      {text:'Do what you can, with what you have, where you are.',author:'Theodore Roosevelt'},
+      {text:'Strive not to be a success, but rather to be of value.',author:'Albert Einstein'},
+      {text:'The best time to plant a tree was 20 years ago. The second best time is now.',author:'Chinese Proverb'},
+      {text:'Your time is limited, so don\'t waste it living someone else\'s life.',author:'Steve Jobs'},
+      {text:'Believe you can and you\'re halfway there.',author:'Theodore Roosevelt'}
+    ];
+
+    async function qsFetchQuote() {
+      var statusEl = document.getElementById('qs-status');
+      var previewEl = document.getElementById('qs-preview');
+      var useBtn = document.getElementById('qs-use-btn');
+      var fetchBtn = document.getElementById('qs-fetch-btn');
+      var lang = document.getElementById('qs-language').value;
+      var author = document.getElementById('qs-author').value.trim();
+
+      fetchBtn.disabled = true;
+      fetchBtn.textContent = 'Fetching…';
+      previewEl.style.display = 'none';
+      useBtn.style.display = 'none';
+      qsFetchedQuote = null;
+
+      var url = 'https://quotes15.p.rapidapi.com/quotes/random/?language_code=' + encodeURIComponent(lang);
+      if (author) url += '&originator_name=' + encodeURIComponent(author);
+
+      try {
+        var result = await TeamzAPI.call('quotes15', url, { tool: 'social-post', notFoundHint: author || null });
+        var data = result.data;
+        var text = (data && data.content || '').trim();
+        var name = (data && data.originator && data.originator.name || '').trim();
+        if (!text) throw new Error('Empty response from API.');
+        qsFetchedQuote = { text: text, author: name };
+        statusEl.textContent = result.fromCache ? 'Loaded from cache.' : 'Live quote fetched from Quotes15 API.';
+        showQsPreview(qsFetchedQuote);
+      } catch (e) {
+        var msg = e.isTeamzAPIError ? e.message : (e.message || 'Fetch failed.');
+        var pick = QS_FALLBACK[Math.floor(Math.random() * QS_FALLBACK.length)];
+        qsFetchedQuote = pick;
+        statusEl.textContent = msg + ' Using a curated quote instead.';
+        showQsPreview(pick);
+      } finally {
+        fetchBtn.disabled = false;
+        fetchBtn.textContent = 'Fetch Quote';
+      }
+    }
+
+    function showQsPreview(q) {
+      var previewEl = document.getElementById('qs-preview');
+      var useBtn = document.getElementById('qs-use-btn');
+      previewEl.innerHTML = '&ldquo;' + escapeHtml(q.text) + '&rdquo;' + (q.author ? '<br><em style="color:var(--text-muted);font-size:0.82rem">\u2014 ' + escapeHtml(q.author) + '</em>' : '');
+      previewEl.style.display = 'block';
+      useBtn.style.display = 'inline-block';
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       checkAI();
+
+      // Quote starter toggle
+      document.getElementById('qs-toggle').addEventListener('click', function() {
+        this.classList.toggle('open');
+        document.getElementById('qs-body').classList.toggle('open');
+      });
+      document.getElementById('qs-fetch-btn').addEventListener('click', qsFetchQuote);
+      document.getElementById('qs-use-btn').addEventListener('click', function() {
+        if (!qsFetchedQuote) return;
+        var topic = '\u201C' + qsFetchedQuote.text + '\u201D' + (qsFetchedQuote.author ? ' \u2014 ' + qsFetchedQuote.author : '');
+        document.getElementById('input-topic').value = topic;
+        // Auto-select Inspirational tone for quotes
+        document.getElementById('input-tone').value = 'inspirational';
+        if (window.showToast) window.showToast('Quote loaded as topic. Click Generate Posts!');
+        // Collapse the panel
+        document.getElementById('qs-toggle').classList.remove('open');
+        document.getElementById('qs-body').classList.remove('open');
+      });
 
       document.getElementById('generate-btn').addEventListener('click', generate);
 

@@ -153,6 +153,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
   (function() {
     var doiInput = document.getElementById('doi_input');
@@ -388,17 +389,9 @@
       showSpinner();
       lookupBtn.disabled = true;
 
-      fetch('https://api.crossref.org/works/' + encodeURIComponent(doi), {
-        headers: { 'Accept': 'application/json' }
-      })
-      .then(function(res) {
-        if (!res.ok) {
-          if (res.status === 404) throw new Error('DOI not found. Please check the DOI and try again.');
-          throw new Error('CrossRef API error (HTTP ' + res.status + '). Please try again.');
-        }
-        return res.json();
-      })
-      .then(function(data) {
+      TeamzAPI.call('crossref', 'https://api.crossref.org/works/' + encodeURIComponent(doi), { tool: 'doi-lookup', notFoundHint: 'DOI not found. Please check the DOI and try again.' })
+      .then(function(result) {
+        var data = result.data;
         if (data && data.message) {
           displayResult(data.message);
         } else {
@@ -406,7 +399,7 @@
         }
       })
       .catch(function(err) {
-        showError(err.message || 'Failed to fetch DOI metadata. Check your connection and try again.');
+        showError(err.isTeamzAPIError ? err.message : (err.message || 'Failed to fetch DOI metadata. Check your connection and try again.'));
       })
       .finally(function() {
         lookupBtn.disabled = false;

@@ -149,6 +149,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" onerror="window.jsQRLoaded=false;"></script>
   <script>
   (function() {
@@ -205,9 +206,9 @@
     function lookupProduct(barcode) {
       resultArea.innerHTML = '<div class="loading-msg">Looking up barcode ' + barcode + '…</div>';
       var url = 'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(barcode) + '.json?fields=product_name,brands,image_url,nutriscore_grade,nutriments,ingredients_text,allergens_hierarchy,countries_tags,quantity,serving_size,code';
-      fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
+      TeamzAPI.call('openfoodfacts', url, { tool: 'food-barcode-scanner' })
+        .then(function(result) {
+          var data = result.data;
           if (data.status === 0 || !data.product) {
             resultArea.innerHTML = '<div class="not-found-msg">' +
               '<p style="font-size:1.05rem;font-weight:700;color:var(--heading);margin-bottom:0.5rem;">Product not found</p>' +
@@ -218,8 +219,9 @@
           }
           renderProduct(data.product);
         })
-        .catch(function() {
-          resultArea.innerHTML = '<div class="not-found-msg"><p>Could not connect to the Open Food Facts database. Please check your internet connection and try again.</p></div>';
+        .catch(function(err) {
+          var msg = err.isTeamzAPIError ? err.message : 'Could not connect to the Open Food Facts database. Please check your internet connection and try again.';
+          resultArea.innerHTML = '<div class="not-found-msg"><p>' + msg + '</p></div>';
         });
     }
 

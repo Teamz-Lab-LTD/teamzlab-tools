@@ -273,6 +273,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
   (function() {
     var STORAGE_KEY = 'crypto_portfolio_v1';
@@ -353,21 +354,18 @@
       var url = 'https://api.coingecko.com/api/v3/simple/price?ids=' + ids +
                 '&vs_currencies=usd,eur,gbp,aud&include_24hr_change=true';
 
-      fetch(url)
-        .then(function(r) {
-          if (!r.ok) throw new Error('API ' + r.status);
-          return r.json();
-        })
-        .then(function(data) {
-          prices = data;
+      TeamzAPI.call('coingecko', url, { tool: 'portfolio-tracker' })
+        .then(function(result) {
+          prices = result.data;
           var now = new Date();
           var timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           var el = document.getElementById('portfolio-updated');
           if (el) el.textContent = 'Updated ' + timeStr;
           if (callback) callback();
         })
-        .catch(function() {
-          if (window.showToast) window.showToast('Price fetch failed — prices may be delayed. Try refreshing.');
+        .catch(function(err) {
+          var msg = err.isTeamzAPIError ? err.message : 'Price fetch failed — prices may be delayed. Try refreshing.';
+          if (window.showToast) window.showToast(msg);
           if (callback) callback();
         })
         .finally(function() {

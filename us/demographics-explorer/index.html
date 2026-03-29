@@ -488,6 +488,7 @@
 
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
     // ─────────────────────────────────────────────
     // Hard-coded fallback dataset — 2022 US Census estimates
@@ -551,19 +552,23 @@
     // Try to fetch live data from DataUSA API
     // ─────────────────────────────────────────────
     function fetchLiveData() {
+      var host = window.location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') {
+        buildFromFallback();
+        initTool(false);
+        return;
+      }
+
       var url = 'https://datausa.io/api/data?drilldowns=State&measures=Population&year=latest';
       var timeout = setTimeout(function() {
         // If API takes > 6 seconds, give up and use fallback
         initTool(false);
       }, 6000);
 
-      fetch(url)
-        .then(function(resp) {
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          return resp.json();
-        })
-        .then(function(json) {
+      TeamzAPI.call('datausa', url, { tool: 'demographics-explorer' })
+        .then(function(result) {
           clearTimeout(timeout);
+          var json = result.data;
           var rows = (json && json.data) ? json.data : [];
           if (rows.length < 40) throw new Error('Insufficient data');
 
@@ -848,7 +853,6 @@
 
       if (window.TeamzTools) {
         if (TeamzTools.renderFAQs) TeamzTools.renderFAQs(faqs);
-        }
         if (TeamzTools.renderRelatedTools) {
           TeamzTools.renderRelatedTools([
             { slug: 'us/income-tax-calculator', name: 'US Income Tax Calculator', description: 'Calculate federal and state income tax for all 50 states' },

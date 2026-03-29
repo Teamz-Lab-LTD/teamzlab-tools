@@ -37,6 +37,20 @@
       .ew-copy-btn { width: 100%; text-align: center; }
       .tool-content h2 { font-size: var(--text-lg); }
     }
+    .quote-starter{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:1.25rem;overflow:hidden}
+    .quote-starter-toggle{display:flex;align-items:center;gap:0.5rem;width:100%;padding:0.75rem 1rem;background:none;border:none;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--heading);text-align:left}
+    .quote-starter-toggle .qs-arrow{font-size:0.7rem;color:var(--text-muted);transition:transform 0.2s}
+    .quote-starter-toggle.open .qs-arrow{transform:rotate(90deg)}
+    .quote-starter-body{display:none;padding:0 1rem 1rem}
+    .quote-starter-body.open{display:block}
+    .qs-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem}
+    .qs-actions{display:flex;gap:0.5rem;flex-wrap:wrap}
+    .qs-btn{padding:0.45rem 1rem;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--heading);cursor:pointer;font-size:0.85rem;font-weight:600}
+    .qs-btn.primary{background:var(--heading);color:var(--bg);border-color:var(--heading)}
+    .qs-btn:disabled{opacity:0.5;cursor:not-allowed}
+    .qs-status{font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;min-height:1.1em}
+    .qs-preview{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:0.6rem 0.75rem;font-size:0.88rem;line-height:1.5;color:var(--text);margin-top:0.75rem;display:none}
+    @media(max-width:600px){.qs-row{grid-template-columns:1fr}}
   </style>
 <!-- STATIC-SCHEMA -->
   <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "AI Tools", "item": "https://tool.teamzlab.com/ai/"}, {"@type": "ListItem", "position": 3, "name": "AI Email Writer"}]}</script>
@@ -58,6 +72,39 @@
       </div>
       <div class="ai-fallback" id="ai-fallback">
         <strong>AI Email Writer:</strong> Uses Transformers.js (runs a real AI model in your browser) to generate emails. First use downloads the model (~350MB, cached after first use), then it works offline. Chrome 138+ uses even faster on-device AI.
+      </div>
+
+      <!-- Quote Starter -->
+      <div class="quote-starter">
+        <button class="quote-starter-toggle" id="qs-toggle">
+          <span>&#x201C;</span> Open or Close Email with a Famous Quote
+          <span class="qs-arrow">&#9654;</span>
+        </button>
+        <div class="quote-starter-body" id="qs-body">
+          <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 0.75rem">Fetch a real quote from the Quotes15 database and add it to your email as an opening or closing line.</p>
+          <div class="qs-row">
+            <div class="tool-field" style="margin-bottom:0">
+              <label class="tool-label" for="qs-language">Language</label>
+              <select id="qs-language" class="tool-input">
+                <option value="en">English</option><option value="de">German</option>
+                <option value="es">Spanish</option><option value="fr">French</option>
+                <option value="it">Italian</option><option value="pt">Portuguese</option>
+                <option value="tr">Turkish</option><option value="ja">Japanese</option>
+              </select>
+            </div>
+            <div class="tool-field" style="margin-bottom:0">
+              <label class="tool-label" for="qs-author">Author (optional)</label>
+              <input type="text" id="qs-author" class="tool-input" placeholder="e.g. Churchill, Rumi">
+            </div>
+          </div>
+          <div class="qs-actions">
+            <button class="qs-btn primary" id="qs-fetch-btn">Fetch Quote</button>
+            <button class="qs-btn" id="qs-open-btn" style="display:none">Add as Opening</button>
+            <button class="qs-btn" id="qs-close-btn" style="display:none">Add as Closing</button>
+          </div>
+          <div class="qs-status" id="qs-status"></div>
+          <div class="qs-preview" id="qs-preview"></div>
+        </div>
       </div>
 
       <div class="ew-form-grid">
@@ -142,6 +189,7 @@
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
     (function () {
       var hasAI = false;
@@ -331,6 +379,74 @@
         btn.textContent = 'Write Email';
         btn.disabled = false;
       }
+
+    /* ---- QUOTE STARTER (via TeamzAPI centralized client) ---- */
+    var QS_FALLBACK=[
+      {text:'The secret of getting ahead is getting started.',author:'Mark Twain'},
+      {text:'Excellence is not a destination but a continuous journey.',author:'Brian Tracy'},
+      {text:'Coming together is a beginning, staying together is progress, and working together is success.',author:'Henry Ford'},
+      {text:'The secret of success is to do the common thing uncommonly well.',author:'John D. Rockefeller Jr.'},
+      {text:'Alone we can do so little; together we can do so much.',author:'Helen Keller'},
+      {text:'Opportunity does not knock, it presents itself when you beat down the door.',author:'Kyle Chandler'},
+      {text:'Success usually comes to those who are too busy to be looking for it.',author:'Henry David Thoreau'},
+      {text:'The way to get started is to quit talking and begin doing.',author:'Walt Disney'},
+      {text:'Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work.',author:'Steve Jobs'},
+      {text:'It always seems impossible until it\'s done.',author:'Nelson Mandela'}
+    ];
+    var ewQsFetched=null;
+
+    function ewQsEsc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+    function ewQsShowPreview(q){
+      var pre=document.getElementById('qs-preview');
+      pre.innerHTML='&ldquo;'+ewQsEsc(q.text)+'&rdquo;'+(q.author?'<br><em style="color:var(--text-muted);font-size:0.82rem">\u2014 '+ewQsEsc(q.author)+'</em>':'');
+      pre.style.display='block';
+      document.getElementById('qs-open-btn').style.display='inline-block';
+      document.getElementById('qs-close-btn').style.display='inline-block';
+    }
+
+    function ewQsInsert(position){
+      if(!ewQsFetched) return;
+      var line='\u201C'+ewQsFetched.text+'\u201D'+(ewQsFetched.author?' \u2014 '+ewQsFetched.author:'');
+      var ctx=document.getElementById('ew-context');
+      var existing=ctx.value.trim();
+      ctx.value=position==='open'?(existing?line+'\n\n'+existing:line):(existing?existing+'\n\n'+line:line);
+      if(window.showToast) window.showToast('Quote added to context as '+(position==='open'?'opening':'closing')+'.');
+      document.getElementById('qs-toggle').classList.remove('open');
+      document.getElementById('qs-body').classList.remove('open');
+    }
+
+    async function ewQsFetch(){
+      var st=document.getElementById('qs-status'),fb=document.getElementById('qs-fetch-btn');
+      var lang=document.getElementById('qs-language').value;
+      var author=document.getElementById('qs-author').value.trim();
+      fb.disabled=true;fb.textContent='Fetching\u2026';
+      document.getElementById('qs-preview').style.display='none';
+      document.getElementById('qs-open-btn').style.display='none';
+      document.getElementById('qs-close-btn').style.display='none';
+      ewQsFetched=null;
+
+      var url='https://quotes15.p.rapidapi.com/quotes/random/?language_code='+encodeURIComponent(lang);
+      if(author) url+='&originator_name='+encodeURIComponent(author);
+      try{
+        var result=await TeamzAPI.call('quotes15',url,{tool:'email-writer',notFoundHint:author||null});
+        var data=result.data;
+        var txt=(data&&data.content||'').trim(),name=(data&&data.originator&&data.originator.name||'').trim();
+        if(!txt) throw new Error('Empty response.');
+        ewQsFetched={text:txt,author:name};
+        st.textContent=result.fromCache?'Loaded from cache.':'Live quote from Quotes15 API.';
+        ewQsShowPreview(ewQsFetched);
+      }catch(err){
+        var msg=err.isTeamzAPIError?err.message:(err.message||'Fetch failed.');
+        var p=QS_FALLBACK[Math.floor(Math.random()*QS_FALLBACK.length)];
+        ewQsFetched=p;st.textContent=msg+' Using curated quote instead.';ewQsShowPreview(p);
+      }finally{fb.disabled=false;fb.textContent='Fetch Quote';}
+    }
+
+      document.getElementById('qs-toggle').addEventListener('click',function(){this.classList.toggle('open');document.getElementById('qs-body').classList.toggle('open');});
+      document.getElementById('qs-fetch-btn').addEventListener('click',ewQsFetch);
+      document.getElementById('qs-open-btn').addEventListener('click',function(){ewQsInsert('open');});
+      document.getElementById('qs-close-btn').addEventListener('click',function(){ewQsInsert('close');});
 
       document.getElementById('write-btn').addEventListener('click', writeEmail);
       document.getElementById('rewrite-btn').addEventListener('click', writeEmail);

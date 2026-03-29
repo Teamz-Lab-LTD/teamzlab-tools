@@ -119,6 +119,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
     var BREADCRUMBS = [
       { name: 'Home', url: '/' },
@@ -228,9 +229,9 @@
     }
 
     function sxLoadUpcoming() {
-      fetch('https://api.spacexdata.com/v5/launches/upcoming')
-        .then(function(r) { return r.json(); })
-        .then(function(launches) {
+      TeamzAPI.call('spacex', 'https://api.spacexdata.com/v5/launches/upcoming', { tool: 'spacex-tracker' })
+        .then(function(result) {
+          var launches = result.data;
           SX_DATA.upcoming = launches;
           var sorted = launches.filter(function(l) { return l.date_utc; }).sort(function(a,b) { return new Date(a.date_utc) - new Date(b.date_utc); });
           if (sorted.length > 0) sxStartCountdown(sorted[0].date_utc, sorted[0].name);
@@ -242,8 +243,9 @@
             html += sxRenderUpcomingCard(l);
           });
           document.getElementById('sx-upcoming-list').innerHTML = html;
-        }).catch(function() {
-          document.getElementById('sx-upcoming-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">Could not load launch data. Please try again.</div>';
+        }).catch(function(err) {
+          var msg = err.isTeamzAPIError ? err.message : 'Could not load launch data. Please try again.';
+          document.getElementById('sx-upcoming-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">' + msg + '</div>';
         });
     }
 
@@ -266,9 +268,9 @@
     }
 
     function sxLoadRecent() {
-      fetch('https://api.spacexdata.com/v5/launches/past?limit=10')
-        .then(function(r) { return r.json(); })
-        .then(function(launches) {
+      TeamzAPI.call('spacex', 'https://api.spacexdata.com/v5/launches/past?limit=10', { tool: 'spacex-tracker' })
+        .then(function(result) {
+          var launches = result.data;
           SX_DATA.recent = launches;
           var sorted = launches.sort(function(a,b) { return new Date(b.date_utc) - new Date(a.date_utc); }).slice(0, 10);
           var html = '';
@@ -290,15 +292,16 @@
             html += '</div>';
           });
           document.getElementById('sx-recent-list').innerHTML = html || '<div style="padding:20px;color:var(--text-muted);">No recent launches found.</div>';
-        }).catch(function() {
-          document.getElementById('sx-recent-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">Could not load launch data.</div>';
+        }).catch(function(err) {
+          var msg = err.isTeamzAPIError ? err.message : 'Could not load launch data.';
+          document.getElementById('sx-recent-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">' + msg + '</div>';
         });
     }
 
     function sxLoadRockets() {
-      fetch('https://api.spacexdata.com/v4/rockets')
-        .then(function(r) { return r.json(); })
-        .then(function(rockets) {
+      TeamzAPI.call('spacex', 'https://api.spacexdata.com/v4/rockets', { tool: 'spacex-tracker' })
+        .then(function(result) {
+          var rockets = result.data;
           SX_DATA.rockets = rockets;
           var html = '';
           rockets.forEach(function(r) {
@@ -317,8 +320,9 @@
             html += '</div>';
           });
           document.getElementById('sx-rockets-list').innerHTML = html || '<div style="padding:20px;color:var(--text-muted);">No rocket data available.</div>';
-        }).catch(function() {
-          document.getElementById('sx-rockets-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">Could not load rocket data.</div>';
+        }).catch(function(err) {
+          var msg = err.isTeamzAPIError ? err.message : 'Could not load rocket data.';
+          document.getElementById('sx-rockets-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">' + msg + '</div>';
         });
     }
 

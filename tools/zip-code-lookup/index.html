@@ -348,6 +348,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
     (function () {
       'use strict';
@@ -495,18 +496,10 @@
 
         var url = 'https://api.zippopotam.us/' + encodeURIComponent(country) + '/' + encodeURIComponent(postal);
 
-        fetch(url)
-          .then(function (res) {
-            if (res.status === 404) {
-              return null;
-            }
-            if (!res.ok) {
-              throw new Error('HTTP ' + res.status);
-            }
-            return res.json();
-          })
-          .then(function (data) {
+        TeamzAPI.call('zip-lookup', url, { tool: 'zip-code-lookup' })
+          .then(function (result) {
             hideLoading();
+            var data = result.data;
             if (!data || !data['places'] || !data['places'].length) {
               showError('No results found for \u201c' + postal + '\u201d in ' + country.toUpperCase() + '. Please check the code and try again.');
               return;
@@ -516,8 +509,13 @@
           })
           .catch(function (err) {
             hideLoading();
-            if (window.showToast) window.showToast('Network error. Please check your connection and try again.');
-            showError('Could not reach the lookup service. Please check your internet connection and try again.');
+            if (err.isTeamzAPIError && err.type === 'not_found') {
+              showError('No results found for \u201c' + postal + '\u201d in ' + country.toUpperCase() + '. Please check the code and try again.');
+              return;
+            }
+            var msg = err.isTeamzAPIError ? err.message : 'Could not reach the lookup service. Please check your internet connection and try again.';
+            if (window.showToast) window.showToast(msg);
+            showError(msg);
           });
       }
 

@@ -335,6 +335,7 @@
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
+  <script src="/shared/js/api-client.js"></script>
   <script>
   (function () {
     'use strict';
@@ -426,23 +427,16 @@
       if (params.date)  url += '&date='  + params.date;
       if (params.count) url += '&count=' + params.count;
 
-      fetch(url)
-        .then(function (res) {
-          if (!res.ok) {
-            return res.json().then(function (e) {
-              throw new Error((e.error && e.error.message) || ('HTTP ' + res.status));
-            });
-          }
-          return res.json();
-        })
-        .then(function (data) {
+      TeamzAPI.call('nasa-apod', url, { tool: 'nasa-apod' })
+        .then(function (result) {
+          var data = result.data;
           // count=1 returns an array
           if (Array.isArray(data)) data = data[0];
           renderAPOD(data);
         })
         .catch(function (err) {
-          var msg = err.message || 'Network error.';
-          if (msg.indexOf('429') !== -1 || msg.toLowerCase().indexOf('rate') !== -1) {
+          var msg = err.isTeamzAPIError ? err.message : (err.message || 'Network error.');
+          if (err.isTeamzAPIError && err.type === 'rate_limit') {
             showError('NASA API rate limit reached (50 requests/day with DEMO_KEY). Please try again tomorrow or in a few minutes.');
           } else {
             showError('Could not load image: ' + msg);
