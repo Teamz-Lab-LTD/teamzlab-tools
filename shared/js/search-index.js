@@ -861,7 +861,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Gaming Monitor Calculator',d:'Find the perfect gaming monitor. Calculate PPI, response time needs, viewing distance, and compare resolutions for your setup. Free and private.',h:'/gaming/gaming-monitor-calculator/'},
   {t:'Gaming Name Generator',d:'Generate unique gaming names and gamertags instantly. Choose styles like epic, funny, dark, or anime. Copy your favorite name. Free and private.',h:'/gaming/gaming-name-generator/'},
   {t:'Gaming Resolution Calculator',d:'Calculate optimal gaming resolution for your GPU and monitor. Compare 1080p, 1440p, and 4K performance impact. Free and private.',h:'/gaming/gaming-resolution-calculator/'},
-  {t:'Gaming Tools',d:'Free online gaming tools — eDPI calculator, RAM latency calculator, PSU calculator, DDR5 vs DDR4 comparison, and 20+ utilities for gamers. All free ',h:'/gaming/'},
+  {t:'Gaming Tools',d:'Free gaming tools — eDPI calculator, RAM latency calculator, PSU wattage, DDR5 vs DDR4 comparison, and 20+ utilities for PC gamers. Free and private',h:'/gaming/'},
   {t:'KD Ratio Calculator',d:'Calculate your kill/death ratio and gaming stats. Enter kills, deaths, and assists for KDA, win rate, and performance rating. Free and private.',h:'/gaming/kd-ratio-calculator/'},
   {t:'Keyboard Polling Rate Test',d:'Test your keyboard polling rate online for free. Measure how fast your keyboard reports keypresses in Hz with real-time results. Private.',h:'/gaming/keyboard-polling-rate-test/'},
   {t:'Keyboard Tester Online',d:'Test every key on your keyboard online for free. Visual layout shows which keys work. Detect stuck keys and ghosting issues. No downloads needed. Priv',h:'/gaming/keyboard-tester/'},
