@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Price Checker — Live US Stock Quotes — Teamz Lab Tools</title>
+  <meta name="description" content="Check live US stock prices, P/E ratio, market cap, 52-week range, and key stats for any NYSE or NASDAQ ticker. Free stock quote tool, no signup.">
+  <meta property="og:title" content="Stock Price Checker — Live US Stock Quotes — Teamz Lab Tools">
+  <meta property="og:description" content="Check live US stock prices, P/E ratio, market cap, 52-week range, and key stats for any NYSE or NASDAQ ticker. Free stock quote tool, no signup.">
+  <meta property="og:url" content="https://tool.teamzlab.com/us/stock-price-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/us.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Stock Price Checker — Live US Stock Quotes — Teamz Lab Tools">
+  <meta name="twitter:description" content="Check live US stock prices, P/E ratio, market cap, 52-week range, and key stats for any NYSE or NASDAQ ticker. Free stock quote tool, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/us/stock-price-checker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* Stock Price Checker — tool-specific styles (no shared class overrides) */
+    .spc-popular-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .spc-popular-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .spc-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .spc-chip {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      transition: border-color 0.15s, color 0.15s;
+      line-height: 1.4;
+    }
+    .spc-chip:hover {
+      border-color: var(--heading);
+      color: var(--heading);
+    }
+    .spc-search-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+    .spc-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-md);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .spc-input:focus {
+      border-color: var(--heading);
+    }
+    /* Result card */
+    .spc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+    .spc-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .spc-company-name {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    .spc-symbol-sector {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .spc-data-badge {
+      font-size: var(--text-sm);
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .spc-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .spc-price-big {
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .spc-change-badge {
+      font-size: var(--text-md);
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--heading);
+      background: var(--surface);
+    }
+    .spc-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .spc-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .spc-stat-label {
+      display: block;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .spc-stat-value {
+      font-size: var(--text-md);
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .spc-description {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      max-height: 80px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+    .spc-description.spc-expanded {
+      max-height: none;
+    }
+    .spc-desc-toggle {
+      background: none;
+      border: none;
+      color: var(--heading);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      padding: 0;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .spc-updated {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      text-align: right;
+    }
+    /* Recent lookups */
+    .spc-recents-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .spc-recents-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .spc-recent-chip {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: var(--text-sm);
+      font-weight: 500;
+    }
+    .spc-recent-chip:hover {
+      border-color: var(--heading);
+      color: var(--heading);
+    }
+    /* Loading state */
+    .spc-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 0;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+    }
+    .spc-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--heading);
+      border-radius: 50%;
+      animation: spc-spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spc-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 600px) {
+      .spc-card {
+        padding: 16px;
+      }
+      .spc-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .spc-price-big {
+        font-size: clamp(1.6rem, 8vw, 2.4rem);
+      }
+      .spc-stat {
+        padding: 8px 10px;
+      }
+      .spc-search-row {
+        flex-direction: column;
+      }
+      .spc-input {
+        width: 100%;
+        min-width: unset;
+      }
+      .spc-search-row .btn-primary {
+        width: 100%;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Are these stock prices real-time?", "acceptedAnswer": {"@type": "Answer", "text": "Data is provided by Alpha Vantage and may be delayed up to 15\\u201320 minutes on the free tier. For real-time prices, use your brokerage app."}}, {"@type": "Question", "name": "Which exchanges are supported?", "acceptedAnswer": {"@type": "Answer", "text": "US stocks listed on NYSE, NASDAQ, and NYSE American (AMEX) are supported. Enter the exact ticker symbol (e.g. AAPL for Apple, TSLA for Tesla)."}}, {"@type": "Question", "name": "What is P/E ratio?", "acceptedAnswer": {"@type": "Answer", "text": "Price-to-Earnings ratio compares a company\\u2019s stock price to its earnings per share. A lower P/E may indicate undervaluation, but context matters \\u2014 compare within the same industry."}}, {"@type": "Question", "name": "What is Beta?", "acceptedAnswer": {"@type": "Answer", "text": "Beta measures a stock\\u2019s volatility relative to the market. Beta > 1 = more volatile than the market. Beta < 1 = less volatile. Beta = 1 = moves with the market."}}, {"@type": "Question", "name": "Why is market cap important?", "acceptedAnswer": {"@type": "Answer", "text": "Market capitalization (share price \\xd7 total shares) shows a company\\u2019s total value. Large-cap ($10B+), Mid-cap ($2\\u201310B), Small-cap (<$2B)."}}, {"@type": "Question", "name": "Is this tool free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, completely free. Data is cached locally for 60 minutes to stay within API limits. No account or signup needed."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Stock Price Checker", "description": "Check live US stock prices, P/E ratio, market cap, 52-week range, and key stats for any NYSE or NASDAQ ticker.", "url": "https://tool.teamzlab.com/us/stock-price-checker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Stock Price Checker</h1>
+      <p class="tool-description">Look up live US stock prices, key financial metrics, and company details for any NYSE or NASDAQ ticker. See current price, daily change, 52-week range, P/E ratio, market cap, and more — all free, no signup required.</p>
+    </section>
+
+    <section class="tool-calculator">
+
+      <!-- Popular stocks quick-pick -->
+      <div class="spc-popular-row">
+        <span class="spc-popular-label">Popular:</span>
+        <div id="spc-popular-chips" class="spc-chips-wrap"></div>
+      </div>
+
+      <!-- Search row -->
+      <div class="spc-search-row">
+        <input
+          type="text"
+          id="stock-symbol"
+          class="spc-input"
+          placeholder="Enter ticker — e.g. AAPL, TSLA, NVDA"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          maxlength="10"
+        >
+        <button class="btn-primary" id="get-stock-btn">Get Quote</button>
+      </div>
+
+      <!-- Loading indicator (hidden by default) -->
+      <div id="spc-loading" style="display:none;">
+        <div class="spc-loading">
+          <div class="spc-spinner"></div>
+          <span id="spc-loading-msg">Fetching data&hellip;</span>
+        </div>
+      </div>
+
+      <!-- Result card (hidden until data loaded) -->
+      <div id="stock-result" style="display:none;"></div>
+
+      <!-- Recent lookups (hidden until there are some) -->
+      <div id="recent-stocks" style="display:none; margin-top:12px;"></div>
+
+      <div class="ad-slot">Ad Space</div>
+    </section>
+
+    <section class="tool-content">
+      <h2>How to Look Up a Stock Price for Free</h2>
+      <p>The Stock Price Checker retrieves live quote data for any US-listed stock directly in your browser. Simply type a ticker symbol — AAPL for Apple, TSLA for Tesla, NVDA for NVIDIA — and click <strong>Get Quote</strong>. You can also tap one of the popular ticker chips above the search box to jump straight to the most-watched stocks.</p>
+      <p>Data is sourced from <strong>Alpha Vantage</strong> (alphavantage.co) and may be delayed up to 15&ndash;20&nbsp;minutes on the free tier. Results are cached locally in your browser for 60&nbsp;minutes, so repeated lookups of the same ticker load instantly without counting against the daily API limit. Each fresh lookup uses two API calls (quote + company overview). The free tier allows approximately 12 full lookups per day before caching takes over.</p>
+      <p>For real-time prices or trading execution, always use your brokerage&rsquo;s platform. This tool is designed for quick reference, research, and education.</p>
+
+      <h2>Understanding Stock Quote Data &mdash; P/E, EPS, Beta Explained</h2>
+      <p>A stock quote contains more than just the current price. Here is what each field means and why it matters to investors:</p>
+      <ul>
+        <li><strong>Price &amp; Change</strong> — The current trading price and the dollar/percentage change from the previous session&rsquo;s close. A positive change means the stock gained value today; negative means it lost value.</li>
+        <li><strong>Day High / Day Low</strong> — The highest and lowest prices the stock traded at during the current (or most recent) trading session. A wide range signals high intraday volatility.</li>
+        <li><strong>52-Week High / Low</strong> — The highest and lowest prices over the past 52 weeks. Stocks trading near their 52-week high are often in an uptrend; near the 52-week low may signal undervaluation or distress.</li>
+        <li><strong>Market Cap</strong> — Share price multiplied by total shares outstanding. Large-cap stocks ($10B+) tend to be more stable; small-cap (&lt;$2B) are higher risk and higher potential reward.</li>
+        <li><strong>P/E Ratio (Price-to-Earnings)</strong> — How much investors are paying per dollar of earnings. A P/E of 20 means investors pay $20 for every $1 of annual profit. High P/E can mean growth expectations are priced in; low P/E can mean undervaluation or slowing growth. Always compare P/E within the same industry.</li>
+        <li><strong>EPS (Earnings Per Share)</strong> — Net income divided by shares outstanding. EPS is the &ldquo;E&rdquo; in P/E. Rising EPS over time is a sign of a growing, profitable company.</li>
+        <li><strong>Dividend Yield</strong> — Annual dividend as a percentage of the current stock price. A 3% yield means you earn $3/year in dividends for every $100 invested. Income-focused investors prioritize high-yield stocks.</li>
+        <li><strong>Beta</strong> — Measures volatility relative to the broader market (S&amp;P 500). Beta &gt; 1 = more volatile. Beta &lt; 1 = less volatile. Beta of 0 = uncorrelated. High-beta stocks are riskier but can deliver bigger gains in bull markets.</li>
+      </ul>
+
+      <h2>US Stock Market &mdash; NYSE and NASDAQ</h2>
+      <p>The United States hosts the two largest stock exchanges in the world by market capitalization. The <strong>New York Stock Exchange (NYSE)</strong>, founded in 1792, lists many of the oldest and largest blue-chip companies including Berkshire Hathaway (BRK.B), JPMorgan Chase (JPM), and Procter &amp; Gamble (PG). The <strong>NASDAQ</strong>, launched in 1971 as the world&rsquo;s first electronic exchange, is home to most major technology companies including Apple (AAPL), Microsoft (MSFT), Alphabet/Google (GOOGL), Amazon (AMZN), and Meta (META).</p>
+      <p>US markets trade Monday through Friday, 9:30&nbsp;AM to 4:00&nbsp;PM Eastern Time, excluding market holidays. Pre-market trading runs 4:00&ndash;9:30&nbsp;AM ET, and after-hours trading continues from 4:00&ndash;8:00&nbsp;PM ET. Prices shown in this tool reflect the most recent available quote, which may be from the previous close if markets are currently closed.</p>
+      <p>The S&amp;P&nbsp;500 index tracks the 500 largest US companies and is widely used as a benchmark. If a stock&rsquo;s Beta is 1.2, it typically moves 20% more than the S&amp;P&nbsp;500 in either direction. Stocks in this tool cover NYSE, NASDAQ, and NYSE American (AMEX) listings.</p>
+
+      <h2>Stock Price Checker vs Full Brokerage Apps</h2>
+      <p>This tool is purpose-built for quick, no-login stock lookups. It is not a replacement for a full brokerage platform. Here is how they compare:</p>
+      <table style="width:100%;border-collapse:collapse;margin:1rem 0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="padding:10px 12px;text-align:left;color:var(--heading);font-size:0.9rem;">Feature</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--heading);font-size:0.9rem;">This Tool</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--heading);font-size:0.9rem;">Brokerage App</th>
+          </tr>
+        </thead>
+        <tbody style="color:var(--text);">
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Sign-up required</td><td style="padding:8px 12px;">No</td><td style="padding:8px 12px;">Yes</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Real-time prices</td><td style="padding:8px 12px;">Delayed 15&ndash;20 min</td><td style="padding:8px 12px;">Real-time</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Key fundamentals</td><td style="padding:8px 12px;">P/E, EPS, Beta, Div, Cap</td><td style="padding:8px 12px;">Full financials</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Charts</td><td style="padding:8px 12px;">No</td><td style="padding:8px 12px;">Yes (interactive)</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Buy / Sell</td><td style="padding:8px 12px;">No</td><td style="padding:8px 12px;">Yes</td></tr>
+          <tr><td style="padding:8px 12px;">Privacy</td><td style="padding:8px 12px;">100% — no tracking</td><td style="padding:8px 12px;">Account-linked</td></tr>
+        </tbody>
+      </table>
+      <p>Use this checker for fast reference when you need a quick number without logging in — before a meeting, during research, or when comparing a handful of tickers quickly. For active trading and portfolio management, use your broker.</p>
+      <p><em>Data provided by <a href="https://www.alphavantage.co/" target="_blank" rel="noopener noreferrer">Alpha Vantage</a> (alphavantage.co). Prices may be delayed up to 15&ndash;20&nbsp;minutes for the free tier. For real-time data, check your broker&rsquo;s platform. Last updated: March 2026.</em></p>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var API_KEY = 'SF0YL7AT1J2FZ2C5';
+    var CACHE_TTL = 60 * 60 * 1000; // 60 minutes in ms
+    var POPULAR = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'JPM', 'ORCL'];
+    var RECENTS_KEY = 'stock_recents';
+    var MAX_RECENTS = 5;
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    var symbolInput   = document.getElementById('stock-symbol');
+    var getBtn        = document.getElementById('get-stock-btn');
+    var resultEl      = document.getElementById('stock-result');
+    var recentEl      = document.getElementById('recent-stocks');
+    var loadingEl     = document.getElementById('spc-loading');
+    var loadingMsg    = document.getElementById('spc-loading-msg');
+    var popularWrap   = document.getElementById('spc-popular-chips');
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function formatPrice(n) {
+      var v = parseFloat(n);
+      if (isNaN(v)) return 'N/A';
+      return '$' + v.toFixed(2);
+    }
+
+    function formatLargeNum(n) {
+      var v = parseFloat(n);
+      if (isNaN(v) || v === 0) return 'N/A';
+      if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+      if (v >= 1e9)  return '$' + (v / 1e9).toFixed(2) + 'B';
+      if (v >= 1e6)  return '$' + (v / 1e6).toFixed(2) + 'M';
+      return '$' + v.toLocaleString();
+    }
+
+    function formatVolume(n) {
+      var v = parseFloat(n);
+      if (isNaN(v) || v === 0) return 'N/A';
+      if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+      if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+      if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+      return v.toString();
+    }
+
+    function formatField(val) {
+      if (!val || val === 'None' || val === '-' || val.trim() === '') return 'N/A';
+      return val;
+    }
+
+    function formatPercent(val) {
+      if (!val || val === 'None') return 'N/A';
+      // API may return "0.0523%" or "5.23%"
+      var s = String(val).replace('%', '');
+      var v = parseFloat(s);
+      if (isNaN(v)) return 'N/A';
+      // dividend yield from overview is a decimal fraction like 0.0052
+      // change percent from quote already includes %
+      return v.toFixed(2) + '%';
+    }
+
+    function formatDividendYield(val) {
+      if (!val || val === 'None' || val === '0') return 'N/A';
+      var v = parseFloat(val);
+      if (isNaN(v) || v === 0) return 'N/A';
+      // Alpha Vantage overview returns decimal: 0.0052 = 0.52%
+      if (v < 1) return (v * 100).toFixed(2) + '%';
+      return v.toFixed(2) + '%';
+    }
+
+    function timeAgoMin(ts) {
+      var diff = Math.floor((Date.now() - ts) / 60000);
+      if (diff < 1) return 'less than 1 min ago';
+      if (diff === 1) return '1 min ago';
+      return diff + ' min ago';
+    }
+
+    function safeText(str) {
+      var d = document.createElement('div');
+      d.appendChild(document.createTextNode(str));
+      return d.innerHTML;
+    }
+
+    // ── Cache helpers ─────────────────────────────────────────────────────────
+    function cacheKey(symbol) {
+      return 'stock_cache_' + symbol.toUpperCase();
+    }
+
+    function readCache(symbol) {
+      try {
+        var raw = localStorage.getItem(cacheKey(symbol));
+        if (!raw) return null;
+        var data = JSON.parse(raw);
+        if (!data || !data.timestamp) return null;
+        if (Date.now() - data.timestamp > CACHE_TTL) return null; // expired
+        return data;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function writeCache(symbol, quote, overview) {
+      try {
+        var payload = {
+          quote: quote,
+          overview: overview,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(cacheKey(symbol), JSON.stringify(payload));
+      } catch (e) { /* quota exceeded — ignore */ }
+    }
+
+    // ── Recent lookups ────────────────────────────────────────────────────────
+    function getRecents() {
+      try {
+        return JSON.parse(localStorage.getItem(RECENTS_KEY)) || [];
+      } catch (e) { return []; }
+    }
+
+    function addRecent(symbol) {
+      var list = getRecents().filter(function (s) { return s !== symbol; });
+      list.unshift(symbol);
+      if (list.length > MAX_RECENTS) list = list.slice(0, MAX_RECENTS);
+      try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+
+    function renderRecents() {
+      var list = getRecents();
+      if (!list.length) {
+        hideEl(recentEl);
+        return;
+      }
+      var html = '<div class="spc-recents-label">Recent lookups:</div><div class="spc-recents-chips">';
+      list.forEach(function (sym) {
+        html += '<button class="spc-recent-chip" data-sym="' + safeText(sym) + '">' + safeText(sym) + '</button>';
+      });
+      html += '</div>';
+      recentEl.innerHTML = html;
+      showEl(recentEl, 'block');
+
+      recentEl.querySelectorAll('.spc-recent-chip').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          symbolInput.value = btn.getAttribute('data-sym');
+          doLookup();
+        });
+      });
+    }
+
+    // ── API fetch ─────────────────────────────────────────────────────────────
+    function fetchJson(url) {
+      return fetch(url).then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      });
+    }
+
+    function isRateLimit(data) {
+      return data && (data['Note'] || data['Information']);
+    }
+
+    // ── Render result ─────────────────────────────────────────────────────────
+    function renderResult(quote, overview, fromCache, cacheTimestamp) {
+      var sym    = formatField(quote['01. symbol']);
+      var price  = formatPrice(quote['05. price']);
+      var open   = formatPrice(quote['02. open']);
+      var high   = formatPrice(quote['03. high']);
+      var low    = formatPrice(quote['04. low']);
+      var prev   = formatPrice(quote['08. previous close']);
+      var vol    = formatVolume(quote['06. volume']);
+      var day    = formatField(quote['07. latest trading day']);
+
+      var changeRaw = parseFloat(quote['09. change'] || '0');
+      var changePct = String(quote['10. change percent'] || '0%').replace('%', '');
+      var changePctNum = parseFloat(changePct);
+      var isPositive = changeRaw >= 0;
+
+      var changeStr = (isPositive ? '&#9650; +' : '&#9660; ') +
+        formatPrice(Math.abs(changeRaw)).replace('$', '$') +
+        ' (' + (isPositive ? '+' : '') + changePctNum.toFixed(2) + '%)';
+
+      var name     = formatField(overview['Name']) !== 'N/A' ? overview['Name'] : sym;
+      var sector   = formatField(overview['Sector']);
+      var industry = formatField(overview['Industry']);
+      var mcap     = formatLargeNum(overview['MarketCapitalization']);
+      var pe       = formatField(overview['PERatio']);
+      var eps      = formatField(overview['EPS']);
+      var w52h     = formatPrice(overview['52WeekHigh']);
+      var w52l     = formatPrice(overview['52WeekLow']);
+      var divYield = formatDividendYield(overview['DividendYield']);
+      var beta     = formatField(overview['Beta']);
+      var desc     = formatField(overview['Description']);
+
+      var badgeText = fromCache
+        ? '&#9203; Cached &bull; ' + timeAgoMin(cacheTimestamp)
+        : '&#128994; Live data';
+
+      var symbolSectorText = sym !== 'N/A' ? sym : '';
+      if (sector !== 'N/A') symbolSectorText += (symbolSectorText ? ' &bull; ' : '') + safeText(sector);
+      if (industry !== 'N/A') symbolSectorText += ' &bull; ' + safeText(industry);
+
+      var descHtml = '';
+      if (desc !== 'N/A') {
+        descHtml = '<div id="spc-desc" class="spc-description">' + safeText(desc) + '</div>' +
+          '<button class="spc-desc-toggle" id="spc-desc-toggle">Read more</button>';
+      }
+
+      var html = '<div class="spc-card">' +
+        '<div class="spc-card-header">' +
+          '<div>' +
+            '<div class="spc-company-name">' + safeText(name) + '</div>' +
+            '<div class="spc-symbol-sector">' + symbolSectorText + '</div>' +
+          '</div>' +
+          '<div class="spc-data-badge">' + badgeText + '</div>' +
+        '</div>' +
+
+        '<div class="spc-price-row">' +
+          '<span class="spc-price-big">' + price + '</span>' +
+          '<span class="spc-change-badge ' + (isPositive ? 'positive' : 'negative') + '">' + changeStr + '</span>' +
+        '</div>' +
+
+        '<div class="spc-stats-grid">' +
+          '<div class="spc-stat"><span class="spc-stat-label">Open</span><span class="spc-stat-value">' + open + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Prev Close</span><span class="spc-stat-value">' + prev + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Day High</span><span class="spc-stat-value">' + high + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Day Low</span><span class="spc-stat-value">' + low + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">52W High</span><span class="spc-stat-value">' + w52h + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">52W Low</span><span class="spc-stat-value">' + w52l + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Volume</span><span class="spc-stat-value">' + vol + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Market Cap</span><span class="spc-stat-value">' + mcap + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">P/E Ratio</span><span class="spc-stat-value">' + pe + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">EPS</span><span class="spc-stat-value">' + eps + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Dividend Yield</span><span class="spc-stat-value">' + divYield + '</span></div>' +
+          '<div class="spc-stat"><span class="spc-stat-label">Beta</span><span class="spc-stat-value">' + beta + '</span></div>' +
+        '</div>' +
+
+        descHtml +
+
+        '<div class="spc-updated">Trading day: ' + safeText(day) + '</div>' +
+      '</div>';
+
+      resultEl.innerHTML = html;
+      showEl(resultEl, 'block');
+
+      // Wire description toggle
+      if (desc !== 'N/A') {
+        var descEl   = document.getElementById('spc-desc');
+        var toggleEl = document.getElementById('spc-desc-toggle');
+        if (descEl && toggleEl) {
+          toggleEl.addEventListener('click', function () {
+            if (descEl.classList.contains('spc-expanded')) {
+              descEl.classList.remove('spc-expanded');
+              toggleEl.textContent = 'Read more';
+            } else {
+              descEl.classList.add('spc-expanded');
+              toggleEl.textContent = 'Show less';
+            }
+          });
+        }
+      }
+    }
+
+    // ── Main lookup ───────────────────────────────────────────────────────────
+    function doLookup() {
+      var symbol = symbolInput.value.trim().toUpperCase();
+      if (!symbol) {
+        if (window.showToast) window.showToast('Please enter a ticker symbol.');
+        return;
+      }
+
+      // Disable button
+      getBtn.disabled = true;
+      getBtn.textContent = 'Loading\u2026';
+      hideEl(loadingEl);
+
+      // Check cache first
+      var cached = readCache(symbol);
+      if (cached) {
+        try {
+          renderResult(cached.quote, cached.overview, true, cached.timestamp);
+          addRecent(symbol);
+          renderRecents();
+        } catch (e) {
+          // cache corrupt — fall through to fetch
+        } finally {
+          getBtn.disabled = false;
+          getBtn.textContent = 'Get Quote';
+        }
+        if (cached) return; // only return if cache was valid (not corrupted)
+      }
+
+      // Show loading
+      loadingMsg.textContent = 'Fetching live data for ' + symbol + '\u2026';
+      showEl(loadingEl, 'block');
+
+      var quoteUrl    = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=' + encodeURIComponent(symbol) + '&apikey=' + API_KEY;
+      var overviewUrl = 'https://www.alphavantage.co/query?function=OVERVIEW&symbol=' + encodeURIComponent(symbol) + '&apikey=' + API_KEY;
+
+      Promise.all([fetchJson(quoteUrl), fetchJson(overviewUrl)])
+        .then(function (results) {
+          var quoteData    = results[0];
+          var overviewData = results[1];
+
+          // Check for rate limit on either response
+          if (isRateLimit(quoteData) || isRateLimit(overviewData)) {
+            var rateLimitMsg = quoteData['Information'] || overviewData['Information']
+              ? 'Daily API limit reached (25 calls). Showing cached data where available.'
+              : 'Rate limit reached. Showing cached data or try again in 1 minute.';
+
+            // Try stale cache on rate limit
+            try {
+              var staleRaw = localStorage.getItem(cacheKey(symbol));
+              if (staleRaw) {
+                var stale = JSON.parse(staleRaw);
+                if (stale && stale.quote && stale.overview) {
+                  if (window.showToast) window.showToast(rateLimitMsg);
+                  renderResult(stale.quote, stale.overview, true, stale.timestamp);
+                  addRecent(symbol);
+                  renderRecents();
+                  return;
+                }
+              }
+            } catch (e) {}
+
+            if (window.showToast) window.showToast(rateLimitMsg);
+            return;
+          }
+
+          var quote    = quoteData['Global Quote'];
+          var overview = overviewData;
+
+          if (!quote || Object.keys(quote).length === 0) {
+            if (window.showToast) window.showToast('Symbol "' + symbol + '" not found. Check the ticker and try again.');
+            return;
+          }
+
+          writeCache(symbol, quote, overview);
+          renderResult(quote, overview, false, Date.now());
+          addRecent(symbol);
+          renderRecents();
+        })
+        .catch(function (err) {
+          // Network error — try stale cache
+          try {
+            var staleRaw = localStorage.getItem(cacheKey(symbol));
+            if (staleRaw) {
+              var stale = JSON.parse(staleRaw);
+              if (stale && stale.quote && stale.overview) {
+                if (window.showToast) window.showToast('Network error. Showing last cached data for ' + symbol + '.');
+                renderResult(stale.quote, stale.overview, true, stale.timestamp);
+                addRecent(symbol);
+                renderRecents();
+                return;
+              }
+            }
+          } catch (e2) {}
+          if (window.showToast) window.showToast('Could not fetch data. Check your connection and try again.');
+        })
+        .finally(function () {
+          getBtn.disabled = false;
+          getBtn.textContent = 'Get Quote';
+          hideEl(loadingEl);
+        });
+    }
+
+    // ── Event wiring ──────────────────────────────────────────────────────────
+    getBtn.addEventListener('click', doLookup);
+
+    symbolInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') doLookup();
+    });
+
+    // Uppercase as user types
+    symbolInput.addEventListener('input', function () {
+      var pos = symbolInput.selectionStart;
+      symbolInput.value = symbolInput.value.toUpperCase();
+      try { symbolInput.setSelectionRange(pos, pos); } catch (e) {}
+    });
+
+    // ── Render popular chips ──────────────────────────────────────────────────
+    POPULAR.forEach(function (sym) {
+      var btn = document.createElement('button');
+      btn.className = 'spc-chip';
+      btn.textContent = sym;
+      btn.setAttribute('type', 'button');
+      btn.addEventListener('click', function () {
+        symbolInput.value = sym;
+        doLookup();
+      });
+      popularWrap.appendChild(btn);
+    });
+
+    // ── Init recents on page load ─────────────────────────────────────────────
+    renderRecents();
+
+    // ── TeamzTools helpers ────────────────────────────────────────────────────
+    if (window.TeamzTools) {
+      TeamzTools.renderBreadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'US Tools', url: '/us/' },
+        { name: 'Stock Price Checker' }
+      ]);
+
+      var faqs = [
+        {
+          q: 'Are these stock prices real-time?',
+          a: 'Data is provided by Alpha Vantage and may be delayed up to 15\u201320 minutes on the free tier. For real-time prices, use your brokerage app.'
+        },
+        {
+          q: 'Which exchanges are supported?',
+          a: 'US stocks listed on NYSE, NASDAQ, and NYSE American (AMEX) are supported. Enter the exact ticker symbol (e.g. AAPL for Apple, TSLA for Tesla).'
+        },
+        {
+          q: 'What is P/E ratio?',
+          a: 'Price-to-Earnings ratio compares a company\u2019s stock price to its earnings per share. A lower P/E may indicate undervaluation, but context matters \u2014 compare within the same industry.'
+        },
+        {
+          q: 'What is Beta?',
+          a: 'Beta measures a stock\u2019s volatility relative to the market. Beta > 1 = more volatile than the market. Beta < 1 = less volatile. Beta = 1 = moves with the market.'
+        },
+        {
+          q: 'Why is market cap important?',
+          a: 'Market capitalization (share price \xd7 total shares) shows a company\u2019s total value. Large-cap ($10B+), Mid-cap ($2\u201310B), Small-cap (<$2B).'
+        },
+        {
+          q: 'Is this tool free?',
+          a: 'Yes, completely free. Data is cached locally for 60 minutes to stay within API limits. No account or signup needed.'
+        }
+      ];
+
+      TeamzTools.renderFAQs(faqs);
+
+      TeamzTools.renderRelatedTools([
+        { slug: 'us/income-tax-calculator', name: 'US Income Tax Calculator', description: 'Calculate federal and state income tax' },
+        { slug: 'crypto/portfolio-tracker', name: 'Crypto Portfolio Tracker', description: 'Track live crypto prices and portfolio value' },
+        { slug: 'crypto/profit-loss-calculator', name: 'Crypto Profit/Loss Calculator', description: 'Calculate profit or loss on any trade' },
+        { slug: 'tools/live-currency-converter', name: 'Live Currency Converter', description: 'Convert between 150+ currencies with live rates' },
+        { slug: 'ae/gold-price-calculator', name: 'UAE Gold Price Calculator', description: 'Live gold price in AED by weight and karat' },
+        { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'Calculate investment growth with compound interest' }
+      ]);
+    }
+
+  }());
+  </script>
+</body>
+</html>
