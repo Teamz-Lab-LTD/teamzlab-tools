@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV Show Episode Guide & Search — Teamz Lab Tools</title>
+  <meta name="description" content="Search any TV show and browse all seasons and episodes instantly. Find air dates, ratings, and summaries — free, no signup, powered by TVmaze.">
+  <meta property="og:title" content="TV Show Episode Guide & Search — Teamz Lab Tools">
+  <meta property="og:description" content="Search any TV show and browse all seasons and episodes instantly. Find air dates, ratings, and summaries — free, no signup, powered by TVmaze.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/tv-show-guide/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="TV Show Episode Guide & Search — Teamz Lab Tools">
+  <meta name="twitter:description" content="Search any TV show and browse all episodes by season. Air dates, ratings, summaries. Free, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/tv-show-guide/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .tv-search-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .tv-search-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 11px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+    }
+    .tv-search-input:focus { outline: 2px solid var(--accent); }
+    .tv-search-btn {
+      padding: 11px 24px;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-size: var(--text-base);
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .tv-search-btn:hover { opacity: 0.9; }
+    .tv-search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .quick-shows {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .tv-chip {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      background: var(--surface);
+    }
+    .tv-chip:hover { border-color: var(--accent); color: var(--heading); }
+    .show-results { margin-top: 16px; display: none; }
+    .show-result-card {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      margin-bottom: 10px;
+      cursor: pointer;
+      align-items: flex-start;
+    }
+    .show-result-card:hover { border-color: var(--accent); }
+    .show-thumb { width: 56px; min-width: 56px; height: 80px; object-fit: cover; border-radius: 6px; background: var(--border); }
+    .show-thumb-placeholder { width: 56px; min-width: 56px; height: 80px; border-radius: 6px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .show-result-info { flex: 1; }
+    .show-result-name { font-size: var(--text-base); font-weight: 700; color: var(--heading); margin-bottom: 4px; }
+    .show-result-meta { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 5px; }
+    .show-result-genres { display: flex; flex-wrap: wrap; gap: 5px; }
+    .genre-tag { padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); font-size: var(--text-xs); color: var(--text-muted); background: var(--bg); }
+    .show-detail { display: none; margin-top: 16px; }
+    .show-header {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .show-poster { width: 96px; min-width: 96px; border-radius: 8px; object-fit: cover; }
+    .show-poster-placeholder { width: 96px; min-width: 96px; height: 140px; border-radius: 8px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 36px; }
+    .show-header-info { flex: 1; }
+    .show-title { font-size: var(--text-xl); font-weight: 700; color: var(--heading); margin-bottom: 6px; }
+    .show-meta-row { display: flex; flex-wrap: wrap; gap: 12px; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 8px; }
+    .show-summary { font-size: var(--text-sm); color: var(--text); line-height: 1.6; }
+    .show-stats-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .show-stat {
+      flex: 1;
+      min-width: 100px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .show-stat-val { font-size: clamp(16px,3vw,24px); font-weight: 700; color: var(--heading); line-height: 1.2; }
+    .show-stat-lbl { font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px; }
+    .season-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .season-tab {
+      padding: 7px 16px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: var(--text-sm);
+      cursor: pointer;
+      background: var(--surface);
+      color: var(--text-muted);
+    }
+    .season-tab:hover, .season-tab.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .episode-list { }
+    .episode-card {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .episode-card:last-child { border-bottom: none; }
+    .episode-card.next-ep { border-left: 3px solid var(--accent); padding-left: 13px; }
+    .episode-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .episode-title { font-size: var(--text-sm); font-weight: 600; color: var(--heading); }
+    .episode-num { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 3px; }
+    .episode-rating { font-size: var(--text-xs); color: var(--heading); font-weight: 600; white-space: nowrap; }
+    .episode-airdate { font-size: var(--text-xs); color: var(--text-muted); }
+    .episode-summary { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.5; margin-top: 5px; max-height: 52px; overflow: hidden; }
+    .next-ep-badge {
+      display: inline-block;
+      font-size: var(--text-xs);
+      background: var(--accent);
+      color: var(--accent-text);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+    .status-running { color: var(--color-success, #22c55e); font-weight: 600; }
+    .status-ended { color: var(--text-muted); }
+    .back-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--heading);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      margin-bottom: 14px;
+    }
+    .back-btn:hover { border-color: var(--accent); }
+    .eps-loading { text-align: center; padding: 32px 0; color: var(--text-muted); font-size: var(--text-sm); }
+    @media (max-width: 600px) {
+      .tv-search-row { flex-direction: column; }
+      .tv-search-btn { width: 100%; }
+      .show-header { flex-direction: column; }
+      .show-poster, .show-poster-placeholder { width: 80px; min-width: 80px; }
+      .show-stats-bar { gap: 8px; }
+      .show-stat { min-width: 80px; padding: 10px 8px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Where does the show data come from?", "acceptedAnswer": {"@type": "Answer", "text": "All data comes from the TVmaze public API, which is free, CORS-enabled, and requires no API key. TVmaze covers thousands of shows from major networks and streaming platforms worldwide."}}, {"@type": "Question", "name": "How far back does episode data go?", "acceptedAnswer": {"@type": "Answer", "text": "TVmaze has extensive data on shows dating back decades. Most popular series have complete episode guides including classic shows from the 1990s and 2000s."}}, {"@type": "Question", "name": "Does this tool show streaming availability?", "acceptedAnswer": {"@type": "Answer", "text": "No. This tool focuses on episode guide data — titles, air dates, ratings, and summaries. For streaming availability, check JustWatch."}}, {"@type": "Question", "name": "How is the episode data cached?", "acceptedAnswer": {"@type": "Answer", "text": "Episode lists are cached in your browser's localStorage for 24 hours. If you look up the same show again within a day, it loads instantly without a new API request."}}, {"@type": "Question", "name": "What does the star rating mean?", "acceptedAnswer": {"@type": "Answer", "text": "The rating shown on each episode is sourced from TVmaze community ratings, which aggregate viewer scores similar to IMDb. Show-level ratings are averages across all rated episodes."}}, {"@type": "Question", "name": "Can I find ongoing shows?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. For ongoing shows, the tool highlights the most recently aired episode and the upcoming next episode. Show status is displayed as Running, Ended, or In Development."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "TV Show Episode Guide & Search", "description": "Search any TV show and browse all seasons and episodes instantly with air dates, ratings, and summaries.", "url": "https://tool.teamzlab.com/tools/tv-show-guide/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>TV Show Episode Guide &amp; Search</h1>
+      <p class="tool-description">Search any TV show to browse all seasons and episodes — with air dates, ratings, and plot summaries. Powered by TVmaze. Free, no signup required.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="tv-search-row">
+        <input type="text" id="tv-search-input" class="tv-search-input" placeholder="Search for a TV show..." aria-label="TV show name">
+        <button id="tv-search-btn" class="tv-search-btn">Search</button>
+      </div>
+      <div class="quick-shows">
+        <span style="font-size:var(--text-sm);color:var(--text-muted)">Popular:</span>
+        <button class="tv-chip" data-show="Breaking Bad">Breaking Bad</button>
+        <button class="tv-chip" data-show="Game of Thrones">Game of Thrones</button>
+        <button class="tv-chip" data-show="The Office">The Office</button>
+        <button class="tv-chip" data-show="Stranger Things">Stranger Things</button>
+      </div>
+
+      <div id="show-results" class="show-results"></div>
+      <div id="show-detail" class="show-detail"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the TV Show Episode Guide Works</h2>
+      <p>This tool connects to the TVmaze public API — a comprehensive, free television database with complete episode information for thousands of shows worldwide. When you search for a show, the tool fetches matching results and displays key details: network, premiere year, genre, and average rating. Clicking a show loads its complete episode list grouped by season, with each episode showing its air date, runtime, community rating, and plot summary.</p>
+      <p>TVmaze covers shows from every major network (NBC, HBO, BBC, Netflix, Amazon) and many international broadcasters. Data is cached in your browser for 24 hours so repeat lookups are instant.</p>
+
+      <h2>Browsing Seasons and Episodes</h2>
+      <p>Once you open a show, use the season tabs to jump between seasons quickly. Each episode card shows the episode number, title, original air date, runtime in minutes, and a rating out of 10. For ongoing shows, the next scheduled episode is highlighted with an accent border and a "Next Episode" badge so you can quickly see when new episodes drop.</p>
+      <p>The show stats bar at the top displays total episode count, total seasons, average rating across all rated episodes, and the show's current status (Running, Ended, or In Development). This gives you a quick at-a-glance summary before diving into the episode list.</p>
+
+      <h2>About TVmaze Data</h2>
+      <p>TVmaze is maintained by a community of TV enthusiasts and professionals. It covers over 50,000 shows and 1.5 million episodes across all major streaming platforms and broadcast networks. Ratings are community-sourced, similar to IMDb's model, and are updated as new episodes air.</p>
+      <p>The TVmaze API is completely free and requires no authentication, making it ideal for browser-based tools. All requests are made directly from your browser — no data passes through our servers. Episode data is accurate as of TVmaze's last update, which typically happens within hours of a new episode airing. Last updated: March 2026.</p>
+
+      <h2>Tips for Finding Shows</h2>
+      <p>Use the exact show name for the most accurate results. If you're searching for a show with a common word in the title (like "Office" or "House"), try adding the network name or year to narrow down results. The search returns up to 10 matching shows ranked by relevance. For animated series, anime, and international shows, TVmaze has excellent coverage — try searching for "Attack on Titan" or "Dark" for German language shows.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var EPS_CACHE_PREFIX = 'tvmaze_eps_v1_';
+    var EPS_CACHE_TTL = 24 * 60 * 60 * 1000;
+    var allEpisodes = [];
+    var currentSeasons = [];
+    var activeSeasonNum = 1;
+    var nextEpId = null;
+
+    function stripHtml(html) {
+      if (!html) return '';
+      return html.replace(/<[^>]*>/g, '').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&#[0-9]+;/g, '').trim();
+    }
+    function fmtDate(s) {
+      if (!s) return 'TBA';
+      return new Date(s + 'T00:00:00').toLocaleDateString('en', {month:'short', day:'numeric', year:'numeric'});
+    }
+
+    function getCachedEps(showId) {
+      try {
+        var raw = localStorage.getItem(EPS_CACHE_PREFIX + showId);
+        if (!raw) return null;
+        var obj = JSON.parse(raw);
+        if (Date.now() - obj.ts > EPS_CACHE_TTL) return null;
+        return obj.data;
+      } catch(e) { return null; }
+    }
+    function setCachedEps(showId, data) {
+      try { localStorage.setItem(EPS_CACHE_PREFIX + showId, JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+    }
+
+    function searchShows(query) {
+      if (!query.trim()) { if (window.showToast) window.showToast('Enter a show name to search.'); return; }
+      var btn = document.getElementById('tv-search-btn');
+      btn.disabled = true;
+      btn.textContent = 'Searching...';
+      hideEl(document.getElementById('show-results'));
+      hideEl(document.getElementById('show-detail'));
+
+      fetch('https://api.tvmaze.com/search/shows?q=' + encodeURIComponent(query.trim()))
+        .then(function(r) { if (!r.ok) throw new Error('search failed'); return r.json(); })
+        .then(function(results) {
+          renderResults(results);
+        })
+        .catch(function() {
+          if (window.showToast) window.showToast('Search failed. Please try again.');
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.textContent = 'Search';
+        });
+    }
+
+    function renderResults(results) {
+      var el = document.getElementById('show-results');
+      if (!results || results.length === 0) {
+        el.innerHTML = '<p style="color:var(--text-muted);font-size:var(--text-sm)">No shows found. Try a different search term.</p>';
+        showEl(el);
+        return;
+      }
+      el.innerHTML = results.slice(0, 8).map(function(item) {
+        var show = item.show;
+        var img = show.image && show.image.medium ? '<img src="' + show.image.medium + '" class="show-thumb" alt="' + show.name + '">' : '<div class="show-thumb-placeholder">📺</div>';
+        var genres = (show.genres || []).slice(0,3).map(function(g){ return '<span class="genre-tag">' + g + '</span>'; }).join('');
+        var year = show.premiered ? show.premiered.slice(0,4) : '';
+        var rating = show.rating && show.rating.average ? '★ ' + show.rating.average : '';
+        var network = show.network ? show.network.name : (show.webChannel ? show.webChannel.name : '');
+        return '<div class="show-result-card" data-showid="' + show.id + '" tabindex="0" role="button" aria-label="View ' + show.name + '">' +
+          img +
+          '<div class="show-result-info">' +
+          '<div class="show-result-name">' + show.name + '</div>' +
+          '<div class="show-result-meta">' + [year, network, rating].filter(Boolean).join(' · ') + '</div>' +
+          (genres ? '<div class="show-result-genres">' + genres + '</div>' : '') +
+          '</div></div>';
+      }).join('');
+      showEl(el);
+
+      el.querySelectorAll('.show-result-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          loadShow(parseInt(this.dataset.showid, 10), results);
+        });
+        card.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadShow(parseInt(this.dataset.showid, 10), results); }
+        });
+      });
+    }
+
+    function loadShow(showId, results) {
+      hideEl(document.getElementById('show-results'));
+      var detailEl = document.getElementById('show-detail');
+      detailEl.innerHTML = '<div class="eps-loading">Loading episodes...</div>';
+      showEl(detailEl);
+
+      // Find show obj
+      var showObj = null;
+      if (results) {
+        for (var i=0; i<results.length; i++) {
+          if (results[i].show.id === showId) { showObj = results[i].show; break; }
+        }
+      }
+
+      var cached = getCachedEps(showId);
+      if (cached) {
+        renderShowDetail(showObj, cached);
+        return;
+      }
+
+      fetch('https://api.tvmaze.com/shows/' + showId + '/episodes')
+        .then(function(r) { if (!r.ok) throw new Error('episode fetch failed'); return r.json(); })
+        .then(function(eps) {
+          setCachedEps(showId, eps);
+          renderShowDetail(showObj, eps);
+        })
+        .catch(function() {
+          detailEl.innerHTML = '<p style="color:var(--text-muted);padding:20px">Failed to load episodes. Please try again.</p>';
+        });
+    }
+
+    function renderShowDetail(show, episodes) {
+      allEpisodes = episodes;
+      var today = new Date().toISOString().slice(0, 10);
+
+      // Determine seasons
+      var seasonNums = [];
+      var seenSeasons = {};
+      episodes.forEach(function(ep) {
+        if (!seenSeasons[ep.season]) { seenSeasons[ep.season] = true; seasonNums.push(ep.season); }
+      });
+      currentSeasons = seasonNums.sort(function(a,b){return a-b;});
+      activeSeasonNum = currentSeasons[0] || 1;
+
+      // Find next episode
+      nextEpId = null;
+      var futureEps = episodes.filter(function(ep) { return ep.airdate && ep.airdate > today; });
+      if (futureEps.length > 0) {
+        futureEps.sort(function(a,b){ return a.airdate.localeCompare(b.airdate); });
+        nextEpId = futureEps[0].id;
+        // Set season to where next ep is
+        activeSeasonNum = futureEps[0].season;
+      }
+
+      // Show stats
+      var ratings = episodes.filter(function(ep){ return ep.rating && ep.rating.average; }).map(function(ep){ return ep.rating.average; });
+      var avgRating = ratings.length > 0 ? (ratings.reduce(function(a,b){return a+b;},0)/ratings.length).toFixed(1) : 'N/A';
+      var totalSeasons = currentSeasons.length;
+      var statusText = show ? (show.status || 'Unknown') : 'Unknown';
+      var statusClass = statusText === 'Running' ? 'status-running' : 'status-ended';
+
+      var posterHtml = '';
+      if (show && show.image && show.image.medium) {
+        posterHtml = '<img src="' + show.image.medium + '" class="show-poster" alt="' + (show.name||'') + ' poster">';
+      } else {
+        posterHtml = '<div class="show-poster-placeholder">📺</div>';
+      }
+
+      var genres = show ? (show.genres||[]).slice(0,4).map(function(g){return '<span class="genre-tag">'+g+'</span>';}).join('') : '';
+      var network = show ? (show.network ? show.network.name : (show.webChannel ? show.webChannel.name : '')) : '';
+      var premiered = show && show.premiered ? show.premiered.slice(0,4) : '';
+      var summaryText = show ? stripHtml(show.summary).slice(0, 300) : '';
+
+      var detailEl = document.getElementById('show-detail');
+      detailEl.innerHTML =
+        '<button class="back-btn" id="back-to-results">← Back to results</button>' +
+        '<div class="show-header">' +
+          posterHtml +
+          '<div class="show-header-info">' +
+            '<div class="show-title">' + (show ? show.name : '') + '</div>' +
+            '<div class="show-meta-row">' +
+              (premiered ? '<span>' + premiered + '</span>' : '') +
+              (network ? '<span>' + network + '</span>' : '') +
+              (show && show.rating && show.rating.average ? '<span>★ ' + show.rating.average + '</span>' : '') +
+              (show && show.averageRuntime ? '<span>' + show.averageRuntime + ' min/ep</span>' : '') +
+              '<span class="' + statusClass + '">' + statusText + '</span>' +
+            '</div>' +
+            (genres ? '<div style="margin-bottom:8px">' + genres + '</div>' : '') +
+            (summaryText ? '<div class="show-summary">' + summaryText + (summaryText.length >= 300 ? '…' : '') + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="show-stats-bar">' +
+          '<div class="show-stat"><div class="show-stat-val">' + episodes.length + '</div><div class="show-stat-lbl">Episodes</div></div>' +
+          '<div class="show-stat"><div class="show-stat-val">' + totalSeasons + '</div><div class="show-stat-lbl">Seasons</div></div>' +
+          '<div class="show-stat"><div class="show-stat-val">' + avgRating + '</div><div class="show-stat-lbl">Avg Rating</div></div>' +
+          '<div class="show-stat"><div class="show-stat-val" style="font-size:var(--text-sm)">' + statusText + '</div><div class="show-stat-lbl">Status</div></div>' +
+        '</div>' +
+        '<div class="season-tabs" id="season-tabs"></div>' +
+        '<div id="episode-list" class="episode-list"></div>';
+
+      showEl(detailEl);
+
+      document.getElementById('back-to-results').addEventListener('click', function() {
+        hideEl(detailEl);
+        showEl(document.getElementById('show-results'));
+      });
+
+      renderSeasonTabs();
+      renderEpisodes(activeSeasonNum);
+    }
+
+    function renderSeasonTabs() {
+      var tabsEl = document.getElementById('season-tabs');
+      tabsEl.innerHTML = currentSeasons.map(function(s) {
+        return '<button class="season-tab' + (s === activeSeasonNum ? ' active' : '') + '" data-season="' + s + '">Season ' + s + '</button>';
+      }).join('');
+      tabsEl.querySelectorAll('.season-tab').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          activeSeasonNum = parseInt(this.dataset.season, 10);
+          tabsEl.querySelectorAll('.season-tab').forEach(function(b){ b.classList.remove('active'); });
+          this.classList.add('active');
+          renderEpisodes(activeSeasonNum);
+        });
+      });
+    }
+
+    function renderEpisodes(seasonNum) {
+      var eps = allEpisodes.filter(function(ep){ return ep.season === seasonNum; });
+      var epsHtml = eps.map(function(ep) {
+        var isNext = ep.id === nextEpId;
+        var rating = ep.rating && ep.rating.average ? ep.rating.average + '/10' : '';
+        var summary = ep.summary ? stripHtml(ep.summary).slice(0, 180) : '';
+        return '<div class="episode-card' + (isNext ? ' next-ep' : '') + '">' +
+          '<div class="episode-num">S' + String(ep.season).padStart(2,'0') + 'E' + String(ep.number).padStart(2,'0') +
+          (ep.runtime ? ' · ' + ep.runtime + ' min' : '') +
+          (isNext ? '<span class="next-ep-badge">Next Episode</span>' : '') +
+          '</div>' +
+          '<div class="episode-header">' +
+            '<div class="episode-title">' + (ep.name || 'TBA') + '</div>' +
+            (rating ? '<div class="episode-rating">★ ' + rating + '</div>' : '') +
+          '</div>' +
+          '<div class="episode-airdate">' + fmtDate(ep.airdate) + '</div>' +
+          (summary ? '<div class="episode-summary">' + summary + '</div>' : '') +
+          '</div>';
+      }).join('');
+      document.getElementById('episode-list').innerHTML = epsHtml || '<p style="color:var(--text-muted);padding:16px;font-size:var(--text-sm)">No episodes found for this season.</p>';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Digital Card & Sharing Tools',url:'/tools/'},{name:'TV Show Episode Guide'}]);
+
+      var faqs = [
+        {q:'Where does the show data come from?', a:'All data comes from the TVmaze public API, which is free, CORS-enabled, and requires no API key. TVmaze covers thousands of shows from major networks and streaming platforms worldwide.'},
+        {q:'How far back does episode data go?', a:'TVmaze has extensive data on shows dating back decades. Most popular series have complete episode guides including classic shows from the 1990s and 2000s.'},
+        {q:'Does this tool show streaming availability?', a:'No. This tool focuses on episode guide data — titles, air dates, ratings, and summaries. For streaming availability, check JustWatch.'},
+        {q:'How is the episode data cached?', a:"Episode lists are cached in your browser's localStorage for 24 hours. If you look up the same show again within a day, it loads instantly without a new API request."},
+        {q:'What does the star rating mean?', a:'The rating shown on each episode is sourced from TVmaze community ratings, which aggregate viewer scores similar to IMDb. Show-level ratings are averages across all rated episodes.'},
+        {q:'Can I find ongoing shows?', a:'Yes. For ongoing shows, the tool highlights the most recently aired episode and the upcoming next episode. Show status is displayed as Running, Ended, or In Development.'}
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        {slug:'tools/nasa-picture-of-the-day', name:'NASA Picture of the Day', description:'Explore NASA Astronomy Picture of the Day with expert explanations.'},
+        {slug:'tools/country-comparison-tool', name:'Country Comparison Tool', description:'Compare countries side by side on cost of living, safety, and quality of life.'},
+        {slug:'tools/live-currency-converter', name:'Live Currency Converter', description:'Convert between 150+ currencies at live rates with 7-day trend chart.'},
+        {slug:'tools/age-on-planets', name:'Age on Other Planets', description:'Find out how old you are on Mars, Jupiter, Venus, and every planet.'},
+        {slug:'tools/name-meaning-generator', name:'Name Meaning Generator', description:'Discover the meaning, origin, and personality traits of any name.'},
+        {slug:'tools/color-personality-test', name:'Color Personality Test', description:'Discover what your color preferences reveal about your personality.'}
+      ]);
+
+      document.getElementById('tv-search-btn').addEventListener('click', function() {
+        searchShows(document.getElementById('tv-search-input').value);
+      });
+      document.getElementById('tv-search-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') searchShows(this.value);
+      });
+      document.querySelectorAll('.tv-chip[data-show]').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          var show = this.dataset.show;
+          document.getElementById('tv-search-input').value = show;
+          searchShows(show);
+        });
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

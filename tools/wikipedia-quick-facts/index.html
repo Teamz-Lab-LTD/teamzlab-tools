@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wikipedia Quick Facts Search — Teamz Lab Tools</title>
+  <meta name="description" content="Search Wikipedia and get instant article summaries, key facts, and images — no ads, no clutter. Fast, free, private Wikipedia reader tool.">
+  <meta property="og:title" content="Wikipedia Quick Facts Search — Teamz Lab Tools">
+  <meta property="og:description" content="Search Wikipedia and get instant article summaries, key facts, and images — no ads, no clutter. Fast, free, private Wikipedia reader tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/wikipedia-quick-facts/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Wikipedia Quick Facts Search — Teamz Lab Tools">
+  <meta name="twitter:description" content="Search Wikipedia and get instant article summaries, key facts, and images — no ads, no clutter. Free, private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/wikipedia-quick-facts/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .wq-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .wq-search-wrap {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      gap: 8px;
+    }
+    .wq-search-wrap input {
+      flex: 1;
+      padding: 11px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .wq-search-wrap input:focus {
+      outline: 2px solid var(--accent);
+      border-color: var(--accent);
+    }
+    .wq-btn {
+      padding: 11px 18px;
+      background: var(--accent);
+      color: var(--accent-text);
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .wq-btn:hover { opacity: 0.9; }
+    .wq-btn-secondary {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+    }
+    .wq-lang-switcher {
+      display: flex;
+      gap: 4px;
+    }
+    .wq-lang-btn {
+      padding: 7px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .wq-lang-btn.active {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+    }
+    .wq-lang-btn:hover:not(.active) { color: var(--heading); border-color: var(--heading); }
+    .wq-results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .wq-result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+      display: flex;
+      flex-direction: column;
+    }
+    .wq-result-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .wq-card-thumb {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+    .wq-card-body { padding: 14px; flex: 1; }
+    .wq-card-title { font-weight: 700; color: var(--heading); margin-bottom: 6px; font-size: 0.95rem; }
+    .wq-card-extract { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
+    .wq-detail {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      margin-top: 16px;
+    }
+    .wq-detail-inner { display: flex; gap: 22px; align-items: flex-start; }
+    .wq-detail-thumb {
+      width: 200px;
+      min-width: 200px;
+      border-radius: 8px;
+    }
+    .wq-detail-content { flex: 1; }
+    .wq-detail-title { font-size: 1.5rem; font-weight: 800; color: var(--heading); margin-bottom: 8px; }
+    .wq-detail-extract { color: var(--text); line-height: 1.7; margin-bottom: 16px; }
+    .wq-detail-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .wq-detail-link {
+      padding: 8px 18px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .wq-detail-link-primary { background: var(--accent); color: var(--accent-text); }
+    .wq-detail-link-secondary { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .wq-back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+      padding: 0;
+    }
+    .wq-back-btn:hover { color: var(--heading); }
+    .wq-today-section { margin-bottom: 20px; }
+    .wq-today-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .wq-today-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .wq-today-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .wq-today-card:hover { border-color: var(--accent); }
+    .wq-today-card-title { font-weight: 700; font-size: 0.88rem; color: var(--heading); margin-bottom: 4px; }
+    .wq-today-card-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+    .wq-loading { text-align: center; padding: 30px; color: var(--text-muted); }
+    .wq-empty { text-align: center; padding: 30px; color: var(--text-muted); }
+    @media (max-width: 600px) {
+      .wq-controls { flex-direction: column; align-items: stretch; }
+      .wq-search-wrap { flex-direction: column; }
+      .wq-btn { width: 100%; }
+      .wq-lang-switcher { flex-wrap: wrap; }
+      .wq-results-grid { grid-template-columns: 1fr; }
+      .wq-today-grid { grid-template-columns: 1fr; }
+      .wq-detail-inner { flex-direction: column; }
+      .wq-detail-thumb { width: 100%; min-width: unset; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Wikipedia Quick Facts Search", "description": "Search Wikipedia and get instant article summaries, key facts, and images — no ads, no clutter.", "url": "https://tool.teamzlab.com/tools/wikipedia-quick-facts/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Wikipedia Quick Facts Search</h1>
+      <p class="tool-description">Search Wikipedia and get instant summaries, key facts, and images — with no ads, popups, or donation banners. Switch between 5 languages. Fast, free, and private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Today in Wikipedia -->
+      <div class="wq-today-section" id="wq-today-section" style="display:none">
+        <div class="wq-today-label">Today in Wikipedia</div>
+        <div class="wq-today-grid" id="wq-today-grid"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="wq-controls">
+        <div class="wq-search-wrap">
+          <input type="text" id="wq-search-input" placeholder="Search Wikipedia (e.g. Black holes, Roman Empire)..." autocomplete="off">
+          <button class="wq-btn" id="wq-search-btn">Search</button>
+          <button class="wq-btn wq-btn-secondary" id="wq-surprise-btn">Surprise Me</button>
+        </div>
+        <div class="wq-lang-switcher" id="wq-lang-switcher">
+          <button class="wq-lang-btn active" data-lang="en">EN</button>
+          <button class="wq-lang-btn" data-lang="es">ES</button>
+          <button class="wq-lang-btn" data-lang="fr">FR</button>
+          <button class="wq-lang-btn" data-lang="de">DE</button>
+          <button class="wq-lang-btn" data-lang="ar">AR</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="wq-results"></div>
+
+      <!-- Detail view -->
+      <div id="wq-detail" class="wq-detail">
+        <button class="wq-back-btn" id="wq-back-btn">&#8592; Back to results</button>
+        <div id="wq-detail-content"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Wikipedia Quick Facts Search Works</h2>
+      <p>This tool uses the <strong>Wikipedia REST API</strong> to fetch article summaries directly in your browser. When you type a search query, it calls Wikipedia's search endpoint which returns up to 8 matching articles with their titles and extracts. Click any result to load the full summary view, which includes the article's opening paragraph (typically 200-400 words), a thumbnail image if available, and a direct link to read the complete article on Wikipedia. The API is free, requires no key, and supports CORS so it works directly in the browser without any backend proxy.</p>
+      <p>Results are cached in your browser's localStorage for 24 hours. This means if you search for "Albert Einstein" today and search again within 24 hours, the result loads instantly from cache without another API call. The cache stores only article summary data and is limited to your own device — nothing is sent to Teamz Lab servers. All API queries go directly from your browser to Wikipedia's servers.</p>
+
+      <h2>Multi-Language Wikipedia Support</h2>
+      <p>Wikipedia exists in over 300 languages, each with its own subdomain. This tool supports 5 of the most widely spoken languages: <strong>English</strong> (en.wikipedia.org, 6.7M articles), <strong>Spanish</strong> (es.wikipedia.org, 1.8M articles), <strong>French</strong> (fr.wikipedia.org, 2.5M articles), <strong>German</strong> (de.wikipedia.org, 2.8M articles), and <strong>Arabic</strong> (ar.wikipedia.org, 1.2M articles). Switch languages using the buttons above the search box. Searching in a different language queries that language's Wikipedia, so the same topic may have different content depth depending on the language edition.</p>
+
+      <h2>Today in Wikipedia and Surprise Me</h2>
+      <p>When you first load the page, the tool fetches today's featured Wikipedia content using the Wikipedia featured feed API, which returns articles that were highlighted on this calendar date in past years. Three featured articles are shown as quick-tap cards at the top. The "Surprise Me" button randomly selects one of 12 pre-selected interesting topics — including black holes, the Roman Empire, DNA, climate change, artificial intelligence, and Leonardo da Vinci — and fetches its Wikipedia summary instantly. This is a great way to learn something new without deciding what to search for. Last updated: March 2026, using the Wikipedia REST API v1.</p>
+
+      <h2>Privacy and Wikipedia's Open Knowledge Mission</h2>
+      <p>Wikipedia is operated by the Wikimedia Foundation, a non-profit organization dedicated to free knowledge. Its content is freely licensed under Creative Commons Attribution-ShareAlike, meaning anyone can reuse it with attribution. This tool respects that mission by providing a clean, ad-free reading experience while always linking back to the full article. Your searches are not tracked by Teamz Lab. Wikipedia's own privacy policy applies to the API queries your browser makes directly to their servers.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    TeamzTools.renderBreadcrumbs([
+      {name:'Home', url:'/'},
+      {name:'Tools', url:'/tools/'},
+      {name:'Wikipedia Quick Facts Search'}
+    ]);
+
+    TeamzTools.renderFAQs([
+      {q:'Is this Wikipedia reader free?', a:'Yes, completely free. It queries the Wikipedia REST API which is publicly available with no API key and no usage limits for normal personal use.'},
+      {q:'How is this different from Wikipedia itself?', a:'This tool shows article summaries without Wikipedia\'s ads, popups, and donation banners. It gives you the key facts quickly in a clean interface. For the full article, click \'Read full article\' to open Wikipedia directly.'},
+      {q:'What languages are supported?', a:'You can switch between English (EN), Spanish (ES), French (FR), German (DE), and Arabic (AR) using the language switcher. The tool queries the corresponding Wikipedia subdomain (e.g., fr.wikipedia.org for French).'},
+      {q:'What is the Surprise Me button?', a:'Surprise Me picks a random interesting topic from a built-in list including black holes, the Roman Empire, DNA, and more, then fetches its Wikipedia summary for instant discovery.'},
+      {q:'What is Today in Wikipedia?', a:'On load, the tool shows 3 featured articles from today\'s date in Wikipedia\'s featured content feed. This shows historically or culturally significant topics tied to the current calendar date.'},
+      {q:'Are search results cached?', a:'Search results are cached in your browser\'s localStorage for 24 hours to speed up repeated searches. The cache stores the article summary data locally on your device only.'},
+      {q:'Is my search history private?', a:'Yes. The search queries go to the Wikipedia API directly from your browser. Your queries are not tracked by Teamz Lab. The cache and any local data stay only on your device.'}
+    ]);
+
+    TeamzTools.renderRelatedTools([
+      {slug:'tools/book-search', name:'Book Search & ISBN Lookup', description:'Search millions of books by title, author, or ISBN with cover images.'},
+      {slug:'text/word-definition-lookup', name:'Word Definition Lookup', description:'Look up any English word — definitions, phonetics, synonyms, and audio.'},
+      {slug:'tools/ai-text-summarizer', name:'AI Text Summarizer', description:'Summarize long articles and documents into key points with AI.'},
+      {slug:'text/readability-checker', name:'Readability Checker', description:'Check Flesch Reading Ease and grade level of any text.'},
+      {slug:'text/citation-formatter', name:'Citation Formatter', description:'Format citations in APA, MLA, and Chicago styles instantly.'},
+      {slug:'text/word-counter', name:'Word Counter', description:'Count words, characters, sentences, and estimate reading time.'}
+    ]);
+
+    // ---- State ----
+    var currentLang = 'en';
+    var CACHE_KEY = 'wq-cache';
+    var detailEl = document.getElementById('wq-detail');
+    var resultsEl = document.getElementById('wq-results');
+    var searchInput = document.getElementById('wq-search-input');
+
+    var SURPRISE_TOPICS = [
+      'Black hole','Roman Empire','The Internet','DNA','The Moon','Albert Einstein',
+      'Climate change','Artificial intelligence','Great Wall of China',
+      'Quantum mechanics','Leonardo da Vinci','Amazon rainforest'
+    ];
+
+    // ---- Cache helpers ----
+    function getCached(key) {
+      try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        var data = raw ? JSON.parse(raw) : {};
+        var entry = data[key];
+        if (entry && (Date.now() - entry.ts) < 86400000) return entry.val;
+        return null;
+      } catch(e){ return null; }
+    }
+    function setCache(key, val) {
+      try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        var data = raw ? JSON.parse(raw) : {};
+        // Keep cache small (max 50 entries)
+        var keys = Object.keys(data);
+        if (keys.length > 50) { delete data[keys[0]]; }
+        data[key] = {ts: Date.now(), val: val};
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      } catch(e){}
+    }
+
+    // ---- Language switcher ----
+    document.getElementById('wq-lang-switcher').querySelectorAll('.wq-lang-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        currentLang = btn.getAttribute('data-lang');
+        document.querySelectorAll('.wq-lang-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+      });
+    });
+
+    // ---- Search ----
+    document.getElementById('wq-search-btn').addEventListener('click', function() {
+      var q = searchInput.value.trim();
+      if (q) doSearch(q);
+    });
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { var q = searchInput.value.trim(); if (q) doSearch(q); }
+    });
+
+    // Surprise Me
+    document.getElementById('wq-surprise-btn').addEventListener('click', function() {
+      var topic = SURPRISE_TOPICS[Math.floor(Math.random() * SURPRISE_TOPICS.length)];
+      searchInput.value = topic;
+      doSearch(topic);
+    });
+
+    // Back button
+    document.getElementById('wq-back-btn').addEventListener('click', function() {
+      hideEl(detailEl);
+      showEl(resultsEl, 'block');
+    });
+
+    function escHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function doSearch(query) {
+      hideEl(detailEl);
+      showEl(resultsEl, 'block');
+      resultsEl.innerHTML = '<div class="wq-loading">Searching Wikipedia for <strong>' + escHtml(query) + '</strong>...</div>';
+
+      var cacheKey = currentLang + ':' + query.toLowerCase();
+      var cached = getCached(cacheKey);
+      if (cached) { renderSearchResults(cached, query); return; }
+
+      var url = 'https://' + currentLang + '.wikipedia.org/w/api.php?action=query&list=search&srsearch=' + encodeURIComponent(query) + '&format=json&origin=*&srlimit=8';
+      fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          var results = (data.query && data.query.search) ? data.query.search : [];
+          setCache(cacheKey, results);
+          renderSearchResults(results, query);
+        })
+        .catch(function() {
+          resultsEl.innerHTML = '<div class="wq-empty">Search failed. Please check your connection and try again.</div>';
+        });
+    }
+
+    function renderSearchResults(results, query) {
+      if (!results.length) {
+        resultsEl.innerHTML = '<div class="wq-empty">No Wikipedia articles found for "' + escHtml(query) + '". Try a different search term.</div>';
+        return;
+      }
+      var html = '<div class="wq-results-grid">';
+      results.forEach(function(item) {
+        var extract = item.snippet ? item.snippet.replace(/<[^>]+>/g,'').substring(0,180) + '…' : '';
+        html += '<div class="wq-result-card" data-title="' + escHtml(item.title) + '">';
+        html += '<div class="wq-card-body">';
+        html += '<div class="wq-card-title">' + escHtml(item.title) + '</div>';
+        html += '<div class="wq-card-extract">' + escHtml(extract) + '</div>';
+        html += '</div></div>';
+      });
+      html += '</div>';
+      resultsEl.innerHTML = html;
+
+      resultsEl.querySelectorAll('.wq-result-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var title = card.getAttribute('data-title');
+          loadArticleSummary(title);
+        });
+      });
+    }
+
+    function loadArticleSummary(title) {
+      hideEl(resultsEl);
+      showEl(detailEl, 'block');
+      document.getElementById('wq-detail-content').innerHTML = '<div class="wq-loading">Loading <strong>' + escHtml(title) + '</strong>...</div>';
+      detailEl.scrollIntoView({behavior:'smooth', block:'start'});
+
+      var encodedTitle = encodeURIComponent(title.replace(/ /g, '_'));
+      var url = 'https://' + currentLang + '.wikipedia.org/api/rest_v1/page/summary/' + encodedTitle;
+      fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data) { renderDetail(data); })
+        .catch(function() {
+          document.getElementById('wq-detail-content').innerHTML = '<div class="wq-empty">Failed to load article. Try again later.</div>';
+        });
+    }
+
+    function renderDetail(data) {
+      var title = data.title || '';
+      var extract = data.extract || '';
+      var thumb = data.thumbnail ? data.thumbnail.source : '';
+      var wikiUrl = data.content_urls ? (data.content_urls.desktop ? data.content_urls.desktop.page : '') : '';
+
+      var html = '<div class="wq-detail-inner">';
+      if (thumb) html += '<img class="wq-detail-thumb" src="' + escHtml(thumb) + '" alt="' + escHtml(title) + '" loading="lazy">';
+      html += '<div class="wq-detail-content">';
+      html += '<div class="wq-detail-title">' + escHtml(title) + '</div>';
+      html += '<div class="wq-detail-extract">' + escHtml(extract) + '</div>';
+      html += '<div class="wq-detail-links">';
+      if (wikiUrl) html += '<a class="wq-detail-link wq-detail-link-primary" href="' + escHtml(wikiUrl) + '" target="_blank" rel="noopener">Read full article on Wikipedia</a>';
+      html += '</div></div></div>';
+
+      document.getElementById('wq-detail-content').innerHTML = html;
+    }
+
+    // ---- Today in Wikipedia ----
+    function loadTodayFeatured() {
+      var now = new Date();
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      var url = 'https://en.wikipedia.org/api/rest_v1/feed/featured/' + y + '/' + m + '/' + d;
+
+      fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          var articles = [];
+          if (data.tfa) articles.push(data.tfa);
+          if (data.mostread && data.mostread.articles) {
+            data.mostread.articles.slice(0, 2).forEach(function(a){ articles.push(a); });
+          }
+          if (articles.length === 0 && data.onthisday) {
+            data.onthisday.slice(0, 3).forEach(function(e){
+              if (e.pages && e.pages[0]) articles.push(e.pages[0]);
+            });
+          }
+          articles = articles.slice(0, 3);
+          if (!articles.length) return;
+
+          var grid = document.getElementById('wq-today-grid');
+          grid.innerHTML = '';
+          articles.forEach(function(art) {
+            var t = art.titles ? (art.titles.normalized || art.titles.canonical || art.title) : art.title;
+            var desc = art.description || (art.extract ? art.extract.substring(0, 100) + '…' : '');
+            var card = document.createElement('div');
+            card.className = 'wq-today-card';
+            card.innerHTML = '<div class="wq-today-card-title">' + escHtml(t) + '</div><div class="wq-today-card-desc">' + escHtml(desc) + '</div>';
+            card.addEventListener('click', function(){ loadArticleSummary(t); });
+            grid.appendChild(card);
+          });
+          showEl(document.getElementById('wq-today-section'), 'block');
+        })
+        .catch(function(){}); // silently fail — today section is optional
+    }
+
+    loadTodayFeatured();
+
+  });
+  </script>
+</body>
+</html>

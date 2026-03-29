@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipe Finder by Ingredient — Teamz Lab Tools</title>
+  <meta name="description" content="Find recipes using ingredients you already have. Enter what's in your fridge and discover free recipes instantly — no signup, no ads, private.">
+  <meta property="og:title" content="Recipe Finder by Ingredient — Teamz Lab Tools">
+  <meta property="og:description" content="Find recipes using ingredients you already have. Enter what's in your fridge and discover free recipes instantly — no signup required.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/recipe-finder/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Recipe Finder by Ingredient — Teamz Lab Tools">
+  <meta name="twitter:description" content="Find recipes using ingredients you already have. Free, private, instant — no signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/recipe-finder/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .rf-mode-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .rf-tab { padding: 9px 20px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: var(--text-sm); font-weight: 600; transition: background 0.2s, color 0.2s; }
+    .rf-tab.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .rf-panel { display: none; }
+    .rf-panel.active { display: block; }
+    .rf-input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .rf-input-row input { flex: 1; min-width: 120px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-sm); }
+    .rf-input-row input:focus { outline: none; border-color: var(--accent); }
+    .rf-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .rf-cat-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .rf-pill { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: var(--text-xs); font-weight: 600; transition: background 0.2s; }
+    .rf-pill.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .rf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; }
+    .rf-card { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; position: relative; }
+    .rf-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+    .rf-card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+    .rf-card-body { padding: 12px; }
+    .rf-card-name { font-weight: 700; font-size: var(--text-sm); color: var(--heading); margin-bottom: 4px; line-height: 1.3; }
+    .rf-card-meta { font-size: var(--text-xs); color: var(--text-muted); }
+    .rf-fav-btn { position: absolute; top: 8px; right: 8px; background: var(--bg); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: transform 0.2s; }
+    .rf-fav-btn:hover { transform: scale(1.2); }
+    .rf-detail { display: none; padding: 0; }
+    .rf-detail.active { display: block; }
+    .rf-detail-header { display: flex; gap: 16px; margin-bottom: 20px; align-items: flex-start; flex-wrap: wrap; }
+    .rf-detail-img { width: 180px; height: 140px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+    .rf-detail-meta { flex: 1; }
+    .rf-detail-meta h3 { font-size: var(--text-xl); color: var(--heading); margin-bottom: 8px; line-height: 1.2; }
+    .rf-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: var(--text-xs); font-weight: 700; background: var(--accent); color: var(--accent-text); margin-right: 6px; margin-bottom: 6px; }
+    .rf-ingredients { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 14px 0; }
+    .rf-ing-item { font-size: var(--text-sm); color: var(--text); padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .rf-ing-item strong { color: var(--heading); }
+    .rf-instructions { font-size: var(--text-sm); color: var(--text); line-height: 1.8; white-space: pre-line; }
+    .rf-back-btn { margin-bottom: 16px; }
+    .rf-yt-embed { margin: 16px 0; }
+    .rf-yt-embed iframe { width: 100%; height: 250px; border-radius: 10px; border: none; }
+    .rf-empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: var(--text-sm); }
+    .rf-loading { text-align: center; padding: 30px; color: var(--text-muted); }
+    .rf-favs-section { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 18px; }
+    @media (max-width: 600px) {
+      .rf-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+      .rf-detail-header { flex-direction: column; }
+      .rf-detail-img { width: 100%; height: 180px; }
+      .rf-ingredients { grid-template-columns: 1fr; }
+      .rf-actions { flex-direction: column; }
+      .rf-actions .btn-primary, .rf-actions .btn-secondary { width: 100%; }
+      .rf-yt-embed iframe { height: 200px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Recipe Finder by Ingredient", "description": "Find recipes using ingredients you already have. Enter what\\", "url": "https://tool.teamzlab.com/health/recipe-finder/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Recipe Finder by Ingredient</h1>
+      <p class="tool-description">Enter ingredients you have on hand and discover delicious recipes instantly. Search by name, browse by category, or get a random meal suggestion — completely free and private.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div id="rf-main">
+        <!-- Mode Tabs -->
+        <div class="rf-mode-tabs">
+          <button class="rf-tab active" id="tab-ingredient" onclick="rfSetMode('ingredient')">By Ingredient</button>
+          <button class="rf-tab" id="tab-name" onclick="rfSetMode('name')">By Name / Cuisine</button>
+          <button class="rf-tab" id="tab-category" onclick="rfSetMode('category')">Browse Category</button>
+          <button class="rf-tab" id="tab-favourites" onclick="rfSetMode('favourites')">Favourites</button>
+        </div>
+
+        <!-- Ingredient Panel -->
+        <div class="rf-panel active" id="panel-ingredient">
+          <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:12px;">Enter up to 3 ingredients you have (e.g. chicken, tomato, pasta):</p>
+          <div class="rf-input-row"><input type="text" id="ing1" placeholder="Ingredient 1 (e.g. chicken)"></div>
+          <div class="rf-input-row"><input type="text" id="ing2" placeholder="Ingredient 2 (e.g. tomato)"></div>
+          <div class="rf-input-row"><input type="text" id="ing3" placeholder="Ingredient 3 (optional)"></div>
+          <div class="rf-actions">
+            <button class="btn-primary" onclick="rfSearchIngredients()">Find Recipes</button>
+            <button class="btn-secondary" onclick="rfRandom()">Random Recipe</button>
+          </div>
+        </div>
+
+        <!-- Name Panel -->
+        <div class="rf-panel" id="panel-name">
+          <div class="rf-input-row"><input type="text" id="name-query" placeholder="Search recipe name or cuisine (e.g. pasta, curry, tacos)..."></div>
+          <div class="rf-actions">
+            <button class="btn-primary" onclick="rfSearchName()">Search Recipes</button>
+          </div>
+        </div>
+
+        <!-- Category Panel -->
+        <div class="rf-panel" id="panel-category">
+          <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:12px;">Select a category to browse:</p>
+          <div class="rf-cat-pills" id="cat-pills">
+            <span class="rf-pill loading-pill" style="color:var(--text-muted);">Loading categories...</span>
+          </div>
+        </div>
+
+        <!-- Favourites Panel -->
+        <div class="rf-panel" id="panel-favourites">
+          <div id="favs-content"></div>
+        </div>
+
+        <!-- Results / Detail area -->
+        <div id="rf-results" style="margin-top:16px;"></div>
+        <div id="rf-detail" class="rf-detail"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Recipe Finder Works</h2>
+      <p>This recipe finder tool uses <a href="https://www.themealdb.com/" target="_blank" rel="noopener">TheMealDB</a>, a free and open recipe database with over 300 meals from 27 culinary categories and dozens of regional cuisines. Enter up to three ingredients you have available — such as chicken, tomato, and pasta — and the tool searches the database in real time to return matching meal ideas. Each result includes a full ingredient list with measurements, step-by-step cooking instructions, and an optional YouTube video for visual guidance. Based on 2026 data, TheMealDB serves millions of recipe lookups monthly with no authentication required.</p>
+
+      <h2>Finding Recipes by Ingredient</h2>
+      <p>The ingredient search mode queries TheMealDB's filter endpoint for each ingredient separately, then finds meals that appear across multiple searches. This approach surfaces recipes where your key ingredients play a starring role rather than being incidental additions. For best results, search with main protein or staple ingredients — chicken, beef, pasta, rice, potatoes — rather than seasonings like salt or pepper, which rarely serve as the primary identifier in recipe databases. The tool displays each meal's name, photo, cuisine origin, and category to help you choose the right dish quickly.</p>
+
+      <h2>Halal-Friendly Recipe Browsing</h2>
+      <p>This tool automatically filters out recipes containing wine, beer, or other alcoholic ingredients from displayed results, making it easier to find halal-suitable meal ideas. For the broadest selection, focus on the Chicken, Seafood, Vegetarian, Beef, Lamb, and Pasta categories. Always review the full ingredient list before cooking to verify suitability for your dietary needs. The Miscellaneous and Side categories also contain many vegetable-based dishes that are naturally halal-friendly.</p>
+
+      <h2>Saving and Organising Favourite Recipes</h2>
+      <p>Click the heart icon on any recipe card to save it to your favourites list. Favourites are stored locally in your browser using localStorage, meaning they persist between visits without requiring an account or internet connection after the initial load. Access your saved recipes anytime via the Favourites tab. This is ideal for building a personal recipe library of dishes you enjoy or want to cook again. To remove a recipe from your favourites, click the heart icon again on the recipe card or within the detail view.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Health Tools', url: '/health/' },
+      { name: 'Recipe Finder by Ingredient' }
+    ];
+
+    var FAQS = [
+      { q: 'How does the recipe finder work?', a: 'Enter up to 3 ingredients you have on hand, and the tool searches TheMealDB\'s free recipe database for meals that feature those ingredients. It returns matching meals with images, category, origin, full ingredient lists, and step-by-step instructions.' },
+      { q: 'Is this recipe finder completely free?', a: 'Yes, completely free. It uses TheMealDB\'s free public API — no account required, no subscription, and no hidden costs. All recipes are available instantly with full instructions and ingredient lists.' },
+      { q: 'Can I save my favourite recipes?', a: 'Yes. Click the heart icon on any recipe card to save it to your favourites. Favourites are stored in your browser\'s local storage, so they persist between visits on the same device without requiring an account.' },
+      { q: 'Are the recipes halal-friendly?', a: 'The tool filters out recipes that contain alcohol-based ingredients such as wine or beer. Focus on the Chicken, Seafood, Vegetarian, and Beef categories for the widest selection of halal-suitable recipes. Always verify individual recipe ingredients before cooking.' },
+      { q: 'What if no recipes are found for my ingredients?', a: 'Try searching with a single, common ingredient first (e.g. chicken, pasta, or tomato). The database works best with individual main ingredients rather than spice names. You can also switch to "Search by Name" mode and type a cuisine or dish name directly.' },
+      { q: 'How many recipes are in the database?', a: 'TheMealDB contains over 300 meals spanning 27 categories and dozens of regional cuisines from around the world, including British, Italian, Mexican, Indian, Chinese, and many more. New recipes are added regularly.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'health/calorie-calculator', name: 'Calorie Calculator', description: 'Calculate your daily calorie needs based on age, weight, height, and activity level.' },
+      { slug: 'health/bmi-health-checker', name: 'BMI Health Checker', description: 'Check your Body Mass Index and understand what it means for your health.' },
+      { slug: 'health/meal-calorie-counter', name: 'Meal Calorie Counter', description: 'Count calories in your meals using a comprehensive food database.' },
+      { slug: 'evergreen/unit-converter', name: 'Unit Converter', description: 'Convert between cooking measurements, weights, temperatures, and more.' },
+      { slug: 'health/water-intake-calculator', name: 'Water Intake Calculator', description: 'Find out how much water you should drink each day based on your weight and activity.' },
+      { slug: 'health/intermittent-fasting-calculator', name: 'Fasting Calculator', description: 'Plan your intermittent fasting schedule and track fasting windows.' }
+    ];
+
+    // ---- Recipe Finder Logic ----
+    var RF_MODE = 'ingredient';
+    var RF_FAVS = JSON.parse(localStorage.getItem('rf_favourites') || '[]');
+    var ALCOHOL_KEYWORDS = ['wine', 'beer', 'ale', 'lager', 'brandy', 'whiskey', 'whisky', 'vodka', 'rum', 'gin', 'champagne', 'sherry', 'mead', 'cider', 'sake', 'bourbon', 'tequila', 'vermouth', 'baileys'];
+
+    function rfSetMode(mode) {
+      RF_MODE = mode;
+      document.querySelectorAll('.rf-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.rf-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('tab-' + mode).classList.add('active');
+      document.getElementById('panel-' + mode).classList.add('active');
+      document.getElementById('rf-results').innerHTML = '';
+      document.getElementById('rf-detail').innerHTML = '';
+      document.getElementById('rf-detail').classList.remove('active');
+      if (mode === 'favourites') rfShowFavourites();
+      if (mode === 'category') rfLoadCategories();
+    }
+
+    function rfContainsAlcohol(meal) {
+      var combined = '';
+      for (var i = 1; i <= 20; i++) {
+        var ing = (meal['strIngredient' + i] || '').toLowerCase();
+        combined += ' ' + ing;
+      }
+      return ALCOHOL_KEYWORDS.some(function(k) { return combined.indexOf(k) !== -1; });
+    }
+
+    function rfRenderGrid(meals, container) {
+      if (!meals || meals.length === 0) {
+        container.innerHTML = '<div class="rf-empty">No recipes found. Try different ingredients or search terms.</div>';
+        return;
+      }
+      var html = '<div class="rf-grid">';
+      meals.forEach(function(m) {
+        var isFav = RF_FAVS.some(function(f) { return f.idMeal === m.idMeal; });
+        html += '<div class="rf-card" id="card-' + m.idMeal + '">';
+        html += '<img src="' + (m.strMealThumb || '') + '/preview" alt="' + rfEsc(m.strMeal) + '" loading="lazy" onerror="this.style.display=\'none\'">';
+        html += '<button class="rf-fav-btn" title="Save to favourites" onclick="rfToggleFav(event,\'' + m.idMeal + '\',\'' + rfEsc(m.strMeal) + '\',\'' + rfEsc(m.strMealThumb || '') + '\')">' + (isFav ? '❤️' : '🤍') + '</button>';
+        html += '<div class="rf-card-body">';
+        html += '<div class="rf-card-name">' + rfEsc(m.strMeal) + '</div>';
+        html += '<div class="rf-card-meta">' + rfEsc(m.strCategory || '') + (m.strArea ? ' · ' + rfEsc(m.strArea) : '') + '</div>';
+        html += '</div></div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+      // Add click to open detail (not on fav button)
+      meals.forEach(function(m) {
+        var card = document.getElementById('card-' + m.idMeal);
+        if (card) card.addEventListener('click', function(e) {
+          if (e.target.classList.contains('rf-fav-btn') || e.target.closest('.rf-fav-btn')) return;
+          rfOpenDetail(m.idMeal);
+        });
+      });
+    }
+
+    function rfEsc(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function rfSearchIngredients() {
+      var ings = [
+        (document.getElementById('ing1').value || '').trim(),
+        (document.getElementById('ing2').value || '').trim(),
+        (document.getElementById('ing3').value || '').trim()
+      ].filter(Boolean);
+      if (!ings.length) { window.showToast('Please enter at least one ingredient.'); return; }
+      var container = document.getElementById('rf-results');
+      container.innerHTML = '<div class="rf-loading">Searching recipes...</div>';
+      document.getElementById('rf-detail').classList.remove('active');
+      document.getElementById('rf-detail').innerHTML = '';
+
+      var promises = ings.map(function(ing) {
+        return fetch('https://www.themealdb.com/api/json/v1/1/filter.php?i=' + encodeURIComponent(ing))
+          .then(function(r) { return r.json(); })
+          .then(function(d) { return (d.meals || []); });
+      });
+
+      Promise.all(promises).then(function(results) {
+        var all = results[0] || [];
+        for (var i = 1; i < results.length; i++) {
+          var ids = results[i].map(function(m) { return m.idMeal; });
+          all = all.filter(function(m) { return ids.indexOf(m.idMeal) !== -1; });
+        }
+        // Fetch full details to filter alcohol
+        if (all.length === 0) {
+          container.innerHTML = '<div class="rf-empty">No recipes found for those ingredients. Try fewer or different ingredients.</div>';
+          return;
+        }
+        var topIds = all.slice(0, 20).map(function(m) { return m.idMeal; });
+        Promise.all(topIds.map(function(id) {
+          return fetch('https://www.themealdb.com/api/json/v1/1/lookup.php?i=' + id).then(function(r) { return r.json(); }).then(function(d) { return d.meals ? d.meals[0] : null; });
+        })).then(function(full) {
+          var filtered = full.filter(function(m) { return m && !rfContainsAlcohol(m); });
+          rfRenderGrid(filtered, container);
+        }).catch(function() { rfRenderGrid(all.slice(0, 16), container); });
+      }).catch(function() {
+        container.innerHTML = '<div class="rf-empty">Unable to fetch recipes. Please check your connection and try again.</div>';
+      });
+    }
+
+    function rfSearchName() {
+      var q = (document.getElementById('name-query').value || '').trim();
+      if (!q) { window.showToast('Please enter a recipe name or cuisine.'); return; }
+      var container = document.getElementById('rf-results');
+      container.innerHTML = '<div class="rf-loading">Searching...</div>';
+      document.getElementById('rf-detail').classList.remove('active');
+      document.getElementById('rf-detail').innerHTML = '';
+      fetch('https://www.themealdb.com/api/json/v1/1/search.php?s=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var meals = (d.meals || []).filter(function(m) { return !rfContainsAlcohol(m); });
+          rfRenderGrid(meals, container);
+        }).catch(function() {
+          container.innerHTML = '<div class="rf-empty">Unable to fetch results. Please try again.</div>';
+        });
+    }
+
+    function rfRandom() {
+      var container = document.getElementById('rf-results');
+      container.innerHTML = '<div class="rf-loading">Finding a random recipe...</div>';
+      fetch('https://www.themealdb.com/api/json/v1/1/random.php')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var meal = d.meals && d.meals[0];
+          if (!meal) { container.innerHTML = '<div class="rf-empty">Could not fetch a random recipe.</div>'; return; }
+          container.innerHTML = '';
+          rfShowDetailMeal(meal);
+        }).catch(function() {
+          container.innerHTML = '<div class="rf-empty">Unable to fetch a random recipe. Please try again.</div>';
+        });
+    }
+
+    function rfLoadCategories() {
+      var pills = document.getElementById('cat-pills');
+      if (document.querySelector('.rf-pill.real')) return; // already loaded
+      fetch('https://www.themealdb.com/api/json/v1/1/categories.php')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var cats = d.categories || [];
+          // Filter out alcoholic categories
+          var skip = ['cocktails'];
+          pills.innerHTML = '';
+          cats.forEach(function(c) {
+            if (skip.indexOf(c.strCategory.toLowerCase()) !== -1) return;
+            var btn = document.createElement('button');
+            btn.className = 'rf-pill real';
+            btn.textContent = c.strCategory;
+            btn.addEventListener('click', function() {
+              document.querySelectorAll('.rf-pill').forEach(function(p) { p.classList.remove('active'); });
+              btn.classList.add('active');
+              rfSearchCategory(c.strCategory);
+            });
+            pills.appendChild(btn);
+          });
+        }).catch(function() {
+          pills.innerHTML = '<span style="color:var(--text-muted);font-size:var(--text-sm);">Could not load categories.</span>';
+        });
+    }
+
+    function rfSearchCategory(cat) {
+      var container = document.getElementById('rf-results');
+      container.innerHTML = '<div class="rf-loading">Loading ' + rfEsc(cat) + ' recipes...</div>';
+      document.getElementById('rf-detail').classList.remove('active');
+      fetch('https://www.themealdb.com/api/json/v1/1/filter.php?c=' + encodeURIComponent(cat))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          rfRenderGrid(d.meals || [], container);
+        });
+    }
+
+    function rfOpenDetail(id) {
+      var resultsEl = document.getElementById('rf-results');
+      var detailEl = document.getElementById('rf-detail');
+      resultsEl.innerHTML = '';
+      detailEl.innerHTML = '<div class="rf-loading">Loading recipe...</div>';
+      detailEl.classList.add('active');
+      fetch('https://www.themealdb.com/api/json/v1/1/lookup.php?i=' + id)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var meal = d.meals && d.meals[0];
+          if (!meal) { detailEl.innerHTML = '<div class="rf-empty">Recipe not found.</div>'; return; }
+          rfShowDetailMeal(meal);
+        });
+    }
+
+    function rfShowDetailMeal(meal) {
+      var detailEl = document.getElementById('rf-detail');
+      detailEl.classList.add('active');
+
+      // Build ingredients list
+      var ings = [];
+      for (var i = 1; i <= 20; i++) {
+        var name = (meal['strIngredient' + i] || '').trim();
+        var measure = (meal['strMeasure' + i] || '').trim();
+        if (name) ings.push({ name: name, measure: measure });
+      }
+
+      var isFav = RF_FAVS.some(function(f) { return f.idMeal === meal.idMeal; });
+      var ytId = '';
+      if (meal.strYoutube) {
+        var ytMatch = meal.strYoutube.match(/v=([^&]+)/);
+        if (ytMatch) ytId = ytMatch[1];
+      }
+
+      var tags = meal.strTags ? meal.strTags.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : [];
+
+      var html = '<button class="btn-secondary rf-back-btn" onclick="rfGoBack()">← Back to Results</button>';
+      html += '<div class="rf-detail-header">';
+      html += '<img class="rf-detail-img" src="' + rfEsc(meal.strMealThumb || '') + '" alt="' + rfEsc(meal.strMeal) + '" onerror="this.style.display=\'none\'">';
+      html += '<div class="rf-detail-meta">';
+      html += '<h3>' + rfEsc(meal.strMeal) + '</h3>';
+      if (meal.strCategory) html += '<span class="rf-badge">' + rfEsc(meal.strCategory) + '</span>';
+      if (meal.strArea) html += '<span class="rf-badge">' + rfEsc(meal.strArea) + '</span>';
+      tags.forEach(function(t) { html += '<span class="rf-badge">' + rfEsc(t) + '</span>'; });
+      html += '<br><button class="btn-secondary" style="margin-top:10px;" onclick="rfToggleFav(null,\'' + meal.idMeal + '\',\'' + rfEsc(meal.strMeal) + '\',\'' + rfEsc(meal.strMealThumb || '') + '\')" id="detail-fav-btn">' + (isFav ? '❤️ Saved' : '🤍 Save Favourite') + '</button>';
+      if (meal.strSource) html += '<br><a href="' + rfEsc(meal.strSource) + '" target="_blank" rel="noopener" style="font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;display:inline-block;">Original Source ↗</a>';
+      html += '</div></div>';
+
+      html += '<h4 style="color:var(--heading);margin-bottom:8px;">Ingredients (' + ings.length + ')</h4>';
+      html += '<div class="rf-ingredients">';
+      ings.forEach(function(ing) {
+        html += '<div class="rf-ing-item"><strong>' + rfEsc(ing.measure) + '</strong> ' + rfEsc(ing.name) + '</div>';
+      });
+      html += '</div>';
+
+      html += '<h4 style="color:var(--heading);margin:16px 0 8px;">Instructions</h4>';
+      html += '<div class="rf-instructions">' + rfEsc(meal.strInstructions || 'Instructions not available.') + '</div>';
+
+      if (ytId) {
+        html += '<h4 style="color:var(--heading);margin:16px 0 8px;">Video Guide</h4>';
+        html += '<div class="rf-yt-embed"><iframe src="https://www.youtube.com/embed/' + ytId + '" title="Recipe video for ' + rfEsc(meal.strMeal) + '" allowfullscreen loading="lazy"></iframe></div>';
+      }
+
+      detailEl.innerHTML = html;
+    }
+
+    function rfGoBack() {
+      document.getElementById('rf-detail').classList.remove('active');
+      document.getElementById('rf-detail').innerHTML = '';
+      // Re-run last search based on mode
+      if (RF_MODE === 'ingredient') rfSearchIngredients();
+      else if (RF_MODE === 'name') rfSearchName();
+      else if (RF_MODE === 'category') { var active = document.querySelector('.rf-pill.active'); if (active) rfSearchCategory(active.textContent); }
+    }
+
+    function rfToggleFav(e, id, name, thumb) {
+      if (e) e.stopPropagation();
+      var idx = RF_FAVS.findIndex(function(f) { return f.idMeal === id; });
+      if (idx !== -1) {
+        RF_FAVS.splice(idx, 1);
+        window.showToast('Removed from favourites.');
+      } else {
+        RF_FAVS.push({ idMeal: id, strMeal: name, strMealThumb: thumb });
+        window.showToast('Saved to favourites!');
+      }
+      localStorage.setItem('rf_favourites', JSON.stringify(RF_FAVS));
+      // Update card button
+      var btn = document.querySelector('#card-' + id + ' .rf-fav-btn');
+      if (btn) btn.textContent = RF_FAVS.some(function(f) { return f.idMeal === id; }) ? '❤️' : '🤍';
+      var detBtn = document.getElementById('detail-fav-btn');
+      if (detBtn) detBtn.textContent = RF_FAVS.some(function(f) { return f.idMeal === id; }) ? '❤️ Saved' : '🤍 Save Favourite';
+    }
+
+    function rfShowFavourites() {
+      var el = document.getElementById('favs-content');
+      if (!RF_FAVS.length) {
+        el.innerHTML = '<div class="rf-empty">No favourites saved yet. Click the ❤️ on any recipe card to save it here.</div>';
+        return;
+      }
+      var container = document.createElement('div');
+      el.innerHTML = '<h4 style="color:var(--heading);margin-bottom:12px;">Your Saved Recipes (' + RF_FAVS.length + ')</h4>';
+      el.appendChild(container);
+      rfRenderGrid(RF_FAVS, container);
+    }
+
+    // Name query enter key
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      var nameInput = document.getElementById('name-query');
+      if (nameInput) nameInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') rfSearchName(); });
+      var ing1 = document.getElementById('ing1');
+      if (ing1) ing1.addEventListener('keypress', function(e) { if (e.key === 'Enter') rfSearchIngredients(); });
+    });
+  </script>
+</body>
+</html>

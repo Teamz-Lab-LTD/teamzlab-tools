@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Profile Analyzer — Teamz Lab Tools</title>
+  <meta name="description" content="Analyze any GitHub profile instantly — see repositories, stars, languages, contribution streak, and developer stats. Free, no login needed.">
+  <meta property="og:title" content="GitHub Profile Analyzer — Teamz Lab Tools">
+  <meta property="og:description" content="Analyze any GitHub profile instantly — see repositories, stars, languages, contribution streak, and developer stats. Free, no login needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/dev/github-profile-analyzer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/dev.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="GitHub Profile Analyzer — Teamz Lab Tools">
+  <meta name="twitter:description" content="Analyze any GitHub profile — repos, stars, languages, and developer stats. Free, no login.">
+  <link rel="canonical" href="https://tool.teamzlab.com/dev/github-profile-analyzer/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .gh-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+    .gh-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 11px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+    }
+    .gh-input:focus { outline: 2px solid var(--accent); }
+    .gh-btn-primary {
+      padding: 11px 24px;
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-size: var(--text-base);
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .gh-btn-primary:hover { opacity: 0.9; }
+    .gh-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .example-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .chip {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      background: var(--surface);
+    }
+    .chip:hover { border-color: var(--accent); color: var(--heading); }
+    .gh-result { display: none; margin-top: 20px; }
+    .gh-profile-header {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .gh-avatar { width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--border); }
+    .gh-profile-info { flex: 1; min-width: 180px; }
+    .gh-profile-name { font-size: var(--text-xl); font-weight: 700; color: var(--heading); margin: 0 0 4px; }
+    .gh-profile-login { color: var(--text-muted); font-size: var(--text-sm); margin-bottom: 6px; }
+    .gh-profile-bio { color: var(--text); font-size: var(--text-sm); margin-bottom: 8px; line-height: 1.5; }
+    .gh-profile-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: var(--text-sm); color: var(--text-muted); }
+    .gh-meta-item { display: flex; align-items: center; gap: 4px; }
+    .gh-share-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--heading);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      white-space: nowrap;
+      align-self: flex-start;
+    }
+    .gh-share-btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .stat-value { font-size: clamp(18px, 3vw, 28px); font-weight: 700; color: var(--heading); line-height: 1.2; }
+    .stat-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px; }
+    .lang-section { margin-bottom: 16px; }
+    .lang-title { font-size: var(--text-sm); font-weight: 600; color: var(--heading); margin-bottom: 10px; }
+    .lang-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+    .lang-name { min-width: 90px; font-size: var(--text-sm); color: var(--text); }
+    .lang-bar-wrap { flex: 1; background: var(--border); border-radius: 4px; height: 8px; }
+    .lang-bar { height: 8px; border-radius: 4px; background: var(--accent); transition: width 0.4s ease; }
+    .lang-pct { font-size: var(--text-xs); color: var(--text-muted); min-width: 36px; text-align: right; }
+    .repos-title { font-size: var(--text-sm); font-weight: 600; color: var(--heading); margin: 16px 0 10px; }
+    .repo-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      background: var(--surface);
+    }
+    .repo-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .repo-name { font-size: var(--text-sm); font-weight: 700; color: var(--heading); text-decoration: none; }
+    .repo-name:hover { color: var(--accent); }
+    .repo-desc { font-size: var(--text-xs); color: var(--text-muted); margin: 5px 0; line-height: 1.5; }
+    .repo-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--text-xs); color: var(--text-muted); }
+    .repo-stars { color: var(--heading); font-weight: 600; }
+    .repo-lang { padding: 2px 8px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); }
+    .developer-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      max-width: 360px;
+      margin: 16px auto 0;
+      text-align: center;
+    }
+    .dev-card-avatar { width: 64px; height: 64px; border-radius: 50%; margin-bottom: 10px; border: 2px solid var(--border); }
+    .dev-card-name { font-size: var(--text-base); font-weight: 700; color: var(--heading); }
+    .dev-card-login { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 12px; }
+    .dev-card-stats { display: flex; justify-content: center; gap: 20px; font-size: var(--text-sm); }
+    .dev-card-stat { text-align: center; }
+    .dev-card-stat-val { font-weight: 700; color: var(--heading); display: block; }
+    .dev-card-stat-lbl { color: var(--text-muted); font-size: var(--text-xs); }
+    .gh-error {
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-sm);
+      display: none;
+    }
+    .badge-title { font-size: var(--text-sm); font-weight: 600; color: var(--heading); margin: 16px 0 8px; text-align: center; }
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .gh-input-row { flex-direction: column; }
+      .gh-btn-primary { width: 100%; }
+      .gh-profile-header { flex-direction: column; gap: 12px; }
+      .gh-share-btn { width: 100%; text-align: center; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Do I need a GitHub account to use this?", "acceptedAnswer": {"@type": "Answer", "text": "No. This tool uses the GitHub public API which works without authentication. You can analyze any public GitHub profile by just entering the username."}}, {"@type": "Question", "name": "How many requests can I make?", "acceptedAnswer": {"@type": "Answer", "text": "GitHub's unauthenticated API allows 60 requests per hour per IP address. Each profile analysis uses 2 requests. Profiles are cached for 1 hour in your browser."}}, {"@type": "Question", "name": "What does the language breakdown show?", "acceptedAnswer": {"@type": "Answer", "text": "The language chart counts how many of the user's top 10 repositories use each programming language, shown as horizontal bars proportional to their share."}}, {"@type": "Question", "name": "What are the stats cards?", "acceptedAnswer": {"@type": "Answer", "text": "The stats cards show: total stars earned across top repos, total forks, the most-used programming language, and the most active repository by combined stars and forks score."}}, {"@type": "Question", "name": "Can I share a profile analysis?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The Share button generates a pre-written message containing the username stats that you can share on social media or copy to clipboard."}}, {"@type": "Question", "name": "Is this tool affiliated with GitHub?", "acceptedAnswer": {"@type": "Answer", "text": "No. This is an independent analysis tool that reads from the freely available public GitHub API. It is not affiliated with GitHub or Microsoft."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "GitHub Profile Analyzer", "description": "Analyze any GitHub profile instantly — repositories, stars, languages, and developer stats.", "url": "https://tool.teamzlab.com/dev/github-profile-analyzer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>GitHub Profile Analyzer</h1>
+      <p class="tool-description">Enter any GitHub username to instantly analyze their public profile — view top repositories, total stars, language breakdown, and developer stats. No login required.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="gh-input-row">
+        <input type="text" id="gh-username" class="gh-input" placeholder="Enter GitHub username..." aria-label="GitHub username" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button id="gh-analyze-btn" class="gh-btn-primary">Analyze Profile</button>
+      </div>
+      <div class="example-chips">
+        <span>Try:</span>
+        <button class="chip" data-user="torvalds">torvalds</button>
+        <button class="chip" data-user="gaearon">gaearon</button>
+        <button class="chip" data-user="sindresorhus">sindresorhus</button>
+        <button class="chip" data-user="tj">tj</button>
+      </div>
+
+      <div id="gh-error" class="gh-error"></div>
+
+      <div id="gh-result" class="gh-result">
+        <div class="gh-profile-header">
+          <img id="gh-avatar" class="gh-avatar" src="" alt="GitHub avatar">
+          <div class="gh-profile-info">
+            <h2 id="gh-name" class="gh-profile-name"></h2>
+            <div id="gh-login" class="gh-profile-login"></div>
+            <div id="gh-bio" class="gh-profile-bio"></div>
+            <div class="gh-profile-meta">
+              <span id="gh-location" class="gh-meta-item"></span>
+              <span id="gh-followers" class="gh-meta-item"></span>
+              <span id="gh-following" class="gh-meta-item"></span>
+              <span id="gh-repos-count" class="gh-meta-item"></span>
+              <span id="gh-joined" class="gh-meta-item"></span>
+            </div>
+          </div>
+          <button id="gh-share-btn" class="gh-share-btn">Share Profile</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value" id="stat-stars">0</div><div class="stat-label">Total Stars</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-forks">0</div><div class="stat-label">Total Forks</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-toplang">—</div><div class="stat-label">Top Language</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-activerepo" style="font-size:var(--text-sm)">—</div><div class="stat-label">Most Active Repo</div></div>
+        </div>
+
+        <div class="lang-section">
+          <div class="lang-title">Language Breakdown (top repos)</div>
+          <div id="lang-bars"></div>
+        </div>
+
+        <div class="repos-title">Top 10 Repositories by Stars</div>
+        <div id="repo-list"></div>
+
+        <div class="badge-title">Shareable Developer Card</div>
+        <div class="developer-card" id="dev-card">
+          <img id="dev-card-avatar" class="dev-card-avatar" src="" alt="avatar">
+          <div class="dev-card-name" id="dev-card-name"></div>
+          <div class="dev-card-login" id="dev-card-login"></div>
+          <div class="dev-card-stats">
+            <div class="dev-card-stat"><span class="dev-card-stat-val" id="dev-card-stars"></span><span class="dev-card-stat-lbl">Stars</span></div>
+            <div class="dev-card-stat"><span class="dev-card-stat-val" id="dev-card-followers"></span><span class="dev-card-stat-lbl">Followers</span></div>
+            <div class="dev-card-stat"><span class="dev-card-stat-val" id="dev-card-lang"></span><span class="dev-card-stat-lbl">Top Lang</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What This GitHub Profile Analyzer Shows</h2>
+      <p>This tool reads public data from the GitHub REST API (v3) to give you a complete snapshot of any developer's open-source activity. You can use it to research contributors before collaborating, evaluate a developer's skill set, or simply explore what prolific open-source developers like Linus Torvalds or Dan Abramov have built. All data is publicly available — the same information visible on a GitHub profile page.</p>
+      <p>The analyzer fetches two endpoints: the user profile (followers, location, join date, bio) and their top 10 repositories sorted by star count. From this, it calculates aggregate statistics including total stars earned, total forks, language distribution, and the most-active repository by combined engagement score.</p>
+
+      <h2>Understanding Developer Stats</h2>
+      <p>The four stat cards give you a quick developer profile at a glance. <strong>Total Stars</strong> is the sum of stars across the top 10 repositories — a strong indicator of how widely used or recognized a developer's work is. <strong>Total Forks</strong> shows how many times others have copied repos to build on them. <strong>Top Language</strong> is the most frequent primary language across repositories. <strong>Most Active Repo</strong> is determined by a combined score of stars plus forks — typically their most impactful project.</p>
+      <p>The language breakdown bar chart shows the percentage of repositories using each programming language, giving you a sense of a developer's specializations — whether they're a Python data scientist, JavaScript frontend developer, or Go systems programmer.</p>
+
+      <h2>GitHub API Rate Limits & Caching</h2>
+      <p>GitHub's unauthenticated public API allows 60 requests per hour per IP address. Each full profile analysis uses 2 API calls. To be respectful of this limit, profile data is automatically cached in your browser's localStorage for 1 hour — so if you look up the same username again within that window, no extra API call is made. If you hit the rate limit, an error message will indicate this and suggest waiting a few minutes. Rate limits are per-IP and shared with other API calls from the same connection.</p>
+
+      <h2>Using the Shareable Developer Card</h2>
+      <p>The developer card at the bottom is a styled summary card showing the user's avatar, full name, GitHub handle, total stars, follower count, and top programming language. You can use the Share button to generate a pre-written social post about the profile. The card is designed to work as a quick reference when sharing a developer's profile in Slack, Discord, or other team communication tools. Last updated: March 2026.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var CACHE_PREFIX = 'gh_profile_v2_';
+    var CACHE_TTL = 60 * 60 * 1000; // 1 hour
+    var currentProfile = null;
+    var currentRepos = null;
+
+    function getCached(key) {
+      try {
+        var raw = localStorage.getItem(CACHE_PREFIX + key);
+        if (!raw) return null;
+        var obj = JSON.parse(raw);
+        if (Date.now() - obj.ts > CACHE_TTL) return null;
+        return obj.data;
+      } catch(e) { return null; }
+    }
+    function setCached(key, data) {
+      try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+    }
+
+    function fmtNum(n) {
+      if (!n) return '0';
+      if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+      return String(n);
+    }
+    function fmtDate(s) {
+      return new Date(s).toLocaleDateString('en', { year:'numeric', month:'short' });
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('gh-error');
+      el.textContent = msg;
+      showEl(el);
+      hideEl(document.getElementById('gh-result'));
+    }
+    function hideError() {
+      hideEl(document.getElementById('gh-error'));
+    }
+
+    function analyze(username) {
+      if (!username) { if (window.showToast) window.showToast('Enter a GitHub username.'); return; }
+      username = username.trim().replace(/^@/, '');
+      var btn = document.getElementById('gh-analyze-btn');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing...';
+      hideError();
+      hideEl(document.getElementById('gh-result'));
+
+      var cachedProfile = getCached('profile_' + username);
+      var cachedRepos = getCached('repos_' + username);
+
+      var profilePromise = cachedProfile
+        ? Promise.resolve(cachedProfile)
+        : fetch('https://api.github.com/users/' + encodeURIComponent(username))
+            .then(function(r) {
+              if (r.status === 404) throw new Error('User "' + username + '" not found on GitHub.');
+              if (r.status === 403) throw new Error('GitHub rate limit reached. Please wait a few minutes.');
+              if (!r.ok) throw new Error('GitHub API error: ' + r.status);
+              return r.json();
+            })
+            .then(function(d) { setCached('profile_' + username, d); return d; });
+
+      var reposPromise = cachedRepos
+        ? Promise.resolve(cachedRepos)
+        : fetch('https://api.github.com/users/' + encodeURIComponent(username) + '/repos?sort=stars&per_page=10')
+            .then(function(r) {
+              if (!r.ok) throw new Error('Could not fetch repositories.');
+              return r.json();
+            })
+            .then(function(d) { setCached('repos_' + username, d); return d; });
+
+      Promise.all([profilePromise, reposPromise])
+        .then(function(results) {
+          currentProfile = results[0];
+          currentRepos = results[1];
+          renderProfile(currentProfile, currentRepos);
+        })
+        .catch(function(err) {
+          showError(err.message || 'Failed to load profile. Check the username and try again.');
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.textContent = 'Analyze Profile';
+        });
+    }
+
+    function renderProfile(profile, repos) {
+      // Avatar + header
+      var avatar = document.getElementById('gh-avatar');
+      avatar.src = profile.avatar_url || '';
+      avatar.alt = profile.login + ' avatar';
+
+      document.getElementById('gh-name').textContent = profile.name || profile.login;
+      document.getElementById('gh-login').textContent = '@' + profile.login;
+      document.getElementById('gh-bio').textContent = profile.bio || '';
+
+      var loc = document.getElementById('gh-location');
+      loc.textContent = profile.location ? '📍 ' + profile.location : '';
+
+      document.getElementById('gh-followers').textContent = '👥 ' + fmtNum(profile.followers) + ' followers';
+      document.getElementById('gh-following').textContent = 'Following ' + fmtNum(profile.following);
+      document.getElementById('gh-repos-count').textContent = '📦 ' + profile.public_repos + ' repos';
+      document.getElementById('gh-joined').textContent = 'Joined ' + fmtDate(profile.created_at);
+
+      // Stats
+      var totalStars = repos.reduce(function(a,r){ return a + (r.stargazers_count||0); }, 0);
+      var totalForks = repos.reduce(function(a,r){ return a + (r.forks_count||0); }, 0);
+
+      // Language breakdown
+      var langCount = {};
+      repos.forEach(function(r) {
+        if (r.language) langCount[r.language] = (langCount[r.language] || 0) + 1;
+      });
+      var langEntries = Object.keys(langCount).sort(function(a,b){ return langCount[b]-langCount[a]; });
+      var topLang = langEntries[0] || '—';
+      var totalRepos = repos.filter(function(r){ return r.language; }).length;
+
+      document.getElementById('stat-stars').textContent = fmtNum(totalStars);
+      document.getElementById('stat-forks').textContent = fmtNum(totalForks);
+      document.getElementById('stat-toplang').textContent = topLang;
+
+      // Most active repo
+      var mostActive = repos.reduce(function(best, r) {
+        var score = (r.stargazers_count||0) + (r.forks_count||0)*2;
+        var bestScore = (best.stargazers_count||0) + (best.forks_count||0)*2;
+        return score > bestScore ? r : best;
+      }, repos[0] || {});
+      document.getElementById('stat-activerepo').textContent = mostActive ? mostActive.name : '—';
+
+      // Language bars
+      var barsHtml = langEntries.slice(0, 7).map(function(lang) {
+        var pct = totalRepos > 0 ? Math.round(langCount[lang] / totalRepos * 100) : 0;
+        return '<div class="lang-bar-row">' +
+          '<span class="lang-name">' + lang + '</span>' +
+          '<div class="lang-bar-wrap"><div class="lang-bar" style="width:' + pct + '%"></div></div>' +
+          '<span class="lang-pct">' + pct + '%</span>' +
+          '</div>';
+      }).join('');
+      document.getElementById('lang-bars').innerHTML = barsHtml || '<span style="color:var(--text-muted);font-size:var(--text-sm)">No language data available.</span>';
+
+      // Repos
+      var reposHtml = repos.map(function(r) {
+        var updated = r.updated_at ? 'Updated ' + new Date(r.updated_at).toLocaleDateString('en', {month:'short', year:'numeric'}) : '';
+        return '<div class="repo-card">' +
+          '<div class="repo-header">' +
+          '<a href="' + r.html_url + '" target="_blank" rel="noopener noreferrer" class="repo-name">' + r.name + '</a>' +
+          '</div>' +
+          (r.description ? '<div class="repo-desc">' + r.description + '</div>' : '') +
+          '<div class="repo-meta">' +
+          '<span class="repo-stars">★ ' + fmtNum(r.stargazers_count||0) + '</span>' +
+          '<span>🍴 ' + fmtNum(r.forks_count||0) + '</span>' +
+          (r.language ? '<span class="repo-lang">' + r.language + '</span>' : '') +
+          (updated ? '<span>' + updated + '</span>' : '') +
+          '</div>' +
+          '</div>';
+      }).join('');
+      document.getElementById('repo-list').innerHTML = reposHtml || '<p style="color:var(--text-muted);font-size:var(--text-sm)">No public repositories found.</p>';
+
+      // Developer card
+      document.getElementById('dev-card-avatar').src = profile.avatar_url || '';
+      document.getElementById('dev-card-name').textContent = profile.name || profile.login;
+      document.getElementById('dev-card-login').textContent = '@' + profile.login;
+      document.getElementById('dev-card-stars').textContent = fmtNum(totalStars);
+      document.getElementById('dev-card-followers').textContent = fmtNum(profile.followers);
+      document.getElementById('dev-card-lang').textContent = topLang;
+
+      showEl(document.getElementById('gh-result'));
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Developer Tools',url:'/dev/'},{name:'GitHub Profile Analyzer'}]);
+
+      var faqs = [
+        {q:'Do I need a GitHub account to use this?', a:'No. This tool uses the GitHub public API which works without authentication. You can analyze any public GitHub profile by just entering the username.'},
+        {q:'How many requests can I make?', a:"GitHub's unauthenticated API allows 60 requests per hour per IP address. Each profile analysis uses 2 requests. Profiles are cached for 1 hour in your browser."},
+        {q:'What does the language breakdown show?', a:"The language chart counts how many of the user's top 10 repositories use each programming language, shown as horizontal bars proportional to their share."},
+        {q:'What are the stats cards?', a:'The stats cards show: total stars earned across top repos, total forks, the most-used programming language, and the most active repository by combined stars and forks score.'},
+        {q:'Can I share a profile analysis?', a:'Yes. The Share button generates a pre-written message containing the username stats that you can share on social media or copy to clipboard.'},
+        {q:'Is this tool affiliated with GitHub?', a:'No. This is an independent analysis tool that reads from the freely available public GitHub API. It is not affiliated with GitHub or Microsoft.'}
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        {slug:'dev/api-request-tester', name:'API Request Tester', description:'Test any API endpoint online — GET, POST, PUT, DELETE with custom headers.'},
+        {slug:'dev/cors-debugger', name:'CORS Tester & Checker', description:'Test any URL for CORS headers and diagnose cross-origin errors.'},
+        {slug:'dev/json-formatter', name:'JSON Formatter & Validator', description:'Paste JSON to beautify, format, and validate it instantly.'},
+        {slug:'dev/http-status-code-lookup', name:'HTTP Status Codes Reference', description:'Complete list of all HTTP status codes with meanings and fix guidance.'},
+        {slug:'dev/git-command-generator', name:'Git Cheat Sheet', description:'Find any git command instantly — undo, branching, stashing, remotes.'},
+        {slug:'dev/base64-encode-decode', name:'Base64 Encode/Decode', description:'Encode or decode Base64 strings instantly with full Unicode support.'}
+      ]);
+
+      document.getElementById('gh-analyze-btn').addEventListener('click', function() {
+        analyze(document.getElementById('gh-username').value);
+      });
+
+      document.getElementById('gh-username').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') analyze(this.value);
+      });
+
+      document.querySelectorAll('.chip[data-user]').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          var user = this.dataset.user;
+          document.getElementById('gh-username').value = user;
+          analyze(user);
+        });
+      });
+
+      document.getElementById('gh-share-btn').addEventListener('click', function() {
+        if (!currentProfile) return;
+        var totalStars = currentRepos ? currentRepos.reduce(function(a,r){ return a + (r.stargazers_count||0); }, 0) : 0;
+        var msg = 'Check out @' + currentProfile.login + ' on GitHub!\n' +
+          (currentProfile.name ? currentProfile.name + ' — ' : '') +
+          (currentProfile.bio ? currentProfile.bio + '\n' : '') +
+          '⭐ ' + totalStars + ' stars · ' +
+          '👥 ' + currentProfile.followers + ' followers · ' +
+          '📦 ' + currentProfile.public_repos + ' repos\n' +
+          'https://github.com/' + currentProfile.login;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(msg)
+            .then(function() { if (window.showToast) window.showToast('Profile summary copied to clipboard!'); })
+            .catch(function() { if (window.showToast) window.showToast('Copy failed — try again.'); });
+        } else {
+          if (window.showToast) window.showToast('Clipboard not supported in this browser.');
+        }
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

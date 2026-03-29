@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpaceX Launch Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track upcoming and past SpaceX rocket launches. See launch dates, mission details, rocket specs, and launch success rates. Free, no signup needed.">
+  <meta property="og:title" content="SpaceX Launch Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Track upcoming and past SpaceX launches — mission details, countdowns, rocket specs, and success rates. Free, no signup.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/spacex-launch-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="SpaceX Launch Tracker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track upcoming and past SpaceX launches with countdowns and mission details. Free, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/spacex-launch-tracker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .sx-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+    .sx-tab { padding: 10px 20px; border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: var(--text-sm); font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color 0.15s, border-color 0.15s; }
+    .sx-tab.active { color: var(--heading); border-bottom-color: var(--accent); }
+    .sx-panel { display: none; }
+    .sx-panel.active { display: block; }
+    .sx-countdown { text-align: center; padding: 20px; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
+    .sx-countdown-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+    .sx-countdown-mission { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin-bottom: 14px; line-height: 1.3; }
+    .sx-countdown-units { display: flex; justify-content: center; gap: 16px; }
+    .sx-unit { text-align: center; }
+    .sx-unit-val { font-size: clamp(28px, 6vw, 48px); font-weight: 900; color: var(--heading); line-height: 1; font-variant-numeric: tabular-nums; }
+    .sx-unit-lbl { font-size: var(--text-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .sx-sep { font-size: clamp(24px, 5vw, 40px); font-weight: 900; color: var(--text-muted); align-self: flex-start; padding-top: 2px; }
+    .sx-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; background: var(--surface); }
+    .sx-card-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px; }
+    .sx-patch { width: 60px; height: 60px; object-fit: contain; flex-shrink: 0; border-radius: 50%; background: var(--bg); }
+    .sx-mission-name { font-size: var(--text-lg); font-weight: 700; color: var(--heading); line-height: 1.2; }
+    .sx-meta { font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px; }
+    .sx-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: var(--text-xs); font-weight: 700; margin-right: 6px; }
+    .sx-badge-success { background: var(--success-bg); color: var(--success); }
+        .sx-badge-failed { background: var(--danger-bg); color: var(--danger); }
+    .sx-badge-upcoming { background: rgba(var(--accent-rgb, 217,254,6),0.15); color: var(--heading); border: 1px solid var(--accent); }
+    .sx-badge-unknown { background: var(--border); color: var(--text-muted); }
+    .sx-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: var(--text-sm); }
+    .sx-detail-item { }
+    .sx-detail-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .sx-detail-val { color: var(--text); font-weight: 600; }
+    .sx-webcast-btn { display: inline-block; margin-top: 10px; padding: 7px 16px; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-size: var(--text-xs); font-weight: 700; text-decoration: none; }
+    .sx-rocket-card { border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; background: var(--surface); }
+    .sx-rocket-name { font-size: var(--text-xl); font-weight: 900; color: var(--heading); margin-bottom: 12px; }
+    .sx-specs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .sx-spec { text-align: center; padding: 10px; background: var(--bg); border-radius: 8px; }
+    .sx-spec-val { font-size: var(--text-lg); font-weight: 800; color: var(--heading); }
+    .sx-spec-lbl { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+    .sx-loading { text-align: center; padding: 30px; color: var(--text-muted); }
+    .sx-share-btn { margin-top: 10px; }
+    @media (max-width: 600px) {
+      .sx-tabs { gap: 0; }
+      .sx-tab { padding: 8px 12px; font-size: var(--text-xs); }
+      .sx-detail-grid { grid-template-columns: 1fr; }
+      .sx-specs-grid { grid-template-columns: repeat(2, 1fr); }
+      .sx-countdown-units { gap: 8px; }
+      .sx-card-header { flex-direction: column; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "SpaceX Launch Tracker", "description": "Track upcoming and past SpaceX rocket launches with countdowns, mission details, and rocket specs.", "url": "https://tool.teamzlab.com/tools/spacex-launch-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>SpaceX Launch Tracker</h1>
+      <p class="tool-description">Track upcoming SpaceX rocket launches with live countdowns, view recent mission results, and explore rocket specifications — all powered by real launch data. Free, no signup required.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="sx-tabs">
+        <button class="sx-tab active" onclick="sxSetTab('upcoming')">Upcoming</button>
+        <button class="sx-tab" onclick="sxSetTab('recent')">Recent Launches</button>
+        <button class="sx-tab" onclick="sxSetTab('rockets')">Rockets</button>
+      </div>
+
+      <div class="sx-panel active" id="panel-upcoming">
+        <div id="sx-countdown-wrap"></div>
+        <div id="sx-upcoming-list"><div class="sx-loading">Loading upcoming launches...</div></div>
+      </div>
+
+      <div class="sx-panel" id="panel-recent">
+        <div id="sx-recent-list"><div class="sx-loading">Loading recent launches...</div></div>
+      </div>
+
+      <div class="sx-panel" id="panel-rockets">
+        <div id="sx-rockets-list"><div class="sx-loading">Loading rocket data...</div></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>About the SpaceX Launch Tracker</h2>
+      <p>This tracker pulls live data from the community-maintained <a href="https://github.com/r-spacex/SpaceX-API" target="_blank" rel="noopener">SpaceX API v5</a>, the most comprehensive open database of SpaceX mission information available. Data includes launch dates, mission names, payload descriptions, launch pad locations, rocket configurations, and mission success indicators. The API is updated by contributors following each SpaceX announcement and post-launch report. As of 2026, SpaceX has completed over 300 orbital missions with an industry-leading success rate above 97%.</p>
+
+      <h2>SpaceX Rocket Fleet Overview</h2>
+      <p>SpaceX currently operates three rocket families. The <strong>Falcon 9</strong> is a two-stage orbital rocket with a reusable first stage booster. Each booster can be reflown many times, dramatically reducing launch costs. Falcon 9 is the most frequently launched orbital rocket in history. The <strong>Falcon Heavy</strong> uses three Falcon 9 cores strapped together, capable of launching 63.8 tonnes to low Earth orbit — the most powerful operational rocket before Starship. <strong>Starship</strong> is SpaceX's next-generation fully reusable launch system designed for Mars missions, capable of carrying over 100 tonnes to orbit. The Starship Super Heavy booster produces more thrust than any rocket ever built, with over 70 Raptor engines generating approximately 74 meganewtons of thrust at sea level.</p>
+
+      <h2>Understanding Launch Success Rates</h2>
+      <p>SpaceX tracks mission outcomes as success, partial success, or failure. A mission is considered successful when the primary payload is delivered to the target orbit or destination. Booster recovery attempts — landing on drone ships or return-to-launch-site — are tracked separately from mission success, as a failed booster landing does not affect the primary mission outcome. Falcon 9's only in-flight failure was CRS-7 in June 2015; since then the vehicle has achieved an unbroken streak of mission successes spanning hundreds of launches. This reliability is a key reason Falcon 9 has captured the majority of the commercial satellite launch market.</p>
+
+      <h2>Upcoming Launches and Mission Details</h2>
+      <p>The upcoming launches tab shows all planned SpaceX missions sorted by launch date. Each mission card includes the mission name, target launch date, launch pad, rocket type, and payload description. Where available, a direct link to the official SpaceX webcast is shown — these streams are free to watch on SpaceX's YouTube channel and typically go live about 30–45 minutes before launch. Launch dates can shift due to weather constraints, range scheduling conflicts, or technical hold periods. Always verify with the official SpaceX webcast or SpaceX.com for the most current status before a scheduled launch.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools/' },
+      { name: 'SpaceX Launch Tracker' }
+    ];
+
+    var FAQS = [
+      { q: 'Where does the launch data come from?', a: 'Launch data is sourced from the community-maintained SpaceX API v5 (api.spacexdata.com), which aggregates publicly available information about SpaceX missions, rockets, and launch pads. The API is updated by contributors following each launch or announcement.' },
+      { q: 'How accurate is the launch countdown?', a: 'The countdown uses the launch date and time provided by the SpaceX API, based on SpaceX\'s public launch schedule. Launch times can change due to weather, technical issues, or range conflicts. Check SpaceX.com or the official webcast for the most current information.' },
+      { q: 'Can I watch the launch webcast here?', a: 'When a webcast link is available in the API data, it appears as a direct link to the official SpaceX YouTube stream. Click the webcast link to open it in a new tab. Not all launches have webcast links available before launch day.' },
+      { q: 'What rockets does SpaceX currently fly?', a: 'SpaceX currently operates the Falcon 9 (workhorse orbital rocket), Falcon Heavy (triple-core heavy lift), and Starship (next-generation mega-rocket). Falcon 9 is the most frequently flown rocket in history, with over 250 launches and near-perfect reliability.' },
+      { q: 'What is SpaceX\'s overall launch success rate?', a: 'As of 2026, SpaceX has achieved over a 97% mission success rate across all Falcon 9 and Falcon Heavy launches. Falcon 9 has had only one in-flight failure (CRS-7 in 2015) out of 250+ missions.' },
+      { q: 'How often does SpaceX launch?', a: 'SpaceX reached a launch cadence of over 90 launches in 2023, averaging roughly one launch every 4 days. In 2024 and 2025, the cadence continued to increase, driven by Starlink constellation deployment and commercial customer missions.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'tools/spacex-launch-tracker', name: 'SpaceX Launch Tracker', description: 'Track upcoming and past SpaceX launches with live countdowns and mission details.' },
+      { slug: 'evergreen/today-in-history', name: 'Today in History', description: 'Discover what happened in history on any date, including space milestones.' },
+      { slug: 'tools/countdown-timer', name: 'Countdown Timer', description: 'Create a countdown to any event or deadline.' },
+      { slug: 'evergreen/unit-converter', name: 'Unit Converter', description: 'Convert between metric and imperial units including mass, distance, and speed.' },
+      { slug: 'tools/world-clock', name: 'World Clock', description: 'Check current times in multiple cities and time zones around the world.' },
+      { slug: 'evergreen/date-calculator', name: 'Date Calculator', description: 'Calculate the difference between dates or add/subtract days from any date.' }
+    ];
+
+    // ---- SpaceX Tracker Logic ----
+    var SX_DATA = { upcoming: null, recent: null, rockets: null };
+    var SX_COUNTDOWN_INTERVAL = null;
+    var SX_ACTIVE_TAB = 'upcoming';
+
+    function sxSetTab(tab) {
+      SX_ACTIVE_TAB = tab;
+      document.querySelectorAll('.sx-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.sx-panel').forEach(function(p) { p.classList.remove('active'); });
+      document.querySelector('.sx-tab:nth-child(' + (['upcoming','recent','rockets'].indexOf(tab)+1) + ')').classList.add('active');
+      document.getElementById('panel-' + tab).classList.add('active');
+
+      if (tab === 'upcoming' && !SX_DATA.upcoming) sxLoadUpcoming();
+      if (tab === 'recent' && !SX_DATA.recent) sxLoadRecent();
+      if (tab === 'rockets' && !SX_DATA.rockets) sxLoadRockets();
+    }
+
+    function sxFmt(val) { return String(val).padStart(2, '0'); }
+
+    function sxFormatDate(dateStr) {
+      if (!dateStr) return 'TBD';
+      try {
+        var d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+      } catch(e) { return dateStr; }
+    }
+
+    function sxCountdown(dateStr) {
+      var target = new Date(dateStr).getTime();
+      var now = Date.now();
+      var diff = target - now;
+      if (diff <= 0) return null;
+      var d = Math.floor(diff / 86400000);
+      var h = Math.floor((diff % 86400000) / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      return { d: d, h: h, m: m, s: s };
+    }
+
+    function sxStartCountdown(dateStr, mission) {
+      clearInterval(SX_COUNTDOWN_INTERVAL);
+      var wrap = document.getElementById('sx-countdown-wrap');
+      if (!dateStr || !new Date(dateStr).getTime()) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      function render() {
+        var c = sxCountdown(dateStr);
+        if (!c) {
+          wrap.innerHTML = '<div class="sx-countdown"><div class="sx-countdown-label">Next Launch</div><div class="sx-countdown-mission">' + sxEsc(mission) + '</div><div style="color:var(--text-muted);font-size:var(--text-sm);">Launch window has passed — check for updates.</div></div>';
+          clearInterval(SX_COUNTDOWN_INTERVAL);
+          return;
+        }
+        wrap.innerHTML = '<div class="sx-countdown">'
+          + '<div class="sx-countdown-label">Next Launch Countdown</div>'
+          + '<div class="sx-countdown-mission">' + sxEsc(mission) + '</div>'
+          + '<div class="sx-countdown-units">'
+          + '<div class="sx-unit"><div class="sx-unit-val">' + sxFmt(c.d) + '</div><div class="sx-unit-lbl">Days</div></div>'
+          + '<div class="sx-sep">:</div>'
+          + '<div class="sx-unit"><div class="sx-unit-val">' + sxFmt(c.h) + '</div><div class="sx-unit-lbl">Hours</div></div>'
+          + '<div class="sx-sep">:</div>'
+          + '<div class="sx-unit"><div class="sx-unit-val">' + sxFmt(c.m) + '</div><div class="sx-unit-lbl">Min</div></div>'
+          + '<div class="sx-sep">:</div>'
+          + '<div class="sx-unit"><div class="sx-unit-val">' + sxFmt(c.s) + '</div><div class="sx-unit-lbl">Sec</div></div>'
+          + '</div>'
+          + '<button class="btn-secondary sx-share-btn" onclick="sxShareNext(\'' + sxEsc(mission) + '\',' + c.d + ')">Share Countdown</button>'
+          + '</div>';
+      }
+      render();
+      SX_COUNTDOWN_INTERVAL = setInterval(render, 1000);
+    }
+
+    function sxShareNext(mission, days) {
+      var msg = 'SpaceX ' + mission + ' launches in ' + days + ' day' + (days !== 1 ? 's' : '') + '! Track it at https://tool.teamzlab.com/tools/spacex-launch-tracker/';
+      if (window.safeClipboardText) window.safeClipboardText(msg, function() { window.showToast('Copied to clipboard!'); });
+      else navigator.clipboard.writeText(msg).then(function() { window.showToast('Copied to clipboard!'); }).catch(function() { window.showToast('Could not copy.'); });
+    }
+
+    function sxEsc(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    function sxLoadUpcoming() {
+      fetch('https://api.spacexdata.com/v5/launches/upcoming')
+        .then(function(r) { return r.json(); })
+        .then(function(launches) {
+          SX_DATA.upcoming = launches;
+          var sorted = launches.filter(function(l) { return l.date_utc; }).sort(function(a,b) { return new Date(a.date_utc) - new Date(b.date_utc); });
+          if (sorted.length > 0) sxStartCountdown(sorted[0].date_utc, sorted[0].name);
+
+          var html = '';
+          var shown = sorted.slice(0, 10);
+          if (!shown.length) { document.getElementById('sx-upcoming-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">No upcoming launches found.</div>'; return; }
+          shown.forEach(function(l) {
+            html += sxRenderUpcomingCard(l);
+          });
+          document.getElementById('sx-upcoming-list').innerHTML = html;
+        }).catch(function() {
+          document.getElementById('sx-upcoming-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">Could not load launch data. Please try again.</div>';
+        });
+    }
+
+    function sxRenderUpcomingCard(l) {
+      var html = '<div class="sx-card">';
+      html += '<div class="sx-card-header">';
+      if (l.links && l.links.patch && l.links.patch.small) html += '<img class="sx-patch" src="' + sxEsc(l.links.patch.small) + '" alt="' + sxEsc(l.name) + ' mission patch" onerror="this.style.display=\'none\'">';
+      html += '<div><div class="sx-mission-name">' + sxEsc(l.name) + '</div>';
+      html += '<div class="sx-meta">' + sxFormatDate(l.date_utc) + '</div>';
+      html += '<span class="sx-badge sx-badge-upcoming">Upcoming</span>';
+      html += '</div></div>';
+      html += '<div class="sx-detail-grid">';
+      if (l.rocket) html += '<div class="sx-detail-item"><div class="sx-detail-label">Rocket</div><div class="sx-detail-val">' + sxEsc(l.rocket) + '</div></div>';
+      if (l.launchpad) html += '<div class="sx-detail-item"><div class="sx-detail-label">Launch Pad</div><div class="sx-detail-val">' + sxEsc(l.launchpad) + '</div></div>';
+      if (l.details) html += '<div class="sx-detail-item" style="grid-column:1/-1"><div class="sx-detail-label">Mission</div><div class="sx-detail-val" style="font-weight:400;color:var(--text);">' + sxEsc(l.details.substring(0, 200)) + (l.details.length > 200 ? '…' : '') + '</div></div>';
+      html += '</div>';
+      if (l.links && l.links.webcast) html += '<a href="' + sxEsc(l.links.webcast) + '" target="_blank" rel="noopener" class="sx-webcast-btn">▶ Watch Webcast</a>';
+      html += '</div>';
+      return html;
+    }
+
+    function sxLoadRecent() {
+      fetch('https://api.spacexdata.com/v5/launches/past?limit=10')
+        .then(function(r) { return r.json(); })
+        .then(function(launches) {
+          SX_DATA.recent = launches;
+          var sorted = launches.sort(function(a,b) { return new Date(b.date_utc) - new Date(a.date_utc); }).slice(0, 10);
+          var html = '';
+          sorted.forEach(function(l) {
+            var success = l.success === true ? 'success' : l.success === false ? 'failed' : 'unknown';
+            var badge = success === 'success' ? '<span class="sx-badge sx-badge-success">✓ Success</span>' : success === 'failed' ? '<span class="sx-badge sx-badge-failed">✗ Failed</span>' : '<span class="sx-badge sx-badge-unknown">Unknown</span>';
+            html += '<div class="sx-card">';
+            html += '<div class="sx-card-header">';
+            if (l.links && l.links.patch && l.links.patch.small) html += '<img class="sx-patch" src="' + sxEsc(l.links.patch.small) + '" alt="' + sxEsc(l.name) + ' mission patch" onerror="this.style.display=\'none\'">';
+            html += '<div><div class="sx-mission-name">' + sxEsc(l.name) + '</div>';
+            html += '<div class="sx-meta">' + sxFormatDate(l.date_utc) + '</div>';
+            html += badge + '</div></div>';
+            html += '<div class="sx-detail-grid">';
+            if (l.rocket) html += '<div class="sx-detail-item"><div class="sx-detail-label">Rocket</div><div class="sx-detail-val">' + sxEsc(l.rocket) + '</div></div>';
+            if (l.launchpad) html += '<div class="sx-detail-item"><div class="sx-detail-label">Launch Pad</div><div class="sx-detail-val">' + sxEsc(l.launchpad) + '</div></div>';
+            if (l.details) html += '<div class="sx-detail-item" style="grid-column:1/-1"><div class="sx-detail-label">Mission</div><div class="sx-detail-val" style="font-weight:400;color:var(--text);">' + sxEsc(l.details.substring(0, 200)) + (l.details.length > 200 ? '…' : '') + '</div></div>';
+            html += '</div>';
+            if (l.links && l.links.webcast) html += '<a href="' + sxEsc(l.links.webcast) + '" target="_blank" rel="noopener" class="sx-webcast-btn">▶ Watch Replay</a>';
+            html += '</div>';
+          });
+          document.getElementById('sx-recent-list').innerHTML = html || '<div style="padding:20px;color:var(--text-muted);">No recent launches found.</div>';
+        }).catch(function() {
+          document.getElementById('sx-recent-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">Could not load launch data.</div>';
+        });
+    }
+
+    function sxLoadRockets() {
+      fetch('https://api.spacexdata.com/v4/rockets')
+        .then(function(r) { return r.json(); })
+        .then(function(rockets) {
+          SX_DATA.rockets = rockets;
+          var html = '';
+          rockets.forEach(function(r) {
+            html += '<div class="sx-rocket-card">';
+            html += '<div class="sx-rocket-name">' + sxEsc(r.name) + '</div>';
+            if (r.description) html += '<p style="font-size:var(--text-sm);color:var(--text);margin-bottom:14px;line-height:1.6;">' + sxEsc(r.description) + '</p>';
+            html += '<div class="sx-specs-grid">';
+            html += '<div class="sx-spec"><div class="sx-spec-val">' + (r.height ? r.height.meters + 'm' : 'N/A') + '</div><div class="sx-spec-lbl">Height</div></div>';
+            html += '<div class="sx-spec"><div class="sx-spec-val">' + (r.diameter ? r.diameter.meters + 'm' : 'N/A') + '</div><div class="sx-spec-lbl">Diameter</div></div>';
+            html += '<div class="sx-spec"><div class="sx-spec-val">' + (r.mass ? (r.mass.kg / 1000).toFixed(0) + 't' : 'N/A') + '</div><div class="sx-spec-lbl">Mass</div></div>';
+            html += '<div class="sx-spec"><div class="sx-spec-val">' + (r.payload_weights && r.payload_weights[0] ? r.payload_weights[0].kg.toLocaleString() + 'kg' : 'N/A') + '</div><div class="sx-spec-lbl">Payload (LEO)</div></div>';
+            html += '<div class="sx-spec"><div class="sx-spec-val">' + (r.success_rate_pct ? r.success_rate_pct + '%' : 'N/A') + '</div><div class="sx-spec-lbl">Success Rate</div></div>';
+            html += '<div class="sx-spec"><div class="sx-spec-val">' + (r.first_flight || 'N/A') + '</div><div class="sx-spec-lbl">First Flight</div></div>';
+            html += '</div>';
+            if (r.flickr_images && r.flickr_images[0]) html += '<img src="' + sxEsc(r.flickr_images[0]) + '" alt="' + sxEsc(r.name) + '" style="width:100%;border-radius:8px;margin-top:14px;max-height:200px;object-fit:cover;" loading="lazy" onerror="this.style.display=\'none\'">';
+            html += '</div>';
+          });
+          document.getElementById('sx-rockets-list').innerHTML = html || '<div style="padding:20px;color:var(--text-muted);">No rocket data available.</div>';
+        }).catch(function() {
+          document.getElementById('sx-rockets-list').innerHTML = '<div style="padding:20px;color:var(--text-muted);text-align:center;">Could not load rocket data.</div>';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      // Fix related tools — exclude self
+      TeamzTools.renderRelatedTools([
+        { slug: 'evergreen/today-in-history', name: 'Today in History', description: 'Discover what happened in history on any date, including space milestones.' },
+        { slug: 'tools/countdown-timer', name: 'Countdown Timer', description: 'Create a countdown to any event or deadline.' },
+        { slug: 'evergreen/unit-converter', name: 'Unit Converter', description: 'Convert between metric and imperial units including mass, distance, and speed.' },
+        { slug: 'tools/world-clock', name: 'World Clock', description: 'Check current times in multiple cities and time zones around the world.' },
+        { slug: 'evergreen/date-calculator', name: 'Date Calculator', description: 'Calculate the difference between dates or add/subtract days from any date.' },
+        { slug: 'tools/age-on-planets', name: 'Age on Other Planets', description: 'Find out how old you would be on Mars, Jupiter, or any other planet.' }
+      ]);
+      sxLoadUpcoming();
+    });
+  </script>
+</body>
+</html>

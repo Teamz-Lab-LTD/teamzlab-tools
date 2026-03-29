@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Search &amp; ISBN Lookup — Teamz Lab Tools</title>
+  <meta name="description" content="Search millions of books by title, author, or ISBN. Get cover images, descriptions, publication details, and preview links. Free, no signup needed.">
+  <meta property="og:title" content="Book Search &amp; ISBN Lookup — Teamz Lab Tools">
+  <meta property="og:description" content="Search millions of books by title, author, or ISBN. Get cover images, descriptions, publication details, and preview links. Free, no signup needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/book-search/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Book Search &amp; ISBN Lookup — Teamz Lab Tools">
+  <meta name="twitter:description" content="Search millions of books by title, author, or ISBN. Get cover images, descriptions, and preview links instantly. Free, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/book-search/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .bs-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+    .bs-tab {
+      padding: 10px 22px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: -2px;
+      transition: color 0.15s;
+    }
+    .bs-tab.active {
+      color: var(--heading);
+      border-bottom-color: var(--accent);
+    }
+    .bs-tab:hover { color: var(--heading); }
+    .bs-panel { display: none; }
+    .bs-panel.active { display: block; }
+    .bs-search-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .bs-search-row input {
+      flex: 1;
+      padding: 11px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .bs-search-row input:focus {
+      outline: 2px solid var(--accent);
+      border-color: var(--accent);
+    }
+    .bs-btn {
+      padding: 11px 20px;
+      background: var(--accent);
+      color: var(--accent-text);
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .bs-btn:hover { opacity: 0.9; }
+    .bs-btn-secondary {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+    }
+    .bs-history {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 16px;
+    }
+    .bs-chip {
+      padding: 3px 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.82rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .bs-chip:hover { border-color: var(--accent); }
+    .bs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .bs-book-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .bs-book-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .bs-book-cover {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: var(--bg);
+      display: block;
+    }
+    .bs-book-cover-placeholder {
+      width: 100%;
+      height: 180px;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+    }
+    .bs-book-info { padding: 12px; }
+    .bs-book-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--heading);
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .bs-book-author { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 3px; }
+    .bs-book-year { font-size: 0.8rem; color: var(--text-muted); }
+    .bs-detail-view {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      margin-top: 16px;
+    }
+    .bs-detail-inner { display: flex; gap: 22px; align-items: flex-start; }
+    .bs-detail-cover {
+      width: 130px;
+      min-width: 130px;
+      border-radius: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    .bs-detail-cover-placeholder {
+      width: 130px;
+      min-width: 130px;
+      height: 190px;
+      background: var(--bg);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+    .bs-detail-meta { flex: 1; }
+    .bs-detail-title { font-size: 1.4rem; font-weight: 800; color: var(--heading); margin-bottom: 6px; }
+    .bs-detail-author { color: var(--text-muted); margin-bottom: 10px; }
+    .bs-detail-desc { color: var(--text); line-height: 1.65; margin-bottom: 14px; font-size: 0.95rem; }
+    .bs-detail-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .bs-detail-link {
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .bs-detail-link-primary {
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+    .bs-detail-link-secondary {
+      background: var(--surface);
+      color: var(--heading);
+      border: 1px solid var(--border);
+    }
+    .bs-share-btn {
+      padding: 8px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--heading);
+    }
+    .bs-share-btn:hover { border-color: var(--accent); }
+    .bs-back-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      padding: 0;
+    }
+    .bs-back-btn:hover { color: var(--heading); }
+    .bs-loading { text-align: center; padding: 30px; color: var(--text-muted); }
+    .bs-empty { text-align: center; padding: 30px; color: var(--text-muted); }
+    .bs-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 2px;
+    }
+    @media (max-width: 600px) {
+      .bs-search-row { flex-wrap: wrap; }
+      .bs-btn { width: 100%; }
+      .bs-grid { grid-template-columns: repeat(2, 1fr); }
+      .bs-detail-inner { flex-direction: column; }
+      .bs-detail-cover, .bs-detail-cover-placeholder { width: 100%; min-width: unset; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Book Search & ISBN Lookup", "description": "Search millions of books by title, author, or ISBN. Get cover images, descriptions, publication details, and preview links.", "url": "https://tool.teamzlab.com/tools/book-search/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Book Search &amp; ISBN Lookup</h1>
+      <p class="tool-description">Search millions of books by title, author, or keyword. Or look up any book by ISBN-10 or ISBN-13 to get cover image, description, subjects, and links. Free, no account needed.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="bs-tabs">
+        <button class="bs-tab active" id="bs-tab-search">Search Books</button>
+        <button class="bs-tab" id="bs-tab-isbn">ISBN Lookup</button>
+      </div>
+
+      <!-- Search Panel -->
+      <div class="bs-panel active" id="bs-panel-search">
+        <div class="bs-search-row">
+          <input type="text" id="bs-search-input" placeholder="Search by title, author, or keyword..." autocomplete="off">
+          <button class="bs-btn" id="bs-search-btn">Search</button>
+          <button class="bs-btn bs-btn-secondary" id="bs-random-btn">Random Classic</button>
+        </div>
+        <div id="bs-search-history" class="bs-history"></div>
+        <div id="bs-search-results"></div>
+      </div>
+
+      <!-- ISBN Panel -->
+      <div class="bs-panel" id="bs-panel-isbn">
+        <div class="bs-search-row">
+          <input type="text" id="bs-isbn-input" placeholder="Enter ISBN-10 or ISBN-13 (e.g. 9780141439518)..." autocomplete="off">
+          <button class="bs-btn" id="bs-isbn-btn">Lookup</button>
+        </div>
+        <div id="bs-isbn-results"></div>
+      </div>
+
+      <!-- Detail View (shared) -->
+      <div id="bs-detail" class="bs-detail-view">
+        <button class="bs-back-btn" id="bs-back-btn">&#8592; Back to results</button>
+        <div id="bs-detail-content"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Book Search Tool Works</h2>
+      <p>This free online book finder connects to the <strong>Open Library API</strong>, maintained by the Internet Archive. Open Library catalogs over 20 million book editions contributed by libraries, publishers, and volunteers worldwide. When you search by title, author, or keyword, the tool queries Open Library's full-text search API and returns the most relevant matches with cover images, author names, and first publication year. No API key is required and all searches are completely free.</p>
+      <p>The tool has two search modes. <strong>Search Books</strong> accepts any query — you can type a book title, an author's name, a subject like "World War II history," or any combination. <strong>ISBN Lookup</strong> accepts any 10 or 13-digit ISBN and retrieves the exact edition, including the publisher, publication date, page count, and full subject list. This is useful for checking library holdings, comparing editions, or verifying publication details for citations.</p>
+
+      <h2>ISBN Lookup and Classic Books</h2>
+      <p>ISBN (International Standard Book Number) is a unique identifier assigned to every edition of every published book. ISBN-13 became the global standard in 2007, though older books still use 10-digit ISBNs. Both formats work with this tool. The "Random Classic" button randomly selects one of the world's most celebrated books — including Pride and Prejudice, 1984, Moby Dick, Don Quixote, and The Great Gatsby — and looks it up by its known ISBN, giving you a curated discovery experience every time you click.</p>
+
+      <h2>Finding Books on Amazon and Goodreads</h2>
+      <p>When you click any book, the detail view shows links to search for that title on Amazon and Goodreads. These are search links rather than direct product links, which means they always work regardless of regional availability or edition variations. Amazon's link helps you find purchasing options, while the Goodreads link shows community ratings, reviews, and reading lists. Your recent searches are saved as clickable chips using browser localStorage, so you can quickly return to books you looked at without re-typing. Last updated: March 2026 using Open Library API v3.</p>
+
+      <h2>Privacy and Data</h2>
+      <p>Your recent searches are stored only in your browser's localStorage and are never transmitted to Teamz Lab servers. The search queries themselves go to Open Library's public API, which is operated by the Internet Archive — a non-profit digital library committed to preserving universal access to knowledge. No personal account is needed, no email address is required, and no usage data is tracked by this tool.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    TeamzTools.renderBreadcrumbs([
+      {name:'Home', url:'/'},
+      {name:'Tools', url:'/tools/'},
+      {name:'Book Search & ISBN Lookup'}
+    ]);
+
+    TeamzTools.renderFAQs([
+      {q:'Is this book search tool free?', a:'Yes, completely free. It uses the Open Library API from the Internet Archive, which requires no API key and no signup. You can search as many books as you like at no cost.'},
+      {q:'How many books are in the database?', a:'Open Library catalogs over 20 million editions from libraries and publishers worldwide. It includes books in all languages, from ancient texts to modern publications.'},
+      {q:'How do I search by ISBN?', a:'Switch to the \'ISBN Lookup\' tab, paste any ISBN-10 or ISBN-13 number, and click Lookup. The tool fetches the exact edition from Open Library\'s book API and shows full details.'},
+      {q:'What does the Random Classic button do?', a:'It picks a random famous book from a built-in list of classics (Pride and Prejudice, 1984, Moby Dick, etc.) and looks it up by ISBN, giving you a curated discovery experience.'},
+      {q:'Can I buy books directly from this tool?', a:'This tool shows links to search for the book on Amazon and Goodreads. We don\'t sell books directly — we link to trusted external platforms where you can purchase or review them.'},
+      {q:'Are my searches private?', a:'Your recent searches are stored in your browser\'s localStorage only. No data is sent to Teamz Lab servers. Queries do go to the Open Library API to fetch results, as with any online search.'},
+      {q:'Does this work for non-English books?', a:'Yes. Open Library contains books in all languages. Search by title in any language or by ISBN for the specific edition you need.'}
+    ]);
+
+    TeamzTools.renderRelatedTools([
+      {slug:'tools/wikipedia-quick-facts', name:'Wikipedia Quick Facts', description:'Search Wikipedia and get instant article summaries and key facts.'},
+      {slug:'text/word-definition-lookup', name:'Word Definition Lookup', description:'Look up any English word — definitions, phonetics, synonyms, and audio.'},
+      {slug:'text/citation-formatter', name:'Citation Formatter', description:'Format citations in APA, MLA, and Chicago styles instantly.'},
+      {slug:'text/readability-checker', name:'Readability Checker', description:'Check Flesch Reading Ease and grade level of your writing.'},
+      {slug:'text/word-counter', name:'Word Counter', description:'Count words, characters, sentences, and estimate reading time.'},
+      {slug:'tools/ai-text-summarizer', name:'AI Text Summarizer', description:'Summarize long articles and documents into key points with AI.'}
+    ]);
+
+    // ---- Tabs ----
+    var tabSearch = document.getElementById('bs-tab-search');
+    var tabIsbn = document.getElementById('bs-tab-isbn');
+    var panelSearch = document.getElementById('bs-panel-search');
+    var panelIsbn = document.getElementById('bs-panel-isbn');
+    var detailView = document.getElementById('bs-detail');
+
+    tabSearch.addEventListener('click', function() {
+      tabSearch.classList.add('active'); tabIsbn.classList.remove('active');
+      panelSearch.classList.add('active'); panelIsbn.classList.remove('active');
+      hideEl(detailView);
+    });
+    tabIsbn.addEventListener('click', function() {
+      tabIsbn.classList.add('active'); tabSearch.classList.remove('active');
+      panelIsbn.classList.add('active'); panelSearch.classList.remove('active');
+      hideEl(detailView);
+    });
+
+    // ---- Classic ISBNs ----
+    var CLASSICS = [
+      {isbn:'9780141439518', title:'Pride and Prejudice'},
+      {isbn:'9780451524935', title:'1984'},
+      {isbn:'9780140861723', title:'Moby Dick'},
+      {isbn:'9780743273565', title:'The Great Gatsby'},
+      {isbn:'9780743477123', title:'Romeo and Juliet'},
+      {isbn:'9780486415864', title:'Don Quixote'},
+      {isbn:'9780486284729', title:'Crime and Punishment'},
+      {isbn:'9780140449136', title:'Anna Karenina'},
+      {isbn:'9780307346612', title:'One Hundred Years of Solitude'},
+      {isbn:'9780061120084', title:'To Kill a Mockingbird'}
+    ];
+
+    // ---- History ----
+    var HIST_KEY = 'bs-history';
+    function getHistory() {
+      try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch(e){ return []; }
+    }
+    function addHistory(term) {
+      var h = getHistory().filter(function(t){ return t !== term; });
+      h.unshift(term);
+      if (h.length > 8) h = h.slice(0,8);
+      try { localStorage.setItem(HIST_KEY, JSON.stringify(h)); } catch(e){}
+      renderHistory();
+    }
+    function renderHistory() {
+      var h = getHistory();
+      var c = document.getElementById('bs-search-history');
+      c.innerHTML = '';
+      h.forEach(function(t) {
+        var chip = document.createElement('span');
+        chip.className = 'bs-chip';
+        chip.textContent = t;
+        chip.addEventListener('click', function(){ doSearch(t); });
+        c.appendChild(chip);
+      });
+    }
+    renderHistory();
+
+    // ---- Search ----
+    var searchInput = document.getElementById('bs-search-input');
+    var lastResults = [];
+
+    document.getElementById('bs-search-btn').addEventListener('click', function() {
+      var q = searchInput.value.trim();
+      if (q) doSearch(q);
+    });
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { var q = searchInput.value.trim(); if (q) doSearch(q); }
+    });
+
+    document.getElementById('bs-random-btn').addEventListener('click', function() {
+      var classic = CLASSICS[Math.floor(Math.random() * CLASSICS.length)];
+      doIsbnLookup(classic.isbn, document.getElementById('bs-search-results'));
+      panelSearch.classList.add('active'); panelIsbn.classList.remove('active');
+      tabSearch.classList.add('active'); tabIsbn.classList.remove('active');
+    });
+
+    function doSearch(query) {
+      addHistory(query);
+      searchInput.value = query;
+      hideEl(detailView);
+      var container = document.getElementById('bs-search-results');
+      container.innerHTML = '<div class="bs-loading">Searching for <strong>' + escHtml(query) + '</strong>...</div>';
+
+      var url = 'https://openlibrary.org/search.json?q=' + encodeURIComponent(query) + '&limit=12&fields=key,title,author_name,first_publish_year,isbn,cover_i,subject';
+      fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          lastResults = (data.docs || []);
+          renderSearchResults(lastResults, container);
+        })
+        .catch(function() {
+          container.innerHTML = '<div class="bs-empty">Search failed. Please check your connection and try again.</div>';
+        });
+    }
+
+    function renderSearchResults(books, container) {
+      if (!books.length) {
+        container.innerHTML = '<div class="bs-empty">No books found. Try a different search term.</div>';
+        return;
+      }
+      var html = '<div class="bs-grid">';
+      books.forEach(function(book, idx) {
+        var coverId = book.cover_i;
+        var title = escHtml(book.title || 'Unknown Title');
+        var author = book.author_name ? escHtml(book.author_name[0]) : 'Unknown Author';
+        var year = book.first_publish_year || '';
+
+        html += '<div class="bs-book-card" data-idx="' + idx + '">';
+        if (coverId) {
+          html += '<img class="bs-book-cover" src="https://covers.openlibrary.org/b/id/' + coverId + '-M.jpg" alt="' + title + '" loading="lazy" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\'">';
+          html += '<div class="bs-book-cover-placeholder" style="display:none">&#128218;</div>';
+        } else {
+          html += '<div class="bs-book-cover-placeholder">&#128218;</div>';
+        }
+        html += '<div class="bs-book-info">';
+        html += '<div class="bs-book-title">' + title + '</div>';
+        html += '<div class="bs-book-author">' + author + '</div>';
+        if (year) html += '<div class="bs-book-year">' + year + '</div>';
+        html += '</div></div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+
+      container.querySelectorAll('.bs-book-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+          var idx = parseInt(card.getAttribute('data-idx'));
+          showBookDetail(books[idx]);
+        });
+      });
+    }
+
+    // ---- ISBN Lookup ----
+    var isbnInput = document.getElementById('bs-isbn-input');
+    document.getElementById('bs-isbn-btn').addEventListener('click', function() {
+      var isbn = isbnInput.value.replace(/[^0-9Xx]/g,'').trim();
+      if (isbn) doIsbnLookup(isbn, document.getElementById('bs-isbn-results'));
+    });
+    isbnInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        var isbn = isbnInput.value.replace(/[^0-9Xx]/g,'').trim();
+        if (isbn) doIsbnLookup(isbn, document.getElementById('bs-isbn-results'));
+      }
+    });
+
+    function doIsbnLookup(isbn, container) {
+      hideEl(detailView);
+      container.innerHTML = '<div class="bs-loading">Looking up ISBN ' + escHtml(isbn) + '...</div>';
+      var url = 'https://openlibrary.org/api/books?bibkeys=ISBN:' + encodeURIComponent(isbn) + '&format=json&jscmd=data';
+      fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+          var key = 'ISBN:' + isbn;
+          if (!data[key]) {
+            container.innerHTML = '<div class="bs-empty">No book found for ISBN ' + escHtml(isbn) + '. Check the number and try again.</div>';
+            return;
+          }
+          var book = data[key];
+          showBookDetailFromISBN(book, isbn);
+          container.innerHTML = '';
+        })
+        .catch(function() {
+          container.innerHTML = '<div class="bs-empty">Lookup failed. Please check your connection and try again.</div>';
+        });
+    }
+
+    // ---- Detail Views ----
+    function showBookDetail(book) {
+      var title = book.title || 'Unknown Title';
+      var author = (book.author_name || ['Unknown'])[0];
+      var year = book.first_publish_year || '';
+      var coverId = book.cover_i;
+      var isbn = (book.isbn || [])[0] || '';
+      var subjects = (book.subject || []).slice(0, 6);
+      var olKey = book.key || '';
+
+      var coverHtml = coverId
+        ? '<img class="bs-detail-cover" src="https://covers.openlibrary.org/b/id/' + coverId + '-L.jpg" alt="' + escHtml(title) + '" onerror="this.outerHTML=\'<div class=bs-detail-cover-placeholder>&#128218;</div>\'">'
+        : '<div class="bs-detail-cover-placeholder">&#128218;</div>';
+
+      var olUrl = olKey ? 'https://openlibrary.org' + olKey : '';
+      var amazonUrl = 'https://www.amazon.com/s?k=' + encodeURIComponent(title + ' ' + author);
+      var goodreadsUrl = 'https://www.goodreads.com/search?q=' + encodeURIComponent(title);
+
+      var subjectHtml = subjects.map(function(s){ return '<span class="bs-tag">' + escHtml(s) + '</span>'; }).join('');
+
+      var html = '<div class="bs-detail-inner">';
+      html += coverHtml;
+      html += '<div class="bs-detail-meta">';
+      html += '<div class="bs-detail-title">' + escHtml(title) + '</div>';
+      html += '<div class="bs-detail-author">by ' + escHtml(author) + (year ? ' &middot; ' + year : '') + '</div>';
+      if (subjects.length) html += '<div style="margin-bottom:12px">' + subjectHtml + '</div>';
+      html += '<div class="bs-detail-links">';
+      if (olUrl) html += '<a class="bs-detail-link bs-detail-link-primary" href="' + escHtml(olUrl) + '" target="_blank" rel="noopener">View on Open Library</a>';
+      html += '<a class="bs-detail-link bs-detail-link-secondary" href="' + escHtml(amazonUrl) + '" target="_blank" rel="noopener">Search on Amazon</a>';
+      html += '<a class="bs-detail-link bs-detail-link-secondary" href="' + escHtml(goodreadsUrl) + '" target="_blank" rel="noopener">Find on Goodreads</a>';
+      html += '<button class="bs-share-btn" id="bs-share-btn">Share</button>';
+      html += '</div></div></div>';
+
+      document.getElementById('bs-detail-content').innerHTML = html;
+      showEl(detailView, 'block');
+      detailView.scrollIntoView({behavior:'smooth', block:'start'});
+
+      var capturedTitle = title;
+      var capturedAuthor = author;
+      var capturedOlUrl = olUrl || 'https://openlibrary.org';
+      document.getElementById('bs-share-btn').addEventListener('click', function() {
+        var text = 'Check out "' + capturedTitle + '" by ' + capturedAuthor + ' — ' + capturedOlUrl;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(function(){ window.showToast('Book link copied!'); })
+            .catch(function(){ window.showToast('Copy failed — please copy manually.'); });
+        } else {
+          window.showToast('Clipboard not supported.');
+        }
+      });
+    }
+
+    function showBookDetailFromISBN(book, isbn) {
+      var title = book.title || 'Unknown Title';
+      var authors = (book.authors || []).map(function(a){ return a.name; }).join(', ') || 'Unknown Author';
+      var year = (book.publish_date || '');
+      var publisher = (book.publishers || []).map(function(p){ return p.name; }).join(', ');
+      var pages = book.number_of_pages || '';
+      var subjects = (book.subjects || []).map(function(s){ return s.name || s; }).slice(0,6);
+      var coverId = book.cover ? (book.cover.large || book.cover.medium || '') : '';
+      var olUrl = book.url || '';
+      var desc = book.notes || '';
+
+      var coverHtml = coverId
+        ? '<img class="bs-detail-cover" src="' + escHtml(coverId) + '" alt="' + escHtml(title) + '" onerror="this.outerHTML=\'<div class=bs-detail-cover-placeholder>&#128218;</div>\'">'
+        : '<div class="bs-detail-cover-placeholder">&#128218;</div>';
+
+      var amazonUrl = 'https://www.amazon.com/s?k=' + encodeURIComponent(title);
+      var goodreadsUrl = 'https://www.goodreads.com/search?q=' + encodeURIComponent(isbn || title);
+      var subjectHtml = subjects.map(function(s){ return '<span class="bs-tag">' + escHtml(typeof s === 'string' ? s : (s.name||'')) + '</span>'; }).join('');
+
+      var html = '<div class="bs-detail-inner">';
+      html += coverHtml;
+      html += '<div class="bs-detail-meta">';
+      html += '<div class="bs-detail-title">' + escHtml(title) + '</div>';
+      html += '<div class="bs-detail-author">by ' + escHtml(authors) + (year ? ' &middot; ' + year : '') + '</div>';
+      if (publisher) html += '<div style="font-size:0.9rem;color:var(--text-muted);margin-bottom:6px">Publisher: ' + escHtml(publisher) + (pages ? ' &middot; ' + pages + ' pages' : '') + '</div>';
+      if (desc) html += '<div class="bs-detail-desc">' + escHtml(typeof desc === 'string' ? desc : '') + '</div>';
+      if (subjects.length) html += '<div style="margin-bottom:12px">' + subjectHtml + '</div>';
+      html += '<div class="bs-detail-links">';
+      if (olUrl) html += '<a class="bs-detail-link bs-detail-link-primary" href="' + escHtml(olUrl) + '" target="_blank" rel="noopener">View on Open Library</a>';
+      html += '<a class="bs-detail-link bs-detail-link-secondary" href="' + escHtml(amazonUrl) + '" target="_blank" rel="noopener">Search on Amazon</a>';
+      html += '<a class="bs-detail-link bs-detail-link-secondary" href="' + escHtml(goodreadsUrl) + '" target="_blank" rel="noopener">Find on Goodreads</a>';
+      html += '<button class="bs-share-btn" id="bs-share-btn-isbn">Share</button>';
+      html += '</div></div></div>';
+
+      document.getElementById('bs-detail-content').innerHTML = html;
+      showEl(detailView, 'block');
+      detailView.scrollIntoView({behavior:'smooth', block:'start'});
+
+      var capturedTitle = title;
+      var capturedAuthors = authors;
+      var capturedOlUrl = olUrl || 'https://openlibrary.org';
+      document.getElementById('bs-share-btn-isbn').addEventListener('click', function() {
+        var text = 'Check out "' + capturedTitle + '" by ' + capturedAuthors + ' — ' + capturedOlUrl;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(function(){ window.showToast('Book link copied!'); })
+            .catch(function(){ window.showToast('Copy failed — please copy manually.'); });
+        } else {
+          window.showToast('Clipboard not supported.');
+        }
+      });
+    }
+
+    // Back button
+    document.getElementById('bs-back-btn').addEventListener('click', function() {
+      hideEl(detailView);
+    });
+
+    function escHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+  });
+  </script>
+</body>
+</html>

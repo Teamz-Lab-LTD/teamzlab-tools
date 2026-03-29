@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Crypto Price Dashboard — Teamz Lab Tools</title>
+  <meta name="description" content="Track live cryptocurrency prices, market cap, and 24h changes for 100+ coins. Free, real-time, no signup — powered by CoinGecko public API.">
+  <meta property="og:title" content="Live Crypto Price Dashboard — Teamz Lab Tools">
+  <meta property="og:description" content="Track live cryptocurrency prices, market cap, and 24h changes for 100+ coins. Free, real-time, no signup — powered by CoinGecko public API.">
+  <meta property="og:url" content="https://tool.teamzlab.com/crypto/live-crypto-dashboard/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/crypto.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Live Crypto Price Dashboard — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track live cryptocurrency prices, market cap, and 24h changes for 100+ coins. Free, real-time, no signup.">
+  <link rel="canonical" href="https://tool.teamzlab.com/crypto/live-crypto-dashboard/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .crypto-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .crypto-search {
+      flex: 1;
+      min-width: 180px;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-sm);
+    }
+    .crypto-search:focus { outline: 2px solid var(--accent); }
+    .crypto-select {
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-sm);
+      cursor: pointer;
+    }
+    .crypto-auto-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .crypto-auto-label input { accent-color: var(--accent); cursor: pointer; }
+    .crypto-countdown {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      min-width: 70px;
+    }
+    .fear-bar {
+      padding: 10px 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: var(--text-sm);
+    }
+    .fear-label { font-weight: 700; font-size: var(--text-base); }
+    .fear-extreme-greed .fear-label { color: var(--color-success, #22c55e); }
+    .fear-greed .fear-label { color: var(--color-success-muted, #86efac); }
+    .fear-neutral .fear-label { color: var(--text-muted); }
+    .fear-fear .fear-label { color: var(--color-warning, #fbbf24); }
+    .fear-extreme-fear .fear-label { color: var(--color-danger, #f87171); }
+    .crypto-table-wrap { overflow-x: auto; }
+    .crypto-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .crypto-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .crypto-table th:hover { color: var(--heading); }
+    .crypto-table th.sorted { color: var(--accent); }
+    .crypto-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .crypto-table tr:last-child td { border-bottom: none; }
+    .crypto-table tr:hover td { background: var(--surface); }
+    .coin-name-cell { display: flex; align-items: center; gap: 8px; }
+    .coin-icon { width: 24px; height: 24px; border-radius: 50%; }
+    .coin-symbol { color: var(--text-muted); font-size: var(--text-xs); }
+    .coin-link { color: var(--heading); text-decoration: none; font-weight: 600; }
+    .coin-link:hover { color: var(--accent); text-decoration: underline; }
+    .change-pos { color: var(--color-success, #22c55e); font-weight: 600; }
+    .change-neg { color: var(--color-danger, #f87171); font-weight: 600; }
+    .change-zero { color: var(--text-muted); }
+    .mcap-cell, .vol-cell { color: var(--text-muted); }
+    .stale-notice {
+      display: none;
+      padding: 8px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .chart-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      max-width: 560px;
+      width: 95%;
+      position: relative;
+    }
+    .chart-title { font-size: var(--text-base); font-weight: 700; color: var(--heading); margin-bottom: 14px; }
+    .chart-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+    }
+    .chart-close:hover { color: var(--heading); }
+    #chart-canvas { width: 100%; border-radius: 8px; }
+    .chart-loading { text-align: center; padding: 40px 0; color: var(--text-muted); font-size: var(--text-sm); }
+    .rank-cell { color: var(--text-muted); font-size: var(--text-xs); }
+    .refresh-btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--heading);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .refresh-btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .loading-overlay {
+      text-align: center;
+      padding: 48px 0;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+    }
+    @media (max-width: 600px) {
+      .crypto-controls { flex-direction: column; align-items: stretch; }
+      .crypto-search { min-width: unset; }
+      .fear-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .crypto-table th, .crypto-table td { padding: 8px 8px; font-size: var(--text-xs); }
+      .coin-icon { width: 20px; height: 20px; }
+      .mcap-cell, .vol-cell { display: none; }
+      .chart-box { padding: 16px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How often does the dashboard update prices?", "acceptedAnswer": {"@type": "Answer", "text": "Prices are fetched live from CoinGecko's free public API. Data is cached for 2 minutes in your browser. With auto-refresh enabled, new data is fetched every 60 seconds automatically."}}, {"@type": "Question", "name": "Which cryptocurrencies are shown?", "acceptedAnswer": {"@type": "Answer", "text": "The dashboard shows the top 50 cryptocurrencies by market capitalization, including Bitcoin (BTC), Ethereum (ETH), BNB, Solana (SOL), XRP, and many more. You can filter by name using the search box."}}, {"@type": "Question", "name": "What currencies can I use?", "acceptedAnswer": {"@type": "Answer", "text": "You can view prices in USD, EUR, GBP, BDT (Bangladeshi Taka), and INR (Indian Rupee). Select your preferred currency from the dropdown and all prices update instantly."}}, {"@type": "Question", "name": "What does the Fear & Greed indicator show?", "acceptedAnswer": {"@type": "Answer", "text": "The Fear & Greed indicator calculates the average 24-hour price change across the top 50 coins. A strongly positive average signals market Greed; a negative average signals Fear."}}, {"@type": "Question", "name": "Is my data private?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. This tool fetches data directly from the CoinGecko API in your browser. No personal data is collected or stored on our servers."}}, {"@type": "Question", "name": "What is the 7-day price chart?", "acceptedAnswer": {"@type": "Answer", "text": "Clicking any coin name loads its 7-day price history as a line chart drawn using the HTML Canvas API. The chart shows how the coin's USD price has moved over the past week."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Live Crypto Price Dashboard", "description": "Track live cryptocurrency prices, market cap, and 24h changes for 100+ coins powered by CoinGecko.", "url": "https://tool.teamzlab.com/crypto/live-crypto-dashboard/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Live Crypto Price Dashboard</h1>
+      <p class="tool-description">Track live cryptocurrency prices, 24h changes, market cap, and trading volume for the top 50 coins — updated every 60 seconds via CoinGecko. Filter, sort, and click any coin for its 7-day price chart.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="crypto-controls">
+        <input type="text" id="crypto-search" class="crypto-search" placeholder="Search coins by name or symbol..." aria-label="Search coins">
+        <select id="currency-select" class="crypto-select" aria-label="Select currency">
+          <option value="usd">USD ($)</option>
+          <option value="eur">EUR (€)</option>
+          <option value="gbp">GBP (£)</option>
+          <option value="bdt">BDT (৳)</option>
+          <option value="inr">INR (₹)</option>
+        </select>
+        <label class="crypto-auto-label">
+          <input type="checkbox" id="auto-refresh" checked> Auto-refresh
+        </label>
+        <span id="countdown" class="crypto-countdown"></span>
+        <button id="manual-refresh" class="refresh-btn">↻ Refresh</button>
+      </div>
+
+      <div id="stale-notice" class="stale-notice"></div>
+      <div id="fear-bar" class="fear-bar" style="display:none"></div>
+
+      <div class="crypto-table-wrap">
+        <div id="crypto-loading" class="loading-overlay">Loading live prices...</div>
+        <table class="crypto-table" id="crypto-table" style="display:none">
+          <thead>
+            <tr>
+              <th id="th-rank" class="sorted" data-col="rank">#</th>
+              <th id="th-name" data-col="name">Coin</th>
+              <th id="th-price" data-col="price">Price</th>
+              <th id="th-change" data-col="change">24h %</th>
+              <th id="th-mcap" data-col="mcap" class="mcap-cell">Market Cap</th>
+              <th id="th-vol" data-col="vol" class="vol-cell">24h Volume</th>
+            </tr>
+          </thead>
+          <tbody id="crypto-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div id="chart-modal" class="chart-modal" role="dialog" aria-modal="true" aria-labelledby="chart-title">
+      <div class="chart-box">
+        <button class="chart-close" id="chart-close" aria-label="Close chart">×</button>
+        <div class="chart-title" id="chart-title">7-Day Price Chart</div>
+        <div id="chart-loading" class="chart-loading">Loading chart...</div>
+        <canvas id="chart-canvas" width="500" height="220" style="display:none"></canvas>
+      </div>
+    </div>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Live Crypto Price Dashboard Works</h2>
+      <p>This real-time cryptocurrency price tracker fetches live market data directly from the CoinGecko public API — one of the most reliable and widely used crypto data sources, serving over 900 million API calls per month. The dashboard displays the top 50 cryptocurrencies ranked by market capitalization, with prices, 24-hour percentage changes, market cap figures, and trading volume updated every 60 seconds.</p>
+      <p>All data is fetched directly in your browser. Nothing is sent to our servers. Prices are cached for 2 minutes in your browser's localStorage, so if your connection drops temporarily, you still see the last known data with a timestamp showing when it was last refreshed.</p>
+
+      <h2>Understanding Crypto Market Data</h2>
+      <p>Each column in the dashboard gives you a different view of a coin's market position:</p>
+      <ul>
+        <li><strong>Price</strong> — the current trading price in your selected currency (USD, EUR, GBP, BDT, or INR)</li>
+        <li><strong>24h %</strong> — how much the price has changed in the last 24 hours. Green means the price has risen; red means it has fallen.</li>
+        <li><strong>Market Cap</strong> — the total value of all coins in circulation (price × circulating supply). This is the most common way to rank cryptocurrencies by size.</li>
+        <li><strong>24h Volume</strong> — how much of the coin was traded in the last 24 hours. High volume often confirms a price move is significant.</li>
+      </ul>
+      <p>Click any coin name to see its 7-day price history as a line chart, giving you a quick visual of recent price momentum.</p>
+
+      <h2>What Is the Fear & Greed Indicator?</h2>
+      <p>The market sentiment bar at the top of the dashboard shows a simplified Fear & Greed reading based on the average 24-hour price change across all top 50 coins. When most coins are rising strongly (average change above +3%), the market is in "Extreme Greed" — often a caution signal that prices may be overheated. When most coins are falling (average change below -3%), the market is in "Extreme Fear" — historically a potential buying opportunity for long-term investors.</p>
+      <p>This indicator is a simplified version of the well-known Crypto Fear & Greed Index and is intended as a quick pulse-check, not financial advice.</p>
+
+      <h2>Tips for Using This Dashboard</h2>
+      <p>Use the search box to quickly filter coins by name or symbol — type "BTC" or "bitcoin" to jump straight to Bitcoin. Switch currencies using the dropdown to see prices in your local currency. The auto-refresh toggle keeps prices current while you monitor the market; turn it off if you want a static snapshot to study. You can click any column header to sort the table by that metric — for example, sorting by 24h % lets you instantly see today's biggest movers. Last updated: March 2026.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var CACHE_KEY = 'crypto_dashboard_v2';
+    var CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+    var CHART_CACHE_KEY = 'crypto_chart_v1_';
+    var CHART_TTL = 10 * 60 * 1000; // 10 minutes
+    var autoInterval = null;
+    var countdownInterval = null;
+    var secondsLeft = 60;
+    var allCoins = [];
+    var sortCol = 'rank';
+    var sortDir = 1; // 1=asc, -1=desc
+    var currentCurrency = 'usd';
+
+    var CURRENCY_SYMBOLS = { usd: '$', eur: '€', gbp: '£', bdt: '৳', inr: '₹' };
+
+    function fmtPrice(val) {
+      if (val === null || val === undefined) return 'N/A';
+      var sym = CURRENCY_SYMBOLS[currentCurrency] || '$';
+      if (val >= 1000) return sym + val.toLocaleString('en', {maximumFractionDigits: 2});
+      if (val >= 1) return sym + val.toFixed(4);
+      return sym + val.toFixed(6);
+    }
+    function fmtLarge(val) {
+      if (!val) return 'N/A';
+      var sym = CURRENCY_SYMBOLS[currentCurrency] || '$';
+      if (val >= 1e12) return sym + (val / 1e12).toFixed(2) + 'T';
+      if (val >= 1e9) return sym + (val / 1e9).toFixed(2) + 'B';
+      if (val >= 1e6) return sym + (val / 1e6).toFixed(2) + 'M';
+      return sym + val.toLocaleString('en');
+    }
+    function fmtChange(val) {
+      if (val === null || val === undefined) return '<span class="change-zero">—</span>';
+      var cls = val > 0 ? 'change-pos' : val < 0 ? 'change-neg' : 'change-zero';
+      var arrow = val > 0 ? '▲' : val < 0 ? '▼' : '';
+      return '<span class="' + cls + '">' + arrow + ' ' + Math.abs(val).toFixed(2) + '%</span>';
+    }
+
+    function getCache() {
+      try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        var obj = JSON.parse(raw);
+        if (Date.now() - obj.ts > CACHE_TTL) return null;
+        return obj;
+      } catch(e) { return null; }
+    }
+    function setCache(data) {
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+    }
+    function getStaleCache() {
+      try {
+        var raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch(e) { return null; }
+    }
+
+    function fetchCoins() {
+      var currency = currentCurrency;
+      var url = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=' + currency + '&order=market_cap_desc&per_page=50&page=1&sparkline=false';
+      return fetch(url).then(function(r) {
+        if (!r.ok) throw new Error('API error ' + r.status);
+        return r.json();
+      });
+    }
+
+    function renderFearBar(coins) {
+      var bar = document.getElementById('fear-bar');
+      if (!bar) return;
+      var changes = coins.map(function(c) { return c.price_change_percentage_24h || 0; });
+      var avg = changes.reduce(function(a,b){ return a+b; }, 0) / changes.length;
+      var label, cls, desc;
+      if (avg >= 3) { label = 'Extreme Greed'; cls = 'fear-extreme-greed'; desc = 'Market avg +' + avg.toFixed(1) + '% — be cautious.'; }
+      else if (avg >= 1) { label = 'Greed'; cls = 'fear-greed'; desc = 'Market avg +' + avg.toFixed(1) + '% — bullish sentiment.'; }
+      else if (avg > -1) { label = 'Neutral'; cls = 'fear-neutral'; desc = 'Market avg ' + avg.toFixed(1) + '% — sideways action.'; }
+      else if (avg > -3) { label = 'Fear'; cls = 'fear-fear'; desc = 'Market avg ' + avg.toFixed(1) + '% — bearish sentiment.'; }
+      else { label = 'Extreme Fear'; cls = 'fear-extreme-fear'; desc = 'Market avg ' + avg.toFixed(1) + '% — potential opportunity?'; }
+      bar.className = 'fear-bar ' + cls;
+      bar.innerHTML = '<span>Market Sentiment:</span><span class="fear-label">' + label + '</span><span style="color:var(--text-muted)">' + desc + '</span>';
+      showEl(bar);
+    }
+
+    function renderTable(coins) {
+      var query = (document.getElementById('crypto-search') ? document.getElementById('crypto-search').value : '').toLowerCase();
+      var filtered = coins.filter(function(c) {
+        return !query || c.name.toLowerCase().includes(query) || (c.symbol || '').toLowerCase().includes(query);
+      });
+      // sort
+      filtered.sort(function(a, b) {
+        var av, bv;
+        if (sortCol === 'rank') { av = a.market_cap_rank || 9999; bv = b.market_cap_rank || 9999; }
+        else if (sortCol === 'name') { av = a.name.toLowerCase(); bv = b.name.toLowerCase(); return sortDir * av.localeCompare(bv); }
+        else if (sortCol === 'price') { av = a.current_price || 0; bv = b.current_price || 0; }
+        else if (sortCol === 'change') { av = a.price_change_percentage_24h || 0; bv = b.price_change_percentage_24h || 0; }
+        else if (sortCol === 'mcap') { av = a.market_cap || 0; bv = b.market_cap || 0; }
+        else if (sortCol === 'vol') { av = a.total_volume || 0; bv = b.total_volume || 0; }
+        return sortDir * (av - bv);
+      });
+
+      var tbody = document.getElementById('crypto-tbody');
+      tbody.innerHTML = filtered.map(function(c) {
+        var img = c.image ? '<img src="' + c.image + '" class="coin-icon" alt="' + c.symbol + '" onerror="this.style.display=\'none\'">' : '';
+        return '<tr>' +
+          '<td class="rank-cell">' + (c.market_cap_rank || '—') + '</td>' +
+          '<td><div class="coin-name-cell">' + img + '<div><a class="coin-link" href="#" data-coinid="' + c.id + '" data-name="' + c.name + '">' + c.name + '</a><br><span class="coin-symbol">' + (c.symbol || '').toUpperCase() + '</span></div></div></td>' +
+          '<td><strong>' + fmtPrice(c.current_price) + '</strong></td>' +
+          '<td>' + fmtChange(c.price_change_percentage_24h) + '</td>' +
+          '<td class="mcap-cell">' + fmtLarge(c.market_cap) + '</td>' +
+          '<td class="vol-cell">' + fmtLarge(c.total_volume) + '</td>' +
+          '</tr>';
+      }).join('');
+
+      // attach click events for coin links
+      tbody.querySelectorAll('a[data-coinid]').forEach(function(a) {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          openChart(this.dataset.coinid, this.dataset.name);
+        });
+      });
+
+      hideEl(document.getElementById('crypto-loading'));
+      showEl(document.getElementById('crypto-table'), 'table');
+    }
+
+    function loadData(forceRefresh) {
+      var cached = !forceRefresh && getCache();
+      if (cached) {
+        allCoins = cached.data;
+        renderFearBar(allCoins);
+        renderTable(allCoins);
+        return;
+      }
+      fetchCoins().then(function(data) {
+        allCoins = data;
+        setCache(data);
+        renderFearBar(allCoins);
+        renderTable(allCoins);
+        hideEl(document.getElementById('stale-notice'));
+        resetCountdown();
+      }).catch(function(err) {
+        var stale = getStaleCache();
+        if (stale && stale.data) {
+          allCoins = stale.data;
+          renderFearBar(allCoins);
+          renderTable(allCoins);
+          var mins = Math.round((Date.now() - stale.ts) / 60000);
+          var notice = document.getElementById('stale-notice');
+          notice.textContent = 'Showing cached data — last updated ' + mins + ' min ago. Live fetch failed.';
+          showEl(notice);
+        } else {
+          document.getElementById('crypto-loading').textContent = 'Failed to load prices. CoinGecko rate limit may apply — try again in a minute.';
+        }
+      });
+    }
+
+    function resetCountdown() {
+      secondsLeft = 60;
+      updateCountdownDisplay();
+    }
+    function updateCountdownDisplay() {
+      var el = document.getElementById('countdown');
+      if (!el) return;
+      var cb = document.getElementById('auto-refresh');
+      if (cb && !cb.checked) { el.textContent = ''; return; }
+      el.textContent = 'Next: ' + secondsLeft + 's';
+    }
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      resetCountdown();
+      autoInterval = setInterval(function() {
+        secondsLeft--;
+        updateCountdownDisplay();
+        if (secondsLeft <= 0) {
+          loadData(true);
+          secondsLeft = 60;
+        }
+      }, 1000);
+      countdownInterval = autoInterval;
+    }
+    function stopAutoRefresh() {
+      if (autoInterval) { clearInterval(autoInterval); autoInterval = null; }
+    }
+
+    // Chart
+    function openChart(coinId, coinName) {
+      var modal = document.getElementById('chart-modal');
+      showEl(modal, 'flex');
+      document.getElementById('chart-title').textContent = coinName + ' — 7-Day Price Chart';
+      hideEl(document.getElementById('chart-canvas'));
+      showEl(document.getElementById('chart-loading'));
+
+      var cacheKey = CHART_CACHE_KEY + coinId + '_' + currentCurrency;
+      var cached = null;
+      try {
+        var raw = localStorage.getItem(cacheKey);
+        if (raw) {
+          var obj = JSON.parse(raw);
+          if (Date.now() - obj.ts < CHART_TTL) cached = obj.data;
+        }
+      } catch(e) {}
+
+      if (cached) { drawChart(cached); return; }
+
+      fetch('https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=' + currentCurrency + '&days=7')
+        .then(function(r) { if (!r.ok) throw new Error('chart fetch error'); return r.json(); })
+        .then(function(d) {
+          try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: d.prices })); } catch(e) {}
+          drawChart(d.prices);
+        })
+        .catch(function() {
+          document.getElementById('chart-loading').textContent = 'Could not load chart data. Rate limit may apply.';
+        });
+    }
+
+    function drawChart(prices) {
+      var canvas = document.getElementById('chart-canvas');
+      var ctx = canvas.getContext('2d');
+      var W = canvas.width, H = canvas.height;
+      var vals = prices.map(function(p) { return p[1]; });
+      var minV = Math.min.apply(null, vals);
+      var maxV = Math.max.apply(null, vals);
+      var pad = { t: 16, r: 16, b: 28, l: 55 };
+      var cW = W - pad.l - pad.r;
+      var cH = H - pad.t - pad.b;
+
+      // background
+      ctx.clearRect(0, 0, W, H);
+
+      // compute style from CSS vars
+      var style = getComputedStyle(document.documentElement);
+      var accentColor = style.getPropertyValue('--accent').trim() || 'lime';
+      var borderColor = style.getPropertyValue('--border').trim() || '#333';
+      var textMuted = style.getPropertyValue('--text-muted').trim() || '#888';
+
+      // grid lines
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 0.5;
+      for (var i = 0; i <= 4; i++) {
+        var y = pad.t + cH * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cW, y); ctx.stroke();
+        var priceAtLine = maxV - (maxV - minV) * i / 4;
+        ctx.fillStyle = textMuted;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(fmtPrice(priceAtLine), pad.l - 4, y + 4);
+      }
+
+      // line
+      ctx.beginPath();
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2;
+      prices.forEach(function(p, idx) {
+        var x = pad.l + cW * idx / (prices.length - 1);
+        var y = pad.t + cH * (1 - (p[1] - minV) / (maxV - minV || 1));
+        idx === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // x-axis labels (7 days)
+      ctx.fillStyle = textMuted;
+      ctx.textAlign = 'center';
+      var step = Math.floor(prices.length / 6);
+      for (var j = 0; j < prices.length; j += step) {
+        var d = new Date(prices[j][0]);
+        var label = (d.getMonth()+1) + '/' + d.getDate();
+        var xPos = pad.l + cW * j / (prices.length - 1);
+        ctx.fillText(label, xPos, H - 6);
+      }
+
+      hideEl(document.getElementById('chart-loading'));
+      showEl(canvas);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs([{name:'Home',url:'/'},{name:'Crypto Tools',url:'/crypto/'},{name:'Live Crypto Price Dashboard'}]);
+
+      var faqs = [
+        {q:'How often does the dashboard update prices?', a:'Prices are fetched live from CoinGecko\'s free public API. Data is cached for 2 minutes in your browser. With auto-refresh enabled, new data is fetched every 60 seconds automatically.'},
+        {q:'Which cryptocurrencies are shown?', a:'The dashboard shows the top 50 cryptocurrencies by market capitalization, including Bitcoin (BTC), Ethereum (ETH), BNB, Solana (SOL), XRP, and many more. You can filter by name using the search box.'},
+        {q:'What currencies can I use?', a:'You can view prices in USD, EUR, GBP, BDT (Bangladeshi Taka), and INR (Indian Rupee). Select your preferred currency from the dropdown and all prices update instantly.'},
+        {q:'What does the Fear & Greed indicator show?', a:'The Fear & Greed indicator calculates the average 24-hour price change across the top 50 coins. A strongly positive average signals market Greed; a negative average signals Fear.'},
+        {q:'Is my data private?', a:'Yes. This tool fetches data directly from the CoinGecko API in your browser. No personal data is collected or stored on our servers.'},
+        {q:'What is the 7-day price chart?', a:'Clicking any coin name loads its 7-day price history as a line chart drawn using the HTML Canvas API. The chart shows how the coin\'s USD price has moved over the past week.'}
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        {slug:'crypto/profit-loss-calculator', name:'Crypto Profit/Loss Calculator', description:'Calculate gains and losses on your crypto trades including fees.'},
+        {slug:'crypto/dca-calculator', name:'DCA Calculator', description:'Plan dollar-cost averaging into crypto and see how periodic investments grow.'},
+        {slug:'crypto/fear-greed-dca-calculator', name:'Fear & Greed DCA Calculator', description:'Backtest a fear-based Bitcoin DCA strategy using historical data.'},
+        {slug:'crypto/portfolio-rebalancer', name:'Crypto Portfolio Rebalancer', description:'See exactly what to buy and sell to rebalance your crypto portfolio.'},
+        {slug:'crypto/staking-rewards-calculator', name:'Staking Rewards Calculator', description:'Calculate staking returns for any cryptocurrency with compounding.'},
+        {slug:'crypto/bitcoin-halving-countdown', name:'Bitcoin Halving Countdown', description:'Track the countdown to the next Bitcoin halving with block data.'}
+      ]);
+
+      // Event wiring
+      document.getElementById('currency-select').addEventListener('change', function() {
+        currentCurrency = this.value;
+        localStorage.removeItem(CACHE_KEY);
+        loadData(true);
+      });
+      document.getElementById('crypto-search').addEventListener('input', function() {
+        if (allCoins.length) renderTable(allCoins);
+      });
+      document.getElementById('auto-refresh').addEventListener('change', function() {
+        if (this.checked) startAutoRefresh();
+        else { stopAutoRefresh(); updateCountdownDisplay(); }
+      });
+      document.getElementById('manual-refresh').addEventListener('click', function() {
+        loadData(true);
+      });
+
+      // Sort headers
+      ['rank','name','price','change','mcap','vol'].forEach(function(col) {
+        var th = document.getElementById('th-' + col);
+        if (!th) return;
+        th.addEventListener('click', function() {
+          if (sortCol === col) { sortDir *= -1; }
+          else { sortCol = col; sortDir = col === 'rank' ? 1 : -1; }
+          document.querySelectorAll('.crypto-table th').forEach(function(t) { t.classList.remove('sorted'); });
+          th.classList.add('sorted');
+          if (allCoins.length) renderTable(allCoins);
+        });
+      });
+
+      document.getElementById('chart-close').addEventListener('click', function() {
+        hideEl(document.getElementById('chart-modal'));
+      });
+      document.getElementById('chart-modal').addEventListener('click', function(e) {
+        if (e.target === this) hideEl(this);
+      });
+
+      loadData(false);
+      startAutoRefresh();
+    });
+  })();
+  </script>
+</body>
+</html>

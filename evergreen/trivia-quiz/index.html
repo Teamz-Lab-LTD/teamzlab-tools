@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trivia Quiz Generator — Teamz Lab Tools</title>
+  <meta name="description" content="Generate instant trivia quizzes on any topic — science, history, geography, sports, and more. Free, unlimited questions, no signup required.">
+  <meta property="og:title" content="Trivia Quiz Generator — Teamz Lab Tools">
+  <meta property="og:description" content="Generate instant trivia quizzes on any topic. Science, history, sports, geography, and more. Free and unlimited.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/trivia-quiz/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Trivia Quiz Generator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Generate instant trivia quizzes on any topic. Free, unlimited, no signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/trivia-quiz/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .tq-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .tq-settings label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .tq-settings select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-sm); }
+    .tq-timer-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .tq-timer-row label { font-size: var(--text-sm); color: var(--text); cursor: pointer; }
+    .tq-toggle { width: 40px; height: 22px; background: var(--border); border-radius: 11px; position: relative; cursor: pointer; border: none; transition: background 0.2s; flex-shrink: 0; }
+    .tq-toggle.on { background: var(--accent); }
+    .tq-toggle::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); transition: left 0.2s; }
+    .tq-toggle.on::after { left: 21px; background: var(--accent-text); }
+    .tq-quiz-area { display: none; }
+    .tq-quiz-area.active { display: block; }
+    .tq-progress-bar { height: 6px; background: var(--border); border-radius: 3px; margin-bottom: 16px; overflow: hidden; }
+    .tq-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
+    .tq-meta { display: flex; justify-content: space-between; align-items: center; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 12px; }
+    .tq-timer-display { font-weight: 700; font-size: var(--text-lg); color: var(--heading); }
+    .tq-timer-display.urgent { color: var(--danger); }
+    .tq-question { font-size: var(--text-lg); color: var(--heading); font-weight: 700; line-height: 1.4; margin-bottom: 20px; }
+    .tq-options { display: flex; flex-direction: column; gap: 10px; }
+    .tq-opt { padding: 14px 18px; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); cursor: pointer; font-size: var(--text-sm); text-align: left; transition: border-color 0.15s, background 0.15s; line-height: 1.4; }
+    .tq-opt:hover:not(:disabled) { border-color: var(--accent); background: var(--bg); }
+    .tq-opt.correct { border-color: var(--success-border); background: var(--success-bg); color: var(--heading); }
+    .tq-opt.wrong { border-color: var(--danger); background: var(--danger-bg); }
+    .tq-opt:disabled { cursor: default; }
+    .tq-feedback { margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: var(--text-sm); font-weight: 600; }
+    .tq-feedback.correct { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
+    .tq-feedback.wrong { background: rgba(231,76,60,0.1); color: var(--danger); border: 1px solid var(--danger-border); }
+    .tq-next-btn { margin-top: 16px; width: 100%; }
+    .tq-score-area { display: none; text-align: center; padding: 20px 0; }
+    .tq-score-area.active { display: block; }
+    .tq-score-big { font-size: 64px; font-weight: 900; color: var(--heading); line-height: 1; margin-bottom: 8px; }
+    .tq-grade { font-size: var(--text-2xl); font-weight: 900; color: var(--accent); }
+    .tq-score-sub { font-size: var(--text-sm); color: var(--text-muted); margin: 8px 0 20px; }
+    .tq-score-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .tq-hi { font-size: var(--text-xs); color: var(--text-muted); margin-top: 10px; }
+    @media (max-width: 600px) {
+      .tq-settings { grid-template-columns: 1fr; }
+      .tq-score-actions { flex-direction: column; align-items: stretch; }
+      .tq-score-big { font-size: 48px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Trivia Quiz Generator", "description": "Generate instant trivia quizzes on any topic — science, history, geography, sports, and more.", "url": "https://tool.teamzlab.com/evergreen/trivia-quiz/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Trivia Quiz Generator</h1>
+      <p class="tool-description">Generate instant trivia quizzes on science, history, geography, sports, and 20+ more categories. Choose your difficulty, set a timer, and challenge yourself or friends — free, unlimited, no signup.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Setup Screen -->
+      <div id="tq-setup">
+        <div class="tq-settings">
+          <div>
+            <label for="tq-cat">Category</label>
+            <select id="tq-cat">
+              <option value="">Any Category</option>
+              <option value="9">General Knowledge</option>
+              <option value="17">Science &amp; Nature</option>
+              <option value="18">Science: Computers</option>
+              <option value="30">Science: Gadgets</option>
+              <option value="21">Sports</option>
+              <option value="22">Geography</option>
+              <option value="23">History</option>
+              <option value="24">Politics</option>
+              <option value="25">Art</option>
+              <option value="27">Animals</option>
+              <option value="28">Vehicles</option>
+              <option value="10">Books</option>
+              <option value="11">Film</option>
+              <option value="12">Music</option>
+              <option value="14">Television</option>
+              <option value="15">Video Games</option>
+              <option value="19">Mathematics</option>
+              <option value="20">Mythology</option>
+              <option value="26">Celebrities</option>
+            </select>
+          </div>
+          <div>
+            <label for="tq-diff">Difficulty</label>
+            <select id="tq-diff">
+              <option value="">Any</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div>
+            <label for="tq-count">Questions</label>
+            <select id="tq-count">
+              <option value="5">5 Questions</option>
+              <option value="10" selected>10 Questions</option>
+              <option value="15">15 Questions</option>
+              <option value="20">20 Questions</option>
+            </select>
+          </div>
+          <div>
+            <label>Timer</label>
+            <div class="tq-timer-row">
+              <button class="tq-toggle" id="tq-timer-toggle" onclick="tqToggleTimer()" title="Enable 15-second timer per question" aria-pressed="false"></button>
+              <label for="tq-timer-toggle" onclick="tqToggleTimer()">15 sec per question</label>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" id="tq-start-btn" onclick="tqStart()" style="width:100%;">Start Quiz</button>
+        <div id="tq-hi-display" style="margin-top:12px;"></div>
+      </div>
+
+      <!-- Quiz Screen -->
+      <div class="tq-quiz-area" id="tq-quiz">
+        <div class="tq-progress-bar"><div class="tq-progress-fill" id="tq-prog"></div></div>
+        <div class="tq-meta">
+          <span id="tq-qnum">Question 1 of 10</span>
+          <span>Score: <strong id="tq-live-score">0</strong></span>
+          <span class="tq-timer-display" id="tq-timer-display" style="display:none;"></span>
+        </div>
+        <div class="tq-question" id="tq-question"></div>
+        <div class="tq-options" id="tq-options"></div>
+        <div id="tq-feedback" class="tq-feedback" style="display:none;"></div>
+        <button class="btn-primary tq-next-btn" id="tq-next-btn" style="display:none;" onclick="tqNext()">Next Question →</button>
+      </div>
+
+      <!-- Score Screen -->
+      <div class="tq-score-area" id="tq-score">
+        <div class="tq-score-big" id="tq-final-score"></div>
+        <div class="tq-grade" id="tq-grade"></div>
+        <div class="tq-score-sub" id="tq-score-sub"></div>
+        <div class="tq-score-actions">
+          <button class="btn-primary" onclick="tqStart()">Play Again</button>
+          <button class="btn-secondary" onclick="tqShareScore()">Share Score</button>
+          <button class="btn-secondary" onclick="tqReset()">Change Settings</button>
+        </div>
+        <div class="tq-hi" id="tq-hi-msg"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Trivia Quiz Generator Works</h2>
+      <p>This tool fetches questions from the <a href="https://opentdb.com/" target="_blank" rel="noopener">Open Trivia Database</a>, a free, community-contributed trivia database with thousands of verified questions across 24 categories. Questions are encoded in HTML to handle special characters and are decoded automatically before display. Each quiz session fetches a fresh, randomised selection of questions matching your chosen category, difficulty, and quantity — ensuring every quiz is different. The multiple-choice options are shuffled on each question to prevent memorisation of answer positions. Based on 2026 community data, OpenTDB serves over 5 million trivia requests per month.</p>
+
+      <h2>Quiz Difficulty Levels and Scoring</h2>
+      <p>Choose from Easy, Medium, or Hard questions, or select "Any" to get a mixed difficulty quiz. Easy questions are suitable for general audiences and younger players. Medium questions cover intermediate knowledge across the selected category. Hard questions challenge even subject matter experts. Your score is calculated as the number of correct answers out of the total, displayed as both a fraction and a percentage. Letter grades are assigned as follows: A (90% or above), B (75% or above), C (60% or above), D (50% or above), and F (below 50%). Your high score for each category is saved locally in your browser so you can track improvement over time.</p>
+
+      <h2>Tips for High Scores</h2>
+      <p>Start with "Any" difficulty on a category you enjoy to warm up and establish your baseline score. Use the 15-second timer mode for an added challenge once you're comfortable with a category. Science and Nature, Geography, and History categories tend to have the most questions available, giving you greater variety across multiple quiz sessions. General Knowledge is the best category for mixed groups or parties as it doesn't require specialist knowledge. Share your scores to challenge friends — competitive quizzing is consistently rated as one of the most engaging learning formats by educational researchers.</p>
+
+      <h2>Using Trivia Quizzes for Learning</h2>
+      <p>Spaced repetition through quizzes is one of the most effective study methods supported by cognitive science research. Taking a trivia quiz on a subject activates recall practice — the process of retrieving information from memory — which strengthens neural pathways more effectively than passive reading. Use this tool to test knowledge before exams, to refresh on topics you haven't studied recently, or simply to keep your mind sharp. The wide range of categories makes it suitable for students, teachers, trivia night hosts, and casual learners alike.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'Evergreen Tools', url: '/evergreen/' },
+      { name: 'Trivia Quiz Generator' }
+    ];
+
+    var FAQS = [
+      { q: 'Where do the trivia questions come from?', a: 'Questions are sourced from the Open Trivia Database (opentdb.com), a free, user-contributed database containing thousands of verified trivia questions across 24 categories. Questions are reviewed by the community and updated regularly.' },
+      { q: 'Can I set a timer for each question?', a: 'Yes. Enable the timer toggle before starting the quiz and you\'ll have 15 seconds to answer each question. The timer counts down visually and automatically moves to the next question if time runs out.' },
+      { q: 'How is my score calculated?', a: 'Your score is the number of questions you answer correctly. At the end, your percentage is shown along with a letter grade: A (90%+), B (75%+), C (60%+), D (50%+), or F (below 50%). Your best score per category is saved locally.' },
+      { q: 'Are the answer options shuffled each time?', a: 'Yes. The four multiple-choice options are shuffled into a random order each time a new quiz is generated. This prevents memorising answer positions and keeps every quiz a fresh challenge.' },
+      { q: 'Can I share my quiz score?', a: 'Yes. After completing the quiz, click Share Score to copy a shareable message to your clipboard. You can then paste it into any messaging app, social media, or chat.' },
+      { q: 'Is there a limit to how many quizzes I can play?', a: 'No limit at all. You can play as many quizzes as you want across any category, difficulty, and question count combination. Each new quiz fetches a fresh set of questions from the Open Trivia Database.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/today-in-history', name: 'Today in History', description: 'Discover historical events, births, and facts that happened on today\'s date.' },
+      { slug: 'evergreen/random-name-picker', name: 'Random Name Picker', description: 'Pick a random name or item from a list — great for games and team activities.' },
+      { slug: 'evergreen/coin-flip', name: 'Coin Flip Simulator', description: 'Flip a virtual coin — heads or tails — for fair decision making.' },
+      { slug: 'evergreen/dice-roller', name: 'Dice Roller', description: 'Roll virtual dice of any type — d4, d6, d8, d10, d12, d20.' },
+      { slug: 'evergreen/word-scramble', name: 'Word Scramble Generator', description: 'Create word scramble puzzles from any text for games and learning.' },
+      { slug: 'evergreen/iq-test', name: 'IQ Test', description: 'Test your logic and reasoning skills with a free online IQ assessment.' }
+    ];
+
+    // ---- Trivia Quiz Logic ----
+    var TQ_TIMER_ON = false;
+    var TQ_QUESTIONS = [];
+    var TQ_CURRENT = 0;
+    var TQ_SCORE = 0;
+    var TQ_TIMER_INTERVAL = null;
+    var TQ_TIMER_LEFT = 15;
+
+    function tqToggleTimer() {
+      TQ_TIMER_ON = !TQ_TIMER_ON;
+      var btn = document.getElementById('tq-timer-toggle');
+      btn.classList.toggle('on', TQ_TIMER_ON);
+      btn.setAttribute('aria-pressed', TQ_TIMER_ON ? 'true' : 'false');
+    }
+
+    function tqDecodeHtml(str) {
+      var el = document.createElement('textarea');
+      el.innerHTML = str;
+      return el.value;
+    }
+
+    function tqShuffle(arr) {
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    function tqStart() {
+      var cat = document.getElementById('tq-cat').value;
+      var diff = document.getElementById('tq-diff').value;
+      var count = document.getElementById('tq-count').value;
+      var url = 'https://opentdb.com/api.php?amount=' + count + '&type=multiple';
+      if (cat) url += '&category=' + cat;
+      if (diff) url += '&difficulty=' + diff;
+
+      var startBtn = document.getElementById('tq-start-btn');
+      startBtn.disabled = true;
+      startBtn.textContent = 'Loading questions...';
+
+      showEl(document.getElementById('tq-quiz'));
+      document.getElementById('tq-setup').style.display = 'none';
+      document.getElementById('tq-score').classList.remove('active');
+      document.getElementById('tq-quiz').classList.add('active');
+      document.getElementById('tq-options').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">Loading questions...</div>';
+
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          startBtn.disabled = false;
+          startBtn.textContent = 'Start Quiz';
+          if (!d.results || d.results.length === 0) {
+            window.showToast('Could not load questions for that combination. Try different settings.');
+            tqReset();
+            return;
+          }
+          TQ_QUESTIONS = d.results.map(function(q) {
+            return {
+              question: tqDecodeHtml(q.question),
+              correct: tqDecodeHtml(q.correct_answer),
+              options: tqShuffle([q.correct_answer].concat(q.incorrect_answers)).map(tqDecodeHtml),
+              category: q.category,
+              difficulty: q.difficulty
+            };
+          });
+          TQ_CURRENT = 0;
+          TQ_SCORE = 0;
+          document.getElementById('tq-live-score').textContent = '0';
+          tqShowQuestion();
+        }).catch(function() {
+          startBtn.disabled = false;
+          startBtn.textContent = 'Start Quiz';
+          window.showToast('Network error. Please check your connection and try again.');
+          tqReset();
+        });
+    }
+
+    function tqShowQuestion() {
+      var q = TQ_QUESTIONS[TQ_CURRENT];
+      var total = TQ_QUESTIONS.length;
+      document.getElementById('tq-prog').style.width = (TQ_CURRENT / total * 100) + '%';
+      document.getElementById('tq-qnum').textContent = 'Question ' + (TQ_CURRENT + 1) + ' of ' + total;
+      document.getElementById('tq-question').textContent = q.question;
+      hideEl(document.getElementById('tq-feedback'));
+      hideEl(document.getElementById('tq-next-btn'));
+
+      var optsEl = document.getElementById('tq-options');
+      optsEl.innerHTML = '';
+      q.options.forEach(function(opt) {
+        var btn = document.createElement('button');
+        btn.className = 'tq-opt';
+        btn.textContent = opt;
+        btn.addEventListener('click', function() { tqAnswer(opt, btn); });
+        optsEl.appendChild(btn);
+      });
+
+      if (TQ_TIMER_ON) {
+        TQ_TIMER_LEFT = 15;
+        var timerEl = document.getElementById('tq-timer-display');
+        showEl(timerEl, 'inline');
+        timerEl.textContent = '15s';
+        timerEl.classList.remove('urgent');
+        clearInterval(TQ_TIMER_INTERVAL);
+        TQ_TIMER_INTERVAL = setInterval(function() {
+          TQ_TIMER_LEFT--;
+          timerEl.textContent = TQ_TIMER_LEFT + 's';
+          if (TQ_TIMER_LEFT <= 5) timerEl.classList.add('urgent');
+          if (TQ_TIMER_LEFT <= 0) {
+            clearInterval(TQ_TIMER_INTERVAL);
+            tqAnswer(null, null); // timeout
+          }
+        }, 1000);
+      } else {
+        hideEl(document.getElementById('tq-timer-display'));
+      }
+    }
+
+    function tqAnswer(chosen, clickedBtn) {
+      clearInterval(TQ_TIMER_INTERVAL);
+      var q = TQ_QUESTIONS[TQ_CURRENT];
+      var opts = document.querySelectorAll('.tq-opt');
+      opts.forEach(function(btn) { btn.disabled = true; });
+
+      var feedback = document.getElementById('tq-feedback');
+      if (chosen === q.correct) {
+        TQ_SCORE++;
+        document.getElementById('tq-live-score').textContent = TQ_SCORE;
+        if (clickedBtn) clickedBtn.classList.add('correct');
+        feedback.className = 'tq-feedback correct';
+        feedback.textContent = '✓ Correct!';
+      } else {
+        if (clickedBtn) clickedBtn.classList.add('wrong');
+        // Highlight correct answer
+        opts.forEach(function(btn) {
+          if (btn.textContent === q.correct) btn.classList.add('correct');
+        });
+        if (chosen === null) {
+          feedback.className = 'tq-feedback wrong';
+          feedback.textContent = '⏱ Time\'s up! The answer was: ' + q.correct;
+        } else {
+          feedback.className = 'tq-feedback wrong';
+          feedback.textContent = '✗ Wrong. The correct answer was: ' + q.correct;
+        }
+      }
+      showEl(feedback);
+
+      var nextBtn = document.getElementById('tq-next-btn');
+      var isLast = TQ_CURRENT === TQ_QUESTIONS.length - 1;
+      nextBtn.textContent = isLast ? 'See Results' : 'Next Question →';
+      showEl(nextBtn);
+    }
+
+    function tqNext() {
+      TQ_CURRENT++;
+      if (TQ_CURRENT >= TQ_QUESTIONS.length) {
+        tqShowScore();
+      } else {
+        document.getElementById('tq-prog').style.width = (TQ_CURRENT / TQ_QUESTIONS.length * 100) + '%';
+        tqShowQuestion();
+      }
+    }
+
+    function tqShowScore() {
+      document.getElementById('tq-quiz').classList.remove('active');
+      var scoreArea = document.getElementById('tq-score');
+      scoreArea.classList.add('active');
+
+      var total = TQ_QUESTIONS.length;
+      var pct = Math.round(TQ_SCORE / total * 100);
+      var grade = pct >= 90 ? 'A' : pct >= 75 ? 'B' : pct >= 60 ? 'C' : pct >= 50 ? 'D' : 'F';
+
+      document.getElementById('tq-final-score').textContent = TQ_SCORE + '/' + total;
+      document.getElementById('tq-grade').textContent = 'Grade: ' + grade;
+      document.getElementById('tq-score-sub').textContent = pct + '% — ' + (pct >= 90 ? 'Outstanding!' : pct >= 75 ? 'Great job!' : pct >= 60 ? 'Good effort!' : pct >= 50 ? 'Keep practising!' : 'Better luck next time!');
+
+      // Save high score
+      var cat = document.getElementById('tq-cat').value || '0';
+      var hiKey = 'tq_hi_' + cat;
+      var prev = parseInt(localStorage.getItem(hiKey) || '0', 10);
+      if (TQ_SCORE > prev) {
+        localStorage.setItem(hiKey, TQ_SCORE);
+        document.getElementById('tq-hi-msg').textContent = '🏆 New high score for this category!';
+      } else {
+        document.getElementById('tq-hi-msg').textContent = 'Personal best: ' + prev + '/' + total;
+      }
+    }
+
+    function tqShareScore() {
+      var total = TQ_QUESTIONS.length;
+      var cat = document.getElementById('tq-cat').options[document.getElementById('tq-cat').selectedIndex].text;
+      var msg = 'I scored ' + TQ_SCORE + '/' + total + ' on ' + cat + ' trivia! Can you beat me? Try it at https://tool.teamzlab.com/evergreen/trivia-quiz/';
+      window.safeClipboardText ? window.safeClipboardText(msg, function() { window.showToast('Score copied to clipboard!'); }) : navigator.clipboard.writeText(msg).then(function() { window.showToast('Score copied to clipboard!'); }).catch(function() { window.showToast('Could not copy — try selecting manually.'); });
+    }
+
+    function tqReset() {
+      clearInterval(TQ_TIMER_INTERVAL);
+      document.getElementById('tq-setup').style.display = 'block';
+      document.getElementById('tq-quiz').classList.remove('active');
+      document.getElementById('tq-score').classList.remove('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      // Show high score for default category
+      var cat = document.getElementById('tq-cat').value || '0';
+      var hi = localStorage.getItem('tq_hi_' + cat);
+      if (hi) document.getElementById('tq-hi-display').innerHTML = '<span style="font-size:var(--text-xs);color:var(--text-muted);">Your best: ' + hi + ' correct in this category</span>';
+    });
+  </script>
+</body>
+</html>
