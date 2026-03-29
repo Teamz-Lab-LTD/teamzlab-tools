@@ -91,8 +91,8 @@
 
         <!-- Ingredient Panel -->
         <div class="rf-panel active" id="panel-ingredient">
-          <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:12px;">Enter up to 3 ingredients you have (e.g. chicken, tomato, pasta):</p>
-          <div class="rf-input-row"><input type="text" id="ing1" placeholder="Ingredient 1 (e.g. chicken)"></div>
+          <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:12px;">Enter main ingredients (e.g. chicken, beef, salmon, pasta, potato) — not seasonings like oil or salt:</p>
+          <div class="rf-input-row"><input type="text" id="ing1" placeholder="Main ingredient (e.g. chicken)"></div>
           <div class="rf-input-row"><input type="text" id="ing2" placeholder="Ingredient 2 (e.g. tomato)"></div>
           <div class="rf-input-row"><input type="text" id="ing3" placeholder="Ingredient 3 (optional)"></div>
           <div class="rf-actions">
@@ -253,15 +253,24 @@
       });
 
       Promise.all(promises).then(function(results) {
+        // Start with intersection of all ingredient results
         var all = results[0] || [];
+        var usedIngs = [ings[0]];
         for (var i = 1; i < results.length; i++) {
+          if (!results[i].length) continue; // skip ingredients that return nothing (e.g. "oil", "salt")
           var ids = results[i].map(function(m) { return m.idMeal; });
-          all = all.filter(function(m) { return ids.indexOf(m.idMeal) !== -1; });
+          var intersected = all.filter(function(m) { return ids.indexOf(m.idMeal) !== -1; });
+          if (intersected.length > 0) { all = intersected; usedIngs.push(ings[i]); }
+          // if intersection would be empty, skip that ingredient silently
         }
         // Fetch full details to filter alcohol
         if (all.length === 0) {
-          container.innerHTML = '<div class="rf-empty">No recipes found for those ingredients. Try fewer or different ingredients.</div>';
+          container.innerHTML = '<div class="rf-empty">No recipes found. TheMealDB works best with main ingredients like "chicken", "beef", "pasta", "salmon" — try those instead of seasonings like oil or salt.</div>';
           return;
+        }
+        if (usedIngs.length < ings.length) {
+          var skipped = ings.filter(function(i) { return usedIngs.indexOf(i) === -1; });
+          container.innerHTML = '<div class="rf-empty" style="background:var(--surface);padding:8px 12px;border-radius:6px;margin-bottom:12px;font-size:0.85rem;color:var(--text-muted)">Tip: "' + skipped.join('", "') + '" not indexed as a primary ingredient — showing results for "' + usedIngs.join(' + ') + '"</div>';
         }
         var topIds = all.slice(0, 20).map(function(m) { return m.idMeal; });
         Promise.all(topIds.map(function(id) {
