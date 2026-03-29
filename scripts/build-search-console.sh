@@ -32,6 +32,7 @@ MODE="${1:---all}"
 python3 - "$MODE" "$TOKEN_FILE" "$SITE_URL" << 'PYEOF'
 import json, sys, requests
 from datetime import datetime, timedelta
+from requests.exceptions import RequestException
 from urllib.parse import quote
 
 MODE = sys.argv[1]
@@ -42,15 +43,26 @@ ENCODED_SITE = quote(SITE_URL, safe='')
 with open(TOKEN_FILE) as f:
     token_data = json.load(f)
 
+def fatal_api_error(message, exc=None):
+    if exc is None:
+        print(f"ERROR: {message}")
+    else:
+        print(f"ERROR: {message}: {exc}")
+    sys.exit(1)
+
 # Refresh token if needed
 def get_fresh_token():
     """Try existing token, refresh if expired."""
     token = token_data.get('token', '')
     # Test token
-    r = requests.get(
-        f'https://searchconsole.googleapis.com/webmasters/v3/sites',
-        headers={'Authorization': f'Bearer {token}', 'x-goog-user-project': 'teamzlab-tools'}
-    )
+    try:
+        r = requests.get(
+            'https://searchconsole.googleapis.com/webmasters/v3/sites',
+            headers={'Authorization': f'Bearer {token}', 'x-goog-user-project': 'teamzlab-tools'},
+            timeout=20,
+        )
+    except RequestException as exc:
+        fatal_api_error("Search Console API unreachable", exc)
     if r.status_code == 200:
         return token
     # Refresh
@@ -58,12 +70,15 @@ def get_fresh_token():
     if not refresh:
         print("ERROR: Token expired. Re-run: python3 build-search-console-auth.py")
         sys.exit(1)
-    rr = requests.post('https://oauth2.googleapis.com/token', data={
-        'client_id': token_data['client_id'],
-        'client_secret': token_data['client_secret'],
-        'refresh_token': refresh,
-        'grant_type': 'refresh_token'
-    })
+    try:
+        rr = requests.post('https://oauth2.googleapis.com/token', data={
+            'client_id': token_data['client_id'],
+            'client_secret': token_data['client_secret'],
+            'refresh_token': refresh,
+            'grant_type': 'refresh_token'
+        }, timeout=20)
+    except RequestException as exc:
+        fatal_api_error("Token refresh request failed", exc)
     if rr.status_code == 200:
         new_token = rr.json()['access_token']
         token_data['token'] = new_token
@@ -98,7 +113,13 @@ def query_search(dimensions, row_limit=50, start=start_date, end=end_date, filte
     }
     if filters:
         payload['dimensionFilterGroups'] = [{'filters': filters}]
-    r = requests.post(f'{API_BASE}/searchAnalytics/query', headers=headers, json=payload)
+    try:
+        r = requests.post(f'{API_BASE}/searchAnalytics/query', headers=headers, json=payload, timeout=30)
+    except RequestException as exc:
+        print(f"ERROR: searchAnalytics query failed: {exc}")
+        return []
+    if r.status_code != 200:
+        return []
     return r.json().get('rows', [])
 
 print("=" * 70)
@@ -112,8 +133,12 @@ if MODE in ('--status', '--all'):
     print("-" * 50)
 
     # 1) Sitemap submission info
-    r = requests.get(f'{API_BASE}/sitemaps', headers=headers)
-    sitemaps = r.json()
+    try:
+        r = requests.get(f'{API_BASE}/sitemaps', headers=headers, timeout=20)
+        sitemaps = r.json() if r.status_code == 200 else {}
+    except RequestException as exc:
+        print(f"  ERROR: Sitemap status request failed: {exc}")
+        sitemaps = {}
     sitemap_submitted = 0
     if 'sitemap' in sitemaps:
         for s in sitemaps['sitemap']:
@@ -174,7 +199,7 @@ if MODE in ('--status', '--all'):
                 ir = requests.post(INSPECT_URL, headers=headers, json={
                     'inspectionUrl': url,
                     'siteUrl': SITE_URL
-                })
+                }, timeout=30)
                 if ir.status_code == 200:
                     result = ir.json().get('inspectionResult', {})
                     index_status = result.get('indexStatusResult', {})

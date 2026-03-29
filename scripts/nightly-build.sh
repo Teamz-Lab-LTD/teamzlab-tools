@@ -105,8 +105,39 @@ echo "============================================================"
 
 cd "$PROJECT_DIR" || exit 1
 
+has_command() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+can_resolve_host() {
+    python3 - "$1" <<'PY'
+import socket
+import sys
+
+try:
+    socket.getaddrinfo(sys.argv[1], 443)
+except OSError:
+    sys.exit(1)
+sys.exit(0)
+PY
+}
+
+skip_phase() {
+    echo "  - Skipping: $1"
+}
+
+REPO_DIRTY_AT_START=0
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    REPO_DIRTY_AT_START=1
+    echo "  Warning: repo is dirty at start. Nightly run will not auto-commit or auto-push."
+fi
+
 # Pull latest changes first
-git pull origin main 2>/dev/null
+if [ "$REPO_DIRTY_AT_START" -eq 0 ] && can_resolve_host github.com; then
+    git pull --ff-only origin main 2>/dev/null || echo "  Warning: git pull skipped (fast-forward unavailable)"
+else
+    skip_phase "git pull (repo dirty at start or github.com unavailable)"
+fi
 
 # Phase 0: Research — find high-value keywords (zero quota, bash scripts only)
 echo ""
@@ -189,16 +220,45 @@ echo "  Running QA check..."
 # Phase 2: Request indexing for any new pages
 echo ""
 echo "=== Phase 2: Request Indexing ==="
-python3 scripts/build-request-indexing.py 2>&1 | tail -10
+if can_resolve_host indexing.googleapis.com && can_resolve_host oauth2.googleapis.com; then
+    python3 scripts/build-request-indexing.py 2>&1 | tail -10
+else
+    skip_phase "Google indexing request (Google APIs unavailable)"
+fi
 
 # Phase 3: Pull data (uses local API tokens — only works locally!)
 echo ""
 echo "=== Phase 3: Pull Data (local tokens) ==="
-./build-search-console.sh --status 2>&1 | tail -10
-./build-analytics.sh --all 2>&1 | tail -20
-./build-adsense.sh 2>&1 | tail -10
-./build-clarity.sh 1 2>&1 | tail -20
-./build-pagespeed.sh 2>&1 | tail -10
+if can_resolve_host searchconsole.googleapis.com && can_resolve_host oauth2.googleapis.com; then
+    ./build-search-console.sh --status 2>&1 | tail -10
+else
+    skip_phase "Search Console pull (searchconsole.googleapis.com unavailable)"
+fi
+
+if can_resolve_host analyticsdata.googleapis.com && can_resolve_host oauth2.googleapis.com; then
+    ./build-analytics.sh --all 2>&1 | tail -20
+else
+    skip_phase "GA4 analytics pull (analyticsdata.googleapis.com unavailable)"
+fi
+
+if can_resolve_host adsense.googleapis.com && can_resolve_host oauth2.googleapis.com; then
+    ./build-adsense.sh 2>&1 | tail -10
+else
+    skip_phase "AdSense pull (adsense.googleapis.com unavailable)"
+fi
+
+if can_resolve_host clarity.ms; then
+    ./build-clarity.sh 1 2>&1 | tail -20
+else
+    skip_phase "Clarity pull (clarity.ms unavailable)"
+fi
+
+if can_resolve_host pagespeedonline.googleapis.com; then
+    ./build-pagespeed.sh 2>&1 | tail -10
+else
+    skip_phase "PageSpeed pull (pagespeedonline.googleapis.com unavailable)"
+fi
+
 python3 scripts/distribute/distribute.py list 2>&1 | tail -10
 
 # Phase 4: Run Claude to build tools (uses quota)
@@ -209,17 +269,34 @@ echo "  ────────────────────────
 PROMPT_FILE="$PROJECT_DIR/scripts/nightly-build-prompt.md"
 BUILD_MODEL="${MODEL:-sonnet}"
 echo "  Model: $BUILD_MODEL"
-claude --print --verbose --dangerously-skip-permissions --model "$BUILD_MODEL" -p "$(cat "$PROMPT_FILE")" 2>&1
-BUILD_EXIT=$?
+if [ "$REPO_DIRTY_AT_START" -ne 0 ]; then
+    skip_phase "Claude build (repo dirty at start)"
+    BUILD_EXIT=0
+elif ! has_command claude; then
+    skip_phase "Claude build (claude CLI not installed)"
+    BUILD_EXIT=0
+elif ! can_resolve_host api.anthropic.com; then
+    skip_phase "Claude build (api.anthropic.com unavailable)"
+    BUILD_EXIT=0
+else
+    claude --print --verbose --dangerously-skip-permissions --model "$BUILD_MODEL" -p "$(cat "$PROMPT_FILE")" 2>&1
+    BUILD_EXIT=$?
 
-if [ "$BUILD_EXIT" -ne 0 ]; then
-    echo "  ✗ Claude build failed (exit code $BUILD_EXIT)"
-    osascript -e "display notification \"Claude build FAILED (exit $BUILD_EXIT). Check logs.\" with title \"Teamz Build ERROR\" sound name \"Basso\"" 2>/dev/null
+    if [ "$BUILD_EXIT" -ne 0 ]; then
+        echo "  ✗ Claude build failed (exit code $BUILD_EXIT)"
+        osascript -e "display notification \"Claude build FAILED (exit $BUILD_EXIT). Check logs.\" with title \"Teamz Build ERROR\" sound name \"Basso\"" 2>/dev/null
+    fi
 fi
 
 # Phase 5: Final push
 echo ""
 echo "=== Phase 5: Auto-Fix + Push ==="
+if [ "$REPO_DIRTY_AT_START" -ne 0 ]; then
+    echo "  Repo was dirty at start."
+    skip_phase "auto-fix commit and push (protecting existing local work)"
+    NEW_TOOLS=0
+    TOTAL_COMMITS=0
+else
 echo "  Running auto-fix on all changed files..."
 
 # Get list of changed HTML files
@@ -345,27 +422,40 @@ python3 build-static-schema.py 2>/dev/null | tail -2
 ./build-search-index.sh 2>/dev/null | tail -3
 python3 scripts/build-fix-orphans.py fix 2>/dev/null | tail -2
 
-# Stage and commit all fixes
-git add -A 2>/dev/null
+# Stage generated/site changes, but leave volatile logs and lock files out of the commit
+git add -A -- . \
+    ':(exclude)logs/*.log' \
+    ':(exclude)scripts/seo-latest-report.txt' \
+    ':(exclude)scripts/seo-logs/*.log' \
+    ':(exclude)seo-logs/*.log' \
+    ':(exclude).claude/scheduled_tasks.lock' 2>/dev/null
+
 if ! git diff --cached --quiet 2>/dev/null; then
     git commit -m "Auto-fix: Sonnet cleanup ($FIXES issues fixed)" --no-verify 2>/dev/null
     echo "  Committed auto-fixes."
+else
+    echo "  No commit-worthy changes after exclusions."
 fi
 
 # Push with --no-verify
-PUSH_OUTPUT=$(git push origin main --no-verify 2>&1)
-PUSH_EXIT=$?
-echo "$PUSH_OUTPUT"
+if can_resolve_host github.com; then
+    PUSH_OUTPUT=$(git push origin main --no-verify 2>&1)
+    PUSH_EXIT=$?
+    echo "$PUSH_OUTPUT"
 
-if [ "$PUSH_EXIT" -ne 0 ]; then
-    echo "  ✗ Push failed! Trying pull rebase + push..."
-    git pull --rebase origin main 2>/dev/null
-    git push origin main --no-verify 2>&1
+    if [ "$PUSH_EXIT" -ne 0 ]; then
+        echo "  ✗ Push failed! Trying pull rebase + push..."
+        git pull --rebase origin main 2>/dev/null
+        git push origin main --no-verify 2>&1
+    fi
+else
+    skip_phase "git push (github.com unavailable)"
 fi
 
 # Count what was built
 NEW_TOOLS=$(git log --oneline --since="2 hours ago" --grep="Add " | wc -l | tr -d ' ')
 TOTAL_COMMITS=$(git log --oneline --since="2 hours ago" | wc -l | tr -d ' ')
+fi
 
 echo ""
 echo "=== DONE — $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
