@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-29 03:22
+# Indexing Report — 2026-03-29 05:38
 
 Total pages: 1
 Checked: 1
@@ -8,4 +8,4 @@ Errors: 0
 
 ## Indexed Pages (1)
 
-- /evergreen/student-loan-repayment-calculator/
+- /bd/govt-salary-calculator/

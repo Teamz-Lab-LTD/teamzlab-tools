@@ -1,0 +1,763 @@
+#!/usr/bin/env python3
+"""
+Teamz Lab Tools — Automated Backlink & Directory Submission Script
+Submits site to 40+ free tool directories and backlink sources.
+
+Usage:
+    python3 scripts/build-backlinks.py                  # Show status + next actions
+    python3 scripts/build-backlinks.py submit            # Open directories in browser to submit
+    python3 scripts/build-backlinks.py submit --auto     # Auto-submit where API available
+    python3 scripts/build-backlinks.py ping              # Ping blog/indexing services (automated)
+    python3 scripts/build-backlinks.py status            # Show submission status
+    python3 scripts/build-backlinks.py clipboard [id]    # Copy submission details to clipboard
+
+Directories are categorized by link type:
+    - DoFollow: Pass SEO authority (most valuable)
+    - NoFollow: Don't pass authority but drive traffic
+    - UGC/Mixed: May vary per page
+"""
+
+import json
+import os
+import sys
+import urllib.request
+import urllib.parse
+import urllib.error
+import ssl
+import subprocess
+import webbrowser
+from datetime import datetime
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).parent
+HISTORY_FILE = SCRIPT_DIR / "backlinks-history.json"
+
+# ──────────────────────────────────────────────────────────────
+# Site Details (used for submissions)
+# ──────────────────────────────────────────────────────────────
+SITE = {
+    "name": "Teamz Lab Tools",
+    "url": "https://tool.teamzlab.com",
+    "tagline": "1900+ free browser-based tools — no signup, no data collection, 100% private",
+    "description": "Teamz Lab Tools is a collection of 1900+ free online tools that run entirely in your browser. Calculators, converters, generators, SEO tools, developer tools, health calculators, finance tools, and more. No signup required, no data uploaded — everything stays private on your device.",
+    "short_description": "1900+ free browser tools. No signup. 100% private.",
+    "categories": ["Tools", "Productivity", "Developer Tools", "Calculators", "Free"],
+    "tags": ["free-tools", "online-calculator", "developer-tools", "privacy", "browser-based", "no-signup"],
+    "logo": "https://tool.teamzlab.com/icons/icon-512.png",
+    "screenshot": "https://tool.teamzlab.com/og-images/home.png",
+    "owner": "Teamz Lab LTD",
+    "email": "teamz.lab.contact@gmail.com",
+    "twitter": "@teamzlab",
+    "github": "https://github.com/Teamz-Lab-LTD",
+}
+
+# ──────────────────────────────────────────────────────────────
+# Directory Database
+# ──────────────────────────────────────────────────────────────
+DIRECTORIES = [
+    # ── DoFollow Directories (Most Valuable) ──
+    {
+        "id": "producthunt",
+        "name": "Product Hunt",
+        "url": "https://www.producthunt.com/posts/new",
+        "link_type": "DoFollow",
+        "da": 91,
+        "category": "Startup/Product",
+        "notes": "Launch as a product. Best on Tuesday-Thursday. Need an account.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "alternativeto",
+        "name": "AlternativeTo",
+        "url": "https://alternativeto.net/manage/new-app/",
+        "link_type": "DoFollow",
+        "da": 73,
+        "category": "Software Directory",
+        "notes": "List as alternative to Calculator.net, TinyWow, SmallSEOTools. Add multiple alternatives.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "saashub",
+        "name": "SaaSHub",
+        "url": "https://www.saashub.com/submit",
+        "link_type": "DoFollow",
+        "da": 56,
+        "category": "SaaS Directory",
+        "notes": "Free listing. Add as alternative to popular tools.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "sourceforge",
+        "name": "SourceForge",
+        "url": "https://sourceforge.net/software/product/new",
+        "link_type": "DoFollow",
+        "da": 92,
+        "category": "Software Directory",
+        "notes": "DA 92! Free listing, high authority. List under Productivity > Calculators.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "slant",
+        "name": "Slant",
+        "url": "https://www.slant.co/improve",
+        "link_type": "DoFollow",
+        "da": 58,
+        "category": "Recommendation",
+        "notes": "Add to 'What are the best free online tools?' type questions.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "stackshare",
+        "name": "StackShare",
+        "url": "https://stackshare.io/submit",
+        "link_type": "DoFollow",
+        "da": 72,
+        "category": "Developer",
+        "notes": "For developer tools section. List JSON formatter, CSS tools, etc.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "toolpilot",
+        "name": "ToolPilot.ai",
+        "url": "https://www.toolpilot.ai/submit-tool",
+        "link_type": "DoFollow",
+        "da": 42,
+        "category": "AI Tool Directory",
+        "notes": "Submit AI-powered tools (summarizer, quote generator, etc.)",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "betalist",
+        "name": "BetaList",
+        "url": "https://betalist.com/submit",
+        "link_type": "DoFollow",
+        "da": 64,
+        "category": "Startup",
+        "notes": "Free submission (paid for faster review). Good for new products.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "sideprojectors",
+        "name": "SideProjectors",
+        "url": "https://www.sideprojectors.com/",
+        "link_type": "DoFollow",
+        "da": 45,
+        "category": "Side Project",
+        "notes": "List as a free side project / open tool collection.",
+        "auto": False,
+        "priority": 3,
+    },
+    {
+        "id": "launchingnext",
+        "name": "Launching Next",
+        "url": "https://www.launchingnext.com/submit/",
+        "link_type": "DoFollow",
+        "da": 43,
+        "category": "Startup",
+        "notes": "Free startup directory. Quick approval.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "startupbase",
+        "name": "StartupBase",
+        "url": "https://startupbase.io/startups/new",
+        "link_type": "DoFollow",
+        "da": 38,
+        "category": "Startup",
+        "notes": "Free startup listing directory.",
+        "auto": False,
+        "priority": 3,
+    },
+    {
+        "id": "webtools_directory",
+        "name": "WebToolHub",
+        "url": "https://www.webtoolhub.com/submit.aspx",
+        "link_type": "DoFollow",
+        "da": 35,
+        "category": "Web Tools",
+        "notes": "Niche-relevant directory for web tools.",
+        "auto": False,
+        "priority": 3,
+    },
+    {
+        "id": "1000tools",
+        "name": "1000.tools",
+        "url": "https://1000.tools/submit",
+        "link_type": "DoFollow",
+        "da": 30,
+        "category": "Tool Directory",
+        "notes": "Curated tool directory. Free submission.",
+        "auto": False,
+        "priority": 3,
+    },
+    {
+        "id": "toolify",
+        "name": "Toolify.ai",
+        "url": "https://www.toolify.ai/submit",
+        "link_type": "DoFollow",
+        "da": 52,
+        "category": "AI Tool Directory",
+        "notes": "Growing AI tool directory. Submit AI-powered tools.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "futurepedia",
+        "name": "Futurepedia",
+        "url": "https://www.futurepedia.io/submit-tool",
+        "link_type": "DoFollow",
+        "da": 60,
+        "category": "AI Tool Directory",
+        "notes": "Major AI tool directory. High DA.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "topai",
+        "name": "TopAI.tools",
+        "url": "https://topai.tools/submit",
+        "link_type": "DoFollow",
+        "da": 45,
+        "category": "AI Tool Directory",
+        "notes": "AI tool directory with free listings.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "aitoptools",
+        "name": "AITopTools",
+        "url": "https://aitoptools.com/submit-tool/",
+        "link_type": "DoFollow",
+        "da": 40,
+        "category": "AI Tool Directory",
+        "notes": "Free AI tool directory listing.",
+        "auto": False,
+        "priority": 3,
+    },
+    {
+        "id": "startupstash",
+        "name": "Startup Stash",
+        "url": "https://startupstash.com/add-listing/",
+        "link_type": "DoFollow",
+        "da": 56,
+        "category": "Startup Resource",
+        "notes": "Curated directory of startup resources and tools.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "getapp",
+        "name": "GetApp",
+        "url": "https://www.getapp.com/submit/",
+        "link_type": "DoFollow",
+        "da": 78,
+        "category": "Software Review",
+        "notes": "DA 78! Free listing on Gartner-owned directory.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "g2",
+        "name": "G2",
+        "url": "https://www.g2.com/products/new",
+        "link_type": "DoFollow",
+        "da": 92,
+        "category": "Software Review",
+        "notes": "DA 92! Premier software review site. Free listing available.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "capterra",
+        "name": "Capterra",
+        "url": "https://www.capterra.com/vendors/sign-up",
+        "link_type": "DoFollow",
+        "da": 91,
+        "category": "Software Review",
+        "notes": "DA 91! Gartner-owned. Free basic listing.",
+        "auto": False,
+        "priority": 1,
+    },
+
+    # ── NoFollow but High Traffic ──
+    {
+        "id": "reddit_iib",
+        "name": "Reddit r/InternetIsBeautiful",
+        "url": "https://www.reddit.com/r/InternetIsBeautiful/submit",
+        "link_type": "NoFollow",
+        "da": 99,
+        "category": "Social/Community",
+        "notes": "DA 99! Post your best single tool. Can go viral. NoFollow but massive traffic.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "reddit_webdev",
+        "name": "Reddit r/webdev",
+        "url": "https://www.reddit.com/r/webdev/submit",
+        "link_type": "NoFollow",
+        "da": 99,
+        "category": "Social/Community",
+        "notes": "For developer tools. Share dev tools with explanation of how you built them.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "reddit_sideproject",
+        "name": "Reddit r/SideProject",
+        "url": "https://www.reddit.com/r/SideProject/submit",
+        "link_type": "NoFollow",
+        "da": 99,
+        "category": "Social/Community",
+        "notes": "Great for 'I built 1900 free tools' type posts.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "hackernews",
+        "name": "Hacker News (Show HN)",
+        "url": "https://news.ycombinator.com/submit",
+        "link_type": "DoFollow",
+        "da": 93,
+        "category": "Tech Community",
+        "notes": "DA 93, DoFollow! Use 'Show HN: I built 1900+ free browser tools'. Can drive massive traffic.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "indiehackers",
+        "name": "Indie Hackers",
+        "url": "https://www.indiehackers.com/products/new",
+        "link_type": "DoFollow",
+        "da": 65,
+        "category": "Indie/Startup",
+        "notes": "List as a product, share revenue journey. DoFollow profile link.",
+        "auto": False,
+        "priority": 2,
+    },
+
+    # ── Automated Ping Services ──
+    {
+        "id": "ping_google",
+        "name": "Google Ping",
+        "url": "https://www.google.com/ping?sitemap=https://tool.teamzlab.com/sitemap.xml",
+        "link_type": "Indexing",
+        "da": 100,
+        "category": "Ping/Index",
+        "notes": "Notify Google of sitemap update.",
+        "auto": True,
+        "priority": 1,
+    },
+    {
+        "id": "ping_bing",
+        "name": "Bing Ping",
+        "url": "https://www.bing.com/ping?sitemap=https://tool.teamzlab.com/sitemap.xml",
+        "link_type": "Indexing",
+        "da": 100,
+        "category": "Ping/Index",
+        "notes": "Notify Bing of sitemap update.",
+        "auto": True,
+        "priority": 1,
+    },
+    {
+        "id": "ping_indexnow",
+        "name": "IndexNow (Bing/Yandex)",
+        "url": "https://api.indexnow.org/indexnow",
+        "link_type": "Indexing",
+        "da": 0,
+        "category": "Ping/Index",
+        "notes": "Batch submit URLs to Bing, Yandex, Seznam, Naver.",
+        "auto": True,
+        "priority": 1,
+    },
+
+    # ── Web Directories ──
+    {
+        "id": "crunchbase",
+        "name": "Crunchbase",
+        "url": "https://www.crunchbase.com/add-new",
+        "link_type": "DoFollow",
+        "da": 91,
+        "category": "Business Directory",
+        "notes": "DA 91! Add Teamz Lab LTD as a company. Free basic profile.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "trustpilot",
+        "name": "Trustpilot",
+        "url": "https://business.trustpilot.com/signup",
+        "link_type": "DoFollow",
+        "da": 93,
+        "category": "Review Site",
+        "notes": "DA 93! Already have a page. Claim and optimize your business profile.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "f6s",
+        "name": "F6S",
+        "url": "https://www.f6s.com/company/new",
+        "link_type": "DoFollow",
+        "da": 62,
+        "category": "Startup",
+        "notes": "Free startup profile with DoFollow link.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "angellist",
+        "name": "Wellfound (AngelList)",
+        "url": "https://wellfound.com/company/new",
+        "link_type": "DoFollow",
+        "da": 90,
+        "category": "Startup",
+        "notes": "DA 90! Create company profile with link to site.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "devpost",
+        "name": "Devpost",
+        "url": "https://devpost.com/software/new",
+        "link_type": "DoFollow",
+        "da": 70,
+        "category": "Developer",
+        "notes": "Post as a software project. Good for developer tools.",
+        "auto": False,
+        "priority": 2,
+    },
+
+    # ── Profile Backlinks (Create once) ──
+    {
+        "id": "about_me",
+        "name": "About.me",
+        "url": "https://about.me/signup",
+        "link_type": "DoFollow",
+        "da": 82,
+        "category": "Profile",
+        "notes": "DA 82! Create profile with link. Quick 2-min setup.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "gravatar",
+        "name": "Gravatar",
+        "url": "https://gravatar.com/profiles/new",
+        "link_type": "DoFollow",
+        "da": 88,
+        "category": "Profile",
+        "notes": "DA 88! Add website link to Gravatar profile.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "linktree",
+        "name": "Linktree",
+        "url": "https://linktr.ee/register",
+        "link_type": "DoFollow",
+        "da": 82,
+        "category": "Profile",
+        "notes": "DA 82! Link-in-bio with DoFollow. Free tier.",
+        "auto": False,
+        "priority": 2,
+    },
+    {
+        "id": "behance",
+        "name": "Behance",
+        "url": "https://www.behance.net/",
+        "link_type": "DoFollow",
+        "da": 93,
+        "category": "Portfolio",
+        "notes": "DA 93! Create project showcasing your tools. Adobe-owned.",
+        "auto": False,
+        "priority": 1,
+    },
+    {
+        "id": "dribbble",
+        "name": "Dribbble",
+        "url": "https://dribbble.com/signup/new",
+        "link_type": "DoFollow",
+        "da": 92,
+        "category": "Portfolio",
+        "notes": "DA 92! Showcase tool screenshots. Free account.",
+        "auto": False,
+        "priority": 2,
+    },
+]
+
+
+def load_history():
+    if HISTORY_FILE.exists():
+        return json.loads(HISTORY_FILE.read_text())
+    return {}
+
+
+def save_history(history):
+    HISTORY_FILE.write_text(json.dumps(history, indent=2))
+
+
+def mark_submitted(dir_id, url="", notes=""):
+    history = load_history()
+    history[dir_id] = {
+        "submitted_at": datetime.now().isoformat(),
+        "url": url,
+        "notes": notes,
+        "status": "submitted"
+    }
+    save_history(history)
+
+
+def mark_status(dir_id, status):
+    history = load_history()
+    if dir_id in history:
+        history[dir_id]["status"] = status
+        history[dir_id]["updated_at"] = datetime.now().isoformat()
+        save_history(history)
+
+
+def show_status():
+    history = load_history()
+
+    submitted = [d for d in DIRECTORIES if d["id"] in history]
+    pending = [d for d in DIRECTORIES if d["id"] not in history and not d.get("auto")]
+    auto = [d for d in DIRECTORIES if d.get("auto")]
+
+    total_da = sum(d["da"] for d in submitted if d["link_type"] == "DoFollow")
+    dofollow_count = len([d for d in submitted if d["link_type"] == "DoFollow"])
+
+    print("=" * 64)
+    print("  BACKLINK & DIRECTORY SUBMISSION STATUS")
+    print("  Site: tool.teamzlab.com")
+    print("=" * 64)
+    print()
+    print(f"  Submitted:     {len(submitted)}/{len(DIRECTORIES)}")
+    print(f"  Pending:       {len(pending)}")
+    print(f"  DoFollow links: {dofollow_count}")
+    print(f"  Avg DA of DoFollow: {total_da // max(dofollow_count, 1)}")
+    print()
+
+    if submitted:
+        print("  SUBMITTED:")
+        print("  " + "-" * 60)
+        for d in sorted(submitted, key=lambda x: x["da"], reverse=True):
+            h = history[d["id"]]
+            status = h.get("status", "submitted")
+            icon = {"submitted": "~", "approved": "+", "rejected": "x"}.get(status, "?")
+            print(f"  [{icon}] {d['name']:25s} DA:{d['da']:3d}  {d['link_type']:10s}  {status}")
+        print()
+
+    if pending:
+        print("  PENDING (not yet submitted):")
+        print("  " + "-" * 60)
+
+        # Sort by priority then DA
+        for d in sorted(pending, key=lambda x: (x["priority"], -x["da"])):
+            pri = {1: "!!!", 2: "!! ", 3: "!  "}.get(d["priority"], "   ")
+            print(f"  {pri} {d['name']:25s} DA:{d['da']:3d}  {d['link_type']:10s}  {d['category']}")
+        print()
+
+    # Summary by priority
+    p1 = [d for d in pending if d["priority"] == 1]
+    if p1:
+        p1_da = [d for d in p1 if d["link_type"] == "DoFollow"]
+        print(f"  PRIORITY 1: {len(p1)} directories pending ({len(p1_da)} DoFollow)")
+        print(f"  Potential DA boost from P1 DoFollow: avg DA {sum(d['da'] for d in p1_da) // max(len(p1_da), 1)}")
+        print()
+
+    print("  Commands:")
+    print("    python3 scripts/build-backlinks.py submit          # Open directories to submit")
+    print("    python3 scripts/build-backlinks.py submit --auto   # Auto-ping indexing services")
+    print("    python3 scripts/build-backlinks.py clipboard 1     # Copy details for directory #1")
+    print("    python3 scripts/build-backlinks.py done <id>       # Mark as submitted")
+    print("    python3 scripts/build-backlinks.py approved <id>   # Mark as approved")
+    print()
+
+
+def generate_clipboard_text():
+    """Generate copy-paste text for directory submissions."""
+    text = f"""
+Site Name: {SITE['name']}
+URL: {SITE['url']}
+Tagline: {SITE['tagline']}
+
+Description:
+{SITE['description']}
+
+Short Description: {SITE['short_description']}
+
+Categories: {', '.join(SITE['categories'])}
+Tags: {', '.join(SITE['tags'])}
+
+Logo URL: {SITE['logo']}
+Screenshot: {SITE['screenshot']}
+
+Company: {SITE['owner']}
+Email: {SITE['email']}
+Twitter: {SITE['twitter']}
+GitHub: {SITE['github']}
+
+Key Features:
+- 1900+ free browser-based tools
+- No signup or account required
+- 100% client-side — data never leaves your browser
+- Covers: Finance, Health, Developer, SEO, Math, Career, Design, and 30+ categories
+- Works offline after first load (PWA)
+- Dark/Light mode
+- Mobile responsive
+"""
+    return text.strip()
+
+
+def do_submit(auto_only=False):
+    history = load_history()
+
+    if auto_only:
+        # Auto-ping indexing services
+        print("\n  AUTO-PINGING indexing services...\n")
+        ctx = ssl.create_default_context()
+
+        for d in DIRECTORIES:
+            if not d.get("auto"):
+                continue
+            if d["id"] == "ping_indexnow":
+                # IndexNow handled by build-request-indexing.py
+                print(f"  [skip] {d['name']} — use build-request-indexing.py instead")
+                continue
+
+            try:
+                req = urllib.request.Request(d["url"], method="GET")
+                req.add_header("User-Agent", "TeamzLabTools/1.0")
+                resp = urllib.request.urlopen(req, timeout=10, context=ctx)
+                status = resp.getcode()
+                print(f"  [ok]   {d['name']} — HTTP {status}")
+                mark_submitted(d["id"], d["url"], f"Auto-pinged, HTTP {status}")
+            except Exception as e:
+                print(f"  [fail] {d['name']} — {e}")
+        print()
+        return
+
+    # Interactive: open pending directories in browser
+    pending = [d for d in DIRECTORIES if d["id"] not in history and not d.get("auto")]
+    pending.sort(key=lambda x: (x["priority"], -x["da"]))
+
+    if not pending:
+        print("\n  All directories have been submitted!\n")
+        return
+
+    # Copy submission details to clipboard
+    clip_text = generate_clipboard_text()
+    try:
+        proc = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
+        proc.communicate(clip_text.encode())
+        print("\n  Submission details copied to clipboard!\n")
+    except Exception:
+        print("\n  (Could not copy to clipboard — print details below)")
+        print(clip_text)
+        print()
+
+    print(f"  Opening {min(5, len(pending))} highest-priority directories...\n")
+    print(f"  Paste the clipboard content into each submission form.\n")
+
+    for i, d in enumerate(pending[:5]):
+        pri = {1: "P1", 2: "P2", 3: "P3"}.get(d["priority"], "P?")
+        print(f"  [{pri}] {d['name']:25s} DA:{d['da']:3d}  {d['link_type']}")
+        print(f"        {d['url']}")
+        print(f"        Note: {d['notes']}")
+        print()
+
+    answer = input("  Open these 5 in browser? [Y/n]: ").strip().lower()
+    if answer != "n":
+        for d in pending[:5]:
+            webbrowser.open(d["url"])
+            print(f"  Opened: {d['name']}")
+
+    print()
+    print(f"  After submitting, mark each as done:")
+    for d in pending[:5]:
+        print(f"    python3 scripts/build-backlinks.py done {d['id']}")
+    print()
+
+    remaining = len(pending) - 5
+    if remaining > 0:
+        print(f"  {remaining} more directories remaining. Run again after finishing these.\n")
+
+
+def do_clipboard(dir_id=None):
+    clip_text = generate_clipboard_text()
+
+    if dir_id:
+        # Find directory and add specific notes
+        d = next((d for d in DIRECTORIES if d["id"] == dir_id), None)
+        if d:
+            clip_text += f"\n\nSubmitting to: {d['name']}\nNotes: {d['notes']}"
+
+    try:
+        proc = subprocess.Popen(["pbcopy"], stdin=subprocess.PIPE)
+        proc.communicate(clip_text.encode())
+        print(f"\n  Submission details copied to clipboard!\n")
+    except Exception:
+        print(clip_text)
+
+
+def do_mark(dir_id, status="submitted"):
+    d = next((d for d in DIRECTORIES if d["id"] == dir_id), None)
+    if not d:
+        print(f"\n  Unknown directory: {dir_id}")
+        print(f"  Available IDs: {', '.join(d['id'] for d in DIRECTORIES)}\n")
+        return
+
+    if status == "submitted":
+        mark_submitted(dir_id)
+        print(f"\n  Marked {d['name']} as submitted\n")
+    else:
+        mark_status(dir_id, status)
+        print(f"\n  Marked {d['name']} as {status}\n")
+
+
+def main():
+    args = sys.argv[1:]
+
+    if not args or args[0] == "status":
+        show_status()
+    elif args[0] == "submit":
+        auto_only = "--auto" in args
+        do_submit(auto_only)
+    elif args[0] == "clipboard":
+        dir_id = args[1] if len(args) > 1 else None
+        do_clipboard(dir_id)
+    elif args[0] == "done":
+        if len(args) < 2:
+            print("\n  Usage: python3 scripts/build-backlinks.py done <directory_id>\n")
+            return
+        do_mark(args[1], "submitted")
+    elif args[0] == "approved":
+        if len(args) < 2:
+            print("\n  Usage: python3 scripts/build-backlinks.py approved <directory_id>\n")
+            return
+        do_mark(args[1], "approved")
+    elif args[0] == "rejected":
+        if len(args) < 2:
+            print("\n  Usage: python3 scripts/build-backlinks.py rejected <directory_id>\n")
+            return
+        do_mark(args[1], "rejected")
+    elif args[0] == "list":
+        for d in sorted(DIRECTORIES, key=lambda x: -x["da"]):
+            if d.get("auto"):
+                continue
+            print(f"  {d['id']:25s} DA:{d['da']:3d}  {d['link_type']:10s}  {d['name']}")
+    else:
+        print(__doc__)
+
+
+if __name__ == "__main__":
+    main()

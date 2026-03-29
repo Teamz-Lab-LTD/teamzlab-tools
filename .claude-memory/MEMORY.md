@@ -76,10 +76,18 @@
 - [feedback_pull_data_before_answering.md](feedback_pull_data_before_answering.md) — MANDATORY: When user asks about trends/status/performance, pull Search Console + Analytics + SEO data FIRST before answering.
 - [reference_distribution_system.md](reference_distribution_system.md) — 7-platform content distribution: Dev.to, Hashnode, WordPress, Blogger, Tumblr, Bluesky, Mastodon. Script at scripts/distribute/distribute.py.
 - [reference_clarity_api.md](reference_clarity_api.md) — Microsoft Clarity bot detection API. Token at ~/.config/teamzlab/clarity-token.txt. Script: ./build-clarity.sh.
+- [reference_seo_automation.md](reference_seo_automation.md) — Full Ubersuggest replacement: 8 scripts, auto catch-up, cron, macOS notifications.
 
 ## Data Scripts Available
+- `./build-seo-dashboard.sh --quick` — FREE SEO Dashboard (replaces Ubersuggest) — traffic + rankings + keywords + indexing
 - `./build-search-console.sh` — Google Search Console (queries, clicks, indexing)
 - `./build-analytics.sh --all` — GA4 Analytics (users, pages, sources, devices, ads)
 - `./build-clarity.sh` — Microsoft Clarity (bot vs human traffic, engagement, UX issues)
 - `./build-seo-audit.sh --report` — SEO keyword audit
+- `./build-pagespeed.sh` — PageSpeed Insights (Core Web Vitals, speed scores)
 - `python3 scripts/distribute/distribute.py list` — Distribution history + Dev.to stats
+- `python3 scripts/build-keyword-intel.py` — FREE keyword intelligence (volume, intent, CPC, difficulty, opportunities)
+- `python3 scripts/build-rank-tracker.py` — Daily rank tracking with trends, movers, watchlist
+- `python3 scripts/build-backlinks.py` — Directory submission tracker (39 directories, DA 30-93)
+- `python3 scripts/build-backlinks-overview.py` — Backlinks overview (who links, DoFollow/NoFollow, 346 found)
+- `python3 scripts/build-content-ideas.py` — Content ideas engine (trending, seasonal, gaps, competitors)

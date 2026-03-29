@@ -196,7 +196,7 @@ if MODE in ('--status', '--all'):
         total_sampled = indexed_count + not_indexed_count + errors
         if total_sampled > 0:
             pct = indexed_count / (indexed_count + not_indexed_count) * 100 if (indexed_count + not_indexed_count) > 0 else 0
-            total_pages = sitemap_submitted if sitemap_submitted else len(all_urls)
+            total_pages = int(sitemap_submitted) if sitemap_submitted else len(all_urls)
             estimated_indexed = int(total_pages * pct / 100) if total_pages else '?'
             print(f"\n  URL Inspection (sampled {total_sampled} of {total_pages} pages):")
             print(f"    Indexed:     {indexed_count}/{total_sampled} ({pct:.0f}%)")

@@ -14,22 +14,31 @@
 ```bash
 cd "/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
 ./build-validate-freshness.sh
+./build-catchup.sh
 ./build.sh
 ```
+
+**The catch-up script auto-detects what's stale and runs only what's needed:**
+- If rank tracker hasn't run today → records positions
+- If weekly scan missed → runs opportunities + backlinks
+- If monthly audit missed → runs full dashboard
+- If user was away 30+ days → runs EVERYTHING + shows seasonal suggestions
+- Always shows suggested next actions + seasonal tool ideas
 
 **Then tell the user what's broken/stale and what they should do.**
 
 Example output to user:
 > "I ran a health check on your project. Here's what I found:
-> - 3 UK tax tools have 2025 rates — new 2026 rates should be updated (April update)
+> - Rank tracker was 5 days behind — caught up, 496 keywords recorded
+> - 3 keywords improved, 2 declined this week
+> - 36 directory submissions still pending (run `build-backlinks.py submit`)
+> - Seasonal opportunity: Tax deadline tools (April)
 > - 2 tools are not linked from any hub page
-> - UCL player stats last updated 6 months ago
-> - All APIs are working fine
 > - Search index and sitemap are up to date
 >
-> Want me to fix any of these?"
+> Want me to fix any of these or build seasonal tools?"
 
-**This is MANDATORY.** The user wants to be informed about what's broken or stale every time they start a conversation. Do not skip this.
+**This is MANDATORY.** The user wants to be informed about what's broken/stale every time they start a conversation. Do not skip this.
 
 ## AUTOMATED SAFEGUARDS (already in place)
 
@@ -71,7 +80,9 @@ Example output to user:
    - Token: `~/.config/teamzlab/search-console-token.json` (auto-refreshes)
    - If token expired: `python3 build-search-console-auth.py` (opens browser to re-auth)
    - Setup guide: `docs/search-console-setup.md`
-   - **When user asks "what's my status" or "how's the site doing"**: run this script first, then analyze and make recommendations
+   - **When user asks "what's my status" or "how's the site doing"**: run `./build-seo-dashboard.sh --quick` first, then analyze and make recommendations
+   - **Full SEO dashboard** (replaces Ubersuggest/Ahrefs/SEMrush): `./build-seo-dashboard.sh`
+   - Dashboard combines: Search Console (rankings, keywords) + GA4 (traffic, sources) + PageSpeed (CWV)
 
 4. **You DO need to manually update**: hub index pages when adding new tools to a category (e.g., add new tool link to `/ai/index.html` or `/tools/index.html`).
 
@@ -256,10 +267,16 @@ Every tool page MUST have:
 │   ├── build-analytics.sh     — Google Analytics GA4 data
 │   ├── build-adsense.sh       — Google AdSense revenue data
 │   ├── build-pagespeed.sh     — PageSpeed Insights (Core Web Vitals)
+│   ├── build-seo-dashboard.sh — FREE SEO Dashboard (replaces Ubersuggest)
 │   ├── build-internal-links.sh — internal link health checker
 │   ├── build-fix-orphans.py   — auto-fix orphan pages (cross-link siblings)
 │   ├── build-request-indexing.py — request Google indexing for pages
-│   ├── build-keyword-volume.py — keyword search volume estimator
+│   ├── build-keyword-volume.py — keyword search volume estimator (needs Google Ads API)
+│   ├── build-keyword-intel.py — FREE keyword intelligence (Ubersuggest alternative)
+│   ├── build-rank-tracker.py  — daily rank tracking with trends + movers + watchlist
+│   ├── build-backlinks.py     — directory submission tracker (39 directories, DA tracking)
+│   ├── build-backlinks-overview.py — backlinks overview (who links to you, DoFollow/NoFollow)
+│   ├── build-content-ideas.py — content ideas engine (trending, seasonal, gaps, competitors)
 │   ├── seo-keyword-engine.py  — SEO keyword analysis engine
 │   ├── qa-test.sh / qa-test.py — QA test runner
 │   └── distribute/            — 7-platform content distribution system
@@ -294,6 +311,55 @@ python3 scripts/build-programmatic-seo.py us-income-tax    # Generate US state t
 python3 scripts/build-programmatic-seo.py --dry-run [name] # Preview without writing
 python3 scripts/build-multilang.py status                  # Show translation status (ES/PT/DE/FR/JP)
 python3 scripts/build-multilang.py suggest                 # Suggest which tools to translate next
+```
+
+## Keyword Intelligence (FREE Ubersuggest Alternative)
+```bash
+python3 scripts/build-keyword-intel.py                     # Full keyword report (volume, intent, CPC, difficulty)
+python3 scripts/build-keyword-intel.py --top 30            # Top 30 keywords
+python3 scripts/build-keyword-intel.py --opportunities     # Low-difficulty keywords not on page 1 yet
+python3 scripts/build-keyword-intel.py --gaps              # High impressions but 0 clicks (CTR problems)
+python3 scripts/build-keyword-intel.py --ideas "keyword"   # Google Autocomplete suggestions (no API key needed)
+python3 scripts/build-keyword-intel.py --keyword "calc"    # Filter by keyword
+python3 scripts/build-keyword-intel.py --export csv        # Export as CSV
+```
+
+## Rank Tracker (replaces Ubersuggest Rank Tracking)
+```bash
+python3 scripts/build-rank-tracker.py                      # Record today + show trends
+python3 scripts/build-rank-tracker.py record               # Record today's positions
+python3 scripts/build-rank-tracker.py report               # Show ranking trends (last 90 days)
+python3 scripts/build-rank-tracker.py movers               # Biggest position changes (up/down)
+python3 scripts/build-rank-tracker.py track "keyword"      # Add keyword to watchlist
+python3 scripts/build-rank-tracker.py watchlist             # Show tracked keywords
+```
+
+## Backlink & Directory Submission Tracker
+```bash
+python3 scripts/build-backlinks.py                         # Show status + pending directories
+python3 scripts/build-backlinks.py submit                  # Open top 5 directories in browser + copy details
+python3 scripts/build-backlinks.py submit --auto           # Auto-ping indexing services
+python3 scripts/build-backlinks.py done <id>               # Mark directory as submitted
+python3 scripts/build-backlinks.py list                    # List all 39 directories by DA
+```
+
+## Backlinks Overview (replaces Ubersuggest Backlinks)
+```bash
+python3 scripts/build-backlinks-overview.py                # Scan + full backlinks report
+python3 scripts/build-backlinks-overview.py scan           # Scan for new backlinks
+python3 scripts/build-backlinks-overview.py report         # Show known backlinks
+python3 scripts/build-backlinks-overview.py dofollow       # Show DoFollow links only
+python3 scripts/build-backlinks-overview.py export csv     # Export as CSV
+```
+
+## Content Ideas (replaces Ubersuggest Content Ideas)
+```bash
+python3 scripts/build-content-ideas.py                     # Auto-generate ideas for top niches
+python3 scripts/build-content-ideas.py --niche "keyword"   # Ideas for specific niche
+python3 scripts/build-content-ideas.py --trending          # Trending topics right now
+python3 scripts/build-content-ideas.py --gaps              # Content gaps (keywords with no tool)
+python3 scripts/build-content-ideas.py --seasonal          # Seasonal content calendar
+python3 scripts/build-content-ideas.py --competitors       # Ideas from competitor keywords
 ```
 
 ## SEO & ASO Keyword Engine
@@ -686,6 +752,11 @@ python3 scripts/build-request-indexing.py --url URL        # Check/submit a spec
 
 ## QA & Monitoring
 ```bash
+./build-seo-dashboard.sh --quick             # FREE SEO Dashboard (replaces Ubersuggest) — traffic + rankings + keywords
+./build-seo-dashboard.sh --rank              # Rank tracking (500 keywords with position changes)
+./build-seo-dashboard.sh --keywords          # Keywords by traffic (query → page mapping)
+./build-seo-dashboard.sh --audit             # Site audit (SEO issues count)
+./build-seo-dashboard.sh --speed             # Page speed / Core Web Vitals
 ./build-qa-check.sh                         # Automated QA: checks all tools for missing FAQs, schemas, content, JS logic
 ./build.sh                                   # Full build + 8-step validation
 ./build-seo-audit.sh --report                # SEO keyword audit with hub scores

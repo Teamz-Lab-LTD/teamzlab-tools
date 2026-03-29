@@ -12,7 +12,7 @@ Usage:
     python3 scripts/distribute/distribute.py setup                            # Show setup instructions
     python3 scripts/distribute/distribute.py test                             # Test API connections
 
-Platforms: devto, hashnode, medium, blogger, wordpress, tumblr, bluesky, mastodon, github_discussions, pinterest
+Platforms: devto, hashnode, medium, blogger, wordpress, tumblr, bluesky, mastodon, github_discussions, google_sites, pinterest
 """
 
 import json
@@ -34,7 +34,7 @@ HISTORY_FILE = SCRIPT_DIR / "history.json"
 EXAMPLE_CONFIG = SCRIPT_DIR / "config.example.json"
 ARTICLES_DIR = SCRIPT_DIR / "articles"
 
-ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "gitlab", "substack", "telegraph", "pinterest"]
+ALL_PLATFORMS = ["devto", "hashnode", "medium", "blogger", "wordpress", "tumblr", "bluesky", "mastodon", "github_discussions", "gitlab", "substack", "telegraph", "google_sites", "pinterest"]
 
 # Localized footer text — article language should match tool language
 LOCALIZED_FOOTERS = {
@@ -1014,6 +1014,64 @@ def post_telegraph(config, title, body, tags, canonical_url):
         return None, str(e)[:120]
 
 
+def post_google_sites(config, title, body, tags, canonical_url):
+    """Post to Google Sites via Apps Script bridge — dofollow backlinks, DA 96+.
+
+    Creates a publicly-viewable Google Doc organized under a 'Teamz Lab Articles' folder.
+    The Apps Script web app handles doc creation, sharing, and tracking.
+    """
+    cfg = config.get("google_sites", {})
+    if not cfg.get("enabled"):
+        return None, "Platform disabled in config"
+
+    webapp_url = cfg.get("webapp_url", "").strip()
+    secret_key = cfg.get("secret_key", "")
+
+    if not secret_key:
+        key_file = os.path.expanduser("~/.config/teamzlab/google-sites-key.txt")
+        if os.path.exists(key_file):
+            with open(key_file) as f:
+                secret_key = f.read().strip()
+
+    if not webapp_url:
+        return None, "No webapp_url configured. Deploy google-sites-bridge.gs as Apps Script web app first"
+    if not secret_key:
+        return None, "No secret_key configured. Set it in config or ~/.config/teamzlab/google-sites-key.txt"
+
+    try:
+        # Add footer link
+        body_with_link = body + "\n\n---\n\n*Originally published at [tool.teamzlab.com](https://tool.teamzlab.com)*"
+
+        payload = json.dumps({
+            "key": secret_key,
+            "action": "create",
+            "title": title[:256],
+            "body": body_with_link,
+            "tags": tags[:10] if tags else [],
+            "canonical_url": canonical_url or ""
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            webapp_url,
+            data=payload,
+            method="POST",
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+
+        if result.get("status") == "created" and result.get("url"):
+            return result["url"], None
+        else:
+            return None, result.get("error", "Unknown Google Sites bridge error")
+
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode("utf-8")[:200] if hasattr(e, "read") else ""
+        return None, f"HTTP {e.code}: {err_body}"
+    except Exception as e:
+        return None, str(e)[:120]
+
+
 def post_pinterest(config, title, body, tags, canonical_url, pin_image_url=""):
     """
     Create a Pin on Pinterest (v5 API). Requires a public HTTPS image URL.
@@ -1523,6 +1581,7 @@ def cmd_post(title, filepath, platforms):
         "gitlab": post_gitlab,
         "substack": post_substack,
         "telegraph": post_telegraph,
+        "google_sites": post_google_sites,
     }
 
     results = {}
@@ -1548,7 +1607,7 @@ def cmd_post(title, filepath, platforms):
         if platform == "pinterest":
             pin_img = (meta.get("pin_image") or meta.get("og_image") or "").strip()
             url, error = post_pinterest(config, title, body, tags, canonical_url, pin_img)
-        elif platform in ("telegraph", "substack", "gitlab"):
+        elif platform in ("telegraph", "substack", "gitlab", "google_sites"):
             # These platforms handle their own formatting/footer — send raw body
             url, error = platform_funcs[platform](config, title, body, tags, canonical_url)
         else:
@@ -1753,6 +1812,31 @@ def cmd_test():
             else:
                 print(f"FAILED — HTTP {status}: {json.dumps(resp)[:120]}")
 
+        elif platform == "google_sites":
+            webapp_url = cfg.get("webapp_url", "").strip()
+            secret_key = cfg.get("secret_key", "")
+            if not secret_key:
+                key_file = os.path.expanduser("~/.config/teamzlab/google-sites-key.txt")
+                if os.path.exists(key_file):
+                    with open(key_file) as f:
+                        secret_key = f.read().strip()
+            if not webapp_url:
+                print(f"FAILED — no webapp_url. Deploy google-sites-bridge.gs first")
+                continue
+            if not secret_key:
+                print(f"FAILED — no secret_key configured")
+                continue
+            # Health check via GET
+            try:
+                health_url = webapp_url + ("&" if "?" in webapp_url else "?") + "action=health"
+                status, resp = api_request(health_url)
+                if status == 200 and resp.get("status") == "ok":
+                    print(f"OK — bridge v{resp.get('version', '?')} connected")
+                else:
+                    print(f"FAILED — HTTP {status}: {json.dumps(resp)[:100]}")
+            except Exception as e:
+                print(f"FAILED — {str(e)[:100]}")
+
         else:
             print(f"SKIP — no test available")
 
@@ -1838,7 +1922,20 @@ Step 2: Get API keys (one-time per platform)
    → Copy "Your access token" to config: mastodon.access_token
    → Set mastodon.enabled = true
 
-9. PINTEREST (Pins — requires a public image URL per post)
+9. GOOGLE SITES (DA 96+ dofollow backlinks via Apps Script bridge)
+   → Create a Google Site: https://sites.google.com → New
+   → Go to https://script.google.com → New Project
+   → Paste the contents of scripts/distribute/google-sites-bridge.gs into Code.gs
+   → Set SECRET_KEY in Project Settings → Script Properties
+   → Deploy → New deployment → Web app:
+     - Execute as: Me
+     - Who has access: Anyone
+   → Copy the web app URL to config: google_sites.webapp_url
+   → Set the same secret key in config: google_sites.secret_key
+   → Or run: python3 scripts/distribute/google-sites-auth.py (interactive setup)
+   → Set google_sites.enabled = true
+
+10. PINTEREST (Pins — requires a public image URL per post)
    → Create a developer app: https://developers.pinterest.com/apps/
    → Add Redirect URI: must match pinterest.redirect_uri (default http://localhost:8085/)
    → Copy App id + App secret into config: pinterest.app_id, pinterest.app_secret

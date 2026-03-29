@@ -116,3 +116,14 @@ echo "  [ ] Apple event dates (apple/) — auto-pattern but verify"
 echo "  [ ] Minimum wage rates (country hubs) — varies by country"
 echo "  [ ] SSP/NI/NMW rates (uk/) — April each year"
 echo "============================================="
+
+# ── Show latest SEO auto-report if available ──
+SEO_REPORT="$SCRIPTS/seo-latest-report.txt"
+if [ -f "$SEO_REPORT" ]; then
+    echo ""
+    echo "============================================="
+    echo "  LATEST SEO AUTO-REPORT"
+    echo "============================================="
+    cat "$SEO_REPORT"
+    echo "============================================="
+fi
