@@ -1140,7 +1140,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Child Sleep Calculator',d:'Calculate how much sleep your child needs based on AAP guidelines. Get ideal bedtime, sleep cycle count, nap recommendations, and hygiene tips. Free.',h:'/kids/child-sleep-calculator/'},
   {t:'Diaper Cost Calculator',d:'Estimate total diaper costs until potty training. Calculate monthly and yearly spending by brand tier, see cloth diaper savings. Free budget planner.',h:'/kids/diaper-cost-calculator/'},
   {t:'Handwriting Practice',d:'Practice handwriting with this free letter tracing tool. Trace uppercase, lowercase letters and numbers on screen. Touch and mouse support. Private.',h:'/kids/handwriting-practice/'},
-  {t:'Kids & Education Tools',d:'Free kids education and health tools — times tables quiz, spelling practice, reading level test, growth tracker, BMI calculator, and more. Safe, pri',h:'/kids/'},
+  {t:'Kids & Education Tools',d:'Free kids education and health tools — times tables quiz, spelling, reading tests, growth tracker, BMI calculator, and more. Safe and private.',h:'/kids/'},
   {t:'Math Word Problem Generator',d:'Generate free math word problems for kids by grade level. Addition, subtraction, multiplication, fractions. Step-by-step solutions. Private, no sign-u',h:'/kids/math-word-problem-generator/'},
   {t:'Reading Level Test for Kids',d:'Find your child\'s reading grade level with this free test. Progressively harder passages with comprehension questions. Private, no sign-up needed.',h:'/kids/reading-level-test/'},
   {t:'Screen Time Guide for Kids',d:'Check AAP-recommended screen time limits by age. See if your child\'s usage is over or under guidelines with a free weekly planner. 100% private.',h:'/kids/screen-time-guide/'},
