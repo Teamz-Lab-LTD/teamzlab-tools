@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earthquake Risk Checker by Location — Teamz Lab Tools</title>
+  <meta name="description" content="Check earthquake risk for any city or country worldwide. See seismic hazard level, recent earthquakes nearby, and safety tips. Free, no signup needed.">
+  <meta property="og:title" content="Earthquake Risk Checker by Location — Teamz Lab Tools">
+  <meta property="og:description" content="Check earthquake risk for any city or country worldwide. See seismic hazard level, recent earthquakes nearby, and safety tips. Free, no signup needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/safety/earthquake-risk-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/safety.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Earthquake Risk Checker by Location — Teamz Lab Tools">
+  <meta name="twitter:description" content="Check earthquake risk for any city or country worldwide. See seismic hazard level, recent earthquakes nearby, and safety tips. Free, no signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/safety/earthquake-risk-checker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .eq-search-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+    .eq-input-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .eq-input-wrap label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .eq-input-wrap input {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+      width: 100%;
+    }
+    .eq-input-wrap input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .eq-check-btn {
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-size: var(--text-base);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .eq-check-btn:hover { opacity: 0.85; }
+    .eq-check-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .eq-locate-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--heading);
+      padding: 12px 16px;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s;
+    }
+    .eq-locate-btn:hover { border-color: var(--heading); }
+    .eq-quick-cities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 20px;
+    }
+    .eq-city-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: var(--text-sm);
+      color: var(--heading);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .eq-city-chip:hover { border-color: var(--heading); }
+    .eq-loading {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      display: none;
+    }
+    .eq-loading.visible { display: block; }
+    .eq-error {
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--heading);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      color: var(--text);
+      display: none;
+      margin-top: 12px;
+    }
+    .eq-error.visible { display: block; }
+    .eq-results { display: none; }
+    .eq-results.visible { display: block; }
+    .eq-risk-badge {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      border-radius: var(--radius);
+      border: 2px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .eq-risk-badge.risk-low { border-color: var(--accent); }
+    .eq-risk-badge.risk-medium { border-color: var(--heading); }
+    .eq-risk-badge.risk-high { border-color: var(--heading); background: var(--surface); }
+    .eq-risk-badge.risk-very-high { border-left: 6px solid var(--heading); background: var(--surface); }
+    .eq-wave-svg { flex-shrink: 0; }
+    .eq-risk-info { flex: 1; }
+    .eq-risk-location {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .eq-risk-level {
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .eq-risk-desc {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .eq-stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .eq-stat-card {
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .eq-stat-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .eq-stat-value {
+      font-size: var(--text-xl);
+      font-weight: 800;
+      color: var(--heading);
+    }
+    .eq-stat-sub {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .eq-section-title {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin: 20px 0 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .eq-quake-list { list-style: none; padding: 0; margin: 0; }
+    .eq-quake-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .eq-quake-item:last-child { border-bottom: none; }
+    .eq-mag-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: var(--text-sm);
+      flex-shrink: 0;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--heading);
+    }
+    .eq-mag-badge.mag-strong {
+      background: var(--heading);
+      color: var(--bg);
+      border-color: var(--heading);
+    }
+    .eq-quake-info { min-width: 0; }
+    .eq-quake-place {
+      font-weight: 600;
+      color: var(--heading);
+      font-size: var(--text-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .eq-quake-meta {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .eq-quake-depth {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .eq-no-quakes {
+      padding: 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .eq-tips-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .eq-tip-card {
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .eq-tip-icon { font-size: 20px; margin-bottom: 6px; }
+    .eq-tip-title {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .eq-tip-text {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .eq-checklist { list-style: none; padding: 0; margin: 12px 0 0; }
+    .eq-checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+    .eq-checklist li:last-child { border-bottom: none; }
+    .eq-checklist li::before {
+      content: '✓';
+      color: var(--accent-text);
+      background: var(--heading);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    /* Animated wave SVG */
+    .eq-wave-anim circle { transform-origin: center; }
+    @keyframes eq-pulse {
+      0% { opacity: 1; r: 4; }
+      100% { opacity: 0; r: 22; }
+    }
+    .eq-pulse-ring {
+      animation: eq-pulse 2s ease-out infinite;
+      fill: none;
+      stroke: var(--heading);
+      stroke-width: 2;
+    }
+    .eq-pulse-ring:nth-child(2) { animation-delay: 0.5s; }
+    .eq-pulse-ring:nth-child(3) { animation-delay: 1s; }
+    @media (max-width: 600px) {
+      .eq-search-row { flex-wrap: wrap; }
+      .eq-check-btn, .eq-locate-btn { width: 100%; }
+      .eq-stats-row { grid-template-columns: 1fr 1fr; }
+      .eq-tips-grid { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How is seismic risk level determined for a location?", "acceptedAnswer": {"@type": "Answer", "text": "The seismic risk level is determined using a built-in database of country and regional risk levels derived from global hazard assessments including the Global Earthquake Model (GEM). Locations are classified as Low, Medium, High, or Very High based on historical earthquake frequency and tectonic plate activity. The tool also fetches recent M4+ earthquakes from USGS within 500 km of your location to provide real-time context."}}, {"@type": "Question", "name": "What magnitude earthquakes are shown?", "acceptedAnswer": {"@type": "Answer", "text": "The tool shows earthquakes of magnitude 4.0 and above recorded by USGS within 500 km of your entered location in the past 30 days. Magnitude 4 earthquakes are widely felt but rarely cause serious damage. Magnitude 5 can cause damage to poorly constructed buildings. Magnitude 6 and above can cause significant destruction, and magnitude 7+ are major earthquakes capable of widespread damage."}}, {"@type": "Question", "name": "Which countries have the highest earthquake risk?", "acceptedAnswer": {"@type": "Answer", "text": "The highest earthquake risk countries sit along the Pacific Ring of Fire and major tectonic boundaries. Japan, Indonesia, the Philippines, Chile, Turkey, and New Zealand consistently experience frequent high-magnitude earthquakes. Iran, Italy, Greece, Nepal, and Pakistan also face very high seismic risk. Japan alone accounts for about 20% of all magnitude 6+ earthquakes worldwide each year."}}, {"@type": "Question", "name": "What should I do during an earthquake?", "acceptedAnswer": {"@type": "Answer", "text": "During an earthquake, immediately Drop, Cover, and Hold On. Drop to hands and knees, take cover under a sturdy table or desk, cover your head and neck, then hold on until shaking stops. Stay away from windows and exterior walls. If outside, move away from buildings and power lines. Do not run outside during shaking — most injuries occur when people try to move. After shaking stops, be prepared for aftershocks."}}, {"@type": "Question", "name": "How accurate is the location data?", "acceptedAnswer": {"@type": "Answer", "text": "The tool uses the Nominatim geocoding API from OpenStreetMap to convert your city or address to latitude and longitude coordinates. Nominatim covers virtually all cities worldwide and is accurate to neighborhood level in most cases. Earthquake data comes from the USGS Earthquake Hazards Program API, providing real-time data updated within minutes of detection."}}, {"@type": "Question", "name": "Can I use my current GPS location?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, click the \"Use My Location\" button to use your browser GPS. The browser will request permission before sharing your location. This uses your device GPS or network-based location, typically accurate to within a few hundred meters in urban areas. Your coordinates are only used to query USGS earthquake data — they are never stored on any server."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Earthquake Risk Checker by Location", "description": "Check earthquake risk for any city or country worldwide. See seismic hazard level, recent earthquakes nearby, and safety tips. Free, no signup needed.", "url": "https://tool.teamzlab.com/safety/earthquake-risk-checker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Earthquake Risk Checker by Location</h1>
+      <p class="tool-description">Check the seismic hazard level for any city or country worldwide. See real-time recent earthquakes from USGS within 500 km, plus your local risk rating and what to do if an earthquake strikes.</p>
+    </section>
+
+    <section class="tool-calculator" id="tool-calculator">
+      <div class="eq-search-row">
+        <div class="eq-input-wrap">
+          <label for="eq-location-input">City, region, or country</label>
+          <input type="text" id="eq-location-input" placeholder="e.g. Tokyo, San Francisco, Istanbul…" autocomplete="off">
+        </div>
+        <button type="button" class="eq-check-btn" id="eq-check-btn">Check Risk</button>
+        <button type="button" class="eq-locate-btn" id="eq-locate-btn" title="Use my GPS location">📍 Use My Location</button>
+      </div>
+
+      <div class="eq-quick-cities">
+        <button class="eq-city-chip" data-city="Tokyo, Japan">Tokyo</button>
+        <button class="eq-city-chip" data-city="San Francisco, USA">San Francisco</button>
+        <button class="eq-city-chip" data-city="Istanbul, Turkey">Istanbul</button>
+        <button class="eq-city-chip" data-city="Mexico City, Mexico">Mexico City</button>
+        <button class="eq-city-chip" data-city="Jakarta, Indonesia">Jakarta</button>
+        <button class="eq-city-chip" data-city="Santiago, Chile">Santiago</button>
+        <button class="eq-city-chip" data-city="Tehran, Iran">Tehran</button>
+        <button class="eq-city-chip" data-city="London, UK">London</button>
+        <button class="eq-city-chip" data-city="Sydney, Australia">Sydney</button>
+      </div>
+
+      <div class="eq-loading" id="eq-loading">🌍 Looking up location and fetching earthquake data…</div>
+      <div class="eq-error" id="eq-error">Could not find that location. Please try a more specific city name or country.</div>
+
+      <div class="eq-results" id="eq-results">
+        <div class="eq-risk-badge" id="eq-risk-badge">
+          <svg class="eq-wave-svg" width="52" height="52" viewBox="0 0 52 52">
+            <circle cx="26" cy="26" r="8" fill="var(--heading)"/>
+            <circle class="eq-pulse-ring" cx="26" cy="26" r="12"/>
+            <circle class="eq-pulse-ring" cx="26" cy="26" r="16"/>
+            <circle class="eq-pulse-ring" cx="26" cy="26" r="20"/>
+          </svg>
+          <div class="eq-risk-info">
+            <div class="eq-risk-location" id="eq-risk-location">—</div>
+            <div class="eq-risk-level" id="eq-risk-level">—</div>
+            <div class="eq-risk-desc" id="eq-risk-desc">—</div>
+          </div>
+        </div>
+
+        <div class="eq-stats-row">
+          <div class="eq-stat-card">
+            <div class="eq-stat-label">Recent Quakes</div>
+            <div class="eq-stat-value" id="eq-stat-count">—</div>
+            <div class="eq-stat-sub">M4+ within 500 km</div>
+          </div>
+          <div class="eq-stat-card">
+            <div class="eq-stat-label">Largest Nearby</div>
+            <div class="eq-stat-value" id="eq-stat-max">—</div>
+            <div class="eq-stat-sub">last 30 days</div>
+          </div>
+          <div class="eq-stat-card">
+            <div class="eq-stat-label">Coordinates</div>
+            <div class="eq-stat-value" id="eq-stat-coords" style="font-size:var(--text-base)">—</div>
+            <div class="eq-stat-sub">lat / lon</div>
+          </div>
+        </div>
+
+        <div class="eq-section-title" id="eq-quakes-title">Recent Earthquakes Nearby</div>
+        <ul class="eq-quake-list" id="eq-quake-list"></ul>
+
+        <div class="eq-section-title">Safety Tips for Earthquake Zones</div>
+        <div class="eq-tips-grid">
+          <div class="eq-tip-card">
+            <div class="eq-tip-icon">🏠</div>
+            <div class="eq-tip-title">Secure your home</div>
+            <div class="eq-tip-text">Bolt bookshelves to walls. Store heavy items on lower shelves. Know where your gas shutoff valve is located.</div>
+          </div>
+          <div class="eq-tip-card">
+            <div class="eq-tip-icon">🎒</div>
+            <div class="eq-tip-title">Emergency kit</div>
+            <div class="eq-tip-text">Keep 72 hours of water (4L/person/day), food, first aid kit, flashlight, and copies of important documents.</div>
+          </div>
+          <div class="eq-tip-card">
+            <div class="eq-tip-icon">📋</div>
+            <div class="eq-tip-title">Family plan</div>
+            <div class="eq-tip-text">Designate a meeting spot. Everyone should know the plan. Practice drop, cover, and hold on drills twice a year.</div>
+          </div>
+          <div class="eq-tip-card">
+            <div class="eq-tip-icon">📱</div>
+            <div class="eq-tip-title">Stay informed</div>
+            <div class="eq-tip-text">Register for USGS ShakeAlert or your country's early warning system. Download the MyShake or QuakeFeed app.</div>
+          </div>
+        </div>
+
+        <div class="eq-section-title">What to Do If an Earthquake Occurs</div>
+        <ul class="eq-checklist">
+          <li>Drop to your hands and knees immediately — this prevents being knocked down</li>
+          <li>Take cover under a sturdy table, desk, or against an interior wall</li>
+          <li>Cover your head and neck with your arms if no shelter is nearby</li>
+          <li>Hold on and stay put until shaking stops — do not run outside</li>
+          <li>If outside, move away from buildings, trees, and power lines</li>
+          <li>After shaking stops, check for injuries and gas leaks</li>
+          <li>Expect aftershocks — be ready to drop and cover again</li>
+          <li>Text rather than call — SMS works when voice networks are overloaded</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Earthquake Risk Is Calculated</h2>
+      <p>The Earthquake Risk Checker combines two data sources to give you a complete seismic picture. First, a built-in risk database classifies countries and regions by seismic hazard level — Very High, High, Medium, or Low — based on global hazard assessments, historical records, and tectonic plate boundary data from the Global Earthquake Model (GEM) foundation. Countries along the Pacific Ring of Fire (Japan, Indonesia, Philippines, Chile) and major collision zones (Turkey, Iran, Nepal, Italy) fall into the Very High category. Second, real-time earthquake data is fetched from the USGS Earthquake Hazards Program API, which tracks every M4+ earthquake on Earth within minutes of detection. The tool displays the 10 most recent quakes within 500 km of your location in the past 30 days. Based on 2024 data, the USGS detects over 500,000 earthquakes per year globally, of which about 100,000 can be felt and 100 cause damage.</p>
+
+      <h2>Understanding Seismic Hazard Levels</h2>
+      <p>Seismic hazard is expressed in four levels. <strong>Low risk</strong> locations like the UK, Germany, Scandinavia, Brazil, and South Africa experience infrequent minor earthquakes and face minimal structural risk. <strong>Medium risk</strong> areas like the US East Coast, Canada, Australia, and parts of Southeast Asia experience occasional moderate earthquakes that may cause minor damage to older structures. <strong>High risk</strong> zones encompass the US West Coast, New Zealand, Greece, Portugal, and parts of China, where significant earthquakes occur regularly and building codes are specifically designed for earthquake resistance. <strong>Very High risk</strong> areas — particularly Japan, Indonesia, Turkey, and Chile — sit on or near active tectonic plate boundaries and experience major earthquakes several times per decade. Japan alone has experienced over 1,500 earthquakes of magnitude 5 or higher in recent years.</p>
+
+      <h2>Earthquake Preparedness by Risk Level</h2>
+      <p>Your preparedness actions should match your location's risk level. If you live in a Low risk area, basic awareness is sufficient — know that earthquakes can still occur and have a simple emergency plan. In Medium risk areas, secure heavy furniture, know your building's construction type, and keep a 72-hour emergency kit. In High risk areas, your building should meet modern seismic codes, all family members should practice Drop-Cover-Hold-On drills, and you should have a comprehensive emergency kit with 1 week of supplies. In Very High risk zones like Tokyo or Istanbul, earthquake early warning apps (such as Japan's J-Alert), seismic retrofitting of older buildings, and community-level preparedness are essential. FEMA recommends that residents in earthquake zones check their home's foundation, water heater, and structural walls for vulnerability.</p>
+
+      <h2>About the Earthquake Data Source</h2>
+      <p>All earthquake data is sourced in real time from the <strong>USGS Earthquake Hazards Program</strong>, the world's most comprehensive earthquake monitoring network. USGS operates over 2,000 seismic sensors globally and typically detects earthquakes within 20 minutes of occurrence anywhere in the world. The API used here is the FDSN Event Web Service, which is free, open, and requires no API key. Location geocoding uses the OpenStreetMap Nominatim API, which covers virtually every city and region on Earth. This tool does not store your location — all queries are made directly from your browser to these public APIs.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    // Country/region seismic risk database
+    var RISK_DB = {
+      // Very High
+      'japan': 'very-high', 'indonesia': 'very-high', 'philippines': 'very-high',
+      'chile': 'very-high', 'turkey': 'very-high', 'iran': 'very-high',
+      'italy': 'very-high', 'greece': 'very-high', 'peru': 'very-high',
+      'ecuador': 'very-high', 'colombia': 'very-high', 'mexico': 'very-high',
+      'nepal': 'very-high', 'pakistan': 'very-high', 'new zealand': 'very-high',
+      'taiwan': 'very-high', 'afghanistan': 'very-high', 'el salvador': 'very-high',
+      'costa rica': 'very-high', 'haiti': 'very-high', 'china': 'very-high',
+      'india': 'high', // Gujarat region specifically high
+      'myanmar': 'high', 'papua new guinea': 'very-high',
+      // High
+      'usa': 'high', 'united states': 'high', 'california': 'very-high',
+      'alaska': 'very-high', 'canada': 'medium', 'british columbia': 'high',
+      'spain': 'medium', 'portugal': 'high', 'algeria': 'high',
+      'morocco': 'high', 'romania': 'high', 'russia': 'medium',
+      'vietnam': 'medium', 'thailand': 'medium',
+      // Medium
+      'australia': 'medium', 'south africa': 'low', 'brazil': 'low',
+      'argentina': 'medium', 'bolivia': 'high', 'venezuela': 'medium',
+      'malaysia': 'medium', 'singapore': 'low',
+      // Low
+      'uk': 'low', 'united kingdom': 'low', 'england': 'low',
+      'france': 'low', 'germany': 'low', 'netherlands': 'low',
+      'sweden': 'low', 'norway': 'low', 'finland': 'low',
+      'denmark': 'low', 'poland': 'low', 'czech republic': 'low',
+      'egypt': 'low', 'saudi arabia': 'low', 'uae': 'low',
+      'nigeria': 'low', 'kenya': 'medium', 'ethiopia': 'medium',
+      'ireland': 'low', 'belgium': 'low', 'switzerland': 'medium',
+      'austria': 'medium', 'hungary': 'low', 'ukraine': 'low',
+      'south korea': 'medium', 'north korea': 'medium'
+    };
+
+    var RISK_INFO = {
+      'very-high': {
+        label: 'Very High Seismic Risk',
+        desc: 'Major earthquakes occur regularly. Strict building codes and preparedness are essential.',
+        cssClass: 'risk-very-high'
+      },
+      'high': {
+        label: 'High Seismic Risk',
+        desc: 'Significant earthquakes occur periodically. Modern buildings are designed to withstand them.',
+        cssClass: 'risk-high'
+      },
+      'medium': {
+        label: 'Medium Seismic Risk',
+        desc: 'Moderate earthquakes occur occasionally. General preparedness is recommended.',
+        cssClass: 'risk-medium'
+      },
+      'low': {
+        label: 'Low Seismic Risk',
+        desc: 'Minor earthquakes are rare. Standard building practices are generally sufficient.',
+        cssClass: 'risk-low'
+      }
+    };
+
+    function detectRisk(locationName) {
+      var lower = locationName.toLowerCase();
+      // Direct match
+      if (RISK_DB[lower]) return RISK_DB[lower];
+      // Partial match
+      var keys = Object.keys(RISK_DB);
+      for (var i = 0; i < keys.length; i++) {
+        if (lower.indexOf(keys[i]) !== -1 || keys[i].indexOf(lower) !== -1) {
+          return RISK_DB[keys[i]];
+        }
+      }
+      return 'medium'; // default
+    }
+
+    function timeAgo(dateStr) {
+      var d = new Date(dateStr);
+      var now = new Date();
+      var diffMs = now - d;
+      var diffH = Math.floor(diffMs / 3600000);
+      var diffD = Math.floor(diffMs / 86400000);
+      if (diffH < 1) return 'Just now';
+      if (diffH < 24) return diffH + 'h ago';
+      if (diffD === 1) return '1 day ago';
+      return diffD + ' days ago';
+    }
+
+    function geocode(query, callback) {
+      var url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(query) + '&format=json&limit=1';
+      fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'teamzlab-tools/1.0' } })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data || data.length === 0) { callback(new Error('Not found'), null); return; }
+          callback(null, { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name });
+        })
+        .catch(function(e) { callback(e, null); });
+    }
+
+    function fetchQuakes(lat, lon, callback) {
+      var endTime = new Date().toISOString().split('T')[0];
+      var startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      var startTime = startDate.toISOString().split('T')[0];
+      var url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson' +
+        '&latitude=' + lat + '&longitude=' + lon +
+        '&maxradiuskm=500&minmagnitude=4&limit=10&orderby=time' +
+        '&starttime=' + startTime + '&endtime=' + endTime;
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) { callback(null, data); })
+        .catch(function(e) { callback(e, null); });
+    }
+
+    function formatMag(mag) {
+      return mag ? mag.toFixed(1) : '?';
+    }
+
+    function renderQuakes(quakes) {
+      var list = document.getElementById('eq-quake-list');
+      list.innerHTML = '';
+      var countEl = document.getElementById('eq-stat-count');
+      var maxEl = document.getElementById('eq-stat-max');
+      var titleEl = document.getElementById('eq-quakes-title');
+
+      if (!quakes || quakes.length === 0) {
+        countEl.textContent = '0';
+        maxEl.textContent = 'None';
+        titleEl.textContent = 'No M4+ earthquakes in past 30 days within 500 km';
+        var div = document.createElement('div');
+        div.className = 'eq-no-quakes';
+        div.textContent = 'No earthquakes of magnitude 4.0 or higher detected within 500 km in the past 30 days.';
+        list.appendChild(div);
+        return;
+      }
+
+      countEl.textContent = quakes.length;
+      var mags = quakes.map(function(f) { return f.properties.mag || 0; });
+      var maxMag = Math.max.apply(null, mags);
+      maxEl.textContent = 'M' + formatMag(maxMag);
+      titleEl.textContent = 'Recent Earthquakes Nearby (' + quakes.length + ' found)';
+
+      quakes.forEach(function(feature) {
+        var props = feature.properties;
+        var mag = props.mag || 0;
+        var li = document.createElement('li');
+        li.className = 'eq-quake-item';
+        var isStrong = mag >= 6;
+        var depth = feature.geometry && feature.geometry.coordinates ? feature.geometry.coordinates[2] : null;
+        li.innerHTML =
+          '<div class="eq-mag-badge' + (isStrong ? ' mag-strong' : '') + '">M' + formatMag(mag) + '</div>' +
+          '<div class="eq-quake-info">' +
+            '<div class="eq-quake-place">' + (props.place || 'Unknown location') + '</div>' +
+            '<div class="eq-quake-meta">' + timeAgo(props.time) + '</div>' +
+          '</div>' +
+          '<div class="eq-quake-depth">' + (depth !== null ? Math.round(depth) + ' km<br>deep' : '') + '</div>';
+        list.appendChild(li);
+      });
+    }
+
+    function runCheck(query, lat, lon, displayName) {
+      var resultsEl = document.getElementById('eq-results');
+      var loadingEl = document.getElementById('eq-loading');
+      var errorEl = document.getElementById('eq-error');
+      var btn = document.getElementById('eq-check-btn');
+
+      hideEl(resultsEl);
+      hideEl(errorEl);
+      showEl(loadingEl, 'block');
+      btn.disabled = true;
+      btn.textContent = 'Checking…';
+
+      var riskKey = detectRisk(displayName || query || '');
+      var riskInfo = RISK_INFO[riskKey];
+
+      document.getElementById('eq-risk-location').textContent = displayName ? displayName.split(',').slice(0, 2).join(', ') : query;
+      document.getElementById('eq-risk-level').textContent = riskInfo.label;
+      document.getElementById('eq-risk-desc').textContent = riskInfo.desc;
+      document.getElementById('eq-stat-coords').textContent = lat.toFixed(2) + '°, ' + lon.toFixed(2) + '°';
+
+      var badge = document.getElementById('eq-risk-badge');
+      badge.className = 'eq-risk-badge ' + riskInfo.cssClass;
+
+      fetchQuakes(lat, lon, function(err, data) {
+        hideEl(loadingEl);
+        btn.disabled = false;
+        btn.textContent = 'Check Risk';
+
+        if (err || !data) {
+          // Still show risk level even if quakes fail
+          document.getElementById('eq-stat-count').textContent = '—';
+          document.getElementById('eq-stat-max').textContent = '—';
+        } else {
+          var features = data.features || [];
+          renderQuakes(features);
+        }
+
+        showEl(resultsEl, 'block');
+      });
+    }
+
+    function doSearch() {
+      var query = document.getElementById('eq-location-input').value.trim();
+      if (!query) {
+        window.showToast && window.showToast('Please enter a city or country name.');
+        return;
+      }
+      hideEl(document.getElementById('eq-error'));
+      var loadingEl = document.getElementById('eq-loading');
+      showEl(loadingEl, 'block');
+
+      geocode(query, function(err, geo) {
+        if (err || !geo) {
+          hideEl(loadingEl);
+          showEl(document.getElementById('eq-error'), 'block');
+          return;
+        }
+        runCheck(query, geo.lat, geo.lon, geo.display);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Road Safety', url: '/safety/' },
+        { name: 'Earthquake Risk Checker' }
+      ]);
+
+      var faqs = [
+        { q: 'How is seismic risk level determined for a location?', a: 'The seismic risk level is determined using a built-in database of country and regional risk levels derived from global hazard assessments including the Global Earthquake Model (GEM). Locations are classified as Low, Medium, High, or Very High based on historical earthquake frequency and tectonic plate activity. The tool also fetches recent M4+ earthquakes from USGS within 500 km of your location to provide real-time context.' },
+        { q: 'What magnitude earthquakes are shown?', a: 'The tool shows earthquakes of magnitude 4.0 and above recorded by USGS within 500 km of your entered location in the past 30 days. Magnitude 4 earthquakes are widely felt but rarely cause serious damage. Magnitude 5 can cause damage to poorly constructed buildings. Magnitude 6 and above can cause significant destruction, and magnitude 7+ are major earthquakes capable of widespread damage.' },
+        { q: 'Which countries have the highest earthquake risk?', a: 'The highest earthquake risk countries sit along the Pacific Ring of Fire and major tectonic boundaries. Japan, Indonesia, the Philippines, Chile, Turkey, and New Zealand consistently experience frequent high-magnitude earthquakes. Iran, Italy, Greece, Nepal, and Pakistan also face very high seismic risk. Japan alone accounts for about 20% of all magnitude 6+ earthquakes worldwide each year.' },
+        { q: 'What should I do during an earthquake?', a: 'During an earthquake, immediately Drop, Cover, and Hold On. Drop to hands and knees, take cover under a sturdy table or desk, cover your head and neck, then hold on until shaking stops. Stay away from windows and exterior walls. If outside, move away from buildings and power lines. Do not run outside during shaking — most injuries occur when people try to move. After shaking stops, be prepared for aftershocks.' },
+        { q: 'How accurate is the location data?', a: 'The tool uses the Nominatim geocoding API from OpenStreetMap to convert your city or address to latitude and longitude coordinates. Nominatim covers virtually all cities worldwide and is accurate to neighborhood level in most cases. Earthquake data comes from the USGS Earthquake Hazards Program API, providing real-time data updated within minutes of detection.' },
+        { q: 'Can I use my current GPS location?', a: 'Yes, click the "Use My Location" button to use your browser GPS. The browser will request permission before sharing your location. This uses your device GPS or network-based location, typically accurate to within a few hundred meters in urban areas. Your coordinates are only used to query USGS earthquake data — they are never stored on any server.' }
+      ];
+
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        { slug: 'safety/bac-calculator', name: 'BAC Calculator', description: 'Calculate blood alcohol content based on drinks, weight, and time.' },
+        { slug: 'safety/crash-force-calculator', name: 'Car Crash Impact Force Calculator', description: 'Calculate the force of a car crash in Newtons and G-force.' },
+        { slug: 'safety/dui-cost-calculator', name: 'DUI True Cost Calculator', description: 'Calculate the real total cost of a DUI conviction over 5 years.' },
+        { slug: 'tools/risk-assessment-template', name: 'Risk Assessment Template', description: 'Generate a health and safety risk assessment with hazard identification.' },
+        { slug: 'tools/incident-report-template', name: 'Incident Report Template', description: 'Generate a professional incident report for workplace accidents.' },
+        { slug: 'tools/iss-pass-predictor', name: 'ISS Pass Predictor', description: 'See live ISS location and estimate when it will pass over your city.' }
+      ]);
+
+      document.getElementById('eq-check-btn').addEventListener('click', doSearch);
+
+      document.getElementById('eq-location-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') doSearch();
+      });
+
+      document.querySelectorAll('.eq-city-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          var city = this.getAttribute('data-city');
+          document.getElementById('eq-location-input').value = city;
+          doSearch();
+        });
+      });
+
+      document.getElementById('eq-locate-btn').addEventListener('click', function() {
+        if (!navigator.geolocation) {
+          window.showToast && window.showToast('Geolocation is not supported by your browser.');
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Locating…';
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            btn.disabled = false;
+            btn.textContent = '📍 Use My Location';
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            document.getElementById('eq-location-input').value = lat.toFixed(4) + ', ' + lon.toFixed(4);
+            // Reverse geocode for display name
+            var url = 'https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json';
+            fetch(url, { headers: { 'Accept-Language': 'en' } })
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                var display = data.display_name || ('Lat ' + lat.toFixed(2) + ', Lon ' + lon.toFixed(2));
+                runCheck('my location', lat, lon, display);
+              })
+              .catch(function() {
+                runCheck('my location', lat, lon, 'Lat ' + lat.toFixed(2) + ', Lon ' + lon.toFixed(2));
+              });
+          },
+          function() {
+            btn.disabled = false;
+            btn.textContent = '📍 Use My Location';
+            window.showToast && window.showToast('Could not get your location. Please enter it manually.');
+          }
+        );
+      });
+    });
+  </script>
+</body>
+</html>

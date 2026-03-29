@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Country Stats Comparator — Teamz Lab Tools</title>
+  <meta name="description" content="Compare any two countries: GDP, population, life expectancy, literacy, and 10 development indicators. World Bank data, free, instant, no signup.">
+  <meta property="og:title" content="Country Stats Comparator — Teamz Lab Tools">
+  <meta property="og:description" content="Compare any two countries side by side on GDP, population, life expectancy, education, and 10 development indicators. World Bank data, free, instant.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/country-stats-comparator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Country Stats Comparator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Compare any two countries on 10 World Bank development indicators. GDP, population, life expectancy, literacy, and more. Free, instant.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/country-stats-comparator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .csc-form { margin-bottom: 1.5rem; }
+    .csc-selector-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: end; margin-bottom: 1.25rem; }
+    .csc-field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .csc-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+    .csc-select { padding: 0.65rem 1rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; box-sizing: border-box; }
+    .csc-select:focus { border-color: var(--heading); }
+    .csc-vs { font-size: var(--text-lg); font-weight: 800; color: var(--text-muted); text-align: center; padding-bottom: 0.4rem; }
+    .csc-quick-pairs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+    .csc-pair-btn { padding: 0.35rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: var(--text-xs); font-weight: 600; cursor: pointer; font-family: var(--font); transition: all 0.2s; }
+    .csc-pair-btn:hover { border-color: var(--heading); color: var(--heading); }
+    .csc-loading { text-align: center; color: var(--text-muted); padding: 2rem; font-size: var(--text-sm); }
+    .csc-error { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; color: var(--text); font-size: var(--text-sm); margin-bottom: 1rem; }
+    /* Summary cards */
+    .csc-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .csc-summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; text-align: center; }
+    .csc-flag { font-size: 2.5rem; line-height: 1; margin-bottom: 0.25rem; }
+    .csc-country-name { font-size: var(--text-lg); font-weight: 800; color: var(--heading); margin-bottom: 0.25rem; line-height: 1.2; }
+    .csc-wins { font-size: var(--text-sm); color: var(--text-muted); }
+    .csc-wins span { font-weight: 700; color: var(--heading); }
+    /* Score bar */
+    .csc-score-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; }
+    .csc-score-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 600; flex-shrink: 0; }
+    .csc-score-track { flex: 1; background: var(--border); border-radius: 4px; height: 10px; position: relative; overflow: visible; }
+    .csc-score-a { background: var(--heading); height: 100%; border-radius: 4px; transition: width 0.4s; }
+    .csc-score-b-marker { position: absolute; top: -3px; width: 4px; height: 16px; background: var(--text-muted); border-radius: 2px; transition: left 0.4s; }
+    .csc-score-val { font-size: var(--text-xs); color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
+    /* Comparison table */
+    .csc-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); margin-bottom: 1.5rem; }
+    .csc-table th { text-align: left; padding: 0.6rem 0.75rem; color: var(--text-muted); font-weight: 600; border-bottom: 2px solid var(--border); font-size: var(--text-xs); background: var(--surface); }
+    .csc-table th:nth-child(2), .csc-table th:nth-child(3) { text-align: right; }
+    .csc-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    .csc-table td:nth-child(2), .csc-table td:nth-child(3) { text-align: right; font-weight: 600; }
+    .csc-table tr:last-child td { border-bottom: none; }
+    .csc-winner { color: var(--heading) !important; font-weight: 800 !important; }
+    .csc-badge { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--heading); margin-left: 4px; vertical-align: middle; }
+    .csc-na { color: var(--text-muted); font-weight: 400 !important; }
+    /* Bar vis */
+    .csc-bar-wrap { display: flex; align-items: center; gap: 0.5rem; }
+    .csc-bar-track { flex: 1; background: var(--border); border-radius: 3px; height: 8px; overflow: hidden; }
+    .csc-bar-fill-a { background: var(--heading); height: 100%; border-radius: 3px; }
+    .csc-bar-fill-b { background: var(--text-muted); height: 100%; border-radius: 3px; }
+    .csc-bar-label { font-size: 0.6rem; color: var(--text-muted); min-width: 28px; text-align: right; }
+    /* Share */
+    .csc-share-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+    @media (max-width: 600px) {
+      .csc-selector-grid { grid-template-columns: 1fr; }
+      .csc-vs { display: none; }
+      .csc-table { font-size: 0.75rem; }
+      .csc-table th, .csc-table td { padding: 0.5rem 0.4rem; }
+      .tool-calculator h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Country Stats Comparator", "description": "Compare any two countries on 10 World Bank development indicators.", "url": "https://tool.teamzlab.com/tools/country-stats-comparator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Country Stats Comparator</h1>
+      <p class="tool-description">Compare any two countries side by side on 10 key development indicators — GDP, population, life expectancy, literacy, internet access, and more. Live data from the World Bank. Free, instant, no signup required.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Select Two Countries</h2>
+
+      <div class="csc-form">
+        <div class="csc-selector-grid">
+          <div class="csc-field">
+            <label for="csc-a">Country A</label>
+            <select id="csc-a" class="csc-select"></select>
+          </div>
+          <div class="csc-vs">VS</div>
+          <div class="csc-field">
+            <label for="csc-b">Country B</label>
+            <select id="csc-b" class="csc-select"></select>
+          </div>
+        </div>
+
+        <div class="csc-quick-pairs">
+          <span style="font-size:var(--text-xs);color:var(--text-muted);align-self:center;margin-right:4px;">Popular:</span>
+          <button class="csc-pair-btn" data-a="US" data-b="CN" type="button">USA vs China</button>
+          <button class="csc-pair-btn" data-a="GB" data-b="DE" type="button">UK vs Germany</button>
+          <button class="csc-pair-btn" data-a="IN" data-b="PK" type="button">India vs Pakistan</button>
+          <button class="csc-pair-btn" data-a="JP" data-b="KR" type="button">Japan vs South Korea</button>
+          <button class="csc-pair-btn" data-a="US" data-b="CA" type="button">USA vs Canada</button>
+          <button class="csc-pair-btn" data-a="BR" data-b="AR" type="button">Brazil vs Argentina</button>
+          <button class="csc-pair-btn" data-a="FR" data-b="IT" type="button">France vs Italy</button>
+          <button class="csc-pair-btn" data-a="NG" data-b="ZA" type="button">Nigeria vs S. Africa</button>
+        </div>
+
+        <button class="btn-primary" id="csc-compare-btn" type="button" style="width:100%;">Compare Countries</button>
+      </div>
+
+      <div id="csc-loading" class="csc-loading" style="display:none;">Fetching World Bank data...</div>
+      <div id="csc-error" class="csc-error" style="display:none;"></div>
+
+      <div id="csc-results" style="display:none;">
+        <div class="csc-summary" id="csc-summary"></div>
+        <div class="csc-score-row" id="csc-score-row" style="display:none;">
+          <span class="csc-score-label" id="csc-score-a-label">A</span>
+          <div class="csc-score-track">
+            <div class="csc-score-a" id="csc-score-bar-a" style="width:50%;"></div>
+            <div class="csc-score-b-marker" id="csc-score-marker-b" style="left:50%;"></div>
+          </div>
+          <span class="csc-score-val" id="csc-score-b-label">B</span>
+        </div>
+        <table class="csc-table" id="csc-table">
+          <thead><tr><th>Indicator</th><th id="csc-th-a">Country A</th><th id="csc-th-b">Country B</th></tr></thead>
+          <tbody id="csc-tbody"></tbody>
+        </table>
+        <div class="csc-share-row">
+          <button class="btn-secondary" id="csc-share-btn" type="button">Share Comparison</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>About the World Bank Development Indicators</h2>
+      <p>This comparator pulls live data from the World Bank Open Data API, which provides free access to over 1,600 development indicators for 195 countries and territories. The 10 indicators selected here cover the key dimensions of national development: economic output (GDP, GDP per capita), demographic scale (population), health (life expectancy, health expenditure), education (literacy rate, education expenditure), equality (GINI index), and infrastructure (electricity access, internet penetration). Data is sourced from World Bank reports as of 2023–2024 depending on each country's most recent submission. Last updated: March 2026.</p>
+
+      <h2>How to Interpret the Comparison Results</h2>
+      <p>Each indicator is color-coded: the better-performing country is highlighted. "Better" is defined as: higher is better for GDP, GDP per capita, life expectancy, literacy rate, health expenditure, education expenditure, electricity access, and internet users. For the GINI inequality index, lower is better (a score of 0 means perfect equality, 100 means maximum inequality). The overall development score counts how many indicators each country wins — giving a simple summary of relative performance across all 10 dimensions.</p>
+      <p>Note that some indicators may show N/A for smaller or less-data-rich countries. This happens when a country has not reported that metric to the World Bank in recent years. N/A indicators are excluded from the win count.</p>
+
+      <h2>GDP vs GDP Per Capita — What's the Difference?</h2>
+      <p>GDP (Gross Domestic Product) measures the total economic output of a country. China has a higher total GDP than Switzerland by a factor of about 17. But GDP per capita — GDP divided by population — tells a very different story: Switzerland's per capita GDP is around $93,000 versus China's $12,700. Per capita GDP is the better measure of average living standards and economic productivity per person. This tool shows both metrics so you can see both the scale and efficiency of each economy.</p>
+
+      <h2>Life Expectancy as a Development Indicator</h2>
+      <p>Life expectancy at birth is one of the most comprehensive single-number summaries of national health and development. It reflects healthcare quality, nutrition, sanitation, safety, and socioeconomic conditions. Japan leads at 84 years, while some sub-Saharan African countries average below 60. Countries with high life expectancy tend to have lower infant mortality, better chronic disease management, and more stable social safety nets. The comparison of life expectancy between two countries often tells you more about quality of life than GDP alone.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      var WB_API = 'https://api.worldbank.org/v2/country/';
+      var CACHE_PREFIX = 'csc_wb_';
+      var CACHE_EXP = 24 * 60 * 60 * 1000; // 24h
+
+      var INDICATORS = [
+        { id: 'NY.GDP.MKTP.CD',   name: 'GDP (Total)',               unit: 'USD',   fmt: 'money',   higherBetter: true },
+        { id: 'NY.GDP.PCAP.CD',   name: 'GDP Per Capita',            unit: 'USD',   fmt: 'money',   higherBetter: true },
+        { id: 'SP.POP.TOTL',      name: 'Population',                unit: '',      fmt: 'pop',     higherBetter: null },
+        { id: 'SP.DYN.LE00.IN',   name: 'Life Expectancy',           unit: 'years', fmt: 'fixed1',  higherBetter: true },
+        { id: 'SE.ADT.LITR.ZS',   name: 'Adult Literacy Rate',       unit: '%',     fmt: 'fixed1',  higherBetter: true },
+        { id: 'SI.POV.GINI',      name: 'GINI Inequality Index',     unit: '',      fmt: 'fixed1',  higherBetter: false },
+        { id: 'SH.XPD.CHEX.GD.ZS',name: 'Health Expenditure (% GDP)',unit: '%',     fmt: 'fixed1',  higherBetter: true },
+        { id: 'SE.XPD.TOTL.GD.ZS',name: 'Education Expenditure (% GDP)',unit: '%', fmt: 'fixed1',  higherBetter: true },
+        { id: 'EG.ELC.ACCS.ZS',   name: 'Electricity Access',        unit: '%',     fmt: 'fixed1',  higherBetter: true },
+        { id: 'IT.NET.USER.ZS',   name: 'Internet Users',            unit: '%',     fmt: 'fixed1',  higherBetter: true }
+      ];
+
+      var COUNTRIES = [
+        ['AF','Afghanistan'],['AL','Albania'],['DZ','Algeria'],['AO','Angola'],['AR','Argentina'],
+        ['AM','Armenia'],['AU','Australia'],['AT','Austria'],['AZ','Azerbaijan'],['BD','Bangladesh'],
+        ['BY','Belarus'],['BE','Belgium'],['BJ','Benin'],['BO','Bolivia'],['BA','Bosnia and Herzegovina'],
+        ['BW','Botswana'],['BR','Brazil'],['BG','Bulgaria'],['KH','Cambodia'],['CM','Cameroon'],
+        ['CA','Canada'],['CF','Central African Republic'],['CL','Chile'],['CN','China'],['CO','Colombia'],
+        ['CD','Congo, Dem. Rep.'],['CG','Congo, Rep.'],['CR','Costa Rica'],['HR','Croatia'],['CU','Cuba'],
+        ['CY','Cyprus'],['CZ','Czech Republic'],['DK','Denmark'],['DO','Dominican Republic'],['EC','Ecuador'],
+        ['EG','Egypt'],['SV','El Salvador'],['EE','Estonia'],['ET','Ethiopia'],['FI','Finland'],
+        ['FR','France'],['GA','Gabon'],['GE','Georgia'],['DE','Germany'],['GH','Ghana'],
+        ['GR','Greece'],['GT','Guatemala'],['GN','Guinea'],['HT','Haiti'],['HN','Honduras'],
+        ['HK','Hong Kong SAR, China'],['HU','Hungary'],['IN','India'],['ID','Indonesia'],['IR','Iran'],
+        ['IQ','Iraq'],['IE','Ireland'],['IL','Israel'],['IT','Italy'],['JM','Jamaica'],
+        ['JP','Japan'],['JO','Jordan'],['KZ','Kazakhstan'],['KE','Kenya'],['KW','Kuwait'],
+        ['KG','Kyrgyz Republic'],['LA','Lao PDR'],['LV','Latvia'],['LB','Lebanon'],['LT','Lithuania'],
+        ['LU','Luxembourg'],['MK','North Macedonia'],['MG','Madagascar'],['MW','Malawi'],['MY','Malaysia'],
+        ['ML','Mali'],['MT','Malta'],['MR','Mauritania'],['MX','Mexico'],['MD','Moldova'],
+        ['MN','Mongolia'],['MA','Morocco'],['MZ','Mozambique'],['MM','Myanmar'],['NA','Namibia'],
+        ['NP','Nepal'],['NL','Netherlands'],['NZ','New Zealand'],['NI','Nicaragua'],['NE','Niger'],
+        ['NG','Nigeria'],['NO','Norway'],['OM','Oman'],['PK','Pakistan'],['PA','Panama'],
+        ['PY','Paraguay'],['PE','Peru'],['PH','Philippines'],['PL','Poland'],['PT','Portugal'],
+        ['QA','Qatar'],['RO','Romania'],['RU','Russia'],['RW','Rwanda'],['SA','Saudi Arabia'],
+        ['SN','Senegal'],['RS','Serbia'],['SL','Sierra Leone'],['SG','Singapore'],['SK','Slovakia'],
+        ['SI','Slovenia'],['SO','Somalia'],['ZA','South Africa'],['KR','Korea, Rep.'],['SS','South Sudan'],
+        ['ES','Spain'],['LK','Sri Lanka'],['SD','Sudan'],['SE','Sweden'],['CH','Switzerland'],
+        ['SY','Syria'],['TW','Taiwan'],['TJ','Tajikistan'],['TZ','Tanzania'],['TH','Thailand'],
+        ['TG','Togo'],['TN','Tunisia'],['TR','Turkey'],['TM','Turkmenistan'],['UG','Uganda'],
+        ['UA','Ukraine'],['AE','United Arab Emirates'],['GB','United Kingdom'],['US','United States'],
+        ['UY','Uruguay'],['UZ','Uzbekistan'],['VE','Venezuela'],['VN','Vietnam'],['YE','Yemen'],
+        ['ZM','Zambia'],['ZW','Zimbabwe']
+      ];
+
+      var COUNTRY_FLAGS = {
+        'US':'🇺🇸','CN':'🇨🇳','IN':'🇮🇳','DE':'🇩🇪','GB':'🇬🇧','JP':'🇯🇵','FR':'🇫🇷','BR':'🇧🇷',
+        'CA':'🇨🇦','KR':'🇰🇷','AU':'🇦🇺','IT':'🇮🇹','ES':'🇪🇸','MX':'🇲🇽','ID':'🇮🇩','RU':'🇷🇺',
+        'NG':'🇳🇬','ZA':'🇿🇦','PK':'🇵🇰','BD':'🇧🇩','AR':'🇦🇷','EG':'🇪🇬','TR':'🇹🇷','SA':'🇸🇦',
+        'PH':'🇵🇭','MY':'🇲🇾','TH':'🇹🇭','VN':'🇻🇳','NG':'🇳🇬','PL':'🇵🇱','CH':'🇨🇭','NL':'🇳🇱',
+        'UA':'🇺🇦','SG':'🇸🇬','SE':'🇸🇪','NO':'🇳🇴','DK':'🇩🇰','FI':'🇫🇮','BE':'🇧🇪','NZ':'🇳🇿',
+        'PT':'🇵🇹','GR':'🇬🇷','IL':'🇮🇱','AE':'🇦🇪','QA':'🇶🇦','KW':'🇰🇼','IR':'🇮🇷','IQ':'🇮🇶',
+        'ET':'🇪🇹','KE':'🇰🇪','TZ':'🇹🇿','GH':'🇬🇭','CO':'🇨🇴','VE':'🇻🇪','PE':'🇵🇪','CL':'🇨🇱'
+      };
+
+      // --- Build dropdowns ---
+      var selA = document.getElementById('csc-a');
+      var selB = document.getElementById('csc-b');
+      var frag1 = document.createDocumentFragment();
+      var frag2 = document.createDocumentFragment();
+      COUNTRIES.forEach(function (c) {
+        var o1 = document.createElement('option'); o1.value = c[0]; o1.textContent = c[1];
+        if (c[0] === 'US') o1.selected = true;
+        frag1.appendChild(o1);
+        var o2 = document.createElement('option'); o2.value = c[0]; o2.textContent = c[1];
+        if (c[0] === 'CN') o2.selected = true;
+        frag2.appendChild(o2);
+      });
+      selA.appendChild(frag1);
+      selB.appendChild(frag2);
+
+      // --- Cache helpers ---
+      function cacheSet(key, data) {
+        try { localStorage.setItem(key, JSON.stringify({ data: data, ts: Date.now() })); } catch (e) {}
+      }
+      function cacheGet(key) {
+        try {
+          var raw = localStorage.getItem(key);
+          if (!raw) return null;
+          var obj = JSON.parse(raw);
+          if (Date.now() - obj.ts > CACHE_EXP) return null;
+          return obj.data;
+        } catch (e) { return null; }
+      }
+
+      // --- Fetch indicator value for a country ---
+      function fetchIndicator(countryCode, indicatorId) {
+        var cacheKey = CACHE_PREFIX + countryCode + '_' + indicatorId;
+        var cached = cacheGet(cacheKey);
+        if (cached !== null) return Promise.resolve(cached);
+        var url = WB_API + countryCode + '/indicator/' + indicatorId + '?format=json&mrv=5';
+        return fetch(url)
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            var result = null;
+            if (data && data[1]) {
+              for (var i = 0; i < data[1].length; i++) {
+                if (data[1][i].value !== null) { result = data[1][i].value; break; }
+              }
+            }
+            cacheSet(cacheKey, result);
+            return result;
+          })
+          .catch(function () { return null; });
+      }
+
+      // --- Fetch all indicators for both countries ---
+      function fetchCountry(code) {
+        var promises = INDICATORS.map(function (ind) { return fetchIndicator(code, ind.id); });
+        return Promise.all(promises);
+      }
+
+      // --- Format values ---
+      function formatVal(val, fmt, unit) {
+        if (val === null || val === undefined) return 'N/A';
+        if (fmt === 'money') {
+          if (val >= 1e12) return '$' + (val / 1e12).toFixed(2) + 'T';
+          if (val >= 1e9)  return '$' + (val / 1e9).toFixed(2) + 'B';
+          if (val >= 1e6)  return '$' + (val / 1e6).toFixed(2) + 'M';
+          return '$' + val.toLocaleString();
+        }
+        if (fmt === 'pop') {
+          if (val >= 1e9) return (val / 1e9).toFixed(2) + 'B';
+          if (val >= 1e6) return (val / 1e6).toFixed(1) + 'M';
+          return val.toLocaleString();
+        }
+        if (fmt === 'fixed1') return parseFloat(val).toFixed(1) + (unit ? ' ' + unit : '');
+        return val;
+      }
+
+      // --- Compare and render ---
+      function renderResults(codeA, codeB, nameA, nameB, valsA, valsB) {
+        var elResults = document.getElementById('csc-results');
+        var elSummary = document.getElementById('csc-summary');
+        var elTbody = document.getElementById('csc-tbody');
+        var elThA = document.getElementById('csc-th-a');
+        var elThB = document.getElementById('csc-th-b');
+
+        elThA.textContent = nameA;
+        elThB.textContent = nameB;
+
+        var winsA = 0, winsB = 0;
+        var rows = '';
+
+        INDICATORS.forEach(function (ind, i) {
+          var valA = valsA[i];
+          var valB = valsB[i];
+          var fmtA = formatVal(valA, ind.fmt, ind.unit);
+          var fmtB = formatVal(valB, ind.fmt, ind.unit);
+
+          var classA = '', classB = '';
+          var badgeA = '', badgeB = '';
+
+          if (valA !== null && valB !== null && ind.higherBetter !== null) {
+            if (ind.higherBetter) {
+              if (valA > valB) { classA = 'csc-winner'; badgeA = '<span class="csc-badge"></span>'; winsA++; }
+              else if (valB > valA) { classB = 'csc-winner'; badgeB = '<span class="csc-badge"></span>'; winsB++; }
+            } else {
+              if (valA < valB) { classA = 'csc-winner'; badgeA = '<span class="csc-badge"></span>'; winsA++; }
+              else if (valB < valA) { classB = 'csc-winner'; badgeB = '<span class="csc-badge"></span>'; winsB++; }
+            }
+          }
+
+          // Bar vis for numeric comparable fields
+          var barHtml = '';
+          if (valA !== null && valB !== null && ind.higherBetter !== null) {
+            var maxV = Math.max(Math.abs(valA), Math.abs(valB));
+            if (maxV > 0) {
+              var pA = Math.round((valA / maxV) * 100);
+              var pB = Math.round((valB / maxV) * 100);
+              if (!ind.higherBetter) { pA = 100 - pA; pB = 100 - pB; }
+              barHtml = '<div class="csc-bar-wrap" style="margin-top:4px;">'
+                + '<div class="csc-bar-track"><div class="csc-bar-fill-a" style="width:' + pA + '%;"></div></div>'
+                + '<span class="csc-bar-label">' + (ind.higherBetter ? '' : 'inv') + '</span>'
+                + '</div>';
+            }
+          }
+
+          var naClassA = fmtA === 'N/A' ? ' csc-na' : '';
+          var naClassB = fmtB === 'N/A' ? ' csc-na' : '';
+
+          rows += '<tr>'
+            + '<td>' + ind.name + barHtml + '</td>'
+            + '<td class="' + classA + naClassA + '">' + fmtA + badgeA + '</td>'
+            + '<td class="' + classB + naClassB + '">' + fmtB + badgeB + '</td>'
+            + '</tr>';
+        });
+
+        elTbody.innerHTML = rows;
+
+        var flagA = COUNTRY_FLAGS[codeA] || '🌍';
+        var flagB = COUNTRY_FLAGS[codeB] || '🌍';
+        elSummary.innerHTML = '<div class="csc-summary-card">'
+          + '<div class="csc-flag">' + flagA + '</div>'
+          + '<div class="csc-country-name">' + nameA + '</div>'
+          + '<div class="csc-wins">Wins <span>' + winsA + '</span>/' + (winsA + winsB) + ' metrics</div>'
+          + '</div>'
+          + '<div class="csc-summary-card">'
+          + '<div class="csc-flag">' + flagB + '</div>'
+          + '<div class="csc-country-name">' + nameB + '</div>'
+          + '<div class="csc-wins">Wins <span>' + winsB + '</span>/' + (winsA + winsB) + ' metrics</div>'
+          + '</div>';
+
+        // Score bar
+        var scoreRow = document.getElementById('csc-score-row');
+        if (winsA + winsB > 0) {
+          var pctA = Math.round((winsA / (winsA + winsB)) * 100);
+          document.getElementById('csc-score-bar-a').style.width = pctA + '%';
+          document.getElementById('csc-score-marker-b').style.left = pctA + '%';
+          document.getElementById('csc-score-a-label').textContent = nameA + ' (' + winsA + ')';
+          document.getElementById('csc-score-b-label').textContent = nameB + ' (' + winsB + ')';
+          showEl(scoreRow);
+        }
+
+        showEl(elResults, 'block');
+        elResults.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // --- Compare trigger ---
+      function doCompare() {
+        var codeA = selA.value;
+        var codeB = selB.value;
+        if (!codeA || !codeB) { window.showToast && window.showToast('Please select both countries.'); return; }
+        if (codeA === codeB) { window.showToast && window.showToast('Please select two different countries.'); return; }
+
+        var nameA = selA.options[selA.selectedIndex].textContent;
+        var nameB = selB.options[selB.selectedIndex].textContent;
+
+        var elLoading = document.getElementById('csc-loading');
+        var elError = document.getElementById('csc-error');
+        var elResults = document.getElementById('csc-results');
+        var compareBtn = document.getElementById('csc-compare-btn');
+
+        compareBtn.disabled = true;
+        compareBtn.textContent = 'Fetching data...';
+        showEl(elLoading, 'block');
+        hideEl(elError);
+        hideEl(elResults);
+
+        Promise.all([fetchCountry(codeA), fetchCountry(codeB)])
+          .then(function (results) {
+            hideEl(elLoading);
+            compareBtn.disabled = false;
+            compareBtn.textContent = 'Compare Countries';
+            renderResults(codeA, codeB, nameA, nameB, results[0], results[1]);
+          })
+          .catch(function (err) {
+            hideEl(elLoading);
+            compareBtn.disabled = false;
+            compareBtn.textContent = 'Compare Countries';
+            showEl(elError, 'block');
+            elError.textContent = 'Failed to fetch data. Please check your connection and try again.';
+          });
+      }
+
+      document.getElementById('csc-compare-btn').addEventListener('click', doCompare);
+
+      document.querySelectorAll('.csc-pair-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var codeA = btn.getAttribute('data-a');
+          var codeB = btn.getAttribute('data-b');
+          selA.value = codeA;
+          selB.value = codeB;
+          doCompare();
+        });
+      });
+
+      // Share button
+      document.getElementById('csc-share-btn').addEventListener('click', function () {
+        var url = window.location.origin + window.location.pathname + '?a=' + selA.value + '&b=' + selB.value;
+        if (window.safeClipboardText) {
+          window.safeClipboardText(url, 'Comparison link copied!');
+        } else {
+          navigator.clipboard.writeText(url)
+            .then(function () { window.showToast && window.showToast('Comparison link copied!'); })
+            .catch(function () { window.showToast && window.showToast('Could not copy — please copy the URL manually.'); });
+        }
+      });
+
+      // Handle shared URL params
+      var params = new URLSearchParams(window.location.search);
+      var paramA = params.get('a');
+      var paramB = params.get('b');
+      if (paramA && paramB) {
+        selA.value = paramA;
+        selB.value = paramB;
+        doCompare();
+      }
+
+      var BREADCRUMBS = [
+        { name: 'Home', url: '/' },
+        { name: 'Utility Tools', url: '/tools/' },
+        { name: 'Country Stats Comparator' }
+      ];
+      var FAQS = [
+        { q: 'Where does the country data come from?', a: 'All data comes from the World Bank Open Data API, which provides free access to development indicators for all 195 countries. The API is publicly available, CORS-enabled, and does not require an API key. Data is cached in your browser for 24 hours.' },
+        { q: 'What indicators are compared?', a: 'The comparator shows 10 World Bank development indicators: GDP (total), GDP per capita, population, life expectancy, adult literacy rate, GINI inequality index, health expenditure as % of GDP, education expenditure as % of GDP, electricity access, and internet users as % of population.' },
+        { q: 'How is the overall development score calculated?', a: 'The score counts how many indicators each country performs better on. For GINI (inequality), lower is better. For all others, higher is better. The country with more wins gets the higher overall score.' },
+        { q: 'Why are some indicators showing N/A?', a: 'Some countries do not report all indicators to the World Bank. Smaller nations, conflict-affected states, and territories may have missing data. N/A indicators are excluded from the win count.' },
+        { q: 'How current is the data?', a: 'The World Bank API returns the most recently reported value for each indicator. For most countries, GDP and population are available through 2023–2024. Some indicators like literacy or GINI may be from 2021 or 2022.' },
+        { q: 'Can I share a comparison?', a: 'Yes. The Share Comparison button generates a URL with the two country codes in the query string. Anyone with the link can open the same comparison instantly.' },
+        { q: 'Does this work offline?', a: 'The tool requires an internet connection to fetch data. Once loaded, data is cached in your browser for 24 hours, so revisiting the same comparison will work instantly without a connection.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'tools/country-comparison-tool', name: 'Country Comparison Tool', description: 'Compare countries on cost of living, safety, quality of life, and more.' },
+        { slug: 'tools/live-currency-converter', name: 'Live Currency Converter', description: 'Convert between 150+ currencies at live rates.' },
+        { slug: 'evergreen/personal-inflation-calculator', name: 'Personal Inflation Calculator', description: 'Calculate your personal inflation rate based on your spending.' },
+        { slug: 'evergreen/cost-of-living-calculator', name: 'Cost of Living Calculator', description: 'Compare cost of living between two cities.' },
+        { slug: 'evergreen/investment-return-calculator', name: 'Investment Return Calculator', description: 'Calculate return on investment over time.' },
+        { slug: 'tools/name-meaning-generator', name: 'Name Meaning Generator', description: 'Discover the meaning and origin of any name.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

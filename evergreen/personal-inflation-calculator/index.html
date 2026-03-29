@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Inflation Rate Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate YOUR personal inflation rate based on how you actually spend. Enter your spending categories and see if you're beating or losing to inflation.">
+  <meta property="og:title" content="Personal Inflation Rate Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your personal inflation rate based on your actual spending. Compare your rate to official CPI. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/personal-inflation-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Personal Inflation Rate Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate your personal inflation rate based on your actual spending categories. Compare to official CPI. Free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/personal-inflation-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .pi-year-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .pi-year-field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .pi-year-field label { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+    .pi-select { padding: 0.65rem 1rem; font-size: var(--text-md); font-family: var(--font); color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; outline: none; width: 100%; box-sizing: border-box; }
+    .pi-select:focus { border-color: var(--heading); }
+    .pi-categories { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .pi-cat-row { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; }
+    .pi-cat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .pi-cat-name { font-size: var(--text-sm); font-weight: 700; color: var(--heading); }
+    .pi-cat-pct { font-size: var(--text-sm); font-weight: 700; color: var(--heading); min-width: 40px; text-align: right; }
+    .pi-cat-desc { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.5rem; }
+    .pi-slider { width: 100%; accent-color: var(--heading); cursor: pointer; }
+    .pi-weight-sum { text-align: center; font-size: var(--text-sm); font-weight: 700; padding: 0.5rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; }
+    .pi-weight-ok { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .pi-weight-warn { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .pi-result { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem; }
+    .pi-result-headline { font-size: clamp(1rem, 3vw, 1.15rem); font-weight: 700; color: var(--heading); text-align: center; margin-bottom: 1.25rem; line-height: 1.4; }
+    .pi-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .pi-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; }
+    .pi-stat-val { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; color: var(--heading); line-height: 1.1; }
+    .pi-stat-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 0.25rem; }
+    .pi-gap-bar { margin: 1rem 0; }
+    .pi-gap-label { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 0.4rem; }
+    .pi-bar-track { background: var(--border); border-radius: 4px; height: 12px; position: relative; overflow: hidden; }
+    .pi-bar-personal { background: var(--heading); height: 100%; border-radius: 4px; transition: width 0.4s; }
+    .pi-bar-official { background: var(--text-muted); height: 6px; position: absolute; top: 3px; border-radius: 2px; transition: width 0.4s; }
+    .pi-breakdown { margin-top: 1rem; }
+    .pi-breakdown-title { font-size: var(--text-sm); font-weight: 700; color: var(--heading); margin-bottom: 0.75rem; }
+    .pi-breakdown-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .pi-breakdown-table th { text-align: left; padding: 0.4rem 0.5rem; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); font-size: var(--text-xs); }
+    .pi-breakdown-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .pi-breakdown-table tr:last-child td { border-bottom: none; }
+    .pi-breakdown-table .pi-td-high { color: var(--heading); font-weight: 700; }
+    @media (max-width: 600px) {
+      .pi-year-row { grid-template-columns: 1fr; }
+      .pi-result-grid { grid-template-columns: 1fr; }
+      .tool-calculator h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Personal Inflation Rate Calculator", "description": "Calculate your personal inflation rate based on how you actually spend.", "url": "https://tool.teamzlab.com/evergreen/personal-inflation-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Personal Inflation Rate Calculator</h1>
+      <p class="tool-description">Official CPI is an average — your real inflation depends on what you buy. Enter how you spend and discover your personal inflation rate from 2010 to 2025. See if you're ahead or behind the official number. Free, private, runs in your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Your Spending &amp; Time Period</h2>
+
+      <div class="pi-year-row">
+        <div class="pi-year-field">
+          <label for="pi-from-year">From Year</label>
+          <select id="pi-from-year" class="pi-select"></select>
+        </div>
+        <div class="pi-year-field">
+          <label for="pi-to-year">To Year</label>
+          <select id="pi-to-year" class="pi-select"></select>
+        </div>
+      </div>
+
+      <h2>Adjust Your Spending Categories</h2>
+      <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:1rem;">Drag each slider to match how you spend. Total should equal 100%.</p>
+
+      <div class="pi-categories" id="pi-categories"></div>
+
+      <div class="pi-weight-sum pi-weight-ok" id="pi-weight-sum">Total: 100%</div>
+
+      <button class="btn-primary" id="pi-calc-btn" type="button" style="width:100%;margin-bottom:1rem;">Calculate My Inflation Rate</button>
+      <button class="btn-secondary tool-clear-btn" id="pi-reset-btn" type="button" style="width:100%;margin-bottom:1.5rem;">Reset to Defaults</button>
+
+      <div id="pi-result" style="display:none;">
+        <div class="pi-result" id="pi-result-box">
+          <div class="pi-result-headline" id="pi-result-headline"></div>
+          <div class="pi-result-grid">
+            <div class="pi-stat">
+              <div class="pi-stat-val" id="pi-personal-rate">—</div>
+              <div class="pi-stat-label">Your Personal Inflation</div>
+            </div>
+            <div class="pi-stat">
+              <div class="pi-stat-val" id="pi-official-rate">—</div>
+              <div class="pi-stat-label">Official CPI (same period)</div>
+            </div>
+          </div>
+          <div class="pi-gap-bar">
+            <div class="pi-gap-label">
+              <span>0%</span>
+              <span id="pi-gap-label-max">10%</span>
+            </div>
+            <div class="pi-bar-track">
+              <div class="pi-bar-personal" id="pi-bar-personal" style="width:50%;"></div>
+              <div class="pi-bar-official" id="pi-bar-official" style="width:40%;"></div>
+            </div>
+            <div class="pi-gap-label" style="margin-top:0.3rem;">
+              <span style="color:var(--heading);font-weight:700;">Your rate</span>
+              <span style="color:var(--text-muted);">Official CPI</span>
+            </div>
+          </div>
+          <div class="pi-breakdown">
+            <div class="pi-breakdown-title">Category Breakdown</div>
+            <table class="pi-breakdown-table" id="pi-breakdown-table">
+              <thead><tr><th>Category</th><th>Your Weight</th><th>Cumulative Inflation</th><th>Your Contribution</th></tr></thead>
+              <tbody id="pi-breakdown-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>Why Your Personal Inflation Is Different from CPI</h2>
+      <p>The Consumer Price Index (CPI) is calculated by the US Bureau of Labor Statistics using a "market basket" of goods and services weighted by average American household spending. But the average American is a statistical construct — your spending pattern is unique. If you spend 40% of your income on rent in a high-cost city, your housing inflation over 2021–2023 was probably 8–12% per year, far above the 3.5% average. If you work in tech and have excellent employer healthcare, your healthcare exposure is lower than average.</p>
+      <p>This calculator uses category-level CPI data from 2010 to 2025 to calculate a weighted personal inflation rate. The data is sourced from US Bureau of Labor Statistics reports. Last updated: March 2026.</p>
+
+      <h2>Categories with the Highest Historical Inflation (2010–2025)</h2>
+      <p>Healthcare has been the fastest-inflating major category in the US, averaging 3–6% per year over 2010–2025 — roughly double the overall CPI rate. Housing has also run above average, especially in 2021–2023 when rental prices surged 7–10% in major metros. Education (college tuition and fees) outpaced CPI for most of the 2010–2025 period. Transportation (fuel, vehicle prices) is the most volatile category, swinging between -20% (2014–2016 oil crash, 2020 COVID) and +18% (2022 energy crisis).</p>
+      <p>In contrast, technology (electronics, software) has historically inflated at or below 0% — smartphones and laptops get cheaper or better for the same price each year. Clothing has also been relatively flat due to global supply chains. If your spending is concentrated in technology and entertainment, your personal inflation rate will likely be below official CPI.</p>
+
+      <h2>How to Use This Calculator</h2>
+      <p>Select the years you want to compare — for example, 2015 to 2025 to see the last decade. Then adjust the spending sliders to reflect your budget. If you spend 35% on housing, 20% on food, and 15% on healthcare, set those sliders accordingly. The total should reach 100%. Click Calculate to see your personal cumulative inflation over the selected period, compared to the official CPI for those same years.</p>
+      <p>The result shows your total cumulative inflation as a percentage. For example, if your personal rate is 42% over 10 years, that means goods that cost $1,000 in year 1 now cost you approximately $1,420. The official CPI figure for the same period is shown for comparison. A positive gap means you have been hit harder by inflation than the average American.</p>
+
+      <h2>Strategies for Reducing Your Personal Inflation Exposure</h2>
+      <p>Understanding your personal inflation rate helps you make better financial decisions. If healthcare dominates your budget, shopping for a Health Savings Account (HSA) or reviewing your insurance plan can reduce your exposure. If housing is your biggest driver, refinancing a mortgage or relocating to a lower-cost area reduces your personal inflation. Technology spending typically deflates over time — buying last year's model instead of the latest can save 15–30% with identical functionality. Food inflation can be partially offset by buying store brands, batch cooking, and reducing restaurant spending.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+      // --- Built-in CPI data by category (US, annual % change) ---
+      var CPI_DATA = {
+        overall:        { 2010:1.6, 2011:3.2, 2012:2.1, 2013:1.5, 2014:1.6, 2015:0.1, 2016:1.3, 2017:2.1, 2018:2.4, 2019:1.8, 2020:1.2, 2021:4.7, 2022:8.0, 2023:4.1, 2024:2.9, 2025:2.4 },
+        housing:        { 2010:0.4, 2011:1.1, 2012:2.2, 2013:2.3, 2014:2.9, 2015:3.2, 2016:3.5, 2017:3.3, 2018:3.3, 2019:3.2, 2020:2.0, 2021:4.0, 2022:7.9, 2023:7.2, 2024:5.2, 2025:4.5 },
+        food:           { 2010:0.8, 2011:3.7, 2012:2.6, 2013:1.4, 2014:2.4, 2015:1.8, 2016:0.3, 2017:0.5, 2018:1.4, 2019:1.8, 2020:3.9, 2021:6.3, 2022:10.4, 2023:5.8, 2024:2.2, 2025:2.0 },
+        healthcare:     { 2010:3.4, 2011:3.5, 2012:4.0, 2013:2.5, 2014:4.1, 2015:3.3, 2016:4.1, 2017:2.4, 2018:2.0, 2019:4.6, 2020:1.6, 2021:2.5, 2022:4.0, 2023:4.2, 2024:3.3, 2025:3.5 },
+        transportation: { 2010:5.7, 2011:9.7, 2012:3.4, 2013:0.5, 2014:0.9, 2015:-9.0, 2016:0.4, 2017:4.5, 2018:6.2, 2019:1.8, 2020:-7.0, 2021:18.0, 2022:14.0, 2023:4.0, 2024:1.5, 2025:2.8 },
+        education:      { 2010:3.8, 2011:4.5, 2012:4.1, 2013:2.7, 2014:3.1, 2015:4.0, 2016:3.4, 2017:2.7, 2018:2.3, 2019:2.2, 2020:1.8, 2021:2.2, 2022:2.7, 2023:2.3, 2024:2.0, 2025:1.8 },
+        entertainment:  { 2010:0.7, 2011:1.7, 2012:1.1, 2013:1.4, 2014:1.9, 2015:1.6, 2016:1.3, 2017:2.1, 2018:1.7, 2019:2.0, 2020:0.5, 2021:3.2, 2022:5.8, 2023:3.6, 2024:2.5, 2025:2.1 },
+        clothing:       { 2010:0.2, 2011:4.7, 2012:1.8, 2013:0.2, 2014:-0.3, 2015:-0.3, 2016:-1.2, 2017:0.0, 2018:-0.1, 2019:0.3, 2020:-3.0, 2021:5.3, 2022:5.0, 2023:0.7, 2024:1.3, 2025:1.0 },
+        technology:     { 2010:-4.3, 2011:-3.5, 2012:-4.0, 2013:-3.6, 2014:-2.8, 2015:-2.1, 2016:-2.0, 2017:-1.8, 2018:-1.6, 2019:-1.5, 2020:-1.0, 2021:0.8, 2022:1.7, 2023:0.5, 2024:-0.5, 2025:-0.3 }
+      };
+
+      var CATEGORIES = [
+        { id: 'housing',        key: 'housing',        name: 'Housing / Rent',       desc: 'Rent, mortgage payments, utilities, home insurance', defaultVal: 35 },
+        { id: 'food',           key: 'food',           name: 'Food & Groceries',      desc: 'Groceries, dining out, food delivery',              defaultVal: 15 },
+        { id: 'transportation', key: 'transportation', name: 'Transportation / Fuel', desc: 'Car payments, gas, public transit, rideshare',       defaultVal: 15 },
+        { id: 'healthcare',     key: 'healthcare',     name: 'Healthcare',            desc: 'Insurance premiums, doctor visits, medications',     defaultVal: 10 },
+        { id: 'education',      key: 'education',      name: 'Education',             desc: 'Tuition, books, courses, childcare',                 defaultVal: 8 },
+        { id: 'entertainment',  key: 'entertainment',  name: 'Entertainment',         desc: 'Streaming, events, hobbies, travel',                 defaultVal: 7 },
+        { id: 'clothing',       key: 'clothing',       name: 'Clothing',              desc: 'Clothes, shoes, accessories',                        defaultVal: 5 },
+        { id: 'technology',     key: 'technology',     name: 'Technology',            desc: 'Electronics, software, subscriptions, mobile',       defaultVal: 5 }
+      ];
+
+      var MIN_YEAR = 2010, MAX_YEAR = 2025;
+
+      // --- Build year selects ---
+      var fromSelect = document.getElementById('pi-from-year');
+      var toSelect = document.getElementById('pi-to-year');
+      for (var y = MIN_YEAR; y <= MAX_YEAR; y++) {
+        var o1 = document.createElement('option'); o1.value = y; o1.textContent = y;
+        if (y === 2015) o1.selected = true;
+        fromSelect.appendChild(o1);
+        var o2 = document.createElement('option'); o2.value = y; o2.textContent = y;
+        if (y === MAX_YEAR) o2.selected = true;
+        toSelect.appendChild(o2);
+      }
+
+      // --- Build category sliders ---
+      var catContainer = document.getElementById('pi-categories');
+      CATEGORIES.forEach(function (cat) {
+        var row = document.createElement('div');
+        row.className = 'pi-cat-row';
+        row.innerHTML = '<div class="pi-cat-header">'
+          + '<span class="pi-cat-name">' + cat.name + '</span>'
+          + '<span class="pi-cat-pct" id="pct-' + cat.id + '">' + cat.defaultVal + '%</span>'
+          + '</div>'
+          + '<div class="pi-cat-desc">' + cat.desc + '</div>'
+          + '<input type="range" class="pi-slider" id="slider-' + cat.id + '" min="0" max="100" value="' + cat.defaultVal + '" step="1">';
+        catContainer.appendChild(row);
+
+        document.getElementById('slider-' + cat.id).addEventListener('input', function () {
+          document.getElementById('pct-' + cat.id).textContent = this.value + '%';
+          updateWeightSum();
+        }.bind(null, cat.id));
+      });
+
+      function updateWeightSum() {
+        var total = CATEGORIES.reduce(function (sum, cat) {
+          return sum + parseInt(document.getElementById('slider-' + cat.id).value || 0);
+        }, 0);
+        var el = document.getElementById('pi-weight-sum');
+        el.textContent = 'Total: ' + total + '%' + (total !== 100 ? ' (adjust to reach 100%)' : ' ✓');
+        el.className = 'pi-weight-sum ' + (total === 100 ? 'pi-weight-ok' : 'pi-weight-warn');
+      }
+      updateWeightSum();
+
+      // --- Calculate cumulative inflation for a category over years ---
+      function cumulativeInflation(categoryKey, fromYear, toYear) {
+        var data = CPI_DATA[categoryKey];
+        var multiplier = 1;
+        for (var y = fromYear + 1; y <= toYear; y++) {
+          var rate = data[y] !== undefined ? data[y] : CPI_DATA.overall[y] || 2.0;
+          multiplier *= (1 + rate / 100);
+        }
+        return (multiplier - 1) * 100;
+      }
+
+      // --- Main calculation ---
+      function calculate() {
+        var fromYear = parseInt(fromSelect.value);
+        var toYear = parseInt(toSelect.value);
+        if (fromYear >= toYear) {
+          window.showToast && window.showToast('Please select a "From" year earlier than the "To" year.');
+          return;
+        }
+
+        var weights = CATEGORIES.map(function (cat) {
+          return parseInt(document.getElementById('slider-' + cat.id).value || 0);
+        });
+        var totalWeight = weights.reduce(function (s, w) { return s + w; }, 0);
+        if (totalWeight === 0) { window.showToast && window.showToast('Please set at least one category weight.'); return; }
+
+        var personalRate = 0;
+        var officialRate = cumulativeInflation('overall', fromYear, toYear);
+        var breakdownRows = '';
+
+        CATEGORIES.forEach(function (cat, i) {
+          var w = weights[i];
+          var normalizedW = totalWeight > 0 ? w / totalWeight : 0;
+          var catInflation = cumulativeInflation(cat.key, fromYear, toYear);
+          var contribution = normalizedW * catInflation;
+          personalRate += contribution;
+
+          if (w > 0) {
+            var highClass = catInflation > officialRate ? ' class="pi-td-high"' : '';
+            breakdownRows += '<tr>'
+              + '<td>' + cat.name + '</td>'
+              + '<td>' + w + '%</td>'
+              + '<td' + highClass + '>' + catInflation.toFixed(1) + '%</td>'
+              + '<td>' + contribution.toFixed(1) + '%</td>'
+              + '</tr>';
+          }
+        });
+
+        document.getElementById('pi-breakdown-body').innerHTML = breakdownRows;
+        document.getElementById('pi-personal-rate').textContent = personalRate.toFixed(1) + '%';
+        document.getElementById('pi-official-rate').textContent = officialRate.toFixed(1) + '%';
+
+        var gap = personalRate - officialRate;
+        var headline;
+        if (Math.abs(gap) < 1) {
+          headline = 'Your personal inflation (' + personalRate.toFixed(1) + '%) closely tracks the official CPI (' + officialRate.toFixed(1) + '%) from ' + fromYear + ' to ' + toYear + '.';
+        } else if (gap > 0) {
+          headline = 'You\'ve experienced ' + personalRate.toFixed(1) + '% inflation vs. official CPI of ' + officialRate.toFixed(1) + '% from ' + fromYear + ' to ' + toYear + ' — ' + gap.toFixed(1) + '% harder hit than average.';
+        } else {
+          headline = 'Your inflation (' + personalRate.toFixed(1) + '%) is lower than official CPI (' + officialRate.toFixed(1) + '%) from ' + fromYear + ' to ' + toYear + ' — ' + Math.abs(gap).toFixed(1) + '% better than average!';
+        }
+        document.getElementById('pi-result-headline').textContent = headline;
+
+        var maxRate = Math.max(personalRate, officialRate, 5);
+        document.getElementById('pi-gap-label-max').textContent = maxRate.toFixed(0) + '%';
+        document.getElementById('pi-bar-personal').style.width = Math.min(100, (personalRate / maxRate) * 100) + '%';
+        document.getElementById('pi-bar-official').style.width = Math.min(100, (officialRate / maxRate) * 100) + '%';
+
+        showEl(document.getElementById('pi-result'), 'block');
+        document.getElementById('pi-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      document.getElementById('pi-calc-btn').addEventListener('click', calculate);
+
+      document.getElementById('pi-reset-btn').addEventListener('click', function () {
+        CATEGORIES.forEach(function (cat) {
+          document.getElementById('slider-' + cat.id).value = cat.defaultVal;
+          document.getElementById('pct-' + cat.id).textContent = cat.defaultVal + '%';
+        });
+        fromSelect.value = '2015';
+        toSelect.value = String(MAX_YEAR);
+        updateWeightSum();
+        hideEl(document.getElementById('pi-result'));
+      });
+
+      // Update pct label on slider input (close over cat.id)
+      CATEGORIES.forEach(function (cat) {
+        var slider = document.getElementById('slider-' + cat.id);
+        var pctEl = document.getElementById('pct-' + cat.id);
+        slider.addEventListener('input', function () {
+          pctEl.textContent = slider.value + '%';
+          updateWeightSum();
+        });
+      });
+
+      var BREADCRUMBS = [
+        { name: 'Home', url: '/' },
+        { name: 'Everyday Calculators', url: '/evergreen/' },
+        { name: 'Personal Inflation Rate Calculator' }
+      ];
+      var FAQS = [
+        { q: 'What is a personal inflation rate?', a: 'Your personal inflation rate is the actual rate at which your cost of living has increased, based on how you specifically spend your money. Because official CPI uses a national average basket, your personal rate can be higher or lower depending on your spending.' },
+        { q: 'Why is my personal inflation rate different from official CPI?', a: 'Official CPI measures a fixed national average basket. If you spend more on healthcare (which inflates at 5–7% per year) and less on technology (which deflates), your personal rate will be higher than CPI.' },
+        { q: 'What years does this calculator cover?', a: 'This calculator covers 2010 to 2025 using US Bureau of Labor Statistics category-level inflation data.' },
+        { q: 'Do my spending weights need to add up to 100%?', a: 'Yes — the sliders should sum to 100% for an accurate result. The calculator shows a running total as you adjust.' },
+        { q: 'Which categories have the highest historical inflation?', a: 'Healthcare has been the fastest-inflating major category (3–6%/year). Housing ran above average especially in 2021–2023. Technology has historically deflated — electronics get cheaper or better each year.' },
+        { q: 'Can I use this for countries other than the US?', a: 'The built-in data is based on US CPI categories. The concept applies universally, but the percentages shown are US-specific.' },
+        { q: 'Is my data private?', a: 'Yes. All calculations happen entirely in your browser. Nothing is sent to any server. No login is required.' },
+        { q: 'What spending categories are included?', a: 'The calculator includes 8 major categories: Housing/Rent, Food & Groceries, Transportation/Fuel, Healthcare, Education, Entertainment, Clothing, and Technology — aligned with major CPI sub-indexes.' },
+        { q: 'How should I think about healthcare inflation?', a: 'Healthcare in the US has historically inflated at 3–6% per year — much faster than the 2% CPI target. Over a 10-year period, healthcare costs have nearly doubled for many Americans.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'evergreen/inflation-calculator', name: 'Inflation Calculator', description: 'Calculate buying power changes over time using overall CPI.' },
+        { slug: 'tools/live-currency-converter', name: 'Live Currency Converter', description: 'Convert currencies at live rates or look up historical rates.' },
+        { slug: 'evergreen/compound-interest-calculator', name: 'Compound Interest Calculator', description: 'See how compound growth works against inflation.' },
+        { slug: 'evergreen/fire-calculator', name: 'FIRE Calculator', description: 'Calculate your financial independence date.' },
+        { slug: 'evergreen/50-30-20-budget-calculator', name: '50/30/20 Budget Calculator', description: 'Apply the 50/30/20 rule to your income.' },
+        { slug: 'evergreen/cost-of-living-calculator', name: 'Cost of Living Calculator', description: 'Compare cost of living between two cities.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

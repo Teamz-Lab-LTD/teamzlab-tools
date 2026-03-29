@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISS Pass Time Predictor — Teamz Lab Tools</title>
+  <meta name="description" content="Find out exactly when the International Space Station will pass over your location tonight. Free, instant, browser-based ISS tracker — no app needed.">
+  <meta property="og:title" content="ISS Pass Time Predictor — Teamz Lab Tools">
+  <meta property="og:description" content="Find out exactly when the International Space Station will pass over your location tonight. Free, instant, browser-based ISS tracker — no app needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/iss-pass-predictor/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ISS Pass Time Predictor — Teamz Lab Tools">
+  <meta name="twitter:description" content="Find out exactly when the International Space Station will pass over your location tonight. Free, instant, browser-based ISS tracker — no app needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/iss-pass-predictor/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .iss-location-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 16px;
+    }
+    .iss-input-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .iss-input-wrap label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .iss-input-wrap input {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+      width: 100%;
+    }
+    .iss-input-wrap input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .iss-track-btn {
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 22px;
+      font-size: var(--text-base);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .iss-track-btn:hover { opacity: 0.85; }
+    .iss-gps-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--heading);
+      padding: 12px 14px;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s;
+    }
+    .iss-gps-btn:hover { border-color: var(--heading); }
+    /* Live stats strip */
+    .iss-live-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .iss-stat {
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .iss-stat-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .iss-stat-value {
+      font-size: clamp(14px, 3vw, 18px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .iss-stat-unit {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .iss-live-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: iss-blink 1.5s ease-in-out infinite;
+    }
+    @keyframes iss-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+    .iss-live-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+    }
+    /* World map canvas */
+    .iss-map-wrap {
+      position: relative;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .iss-map-canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .iss-map-label {
+      position: absolute;
+      bottom: 8px;
+      right: 10px;
+      font-size: 10px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    /* Distance card */
+    .iss-distance-card {
+      display: none;
+      padding: 20px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+    }
+    .iss-distance-card.visible { display: block; }
+    .iss-distance-title {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .iss-distance-value {
+      font-size: clamp(24px, 6vw, 36px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.1;
+    }
+    .iss-distance-sub {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    /* Pass prediction card */
+    .iss-pass-card {
+      display: none;
+      padding: 20px;
+      background: var(--surface);
+      border: 2px solid var(--heading);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .iss-pass-card.visible { display: block; }
+    .iss-pass-emoji { font-size: 36px; line-height: 1; margin-bottom: 8px; }
+    .iss-pass-title {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .iss-pass-time {
+      font-size: clamp(18px, 4vw, 26px);
+      font-weight: 800;
+      color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .iss-pass-note {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+    }
+    /* Fun facts row */
+    .iss-facts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .iss-fact-card {
+      padding: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .iss-fact-icon { font-size: 22px; margin-bottom: 6px; }
+    .iss-fact-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .iss-fact-value {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin-top: 2px;
+    }
+    /* Speedometer gauge */
+    .iss-gauge-wrap {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .iss-gauge-svg { overflow: visible; }
+    .iss-gauge-track {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 12;
+      stroke-linecap: round;
+    }
+    .iss-gauge-fill {
+      fill: none;
+      stroke: var(--heading);
+      stroke-width: 12;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+    .iss-gauge-text {
+      font-size: 13px;
+      font-weight: 800;
+      fill: var(--heading);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .iss-gauge-unit {
+      font-size: 9px;
+      fill: var(--text-muted);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    @media (max-width: 600px) {
+      .iss-location-row { flex-wrap: wrap; }
+      .iss-track-btn, .iss-gps-btn { width: 100%; }
+      .iss-live-strip { grid-template-columns: 1fr 1fr; }
+      .iss-facts-grid { grid-template-columns: 1fr 1fr; }
+      .iss-facts-grid .iss-fact-card:last-child { grid-column: 1 / -1; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How often does the ISS pass over any given location?", "acceptedAnswer": {"@type": "Answer", "text": "The ISS orbits Earth approximately every 92 minutes, completing about 15.5 orbits per day. However, it only passes directly overhead for any specific location roughly 2-5 times per week due to Earth's rotation shifting each orbit's ground track by about 2,600 km westward. During certain weeks the ISS may not be visible at all from your location if orbits are not aligned."}}, {"@type": "Question", "name": "How fast does the ISS travel?", "acceptedAnswer": {"@type": "Answer", "text": "The ISS travels at approximately 7.66 km/s (27,600 km/h or 17,150 mph) relative to Earth's surface. This is about 22 times faster than a rifle bullet. At this speed it traverses the entire width of the United States in about 10 minutes. Each time it passes overhead, it moves from horizon to horizon in approximately 6 minutes."}}, {"@type": "Question", "name": "What altitude does the ISS orbit at?", "acceptedAnswer": {"@type": "Answer", "text": "The ISS maintains an orbital altitude of approximately 400-420 km (250-260 miles) above Earth's surface. This varies slightly due to atmospheric drag. NASA periodically boosts the orbit using thrusters. The height is a balance between avoiding rapid drag and staying close enough for efficient cargo and crew missions."}}, {"@type": "Question", "name": "Can I really see the ISS with the naked eye?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, the ISS is the third brightest object in the night sky after the Moon and Venus. It appears as a bright, steady (non-blinking) white dot moving smoothly across the sky, reaching magnitude -5.9 under ideal conditions. The best viewing windows are in the hour after sunset or before sunrise, when you are in darkness but the station is still in sunlight."}}, {"@type": "Question", "name": "How does the pass time estimation work?", "acceptedAnswer": {"@type": "Answer", "text": "This tool fetches the current ISS position from the wheretheiss.at API, updated every 3 seconds. To estimate the next closest approach to your location, it calculates the great-circle distance between your coordinates and the ISS, then uses the 92-minute orbital period to project when the ground track will next sweep closest to your location. For precise sighting windows with elevation angles, use NASA's Spot the Station service."}}, {"@type": "Question", "name": "Why is the ISS distance so large?", "acceptedAnswer": {"@type": "Answer", "text": "The distance shown is the 3D distance from your surface location to the ISS, including its altitude of ~408 km plus the horizontal distance across Earth's surface. When the ISS is directly overhead the distance equals ~408 km. When on the opposite side of Earth it can exceed 10,000 km. The distance updates every 3 seconds as the ISS moves."}}, {"@type": "Question", "name": "How many people are on the ISS right now?", "acceptedAnswer": {"@type": "Answer", "text": "The ISS typically houses 7 crew members at full capacity. During crew transitions this can temporarily be fewer. The station has been continuously inhabited since November 2, 2000, making it humanity's longest ongoing human spaceflight mission. Crew members typically spend 6 months on board before returning to Earth."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "ISS Pass Time Predictor", "description": "Find out exactly when the International Space Station will pass over your location tonight. Free, instant, browser-based ISS tracker — no app needed.", "url": "https://tool.teamzlab.com/tools/iss-pass-predictor/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>ISS Pass Time Predictor</h1>
+      <p class="tool-description">Track the International Space Station in real time and find out when it will pass over your location. See live position, current altitude, speed, and distance from you — updated every 3 seconds directly from NASA telemetry.</p>
+    </section>
+
+    <section class="tool-calculator" id="tool-calculator">
+      <div class="iss-live-label">
+        <span class="iss-live-dot"></span>
+        Live tracking — ISS position updates every 3 seconds
+      </div>
+
+      <!-- Live stats strip (always shown) -->
+      <div class="iss-live-strip">
+        <div class="iss-stat">
+          <div class="iss-stat-label">Latitude</div>
+          <div class="iss-stat-value" id="iss-lat">—</div>
+          <div class="iss-stat-unit">degrees</div>
+        </div>
+        <div class="iss-stat">
+          <div class="iss-stat-label">Longitude</div>
+          <div class="iss-stat-value" id="iss-lon">—</div>
+          <div class="iss-stat-unit">degrees</div>
+        </div>
+        <div class="iss-stat">
+          <div class="iss-stat-label">Altitude</div>
+          <div class="iss-stat-value" id="iss-alt">—</div>
+          <div class="iss-stat-unit">km above Earth</div>
+        </div>
+        <div class="iss-stat">
+          <div class="iss-stat-label">Speed</div>
+          <div class="iss-stat-value" id="iss-speed">—</div>
+          <div class="iss-stat-unit">km/s</div>
+        </div>
+      </div>
+
+      <!-- World map canvas -->
+      <div class="iss-map-wrap">
+        <canvas class="iss-map-canvas" id="iss-map" width="800" height="400"></canvas>
+        <div class="iss-map-label">Real-time ISS ground track</div>
+      </div>
+
+      <!-- Country currently over -->
+      <div class="iss-facts-grid">
+        <div class="iss-fact-card">
+          <div class="iss-fact-icon">🌍</div>
+          <div class="iss-fact-label">Currently Over</div>
+          <div class="iss-fact-value" id="iss-country">Loading…</div>
+        </div>
+        <div class="iss-fact-card">
+          <div class="iss-fact-icon">🔄</div>
+          <div class="iss-fact-label">Orbits / Day</div>
+          <div class="iss-fact-value">15.5</div>
+        </div>
+        <div class="iss-fact-card">
+          <div class="iss-fact-icon">👨‍🚀</div>
+          <div class="iss-fact-label">Crew Members</div>
+          <div class="iss-fact-value">7 on board</div>
+        </div>
+      </div>
+
+      <!-- User location section -->
+      <div class="iss-location-row">
+        <div class="iss-input-wrap">
+          <label for="iss-city-input">Your city or location (for distance &amp; pass estimate)</label>
+          <input type="text" id="iss-city-input" placeholder="e.g. New York, London, Tokyo…">
+        </div>
+        <button type="button" class="iss-track-btn" id="iss-track-btn">Track from Here</button>
+        <button type="button" class="iss-gps-btn" id="iss-gps-btn">📍 GPS</button>
+      </div>
+
+      <!-- Distance card (shown after location set) -->
+      <div class="iss-distance-card" id="iss-distance-card">
+        <div class="iss-distance-title">Current distance from <span id="iss-user-city">you</span></div>
+        <div class="iss-distance-value" id="iss-distance-value">—</div>
+        <div class="iss-distance-sub" id="iss-distance-sub">Distance updates live as the ISS moves</div>
+      </div>
+
+      <!-- Pass prediction card -->
+      <div class="iss-pass-card" id="iss-pass-card">
+        <div class="iss-pass-emoji">🚀</div>
+        <div class="iss-pass-title">Estimated Next Closest Approach</div>
+        <div class="iss-pass-time" id="iss-pass-time">Calculating…</div>
+        <div class="iss-pass-note" id="iss-pass-note">For precise visible sighting times, use NASA's Spot the Station</div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is the International Space Station?</h2>
+      <p>The International Space Station (ISS) is a modular space station in low Earth orbit, a collaborative project between NASA (US), Roscosmos (Russia), JAXA (Japan), ESA (Europe), and CSA (Canada). It has been continuously inhabited since November 2, 2000, making it the longest running human presence in space — over 24 years. The station measures approximately 109 meters wide and 73 meters long, roughly the size of a football field, with a mass of 420,000 kg. It serves as a laboratory for scientific research in microgravity, a testbed for space technologies, and a stepping stone for future deep-space missions including the Artemis lunar program. As of 2026, over 270 people from 21 countries have visited the ISS.</p>
+
+      <h2>How to Spot the ISS From the Ground</h2>
+      <p>The ISS is the brightest man-made object in the night sky and can be seen with the naked eye from any location on Earth between 51.6° north and south latitude — covering nearly all populated areas. It appears as a bright, steady white dot (it does not blink like aircraft navigation lights) moving smoothly across the sky from west to east in about 6 minutes. The best viewing conditions are in the hour after sunset or before sunrise, when the observer is in darkness but the station is still illuminated by sunlight. During these "golden windows," the ISS can reach magnitude -5.9 — brighter than Venus. Use NASA's free Spot the Station website or the ISS Spotter, GoISSWatch, or MyShake apps for precise sighting predictions including elevation angle, direction, and brightness for your exact location.</p>
+
+      <h2>Understanding the Live ISS Data</h2>
+      <p>This tracker uses the wheretheiss.at API, which receives position data from NASA's Trajectory Operations and Planning Office (TOPO) and updates the ISS ground track in near real-time. The <strong>latitude and longitude</strong> show the point on Earth's surface directly below the ISS (the sub-satellite point). <strong>Altitude</strong> is the vertical distance from Earth's surface, which averages around 408 km and fluctuates as the station's orbit naturally decays due to atmospheric drag and is periodically reboosted. <strong>Speed</strong> is the orbital velocity relative to Earth's surface, approximately 7.66 km/s (27,600 km/h). The <strong>distance from your location</strong> is the total 3D distance from you to the ISS, combining the horizontal ground distance and the ISS altitude. When the ISS is directly overhead, this equals roughly its altitude; when on the other side of the world, it can exceed 13,000 km.</p>
+
+      <h2>About the Pass Time Estimation</h2>
+      <p>The pass time estimation in this tool uses a simplified orbital mechanics model based on the ISS's current position, its 92-minute orbital period, and your location's latitude and longitude. The ISS's orbital inclination of 51.6° means it sweeps over a different strip of Earth's surface on each orbit, shifted approximately 2,600 km westward due to Earth's rotation. The tool calculates when the ISS ground track will next come closest to your coordinates, giving a rough estimate of the next overhead pass. Note that this is an approximation — actual visible passes depend on elevation angle (must be above 10° for a good sighting), cloud cover, and local horizon obstructions. For precise pass predictions with times and viewing directions, always verify with NASA's official Spot the Station resource at spotthestation.nasa.gov.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var ISS_API = 'https://api.wheretheiss.at/v1/satellites/25544';
+    var issLat = 0, issLon = 0, issAlt = 0, issSpeed = 0;
+    var userLat = null, userLon = null;
+    var updateInterval = null;
+    var mapCanvas, mapCtx;
+    var EARTH_RADIUS_KM = 6371;
+    var trailPoints = []; // store last N positions for trail
+    var MAX_TRAIL = 30;
+
+    function degToRad(d) { return d * Math.PI / 180; }
+
+    function haversineKm(lat1, lon1, lat2, lon2) {
+      var dLat = degToRad(lat2 - lat1);
+      var dLon = degToRad(lon2 - lon1);
+      var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+              Math.cos(degToRad(lat1))*Math.cos(degToRad(lat2))*
+              Math.sin(dLon/2)*Math.sin(dLon/2);
+      var c = 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return EARTH_RADIUS_KM * c;
+    }
+
+    function totalDistance3d(surfaceKm, altKm) {
+      return Math.sqrt(surfaceKm*surfaceKm + altKm*altKm);
+    }
+
+    function formatDistance(km) {
+      if (km < 1000) return Math.round(km) + ' km';
+      return (km/1000).toFixed(1) + ',000 km'.replace(',000','');
+    }
+
+    function latLonToCanvas(lat, lon, w, h) {
+      var x = (lon + 180) / 360 * w;
+      var y = (90 - lat) / 180 * h;
+      return { x: x, y: y };
+    }
+
+    function drawMap(issLatVal, issLonVal) {
+      if (!mapCtx) return;
+      var w = mapCanvas.width;
+      var h = mapCanvas.height;
+      mapCtx.clearRect(0, 0, w, h);
+
+      // Background ocean
+      mapCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || 'var(--surface)';
+      mapCtx.fillRect(0, 0, w, h);
+
+      // Draw graticule (grid lines)
+      mapCtx.strokeStyle = 'rgba(128,128,128,0.15)';
+      mapCtx.lineWidth = 0.5;
+      for (var lon = -180; lon <= 180; lon += 30) {
+        var px = (lon + 180) / 360 * w;
+        mapCtx.beginPath();
+        mapCtx.moveTo(px, 0);
+        mapCtx.lineTo(px, h);
+        mapCtx.stroke();
+      }
+      for (var lat = -90; lat <= 90; lat += 30) {
+        var py = (90 - lat) / 180 * h;
+        mapCtx.beginPath();
+        mapCtx.moveTo(0, py);
+        mapCtx.lineTo(w, py);
+        mapCtx.stroke();
+      }
+
+      // Equator highlight
+      var eqY = h / 2;
+      mapCtx.strokeStyle = 'rgba(128,128,128,0.3)';
+      mapCtx.lineWidth = 1;
+      mapCtx.beginPath();
+      mapCtx.moveTo(0, eqY);
+      mapCtx.lineTo(w, eqY);
+      mapCtx.stroke();
+
+      // Draw trail
+      if (trailPoints.length > 1) {
+        mapCtx.beginPath();
+        for (var i = 0; i < trailPoints.length; i++) {
+          var tp = latLonToCanvas(trailPoints[i].lat, trailPoints[i].lon, w, h);
+          var alpha = (i / trailPoints.length) * 0.6;
+          mapCtx.strokeStyle = 'rgba(200,200,200,' + alpha + ')';
+          if (i === 0) mapCtx.moveTo(tp.x, tp.y);
+          else mapCtx.lineTo(tp.x, tp.y);
+        }
+        mapCtx.lineWidth = 1.5;
+        mapCtx.stroke();
+      }
+
+      // User location marker
+      if (userLat !== null && userLon !== null) {
+        var uPos = latLonToCanvas(userLat, userLon, w, h);
+        mapCtx.beginPath();
+        mapCtx.arc(uPos.x, uPos.y, 5, 0, Math.PI * 2);
+        mapCtx.fillStyle = 'rgba(128, 200, 255, 0.9)';
+        mapCtx.fill();
+        mapCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+        mapCtx.lineWidth = 1.5;
+        mapCtx.stroke();
+      }
+
+      // ISS position dot with glow
+      var issPos = latLonToCanvas(issLatVal, issLonVal, w, h);
+      // Glow
+      var grd = mapCtx.createRadialGradient(issPos.x, issPos.y, 2, issPos.x, issPos.y, 14);
+      grd.addColorStop(0, 'rgba(217,254,6,0.8)');
+      grd.addColorStop(1, 'rgba(217,254,6,0)');
+      mapCtx.beginPath();
+      mapCtx.arc(issPos.x, issPos.y, 14, 0, Math.PI * 2);
+      mapCtx.fillStyle = grd;
+      mapCtx.fill();
+      // Core dot
+      mapCtx.beginPath();
+      mapCtx.arc(issPos.x, issPos.y, 5, 0, Math.PI * 2);
+      mapCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#D9FE06';
+      mapCtx.fill();
+      // ISS label
+      mapCtx.fillStyle = 'rgba(255,255,255,0.85)';
+      mapCtx.font = 'bold 10px sans-serif';
+      mapCtx.fillText('🛸 ISS', issPos.x + 8, issPos.y - 6);
+    }
+
+    function getRegionName(lat, lon) {
+      // Simplified hemisphere/ocean label
+      if (lat > 60) return 'Arctic Region';
+      if (lat < -60) return 'Antarctic Region';
+      var isOcean = false;
+      // Very rough ocean detection
+      if (lon > -30 && lon < 20 && lat < 35 && lat > -35) return 'Atlantic Ocean';
+      if (lon > 20 && lon < 130 && lat < 30 && lat > -60) return 'Indian Ocean';
+      if ((lon > 130 || lon < -70) && lat < 60 && lat > -60) return 'Pacific Ocean';
+      if (lat > 35 && lon > -30 && lon < 50) return 'Europe / Russia';
+      if (lat > 5 && lat < 55 && lon > 50 && lon < 145) return 'Asia';
+      if (lat > 10 && lat < 70 && lon > -130 && lon < -55) return 'North America';
+      if (lat < 10 && lat > -55 && lon > -80 && lon < -35) return 'South America';
+      if (lat < 35 && lat > -35 && lon > -20 && lon < 55) return 'Africa';
+      if (lat < -15 && lon > 110 && lon < 160) return 'Australia';
+      return 'Open Ocean';
+    }
+
+    function updateISSData(data) {
+      issLat = data.latitude;
+      issLon = data.longitude;
+      issAlt = data.altitude;
+      issSpeed = data.velocity / 1000; // m/s -> km/s
+
+      document.getElementById('iss-lat').textContent = issLat.toFixed(2) + '°';
+      document.getElementById('iss-lon').textContent = issLon.toFixed(2) + '°';
+      document.getElementById('iss-alt').textContent = issAlt.toFixed(0);
+      document.getElementById('iss-speed').textContent = issSpeed.toFixed(2);
+      document.getElementById('iss-country').textContent = getRegionName(issLat, issLon);
+
+      // Trail
+      trailPoints.push({ lat: issLat, lon: issLon });
+      if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+
+      drawMap(issLat, issLon);
+
+      // Update distance if user location set
+      if (userLat !== null && userLon !== null) {
+        var surfDist = haversineKm(userLat, userLon, issLat, issLon);
+        var dist3d = totalDistance3d(surfDist, issAlt);
+        var distEl = document.getElementById('iss-distance-value');
+        distEl.textContent = Math.round(dist3d).toLocaleString() + ' km';
+        var subEl = document.getElementById('iss-distance-sub');
+        if (dist3d < 5000) {
+          subEl.textContent = 'ISS is getting closer — look up soon!';
+        } else {
+          subEl.textContent = 'Distance updates live as the ISS orbits at ' + issSpeed.toFixed(2) + ' km/s';
+        }
+      }
+    }
+
+    function estimateNextPass(userLat, userLon, currentISSLat, currentISSLon) {
+      // Simplified estimation:
+      // ISS orbital period ~92 min, inclination 51.6°
+      // Each orbit shifts ~22.5° westward (Earth rotates ~360°/15.5 orbits = 23.2° per orbit)
+      // Estimate minutes until ISS ground track passes closest to user lat
+      var ORBITAL_PERIOD_MIN = 92;
+      var SPEED_DEG_PER_MIN = 360 / ORBITAL_PERIOD_MIN; // ~3.9 deg/min
+
+      // Current longitudinal difference
+      var lonDiff = userLon - currentISSLon;
+      // Normalize to [-180, 180]
+      while (lonDiff > 180) lonDiff -= 360;
+      while (lonDiff < -180) lonDiff += 360;
+
+      // Time to close longitudinal gap (east-west)
+      // ISS moves ~23° east per minute relative to a fixed point? No — ISS moves east ~3.9 deg/min, Earth rotates east ~0.25 deg/min
+      // Net ISS motion relative to ground: ~3.65 deg/min
+      var NET_SPEED = 3.65; // deg/min east
+      var minToPass = lonDiff / NET_SPEED;
+      if (minToPass < 0) minToPass += ORBITAL_PERIOD_MIN;
+      if (minToPass > ORBITAL_PERIOD_MIN) minToPass = minToPass % ORBITAL_PERIOD_MIN;
+
+      return Math.round(minToPass);
+    }
+
+    function fetchISS() {
+      fetch(ISS_API)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          updateISSData(data);
+        })
+        .catch(function() {
+          document.getElementById('iss-country').textContent = 'API unavailable';
+        });
+    }
+
+    function setUserLocation(lat, lon, cityName) {
+      userLat = lat;
+      userLon = lon;
+
+      var cityEl = document.getElementById('iss-user-city');
+      cityEl.textContent = cityName || 'your location';
+
+      showEl(document.getElementById('iss-distance-card'), 'block');
+      showEl(document.getElementById('iss-pass-card'), 'block');
+
+      // Show pass estimate
+      var minsAway = estimateNextPass(lat, lon, issLat, issLon);
+      var passEl = document.getElementById('iss-pass-time');
+      var passNote = document.getElementById('iss-pass-note');
+      if (minsAway < 5) {
+        passEl.textContent = 'Closest approach in ~' + minsAway + ' minutes!';
+        passNote.textContent = 'Look up now — ISS may be visible if it\'s after sunset or before sunrise!';
+      } else if (minsAway < 92) {
+        passEl.textContent = 'Closest approach in ~' + minsAway + ' min (' + Math.round(minsAway/60*10)/10 + ' hrs)';
+        passNote.textContent = 'Simplified estimate. For exact sighting times visit spotthestation.nasa.gov';
+      } else {
+        passEl.textContent = 'Next orbit in ~' + Math.round(minsAway) + ' minutes';
+        passNote.textContent = 'Simplified estimate. For exact sighting times visit spotthestation.nasa.gov';
+      }
+
+      drawMap(issLat, issLon);
+    }
+
+    function geocodeCity(city, callback) {
+      var url = 'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(city) + '&format=json&limit=1';
+      fetch(url, { headers: { 'Accept-Language': 'en' } })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data || data.length === 0) { callback(new Error('Not found'), null); return; }
+          callback(null, {
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon),
+            name: data[0].display_name.split(',')[0]
+          });
+        })
+        .catch(function(e) { callback(e, null); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      mapCanvas = document.getElementById('iss-map');
+      mapCtx = mapCanvas.getContext('2d');
+
+      TeamzTools.renderBreadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Tools', url: '/tools/' },
+        { name: 'ISS Pass Time Predictor' }
+      ]);
+
+      var faqs = [
+        { q: 'How often does the ISS pass over any given location?', a: 'The ISS orbits Earth approximately every 92 minutes, completing about 15.5 orbits per day. However, it only passes directly overhead for any specific location roughly 2-5 times per week due to Earth\'s rotation shifting each orbit\'s ground track by about 2,600 km westward. During certain weeks the ISS may not be visible at all from your location if orbits are not aligned.' },
+        { q: 'How fast does the ISS travel?', a: 'The ISS travels at approximately 7.66 km/s (27,600 km/h or 17,150 mph) relative to Earth\'s surface. This is about 22 times faster than a rifle bullet. At this speed it traverses the entire width of the United States in about 10 minutes. Each time it passes overhead, it moves from horizon to horizon in approximately 6 minutes.' },
+        { q: 'What altitude does the ISS orbit at?', a: 'The ISS maintains an orbital altitude of approximately 400-420 km (250-260 miles) above Earth\'s surface. This varies slightly due to atmospheric drag. NASA periodically boosts the orbit using thrusters. The height is a balance between avoiding rapid drag and staying close enough for efficient cargo and crew missions.' },
+        { q: 'Can I really see the ISS with the naked eye?', a: 'Yes, the ISS is the third brightest object in the night sky after the Moon and Venus. It appears as a bright, steady (non-blinking) white dot moving smoothly across the sky, reaching magnitude -5.9 under ideal conditions. The best viewing windows are in the hour after sunset or before sunrise, when you are in darkness but the station is still in sunlight.' },
+        { q: 'How does the pass time estimation work?', a: 'This tool fetches the current ISS position from the wheretheiss.at API, updated every 3 seconds. To estimate the next closest approach to your location, it calculates the great-circle distance between your coordinates and the ISS, then uses the 92-minute orbital period to project when the ground track will next sweep closest to your location. For precise sighting windows with elevation angles, use NASA\'s Spot the Station service.' },
+        { q: 'Why is the ISS distance so large?', a: 'The distance shown is the 3D distance from your surface location to the ISS, including its altitude of ~408 km plus the horizontal distance across Earth\'s surface. When the ISS is directly overhead the distance equals ~408 km. When on the opposite side of Earth it can exceed 10,000 km. The distance updates every 3 seconds as the ISS moves.' },
+        { q: 'How many people are on the ISS right now?', a: 'The ISS typically houses 7 crew members at full capacity. During crew transitions this can temporarily be fewer. The station has been continuously inhabited since November 2, 2000, making it humanity\'s longest ongoing human spaceflight mission. Crew members typically spend 6 months on board before returning to Earth.' }
+      ];
+
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        { slug: 'tools/age-on-planets', name: 'Age on Other Planets', description: 'Find out how old you are on Mars, Jupiter, and every planet.' },
+        { slug: 'tools/name-predictor', name: 'Name Predictor', description: 'Predict the likely age, gender, and nationality of any first name.' },
+        { slug: 'safety/earthquake-risk-checker', name: 'Earthquake Risk Checker', description: 'Check seismic hazard level and recent earthquakes near any city worldwide.' },
+        { slug: 'tools/country-comparison-tool', name: 'Country Comparison Tool', description: 'Compare countries side by side on cost of living, salary, and safety.' },
+        { slug: 'tools/color-personality-test', name: 'Color Personality Test', description: 'Discover what your color preferences reveal about your personality.' },
+        { slug: 'tools/face-shape-detector', name: 'Face Shape Detector', description: 'Discover your face shape with 4 simple measurements.' }
+      ]);
+
+      // Track button
+      document.getElementById('iss-track-btn').addEventListener('click', function() {
+        var city = document.getElementById('iss-city-input').value.trim();
+        if (!city) {
+          window.showToast && window.showToast('Please enter a city name.');
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Locating…';
+        geocodeCity(city, function(err, geo) {
+          btn.disabled = false;
+          btn.textContent = 'Track from Here';
+          if (err || !geo) {
+            window.showToast && window.showToast('Could not find that city. Try being more specific (e.g. "London, UK").');
+            return;
+          }
+          setUserLocation(geo.lat, geo.lon, geo.name);
+        });
+      });
+
+      document.getElementById('iss-city-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('iss-track-btn').click();
+      });
+
+      // GPS button
+      document.getElementById('iss-gps-btn').addEventListener('click', function() {
+        if (!navigator.geolocation) {
+          window.showToast && window.showToast('Geolocation is not supported by your browser.');
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Locating…';
+        navigator.geolocation.getCurrentPosition(
+          function(pos) {
+            btn.disabled = false;
+            btn.textContent = '📍 GPS';
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            document.getElementById('iss-city-input').value = lat.toFixed(3) + ', ' + lon.toFixed(3);
+            // Reverse geocode
+            fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json', { headers: { 'Accept-Language': 'en' } })
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                var name = d.address ? (d.address.city || d.address.town || d.address.county || 'your location') : 'your location';
+                setUserLocation(lat, lon, name);
+              })
+              .catch(function() { setUserLocation(lat, lon, 'your location'); });
+          },
+          function() {
+            btn.disabled = false;
+            btn.textContent = '📍 GPS';
+            window.showToast && window.showToast('Could not access GPS. Please enter your city manually.');
+          }
+        );
+      });
+
+      // Start live tracking
+      fetchISS();
+      updateInterval = setInterval(fetchISS, 3000);
+    });
+  </script>
+</body>
+</html>

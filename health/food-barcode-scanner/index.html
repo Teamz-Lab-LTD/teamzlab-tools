@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Barcode Nutrition Scanner — Teamz Lab Tools</title>
+  <meta name="description" content="Scan any food barcode to see nutrition facts, ingredients, and additives instantly. Works in your browser — no app download, private, free forever.">
+  <meta property="og:title" content="Food Barcode Nutrition Scanner — Teamz Lab Tools">
+  <meta property="og:description" content="Scan food barcodes to see nutrition facts, ingredients, Nutri-Score, and allergens. No app needed — works right in your browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/food-barcode-scanner/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Food Barcode Nutrition Scanner — Teamz Lab Tools">
+  <meta name="twitter:description" content="Scan food barcodes to see nutrition facts, ingredients, Nutri-Score, and allergens. No app needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/food-barcode-scanner/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .mode-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .mode-tab { flex: 1; padding: 0.7rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; text-align: center; font-size: 0.95rem; }
+    .mode-tab.active { border-color: var(--accent); background: var(--bg); color: var(--heading); }
+    .barcode-form { display: flex; gap: 0.5rem; }
+    .barcode-input { flex: 1; padding: 0.85rem 1rem; border: 2px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 1.05rem; }
+    .barcode-input:focus { outline: none; border-color: var(--accent); }
+    .btn-scan-barcode { background: var(--accent); color: var(--accent-text); border: none; padding: 0.85rem 1.25rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 1rem; white-space: nowrap; }
+    .btn-scan-barcode:hover { opacity: 0.9; }
+    .camera-section { margin-top: 0.75rem; display: none; }
+    .video-wrap { position: relative; width: 100%; max-width: 400px; margin: 0 auto; background: #000; border-radius: 10px; overflow: hidden; }
+    .video-wrap video { width: 100%; display: block; }
+    .video-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+    .scan-line { position: absolute; left: 10%; right: 10%; height: 2px; background: var(--accent); top: 50%; transform: translateY(-50%); box-shadow: 0 0 8px var(--accent); animation: scanline 2s ease-in-out infinite; }
+    @keyframes scanline { 0%,100% { top: 30%; } 50% { top: 70%; } }
+    .camera-hint { text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+    .btn-stop-camera { background: var(--surface); color: var(--heading); border: 1px solid var(--border); padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; display: block; margin: 0.75rem auto 0; }
+    .scanning-status { text-align: center; font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem; }
+    /* Results */
+    .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; }
+    .product-header { display: flex; gap: 1rem; align-items: flex-start; }
+    .product-img { width: 80px; height: 80px; object-fit: contain; border-radius: 8px; background: #fff; flex-shrink: 0; border: 1px solid var(--border); }
+    .product-img-placeholder { width: 80px; height: 80px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 2rem; flex-shrink: 0; }
+    .product-title { font-size: 1.15rem; font-weight: 700; color: var(--heading); }
+    .product-brand { font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem; }
+    .product-barcode { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; font-family: monospace; }
+    .nutriscore { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; font-weight: 700; font-size: 0.9rem; }
+    .nutriscore-badge { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 0.95rem; }
+    .ns-a { background: var(--heading); }
+    .ns-b { background: var(--heading); opacity: 0.85; }
+    .ns-c { background: var(--text-muted); }
+    .ns-d { background: var(--text); }
+    .ns-e { background: var(--text); opacity: 0.7; }
+    .ns-unknown { background: var(--text-muted); font-size: 0.7rem; }
+    .nutrition-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+    .nutrition-table th { text-align: left; padding: 0.5rem 0.75rem; background: var(--bg); border-bottom: 2px solid var(--border); color: var(--heading); font-weight: 700; }
+    .nutrition-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+    .nutrition-table tr:last-child td { border-bottom: none; }
+    .nutrition-table .bold { font-weight: 700; color: var(--heading); }
+    .section-heading { font-size: 0.85rem; font-weight: 700; color: var(--heading); text-transform: uppercase; letter-spacing: 0.05em; margin: 1.25rem 0 0.5rem; }
+    .ingredients-text { font-size: 0.88rem; color: var(--text); line-height: 1.7; background: var(--bg); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border); }
+    .e-highlight { background: var(--surface); color: var(--heading); border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; font-weight: 600; text-decoration: none; cursor: pointer; font-size: 0.85em; }
+    .e-highlight:hover { border-color: var(--accent); }
+    .allergens { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .allergen-badge { background: var(--surface); border: 1px solid var(--border); color: var(--heading); padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; }
+    .not-found-msg { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; color: var(--text-muted); margin-top: 1.5rem; }
+    .not-found-msg a { color: var(--heading); }
+    .loading-msg { text-align: center; padding: 2rem; color: var(--text-muted); }
+    .examples { margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .example-barcode { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.82rem; font-family: monospace; color: var(--heading); cursor: pointer; }
+    .example-barcode:hover { border-color: var(--accent); }
+    @media (max-width: 600px) {
+      .barcode-form { flex-direction: column; }
+      .btn-scan-barcode { width: 100%; }
+      .product-header { flex-direction: column; }
+      .nutrition-table th, .nutrition-table td { padding: 0.4rem 0.5rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Food Barcode Nutrition Scanner", "description": "Scan food barcodes to see nutrition facts, ingredients, Nutri-Score, and allergens using Open Food Facts.", "url": "https://tool.teamzlab.com/health/food-barcode-scanner/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Food Barcode Nutrition Scanner</h1>
+      <p class="tool-description">Scan any food product barcode or type an EAN-13/UPC barcode number to instantly see full nutrition facts, Nutri-Score, ingredients with E-numbers highlighted, and allergen warnings. Powered by the Open Food Facts database — over 3 million products from 200+ countries.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tab-type">Type Barcode</button>
+        <button class="mode-tab" id="tab-camera">Scan with Camera</button>
+      </div>
+
+      <div id="type-mode">
+        <div class="barcode-form">
+          <input type="text" id="barcode-input" class="barcode-input" placeholder="Enter EAN-13 or UPC barcode (e.g. 3017620422003)" maxlength="14" inputmode="numeric">
+          <button id="lookup-btn" class="btn-scan-barcode">Look Up</button>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.4rem;">Try these example barcodes:</p>
+        <div class="examples">
+          <span class="example-barcode" data-barcode="3017620422003">3017620422003 (Nutella)</span>
+          <span class="example-barcode" data-barcode="0038000845352">0038000845352 (Kellogg's)</span>
+          <span class="example-barcode" data-barcode="0016000275270">0016000275270 (Cheerios)</span>
+          <span class="example-barcode" data-barcode="5000159407236">5000159407236 (Kit Kat)</span>
+        </div>
+      </div>
+
+      <div id="camera-mode" class="camera-section" style="display:none;">
+        <div class="video-wrap">
+          <video id="camera-video" autoplay playsinline muted></video>
+          <canvas id="camera-canvas" style="display:none;"></canvas>
+          <div class="video-overlay"><div class="scan-line"></div></div>
+        </div>
+        <p class="camera-hint">Point your camera at the barcode on the product packaging</p>
+        <p id="scanning-status" class="scanning-status">Scanning...</p>
+        <button id="stop-camera-btn" class="btn-stop-camera">Stop Camera</button>
+      </div>
+
+      <div id="result-area"></div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Food Barcode Scanner Works</h2>
+      <p>This tool queries the Open Food Facts API — a free, open-source, crowdsourced database of food products from around the world. When you enter a barcode number (EAN-13 or UPC-A format), the tool sends a request to the Open Food Facts API and retrieves all available nutritional and ingredient data for that product. The API endpoint follows the format: <code>world.openfoodfacts.org/api/v2/product/[BARCODE].json</code>.</p>
+
+      <p>For camera scanning, the tool uses jsQR — an open-source JavaScript library that decodes QR codes and linear barcodes directly in your browser using your device's camera. Video frames are continuously captured to a canvas element and analyzed for barcode patterns. When a barcode is detected, scanning stops and the product lookup begins automatically. No camera footage is ever uploaded or stored.</p>
+
+      <p>Barcode formats supported: EAN-13 (the standard 13-digit European format used globally), UPC-A (12-digit US format), EAN-8 (8-digit compact format), and UPC-E (compressed 8-digit format). Most products worldwide use EAN-13.</p>
+
+      <h2>Understanding Nutri-Score</h2>
+      <p>Nutri-Score is a 5-level nutrition labeling system developed by French public health agencies and now widely adopted across Europe. Products are scored from A (best nutritional quality) to E (poorest nutritional quality) using a traffic-light color system. The calculation is based on 100g of product and considers both beneficial components (fiber, protein, fruit/vegetable/legume/nut content) and components to limit (calories, saturated fat, total sugars, sodium).</p>
+
+      <p>Nutri-Score A products provide a good nutritional profile — high in fiber, protein, or fruits and vegetables with low sugar, fat, and salt. Nutri-Score E products are high in calories, saturated fat, sugars, or sodium. As of 2023, Nutri-Score is legally required on front-of-pack in France, Germany, Belgium, the Netherlands, Luxembourg, Spain, and Switzerland. It is voluntary but widely adopted across the EU. Note that Nutri-Score evaluates nutritional composition, not overall healthfulness — pure olive oil, for example, scores C due to high fat content despite being healthy.</p>
+
+      <h2>How to Read Food Ingredients and Spot E-Numbers</h2>
+      <p>Ingredients are listed by weight in descending order — the first ingredient is the most abundant. EU regulations require that E-numbers or full additive names appear in the ingredient list. This tool automatically highlights any E-numbers found in the ingredient text so they are easy to spot. Clicking an E-number link opens the Food Additive E-Number Checker with full details on that additive's safety rating, health concerns, and halal/vegan status.</p>
+
+      <p>Common ingredients to watch for include E250/E251 (sodium nitrite/nitrate in processed meats — WHO Group 2A carcinogens), E150d (sulphite ammonia caramel in cola drinks — contains 4-MeI), E102/E110/E129 (synthetic dyes requiring EU hyperactivity warning labels), and E471 (mono and diglycerides — potential animal source, halal verification required). For consumers with specific dietary requirements — halal, vegan, gluten-free, or allergen avoidance — reading every ingredient is essential since labeling requirements vary by country.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js" onerror="window.jsQRLoaded=false;"></script>
+  <script>
+  (function() {
+    var barcodeInput = document.getElementById('barcode-input');
+    var lookupBtn = document.getElementById('lookup-btn');
+    var resultArea = document.getElementById('result-area');
+    var tabType = document.getElementById('tab-type');
+    var tabCamera = document.getElementById('tab-camera');
+    var typeMode = document.getElementById('type-mode');
+    var cameraMode = document.getElementById('camera-mode');
+    var cameraVideo = document.getElementById('camera-video');
+    var cameraCanvas = document.getElementById('camera-canvas');
+    var stopCameraBtn = document.getElementById('stop-camera-btn');
+    var scanningStatus = document.getElementById('scanning-status');
+    var cameraStream = null;
+    var scanInterval = null;
+
+    // Tab switching
+    tabType.addEventListener('click', function() {
+      tabType.classList.add('active'); tabCamera.classList.remove('active');
+      window.showEl ? showEl(typeMode, 'block') : (typeMode.style.display = 'block');
+      window.hideEl ? hideEl(cameraMode) : (cameraMode.style.display = 'none');
+      stopCamera();
+    });
+    tabCamera.addEventListener('click', function() {
+      tabCamera.classList.add('active'); tabType.classList.remove('active');
+      window.hideEl ? hideEl(typeMode) : (typeMode.style.display = 'none');
+      window.showEl ? showEl(cameraMode, 'block') : (cameraMode.style.display = 'block');
+      startCamera();
+    });
+
+    // Example barcodes
+    document.querySelectorAll('.example-barcode').forEach(function(el) {
+      el.addEventListener('click', function() {
+        barcodeInput.value = el.getAttribute('data-barcode');
+        lookupProduct(el.getAttribute('data-barcode'));
+      });
+    });
+
+    // Lookup button
+    lookupBtn.addEventListener('click', function() {
+      var code = barcodeInput.value.trim().replace(/\D/g, '');
+      if (!code) { if (window.showToast) showToast('Please enter a barcode number.'); return; }
+      lookupProduct(code);
+    });
+
+    barcodeInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        var code = barcodeInput.value.trim().replace(/\D/g, '');
+        if (code) lookupProduct(code);
+      }
+    });
+
+    function lookupProduct(barcode) {
+      resultArea.innerHTML = '<div class="loading-msg">Looking up barcode ' + barcode + '…</div>';
+      var url = 'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(barcode) + '.json?fields=product_name,brands,image_url,nutriscore_grade,nutriments,ingredients_text,allergens_hierarchy,countries_tags,quantity,serving_size,code';
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (data.status === 0 || !data.product) {
+            resultArea.innerHTML = '<div class="not-found-msg">' +
+              '<p style="font-size:1.05rem;font-weight:700;color:var(--heading);margin-bottom:0.5rem;">Product not found</p>' +
+              '<p>Barcode <strong>' + barcode + '</strong> was not found in the Open Food Facts database.</p>' +
+              '<p style="margin-top:0.5rem;">This could be a regional product or a recently released item. You can <a href="https://world.openfoodfacts.org/product/' + barcode + '" target="_blank" rel="noopener">contribute this product</a> to help others.</p>' +
+            '</div>';
+            return;
+          }
+          renderProduct(data.product);
+        })
+        .catch(function() {
+          resultArea.innerHTML = '<div class="not-found-msg"><p>Could not connect to the Open Food Facts database. Please check your internet connection and try again.</p></div>';
+        });
+    }
+
+    function getNutriscoreClass(grade) {
+      if (!grade) return 'ns-unknown';
+      return 'ns-' + grade.toLowerCase();
+    }
+
+    function highlightENumbers(text) {
+      if (!text) return '';
+      return text.replace(/\b(E\d{3}[a-z]?(?:i{1,3})?)\b/gi, function(match) {
+        return '<a href="/health/food-additive-checker/?e=' + encodeURIComponent(match.toUpperCase()) + '" class="e-highlight" title="Check ' + match + ' safety">' + match + '</a>';
+      });
+    }
+
+    function fmtNutrient(val) {
+      if (val === undefined || val === null || val === '') return '—';
+      var n = parseFloat(val);
+      if (isNaN(n)) return '—';
+      return n < 0.1 ? '< 0.1' : (Math.round(n * 10) / 10).toString();
+    }
+
+    function renderProduct(p) {
+      var name = p.product_name || 'Unknown Product';
+      var brand = p.brands || '';
+      var barcode = p.code || '';
+      var imgUrl = p.image_url || '';
+      var grade = p.nutriscore_grade || '';
+      var n = p.nutriments || {};
+      var ingredients = p.ingredients_text || '';
+      var allergens = p.allergens_hierarchy || [];
+      var quantity = p.quantity || '';
+      var serving = p.serving_size || '';
+
+      var imgHtml = imgUrl
+        ? '<img src="' + imgUrl + '" class="product-img" alt="' + name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
+          '<div class="product-img-placeholder" style="display:none;">🍽</div>'
+        : '<div class="product-img-placeholder">🍽</div>';
+
+      var nsGrade = grade ? grade.toUpperCase() : '?';
+      var nsCls = getNutriscoreClass(grade);
+      var nutriscoreHtml = '<div class="nutriscore">Nutri-Score: <span class="nutriscore-badge ' + nsCls + '">' + nsGrade + '</span></div>';
+
+      var allergenHtml = '';
+      if (allergens.length) {
+        var aTags = allergens.map(function(a) {
+          var label = a.replace('en:', '').replace(/-/g, ' ');
+          label = label.charAt(0).toUpperCase() + label.slice(1);
+          return '<span class="allergen-badge">' + label + '</span>';
+        }).join('');
+        allergenHtml = '<div class="section-heading">Allergens</div><div class="allergens">' + aTags + '</div>';
+      }
+
+      var nutrRows = [
+        { label: 'Energy', val: fmtNutrient(n['energy-kcal_100g'] || n['energy_100g'] ? (n['energy-kcal_100g'] || Math.round(n['energy_100g'] / 4.184)) : null), unit: 'kcal', bold: true },
+        { label: 'Fat', val: fmtNutrient(n['fat_100g']), unit: 'g', bold: true },
+        { label: 'of which Saturated Fat', val: fmtNutrient(n['saturated-fat_100g']), unit: 'g', indent: true },
+        { label: 'Carbohydrates', val: fmtNutrient(n['carbohydrates_100g']), unit: 'g', bold: true },
+        { label: 'of which Sugars', val: fmtNutrient(n['sugars_100g']), unit: 'g', indent: true },
+        { label: 'Fiber', val: fmtNutrient(n['fiber_100g']), unit: 'g' },
+        { label: 'Protein', val: fmtNutrient(n['proteins_100g']), unit: 'g', bold: true },
+        { label: 'Salt', val: fmtNutrient(n['salt_100g']), unit: 'g' },
+        { label: 'Sodium', val: fmtNutrient(n['sodium_100g'] ? n['sodium_100g'] * 1000 : null), unit: 'mg' }
+      ];
+
+      var tableRows = nutrRows.map(function(r) {
+        var cls = (r.bold ? ' class="bold"' : '') + (r.indent ? ' style="padding-left:1.5rem;"' : '');
+        return '<tr><td' + cls + '>' + (r.indent ? '' : '') + r.label + '</td><td>' + r.val + ' ' + (r.val !== '—' ? r.unit : '') + '</td></tr>';
+      }).join('');
+
+      var ingHtml = '';
+      if (ingredients) {
+        ingHtml = '<div class="section-heading">Ingredients</div>' +
+          '<div class="ingredients-text">' + highlightENumbers(ingredients) + '</div>';
+      }
+
+      var countryList = (p.countries_tags || []).map(function(c) { return c.replace('en:', '').replace(/-/g,' '); }).join(', ');
+      var countryHtml = countryList ? '<p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.75rem;">Available in: ' + countryList + '</p>' : '';
+
+      resultArea.innerHTML = '<div class="product-card">' +
+        '<div class="product-header">' +
+          imgHtml +
+          '<div style="flex:1;">' +
+            '<div class="product-title">' + name + '</div>' +
+            (brand ? '<div class="product-brand">' + brand + '</div>' : '') +
+            (quantity ? '<div class="product-brand">Quantity: ' + quantity + (serving ? ' · Serving: ' + serving : '') + '</div>' : '') +
+            '<div class="product-barcode">Barcode: ' + barcode + '</div>' +
+            nutriscoreHtml +
+          '</div>' +
+        '</div>' +
+        allergenHtml +
+        '<div class="section-heading">Nutrition Facts (per 100g)</div>' +
+        '<table class="nutrition-table">' +
+          '<thead><tr><th>Nutrient</th><th>Per 100g</th></tr></thead>' +
+          '<tbody>' + tableRows + '</tbody>' +
+        '</table>' +
+        ingHtml +
+        countryHtml +
+        '<p style="font-size:0.78rem;color:var(--text-muted);margin-top:1rem;">Data from <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> (ODbL license). Accuracy depends on contributor data.</p>' +
+      '</div>';
+    }
+
+    // Camera scanning
+    function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        scanningStatus.textContent = 'Camera not supported in this browser.';
+        return;
+      }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+          cameraStream = stream;
+          cameraVideo.srcObject = stream;
+          cameraVideo.play();
+          scanningStatus.textContent = 'Scanning for barcode…';
+          scanInterval = setInterval(scanFrame, 200);
+        })
+        .catch(function(err) {
+          var msg = err.name === 'NotAllowedError'
+            ? 'Camera permission denied. Please allow camera access and try again.'
+            : 'Could not access camera: ' + (err.message || err.name);
+          scanningStatus.textContent = msg;
+        });
+    }
+
+    function stopCamera() {
+      if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(function(t) { t.stop(); });
+        cameraStream = null;
+      }
+      cameraVideo.srcObject = null;
+    }
+
+    stopCameraBtn.addEventListener('click', function() {
+      stopCamera();
+      tabType.click();
+    });
+
+    function scanFrame() {
+      if (!cameraVideo.videoWidth) return;
+      var ctx = cameraCanvas.getContext('2d');
+      cameraCanvas.width = cameraVideo.videoWidth;
+      cameraCanvas.height = cameraVideo.videoHeight;
+      ctx.drawImage(cameraVideo, 0, 0);
+      var imageData = ctx.getImageData(0, 0, cameraCanvas.width, cameraCanvas.height);
+      if (typeof jsQR === 'undefined') {
+        scanningStatus.textContent = 'jsQR library not loaded. Use manual barcode entry instead.';
+        return;
+      }
+      var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+      if (code && code.data) {
+        var barcode = code.data.replace(/\D/g, '');
+        if (barcode.length >= 8) {
+          stopCamera();
+          scanningStatus.textContent = 'Barcode detected: ' + barcode;
+          if (window.showToast) showToast('Barcode detected: ' + barcode);
+          tabType.click();
+          barcodeInput.value = barcode;
+          lookupProduct(barcode);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.TeamzTools) {
+        TeamzTools.renderBreadcrumbs([
+          { name: 'Health Tools', url: '/health/' },
+          { name: 'Food Barcode Nutrition Scanner' }
+        ]);
+        TeamzTools.renderFAQs([
+          { q: 'How do I use the barcode scanner?', a: 'Type or paste the barcode number (EAN-13 or UPC-A) into the search field and press Enter, or click Scan with Camera to use your device camera. Camera scanning works on most smartphones and modern laptops.' },
+          { q: 'What database does this use?', a: 'This tool uses the Open Food Facts database — a free, open-source food product database with over 3 million products from 200+ countries, maintained by volunteers worldwide under an Open Database License (ODbL).' },
+          { q: 'What is a Nutri-Score?', a: 'Nutri-Score rates food from A (best) to E (worst) based on nutritional content per 100g. It considers beneficial nutrients (fiber, protein, fruits/vegetables) and less desirable components (energy, saturated fat, sugars, sodium). Mandatory in France, Germany, Belgium, and several other EU countries.' },
+          { q: 'What if my barcode is not found?', a: 'Open Food Facts is community-driven. Some local or new products may not be listed yet. You can contribute at world.openfoodfacts.org. Try variations of the barcode or check if you have the correct EAN-13 format.' },
+          { q: 'What are the highlighted E-numbers in the ingredients?', a: 'E-numbers in ingredients are highlighted for easy identification. Clicking any E-number opens the Food Additive E-Number Checker with full details on safety rating, health concerns, and halal/vegan status.' }
+        ]);
+        TeamzTools.injectFAQSchema([
+          { q: 'How do I use the barcode scanner?', a: 'Type the barcode number or click Scan with Camera. Supports EAN-13 and UPC-A formats.' },
+          { q: 'What database does this use?', a: 'Open Food Facts — a free, open database with over 3 million products from 200+ countries.' },
+          { q: 'What is a Nutri-Score?', a: 'Nutri-Score rates food A (best) to E (worst) based on nutritional composition per 100g.' },
+          { q: 'What if my barcode is not found?', a: 'Contribute missing products at world.openfoodfacts.org. Regional or new products may not be in the database yet.' },
+          { q: 'What are the highlighted E-numbers in the ingredients?', a: 'E-numbers are highlighted for easy identification. Click them to check safety ratings in the Food Additive E-Number Checker.' }
+        ]);
+        TeamzTools.renderRelatedTools([
+          { slug: 'health/food-additive-checker', name: 'Food Additive E-Number Checker', description: 'Look up any E-number or food additive name and get its risk rating and health information.' },
+          { slug: 'health/nutrition-label-generator', name: 'Nutrition Label Generator', description: 'Generate FDA-style nutrition facts labels from any recipe using USDA data.' },
+          { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate your daily calorie needs using the Mifflin-St Jeor equation.' },
+          { slug: 'health/macro-calculator', name: 'Macro Calculator', description: 'Calculate daily macronutrient targets for protein, carbs, and fat.' },
+          { slug: 'health/calorie-deficit-calculator', name: 'Calorie Deficit Calculator', description: 'Calculate your daily calorie deficit to lose weight safely.' },
+          { slug: 'health/water-intake-calculator', name: 'Daily Water Intake Calculator', description: 'Calculate your daily water intake based on weight, activity, and climate.' }
+        ]);
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

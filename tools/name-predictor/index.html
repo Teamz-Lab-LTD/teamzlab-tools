@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Name Predictor — Age, Gender & Origin — Teamz Lab Tools</title>
+  <meta name="description" content="Predict the likely age, gender, and nationality of any name using real data. Fun, instant, free — works for 100K+ names worldwide, no signup needed.">
+  <meta property="og:title" content="Name Predictor — Age, Gender & Origin — Teamz Lab Tools">
+  <meta property="og:description" content="Predict the likely age, gender, and nationality of any name using real data. Fun, instant, free — works for 100K+ names worldwide, no signup needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/tools/name-predictor/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/tools.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Name Predictor — Age, Gender & Origin — Teamz Lab Tools">
+  <meta name="twitter:description" content="Predict the likely age, gender, and nationality of any name using real data. Fun, instant, free — works for 100K+ names worldwide, no signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/tools/name-predictor/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .np-input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      margin-bottom: 20px;
+    }
+    .np-input-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .np-input-wrap label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .np-input-wrap input {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-lg);
+      font-family: inherit;
+      width: 100%;
+    }
+    .np-input-wrap input:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .np-predict-btn {
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 28px;
+      font-size: var(--text-base);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .np-predict-btn:hover { opacity: 0.85; }
+    .np-predict-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .np-popular-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .np-popular-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      font-weight: 600;
+      width: 100%;
+      margin-bottom: 4px;
+    }
+    .np-name-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: var(--text-sm);
+      color: var(--heading);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      font-family: inherit;
+    }
+    .np-name-chip:hover { border-color: var(--heading); background: var(--bg); }
+    .np-results { display: none; margin-top: 24px; }
+    .np-results.visible { display: block; }
+    .np-results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .np-card {
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .np-card-icon {
+      font-size: 28px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .np-card-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .np-card-value {
+      font-size: clamp(22px, 5vw, 32px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.1;
+    }
+    .np-card-sub {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .np-prob-bar-wrap {
+      margin-top: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .np-prob-bar {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 6px;
+      transition: width 0.6s ease;
+    }
+    .np-countries-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: left;
+    }
+    .np-countries-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: var(--text-sm);
+      gap: 8px;
+    }
+    .np-countries-list li:last-child { border-bottom: none; }
+    .np-country-flag { font-size: 18px; }
+    .np-country-name { flex: 1; color: var(--text); }
+    .np-country-pct {
+      font-weight: 700;
+      color: var(--heading);
+      font-size: var(--text-sm);
+    }
+    .np-fun-fact {
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .np-fun-fact strong { color: var(--heading); }
+    .np-share-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .np-share-btn {
+      background: var(--heading);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 20px;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .np-share-btn:hover { opacity: 0.85; }
+    .np-compare-section { margin-top: 24px; }
+    .np-compare-title {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 14px;
+    }
+    .np-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .np-compare-card {
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .np-compare-name {
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 8px;
+      font-size: var(--text-base);
+    }
+    .np-compare-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-sm);
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    .np-compare-row:last-child { border-bottom: none; }
+    .np-compare-row span:last-child { font-weight: 600; color: var(--heading); }
+    .np-loading {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      font-size: var(--text-base);
+      display: none;
+    }
+    .np-loading.visible { display: block; }
+    .np-error {
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--heading);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      color: var(--text);
+      display: none;
+      margin-top: 16px;
+    }
+    .np-error.visible { display: block; }
+    .np-compare-input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      margin-top: 12px;
+    }
+    .np-compare-input-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .np-compare-input-wrap label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .np-compare-input-wrap input {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      font-size: var(--text-base);
+      font-family: inherit;
+      width: 100%;
+    }
+    .np-compare-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--heading);
+      padding: 10px 18px;
+      font-size: var(--text-sm);
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: border-color 0.2s;
+    }
+    .np-compare-btn:hover { border-color: var(--heading); }
+    @media (max-width: 600px) {
+      .np-input-row { flex-direction: column; align-items: stretch; }
+      .np-predict-btn { width: 100%; }
+      .np-results-grid { grid-template-columns: 1fr; }
+      .np-compare-grid { grid-template-columns: 1fr; }
+      .np-compare-input-row { flex-direction: column; }
+      .np-compare-btn { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How accurate is the name age prediction?", "acceptedAnswer": {"@type": "Answer", "text": "The age prediction uses data from agify.io, which analyzes millions of real records from census data, social networks, and public datasets. It predicts the most common age associated with a given name. Accuracy varies — common English names have data from millions of people and are highly reliable, while rare or regional names may have smaller sample sizes. The count shown next to the result indicates how many records were used."}}, {"@type": "Question", "name": "Why does the same name give different gender results in different countries?", "acceptedAnswer": {"@type": "Answer", "text": "Many names are used by different genders in different cultures. For example, \"Jordan\" is predominantly male in the US but more evenly split in some European countries. The genderize.io API allows filtering by country code, so predictions can vary by region. Without a country filter, it uses global averages across all regions where the name appears."}}, {"@type": "Question", "name": "What does the probability percentage mean?", "acceptedAnswer": {"@type": "Answer", "text": "The probability percentage (e.g., 92% Male) means that of all people with that name in the dataset, 92% identified or were recorded as male. A higher percentage means more certainty in the prediction. A probability close to 50% means the name is used roughly equally by both genders — it is a genuinely gender-neutral name."}}, {"@type": "Question", "name": "How does nationality prediction work for names?", "acceptedAnswer": {"@type": "Answer", "text": "The nationalize.io API matches names against datasets from different countries and calculates which nationalities are most commonly associated with that name. It returns the top countries sorted by probability. For example, \"Matteo\" is strongly associated with Italy, while \"James\" is most common in English-speaking countries."}}, {"@type": "Question", "name": "Can I predict the origin of any name worldwide?", "acceptedAnswer": {"@type": "Answer", "text": "The tool works for over 100,000 names from around the world. It performs best for common names from English-speaking countries, Europe, and East Asia, as these have the most data available. For very rare or regional names, the sample size may be limited and the confidence lower."}}, {"@type": "Question", "name": "Is my name data stored or tracked?", "acceptedAnswer": {"@type": "Answer", "text": "Results are cached in your browser localStorage for 24 hours to avoid repeat API calls for the same name. This data never leaves your device. The API calls go directly to agify.io, genderize.io, and nationalize.io. No personal data beyond the name itself is transmitted."}}, {"@type": "Question", "name": "What does the compare feature do?", "acceptedAnswer": {"@type": "Answer", "text": "The compare feature lets you enter two names and see their predicted age, gender, and top nationality side by side. This is useful for comparing how different names are perceived — for example comparing \"William\" vs \"Liam\", or a traditional name with a modern one to see generational patterns."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Name Predictor — Age, Gender & Origin", "description": "Predict the likely age, gender, and nationality of any name using real data. Fun, instant, free — works for 100K+ names worldwide, no signup needed.", "url": "https://tool.teamzlab.com/tools/name-predictor/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Name Predictor — Age, Gender &amp; Origin</h1>
+      <p class="tool-description">Type any first name and instantly predict the likely age, gender, and nationality based on real-world data from millions of records. Works for 100,000+ names worldwide — fun, free, and completely private.</p>
+    </section>
+
+    <section class="tool-calculator" id="tool-calculator">
+      <div class="np-input-row">
+        <div class="np-input-wrap">
+          <label for="np-name-input">Enter a first name</label>
+          <input type="text" id="np-name-input" placeholder="e.g. Emma, James, Yuki..." autocomplete="off" spellcheck="false">
+        </div>
+        <button type="button" class="np-predict-btn" id="np-predict-btn">Predict</button>
+      </div>
+
+      <div class="np-popular-row">
+        <div class="np-popular-label">Try these names:</div>
+        <button class="np-name-chip" data-name="Emma">Emma</button>
+        <button class="np-name-chip" data-name="James">James</button>
+        <button class="np-name-chip" data-name="Yuki">Yuki</button>
+        <button class="np-name-chip" data-name="Sofia">Sofia</button>
+        <button class="np-name-chip" data-name="Mohammed">Mohammed</button>
+        <button class="np-name-chip" data-name="Lena">Lena</button>
+        <button class="np-name-chip" data-name="Arjun">Arjun</button>
+        <button class="np-name-chip" data-name="Valentina">Valentina</button>
+        <button class="np-name-chip" data-name="Oliver">Oliver</button>
+        <button class="np-name-chip" data-name="Amara">Amara</button>
+      </div>
+
+      <div class="np-loading" id="np-loading">🔍 Looking up <strong id="np-loading-name"></strong>…</div>
+      <div class="np-error" id="np-error">Could not fetch predictions. Please check your connection and try again.</div>
+
+      <div class="np-results" id="np-results">
+        <div class="np-results-grid">
+          <div class="np-card" id="np-age-card">
+            <div class="np-card-icon">🎂</div>
+            <div class="np-card-label">Predicted Age</div>
+            <div class="np-card-value" id="np-age-value">—</div>
+            <div class="np-card-sub" id="np-age-sub"></div>
+          </div>
+          <div class="np-card" id="np-gender-card">
+            <div class="np-card-icon">👤</div>
+            <div class="np-card-label">Gender</div>
+            <div class="np-card-value" id="np-gender-value">—</div>
+            <div class="np-prob-bar-wrap">
+              <div class="np-prob-bar" id="np-gender-bar" style="width:0%"></div>
+            </div>
+            <div class="np-card-sub" id="np-gender-sub"></div>
+          </div>
+          <div class="np-card" id="np-origin-card">
+            <div class="np-card-icon">🌍</div>
+            <div class="np-card-label">Top Nationalities</div>
+            <ul class="np-countries-list" id="np-countries-list"></ul>
+          </div>
+        </div>
+
+        <div class="np-fun-fact" id="np-fun-fact"></div>
+
+        <div class="np-share-row">
+          <button type="button" class="np-share-btn" id="np-share-btn">📋 Copy Fun Fact</button>
+        </div>
+      </div>
+
+      <div class="np-compare-section" id="np-compare-section">
+        <div class="np-compare-title">Compare Two Names</div>
+        <div class="np-compare-input-row">
+          <div class="np-compare-input-wrap">
+            <label for="np-compare-a">Name A</label>
+            <input type="text" id="np-compare-a" placeholder="e.g. James">
+          </div>
+          <div class="np-compare-input-wrap">
+            <label for="np-compare-b">Name B</label>
+            <input type="text" id="np-compare-b" placeholder="e.g. Oliver">
+          </div>
+          <button type="button" class="np-compare-btn" id="np-compare-btn">Compare</button>
+        </div>
+        <div class="np-compare-grid" id="np-compare-grid" style="display:none; margin-top:16px;"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Name Prediction Works</h2>
+      <p>The Name Predictor uses three specialized free APIs that analyze millions of real-world records to estimate characteristics associated with a given first name. When you type a name, three API calls run simultaneously using JavaScript's <code>Promise.all()</code> for instant parallel results. The <strong>age prediction</strong> from agify.io analyzes census data, social network profiles, and public datasets to find the most statistically common age for people with that name. The <strong>gender prediction</strong> from genderize.io maps names to gender using records from over 89 countries. The <strong>nationality prediction</strong> from nationalize.io calculates which country's population is most likely to include people with that name, returning the top 3 results with probability scores.</p>
+      <p>Results are cached in your browser's localStorage for 24 hours, so looking up the same name again is instant and uses no additional API calls. The cache uses the name as the key, keeping your queries private and your experience fast.</p>
+
+      <h2>What Name Data Reveals About Generations</h2>
+      <p>Names carry generational signatures. A name like "Dorothy" or "Harold" was extremely popular in the 1920s–1940s, so the predicted age tends to be higher. Meanwhile, names like "Noah," "Liam," or "Olivia" surged in the 2010s, pulling the predicted age lower. The decade estimate shown under the age result — for example "Born in the 1980s" — gives you a quick cultural snapshot of when a name peaked in popularity. This makes the tool surprisingly useful for trivia, writing character profiles, genealogy research, and even marketing research about how names skew toward certain demographics.</p>
+      <p>Name data also reveals cultural migration patterns. A name strongly associated with Italy fifty years ago may now appear commonly in Argentina, Brazil, or Australia due to immigration waves. The nationality prediction captures this cross-cultural spread by showing the top 3 countries where the name is most prevalent today.</p>
+
+      <h2>Understanding Probability Scores</h2>
+      <p>Each prediction comes with a confidence score based on sample size. A gender probability of 95% means that in the dataset, 95 out of 100 people with that name identified as that gender — high confidence. A probability near 50% indicates a genuinely gender-neutral name used equally by all genders. The count field tells you how many data points support the prediction: a name with 500,000 records is far more reliable than one with 200. For nationality, the probabilities across all countries sum to 100%, and the top 3 shown represent the most likely origins. Rare or highly regional names may have lower counts and wider uncertainty ranges.</p>
+
+      <h2>Fun Uses for the Name Predictor</h2>
+      <p>Beyond curiosity, the Name Predictor has practical creative uses. Writers can use it to verify whether a character name "feels right" for their nationality or era. Parents can check how a baby name is perceived globally before committing. HR professionals and marketers use name origin data for cultural competency and localization work. The compare feature is especially entertaining — pit "Emma vs Sophia" or "James vs Oliver" to see which name skews older, which is more international, and which gender split is more even. Social media posts sharing fun name facts consistently go viral, which is why the one-click copy button makes it easy to share your result.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    // Country code to flag emoji + name mapping (top 60)
+    var COUNTRY_MAP = {
+      'US': { flag: '🇺🇸', name: 'United States' },
+      'GB': { flag: '🇬🇧', name: 'United Kingdom' },
+      'DE': { flag: '🇩🇪', name: 'Germany' },
+      'FR': { flag: '🇫🇷', name: 'France' },
+      'IT': { flag: '🇮🇹', name: 'Italy' },
+      'ES': { flag: '🇪🇸', name: 'Spain' },
+      'PT': { flag: '🇵🇹', name: 'Portugal' },
+      'NL': { flag: '🇳🇱', name: 'Netherlands' },
+      'BE': { flag: '🇧🇪', name: 'Belgium' },
+      'SE': { flag: '🇸🇪', name: 'Sweden' },
+      'NO': { flag: '🇳🇴', name: 'Norway' },
+      'DK': { flag: '🇩🇰', name: 'Denmark' },
+      'FI': { flag: '🇫🇮', name: 'Finland' },
+      'PL': { flag: '🇵🇱', name: 'Poland' },
+      'CZ': { flag: '🇨🇿', name: 'Czech Republic' },
+      'RO': { flag: '🇷🇴', name: 'Romania' },
+      'HU': { flag: '🇭🇺', name: 'Hungary' },
+      'GR': { flag: '🇬🇷', name: 'Greece' },
+      'AT': { flag: '🇦🇹', name: 'Austria' },
+      'CH': { flag: '🇨🇭', name: 'Switzerland' },
+      'RU': { flag: '🇷🇺', name: 'Russia' },
+      'UA': { flag: '🇺🇦', name: 'Ukraine' },
+      'TR': { flag: '🇹🇷', name: 'Turkey' },
+      'SA': { flag: '🇸🇦', name: 'Saudi Arabia' },
+      'AE': { flag: '🇦🇪', name: 'UAE' },
+      'EG': { flag: '🇪🇬', name: 'Egypt' },
+      'NG': { flag: '🇳🇬', name: 'Nigeria' },
+      'ZA': { flag: '🇿🇦', name: 'South Africa' },
+      'KE': { flag: '🇰🇪', name: 'Kenya' },
+      'MA': { flag: '🇲🇦', name: 'Morocco' },
+      'IN': { flag: '🇮🇳', name: 'India' },
+      'PK': { flag: '🇵🇰', name: 'Pakistan' },
+      'BD': { flag: '🇧🇩', name: 'Bangladesh' },
+      'CN': { flag: '🇨🇳', name: 'China' },
+      'JP': { flag: '🇯🇵', name: 'Japan' },
+      'KR': { flag: '🇰🇷', name: 'South Korea' },
+      'ID': { flag: '🇮🇩', name: 'Indonesia' },
+      'PH': { flag: '🇵🇭', name: 'Philippines' },
+      'VN': { flag: '🇻🇳', name: 'Vietnam' },
+      'TH': { flag: '🇹🇭', name: 'Thailand' },
+      'MY': { flag: '🇲🇾', name: 'Malaysia' },
+      'SG': { flag: '🇸🇬', name: 'Singapore' },
+      'AU': { flag: '🇦🇺', name: 'Australia' },
+      'NZ': { flag: '🇳🇿', name: 'New Zealand' },
+      'CA': { flag: '🇨🇦', name: 'Canada' },
+      'MX': { flag: '🇲🇽', name: 'Mexico' },
+      'BR': { flag: '🇧🇷', name: 'Brazil' },
+      'AR': { flag: '🇦🇷', name: 'Argentina' },
+      'CL': { flag: '🇨🇱', name: 'Chile' },
+      'CO': { flag: '🇨🇴', name: 'Colombia' },
+      'PE': { flag: '🇵🇪', name: 'Peru' },
+      'HR': { flag: '🇭🇷', name: 'Croatia' },
+      'SK': { flag: '🇸🇰', name: 'Slovakia' },
+      'BG': { flag: '🇧🇬', name: 'Bulgaria' },
+      'RS': { flag: '🇷🇸', name: 'Serbia' },
+      'IE': { flag: '🇮🇪', name: 'Ireland' },
+      'IL': { flag: '🇮🇱', name: 'Israel' },
+      'IR': { flag: '🇮🇷', name: 'Iran' },
+      'LT': { flag: '🇱🇹', name: 'Lithuania' },
+      'LV': { flag: '🇱🇻', name: 'Latvia' },
+      'EE': { flag: '🇪🇪', name: 'Estonia' }
+    };
+
+    var NP_CACHE_PREFIX = 'np_cache_';
+    var NP_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+    var debounceTimer = null;
+    var lastResult = null;
+
+    function getCache(name) {
+      try {
+        var key = NP_CACHE_PREFIX + name.toLowerCase();
+        var raw = localStorage.getItem(key);
+        if (!raw) return null;
+        var data = JSON.parse(raw);
+        if (Date.now() - data.ts > NP_CACHE_TTL) { localStorage.removeItem(key); return null; }
+        return data.result;
+      } catch(e) { return null; }
+    }
+
+    function setCache(name, result) {
+      try {
+        var key = NP_CACHE_PREFIX + name.toLowerCase();
+        localStorage.setItem(key, JSON.stringify({ ts: Date.now(), result: result }));
+      } catch(e) {}
+    }
+
+    function getDecade(age) {
+      var year = new Date().getFullYear() - age;
+      var decade = Math.floor(year / 10) * 10;
+      return 'the ' + decade + 's';
+    }
+
+    function getCountryInfo(code) {
+      var info = COUNTRY_MAP[code];
+      if (info) return info;
+      // Fallback: generate flag from country code
+      var flag = code.split('').map(function(c) {
+        return String.fromCodePoint(c.charCodeAt(0) + 127397);
+      }).join('');
+      return { flag: flag, name: code };
+    }
+
+    function buildFunFact(name, ageData, genderData, natData) {
+      var parts = [];
+      if (ageData && ageData.age) {
+        parts.push('Most people named <strong>' + name + '</strong> are around <strong>' + ageData.age + ' years old</strong>, born in ' + getDecade(ageData.age) + '.');
+      }
+      if (genderData && genderData.gender) {
+        var pct = Math.round((genderData.probability || 0) * 100);
+        var gLabel = genderData.gender === 'male' ? 'male' : 'female';
+        parts.push('The name is <strong>' + pct + '% ' + gLabel + '</strong> globally.');
+      }
+      if (natData && natData.country && natData.country.length > 0) {
+        var top = natData.country[0];
+        var info = getCountryInfo(top.country_id);
+        var topPct = Math.round(top.probability * 100);
+        parts.push('It\'s most common in <strong>' + info.flag + ' ' + info.name + '</strong> (' + topPct + '%).');
+      }
+      return parts.join(' ');
+    }
+
+    function renderResults(name, ageData, genderData, natData) {
+      lastResult = { name: name, ageData: ageData, genderData: genderData, natData: natData };
+
+      // Age card
+      var ageVal = document.getElementById('np-age-value');
+      var ageSub = document.getElementById('np-age-sub');
+      if (ageData && ageData.age) {
+        ageVal.textContent = ageData.age + ' yrs';
+        ageSub.textContent = 'Born in ' + getDecade(ageData.age) + ' · ' + (ageData.count || '?').toLocaleString() + ' records';
+      } else {
+        ageVal.textContent = 'No data';
+        ageSub.textContent = '';
+      }
+
+      // Gender card
+      var gVal = document.getElementById('np-gender-value');
+      var gSub = document.getElementById('np-gender-sub');
+      var gBar = document.getElementById('np-gender-bar');
+      if (genderData && genderData.gender) {
+        var pct = Math.round((genderData.probability || 0) * 100);
+        var gLabel = genderData.gender === 'male' ? '♂ Male' : '♀ Female';
+        gVal.textContent = gLabel;
+        gSub.textContent = pct + '% confidence · ' + (genderData.count || '?').toLocaleString() + ' records';
+        gBar.style.width = pct + '%';
+      } else {
+        gVal.textContent = 'No data';
+        gSub.textContent = '';
+        gBar.style.width = '0%';
+      }
+
+      // Nationalities
+      var list = document.getElementById('np-countries-list');
+      list.innerHTML = '';
+      if (natData && natData.country && natData.country.length > 0) {
+        var top3 = natData.country.slice(0, 3);
+        top3.forEach(function(c) {
+          var info = getCountryInfo(c.country_id);
+          var pct = Math.round(c.probability * 100);
+          var li = document.createElement('li');
+          li.innerHTML = '<span class="np-country-flag">' + info.flag + '</span><span class="np-country-name">' + info.name + '</span><span class="np-country-pct">' + pct + '%</span>';
+          list.appendChild(li);
+        });
+      } else {
+        var li = document.createElement('li');
+        li.textContent = 'No data available';
+        list.appendChild(li);
+      }
+
+      // Fun fact
+      var funFact = document.getElementById('np-fun-fact');
+      funFact.innerHTML = buildFunFact(name, ageData, genderData, natData);
+
+      showEl(document.getElementById('np-results'), 'block');
+    }
+
+    function fetchPrediction(name, callback) {
+      var cached = getCache(name);
+      if (cached) { callback(null, cached); return; }
+
+      var encName = encodeURIComponent(name);
+      var ageUrl = 'https://api.agify.io/?name=' + encName;
+      var genderUrl = 'https://api.genderize.io/?name=' + encName;
+      var natUrl = 'https://api.nationalize.io/?name=' + encName;
+
+      Promise.all([
+        fetch(ageUrl).then(function(r) { return r.json(); }).catch(function() { return {}; }),
+        fetch(genderUrl).then(function(r) { return r.json(); }).catch(function() { return {}; }),
+        fetch(natUrl).then(function(r) { return r.json(); }).catch(function() { return {}; })
+      ]).then(function(results) {
+        var result = { age: results[0], gender: results[1], nat: results[2] };
+        setCache(name, result);
+        callback(null, result);
+      }).catch(function(err) {
+        callback(err, null);
+      });
+    }
+
+    function runPrediction(name) {
+      if (!name || name.trim().length < 2) return;
+      name = name.trim();
+
+      hideEl(document.getElementById('np-results'));
+      hideEl(document.getElementById('np-error'));
+      var loadingEl = document.getElementById('np-loading');
+      document.getElementById('np-loading-name').textContent = name;
+      showEl(loadingEl, 'block');
+
+      var btn = document.getElementById('np-predict-btn');
+      btn.disabled = true;
+      btn.textContent = 'Loading…';
+
+      fetchPrediction(name, function(err, result) {
+        hideEl(loadingEl);
+        btn.disabled = false;
+        btn.textContent = 'Predict';
+
+        if (err || !result) {
+          showEl(document.getElementById('np-error'), 'block');
+          return;
+        }
+        renderResults(name, result.age, result.gender, result.nat);
+      });
+    }
+
+    function renderCompareCard(name, result) {
+      var html = '<div class="np-compare-card">';
+      html += '<div class="np-compare-name">' + name + '</div>';
+
+      if (result && result.age && result.age.age) {
+        html += '<div class="np-compare-row"><span>Predicted Age</span><span>' + result.age.age + ' yrs</span></div>';
+        html += '<div class="np-compare-row"><span>Born in</span><span>' + getDecade(result.age.age) + '</span></div>';
+      }
+      if (result && result.gender && result.gender.gender) {
+        var pct = Math.round((result.gender.probability || 0) * 100);
+        var gLabel = result.gender.gender === 'male' ? '♂ Male' : '♀ Female';
+        html += '<div class="np-compare-row"><span>Gender</span><span>' + gLabel + ' (' + pct + '%)</span></div>';
+      }
+      if (result && result.nat && result.nat.country && result.nat.country.length > 0) {
+        var top = result.nat.country[0];
+        var info = getCountryInfo(top.country_id);
+        html += '<div class="np-compare-row"><span>Top Origin</span><span>' + info.flag + ' ' + info.name + '</span></div>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Tools', url: '/tools/' },
+        { name: 'Name Predictor' }
+      ]);
+
+      var faqs = [
+        { q: 'How accurate is the name age prediction?', a: 'The age prediction uses data from agify.io, which analyzes millions of real records from census data, social networks, and public datasets. It predicts the most common age associated with a given name. Accuracy varies — common English names have data from millions of people and are highly reliable, while rare or regional names may have smaller sample sizes. The count shown next to the result indicates how many records were used.' },
+        { q: 'Why does the same name give different gender results in different countries?', a: 'Many names are used by different genders in different cultures. For example, "Jordan" is predominantly male in the US but more evenly split in some European countries. The genderize.io API allows filtering by country code, so predictions can vary by region. Without a country filter, it uses global averages across all regions where the name appears.' },
+        { q: 'What does the probability percentage mean?', a: 'The probability percentage (e.g., 92% Male) means that of all people with that name in the dataset, 92% identified or were recorded as male. A higher percentage means more certainty in the prediction. A probability close to 50% means the name is used roughly equally by both genders — it is a genuinely gender-neutral name.' },
+        { q: 'How does nationality prediction work for names?', a: 'The nationalize.io API matches names against datasets from different countries and calculates which nationalities are most commonly associated with that name. It returns the top countries sorted by probability. For example, "Matteo" is strongly associated with Italy, while "James" is most common in English-speaking countries.' },
+        { q: 'Can I predict the origin of any name worldwide?', a: 'The tool works for over 100,000 names from around the world. It performs best for common names from English-speaking countries, Europe, and East Asia, as these have the most data available. For very rare or regional names, the sample size may be limited and the confidence lower.' },
+        { q: 'Is my name data stored or tracked?', a: 'Results are cached in your browser localStorage for 24 hours to avoid repeat API calls for the same name. This data never leaves your device. The API calls go directly to agify.io, genderize.io, and nationalize.io. No personal data beyond the name itself is transmitted.' },
+        { q: 'What does the compare feature do?', a: 'The compare feature lets you enter two names and see their predicted age, gender, and top nationality side by side. This is useful for comparing how different names are perceived — for example comparing "William" vs "Liam", or a traditional name with a modern one to see generational patterns.' }
+      ];
+
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        { slug: 'tools/name-meaning-generator', name: 'Name Meaning Generator', description: 'Discover the meaning, origin, and personality traits of any name.' },
+        { slug: 'tools/baby-name-generator', name: 'Baby Name Generator', description: 'Generate baby names by origin, meaning, and style.' },
+        { slug: 'tools/age-on-planets', name: 'Age on Other Planets', description: 'Find out how old you are on Mars, Jupiter, and every planet.' },
+        { slug: 'tools/fake-tweet-generator', name: 'Fake Tweet Generator', description: 'Create realistic fake tweet screenshots for memes and social media.' },
+        { slug: 'tools/color-personality-test', name: 'Color Personality Test', description: 'Discover what your color preferences reveal about your personality.' },
+        { slug: 'tools/country-comparison-tool', name: 'Country Comparison Tool', description: 'Compare countries side by side on cost of living, salary, and safety.' }
+      ]);
+
+      // Predict button
+      document.getElementById('np-predict-btn').addEventListener('click', function() {
+        var name = document.getElementById('np-name-input').value.trim();
+        runPrediction(name);
+      });
+
+      // Enter key
+      document.getElementById('np-name-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          clearTimeout(debounceTimer);
+          var name = this.value.trim();
+          runPrediction(name);
+        }
+      });
+
+      // Debounce on input
+      document.getElementById('np-name-input').addEventListener('input', function() {
+        var name = this.value.trim();
+        if (name.length < 2) return;
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() { runPrediction(name); }, 300);
+      });
+
+      // Popular chips
+      document.querySelectorAll('.np-name-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+          var name = this.getAttribute('data-name');
+          document.getElementById('np-name-input').value = name;
+          runPrediction(name);
+        });
+      });
+
+      // Share button
+      document.getElementById('np-share-btn').addEventListener('click', function() {
+        if (!lastResult) return;
+        var funFact = document.getElementById('np-fun-fact').innerText;
+        var shareText = funFact + ' Check your name at https://tool.teamzlab.com/tools/name-predictor/';
+        if (window.safeClipboardText) {
+          window.safeClipboardText(shareText, function() {
+            window.showToast && window.showToast('Fun fact copied to clipboard!');
+          });
+        } else {
+          navigator.clipboard.writeText(shareText)
+            .then(function() { window.showToast && window.showToast('Fun fact copied!'); })
+            .catch(function() { window.showToast && window.showToast('Copy not supported — try selecting the text manually.'); });
+        }
+      });
+
+      // Compare button
+      document.getElementById('np-compare-btn').addEventListener('click', function() {
+        var nameA = document.getElementById('np-compare-a').value.trim();
+        var nameB = document.getElementById('np-compare-b').value.trim();
+        if (!nameA || !nameB) {
+          window.showToast && window.showToast('Please enter both names to compare.');
+          return;
+        }
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Loading…';
+        var grid = document.getElementById('np-compare-grid');
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:16px;">Loading…</div>';
+        showEl(grid, 'grid');
+
+        Promise.all([
+          new Promise(function(resolve) { fetchPrediction(nameA, function(e, r) { resolve(r); }); }),
+          new Promise(function(resolve) { fetchPrediction(nameB, function(e, r) { resolve(r); }); })
+        ]).then(function(results) {
+          btn.disabled = false;
+          btn.textContent = 'Compare';
+          grid.innerHTML = renderCompareCard(nameA, results[0]) + renderCompareCard(nameB, results[1]);
+          showEl(grid, 'grid');
+        }).catch(function() {
+          btn.disabled = false;
+          btn.textContent = 'Compare';
+          window.showToast && window.showToast('Could not compare names. Please try again.');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Additive E-Number Checker — Teamz Lab Tools</title>
+  <meta name="description" content="Check if food additives are safe. Look up any E-number or additive name — get risk rating, uses, and health concerns. Free, instant, no signup.">
+  <meta property="og:title" content="Food Additive E-Number Checker — Teamz Lab Tools">
+  <meta property="og:description" content="Look up any E-number or food additive name. Get risk rating, uses, health concerns, and halal/vegan status. Free and instant.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/food-additive-checker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Food Additive E-Number Checker — Teamz Lab Tools">
+  <meta name="twitter:description" content="Look up any E-number or food additive name. Get risk rating, uses, and health concerns instantly.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/food-additive-checker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .search-wrap { position: relative; }
+    .search-input { width: 100%; padding: 0.85rem 1rem; border: 2px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 1.05rem; box-sizing: border-box; }
+    .search-input:focus { outline: none; border-color: var(--accent); }
+    .search-hint { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
+    .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: none; }
+    .suggestions-list.open { display: block; }
+    .suggestion-item { padding: 0.6rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.6rem; }
+    .suggestion-item:hover, .suggestion-item.active { background: var(--bg); }
+    .sug-code { font-weight: 700; color: var(--heading); min-width: 48px; }
+    .sug-name { color: var(--text); font-size: 0.9rem; }
+    .sug-badge { font-size: 0.72rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; }
+    .badge-safe { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .badge-caution { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .badge-avoid { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-top: 1.25rem; }
+    .result-header { display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+    .result-code { font-size: 2rem; font-weight: 900; color: var(--heading); min-width: 80px; }
+    .result-name { font-size: 1.2rem; font-weight: 700; color: var(--heading); }
+    .result-category { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .risk-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.4rem 0.9rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; margin-top: 0.5rem; }
+    .risk-safe { background: var(--surface); color: var(--heading); border: 2px solid var(--border); }
+    .risk-caution { background: var(--surface); color: var(--heading); border: 2px solid var(--border); }
+    .risk-avoid { background: var(--surface); color: var(--heading); border: 2px solid var(--border); }
+    .risk-dot-safe::before { content: '●'; color: var(--heading); opacity: 0.8; }
+    .risk-dot-caution::before { content: '●'; color: var(--text-muted); }
+    .risk-dot-avoid::before { content: '●'; color: var(--heading); opacity: 0.5; }
+    .result-desc { margin-top: 1rem; color: var(--text); line-height: 1.6; }
+    .result-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+    .meta-item { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; }
+    .meta-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+    .meta-value { font-size: 0.92rem; color: var(--text); }
+    .flags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+    .flag { padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+    .flag-halal-yes { border-color: var(--border); }
+    .flag-halal-no { border-color: var(--border); }
+    .flag-halal-check { border-color: var(--border); }
+    .flag-vegan-yes { border-color: var(--border); }
+    .flag-vegan-no { border-color: var(--border); }
+    .not-found { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; color: var(--text-muted); margin-top: 1.25rem; }
+    .browse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; margin-top: 0.75rem; }
+    .browse-cat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--heading); }
+    .browse-cat:hover { border-color: var(--accent); background: var(--bg); }
+    .browse-cat.active { border-color: var(--accent); }
+    @media (max-width: 600px) {
+      .result-meta { grid-template-columns: 1fr; }
+      .result-code { font-size: 1.5rem; }
+      .result-name { font-size: 1rem; }
+      .browse-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Food Additive E-Number Checker", "description": "Look up any E-number or food additive name to get risk rating, uses, health concerns, and halal/vegan status.", "url": "https://tool.teamzlab.com/health/food-additive-checker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Food Additive E-Number Checker</h1>
+      <p class="tool-description">Search any E-number (e.g. E621) or additive name (e.g. monosodium glutamate) to get its risk rating, what foods it appears in, health concerns, and halal/vegan status. Based on a comprehensive database of 200+ E-numbers from E100 to E999.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="search-wrap">
+        <input type="text" id="additive-search" class="search-input" placeholder="Type E-number (e.g. E621) or name (e.g. tartrazine)..." autocomplete="off">
+        <div id="suggestions" class="suggestions-list" role="listbox"></div>
+      </div>
+      <p class="search-hint">Database covers E100–E999: colors, preservatives, antioxidants, emulsifiers, flavor enhancers, and sweeteners.</p>
+      <div id="result-area"></div>
+      <div style="margin-top:1.5rem;">
+        <p style="font-size:0.9rem;font-weight:600;color:var(--heading);margin-bottom:0.5rem;">Browse by category:</p>
+        <div class="browse-grid">
+          <div class="browse-cat" data-range="100">E100–E199 Colors</div>
+          <div class="browse-cat" data-range="200">E200–E299 Preservatives</div>
+          <div class="browse-cat" data-range="300">E300–E399 Antioxidants</div>
+          <div class="browse-cat" data-range="400">E400–E499 Emulsifiers</div>
+          <div class="browse-cat" data-range="500">E500–E599 Acidity</div>
+          <div class="browse-cat" data-range="600">E600–E699 Flavor</div>
+          <div class="browse-cat" data-range="900">E900–E999 Others</div>
+        </div>
+        <div id="browse-results" style="display:none;margin-top:0.75rem;"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Are Food Additives and E-Numbers?</h2>
+      <p>Food additives are substances added to food during processing or preparation to preserve flavor, enhance taste, improve appearance, or extend shelf life. In the European Union, every approved food additive is assigned an E-number — a standardized code beginning with the letter E. The numbering system follows a logical structure: E100–E199 are food colorings, E200–E299 are preservatives, E300–E399 are antioxidants, E400–E499 are thickeners and emulsifiers, E500–E599 are acidity regulators, E600–E699 are flavor enhancers, and E900–E999 include sweeteners, waxes, and miscellaneous additives.</p>
+
+      <p>An additive receives an E-number only after the European Food Safety Authority (EFSA) evaluates it for safety at typical consumption levels. This means having an E-number is generally a mark of regulatory approval, not danger. However, approval does not mean all E-numbers are equal — some have restricted uses or require warning labels, particularly for children.</p>
+
+      <h2>Understanding Risk Ratings: Safe, Caution, and Avoid</h2>
+      <p>This tool assigns three risk levels based on scientific consensus and regulatory status. Safe additives are well-studied, often naturally derived, and have no significant health concerns at normal dietary intake levels. Examples include E300 (vitamin C), E330 (citric acid), E160a (beta-carotene), and E500 (baking soda). These are universally accepted and often found naturally in whole foods.</p>
+
+      <p>Caution-rated additives have some associated concerns: they may cause allergic reactions in sensitive individuals, have conflicting research, or have been restricted or require warning labels in some jurisdictions. For example, E102 (tartrazine) and E211 (sodium benzoate) have been linked to hyperactivity in children in a 2007 UK study, prompting the EU to require warning labels on products containing these colors. People with asthma, aspirin sensitivity, or children with ADHD may want to minimize exposure to caution-rated additives.</p>
+
+      <p>Avoid-rated additives are those with significant health evidence, bans in multiple countries, or strong scientific concern. E250 (sodium nitrite) and E251 (sodium nitrate), used in processed meats, are classified as Group 2A probable carcinogens by the WHO's International Agency for Research on Cancer (IARC). The EU permits their use but at strictly limited concentrations.</p>
+
+      <h2>Halal, Haram, and Vegan Status of E-Numbers</h2>
+      <p>Many E-numbers are derived from animal sources, making them relevant for Muslim consumers checking halal compliance and vegans avoiding animal products. E120 (carmine, also called cochineal) is produced by crushing dried cochineal insects — it is haram (impermissible) in Islamic dietary law and not vegan. E441 (gelatin) is typically derived from pork or beef bones, making the source critical for halal compliance. E542 (bone phosphate) may come from animal bones.</p>
+
+      <p>Flavor enhancers E631 (disodium inosinate) and E634 (calcium 5-ribonucleotides) are often derived from meat or fish, making them non-halal and non-vegan unless specifically certified plant-based. E904 (shellac) is secreted by the lac insect and is used as a coating on confectionery — it is not vegan. E471 (mono and diglycerides of fatty acids) can come from animal or vegetable sources; without certification, halal status is uncertain. The safest approach is to look for certified halal or vegan labels on packaged food products.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    // Comprehensive E-number database
+    var EDATA = {
+      'E100': { name: 'Curcumin', category: 'Color', risk: 'safe', desc: 'Natural yellow pigment from turmeric root (Curcuma longa). Widely used in mustards, dairy products, and beverages. Also studied for anti-inflammatory properties.', foods: 'Mustard, margarine, curries, cheese, butter', halal: 'yes', vegan: 'yes', concerns: 'None significant at food use levels.' },
+      'E101': { name: 'Riboflavin (Vitamin B2)', category: 'Color', risk: 'safe', desc: 'Yellow vitamin B2, naturally present in milk, eggs, and meat. Used as a yellow food coloring.', foods: 'Baby foods, dairy, cereals', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E102': { name: 'Tartrazine', category: 'Color', risk: 'caution', desc: 'Synthetic azo dye producing lemon-yellow color. One of the "Southampton Six" — linked to hyperactivity in children. Requires EU warning label: "may have an adverse effect on activity and attention in children."', foods: 'Soft drinks, custard powder, canned fruit, gelatin', halal: 'check', vegan: 'yes', concerns: 'Hyperactivity in children, cross-reaction in aspirin-sensitive individuals.' },
+      'E104': { name: 'Quinoline Yellow', category: 'Color', risk: 'caution', desc: 'Synthetic dye producing a dull yellow-green color. Part of the Southampton Six. Requires EU warning label for hyperactivity.', foods: 'Smoked haddock, scotch eggs, quinine water', halal: 'yes', vegan: 'yes', concerns: 'Hyperactivity in children.' },
+      'E110': { name: 'Sunset Yellow FCF', category: 'Color', risk: 'caution', desc: 'Synthetic orange-yellow azo dye. One of the Southampton Six. Requires EU warning label for effects on children\'s attention and activity.', foods: 'Squash drinks, lollipops, jam', halal: 'yes', vegan: 'yes', concerns: 'Hyperactivity in children, possible allergic reactions.' },
+      'E120': { name: 'Carmine (Cochineal)', category: 'Color', risk: 'avoid', desc: 'Red dye derived from crushing dried female cochineal insects. Haram (impermissible) in Islamic law. Not vegan. Used for vibrant red/pink colors.', foods: 'Yogurt, candy, juice, cosmetics', halal: 'no', vegan: 'no', concerns: 'Haram (insect-derived), not vegan. Allergic reactions in sensitive people.' },
+      'E122': { name: 'Carmoisine (Azorubine)', category: 'Color', risk: 'caution', desc: 'Synthetic red azo dye. Part of the Southampton Six. EU requires hyperactivity warning label.', foods: 'Jams, jellies, candied cherries, packet soups', halal: 'check', vegan: 'yes', concerns: 'Hyperactivity in children. Banned in several countries including US, Japan, and Australia.' },
+      'E123': { name: 'Amaranth', category: 'Color', risk: 'avoid', desc: 'Red-violet synthetic dye. Banned in the USA since 1976 due to carcinogenicity concerns. Still permitted in EU at low levels.', foods: 'Fish eggs, aperitif wines, some candies', halal: 'yes', vegan: 'yes', concerns: 'Banned in the US. Possible carcinogen, teratogen in animal studies.' },
+      'E124': { name: 'Ponceau 4R', category: 'Color', risk: 'caution', desc: 'Synthetic red azo dye. One of the Southampton Six. Banned in USA, Norway, and Finland. EU requires hyperactivity warning.', foods: 'Salami, strawberry products, canned fruit', halal: 'check', vegan: 'yes', concerns: 'Hyperactivity in children. Banned in USA and several countries.' },
+      'E127': { name: 'Erythrosine', category: 'Color', risk: 'caution', desc: 'Cherry-pink synthetic dye. Banned in Norway. High iodine content may affect thyroid function. FDA restricts use to maraschino cherries.', foods: 'Maraschino cherries, tinned fruit', halal: 'yes', vegan: 'yes', concerns: 'Thyroid disruption, photosensitivity, neurotoxicity concerns.' },
+      'E129': { name: 'Allura Red AC', category: 'Color', risk: 'caution', desc: 'Synthetic red dye (Red 40). One of the Southampton Six. Most widely used red food dye in the USA. EU requires hyperactivity warning label.', foods: 'Sodas, candy, cereals, gelatin', halal: 'check', vegan: 'yes', concerns: 'Hyperactivity in children, possible behavioral effects, banned in Denmark, Belgium, France, Germany, Switzerland, Sweden, Austria, and Norway.' },
+      'E131': { name: 'Patent Blue V', category: 'Color', risk: 'caution', desc: 'Synthetic blue dye. May cause allergic reactions and anaphylaxis in rare cases. Banned in Australia, USA, and Canada.', foods: 'Scotch eggs, peas (canned), cordials', halal: 'yes', vegan: 'yes', concerns: 'Allergic reactions, potential anaphylaxis. Banned in several countries.' },
+      'E133': { name: 'Brilliant Blue FCF', category: 'Color', risk: 'caution', desc: 'Bright blue synthetic dye (Blue 1). Banned in Austria, Belgium, France, Germany, Greece, Italy, Spain, Switzerland, and Norway.', foods: 'Canned peas, fruit cocktail, dairy products', halal: 'yes', vegan: 'yes', concerns: 'Banned in several European countries. Possible neurotoxicity in large doses.' },
+      'E140': { name: 'Chlorophylls', category: 'Color', risk: 'safe', desc: 'Natural green pigment from plants. Used as a green food coloring.', foods: 'Absinthe, preserved vegetables, chewing gum', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E150a': { name: 'Plain Caramel', category: 'Color', risk: 'safe', desc: 'Natural brown color from heating sugar. The most widely used food coloring in the world. Found in cola drinks and beer.', foods: 'Cola drinks, beer, soy sauce, gravy', halal: 'yes', vegan: 'yes', concerns: 'None at normal levels.' },
+      'E150d': { name: 'Sulphite Ammonia Caramel', category: 'Color', risk: 'caution', desc: 'Caramel color (Class IV) used in colas. Contains 4-methylimidazole (4-MeI), flagged by California Proposition 65 as a potential carcinogen.', foods: 'Cola drinks, bread, biscuits', halal: 'yes', vegan: 'yes', concerns: '4-methylimidazole (4-MeI) — potential carcinogen in high amounts.' },
+      'E160a': { name: 'Beta-carotene', category: 'Color', risk: 'safe', desc: 'Natural orange pigment from carrots and other vegetables. Precursor to vitamin A. Widely considered safe and beneficial.', foods: 'Margarine, cheese, butter, drinks', halal: 'yes', vegan: 'yes', concerns: 'None. Beneficial nutrient at normal food levels.' },
+      'E160b': { name: 'Annatto', category: 'Color', risk: 'caution', desc: 'Natural orange-yellow dye from the seeds of the achiote tree. Can cause rare allergic reactions in sensitive individuals.', foods: 'Cheese, butter, crisps', halal: 'yes', vegan: 'yes', concerns: 'Rare allergic reactions. ADHD-related concerns in some studies.' },
+      'E171': { name: 'Titanium Dioxide', category: 'Color', risk: 'avoid', desc: 'White pigment from titanium. Banned in the EU since August 2022 due to genotoxicity concerns. Still permitted in many other countries.', foods: 'Chewing gum, sweets, icing', halal: 'yes', vegan: 'yes', concerns: 'Banned in EU (2022). EFSA classified as genotoxic — cannot establish a safe level.' },
+      'E200': { name: 'Sorbic Acid', category: 'Preservative', risk: 'safe', desc: 'Naturally occurring in rowan berries. One of the safest and most widely used preservatives. Inhibits mold and yeast growth.', foods: 'Cheese, wine, baked goods, dried fruit', halal: 'yes', vegan: 'yes', concerns: 'Very rarely causes skin irritation in people with eczema.' },
+      'E202': { name: 'Potassium Sorbate', category: 'Preservative', risk: 'safe', desc: 'Salt of sorbic acid. Extremely widely used antimicrobial preservative. GRAS (Generally Recognized As Safe) by the FDA.', foods: 'Cheese, yogurt, pickles, wine, dried fruits', halal: 'yes', vegan: 'yes', concerns: 'Safe at levels used in food. Very rare skin sensitivity.' },
+      'E210': { name: 'Benzoic Acid', category: 'Preservative', risk: 'caution', desc: 'Naturally found in some berries and tree bark. Synthetic version used as a preservative. Reacts with vitamin C to form benzene (potential carcinogen).', foods: 'Soft drinks, fruit juice, margarines', halal: 'yes', vegan: 'yes', concerns: 'Forms benzene with Vitamin C. Can trigger hyperactivity and asthma. Banned in some foods for children.' },
+      'E211': { name: 'Sodium Benzoate', category: 'Preservative', risk: 'caution', desc: 'Sodium salt of benzoic acid. Common in fizzy drinks. Combined with vitamin C (ascorbic acid), it can form benzene. Linked to hyperactivity in children.', foods: 'Cola drinks, energy drinks, fruit juices', halal: 'yes', vegan: 'yes', concerns: 'Benzene formation with Vitamin C, hyperactivity in children, asthma aggravation.' },
+      'E220': { name: 'Sulphur Dioxide', category: 'Preservative', risk: 'caution', desc: 'Antifungal preservative used in dried fruits, wines, and processed meats. Must be declared on labels as an allergen if above 10 mg/kg. Can trigger asthma attacks.', foods: 'Dried fruit, wine, grape juice, pickled onions', halal: 'yes', vegan: 'yes', concerns: 'Allergen — asthma, respiratory reactions. Must be declared on labels.' },
+      'E221': { name: 'Sodium Sulphite', category: 'Preservative', risk: 'caution', desc: 'Sulfite preservative. Declared allergen. Can trigger asthma and allergic reactions.', foods: 'Dried fruits, wine, pickles', halal: 'yes', vegan: 'yes', concerns: 'Allergen. Asthma, sulfite sensitivity reactions.' },
+      'E250': { name: 'Sodium Nitrite', category: 'Preservative', risk: 'avoid', desc: 'Used in cured meats to prevent botulism and maintain pink color. WHO/IARC classify processed meats (which use nitrites) as Group 1 carcinogens. High intake linked to colorectal cancer.', foods: 'Bacon, ham, hot dogs, salami, sausage', halal: 'yes', vegan: 'no', concerns: 'IARC Group 2A. Linked to colorectal cancer. Forms nitrosamines when cooked at high heat.' },
+      'E251': { name: 'Sodium Nitrate', category: 'Preservative', risk: 'avoid', desc: 'Used in cured meats. Converts to nitrite in the body. Associated with increased risk of colorectal cancer according to WHO/IARC data.', foods: 'Cured meats, smoked fish, cheese', halal: 'yes', vegan: 'no', concerns: 'IARC Group 2A. Colorectal cancer risk. Methemoglobinemia in infants.' },
+      'E252': { name: 'Potassium Nitrate (Saltpetre)', category: 'Preservative', risk: 'caution', desc: 'Historic meat curing agent. Still used in some traditional cured meats. Lower risk than nitrites but still monitored.', foods: 'Cured meats, cheese', halal: 'yes', vegan: 'no', concerns: 'Converts to nitrite. Methemoglobinemia risk in infants.' },
+      'E260': { name: 'Acetic Acid (Vinegar)', category: 'Preservative/Acidity', risk: 'safe', desc: 'Acetic acid is the main component of vinegar. Natural preservative and flavoring. Safe at all levels used in food.', foods: 'Vinegar, pickles, sauces, bread', halal: 'yes', vegan: 'yes', concerns: 'None. Tooth enamel erosion from excessive vinegar consumption.' },
+      'E270': { name: 'Lactic Acid', category: 'Preservative/Acidity', risk: 'safe', desc: 'Naturally produced during fermentation. Found in yogurt, cheese, and sauerkraut. Widely considered safe.', foods: 'Dairy products, bread, beer, pickles', halal: 'check', vegan: 'check', concerns: 'None significant. Some lactic acid is animal-derived (L-form from animal muscle).' },
+      'E280': { name: 'Propionic Acid', category: 'Preservative', risk: 'safe', desc: 'Occurs naturally in some cheeses. Used to prevent mold in baked goods.', foods: 'Bread, baked goods, cheese', halal: 'yes', vegan: 'yes', concerns: 'Some studies suggest gut microbiome effects at very high doses.' },
+      'E300': { name: 'Ascorbic Acid (Vitamin C)', category: 'Antioxidant', risk: 'safe', desc: 'Vitamin C — essential nutrient and natural antioxidant. Widely used in food preservation and fortification. Completely safe and beneficial.', foods: 'Fruit juices, meats, jams, beer, wine', halal: 'yes', vegan: 'yes', concerns: 'None. Beneficial vitamin at normal food use levels.' },
+      'E306': { name: 'Tocopherol (Vitamin E)', category: 'Antioxidant', risk: 'safe', desc: 'Natural vitamin E. Antioxidant that prevents rancidity. Found naturally in vegetable oils, nuts, and seeds.', foods: 'Vegetable oils, margarine, nuts', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E310': { name: 'Propyl Gallate', category: 'Antioxidant', risk: 'caution', desc: 'Synthetic antioxidant. Studies show potential estrogenic effects and possible carcinogenicity at high doses.', foods: 'Oils, fats, margarine, chewing gum', halal: 'yes', vegan: 'yes', concerns: 'Possible endocrine disruption, allergic reactions, stomach irritation.' },
+      'E320': { name: 'BHA (Butylated Hydroxyanisole)', category: 'Antioxidant', risk: 'avoid', desc: 'Synthetic antioxidant preservative. Classified as possibly carcinogenic to humans (IARC Group 2B). Banned or restricted in Japan, EU cosmetics, and some food applications.', foods: 'Lard, butter, vegetable oils, cereals, snacks', halal: 'yes', vegan: 'yes', concerns: 'IARC Group 2B possible carcinogen. Endocrine disruption concerns.' },
+      'E321': { name: 'BHT (Butylated Hydroxytoluene)', category: 'Antioxidant', risk: 'caution', desc: 'Synthetic antioxidant. Similar to BHA but less carcinogenic concern. Some animal studies show tumor promotion. USA: GRAS. EU: approved but limited.', foods: 'Cereal, potato chips, rubber packaging', halal: 'yes', vegan: 'yes', concerns: 'Possible tumor promotion in animal studies. Endocrine disruption concerns.' },
+      'E322': { name: 'Lecithin', category: 'Emulsifier', risk: 'safe', desc: 'Naturally occurring phospholipid found in egg yolks and soybeans. Used as an emulsifier to blend fat and water. Completely safe.', foods: 'Chocolate, margarine, baked goods, ice cream', halal: 'check', vegan: 'check', concerns: 'Soy allergy risk if soy-derived. Egg-derived is not vegan.' },
+      'E330': { name: 'Citric Acid', category: 'Antioxidant/Acidity', risk: 'safe', desc: 'Naturally abundant in citrus fruits. One of the most commonly used food additives worldwide. Preservative, flavor enhancer, and acidity regulator.', foods: 'Soft drinks, sweets, jams, canned foods', halal: 'yes', vegan: 'yes', concerns: 'Tooth enamel erosion at very high intake. No other concerns.' },
+      'E331': { name: 'Sodium Citrates', category: 'Acidity Regulator', risk: 'safe', desc: 'Salts of citric acid. Used to regulate acidity and as emulsifiers in processed cheese.', foods: 'Cheese, processed foods, drinks', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E400': { name: 'Alginic Acid', category: 'Thickener', risk: 'safe', desc: 'Natural thickener from brown seaweed. Used as a stabilizer and thickening agent.', foods: 'Ice cream, salad dressing, puddings', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E401': { name: 'Sodium Alginate', category: 'Thickener', risk: 'safe', desc: 'Sodium salt of alginic acid, from seaweed. Widely used in molecular gastronomy and food production.', foods: 'Ice cream, dairy, salad dressings', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E407': { name: 'Carrageenan', category: 'Thickener', risk: 'caution', desc: 'Extracted from red seaweed. Widely used in dairy and dairy alternatives. Some animal studies suggest gut inflammation. Degraded carrageenan (poligeenan) is carcinogenic but is not used in food.', foods: 'Dairy, chocolate milk, infant formula, deli meats', halal: 'yes', vegan: 'yes', concerns: 'Possible gut inflammation, IBS aggravation. Controversial — some researchers call for ban in infant formula.' },
+      'E412': { name: 'Guar Gum', category: 'Thickener', risk: 'safe', desc: 'Natural thickener from guar beans. Used in gluten-free foods as a binder.', foods: 'Ice cream, gluten-free bread, soups', halal: 'yes', vegan: 'yes', concerns: 'High doses can cause gas and bloating.' },
+      'E415': { name: 'Xanthan Gum', category: 'Thickener', risk: 'safe', desc: 'Produced by fermenting glucose with Xanthomonas campestris bacteria. Key ingredient in gluten-free baking.', foods: 'Gluten-free baked goods, salad dressings, sauces', halal: 'yes', vegan: 'yes', concerns: 'None at normal food levels. High doses may cause digestive issues.' },
+      'E420': { name: 'Sorbitol', category: 'Sweetener/Humectant', risk: 'caution', desc: 'Sugar alcohol naturally found in some fruits. Used as low-calorie sweetener and humectant. Can cause digestive issues at higher doses.', foods: 'Sugar-free products, chewing gum, diabetic foods', halal: 'yes', vegan: 'yes', concerns: 'Laxative effect above 50g/day. Bloating, gas, diarrhea.' },
+      'E422': { name: 'Glycerol (Glycerine)', category: 'Humectant', risk: 'safe', desc: 'Naturally produced from fats. Used to retain moisture in foods. Generally safe.', foods: 'Cake icing, dried fruit, liqueurs', halal: 'check', vegan: 'check', concerns: 'Animal-derived glycerol is not vegan. Can be plant-derived.' },
+      'E440': { name: 'Pectin', category: 'Thickener/Gelling', risk: 'safe', desc: 'Natural polysaccharide found in fruit skins and cores. Used as a gelling agent in jams and jellies. Dietary fiber.', foods: 'Jams, jellies, marmalade, sweets', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E441': { name: 'Gelatin', category: 'Thickener/Gelling', risk: 'caution', desc: 'Protein from animal collagen (typically pork or beef bones and skin). Haram if from pork. Not vegan. Must verify source for halal compliance.', foods: 'Gelatin desserts, marshmallows, gummy sweets, yogurt', halal: 'check', vegan: 'no', concerns: 'Not vegan. Pork-derived gelatin is haram. Must verify animal source.' },
+      'E450': { name: 'Diphosphates', category: 'Raising Agent', risk: 'safe', desc: 'Phosphate salts used as leavening agents in baking and to retain moisture in processed meats.', foods: 'Bread, cakes, processed cheese, meats', halal: 'yes', vegan: 'yes', concerns: 'High phosphate intake associated with kidney problems in those with kidney disease.' },
+      'E471': { name: 'Mono and Diglycerides of Fatty Acids', category: 'Emulsifier', risk: 'caution', desc: 'Emulsifiers derived from glycerol and fatty acids. Can be from animal or vegetable fats — halal/vegan status depends on source. Very common in processed foods.', foods: 'Bread, cakes, margarine, ice cream', halal: 'check', vegan: 'check', concerns: 'Animal-derived versions are not halal-certified unless specified. May contain trans fats.' },
+      'E472e': { name: 'Diacetyl Tartaric Acid Esters (DATEM)', category: 'Emulsifier', risk: 'caution', desc: 'Derived from tartaric acid and mono/diglycerides. Source may be animal or vegetable.', foods: 'Bread, baked goods, coffee whiteners', halal: 'check', vegan: 'check', concerns: 'Source-dependent halal/vegan status.' },
+      'E476': { name: 'Polyglycerol Polyricinoleate (PGPR)', category: 'Emulsifier', risk: 'safe', desc: 'Used mainly in chocolate to reduce cocoa butter content. Derived from castor oil and glycerol (usually vegetable sources).', foods: 'Chocolate, chocolaty confections', halal: 'yes', vegan: 'yes', concerns: 'None significant.' },
+      'E481': { name: 'Sodium Stearoyl-2-lactylate (SSL)', category: 'Emulsifier', risk: 'safe', desc: 'Emulsifier used in bread to improve volume and texture. Can be from animal or plant sources.', foods: 'Bread, cakes, pastry', halal: 'check', vegan: 'check', concerns: 'Source-dependent halal/vegan status.' },
+      'E500': { name: 'Sodium Bicarbonate (Baking Soda)', category: 'Acidity Regulator', risk: 'safe', desc: 'Common baking soda used as a leavening agent and acidity regulator. Completely safe and naturally occurring mineral.', foods: 'Baked goods, self-rising flour, fizzy drinks', halal: 'yes', vegan: 'yes', concerns: 'None.' },
+      'E503': { name: 'Ammonium Carbonates', category: 'Acidity Regulator', risk: 'safe', desc: 'Baking powder alternative, formerly called "baker\'s ammonia". Gives a particular crunch to biscuits.', foods: 'Biscuits, crackers, some cookies', halal: 'yes', vegan: 'yes', concerns: 'None significant.' },
+      'E621': { name: 'Monosodium Glutamate (MSG)', category: 'Flavor Enhancer', risk: 'caution', desc: 'Sodium salt of glutamic acid, an amino acid naturally found in tomatoes, cheese, and mushrooms. Controversial but recognized as safe by FDA and EFSA. "Chinese Restaurant Syndrome" not consistently proven in controlled studies.', foods: 'Chinese food, chips, instant noodles, soups, seasoning', halal: 'yes', vegan: 'yes', concerns: 'Some report sensitivity symptoms (headache, flushing). Large doses may cause mild symptoms. EFSA set an ADI of 30mg/kg.' },
+      'E627': { name: 'Disodium Guanylate', category: 'Flavor Enhancer', risk: 'caution', desc: 'Flavor enhancer usually derived from yeast extract or dried fish. Not suitable for vegans or gout sufferers.', foods: 'Instant noodles, crisps, soups', halal: 'check', vegan: 'check', concerns: 'May be pork or fish-derived. Not suitable for gout. Avoid with uric acid conditions.' },
+      'E631': { name: 'Disodium Inosinate', category: 'Flavor Enhancer', risk: 'caution', desc: 'Usually derived from meat or fish. Used together with MSG to enhance umami flavor. Not halal unless plant-based source verified.', foods: 'Snack foods, instant noodles, chips', halal: 'check', vegan: 'no', concerns: 'Typically animal-derived — not halal certified unless verified. Not suitable for vegans or gout sufferers.' },
+      'E635': { name: 'Disodium Ribonucleotides', category: 'Flavor Enhancer', risk: 'caution', desc: 'Mixture of E627 and E631. Strong umami enhancer. Animal-derived unless specified.', foods: 'Crisps, savory snacks, instant soups', halal: 'check', vegan: 'no', concerns: 'Animal-derived. Not halal without certification. Not suitable for gout sufferers.' },
+      'E901': { name: 'Beeswax', category: 'Glazing Agent', risk: 'safe', desc: 'Natural wax from honeybees. Used as a glazing agent on candy and fruit. Not vegan.', foods: 'Confectionery, fresh produce coatings', halal: 'yes', vegan: 'no', concerns: 'Not vegan (animal-derived).' },
+      'E904': { name: 'Shellac', category: 'Glazing Agent', risk: 'caution', desc: 'Resinous substance secreted by female lac insects. Used as a coating on confectionery. Not vegan. Halal status debated.', foods: 'Confectionery, fruits, pharmaceutical tablets', halal: 'check', vegan: 'no', concerns: 'Insect-derived — not vegan. Halal status debated (some scholars say haram).' },
+      'E950': { name: 'Acesulfame K', category: 'Sweetener', risk: 'safe', desc: 'Calorie-free artificial sweetener. About 200x sweeter than sugar. Approved by FDA and EFSA.', foods: 'Diet drinks, sugar-free products, chewing gum', halal: 'yes', vegan: 'yes', concerns: 'Some older studies raised concerns about cancer but EFSA and FDA consider it safe. Ongoing debate.' },
+      'E951': { name: 'Aspartame', category: 'Sweetener', risk: 'caution', desc: 'Artificial sweetener. About 200x sweeter than sugar. Contains phenylalanine — must be labeled for people with phenylketonuria (PKU). WHO IARC classified as Group 2B possible carcinogen in 2023, but JECFA maintained safe ADI.', foods: 'Diet cola, chewing gum, yogurt, sugar-free products', halal: 'yes', vegan: 'yes', concerns: 'Group 2B possible carcinogen (IARC 2023). Avoid in phenylketonuria (PKU). Ongoing scientific debate.' },
+      'E952': { name: 'Cyclamate', category: 'Sweetener', risk: 'avoid', desc: 'Synthetic sweetener banned in the USA since 1969 due to bladder cancer concerns in animal studies. Still permitted in EU and many other countries.', foods: 'Soft drinks, table-top sweeteners', halal: 'yes', vegan: 'yes', concerns: 'Banned in USA (1969). Possible carcinogen in animal studies. EU permits with ADI 7mg/kg.' },
+      'E954': { name: 'Saccharin', category: 'Sweetener', risk: 'caution', desc: 'Oldest artificial sweetener, discovered in 1879. Was listed as possible carcinogen in 1970s but removed from US list in 2000. Acceptable ADI established by EFSA.', foods: 'Diet drinks, table-top sweeteners, medications', halal: 'yes', vegan: 'yes', concerns: 'Historical carcinogen concerns (now delisted). Bitter aftertaste.' },
+      'E955': { name: 'Sucralose', category: 'Sweetener', risk: 'safe', desc: 'Made from sugar. 600x sweeter than sugar. Not metabolized by the body for energy. FDA-approved. Generally considered safe.', foods: 'Diet drinks, baked goods, table sweeteners', halal: 'yes', vegan: 'yes', concerns: 'Some studies suggest gut microbiome effects at very high doses. Generally considered safe.' },
+      'E960': { name: 'Steviol Glycosides (Stevia)', category: 'Sweetener', risk: 'safe', desc: 'Natural sweetener from the Stevia rebaudiana plant. 200-300x sweeter than sugar. No calories. EU-approved since 2011.', foods: 'Diet products, drinks, yogurt, supplements', halal: 'yes', vegan: 'yes', concerns: 'None significant. Plant-derived.' },
+      'E965': { name: 'Maltitol', category: 'Sweetener', risk: 'caution', desc: 'Sugar alcohol used in sugar-free chocolates and confectionery. About 90% as sweet as sugar with 60% of the calories.', foods: 'Sugar-free chocolate, candy, ice cream', halal: 'yes', vegan: 'yes', concerns: 'Laxative effect above 40g/day. Bloating, gas, diarrhea. May affect blood sugar in diabetics.' },
+      'E967': { name: 'Xylitol', category: 'Sweetener', risk: 'safe', desc: 'Sugar alcohol found naturally in birch trees and many fruits/vegetables. Same sweetness as sugar with 40% fewer calories. Beneficial for dental health.', foods: 'Chewing gum, dental products, sugar-free candy', halal: 'yes', vegan: 'yes', concerns: 'Laxative at very high doses. TOXIC TO DOGS — keep xylitol products away from pets.' }
+    };
+
+    var ALL_KEYS = Object.keys(EDATA);
+    var searchInput = document.getElementById('additive-search');
+    var suggestions = document.getElementById('suggestions');
+    var resultArea = document.getElementById('result-area');
+    var browseResults = document.getElementById('browse-results');
+
+    function getRiskClass(risk) {
+      return 'risk-' + risk;
+    }
+    function getRiskDot(risk) {
+      return 'risk-dot-' + risk;
+    }
+    function getRiskLabel(risk) {
+      return risk.charAt(0).toUpperCase() + risk.slice(1);
+    }
+    function getHalalLabel(v) {
+      if (v === 'yes') return { label: 'Halal ✓', cls: 'flag-halal-yes' };
+      if (v === 'no') return { label: 'Haram ✗', cls: 'flag-halal-no' };
+      return { label: 'Halal: Verify Source', cls: 'flag-halal-check' };
+    }
+    function getVeganLabel(v) {
+      if (v === 'yes') return { label: 'Vegan ✓', cls: 'flag-vegan-yes' };
+      if (v === 'no') return { label: 'Not Vegan', cls: 'flag-vegan-no' };
+      return { label: 'Vegan: Verify Source', cls: 'flag-vegan-yes' };
+    }
+
+    function renderResult(code, data) {
+      var riskClass = getRiskClass(data.risk);
+      var dotClass = getRiskDot(data.risk);
+      var halal = getHalalLabel(data.halal);
+      var vegan = getVeganLabel(data.vegan);
+
+      resultArea.innerHTML = '<div class="result-card">' +
+        '<div class="result-header">' +
+          '<div>' +
+            '<div class="result-code">' + code + '</div>' +
+          '</div>' +
+          '<div style="flex:1;">' +
+            '<div class="result-name">' + data.name + '</div>' +
+            '<div class="result-category">' + data.category + '</div>' +
+            '<div class="risk-badge ' + riskClass + '"><span class="' + dotClass + '"></span>' + getRiskLabel(data.risk) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="result-desc">' + data.desc + '</div>' +
+        '<div class="result-meta">' +
+          '<div class="meta-item"><div class="meta-label">Found In</div><div class="meta-value">' + data.foods + '</div></div>' +
+          '<div class="meta-item"><div class="meta-label">Health Concerns</div><div class="meta-value">' + data.concerns + '</div></div>' +
+        '</div>' +
+        '<div class="flags">' +
+          '<span class="flag ' + halal.cls + '">' + halal.label + '</span>' +
+          '<span class="flag ' + vegan.cls + '">' + vegan.label + '</span>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function search(query) {
+      query = query.trim().toUpperCase();
+      if (!query) { suggestions.classList.remove('open'); return; }
+      var matches = ALL_KEYS.filter(function(k) {
+        var d = EDATA[k];
+        return k.indexOf(query) !== -1 ||
+          (d.name && d.name.toUpperCase().indexOf(query) !== -1) ||
+          (d.category && d.category.toUpperCase().indexOf(query) !== -1);
+      }).slice(0, 8);
+
+      if (!matches.length) { suggestions.classList.remove('open'); return; }
+      suggestions.innerHTML = matches.map(function(k) {
+        var d = EDATA[k];
+        return '<div class="suggestion-item" data-code="' + k + '" role="option">' +
+          '<span class="sug-code">' + k + '</span>' +
+          '<span class="sug-name">' + d.name + '</span>' +
+          '<span class="sug-badge badge-' + d.risk + '">' + getRiskLabel(d.risk) + '</span>' +
+        '</div>';
+      }).join('');
+      suggestions.classList.add('open');
+    }
+
+    searchInput.addEventListener('input', function() {
+      search(this.value);
+      // Direct match
+      var q = this.value.trim().toUpperCase();
+      if (EDATA[q]) {
+        renderResult(q, EDATA[q]);
+      }
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') suggestions.classList.remove('open');
+    });
+
+    suggestions.addEventListener('click', function(e) {
+      var item = e.target.closest('.suggestion-item');
+      if (!item) return;
+      var code = item.getAttribute('data-code');
+      searchInput.value = code;
+      suggestions.classList.remove('open');
+      if (EDATA[code]) renderResult(code, EDATA[code]);
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-wrap')) suggestions.classList.remove('open');
+    });
+
+    // Browse by category
+    document.querySelectorAll('.browse-cat').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.browse-cat').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var range = parseInt(btn.getAttribute('data-range'));
+        var filtered = ALL_KEYS.filter(function(k) {
+          var num = parseInt(k.replace('E', ''));
+          return num >= range && num < range + 100;
+        }).sort(function(a, b) {
+          return parseInt(a.replace('E','')) - parseInt(b.replace('E',''));
+        });
+        if (!filtered.length) {
+          browseResults.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;">No entries in database for this range yet.</p>';
+        } else {
+          browseResults.innerHTML = filtered.map(function(k) {
+            var d = EDATA[k];
+            return '<div class="suggestion-item" data-code="' + k + '" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:0.4rem;">' +
+              '<span class="sug-code">' + k + '</span>' +
+              '<span class="sug-name">' + d.name + '</span>' +
+              '<span class="sug-badge badge-' + d.risk + '">' + getRiskLabel(d.risk) + '</span>' +
+            '</div>';
+          }).join('');
+        }
+        window.showEl ? showEl(browseResults, 'block') : (browseResults.style.display = 'block');
+      });
+    });
+
+    browseResults.addEventListener('click', function(e) {
+      var item = e.target.closest('.suggestion-item');
+      if (!item) return;
+      var code = item.getAttribute('data-code');
+      if (EDATA[code]) {
+        searchInput.value = code;
+        renderResult(code, EDATA[code]);
+        window.scrollTo({ top: resultArea.offsetTop - 80, behavior: 'smooth' });
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.TeamzTools) {
+        TeamzTools.renderBreadcrumbs([
+          { name: 'Health Tools', url: '/health/' },
+          { name: 'Food Additive E-Number Checker' }
+        ]);
+        TeamzTools.renderFAQs([
+          { q: 'What is an E-number?', a: 'An E-number is a code assigned by the European Union to food additives approved for use in food. The E prefix stands for Europe. E-numbers cover colors (E100-E199), preservatives (E200-E299), antioxidants (E300-E399), emulsifiers (E400-E499), acidity regulators (E500-E599), flavor enhancers (E600-E699), and others (E900-E999).' },
+          { q: 'Are all E-numbers harmful?', a: 'No — most E-numbers are completely safe and many are naturally derived. E300 is vitamin C, E330 is citric acid found in lemons, E160a is beta-carotene from carrots, and E500 is baking soda. Some synthetic dyes and preservatives like E102, E211, and E250 have associated health concerns and are rated Caution or Avoid.' },
+          { q: 'What does the risk rating mean?', a: 'Safe means no significant health concerns at normal dietary levels. Caution means some studies suggest potential issues or allergic reactions in sensitive individuals. Avoid means significant health evidence, bans in multiple countries, or strong scientific concern.' },
+          { q: 'How do I check if an additive is halal?', a: 'This tool shows a halal flag for each additive. Key concerns include E120 (carmine — insect-derived, haram), E441 (gelatin — often pork-derived), E631 (disodium inosinate — often meat/fish-derived), and E904 (shellac — insect-derived). Always verify with certified halal labels.' },
+          { q: 'Are E-numbers the same worldwide?', a: 'E-numbers are standardized in the EU. The US uses FDA codes instead. Some additives approved in the EU are banned in the US and vice versa — for example, E102 requires a warning label in the EU.' }
+        ]);
+        TeamzTools.injectFAQSchema([
+          { q: 'What is an E-number?', a: 'An E-number is an EU food additive code covering colors (E100-199), preservatives (E200-299), antioxidants (E300-399), emulsifiers (E400-499), and more.' },
+          { q: 'Are all E-numbers harmful?', a: 'No. Most are safe. E300 is vitamin C, E330 is citric acid. Only some synthetic dyes and certain preservatives have health concerns.' },
+          { q: 'What does the risk rating mean?', a: 'Safe = no significant concerns. Caution = some studies show issues or allergic reactions. Avoid = significant evidence or multiple country bans.' },
+          { q: 'How do I check if an additive is halal?', a: 'Use the halal flag on each additive. Key concerns: E120 (carmine, haram), E441 (gelatin, verify source), E631 (usually animal-derived).' },
+          { q: 'Are E-numbers the same worldwide?', a: 'E-numbers are EU-standardized. The US uses different codes. Some EU additives are banned in the US and vice versa.' }
+        ]);
+        TeamzTools.renderRelatedTools([
+          { slug: 'health/food-barcode-scanner', name: 'Food Barcode Nutrition Scanner', description: 'Scan any food barcode to see nutrition facts and ingredients with E-numbers highlighted.' },
+          { slug: 'health/nutrition-label-generator', name: 'Nutrition Label Generator', description: 'Generate FDA-style nutrition labels from any recipe using USDA data.' },
+          { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate your daily calorie needs using the Mifflin-St Jeor equation.' },
+          { slug: 'health/macro-calculator', name: 'Macro Calculator', description: 'Calculate your daily macronutrient targets for protein, carbs, and fat.' },
+          { slug: 'health/water-intake-calculator', name: 'Daily Water Intake Calculator', description: 'Calculate your daily water intake based on weight and activity.' },
+          { slug: 'health/calorie-deficit-calculator', name: 'Calorie Deficit Calculator', description: 'Calculate your daily calorie deficit to lose weight safely.' }
+        ]);
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

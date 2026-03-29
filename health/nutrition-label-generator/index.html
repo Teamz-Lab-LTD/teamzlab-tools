@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nutrition Label Generator — Teamz Lab Tools</title>
+  <meta name="description" content="Generate free FDA-style nutrition labels from any recipe instantly. Enter ingredients, get a complete nutrition facts panel — private, no signup.">
+  <meta property="og:title" content="Nutrition Label Generator — Teamz Lab Tools">
+  <meta property="og:description" content="Generate FDA-style nutrition facts labels from any recipe. Enter ingredients and get a complete panel instantly — free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/nutrition-label-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Nutrition Label Generator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Generate FDA-style nutrition facts labels from any recipe. Enter ingredients, get a complete panel instantly.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/nutrition-label-generator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .nutrition-form { display: grid; gap: 1rem; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .ingredients-area { width: 100%; min-height: 120px; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-family: inherit; font-size: 0.95rem; resize: vertical; }
+    .ingredients-area:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .btn-generate { background: var(--accent); color: var(--accent-text); border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+    .btn-generate:hover { opacity: 0.9; }
+    .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary-action { background: var(--surface); color: var(--heading); border: 1px solid var(--border); padding: 0.75rem 1.25rem; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
+    .btn-secondary-action:hover { border-color: var(--accent); }
+    .ingredient-status { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .ing-tag { padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600; }
+    .ing-tag--loading { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .ing-tag--ok { background: var(--surface); color: var(--heading); border: 1px solid var(--border); }
+    .ing-tag--fallback { background: var(--surface); color: var(--text-muted); border: 1px dashed var(--border); }
+    .ing-tag--error { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+    #label-output { margin-top: 1.5rem; display: none; }
+    .fda-label { background: #fff; color: #000; border: 3px solid #000; width: 280px; padding: 6px; font-family: Arial, Helvetica, sans-serif; font-size: 13px; margin: 0 auto; }
+    .fda-label .lbl-title { font-size: 28px; font-weight: 900; letter-spacing: -1px; line-height: 1; border-bottom: 8px solid #000; padding-bottom: 2px; margin-bottom: 2px; }
+    .fda-label .lbl-servings { font-size: 12px; border-bottom: 3px solid #000; padding-bottom: 4px; margin-bottom: 4px; }
+    .fda-label .lbl-calories-row { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 6px solid #000; padding-bottom: 3px; margin-bottom: 3px; }
+    .fda-label .lbl-cal-label { font-size: 12px; font-weight: 700; }
+    .fda-label .lbl-cal-value { font-size: 36px; font-weight: 900; line-height: 1; }
+    .fda-label .lbl-dv-note { font-size: 10px; text-align: right; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 2px; }
+    .fda-label .lbl-row { display: flex; justify-content: space-between; font-size: 12px; padding: 1px 0; border-bottom: 1px solid #555; }
+    .fda-label .lbl-row.thick { border-bottom: 3px solid #000; }
+    .fda-label .lbl-row .bold { font-weight: 700; }
+    .fda-label .lbl-row .indent { padding-left: 12px; }
+    .fda-label .lbl-micronutrients { display: flex; justify-content: space-between; font-size: 11px; padding-top: 3px; border-top: 6px solid #000; }
+    .fda-label .lbl-footer { font-size: 10px; border-top: 3px solid #000; padding-top: 3px; margin-top: 3px; }
+    .label-actions { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+    .servings-row { display: flex; align-items: center; gap: 0.75rem; }
+    .servings-row label { font-weight: 600; color: var(--heading); white-space: nowrap; }
+    .servings-row input { width: 80px; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+    .servings-row input:focus { outline: 2px solid var(--accent); }
+    .error-msg { color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); padding: 0.75rem; border-radius: 8px; font-size: 0.9rem; }
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      .btn-row { flex-direction: column; }
+      .btn-generate, .btn-secondary-action { width: 100%; }
+      .fda-label { width: 240px; }
+      .fda-label .lbl-title { font-size: 22px; }
+      .fda-label .lbl-cal-value { font-size: 28px; }
+      .label-actions { flex-direction: column; }
+      .label-actions button { width: 100%; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Nutrition Label Generator", "description": "Generate FDA-style nutrition facts labels from any recipe using the USDA FoodData Central database.", "url": "https://tool.teamzlab.com/health/nutrition-label-generator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Nutrition Label Generator</h1>
+      <p class="tool-description">Generate a free FDA-style Nutrition Facts label from any recipe. Enter your ingredients with quantities, and this tool looks up nutritional data from the USDA FoodData Central database to produce a complete, printable nutrition panel.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="nutrition-form">
+        <div>
+          <label for="ingredients-input" style="font-weight:600;color:var(--heading);display:block;margin-bottom:0.4rem;">Ingredients (one per line)</label>
+          <textarea id="ingredients-input" class="ingredients-area" placeholder="100g flour&#10;2 eggs&#10;50ml milk&#10;20g butter&#10;30g sugar&#10;5g baking powder"></textarea>
+          <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.3rem;">Format: quantity + unit + ingredient name. Supports g, ml, cup, tbsp, tsp, oz, piece</p>
+        </div>
+        <div class="servings-row">
+          <label for="servings-count">Number of servings:</label>
+          <input type="number" id="servings-count" value="1" min="1" max="100" step="1">
+          <span style="font-size:0.9rem;color:var(--text-muted);">Label shows per-serving values</span>
+        </div>
+        <div class="btn-row">
+          <button id="generate-btn" class="btn-generate">Generate Nutrition Label</button>
+          <button id="clear-btn" class="btn-secondary-action">Clear</button>
+        </div>
+        <div id="ingredient-status" class="ingredient-status" style="display:none;"></div>
+        <div id="label-output">
+          <div id="fda-label-container"></div>
+          <div class="label-actions">
+            <button id="download-btn" class="btn-secondary-action">Download PNG</button>
+            <button id="copy-label-btn" class="btn-secondary-action">Copy Label</button>
+          </div>
+        </div>
+        <div id="error-output" style="display:none;"></div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Nutrition Label Generator Works</h2>
+      <p>This tool uses the USDA FoodData Central (FDC) API — the official United States Department of Agriculture nutrition database containing over 600,000 food items. When you enter an ingredient like "100g flour" or "2 eggs", the tool parses the quantity, converts units to grams, queries the USDA database for matching nutrient data, and aggregates values across all ingredients. The result is a complete Nutrition Facts panel styled after the FDA's standardized format, covering calories, macronutrients, fiber, sugars, sodium, and key micronutrients.</p>
+
+      <p>Nutrient caching is used to speed up repeated lookups — if you recently searched for "flour", the data is stored locally in your browser for up to one hour, so repeat calculations are instant. All processing happens in your browser; your recipe data is never sent to any server except the USDA's public API.</p>
+
+      <h2>How to Read an FDA Nutrition Label</h2>
+      <p>The US FDA Nutrition Facts panel follows a strict format defined in 21 CFR Part 101. At the top, the serving size tells you the reference amount the rest of the label is based on. Calories per serving is the most prominent number because it is the primary factor most people track. Below calories, you see macronutrients: total fat (broken into saturated and trans fat), total carbohydrates (broken into dietary fiber and total sugars), and protein. Sodium is listed because the average American consumes nearly 3,400 mg daily — well above the 2,300 mg recommended limit.</p>
+
+      <p>The % Daily Value (% DV) column helps you judge whether a food is high or low in a nutrient. A % DV of 5% or less is considered low; 20% or more is considered high. These values are based on a 2,000-calorie reference diet. Micronutrients at the bottom — Vitamin D, Calcium, Iron, and Potassium — are highlighted because they are commonly under-consumed in the US diet.</p>
+
+      <h2>Tips for Accurate Recipe Nutrition</h2>
+      <p>For the most accurate results, weigh ingredients in grams rather than using volume measurements like cups or tablespoons. Volume measures can vary by 20 to 30 percent depending on how tightly packed a substance is — for example, a cup of sifted flour weighs about 100g, but a cup of unsifted packed flour can weigh 150g or more. For eggs, "1 large egg" is standardized at approximately 50g without shell in this tool, based on USDA size definitions. For liquids, 1 cup = 240ml, 1 tablespoon = 15ml, and 1 teaspoon = 5ml.</p>
+
+      <p>Cooking method affects some nutrients: boiling can reduce water-soluble vitamins (B vitamins, vitamin C) by 15 to 55 percent, while frying increases fat content. This generator calculates raw ingredient nutrition, which is standard for recipe labels since cooked-weight data varies by method and duration. For a more complete analysis of prepared meals, the USDA Branded Foods database (also included in FoodData Central) contains nutrition data for thousands of ready-to-eat products.</p>
+
+      <h2>Common Use Cases for Custom Nutrition Labels</h2>
+      <p>Home bakers creating homemade products to sell at farmers markets are often required by local health codes to provide nutrition information. Meal prep services and personal trainers use custom labels to help clients track macronutrients precisely. Food bloggers add nutrition panels to recipes to improve user trust and SEO. Athletes and bodybuilders use the tool to verify protein content in custom meal prep. Parents use it to understand exactly what nutrients are in homemade baby food or snacks for children with dietary restrictions.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" onerror="window.html2canvasLoaded=false;"></script>
+  <script>
+  (function() {
+    // ---- Built-in fallback nutrient table (per 100g) ----
+    var FALLBACK_DB = {
+      'flour': { calories: 364, fat: 1, satFat: 0.2, carbs: 76, fiber: 2.7, sugars: 0.3, protein: 10, sodium: 2, vitD: 0, calcium: 15, iron: 3.9, potassium: 107 },
+      'wheat flour': { calories: 364, fat: 1, satFat: 0.2, carbs: 76, fiber: 2.7, sugars: 0.3, protein: 10, sodium: 2, vitD: 0, calcium: 15, iron: 3.9, potassium: 107 },
+      'egg': { calories: 155, fat: 11, satFat: 3.3, carbs: 1.1, fiber: 0, sugars: 1.1, protein: 13, sodium: 124, vitD: 2, calcium: 56, iron: 1.8, potassium: 138 },
+      'eggs': { calories: 155, fat: 11, satFat: 3.3, carbs: 1.1, fiber: 0, sugars: 1.1, protein: 13, sodium: 124, vitD: 2, calcium: 56, iron: 1.8, potassium: 138 },
+      'milk': { calories: 61, fat: 3.3, satFat: 2.1, carbs: 4.8, fiber: 0, sugars: 4.8, protein: 3.2, sodium: 40, vitD: 1.2, calcium: 113, iron: 0, potassium: 150 },
+      'butter': { calories: 717, fat: 81, satFat: 51, carbs: 0.1, fiber: 0, sugars: 0.1, protein: 0.9, sodium: 576, vitD: 0, calcium: 24, iron: 0, potassium: 24 },
+      'sugar': { calories: 387, fat: 0, satFat: 0, carbs: 100, fiber: 0, sugars: 100, protein: 0, sodium: 1, vitD: 0, calcium: 1, iron: 0, potassium: 3 },
+      'salt': { calories: 0, fat: 0, satFat: 0, carbs: 0, fiber: 0, sugars: 0, protein: 0, sodium: 38758, vitD: 0, calcium: 24, iron: 0, potassium: 8 },
+      'olive oil': { calories: 884, fat: 100, satFat: 14, carbs: 0, fiber: 0, sugars: 0, protein: 0, sodium: 2, vitD: 0, calcium: 1, iron: 0.6, potassium: 1 },
+      'vegetable oil': { calories: 884, fat: 100, satFat: 14, carbs: 0, fiber: 0, sugars: 0, protein: 0, sodium: 0, vitD: 0, calcium: 0, iron: 0, potassium: 0 },
+      'chicken breast': { calories: 165, fat: 3.6, satFat: 1, carbs: 0, fiber: 0, sugars: 0, protein: 31, sodium: 74, vitD: 0.1, calcium: 15, iron: 1, potassium: 256 },
+      'rice': { calories: 130, fat: 0.3, satFat: 0.1, carbs: 28, fiber: 0.4, sugars: 0, protein: 2.7, sodium: 1, vitD: 0, calcium: 10, iron: 1.2, potassium: 35 },
+      'potato': { calories: 77, fat: 0.1, satFat: 0, carbs: 17, fiber: 2.2, sugars: 0.8, protein: 2, sodium: 6, vitD: 0, calcium: 12, iron: 0.8, potassium: 421 },
+      'onion': { calories: 40, fat: 0.1, satFat: 0, carbs: 9.3, fiber: 1.7, sugars: 4.2, protein: 1.1, sodium: 4, vitD: 0, calcium: 23, iron: 0.2, potassium: 146 },
+      'garlic': { calories: 149, fat: 0.5, satFat: 0.1, carbs: 33, fiber: 2.1, sugars: 1, protein: 6.4, sodium: 17, vitD: 0, calcium: 181, iron: 1.7, potassium: 401 },
+      'tomato': { calories: 18, fat: 0.2, satFat: 0, carbs: 3.9, fiber: 1.2, sugars: 2.6, protein: 0.9, sodium: 5, vitD: 0, calcium: 10, iron: 0.3, potassium: 237 },
+      'baking powder': { calories: 53, fat: 0, satFat: 0, carbs: 28, fiber: 0.2, sugars: 0, protein: 0, sodium: 10600, vitD: 0, calcium: 5876, iron: 11, potassium: 40 },
+      'cocoa powder': { calories: 228, fat: 13.7, satFat: 8, carbs: 58, fiber: 33, sugars: 1.8, protein: 19.6, sodium: 21, vitD: 0, calcium: 128, iron: 13.9, potassium: 1524 },
+      'oats': { calories: 389, fat: 6.9, satFat: 1.2, carbs: 66, fiber: 10.6, sugars: 0, protein: 17, sodium: 2, vitD: 0, calcium: 54, iron: 4.7, potassium: 429 },
+      'honey': { calories: 304, fat: 0, satFat: 0, carbs: 82, fiber: 0.2, sugars: 82, protein: 0.3, sodium: 4, vitD: 0, calcium: 6, iron: 0.4, potassium: 52 }
+    };
+
+    // ---- Unit conversion to grams ----
+    var UNIT_TO_G = {
+      'g': 1, 'gram': 1, 'grams': 1,
+      'kg': 1000, 'kilogram': 1000,
+      'ml': 1, 'milliliter': 1, 'milliliters': 1, 'millilitre': 1,
+      'l': 1000, 'liter': 1000, 'litre': 1000,
+      'oz': 28.35, 'ounce': 28.35, 'ounces': 28.35,
+      'lb': 453.6, 'lbs': 453.6, 'pound': 453.6, 'pounds': 453.6,
+      'cup': 240, 'cups': 240,
+      'tbsp': 15, 'tablespoon': 15, 'tablespoons': 15,
+      'tsp': 5, 'teaspoon': 5, 'teaspoons': 5,
+      'piece': 50, 'pieces': 50, 'pcs': 50,
+      'slice': 30, 'slices': 30,
+      'clove': 4, 'cloves': 4,
+      'medium': 120, 'large': 150, 'small': 80
+    };
+
+    // Egg special case
+    var EGG_WEIGHT_G = 50;
+
+    // Cache in localStorage (1 hour TTL)
+    function cacheKey(term) { return 'nlg_cache_' + term.toLowerCase().replace(/\s+/g, '_'); }
+    function readCache(term) {
+      try {
+        var raw = localStorage.getItem(cacheKey(term));
+        if (!raw) return null;
+        var obj = JSON.parse(raw);
+        if (Date.now() - obj.ts > 3600000) { localStorage.removeItem(cacheKey(term)); return null; }
+        return obj.data;
+      } catch(e) { return null; }
+    }
+    function writeCache(term, data) {
+      try { localStorage.setItem(cacheKey(term), JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+    }
+
+    // Parse a single ingredient line
+    function parseLine(line) {
+      line = line.trim();
+      if (!line) return null;
+      // Match: optional number fraction, optional unit, food name
+      var m = line.match(/^([\d\/\.\s]+)\s*([a-zA-Z]+)?\s+(.+)$/);
+      if (!m) {
+        // Maybe just food name without quantity — assume 100g
+        return { qty: 100, unit: 'g', name: line };
+      }
+      var qtyStr = m[1].trim();
+      var qty = parseFloat(qtyStr);
+      if (isNaN(qty)) qty = 1;
+      var unit = (m[2] || 'g').toLowerCase();
+      var name = m[3].trim();
+      return { qty: qty, unit: unit, name: name };
+    }
+
+    // Convert qty+unit to grams
+    function toGrams(qty, unit, foodName) {
+      var u = unit.toLowerCase();
+      if (UNIT_TO_G[u] !== undefined) {
+        var g = qty * UNIT_TO_G[u];
+        // Special: piece of egg
+        if (u === 'piece' || u === 'pieces') {
+          var fn = foodName.toLowerCase();
+          if (fn.indexOf('egg') !== -1) g = qty * EGG_WEIGHT_G;
+        }
+        return g;
+      }
+      // Unknown unit: treat as grams
+      return qty;
+    }
+
+    // Fetch nutrients from USDA API
+    function fetchUSDA(term) {
+      var cached = readCache(term);
+      if (cached) return Promise.resolve(cached);
+      var url = 'https://api.nal.usda.gov/fdc/v1/foods/search?query=' + encodeURIComponent(term) + '&pageSize=1&api_key=DEMO_KEY';
+      return fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(json) {
+          if (!json.foods || !json.foods.length) return null;
+          var food = json.foods[0];
+          var n = {};
+          (food.foodNutrients || []).forEach(function(fn) {
+            var nm = fn.nutrientName || '';
+            var v = fn.value || 0;
+            if (nm.indexOf('Energy') !== -1 && nm.indexOf('kcal') !== -1) n.calories = v;
+            if (nm === 'Energy' && !n.calories) n.calories = v;
+            if (nm.indexOf('Total lipid') !== -1 || nm === 'Total Fat') n.fat = v;
+            if (nm.indexOf('Fatty acids, total saturated') !== -1) n.satFat = v;
+            if (nm.indexOf('Fatty acids, total trans') !== -1) n.transFat = v;
+            if (nm.indexOf('Carbohydrate') !== -1) n.carbs = v;
+            if (nm === 'Total Sugars' || nm.indexOf('Sugars, total') !== -1) n.sugars = v;
+            if (nm === 'Fiber, total dietary') n.fiber = v;
+            if (nm === 'Protein') n.protein = v;
+            if (nm === 'Sodium, Na') n.sodium = v;
+            if (nm === 'Cholesterol') n.cholesterol = v;
+            if (nm.indexOf('Vitamin D') !== -1) n.vitD = v;
+            if (nm === 'Calcium, Ca') n.calcium = v;
+            if (nm === 'Iron, Fe') n.iron = v;
+            if (nm === 'Potassium, K') n.potassium = v;
+          });
+          if (!n.calories && food.calories) n.calories = food.calories;
+          writeCache(term, n);
+          return n;
+        })
+        .catch(function() { return null; });
+    }
+
+    // Get nutrients per 100g for an ingredient (with fallback)
+    function getNutrients(name) {
+      var key = name.toLowerCase().trim();
+      // Try USDA first
+      return fetchUSDA(name).then(function(data) {
+        if (data && data.calories !== undefined) return { data: data, source: 'usda' };
+        // Fallback to built-in DB
+        for (var k in FALLBACK_DB) {
+          if (key.indexOf(k) !== -1 || k.indexOf(key) !== -1) {
+            return { data: FALLBACK_DB[k], source: 'fallback' };
+          }
+        }
+        return { data: null, source: 'notfound' };
+      });
+    }
+
+    // Scale nutrients from per-100g to actual grams
+    function scaleNutrients(base, grams) {
+      var scale = grams / 100;
+      var r = {};
+      for (var k in base) r[k] = (base[k] || 0) * scale;
+      return r;
+    }
+
+    // Add two nutrient objects
+    function addNutrients(a, b) {
+      var r = {};
+      var keys = ['calories','fat','satFat','transFat','carbs','fiber','sugars','protein','sodium','cholesterol','vitD','calcium','iron','potassium'];
+      keys.forEach(function(k) { r[k] = (a[k] || 0) + (b[k] || 0); });
+      return r;
+    }
+
+    function fmt(n) { return Math.round(n * 10) / 10; }
+    function fmtInt(n) { return Math.round(n); }
+
+    // %DV helpers (FDA 2016 reference values)
+    var DV = { fat: 78, satFat: 20, cholesterol: 300, sodium: 2300, carbs: 275, fiber: 28, protein: 50, vitD: 20, calcium: 1300, iron: 18, potassium: 4700 };
+    function pdv(val, nutrient) {
+      if (!DV[nutrient]) return '';
+      return Math.round((val / DV[nutrient]) * 100) + '%';
+    }
+
+    // Render FDA label HTML
+    function renderLabel(totals, servings, servingLabel) {
+      var s = servings && servings > 0 ? servings : 1;
+      var t = {};
+      for (var k in totals) t[k] = (totals[k] || 0) / s;
+
+      var html = '<div class="fda-label" id="fda-label-inner">' +
+        '<div class="lbl-title">Nutrition Facts</div>' +
+        '<div class="lbl-servings">' +
+          '<div style="display:flex;justify-content:space-between;"><span>Serving size</span><span><strong>' + (servingLabel || '1 serving') + '</strong></span></div>' +
+          '<div style="display:flex;justify-content:space-between;"><span>Servings per recipe</span><span><strong>' + fmtInt(s) + '</strong></span></div>' +
+        '</div>' +
+        '<div class="lbl-calories-row">' +
+          '<span class="lbl-cal-label">Calories</span>' +
+          '<span class="lbl-cal-value">' + fmtInt(t.calories) + '</span>' +
+        '</div>' +
+        '<div class="lbl-dv-note">% Daily Value*</div>' +
+        '<div class="lbl-row"><span class="bold">Total Fat</span><span><span class="bold">' + fmt(t.fat) + 'g</span> &nbsp;' + pdv(t.fat,'fat') + '</span></div>' +
+        '<div class="lbl-row"><span class="indent">Saturated Fat ' + fmt(t.satFat||0) + 'g</span><span>' + pdv(t.satFat||0,'satFat') + '</span></div>' +
+        '<div class="lbl-row"><span class="indent"><i>Trans</i> Fat ' + fmt(t.transFat||0) + 'g</span><span></span></div>' +
+        '<div class="lbl-row"><span class="bold">Cholesterol</span><span><span class="bold">' + fmtInt(t.cholesterol||0) + 'mg</span> &nbsp;' + pdv(t.cholesterol||0,'cholesterol') + '</span></div>' +
+        '<div class="lbl-row"><span class="bold">Sodium</span><span><span class="bold">' + fmtInt(t.sodium||0) + 'mg</span> &nbsp;' + pdv(t.sodium||0,'sodium') + '</span></div>' +
+        '<div class="lbl-row"><span class="bold">Total Carbohydrate</span><span><span class="bold">' + fmt(t.carbs) + 'g</span> &nbsp;' + pdv(t.carbs,'carbs') + '</span></div>' +
+        '<div class="lbl-row"><span class="indent">Dietary Fiber ' + fmt(t.fiber||0) + 'g</span><span>' + pdv(t.fiber||0,'fiber') + '</span></div>' +
+        '<div class="lbl-row"><span class="indent">Total Sugars ' + fmt(t.sugars||0) + 'g</span><span></span></div>' +
+        '<div class="lbl-row thick"><span class="bold">Protein</span><span><span class="bold">' + fmt(t.protein) + 'g</span></span></div>' +
+        '<div class="lbl-micronutrients">' +
+          '<span>Vitamin D ' + fmt(t.vitD||0) + 'mcg</span>' +
+          '<span>|</span>' +
+          '<span>Calcium ' + fmtInt(t.calcium||0) + 'mg</span>' +
+          '<span>|</span>' +
+          '<span>Iron ' + fmt(t.iron||0) + 'mg</span>' +
+          '<span>|</span>' +
+          '<span>Potassium ' + fmtInt(t.potassium||0) + 'mg</span>' +
+        '</div>' +
+        '<div class="lbl-footer">* The % Daily Value tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.</div>' +
+        '</div>';
+      return html;
+    }
+
+    var generateBtn = document.getElementById('generate-btn');
+    var clearBtn = document.getElementById('clear-btn');
+    var ingInput = document.getElementById('ingredients-input');
+    var servingsInput = document.getElementById('servings-count');
+    var statusDiv = document.getElementById('ingredient-status');
+    var labelOutput = document.getElementById('label-output');
+    var labelContainer = document.getElementById('fda-label-container');
+    var errorOutput = document.getElementById('error-output');
+    var downloadBtn = document.getElementById('download-btn');
+    var copyBtn = document.getElementById('copy-label-btn');
+
+    generateBtn.addEventListener('click', function() {
+      var lines = ingInput.value.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+      if (!lines.length) {
+        if (window.showToast) showToast('Please enter at least one ingredient.');
+        return;
+      }
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Fetching nutrition data...';
+      window.hideEl ? hideEl(errorOutput) : (errorOutput.style.display = 'none');
+      window.hideEl ? hideEl(labelOutput) : (labelOutput.style.display = 'none');
+
+      // Show status
+      statusDiv.innerHTML = '';
+      window.showEl ? showEl(statusDiv) : (statusDiv.style.display = 'flex');
+      var parsed = lines.map(parseLine).filter(Boolean);
+
+      parsed.forEach(function(ing) {
+        var tag = document.createElement('span');
+        tag.className = 'ing-tag ing-tag--loading';
+        tag.id = 'tag-' + ing.name.replace(/\s+/g,'_');
+        tag.textContent = '⟳ ' + ing.name;
+        statusDiv.appendChild(tag);
+      });
+
+      var promises = parsed.map(function(ing) {
+        return getNutrients(ing.name).then(function(result) {
+          var tag = document.getElementById('tag-' + ing.name.replace(/\s+/g,'_'));
+          if (result.data) {
+            var grams = toGrams(ing.qty, ing.unit, ing.name);
+            var scaled = scaleNutrients(result.data, grams);
+            if (tag) {
+              tag.className = result.source === 'usda' ? 'ing-tag ing-tag--ok' : 'ing-tag ing-tag--fallback';
+              tag.textContent = (result.source === 'usda' ? '✓' : '~') + ' ' + ing.name;
+            }
+            return scaled;
+          } else {
+            if (tag) { tag.className = 'ing-tag ing-tag--error'; tag.textContent = '? ' + ing.name; }
+            return null;
+          }
+        });
+      });
+
+      Promise.all(promises).then(function(results) {
+        var totals = { calories:0, fat:0, satFat:0, transFat:0, carbs:0, fiber:0, sugars:0, protein:0, sodium:0, cholesterol:0, vitD:0, calcium:0, iron:0, potassium:0 };
+        var foundAny = false;
+        results.forEach(function(r) {
+          if (r) { totals = addNutrients(totals, r); foundAny = true; }
+        });
+
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Nutrition Label';
+
+        if (!foundAny) {
+          errorOutput.innerHTML = '<div class="error-msg">Could not find nutrition data for any ingredient. Please check your ingredient names and try again, or use more common names (e.g., "chicken" instead of "poulet").</div>';
+          window.showEl ? showEl(errorOutput, 'block') : (errorOutput.style.display = 'block');
+          return;
+        }
+
+        var servings = parseInt(servingsInput.value) || 1;
+        labelContainer.innerHTML = renderLabel(totals, servings, '1 serving');
+        window.showEl ? showEl(labelOutput, 'block') : (labelOutput.style.display = 'block');
+      }).catch(function(err) {
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generate Nutrition Label';
+        errorOutput.innerHTML = '<div class="error-msg">An error occurred while fetching nutrition data. Please check your internet connection and try again.</div>';
+        window.showEl ? showEl(errorOutput, 'block') : (errorOutput.style.display = 'block');
+      });
+    });
+
+    clearBtn.addEventListener('click', function() {
+      ingInput.value = '';
+      servingsInput.value = '1';
+      statusDiv.innerHTML = '';
+      window.hideEl ? hideEl(statusDiv) : (statusDiv.style.display = 'none');
+      window.hideEl ? hideEl(labelOutput) : (labelOutput.style.display = 'none');
+      window.hideEl ? hideEl(errorOutput) : (errorOutput.style.display = 'none');
+    });
+
+    downloadBtn.addEventListener('click', function() {
+      var el = document.getElementById('fda-label-inner');
+      if (!el) { if (window.showToast) showToast('No label to download. Generate a label first.'); return; }
+      if (window.html2canvas) {
+        html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true })
+          .then(function(canvas) {
+            var link = document.createElement('a');
+            link.download = 'nutrition-label.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            if (window.showToast) showToast('Nutrition label downloaded!');
+          })
+          .catch(function() { if (window.showToast) showToast('Download failed. Please try again.'); });
+      } else {
+        if (window.showToast) showToast('html2canvas library not loaded. Please check your internet connection.');
+      }
+    });
+
+    copyBtn.addEventListener('click', function() {
+      var el = document.getElementById('fda-label-inner');
+      if (!el) { if (window.showToast) showToast('No label to copy. Generate a label first.'); return; }
+      if (window.html2canvas) {
+        html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true })
+          .then(function(canvas) {
+            canvas.toBlob(function(blob) {
+              if (blob && navigator.clipboard && navigator.clipboard.write) {
+                navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                  .then(function() { if (window.showToast) showToast('Label copied to clipboard!'); })
+                  .catch(function() { if (window.showToast) showToast('Copy failed — use Download instead.'); });
+              } else {
+                if (window.showToast) showToast('Copy not supported in this browser — use Download instead.');
+              }
+            }, 'image/png');
+          })
+          .catch(function() { if (window.showToast) showToast('Copy failed. Please try Download instead.'); });
+      } else {
+        if (window.showToast) showToast('html2canvas library not loaded. Please check your internet connection.');
+      }
+    });
+
+    // FAQs and related tools via common.js
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.TeamzTools) {
+        TeamzTools.renderBreadcrumbs([
+          { name: 'Health Tools', url: '/health/' },
+          { name: 'Nutrition Label Generator' }
+        ]);
+        TeamzTools.renderFAQs([
+          { q: 'How accurate is the nutrition label generator?', a: 'This tool uses the USDA FoodData Central database, which is the official US government nutrition database containing over 600,000 foods. Results are accurate for standard ingredient quantities but may vary slightly based on ingredient brands, cooking methods, and specific varieties.' },
+          { q: 'What format should I enter ingredients?', a: 'Enter ingredients one per line in the format: quantity, unit, and food name. For example: 100g flour, 2 eggs, 50ml milk, 20g butter, or 1 cup oats. The tool supports grams (g), milliliters (ml), cups, tablespoons (tbsp), and pieces/items.' },
+          { q: 'What is a serving size on the nutrition label?', a: 'The label defaults to showing nutrients for the total recipe divided by the number of servings you specify. You can adjust the serving count to change what one serving contains. For example, if your recipe makes 4 cookies, enter 4 servings to see nutrition per cookie.' },
+          { q: 'Why does the tool use DEMO_KEY for the USDA API?', a: "The USDA FoodData Central API is free and publicly accessible with a DEMO_KEY for moderate usage. If you get rate-limited, the tool falls back to a built-in database of 20 common ingredients. You can also get your own free API key at api.nal.usda.gov for higher request limits." },
+          { q: 'Can I download the nutrition label as an image?', a: "Yes! After generating a label, click Download PNG to save it as an image file, or click Copy Label to copy it to your clipboard. The downloaded image uses a white background so it prints cleanly on packaging or recipe cards." }
+        ]);
+        TeamzTools.injectFAQSchema([
+          { q: 'How accurate is the nutrition label generator?', a: 'This tool uses the USDA FoodData Central database, the official US government nutrition database with over 600,000 foods.' },
+          { q: 'What format should I enter ingredients?', a: 'Enter one ingredient per line: quantity + unit + name. Example: 100g flour, 2 eggs, 50ml milk.' },
+          { q: 'What is a serving size on the nutrition label?', a: 'The label shows nutrients per serving. Set the number of servings to divide the total recipe nutrients accordingly.' },
+          { q: 'Why does the tool use DEMO_KEY for the USDA API?', a: 'The USDA FoodData Central API is free for moderate use. For high-volume use, get a free key at api.nal.usda.gov.' },
+          { q: 'Can I download the nutrition label as an image?', a: 'Yes — click Download PNG to save, or Copy Label to copy to clipboard.' }
+        ]);
+        TeamzTools.renderRelatedTools([
+          { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate your daily calorie needs using the Mifflin-St Jeor equation.' },
+          { slug: 'health/macro-calculator', name: 'Macro Calculator', description: 'Calculate daily macronutrient targets for protein, carbs, and fat.' },
+          { slug: 'health/food-additive-checker', name: 'Food Additive E-Number Checker', description: 'Look up any E-number or food additive and get its risk rating and health info.' },
+          { slug: 'health/food-barcode-scanner', name: 'Food Barcode Nutrition Scanner', description: 'Scan a barcode to see nutrition facts and ingredient details instantly.' },
+          { slug: 'health/calorie-deficit-calculator', name: 'Calorie Deficit Calculator', description: 'Calculate your daily calorie deficit to lose weight safely.' },
+          { slug: 'health/water-intake-calculator', name: 'Daily Water Intake Calculator', description: 'Calculate your daily hydration needs based on weight and activity.' }
+        ]);
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
