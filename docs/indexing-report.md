@@ -1,12 +1,12 @@
-# Indexing Report — 2026-03-29 08:13
+# Indexing Report — 2026-03-29 15:15
 
 Total pages: 30
 Checked: 30
-Indexed: 30 (100%)
+Indexed: 13 (43%)
 Not indexed: 0
-Errors: 0
+Errors: 17
 
-## Indexed Pages (30)
+## Indexed Pages (13)
 
 - /
 - /diagnostic/dns-leak-test/
@@ -21,20 +21,3 @@ Errors: 0
 - /ai/resume-summary-generator/
 - /gaming/dpi-calculator/
 - /au/pr-points-calculator/
-- /ramadan/eid-salami-qr-card-generator/
-- /cricket/net-run-rate-calculator/
-- /accessibility/ada-compliance-checker/
-- /cricket/over-to-balls-converter/
-- /bd/nagad-charge-calculator/
-- /bd/bkash-charge-calculator/
-- /ai/headline-generator/
-- /accessibility/wcag-accessibility-checklist/
-- /bd/cgpa-calculator/
-- /cricket/economy-rate-calculator/
-- /cricket/dls-calculator/
-- /ramadan/eid-salami-scratch-challenge/
-- /bd/freelancer-tax-calculator/
-- /au/student-visa-cost-calculator/
-- /football/ucl-group-stage-simulator/
-- /health/screen-distance-checker/
-- /health/time-blindness-calculator/
