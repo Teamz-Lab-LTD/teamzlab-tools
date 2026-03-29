@@ -200,7 +200,7 @@ write_health_report() {
 HEALTH_ALERTS=()
 SKIPPED_PHASES=()
 REPO_DIRTY_AT_START=0
-if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+if [ -n "$(git status --porcelain --ignore-submodules 2>/dev/null)" ]; then
     REPO_DIRTY_AT_START=1
     echo "  Warning: repo is dirty at start. Nightly run will not auto-commit or auto-push."
 fi
