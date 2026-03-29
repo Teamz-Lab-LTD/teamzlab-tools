@@ -37,6 +37,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
 TOKEN_FILE = Path.home() / ".config" / "teamzlab" / "search-console-token.json"
+RANK_HISTORY_FILE = SCRIPT_DIR / "rank-history.json"
 SITE_URL = "https://tool.teamzlab.com/"
 CTX = ssl.create_default_context()
 
@@ -135,6 +136,52 @@ def search_console_query(access_token, start_date, end_date, dimensions=None, ro
         error_body = e.read().decode()
         print(f"  Search Console API error: {e.code} — {error_body[:200]}")
         return {"rows": []}
+
+
+def load_rank_history_keywords(keyword_filter=None, page_filter=None, top_n=50):
+    """Fallback keyword data from local rank-history when Search Console is unavailable."""
+    if not RANK_HISTORY_FILE.exists():
+        return []
+
+    try:
+        history = json.loads(RANK_HISTORY_FILE.read_text())
+    except Exception:
+        return []
+
+    records = history.get("records", [])
+    if not records:
+        return []
+
+    latest = records[-1].get("data", {})
+    keywords = []
+
+    for keyword, row in latest.items():
+        page = row.get("page", "/")
+        if keyword_filter and keyword_filter.lower() not in keyword.lower():
+            continue
+        if page_filter and page_filter.lower() not in page.lower():
+            continue
+
+        clicks = row.get("clicks", 0)
+        impressions = row.get("imps", 0)
+        position = round(row.get("pos", 100), 1)
+        ctr = round((clicks / impressions) * 100, 2) if impressions else 0.0
+
+        keywords.append({
+            "keyword": keyword,
+            "page": page,
+            "clicks": clicks,
+            "impressions": impressions,
+            "ctr": ctr,
+            "position": position,
+            "intent": classify_intent(keyword),
+            "cpc": estimate_cpc(keyword),
+            "volume": estimate_volume_from_impressions(max(impressions, 1), position),
+            "difficulty": estimate_difficulty(position, max(impressions, 1), clicks),
+        })
+
+    keywords.sort(key=lambda x: (-x["volume"], x["position"]))
+    return keywords[:top_n]
 
 
 def classify_intent(keyword):
@@ -320,12 +367,12 @@ def difficulty_label(d):
         return "V.Hard"
 
 
-def print_keyword_table(keywords, title="KEYWORD IDEAS"):
+def print_keyword_table(keywords, title="KEYWORD IDEAS", data_source="Google Search Console (last 90 days) + estimates"):
     """Print keywords in Ubersuggest-like format."""
     print()
     print("=" * 120)
     print(f"  {title} — tool.teamzlab.com")
-    print(f"  Data: Google Search Console (last 90 days) + estimates")
+    print(f"  Data: {data_source}")
     print("=" * 120)
     print()
     print(f"  {'KEYWORD':<45s} {'INTENT':>6s} {'VOLUME':>7s} {'POSITION':>9s} {'CLICKS':>7s} {'CPC':>8s} {'DIFFICULTY':>11s}")
@@ -487,15 +534,25 @@ def main():
     # All other commands need Search Console
     print("\n  Connecting to Google Search Console...")
     access_token = refresh_token()
+    data_source = "Google Search Console (last 90 days) + estimates"
+    use_fallback = False
+
     if not access_token:
-        print("  ERROR: Could not get Search Console token.")
-        print("  Run: python3 build-search-console-auth.py")
-        print()
-        print("  Meanwhile, you can use:")
-        print("    python3 scripts/build-keyword-intel.py --ideas \"keyword\"")
-        print("  for free keyword suggestions without Search Console.\n")
-        return
-    print("  Connected!\n")
+        print("  WARNING: Search Console token unavailable.")
+        fallback_preview = load_rank_history_keywords(top_n=1)
+        if not fallback_preview:
+            print("  ERROR: Could not get Search Console token.")
+            print("  Run: python3 build-search-console-auth.py")
+            print()
+            print("  Meanwhile, you can use:")
+            print("    python3 scripts/build-keyword-intel.py --ideas \"keyword\"")
+            print("  for free keyword suggestions without Search Console.\n")
+            return
+        print("  Falling back to local rank-history snapshot.\n")
+        use_fallback = True
+        data_source = "Local rank-history snapshot (latest daily record) + estimates"
+    else:
+        print("  Connected!\n")
 
     # Parse args
     top_n = 50
@@ -519,16 +576,32 @@ def main():
             i += 1
 
     # Get data
-    keywords = get_keyword_data(access_token, keyword_filter, page_filter, top_n)
+    if use_fallback:
+        keywords = load_rank_history_keywords(keyword_filter, page_filter, top_n)
+    else:
+        keywords = get_keyword_data(access_token, keyword_filter, page_filter, top_n)
+
+    if not keywords and not use_fallback:
+        fallback_keywords = load_rank_history_keywords(keyword_filter, page_filter, top_n)
+        if fallback_keywords:
+            print("  WARNING: Search Console returned no rows. Falling back to local rank-history snapshot.\n")
+            keywords = fallback_keywords
+            use_fallback = True
+            data_source = "Local rank-history snapshot (latest daily record) + estimates"
 
     if not keywords:
-        print("  No keyword data found. Try different filters or check Search Console.\n")
+        print("  No keyword data found. Try different filters or refresh Search Console.\n")
         return
 
     # Display
     if "--opportunities" in args:
         # Get more data for opportunities
-        all_kws = get_keyword_data(access_token, keyword_filter, page_filter, 200)
+        if use_fallback:
+            all_kws = load_rank_history_keywords(keyword_filter, page_filter, 200)
+        else:
+            all_kws = get_keyword_data(access_token, keyword_filter, page_filter, 200)
+            if not all_kws:
+                all_kws = load_rank_history_keywords(keyword_filter, page_filter, 200)
         print_opportunities(all_kws)
     elif "--gaps" in args:
         # Show keywords with high impressions but low clicks
@@ -560,7 +633,7 @@ def main():
             title += f" (filter: \"{keyword_filter}\")"
         if page_filter:
             title += f" (page: \"{page_filter}\")"
-        print_keyword_table(keywords, title)
+        print_keyword_table(keywords, title, data_source=data_source)
         print_summary(keywords)
 
     if export_format == "csv":

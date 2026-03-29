@@ -26,6 +26,7 @@ THIS_WEEK=$(date +%Y-%W)
 THIS_MONTH=$(date +%Y-%m)
 ACTIONS=()
 STALE_COUNT=0
+HEALTH_ALERTS=()
 
 echo ""
 echo "============================================="
@@ -42,6 +43,14 @@ file_age_days() {
     local mod=$(stat -f %m "$file" 2>/dev/null || stat -c %Y "$file" 2>/dev/null || echo "0")
     local age=$(( (NOW - mod) / 86400 ))
     echo "$age"
+}
+
+extract_health_issue() {
+    printf '%s\n' "$1" | grep -m1 -E 'ERROR:|FAILED|Traceback|token refresh failed|No Search Console token|Could not get Search Console token|✗ ' || true
+}
+
+record_health_alert() {
+    HEALTH_ALERTS+=("$1")
 }
 
 # ── 1. Rank Tracker ──
@@ -162,30 +171,60 @@ for action in "${ACTIONS[@]}"; do
     case $action in
         rank)
             echo "  --> Recording keyword rankings..."
-            python3 scripts/build-rank-tracker.py record 2>&1 | grep -E "Recorded|Total"
+            OUTPUT=$(python3 scripts/build-rank-tracker.py record 2>&1)
+            ISSUE=$(extract_health_issue "$OUTPUT")
+            if [ -n "$ISSUE" ]; then
+                record_health_alert "Rank tracker record: $ISSUE"
+            fi
+            printf '%s\n' "$OUTPUT" | grep -E "Recorded|Total"
             echo ""
             ;;
         backlinks)
             echo "  --> Scanning backlinks..."
-            python3 scripts/build-backlinks-overview.py scan 2>&1 | grep -E "Found|Total|DoFollow"
+            OUTPUT=$(python3 scripts/build-backlinks-overview.py scan 2>&1)
+            ISSUE=$(extract_health_issue "$OUTPUT")
+            if [ -n "$ISSUE" ]; then
+                record_health_alert "Backlinks scan: $ISSUE"
+            fi
+            printf '%s\n' "$OUTPUT" | grep -E "Found|Total|DoFollow"
             echo ""
             ;;
         keywords)
             echo "  --> Finding keyword opportunities..."
-            python3 scripts/build-keyword-intel.py --opportunities 2>&1 | tail -8
+            OUTPUT=$(python3 scripts/build-keyword-intel.py --opportunities 2>&1)
+            ISSUE=$(extract_health_issue "$OUTPUT")
+            if [ -n "$ISSUE" ]; then
+                record_health_alert "Keyword opportunities: $ISSUE"
+            fi
+            printf '%s\n' "$OUTPUT" | tail -8
             echo ""
             ;;
         monthly)
             echo "  --> Running SEO dashboard..."
-            ./build-seo-dashboard.sh --quick 2>&1 | tail -15
+            OUTPUT=$(./build-seo-dashboard.sh --quick 2>&1)
+            ISSUE=$(extract_health_issue "$OUTPUT")
+            if [ -n "$ISSUE" ]; then
+                record_health_alert "SEO dashboard: $ISSUE"
+            fi
+            printf '%s\n' "$OUTPUT" | tail -15
             echo ""
             echo "  --> Finding content gaps..."
-            python3 scripts/build-content-ideas.py --gaps 2>&1 | tail -8
+            OUTPUT=$(python3 scripts/build-content-ideas.py --gaps 2>&1)
+            ISSUE=$(extract_health_issue "$OUTPUT")
+            if [ -n "$ISSUE" ]; then
+                record_health_alert "Content gaps: $ISSUE"
+            fi
+            printf '%s\n' "$OUTPUT" | tail -8
             echo ""
             ;;
         directories)
             echo "  --> Directory submission status:"
-            python3 scripts/build-backlinks.py status 2>&1 | grep -E "Submitted|Pending|PRIORITY"
+            OUTPUT=$(python3 scripts/build-backlinks.py status 2>&1)
+            ISSUE=$(extract_health_issue "$OUTPUT")
+            if [ -n "$ISSUE" ]; then
+                record_health_alert "Directory status: $ISSUE"
+            fi
+            printf '%s\n' "$OUTPUT" | grep -E "Submitted|Pending|PRIORITY"
             echo ""
             ;;
     esac
@@ -197,6 +236,9 @@ CATCH-UP REPORT — $TODAY
 Stale items fixed: $STALE_COUNT
 Tasks run: ${ACTIONS[*]}
 Seasonal: $SEASONAL
+---
+SCRIPT HEALTH: $([ ${#HEALTH_ALERTS[@]} -eq 0 ] && echo "OK" || echo "REVIEW NEEDED (${#HEALTH_ALERTS[@]} issues)")
+$(for item in "${HEALTH_ALERTS[@]}"; do echo "  - $item"; done)
 ---
 SUGGESTED NEXT ACTIONS:
   1. python3 scripts/build-backlinks.py submit     # Submit to 5 directories ($PENDING pending)

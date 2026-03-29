@@ -11,6 +11,7 @@
 
 PROJECT_DIR="/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
 LOG_DIR="$PROJECT_DIR/logs"
+REPORT_FILE="$PROJECT_DIR/scripts/seo-latest-report.txt"
 PLIST_NAME="com.teamzlab.nightly-build"
 PLIST_PATH="$HOME/Library/LaunchAgents/$PLIST_NAME.plist"
 
@@ -124,8 +125,80 @@ PY
 
 skip_phase() {
     echo "  - Skipping: $1"
+    SKIPPED_PHASES+=("$1")
 }
 
+extract_health_issue() {
+    printf '%s\n' "$1" | grep -m1 -E 'ERROR:|FAILED|Traceback|token refresh failed|No Search Console token|Could not get Search Console token|✗ ' || true
+}
+
+record_health_alert() {
+    HEALTH_ALERTS+=("$1")
+    echo "  ! Health alert: $1"
+}
+
+run_phase_cmd() {
+    local label="$1"
+    local tail_lines="$2"
+    shift 2
+    local output exit_code issue_line
+
+    output=$(eval "$*" 2>&1)
+    exit_code=$?
+
+    if [ -n "$output" ]; then
+        printf '%s\n' "$output" | tail -n "$tail_lines"
+    fi
+
+    issue_line=$(extract_health_issue "$output")
+    if [ "$exit_code" -ne 0 ]; then
+        record_health_alert "$label failed (exit $exit_code)"
+    elif [ -n "$issue_line" ]; then
+        record_health_alert "$label: $issue_line"
+    fi
+
+    return "$exit_code"
+}
+
+write_health_report() {
+    local status="OK"
+    if [ "${#HEALTH_ALERTS[@]}" -gt 0 ]; then
+        status="ALERT"
+    elif [ "${#SKIPPED_PHASES[@]}" -gt 0 ]; then
+        status="PARTIAL"
+    fi
+
+    {
+        echo "NIGHTLY BUILD REPORT — $(date '+%Y-%m-%d %H:%M')"
+        echo "Status: $status"
+        echo "Repo dirty at start: $([ "$REPO_DIRTY_AT_START" -eq 1 ] && echo yes || echo no)"
+        echo "New tools built: ${NEW_TOOLS:-0}"
+        echo "Total commits: ${TOTAL_COMMITS:-0}"
+        echo "---"
+        echo "SCRIPT HEALTH:"
+        if [ "${#HEALTH_ALERTS[@]}" -eq 0 ] && [ "${#SKIPPED_PHASES[@]}" -eq 0 ]; then
+            echo "  OK: no script alerts or skipped phases."
+        else
+            if [ "${#HEALTH_ALERTS[@]}" -gt 0 ]; then
+                echo "  Alerts (${#HEALTH_ALERTS[@]}):"
+                for item in "${HEALTH_ALERTS[@]}"; do
+                    echo "  - $item"
+                done
+            fi
+            if [ "${#SKIPPED_PHASES[@]}" -gt 0 ]; then
+                echo "  Skipped phases (${#SKIPPED_PHASES[@]}):"
+                for item in "${SKIPPED_PHASES[@]}"; do
+                    echo "  - $item"
+                done
+            fi
+        fi
+        echo "---"
+        echo "If script health is not OK, review logs/nightly-build.log before the next automated run."
+    } > "$REPORT_FILE"
+}
+
+HEALTH_ALERTS=()
+SKIPPED_PHASES=()
 REPO_DIRTY_AT_START=0
 if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
     REPO_DIRTY_AT_START=1
@@ -203,25 +276,25 @@ echo "  Research done. All results saved for Claude to use."
 # Phase 1: Run all maintenance scripts (no Claude needed, zero quota)
 echo ""
 echo "=== Phase 1: Maintenance Scripts (zero quota) ==="
-python3 build-static-schema.py 2>&1 | tail -3
-./build-search-index.sh 2>&1 | tail -5
-python3 scripts/build-fix-orphans.py fix 2>&1 | tail -3
-./build-seo-audit.sh --fix 2>&1 | tail -5
+run_phase_cmd "Static schema rebuild" 3 "python3 build-static-schema.py"
+run_phase_cmd "Search index rebuild" 5 "./build-search-index.sh"
+run_phase_cmd "Orphan fix" 3 "python3 scripts/build-fix-orphans.py fix"
+run_phase_cmd "SEO auto-fix" 5 "./build-seo-audit.sh --fix"
 
 echo "  Checking freshness (stale data)..."
-./build-validate-freshness.sh 2>&1 | tail -10
+run_phase_cmd "Freshness validation" 10 "./build-validate-freshness.sh"
 
 echo "  Checking internal link health..."
-scripts/build-internal-links.sh --quick 2>&1 | tail -5
+run_phase_cmd "Internal link health" 5 "scripts/build-internal-links.sh --quick"
 
 echo "  Running QA check..."
-./build-qa-check.sh 2>&1 | tail -10
+run_phase_cmd "QA check" 10 "./build-qa-check.sh"
 
 # Phase 2: Request indexing for any new pages
 echo ""
 echo "=== Phase 2: Request Indexing ==="
 if can_resolve_host indexing.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    python3 scripts/build-request-indexing.py 2>&1 | tail -10
+    run_phase_cmd "Indexing request" 10 "python3 scripts/build-request-indexing.py"
 else
     skip_phase "Google indexing request (Google APIs unavailable)"
 fi
@@ -230,36 +303,36 @@ fi
 echo ""
 echo "=== Phase 3: Pull Data (local tokens) ==="
 if can_resolve_host searchconsole.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    ./build-search-console.sh --status 2>&1 | tail -10
+    run_phase_cmd "Search Console pull" 10 "./build-search-console.sh --status"
 else
     skip_phase "Search Console pull (searchconsole.googleapis.com unavailable)"
 fi
 
 if can_resolve_host analyticsdata.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    ./build-analytics.sh --all 2>&1 | tail -20
+    run_phase_cmd "GA4 analytics pull" 20 "./build-analytics.sh --all"
 else
     skip_phase "GA4 analytics pull (analyticsdata.googleapis.com unavailable)"
 fi
 
 if can_resolve_host adsense.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    ./build-adsense.sh 2>&1 | tail -10
+    run_phase_cmd "AdSense pull" 10 "./build-adsense.sh"
 else
     skip_phase "AdSense pull (adsense.googleapis.com unavailable)"
 fi
 
 if can_resolve_host clarity.ms; then
-    ./build-clarity.sh 1 2>&1 | tail -20
+    run_phase_cmd "Clarity pull" 20 "./build-clarity.sh 1"
 else
     skip_phase "Clarity pull (clarity.ms unavailable)"
 fi
 
 if can_resolve_host pagespeedonline.googleapis.com; then
-    ./build-pagespeed.sh 2>&1 | tail -10
+    run_phase_cmd "PageSpeed pull" 10 "./build-pagespeed.sh"
 else
     skip_phase "PageSpeed pull (pagespeedonline.googleapis.com unavailable)"
 fi
 
-python3 scripts/distribute/distribute.py list 2>&1 | tail -10
+run_phase_cmd "Distribution status" 10 "python3 scripts/distribute/distribute.py list"
 
 # Phase 4: Run Claude to build tools (uses quota)
 echo ""
@@ -284,6 +357,7 @@ else
 
     if [ "$BUILD_EXIT" -ne 0 ]; then
         echo "  ✗ Claude build failed (exit code $BUILD_EXIT)"
+        record_health_alert "Claude build failed (exit $BUILD_EXIT)"
         osascript -e "display notification \"Claude build FAILED (exit $BUILD_EXIT). Check logs.\" with title \"Teamz Build ERROR\" sound name \"Basso\"" 2>/dev/null
     fi
 fi
@@ -446,7 +520,12 @@ if can_resolve_host github.com; then
     if [ "$PUSH_EXIT" -ne 0 ]; then
         echo "  ✗ Push failed! Trying pull rebase + push..."
         git pull --rebase origin main 2>/dev/null
-        git push origin main --no-verify 2>&1
+        RETRY_OUTPUT=$(git push origin main --no-verify 2>&1)
+        RETRY_EXIT=$?
+        echo "$RETRY_OUTPUT"
+        if [ "$RETRY_EXIT" -ne 0 ]; then
+            record_health_alert "git push failed after retry"
+        fi
     fi
 else
     skip_phase "git push (github.com unavailable)"
@@ -456,6 +535,8 @@ fi
 NEW_TOOLS=$(git log --oneline --since="2 hours ago" --grep="Add " | wc -l | tr -d ' ')
 TOTAL_COMMITS=$(git log --oneline --since="2 hours ago" | wc -l | tr -d ' ')
 fi
+
+write_health_report
 
 echo ""
 echo "=== DONE — $(date '+%Y-%m-%d %H:%M:%S %Z') ==="
