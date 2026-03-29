@@ -19,8 +19,14 @@
   <link rel="stylesheet" href="/shared/css/tools.css">
   <style>
     .search-wrap { position: relative; }
-    .search-input { width: 100%; padding: 0.85rem 1rem; border: 2px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 1.05rem; box-sizing: border-box; }
+    .search-row { display: flex; gap: 0.5rem; align-items: center; }
+    .search-input { flex: 1; padding: 0.85rem 1rem; border: 2px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); font-size: 1.05rem; box-sizing: border-box; }
     .search-input:focus { outline: none; border-color: var(--accent); }
+    .cam-btn { flex-shrink: 0; width: 46px; height: 46px; border: 2px solid var(--accent); border-radius: 10px; background: transparent; color: var(--accent); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.18s; }
+    .cam-btn:hover { background: var(--accent); color: var(--accent-text); }
+    .cam-btn svg { width: 20px; height: 20px; }
+    .ocr-status { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; min-height: 1.2em; }
+    .ocr-progress { display: inline-block; width: 0%; height: 3px; background: var(--accent); border-radius: 2px; transition: width 0.2s; vertical-align: middle; margin-left: 0.4rem; }
     .search-hint { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem; }
     .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 10; box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: none; }
     .suggestions-list.open { display: block; }
@@ -66,6 +72,7 @@
       .result-code { font-size: 1.5rem; }
       .result-name { font-size: 1rem; }
       .browse-grid { grid-template-columns: repeat(2, 1fr); }
+      .cam-btn { width: 42px; height: 42px; }
     }
   </style>
 <!-- STATIC-SCHEMA -->
@@ -83,10 +90,18 @@
 
     <section class="tool-calculator">
       <div class="search-wrap">
-        <label for="additive-search" class="sr-only">Search food additive or E-number</label><input type="text" id="additive-search" class="search-input" placeholder="Type E-number (e.g. E621) or name (e.g. tartrazine)..." autocomplete="off">
+        <label for="additive-search" class="sr-only">Search food additive or E-number</label>
+        <div class="search-row">
+          <input type="text" id="additive-search" class="search-input" placeholder="Type E-number (e.g. E621) or name (e.g. tartrazine)..." autocomplete="off">
+          <button class="cam-btn" id="cam-scan-btn" title="Scan food label with camera" aria-label="Scan food label with camera">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+          <input type="file" id="cam-file-input" accept="image/*" capture="environment" style="display:none;" aria-hidden="true">
+        </div>
         <div id="suggestions" class="suggestions-list" role="listbox"></div>
+        <div class="ocr-status" id="ocr-status" style="display:none;"></div>
       </div>
-      <p class="search-hint">Database covers E100–E999: colors, preservatives, antioxidants, emulsifiers, flavor enhancers, and sweeteners.</p>
+      <p class="search-hint">Database covers E100–E999: colors, preservatives, antioxidants, emulsifiers, flavor enhancers, and sweeteners. <strong>Tip:</strong> Use the camera button to scan a food label and auto-detect E-codes.</p>
       <div id="result-area"></div>
       <div style="margin-top:1.5rem;">
         <p style="font-size:0.9rem;font-weight:600;color:var(--heading);margin-bottom:0.5rem;">Browse by category:</p>
@@ -346,6 +361,134 @@
         window.scrollTo({ top: resultArea.offsetTop - 80, behavior: 'smooth' });
       }
     });
+
+    // ── Camera / OCR scanning ────────────────────────────────────────────────
+    var camBtn = document.getElementById('cam-scan-btn');
+    var camFileInput = document.getElementById('cam-file-input');
+    var ocrStatus = document.getElementById('ocr-status');
+
+    function setOcrStatus(msg, pct) {
+      ocrStatus.style.display = msg ? '' : 'none';
+      if (pct !== undefined) {
+        ocrStatus.innerHTML = msg + ' <span class="ocr-progress" style="width:' + pct + '%"></span>';
+      } else {
+        ocrStatus.textContent = msg;
+      }
+    }
+
+    camBtn.addEventListener('click', function() {
+      camFileInput.value = '';
+      camFileInput.click();
+    });
+
+    camFileInput.addEventListener('change', function() {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      runOCR(file);
+    });
+
+    function runOCR(file) {
+      setOcrStatus('Loading OCR engine…', 5);
+      camBtn.disabled = true;
+
+      // Dynamically load Tesseract.js (CDN, only when needed)
+      if (!window.Tesseract) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+        s.onload = function() { doOCR(file); };
+        s.onerror = function() {
+          setOcrStatus('Could not load OCR engine. Please check your connection.');
+          camBtn.disabled = false;
+        };
+        document.head.appendChild(s);
+      } else {
+        doOCR(file);
+      }
+    }
+
+    function doOCR(file) {
+      setOcrStatus('Reading image…', 15);
+      Tesseract.recognize(file, 'eng', {
+        logger: function(m) {
+          if (m.status === 'recognizing text') {
+            setOcrStatus('Scanning label… ' + Math.round(m.progress * 80 + 15) + '%', Math.round(m.progress * 80 + 15));
+          }
+        }
+      }).then(function(result) {
+        var text = result.data.text;
+        var found = extractECodes(text);
+        camBtn.disabled = false;
+        if (!found.length) {
+          setOcrStatus('No E-codes detected. Try a clearer photo of the ingredients list.');
+          return;
+        }
+        setOcrStatus('Found: ' + found.join(', ') + ' — showing results below.');
+        // Show all found E-codes as results
+        resultArea.innerHTML = '';
+        found.forEach(function(code) {
+          if (EDATA[code]) {
+            var div = document.createElement('div');
+            div.innerHTML = buildResultHTML(code, EDATA[code]);
+            resultArea.appendChild(div);
+          } else {
+            var div = document.createElement('div');
+            div.className = 'not-found';
+            div.textContent = code + ' — not in database.';
+            resultArea.appendChild(div);
+          }
+        });
+        if (found.length === 1) {
+          searchInput.value = found[0];
+        } else {
+          searchInput.value = found.join(', ');
+        }
+        window.scrollTo({ top: resultArea.offsetTop - 80, behavior: 'smooth' });
+      }).catch(function(err) {
+        camBtn.disabled = false;
+        setOcrStatus('OCR error: ' + (err.message || 'unknown error.'));
+      });
+    }
+
+    function extractECodes(text) {
+      // Match patterns like E100, E100a, E621 (case-insensitive)
+      var matches = text.toUpperCase().match(/\bE\d{3}[A-Z]?\b/g) || [];
+      // Deduplicate and normalise
+      var seen = {};
+      var result = [];
+      matches.forEach(function(m) {
+        // Strip trailing letter variants not in our DB, try with and without
+        var key = m;
+        if (!EDATA[key] && m.length > 4) key = m.slice(0, 4); // e.g. E160a → E160
+        if (!seen[key]) {
+          seen[key] = true;
+          result.push(key);
+        }
+      });
+      return result;
+    }
+
+    function buildResultHTML(code, data) {
+      var halal = data.halal === 'yes' ? { label: '✓ Halal', cls: 'flag-halal-yes' } :
+                  data.halal === 'no'  ? { label: '✗ Haram', cls: 'flag-halal-no' } :
+                                         { label: '? Halal: Check', cls: 'flag-halal-check' };
+      var vegan = data.vegan === 'yes' ? { label: '✓ Vegan', cls: 'flag-vegan-yes' } :
+                  data.vegan === 'no'  ? { label: '✗ Not Vegan', cls: 'flag-vegan-no' } :
+                                         { label: '? Vegan: Check', cls: 'flag-vegan-yes' };
+      return '<div class="result-card">' +
+        '<div class="result-header">' +
+          '<div><div class="result-code">' + code + '</div><div class="result-name">' + data.name + '</div><div class="result-category">' + data.category + '</div>' +
+            '<span class="risk-badge risk-' + data.risk + '"><span class="risk-dot-' + data.risk + '"></span>' + getRiskLabel(data.risk) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="result-desc">' + data.desc + '</div>' +
+        '<div class="result-meta">' +
+          '<div class="meta-item"><div class="meta-label">Common Foods</div><div class="meta-value">' + data.foods + '</div></div>' +
+          '<div class="meta-item"><div class="meta-label">Health Concerns</div><div class="meta-value">' + data.concerns + '</div></div>' +
+        '</div>' +
+        '<div class="flags"><span class="flag ' + halal.cls + '">' + halal.label + '</span><span class="flag ' + vegan.cls + '">' + vegan.label + '</span></div>' +
+      '</div>';
+    }
+    // ── End OCR scanning ─────────────────────────────────────────────────────
 
     document.addEventListener('DOMContentLoaded', function() {
       if (window.TeamzTools) {
