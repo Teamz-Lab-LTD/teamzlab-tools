@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fake Person Generator — Random Identity Tool — Teamz Lab</title>
+  <meta name="description" content="Generate random fake person profiles with name, email, address, and photo. Free fake identity generator — up to 100 profiles, download CSV or JSON. No signup.">
+  <meta property="og:title" content="Fake Person Generator — Random Identity Tool — Teamz Lab Tools">
+  <meta property="og:description" content="Generate random fake person profiles with name, email, address, and photo. Free fake identity generator — up to 100 profiles, download CSV or JSON. No signup.">
+  <meta property="og:url" content="https://tool.teamzlab.com/dev/fake-person-generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/dev.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Fake Person Generator — Random Identity Tool — Teamz Lab Tools">
+  <meta name="twitter:description" content="Generate random fake person profiles with name, email, address, and photo. Free, no signup, download CSV or JSON.">
+  <link rel="canonical" href="https://tool.teamzlab.com/dev/fake-person-generator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* ---- Controls ---- */
+    .fpg-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .fpg-field label {
+      display: block;
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .fpg-field input,
+    .fpg-field select {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: var(--text-base);
+      box-sizing: border-box;
+    }
+    .fpg-field input:focus,
+    .fpg-field select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .fpg-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ---- Status / loading ---- */
+    .fpg-status {
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ---- Export bar ---- */
+    .fpg-export-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: none;
+    }
+    .fpg-export-bar .fpg-count-label {
+      flex: 1;
+      font-weight: 700;
+      color: var(--heading);
+      font-size: var(--text-base);
+    }
+
+    /* ---- Person grid ---- */
+    .fpg-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    /* ---- Person card ---- */
+    .person-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .person-card img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+    .person-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .person-name {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin: 0 0 8px;
+      line-height: 1.3;
+    }
+    .person-detail {
+      font-size: var(--text-sm);
+      color: var(--text);
+      margin: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      word-break: break-all;
+    }
+    .person-detail span {
+      flex: 1;
+      min-width: 0;
+      word-break: break-all;
+    }
+
+    /* ---- Copy-field button ---- */
+    .copy-field-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 2px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .copy-field-btn:hover {
+      border-color: var(--accent);
+      color: var(--heading);
+    }
+
+    /* ---- Empty / error state ---- */
+    .fpg-empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+      font-size: var(--text-base);
+      display: none;
+    }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 600px) {
+      .fpg-controls {
+        grid-template-columns: 1fr;
+      }
+      .fpg-actions {
+        flex-direction: column;
+      }
+      .fpg-actions .btn-primary,
+      .fpg-actions .btn-secondary {
+        width: 100%;
+      }
+      .fpg-grid {
+        grid-template-columns: 1fr;
+      }
+      .fpg-export-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .fpg-export-bar .fpg-count-label {
+        flex: unset;
+      }
+      section.tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is this data real?", "acceptedAnswer": {"@type": "Answer", "text": "No, all profiles are randomly generated using the randomuser.me API. No real person's data is used."}}, {"@type": "Question", "name": "How many profiles can I generate?", "acceptedAnswer": {"@type": "Answer", "text": "Up to 100 profiles per request. Generate multiple times to get more."}}, {"@type": "Question", "name": "Can I download the results?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, download as JSON or CSV with one click. No signup required."}}, {"@type": "Question", "name": "Which nationalities are supported?", "acceptedAnswer": {"@type": "Answer", "text": "US, UK, Canada, Australia, Germany, France, Brazil, Spain, Netherlands, Denmark, Finland, Norway, New Zealand, and Ireland."}}, {"@type": "Question", "name": "Is this tool free?", "acceptedAnswer": {"@type": "Answer", "text": "Completely free, no signup, no limits on usage."}}, {"@type": "Question", "name": "What is the randomuser.me API?", "acceptedAnswer": {"@type": "Answer", "text": "An open-source API that generates realistic-looking random user profiles. Used by millions of developers for testing."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Fake Person Generator", "description": "Generate random fake person profiles with name, email, address, and photo. Free fake identity generator — up to 100 profiles, download CSV or JSON.", "url": "https://tool.teamzlab.com/dev/fake-person-generator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Fake Person Generator</h1>
+      <p class="tool-description">Generate realistic fake person profiles with photos, names, emails, phone numbers, and addresses. Perfect for software testing, UI mockups, and database seeding — completely free, no signup needed.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <!-- Controls -->
+      <div class="fpg-controls">
+        <div class="fpg-field">
+          <label for="person-count">Number of profiles (1–100)</label>
+          <input type="number" id="person-count" min="1" max="100" value="10" placeholder="10">
+        </div>
+        <div class="fpg-field">
+          <label for="person-nat">Nationality</label>
+          <select id="person-nat">
+            <option value="us,gb,ca">US + UK + Canada (default)</option>
+            <option value="us">United States</option>
+            <option value="gb">United Kingdom</option>
+            <option value="ca">Canada</option>
+            <option value="au">Australia</option>
+            <option value="de">Germany</option>
+            <option value="fr">France</option>
+            <option value="br">Brazil</option>
+            <option value="es">Spain</option>
+            <option value="nl">Netherlands</option>
+            <option value="dk">Denmark</option>
+            <option value="fi">Finland</option>
+            <option value="no">Norway</option>
+            <option value="nz">New Zealand</option>
+            <option value="ie">Ireland</option>
+            <option value="us,gb,ca,au,de,fr">Mixed (all supported)</option>
+          </select>
+        </div>
+        <div class="fpg-field">
+          <label for="person-gender">Gender</label>
+          <select id="person-gender">
+            <option value="">Any</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="fpg-actions">
+        <button id="generate-btn" class="btn-primary">Generate Profiles</button>
+        <button id="reset-btn" class="btn-secondary">Reset</button>
+      </div>
+
+      <!-- Status message -->
+      <p id="fpg-status" class="fpg-status"></p>
+
+      <!-- Export bar (shown after generation) -->
+      <div id="fpg-export-bar" class="fpg-export-bar">
+        <span class="fpg-count-label" id="fpg-count-label">Generated 0 profiles</span>
+        <button id="copy-json-btn" class="btn-secondary">Copy All as JSON</button>
+        <button id="download-json-btn" class="btn-secondary">Download JSON</button>
+        <button id="download-csv-btn" class="btn-secondary">Download CSV</button>
+      </div>
+
+      <!-- Results grid -->
+      <div id="fpg-grid" class="fpg-grid"></div>
+
+      <!-- Empty state -->
+      <div id="fpg-empty" class="fpg-empty">Click "Generate Profiles" to create fake person data.</div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is a Fake Person Generator Used For?</h2>
+      <p>A fake person generator creates randomly assembled, fictional user profiles that look realistic but belong to no real individual. Each profile includes a photo, full name, email address, phone number, physical location, date of birth, age, and username — all entirely synthetic. Developers, designers, and QA engineers use fake profiles whenever they need realistic-looking data without touching real user information.</p>
+      <p>Common use cases include populating development and staging databases, filling in UI mockups with believable placeholder content, training machine-learning models, testing user management dashboards, and creating demo accounts for client presentations. Because the data is fictional, there are no GDPR or CCPA privacy concerns when using it for internal testing.</p>
+      <p>This tool sources its data from the <strong>randomuser.me API</strong> — an open-source project used by millions of developers worldwide. It supports 14 nationalities and generates locale-appropriate names, phone formats, and addresses, making the output genuinely useful for region-specific testing.</p>
+
+      <h2>Generate Fake Profiles for Software Testing</h2>
+      <p>Software testing requires realistic data to catch edge cases that lorem ipsum text will never expose. A user registration form might break on email addresses with certain characters. A phone number field might silently truncate country codes. A search algorithm might fail on non-ASCII names. Fake person profiles generated with realistic locale-specific data surface these bugs before production.</p>
+      <p>This generator lets you pick between 1 and 100 profiles per request, select a nationality to match your target market, and filter by gender. You can repeat requests as many times as needed — each call returns a completely fresh, randomised set. There are no daily limits, no API keys, and no rate limiting for normal use.</p>
+      <p>Each profile card shows the seven most useful fields for testing: full name, email, phone number, city, country, age, and username. Individual "Copy" buttons let you grab a single field in one click without manually selecting text — a small convenience that adds up across a long testing session.</p>
+
+      <h2>Download Fake Data as JSON or CSV</h2>
+      <p>Once you have generated your profiles, you can export the full dataset in two formats optimised for different workflows. <strong>JSON export</strong> preserves the complete nested structure returned by randomuser.me, making it ideal for seeding NoSQL databases like MongoDB or Firestore, loading into Postman as mock data, or importing into data processing scripts. The downloaded file is named <code>fake-persons.json</code> and contains an array of profile objects.</p>
+      <p><strong>CSV export</strong> flattens each profile into a single row with eight columns: name, email, phone, city, country, age, username, and profile picture URL. This format is instantly importable into spreadsheet tools like Google Sheets and Microsoft Excel, relational databases via LOAD DATA INFILE, or CRM and email-marketing platforms that accept CSV uploads. The file is named <code>fake-persons.csv</code>.</p>
+      <p>Both exports are generated entirely in your browser — no data is sent to any server during the download process. The "Copy All as JSON" button places the full dataset on your clipboard for direct pasting into code editors, Postman, or Notion tables.</p>
+
+      <h2>Fake Person Generator vs Mockaroo — Key Differences</h2>
+      <p>Mockaroo is a popular data generation service that supports custom schemas and a wide range of data types. It is excellent when you need fully custom columns — for example, a database table with 30 specific fields mapped to your schema. However, Mockaroo limits free exports to 1,000 rows per download, requires account creation for saved schemas, and does not generate avatar photographs.</p>
+      <p>This tool has a narrower focus: generating complete, photo-backed person profiles in seconds with zero configuration. The profiles look exactly like real social accounts or user records, which makes them ideal for UI prototyping and screenshot demos. The nationality selector produces culturally appropriate names and phone numbers without any manual configuration. For teams that just need realistic user records quickly, this tool requires no sign-up, no schema setup, and no CSV field mapping — just click Generate.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+
+    /* ---- Breadcrumbs ---- */
+    TeamzTools.renderBreadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Developer Tools', url: '/dev/' },
+      { name: 'Fake Person Generator' }
+    ]);
+
+    /* ---- FAQs ---- */
+    var faqs = [
+      { q: 'Is this data real?', a: 'No, all profiles are randomly generated using the randomuser.me API. No real person\'s data is used.' },
+      { q: 'How many profiles can I generate?', a: 'Up to 100 profiles per request. Generate multiple times to get more.' },
+      { q: 'Can I download the results?', a: 'Yes, download as JSON or CSV with one click. No signup required.' },
+      { q: 'Which nationalities are supported?', a: 'US, UK, Canada, Australia, Germany, France, Brazil, Spain, Netherlands, Denmark, Finland, Norway, New Zealand, and Ireland.' },
+      { q: 'Is this tool free?', a: 'Completely free, no signup, no limits on usage.' },
+      { q: 'What is the randomuser.me API?', a: 'An open-source API that generates realistic-looking random user profiles. Used by millions of developers for testing.' }
+    ];
+    TeamzTools.renderFAQs(faqs);
+
+    /* ---- WebApp schema ---- */
+
+    /* ---- Related tools ---- */
+    TeamzTools.renderRelatedTools([
+      { slug: 'dev/json-formatter', name: 'JSON Formatter', description: 'Format and validate JSON data instantly' },
+      { slug: 'dev/uuid-generator', name: 'UUID Generator', description: 'Generate unique identifiers for your app' },
+      { slug: 'dev/password-generator', name: 'Password Generator', description: 'Create strong, secure passwords' },
+      { slug: 'dev/base64-encode-decode', name: 'Base64 Encoder/Decoder', description: 'Encode and decode Base64 strings' },
+      { slug: 'dev/regex-tester', name: 'Regex Tester', description: 'Test and debug regular expressions' },
+      { slug: 'tools/name-predictor', name: 'Name Predictor', description: 'Predict age, gender and nationality from a name' }
+    ]);
+
+    /* ---- Element refs ---- */
+    var generateBtn    = document.getElementById('generate-btn');
+    var resetBtn       = document.getElementById('reset-btn');
+    var copyJsonBtn    = document.getElementById('copy-json-btn');
+    var downloadJsonBtn = document.getElementById('download-json-btn');
+    var downloadCsvBtn = document.getElementById('download-csv-btn');
+    var statusEl       = document.getElementById('fpg-status');
+    var exportBar      = document.getElementById('fpg-export-bar');
+    var countLabel     = document.getElementById('fpg-count-label');
+    var gridEl         = document.getElementById('fpg-grid');
+    var emptyEl        = document.getElementById('fpg-empty');
+
+    var currentPersons = [];
+
+    /* ---- Helpers ---- */
+    function showStatus(msg) {
+      statusEl.textContent = msg;
+      showEl(statusEl);
+    }
+    function hideStatus() {
+      hideEl(statusEl);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function sanitizeFilename(name) {
+      return name.replace(/\s+/g, '-').toLowerCase();
+    }
+
+    /* ---- Render a single person card ---- */
+    function renderCard(person) {
+      var fullName  = escapeHtml(person.name.first + ' ' + person.name.last);
+      var email     = escapeHtml(person.email);
+      var phone     = escapeHtml(person.phone);
+      var city      = escapeHtml(person.location.city);
+      var country   = escapeHtml(person.location.country);
+      var age       = person.dob.age;
+      var username  = escapeHtml(person.login.username);
+      var picSrc    = escapeHtml(person.picture.medium);
+
+      var card = document.createElement('div');
+      card.className = 'person-card';
+      card.innerHTML =
+        '<img src="' + picSrc + '" alt="Generated avatar" loading="lazy">' +
+        '<div class="person-info">' +
+          '<h3 class="person-name">' + fullName + '</h3>' +
+          '<p class="person-detail">&#128231; <span>' + email + '</span>' +
+            '<button class="copy-field-btn" data-value="' + email + '">Copy</button></p>' +
+          '<p class="person-detail">&#128222; <span>' + phone + '</span>' +
+            '<button class="copy-field-btn" data-value="' + phone + '">Copy</button></p>' +
+          '<p class="person-detail">&#128205; ' + city + ', ' + country + '</p>' +
+          '<p class="person-detail">&#127874; Age: ' + age + ' &nbsp;&middot;&nbsp; @' + username + '</p>' +
+        '</div>';
+
+      /* Wire copy buttons on this card */
+      card.querySelectorAll('.copy-field-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var val = btn.getAttribute('data-value');
+          navigator.clipboard.writeText(val)
+            .then(function () { window.showToast('Copied: ' + val); })
+            .catch(function () { window.showToast('Copy failed — try right-click copy'); });
+        });
+      });
+
+      return card;
+    }
+
+    /* ---- Main generate function ---- */
+    function generate() {
+      var countRaw = parseInt(document.getElementById('person-count').value, 10);
+      var count    = Math.min(Math.max(countRaw || 10, 1), 100);
+      var nat      = document.getElementById('person-nat').value || 'us,gb,ca';
+      var gender   = document.getElementById('person-gender').value;
+
+      /* Build URL */
+      var url = 'https://randomuser.me/api/?results=' + count + '&nat=' + encodeURIComponent(nat);
+      if (gender) url += '&gender=' + encodeURIComponent(gender);
+
+      /* UI state — loading */
+      generateBtn.disabled = true;
+      generateBtn.textContent = 'Generating ' + count + ' profile' + (count === 1 ? '' : 's') + '...';
+      hideEl(exportBar);
+      showStatus('Fetching ' + count + ' profile' + (count === 1 ? '' : 's') + ' from randomuser.me...');
+      gridEl.innerHTML = '';
+      hideEl(emptyEl);
+
+      fetch(url)
+        .then(function (res) {
+          if (!res.ok) throw new Error('API returned ' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          currentPersons = data.results || [];
+          hideStatus();
+
+          if (currentPersons.length === 0) {
+            showEl(emptyEl);
+            return;
+          }
+
+          /* Render cards */
+          var frag = document.createDocumentFragment();
+          currentPersons.forEach(function (person) {
+            frag.appendChild(renderCard(person));
+          });
+          gridEl.appendChild(frag);
+
+          /* Show export bar */
+          countLabel.textContent = 'Generated ' + currentPersons.length + ' fake profile' + (currentPersons.length === 1 ? '' : 's');
+          showEl(exportBar, 'flex');
+        })
+        .catch(function (err) {
+          hideStatus();
+          showEl(emptyEl);
+          emptyEl.textContent = 'Error loading profiles: ' + err.message + '. Please try again.';
+          window.showToast('Failed to fetch profiles — check your internet connection.');
+        })
+        .finally(function () {
+          generateBtn.disabled = false;
+          generateBtn.textContent = 'Generate Profiles';
+        });
+    }
+
+    /* ---- Reset ---- */
+    function resetTool() {
+      document.getElementById('person-count').value    = '10';
+      document.getElementById('person-nat').selectedIndex = 0;
+      document.getElementById('person-gender').selectedIndex = 0;
+      currentPersons = [];
+      gridEl.innerHTML = '';
+      hideEl(exportBar);
+      hideStatus();
+      emptyEl.textContent = 'Click "Generate Profiles" to create fake person data.';
+      showEl(emptyEl);
+    }
+
+    /* ---- CSV builder ---- */
+    function buildCsv(persons) {
+      var header = ['name', 'email', 'phone', 'city', 'country', 'age', 'username', 'photo'];
+      var rows = persons.map(function (p) {
+        return [
+          p.name.first + ' ' + p.name.last,
+          p.email,
+          p.phone,
+          p.location.city,
+          p.location.country,
+          p.dob.age,
+          p.login.username,
+          p.picture.medium
+        ].map(function (v) {
+          /* Escape CSV cell: wrap in quotes if it contains comma, quote, or newline */
+          var s = String(v);
+          if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) {
+            s = '"' + s.replace(/"/g, '""') + '"';
+          }
+          return s;
+        }).join(',');
+      });
+      return [header.join(',')].concat(rows).join('\n');
+    }
+
+    /* ---- Download helper ---- */
+    function downloadFile(content, filename, mimeType) {
+      var blob = new Blob([content], { type: mimeType });
+      var url  = URL.createObjectURL(blob);
+      var a    = document.createElement('a');
+      a.href     = url;
+      a.download = sanitizeFilename(filename);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* ---- Event listeners ---- */
+    generateBtn.addEventListener('click', generate);
+
+    resetBtn.addEventListener('click', resetTool);
+
+    copyJsonBtn.addEventListener('click', function () {
+      if (!currentPersons.length) {
+        window.showToast('No profiles to copy — generate some first.');
+        return;
+      }
+      var json = JSON.stringify(currentPersons, null, 2);
+      navigator.clipboard.writeText(json)
+        .then(function () { window.showToast('Copied ' + currentPersons.length + ' profiles as JSON!'); })
+        .catch(function () { window.showToast('Copy failed — try right-click copy'); });
+    });
+
+    downloadJsonBtn.addEventListener('click', function () {
+      if (!currentPersons.length) {
+        window.showToast('No profiles to download — generate some first.');
+        return;
+      }
+      downloadFile(JSON.stringify(currentPersons, null, 2), 'fake-persons.json', 'application/json');
+      window.showToast('Downloading fake-persons.json');
+    });
+
+    downloadCsvBtn.addEventListener('click', function () {
+      if (!currentPersons.length) {
+        window.showToast('No profiles to download — generate some first.');
+        return;
+      }
+      downloadFile(buildCsv(currentPersons), 'fake-persons.csv', 'text/csv;charset=utf-8;');
+      window.showToast('Downloading fake-persons.csv');
+    });
+
+    /* ---- Initial empty state ---- */
+    showEl(emptyEl);
+
+  });
+  </script>
+</body>
+</html>

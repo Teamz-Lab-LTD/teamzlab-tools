@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>US State Population Explorer 2024 — Teamz Lab Tools</title>
+  <meta name="description" content="Explore US population by state. Compare all 50 states by population size, rank, and share of total US population. Free, instant, no signup needed.">
+  <meta property="og:title" content="US State Population Explorer 2024 — Teamz Lab Tools">
+  <meta property="og:description" content="Explore US population by state. Compare all 50 states by population size, rank, and share of total US population. Free, instant, no signup needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/us/demographics-explorer/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/us.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="US State Population Explorer 2024 — Teamz Lab Tools">
+  <meta name="twitter:description" content="Explore US population by state. Compare all 50 states by population size, rank, and share of total US population. Free, instant, no signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/us/demographics-explorer/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* ── Demographics Explorer — tool-specific styles only ── */
+    .demo-controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .demo-controls input,
+    .demo-controls select {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-base);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .demo-controls input:focus,
+    .demo-controls select:focus {
+      border-color: var(--accent);
+    }
+    .demo-controls input {
+      flex: 1;
+      min-width: 180px;
+    }
+    .demo-summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .demo-summary-card {
+      flex: 1;
+      min-width: 140px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .demo-summary-card .demo-summary-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .demo-summary-card .demo-summary-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    /* Table */
+    .demo-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .demo-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .demo-table thead tr {
+      border-bottom: 2px solid var(--border);
+      background: var(--surface);
+    }
+    .demo-table th {
+      padding: 10px 14px;
+      text-align: left;
+      color: var(--heading);
+      font-weight: 600;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .demo-table th.sortable {
+      cursor: pointer;
+    }
+    .demo-table th.sortable:hover {
+      color: var(--accent);
+    }
+    .demo-table th .sort-arrow {
+      display: inline-block;
+      margin-left: 4px;
+      opacity: 0.4;
+      font-size: 0.75rem;
+    }
+    .demo-table th.active-sort .sort-arrow {
+      opacity: 1;
+      color: var(--accent);
+    }
+    .demo-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .demo-table tbody tr:last-child {
+      border-bottom: none;
+    }
+    .demo-table tbody tr:hover {
+      background: var(--surface);
+    }
+    .demo-table tbody tr.row-selected {
+      background: var(--surface);
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+    .demo-table td {
+      padding: 10px 14px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .demo-table td.td-rank {
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+      width: 40px;
+    }
+    .demo-table td.td-state {
+      font-weight: 600;
+      color: var(--heading);
+      white-space: nowrap;
+    }
+    .demo-table td.td-pop {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .demo-table td.td-pct {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .demo-table td.td-bar {
+      width: 120px;
+    }
+    .demo-bar-bg {
+      background: var(--border);
+      border-radius: 4px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .demo-bar-fill {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--accent);
+      transition: width 0.3s;
+    }
+    /* State detail card */
+    .demo-detail {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 20px;
+    }
+    .demo-detail h3 {
+      margin: 0 0 12px;
+      color: var(--heading);
+      font-size: var(--text-xl);
+      line-height: 1.3;
+    }
+    .demo-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .demo-detail-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .demo-detail-stat .stat-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .demo-detail-stat .stat-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    .demo-detail-share {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--heading);
+      font-size: var(--text-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .demo-detail-share:hover {
+      border-color: var(--accent);
+    }
+    /* Fun stats */
+    .demo-fun-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .demo-fun-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .demo-fun-card .fun-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .demo-fun-card .fun-value {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.3;
+    }
+    .demo-fun-card .fun-sub {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .demo-source-note {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .demo-api-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--text-sm);
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+    .demo-api-badge .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .demo-api-badge.live .badge-dot {
+      background: var(--accent);
+    }
+    .demo-no-results {
+      padding: 28px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .demo-controls {
+        flex-direction: column;
+      }
+      .demo-controls input,
+      .demo-controls select {
+        width: 100%;
+      }
+      .demo-summary-card .demo-summary-value {
+        font-size: var(--text-base);
+      }
+      .demo-table th,
+      .demo-table td {
+        padding: 8px 10px;
+        font-size: var(--text-sm);
+      }
+      .demo-table td.td-bar {
+        display: none;
+      }
+      .demo-detail {
+        padding: 16px;
+      }
+      .demo-detail h3 {
+        font-size: var(--text-lg);
+      }
+      .demo-fun-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which is the most populous US state?", "acceptedAnswer": {"@type": "Answer", "text": "California is the most populous US state with approximately 39 million people, followed by Texas (~30M) and Florida (~23M)."}}, {"@type": "Question", "name": "Which is the least populous US state?", "acceptedAnswer": {"@type": "Answer", "text": "Wyoming is the least populous US state with approximately 581,000 residents, followed by Vermont (~647K) and Alaska (~734K)."}}, {"@type": "Question", "name": "What is the total US population?", "acceptedAnswer": {"@type": "Answer", "text": "Approximately 331 million as of 2022 US Census Bureau estimates."}}, {"@type": "Question", "name": "How current is this data?", "acceptedAnswer": {"@type": "Answer", "text": "Data is based on 2022 US Census Bureau estimates sourced via DataUSA.io. Official 2030 Census data will be available after the 2030 decennial census is completed."}}, {"@type": "Question", "name": "What percentage of the US population lives in California?", "acceptedAnswer": {"@type": "Answer", "text": "Approximately 11.8% of the total US population lives in California, making it the most populous state by a significant margin."}}, {"@type": "Question", "name": "How is the population percentage calculated?", "acceptedAnswer": {"@type": "Answer", "text": "Each state's population is divided by the total US population and multiplied by 100 to give the percentage share. For example, Texas with ~30M out of ~331M total equals about 9.1%."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "US State Population Explorer", "description": "Explore and compare US population data for all 50 states. Sort, search, and view each state\\", "url": "https://tool.teamzlab.com/us/demographics-explorer/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>US State Population Explorer</h1>
+      <p class="tool-description">Explore US Census population data for all 50 states. Compare populations, see each state's share of the total US population, sort and filter instantly. Based on 2022 US Census Bureau estimates — free, private, no signup needed.</p>
+    </section>
+
+    <section class="tool-calculator">
+
+      <div id="demo-api-status" class="demo-api-badge">
+        <span class="badge-dot"></span>
+        <span id="demo-api-text">Loading data...</span>
+      </div>
+
+      <!-- Summary strip -->
+      <div class="demo-summary" id="demo-summary">
+        <div class="demo-summary-card">
+          <div class="demo-summary-label">Total US Population</div>
+          <div class="demo-summary-value" id="stat-total">—</div>
+        </div>
+        <div class="demo-summary-card">
+          <div class="demo-summary-label">States Shown</div>
+          <div class="demo-summary-value" id="stat-count">—</div>
+        </div>
+        <div class="demo-summary-card">
+          <div class="demo-summary-label">Largest State</div>
+          <div class="demo-summary-value" id="stat-largest">—</div>
+        </div>
+        <div class="demo-summary-card">
+          <div class="demo-summary-label">Smallest State</div>
+          <div class="demo-summary-value" id="stat-smallest">—</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="demo-controls">
+        <input type="text" id="state-search" placeholder="Search states..." aria-label="Filter states">
+        <select id="sort-select" aria-label="Sort order">
+          <option value="pop-desc">Population: Highest First</option>
+          <option value="pop-asc">Population: Lowest First</option>
+          <option value="name-asc">State Name: A–Z</option>
+          <option value="name-desc">State Name: Z–A</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="demo-table-wrap">
+        <table class="demo-table" role="grid" aria-label="US state populations">
+          <thead>
+            <tr>
+              <th class="td-rank">#</th>
+              <th class="sortable" id="th-name" data-col="name">State <span class="sort-arrow">↕</span></th>
+              <th class="sortable" id="th-pop" data-col="pop">Population <span class="sort-arrow">↕</span></th>
+              <th>% of US</th>
+              <th class="td-bar">Share</th>
+            </tr>
+          </thead>
+          <tbody id="demo-tbody">
+            <tr><td colspan="5" class="demo-no-results">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- State detail card (hidden until a row is clicked) -->
+      <div class="demo-detail" id="demo-detail" style="display:none;">
+        <h3 id="detail-name">—</h3>
+        <div class="demo-detail-grid">
+          <div class="demo-detail-stat">
+            <div class="stat-label">Population</div>
+            <div class="stat-value" id="detail-pop">—</div>
+          </div>
+          <div class="demo-detail-stat">
+            <div class="stat-label">% of US Total</div>
+            <div class="stat-value" id="detail-pct">—</div>
+          </div>
+          <div class="demo-detail-stat">
+            <div class="stat-label">National Rank</div>
+            <div class="stat-value" id="detail-rank">—</div>
+          </div>
+          <div class="demo-detail-stat">
+            <div class="stat-label">Est. Households</div>
+            <div class="stat-value" id="detail-hh">—</div>
+          </div>
+        </div>
+        <button class="demo-detail-share" id="detail-share-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share this state
+        </button>
+      </div>
+
+      <!-- Fun stats -->
+      <div class="demo-fun-stats" id="demo-fun-stats" style="display:none;">
+        <div class="demo-fun-card">
+          <div class="fun-label">Most Populous</div>
+          <div class="fun-value" id="fun-most">—</div>
+          <div class="fun-sub" id="fun-most-sub">—</div>
+        </div>
+        <div class="demo-fun-card">
+          <div class="fun-label">Least Populous</div>
+          <div class="fun-value" id="fun-least">—</div>
+          <div class="fun-sub" id="fun-least-sub">—</div>
+        </div>
+        <div class="demo-fun-card">
+          <div class="fun-label">Average State Population</div>
+          <div class="fun-value" id="fun-avg">—</div>
+          <div class="fun-sub" id="fun-avg-sub">—</div>
+        </div>
+        <div class="demo-fun-card">
+          <div class="fun-label">States Above Average</div>
+          <div class="fun-value" id="fun-above">—</div>
+          <div class="fun-sub" id="fun-below-sub">— below average</div>
+        </div>
+      </div>
+
+      <p class="demo-source-note">Data from US Census Bureau via DataUSA.io (2022 estimates). Last updated: March 2026.</p>
+
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+
+      <h2>US State Population Rankings 2024</h2>
+      <p>The United States Census Bureau tracks population across all 50 states, the District of Columbia, and US territories through annual estimates and decennial census counts. The 2022 estimates — the most recent full dataset available — show a total US population of approximately 331 million people distributed very unevenly across states. California alone accounts for nearly 12% of the national total, while the five most populous states (California, Texas, Florida, New York, and Pennsylvania) together represent roughly one third of all Americans.</p>
+      <p>Population data drives a huge range of decisions: congressional apportionment, federal funding allocations, infrastructure planning, and business market sizing. This tool lets you explore and sort all 50 states by population in a single view, making comparisons easy and immediate. The percentage-of-US column is especially useful for understanding relative scale — Wyoming's 0.18% share versus California's 11.8% share illustrates just how concentrated US population density is in a handful of coastal and Sun Belt states.</p>
+
+      <h2>Most and Least Populous US States</h2>
+      <p>California holds the top spot with approximately 39 million residents, a position it has held since overtaking New York in the 1960s. Texas is a distant second at ~30 million, with Florida close behind at ~23 million. The Sun Belt states — Florida, Texas, Arizona, Georgia, and North Carolina — have seen the fastest growth over the past two decades, driven by domestic migration, international immigration, and favorable economic conditions.</p>
+      <p>At the other end of the spectrum, Wyoming is the least populous state with roughly 581,000 residents, followed by Vermont (~647,000) and Alaska (~734,000). These states cover vast geographic areas but have sparse populations due to challenging climates, limited agricultural land, and limited economic diversification. Wyoming's entire population would fit inside many individual US cities with room to spare.</p>
+
+      <table style="width:100%;border-collapse:collapse;margin:1rem 0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border);">
+            <th style="padding:10px 12px;text-align:left;color:var(--heading);font-size:0.9rem;">State</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--heading);font-size:0.9rem;">Population (2022)</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--heading);font-size:0.9rem;">% of US</th>
+          </tr>
+        </thead>
+        <tbody style="color:var(--text);">
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">California</td><td style="padding:8px 12px;">39,029,342</td><td style="padding:8px 12px;">11.8%</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Texas</td><td style="padding:8px 12px;">30,029,572</td><td style="padding:8px 12px;">9.1%</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Florida</td><td style="padding:8px 12px;">22,610,726</td><td style="padding:8px 12px;">6.8%</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Wyoming</td><td style="padding:8px 12px;">581,381</td><td style="padding:8px 12px;">0.18%</td></tr>
+          <tr style="border-bottom:1px solid var(--border);"><td style="padding:8px 12px;">Vermont</td><td style="padding:8px 12px;">647,464</td><td style="padding:8px 12px;">0.20%</td></tr>
+          <tr><td style="padding:8px 12px;">Alaska</td><td style="padding:8px 12px;">733,583</td><td style="padding:8px 12px;">0.22%</td></tr>
+        </tbody>
+      </table>
+
+      <h2>How US Population Is Distributed by Region</h2>
+      <p>US population clusters strongly in four geographic regions. The South (including Texas, Florida, Georgia, North Carolina, and Virginia) is the most populous region, representing roughly 38% of the national total. The Midwest is home to about 21% of Americans, concentrated in Illinois, Ohio, and Michigan. The West, led by California, accounts for about 24%, and the Northeast — despite containing highly dense urban areas like New York City and Boston — holds about 17% of the population.</p>
+      <p>Urban concentration amplifies these regional numbers. The New York–Newark metropolitan area alone holds around 20 million people, while the Los Angeles metro holds 13 million. The top 10 US metro areas together account for more than 25% of the national population, even though they occupy a tiny fraction of US land area. Understanding state-level data is therefore just one lens — metro-level analysis often tells a more complete economic story.</p>
+      <p>Migration patterns continue to shift these distributions. Sun Belt states like Florida, Texas, and Arizona have gained millions of residents from high-cost coastal states over the 2020s, while states like New York, California, and Illinois have seen net domestic outflows. These shifts directly affect congressional representation: the 2020 Census resulted in Texas gaining two House seats and California losing one for the first time in its history.</p>
+
+      <h2>Population Data Sources — US Census Bureau</h2>
+      <p>This tool uses population data from the US Census Bureau, accessed through the DataUSA.io API. DataUSA aggregates public government datasets — including American Community Survey (ACS) estimates, decennial census counts, and Bureau of Economic Analysis data — into a single queryable API. The 2022 vintage estimates used here represent the Census Bureau's best annual count between full decennial censuses, which occur every 10 years (most recently 2020, next in 2030).</p>
+      <p>The Census Bureau publishes these Population Estimates Program (PEP) figures each year using birth and death records, IRS administrative data, Medicare enrollment, and immigration statistics to estimate population change since the last census. These estimates are revised and superseded when new decennial census data is available. For the most authoritative data, visit <strong>census.gov</strong>. For programmatic access to the same datasets used here, the DataUSA API at <strong>datausa.io/api</strong> is free and requires no API key.</p>
+
+      <p style="font-size:var(--text-sm);color:var(--text-muted);margin-top:2rem;">Last updated: March 2026 | Source: US Census Bureau via DataUSA.io (2022 estimates)</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    // ─────────────────────────────────────────────
+    // Hard-coded fallback dataset — 2022 US Census estimates
+    // ─────────────────────────────────────────────
+    var STATE_POPULATION_FALLBACK = {
+      "Alabama": 5074296, "Alaska": 733583, "Arizona": 7359197, "Arkansas": 3045637,
+      "California": 39029342, "Colorado": 5839926, "Connecticut": 3626205, "Delaware": 1018396,
+      "Florida": 22610726, "Georgia": 10912876, "Hawaii": 1440196, "Idaho": 1939033,
+      "Illinois": 12582032, "Indiana": 6833037, "Iowa": 3200517, "Kansas": 2937150,
+      "Kentucky": 4512310, "Louisiana": 4590241, "Maine": 1385340, "Maryland": 6164660,
+      "Massachusetts": 6981974, "Michigan": 10034113, "Minnesota": 5717184, "Mississippi": 2940057,
+      "Missouri": 6177957, "Montana": 1122867, "Nebraska": 1967923, "Nevada": 3177772,
+      "New Hampshire": 1395231, "New Jersey": 9261699, "New Mexico": 2113344, "New York": 19677151,
+      "North Carolina": 10698973, "North Dakota": 779261, "Ohio": 11756058, "Oklahoma": 4019800,
+      "Oregon": 4240137, "Pennsylvania": 12972008, "Rhode Island": 1093734, "South Carolina": 5282634,
+      "South Dakota": 909824, "Tennessee": 7051339, "Texas": 30029572, "Utah": 3380800,
+      "Vermont": 647464, "Virginia": 8683619, "Washington": 7785786, "West Virginia": 1775156,
+      "Wisconsin": 5892539, "Wyoming": 581381
+    };
+
+    // ─────────────────────────────────────────────
+    // App state
+    // ─────────────────────────────────────────────
+    var stateData = [];       // [{name, pop}]
+    var totalPop = 0;
+    var sortMode = 'pop-desc';
+    var searchQuery = '';
+    var selectedState = null;
+    var dataSource = 'fallback';
+
+    // ─────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────
+    function fmtNum(n) {
+      return n.toLocaleString('en-US');
+    }
+    function fmtShort(n) {
+      if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+      return n.toString();
+    }
+    function fmtPct(n, total) {
+      var p = (n / total) * 100;
+      if (p < 0.1) return p.toFixed(3) + '%';
+      if (p < 1) return p.toFixed(2) + '%';
+      return p.toFixed(1) + '%';
+    }
+
+    // ─────────────────────────────────────────────
+    // Convert fallback object → array
+    // ─────────────────────────────────────────────
+    function buildFromFallback() {
+      stateData = Object.keys(STATE_POPULATION_FALLBACK).map(function(name) {
+        return { name: name, pop: STATE_POPULATION_FALLBACK[name] };
+      });
+      totalPop = stateData.reduce(function(s, d) { return s + d.pop; }, 0);
+    }
+
+    // ─────────────────────────────────────────────
+    // Try to fetch live data from DataUSA API
+    // ─────────────────────────────────────────────
+    function fetchLiveData() {
+      var url = 'https://datausa.io/api/data?drilldowns=State&measures=Population&year=latest';
+      var timeout = setTimeout(function() {
+        // If API takes > 6 seconds, give up and use fallback
+        initTool(false);
+      }, 6000);
+
+      fetch(url)
+        .then(function(resp) {
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          return resp.json();
+        })
+        .then(function(json) {
+          clearTimeout(timeout);
+          var rows = (json && json.data) ? json.data : [];
+          if (rows.length < 40) throw new Error('Insufficient data');
+
+          // Parse API response
+          stateData = [];
+          rows.forEach(function(row) {
+            var name = row['State'];
+            var pop = parseInt(row['Population'], 10);
+            if (name && !isNaN(pop) && pop > 0) {
+              stateData.push({ name: name, pop: pop });
+            }
+          });
+          if (stateData.length < 40) throw new Error('Too few states parsed');
+
+          totalPop = stateData.reduce(function(s, d) { return s + d.pop; }, 0);
+          dataSource = 'live';
+          initTool(true);
+        })
+        .catch(function() {
+          clearTimeout(timeout);
+          buildFromFallback();
+          initTool(false);
+        });
+    }
+
+    // ─────────────────────────────────────────────
+    // Render summary strip
+    // ─────────────────────────────────────────────
+    function renderSummary() {
+      var sorted = stateData.slice().sort(function(a, b) { return b.pop - a.pop; });
+      document.getElementById('stat-total').textContent = fmtNum(totalPop);
+      document.getElementById('stat-count').textContent = stateData.length + ' states';
+      document.getElementById('stat-largest').textContent = sorted[0] ? sorted[0].name : '—';
+      document.getElementById('stat-smallest').textContent = sorted[sorted.length - 1] ? sorted[sorted.length - 1].name : '—';
+    }
+
+    // ─────────────────────────────────────────────
+    // Sort helper
+    // ─────────────────────────────────────────────
+    function getSorted(data) {
+      var arr = data.slice();
+      if (sortMode === 'pop-desc') arr.sort(function(a, b) { return b.pop - a.pop; });
+      else if (sortMode === 'pop-asc') arr.sort(function(a, b) { return a.pop - b.pop; });
+      else if (sortMode === 'name-asc') arr.sort(function(a, b) { return a.name.localeCompare(b.name); });
+      else if (sortMode === 'name-desc') arr.sort(function(a, b) { return b.name.localeCompare(a.name); });
+      return arr;
+    }
+
+    // ─────────────────────────────────────────────
+    // Render table
+    // ─────────────────────────────────────────────
+    function renderTable() {
+      var query = searchQuery.toLowerCase().trim();
+      var filtered = stateData.filter(function(d) {
+        return !query || d.name.toLowerCase().indexOf(query) !== -1;
+      });
+      var sorted = getSorted(filtered);
+
+      // Global rank (by population desc, unfiltered)
+      var globalRanked = stateData.slice().sort(function(a, b) { return b.pop - a.pop; });
+      var rankMap = {};
+      globalRanked.forEach(function(d, i) { rankMap[d.name] = i + 1; });
+
+      var maxPop = stateData.reduce(function(m, d) { return Math.max(m, d.pop); }, 0);
+
+      var tbody = document.getElementById('demo-tbody');
+      if (sorted.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="demo-no-results">No states match "' + searchQuery + '"</td></tr>';
+        document.getElementById('stat-count').textContent = '0 states';
+        return;
+      }
+
+      document.getElementById('stat-count').textContent = sorted.length + ' state' + (sorted.length !== 1 ? 's' : '');
+
+      var rows = sorted.map(function(d, idx) {
+        var rank = rankMap[d.name] || (idx + 1);
+        var pct = fmtPct(d.pop, totalPop);
+        var barWidth = maxPop > 0 ? Math.round((d.pop / maxPop) * 100) : 0;
+        var isSelected = selectedState && selectedState.name === d.name;
+        return '<tr class="' + (isSelected ? 'row-selected' : '') + '" data-state="' + d.name + '">' +
+          '<td class="td-rank">' + rank + '</td>' +
+          '<td class="td-state">' + d.name + '</td>' +
+          '<td class="td-pop">' + fmtNum(d.pop) + '</td>' +
+          '<td class="td-pct">' + pct + '</td>' +
+          '<td class="td-bar"><div class="demo-bar-bg"><div class="demo-bar-fill" style="width:' + barWidth + '%"></div></div></td>' +
+          '</tr>';
+      });
+      tbody.innerHTML = rows.join('');
+
+      // Attach row click listeners
+      var trs = tbody.querySelectorAll('tr[data-state]');
+      trs.forEach(function(tr) {
+        tr.addEventListener('click', function() {
+          var name = tr.getAttribute('data-state');
+          var found = stateData.find(function(d) { return d.name === name; });
+          if (found) showDetail(found);
+        });
+      });
+
+      // Update active sort headers
+      ['th-name', 'th-pop'].forEach(function(id) {
+        document.getElementById(id).classList.remove('active-sort');
+      });
+      if (sortMode === 'name-asc' || sortMode === 'name-desc') {
+        document.getElementById('th-name').classList.add('active-sort');
+      } else {
+        document.getElementById('th-pop').classList.add('active-sort');
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // Show state detail card
+    // ─────────────────────────────────────────────
+    function showDetail(state) {
+      selectedState = state;
+
+      // Global rank
+      var globalRanked = stateData.slice().sort(function(a, b) { return b.pop - a.pop; });
+      var rank = globalRanked.findIndex(function(d) { return d.name === state.name; }) + 1;
+
+      var hh = Math.round(state.pop / 2.53);
+
+      document.getElementById('detail-name').textContent = state.name;
+      document.getElementById('detail-pop').textContent = fmtNum(state.pop);
+      document.getElementById('detail-pct').textContent = fmtPct(state.pop, totalPop);
+      document.getElementById('detail-rank').textContent = '#' + rank + ' of 50';
+      document.getElementById('detail-hh').textContent = '~' + fmtNum(hh);
+
+      var detail = document.getElementById('demo-detail');
+      detail.style.display = 'block';
+
+      // Re-render table to highlight selected row
+      renderTable();
+    }
+
+    // ─────────────────────────────────────────────
+    // Render fun stats
+    // ─────────────────────────────────────────────
+    function renderFunStats() {
+      var sorted = stateData.slice().sort(function(a, b) { return b.pop - a.pop; });
+      var most = sorted[0];
+      var least = sorted[sorted.length - 1];
+      var avg = Math.round(totalPop / stateData.length);
+      var above = stateData.filter(function(d) { return d.pop >= avg; }).length;
+      var below = stateData.length - above;
+
+      document.getElementById('fun-most').textContent = most.name;
+      document.getElementById('fun-most-sub').textContent = fmtNum(most.pop);
+      document.getElementById('fun-least').textContent = least.name;
+      document.getElementById('fun-least-sub').textContent = fmtNum(least.pop);
+      document.getElementById('fun-avg').textContent = fmtNum(avg);
+      document.getElementById('fun-avg-sub').textContent = fmtShort(avg) + ' per state';
+      document.getElementById('fun-above').textContent = above + ' states';
+      document.getElementById('fun-below-sub').textContent = below + ' below average';
+
+      document.getElementById('demo-fun-stats').style.display = 'grid';
+    }
+
+    // ─────────────────────────────────────────────
+    // Update API badge
+    // ─────────────────────────────────────────────
+    function setApiBadge(live) {
+      var badge = document.getElementById('demo-api-status');
+      var text = document.getElementById('demo-api-text');
+      if (live) {
+        badge.classList.add('live');
+        text.textContent = 'Live data from DataUSA.io';
+      } else {
+        text.textContent = 'Using 2022 Census fallback data';
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // Init
+    // ─────────────────────────────────────────────
+    function initTool(live) {
+      setApiBadge(live);
+      renderSummary();
+      renderTable();
+      renderFunStats();
+    }
+
+    // ─────────────────────────────────────────────
+    // Event listeners
+    // ─────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+
+      // Sort select
+      document.getElementById('sort-select').addEventListener('change', function() {
+        sortMode = this.value;
+        renderTable();
+      });
+
+      // Search input
+      document.getElementById('state-search').addEventListener('input', function() {
+        searchQuery = this.value;
+        renderTable();
+      });
+
+      // Column header sort
+      document.getElementById('th-name').addEventListener('click', function() {
+        sortMode = (sortMode === 'name-asc') ? 'name-desc' : 'name-asc';
+        document.getElementById('sort-select').value = sortMode;
+        renderTable();
+      });
+      document.getElementById('th-pop').addEventListener('click', function() {
+        sortMode = (sortMode === 'pop-desc') ? 'pop-asc' : 'pop-desc';
+        document.getElementById('sort-select').value = sortMode;
+        renderTable();
+      });
+
+      // Share state button
+      document.getElementById('detail-share-btn').addEventListener('click', function() {
+        if (!selectedState) return;
+        var url = window.location.href.split('?')[0] + '?state=' + encodeURIComponent(selectedState.name);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url)
+            .then(function() {
+              if (window.showToast) window.showToast('Link copied — ' + selectedState.name + ' population data');
+            })
+            .catch(function() {
+              if (window.showToast) window.showToast('Copy failed — please copy the URL manually');
+            });
+        } else {
+          if (window.showToast) window.showToast('Copy not supported in this browser');
+        }
+      });
+
+      // Load data — attempt live API first, fall back to hard-coded
+      buildFromFallback(); // populate stateData immediately so tool isn't blank while fetching
+      initTool(false);     // show fallback data right away
+
+      // Then try to upgrade to live data in the background
+      fetchLiveData();
+
+      // Handle share link param
+      var params = new URLSearchParams(window.location.search);
+      var stateParam = params.get('state');
+      if (stateParam) {
+        var found = stateData.find(function(d) {
+          return d.name.toLowerCase() === decodeURIComponent(stateParam).toLowerCase();
+        });
+        if (found) showDetail(found);
+      }
+
+      // Breadcrumbs
+      if (window.TeamzTools && TeamzTools.renderBreadcrumbs) {
+        TeamzTools.renderBreadcrumbs([
+          { name: 'Home', url: '/' },
+          { name: 'US Tools', url: '/us/' },
+          { name: 'US Demographics Explorer' }
+        ]);
+      }
+
+      // FAQs
+      var faqs = [
+        {
+          q: 'Which is the most populous US state?',
+          a: 'California is the most populous US state with approximately 39 million people, followed by Texas (~30M) and Florida (~23M).'
+        },
+        {
+          q: 'Which is the least populous US state?',
+          a: 'Wyoming is the least populous US state with approximately 581,000 residents, followed by Vermont (~647K) and Alaska (~734K).'
+        },
+        {
+          q: 'What is the total US population?',
+          a: 'Approximately 331 million as of 2022 US Census Bureau estimates.'
+        },
+        {
+          q: 'How current is this data?',
+          a: 'Data is based on 2022 US Census Bureau estimates sourced via DataUSA.io. Official 2030 Census data will be available after the 2030 decennial census is completed.'
+        },
+        {
+          q: 'What percentage of the US population lives in California?',
+          a: 'Approximately 11.8% of the total US population lives in California, making it the most populous state by a significant margin.'
+        },
+        {
+          q: 'How is the population percentage calculated?',
+          a: 'Each state\'s population is divided by the total US population and multiplied by 100 to give the percentage share. For example, Texas with ~30M out of ~331M total equals about 9.1%.'
+        }
+      ];
+
+      if (window.TeamzTools) {
+        if (TeamzTools.renderFAQs) TeamzTools.renderFAQs(faqs);
+        }
+        if (TeamzTools.renderRelatedTools) {
+          TeamzTools.renderRelatedTools([
+            { slug: 'us/income-tax-calculator', name: 'US Income Tax Calculator', description: 'Calculate federal and state income tax for all 50 states' },
+            { slug: 'us/sales-tax-calculator', name: 'US Sales Tax Calculator', description: 'Look up sales tax rates by state' },
+            { slug: 'us/minimum-wage-calculator', name: 'US Minimum Wage Calculator', description: 'Current minimum wage by state' },
+            { slug: 'tools/zip-code-lookup', name: 'ZIP Code Lookup', description: 'Find city and state from any US ZIP code' },
+            { slug: 'us/cost-of-living-calculator', name: 'Cost of Living Calculator', description: 'Compare cost of living between US cities' },
+            { slug: 'evergreen/world-population-clock', name: 'World Population Clock', description: 'Live world population counter' }
+          ]);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

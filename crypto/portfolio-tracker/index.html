@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Portfolio Tracker — Live Prices — Teamz Lab Tools</title>
+  <meta name="description" content="Track your crypto portfolio with live prices. Add Bitcoin, Ethereum, Solana and 12 more coins. Free portfolio tracker — no account, fully private.">
+  <meta property="og:title" content="Crypto Portfolio Tracker — Live Prices — Teamz Lab Tools">
+  <meta property="og:description" content="Track your crypto portfolio with live prices. Add Bitcoin, Ethereum, Solana and 12 more coins. Free portfolio tracker — no account, fully private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/crypto/portfolio-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/crypto.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Crypto Portfolio Tracker — Live Prices — Teamz Lab Tools">
+  <meta name="twitter:description" content="Track your crypto portfolio with live prices. Add Bitcoin, Ethereum, Solana and 12 more coins. Free, no account.">
+  <link rel="canonical" href="https://tool.teamzlab.com/crypto/portfolio-tracker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* Portfolio Add Row */
+    .portfolio-add-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .portfolio-coin-select,
+    .portfolio-amount-input,
+    .portfolio-currency-select {
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: var(--text-sm);
+    }
+    .portfolio-coin-select { flex: 2; min-width: 160px; }
+    .portfolio-amount-input { flex: 1; min-width: 120px; }
+    .portfolio-coin-select:focus,
+    .portfolio-amount-input:focus,
+    .portfolio-currency-select:focus { outline: 2px solid var(--accent); }
+
+    /* Summary bar */
+    .portfolio-summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      margin-bottom: 20px;
+    }
+    .portfolio-total-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .portfolio-total-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .portfolio-updated {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* Controls bar */
+    .portfolio-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    /* Table */
+    .portfolio-table-wrap { overflow-x: auto; }
+    .portfolio-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+    .portfolio-table th {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .portfolio-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .portfolio-table tr:last-child td { border-bottom: none; }
+    .portfolio-table tr:hover td { background: var(--surface); }
+    .coin-name-col { font-weight: 600; color: var(--heading); }
+    .coin-sym-col {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      display: block;
+      font-weight: 400;
+    }
+    .change-positive { color: var(--accent); font-weight: 600; }
+    .change-negative { color: var(--text-muted); font-weight: 600; }
+    .change-zero { color: var(--text-muted); }
+
+    /* Remove button in table */
+    .remove-coin-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .remove-coin-btn:hover { color: var(--heading); background: var(--border); }
+
+    /* Empty state */
+    .portfolio-empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+    }
+    .portfolio-empty strong { display: block; font-size: var(--text-base); color: var(--heading); margin-bottom: 8px; }
+
+    /* Loading overlay */
+    .portfolio-loading {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--text-muted);
+      font-size: var(--text-sm);
+    }
+
+    @media (max-width: 600px) {
+      .portfolio-add-row { flex-direction: column; align-items: stretch; }
+      .portfolio-coin-select, .portfolio-amount-input { flex: unset; min-width: unset; width: 100%; }
+      .portfolio-summary { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .portfolio-total-value { font-size: var(--text-lg); }
+      .portfolio-updated { margin-left: 0; }
+      .portfolio-controls { flex-direction: column; align-items: stretch; }
+      .portfolio-controls .btn-secondary { width: 100%; text-align: center; }
+      .portfolio-table th, .portfolio-table td { padding: 8px 8px; font-size: var(--text-xs); }
+      .portfolio-table th:nth-child(3),
+      .portfolio-table td:nth-child(3) { display: none; } /* hide Price col on very small */
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is my portfolio data stored anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. Your holdings are saved locally in your browser only using localStorage. Prices are fetched from CoinGecko's public API. Nothing is sent to any server."}}, {"@type": "Question", "name": "Which cryptocurrencies are supported?", "acceptedAnswer": {"@type": "Answer", "text": "Bitcoin, Ethereum, Solana, BNB, Cardano, XRP, Dogecoin, Polkadot, Avalanche, Chainlink, Litecoin, Stellar, Uniswap, Tron, and Shiba Inu — 15 coins in total."}}, {"@type": "Question", "name": "How often do prices update?", "acceptedAnswer": {"@type": "Answer", "text": "Automatically every 5 minutes. You can also click Refresh Prices to fetch the latest data at any time."}}, {"@type": "Question", "name": "What currencies are supported for portfolio value?", "acceptedAnswer": {"@type": "Answer", "text": "USD, EUR, GBP, and AUD. Select your preferred currency from the dropdown and the total portfolio value updates instantly."}}, {"@type": "Question", "name": "Can I export my portfolio?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, click Export CSV to download your holdings and current values as a spreadsheet file compatible with Excel, Google Sheets, and Numbers."}}, {"@type": "Question", "name": "Does this tool work on mobile?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, fully responsive and works on all devices and browsers including Chrome, Firefox, Safari, and Edge."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Crypto Portfolio Tracker", "description": "Track your crypto portfolio with live prices from CoinGecko. Add Bitcoin, Ethereum, Solana and 12 more coins. Free, no account, fully private.", "url": "https://tool.teamzlab.com/crypto/portfolio-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Crypto Portfolio Tracker</h1>
+      <p class="tool-description">Add your crypto holdings and track their total value with live prices from CoinGecko. Supports Bitcoin, Ethereum, Solana, and 12 more coins. No sign-up, no server — your data stays in your browser.</p>
+    </section>
+
+    <section class="tool-calculator">
+
+      <!-- Add Coin Row -->
+      <div class="portfolio-add-row">
+        <select id="coin-select" class="portfolio-coin-select" aria-label="Select coin">
+          <option value="">— Select a coin —</option>
+          <option value="bitcoin" data-symbol="BTC" data-name="Bitcoin">Bitcoin (BTC)</option>
+          <option value="ethereum" data-symbol="ETH" data-name="Ethereum">Ethereum (ETH)</option>
+          <option value="solana" data-symbol="SOL" data-name="Solana">Solana (SOL)</option>
+          <option value="binancecoin" data-symbol="BNB" data-name="BNB">BNB (BNB)</option>
+          <option value="cardano" data-symbol="ADA" data-name="Cardano">Cardano (ADA)</option>
+          <option value="ripple" data-symbol="XRP" data-name="XRP">XRP (XRP)</option>
+          <option value="dogecoin" data-symbol="DOGE" data-name="Dogecoin">Dogecoin (DOGE)</option>
+          <option value="polkadot" data-symbol="DOT" data-name="Polkadot">Polkadot (DOT)</option>
+          <option value="avalanche-2" data-symbol="AVAX" data-name="Avalanche">Avalanche (AVAX)</option>
+          <option value="chainlink" data-symbol="LINK" data-name="Chainlink">Chainlink (LINK)</option>
+          <option value="litecoin" data-symbol="LTC" data-name="Litecoin">Litecoin (LTC)</option>
+          <option value="stellar" data-symbol="XLM" data-name="Stellar">Stellar (XLM)</option>
+          <option value="uniswap" data-symbol="UNI" data-name="Uniswap">Uniswap (UNI)</option>
+          <option value="tron" data-symbol="TRX" data-name="Tron">Tron (TRX)</option>
+          <option value="shiba-inu" data-symbol="SHIB" data-name="Shiba Inu">Shiba Inu (SHIB)</option>
+        </select>
+        <input type="number" id="coin-amount" class="portfolio-amount-input" placeholder="Amount (e.g. 0.5)" min="0" step="any" aria-label="Amount held">
+        <select id="portfolio-currency" class="portfolio-currency-select" aria-label="Display currency">
+          <option value="usd">USD ($)</option>
+          <option value="eur">EUR (€)</option>
+          <option value="gbp">GBP (£)</option>
+          <option value="aud">AUD (A$)</option>
+        </select>
+        <button id="add-coin-btn" class="btn-primary">+ Add Coin</button>
+      </div>
+
+      <!-- Portfolio Summary -->
+      <div class="portfolio-summary" id="portfolio-summary" style="display:none">
+        <div>
+          <div class="portfolio-total-label">Total Portfolio Value</div>
+          <div class="portfolio-total-value" id="portfolio-total-value">—</div>
+        </div>
+        <div class="portfolio-updated" id="portfolio-updated"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="portfolio-controls" id="portfolio-controls" style="display:none">
+        <button id="refresh-btn" class="btn-secondary">↻ Refresh Prices</button>
+        <button id="export-csv-btn" class="btn-secondary">↓ Export CSV</button>
+        <button id="clear-portfolio-btn" class="btn-secondary tool-clear-btn">✕ Clear Portfolio</button>
+      </div>
+
+      <!-- Loading state -->
+      <div id="portfolio-loading" class="portfolio-loading" style="display:none">Fetching live prices...</div>
+
+      <!-- Portfolio Table -->
+      <div class="portfolio-table-wrap" id="portfolio-table-wrap" style="display:none">
+        <table class="portfolio-table">
+          <thead>
+            <tr>
+              <th>Coin</th>
+              <th>Amount</th>
+              <th>Price</th>
+              <th>24h Change</th>
+              <th>Total Value</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="portfolio-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Empty state -->
+      <div id="portfolio-empty" class="portfolio-empty">
+        <strong>No coins added yet</strong>
+        Add your first coin to start tracking your portfolio
+      </div>
+
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Track Your Crypto Portfolio for Free</h2>
+      <p>This free crypto portfolio tracker lets you monitor the combined value of your cryptocurrency holdings in real time — no account, no app download, and no data shared with any server. Select a coin from the dropdown, enter the amount you hold, and click "Add Coin." The tool immediately fetches the current price from the CoinGecko public API and calculates your holding's total value. Your portfolio is automatically saved to your browser's localStorage, so your holdings are still there when you return. Based on <a href="https://www.coingecko.com/" rel="noopener noreferrer" target="_blank">CoinGecko</a> data. Last updated: March 2026.</p>
+      <p>You can track up to 15 popular cryptocurrencies including Bitcoin (BTC), Ethereum (ETH), Solana (SOL), BNB, Cardano (ADA), XRP, Dogecoin (DOGE), Polkadot (DOT), Avalanche (AVAX), Chainlink (LINK), Litecoin (LTC), Stellar (XLM), Uniswap (UNI), Tron (TRX), and Shiba Inu (SHIB). Portfolio values can be displayed in USD, EUR, GBP, or AUD.</p>
+
+      <h2>Live Bitcoin and Ethereum Prices</h2>
+      <p>Prices are fetched directly from the CoinGecko public API — one of the most trusted crypto data sources, used by thousands of apps worldwide. The API provides real-time prices with 24-hour percentage changes, so you can see at a glance whether your holdings are up or down today. Green values indicate a price gain; muted values indicate a price drop. Prices auto-refresh every 5 minutes while the page is open, and you can also click "Refresh Prices" for an immediate update.</p>
+      <p>The 24-hour change percentage shown next to each coin lets you spot daily movers quickly. If Bitcoin is up 3% but Solana is down 2%, you can see the net effect on your total portfolio value at a glance. The total portfolio value at the top updates automatically whenever prices refresh.</p>
+
+      <h2>Portfolio Tracker vs Crypto Exchange Apps</h2>
+      <p>Exchange apps like Coinbase, Binance, and Kraken only show balances held on their own platform. If you hold coins across multiple wallets, hardware wallets (like Ledger), or different exchanges, you need a separate tracker to see your complete picture. This tool is exchange-agnostic — you simply enter the amounts you hold regardless of where they are stored.</p>
+      <p>Unlike dedicated portfolio apps such as CoinStats, Delta, or Blockfolio, this tracker requires no account, no email, and no app installation. It works in any browser, including on mobile. There are no premium tiers, no ads to sign up through, and no data collection. It is a pure browser tool.</p>
+      <p>Use the Export CSV button to download your portfolio as a spreadsheet. This makes it easy to import into Google Sheets, Excel, or your own tax software for further analysis.</p>
+
+      <h2>Keeping Your Crypto Data Private</h2>
+      <p>Privacy is built into the design. Your portfolio holdings — which coins you own and how much — are saved only in your browser's localStorage. This data never leaves your device. The only external connection this tool makes is a price fetch from the CoinGecko API, which is a standard public price feed that does not receive any information about your holdings. CoinGecko's API call contains only the list of coin IDs you selected; it has no way to associate that request with a specific portfolio or user.</p>
+      <p>If you clear your browser data or use Private/Incognito mode, your saved portfolio will not persist. For a permanent record, use the Export CSV feature to save a snapshot to your own storage. You can re-import values manually at any time by adding coins again from the dropdown.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    var STORAGE_KEY = 'crypto_portfolio_v1';
+    var REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+    var refreshTimer = null;
+
+    // Coin metadata map
+    var COIN_META = {
+      'bitcoin':       { symbol: 'BTC', name: 'Bitcoin' },
+      'ethereum':      { symbol: 'ETH', name: 'Ethereum' },
+      'solana':        { symbol: 'SOL', name: 'Solana' },
+      'binancecoin':   { symbol: 'BNB', name: 'BNB' },
+      'cardano':       { symbol: 'ADA', name: 'Cardano' },
+      'ripple':        { symbol: 'XRP', name: 'XRP' },
+      'dogecoin':      { symbol: 'DOGE', name: 'Dogecoin' },
+      'polkadot':      { symbol: 'DOT', name: 'Polkadot' },
+      'avalanche-2':   { symbol: 'AVAX', name: 'Avalanche' },
+      'chainlink':     { symbol: 'LINK', name: 'Chainlink' },
+      'litecoin':      { symbol: 'LTC', name: 'Litecoin' },
+      'stellar':       { symbol: 'XLM', name: 'Stellar' },
+      'uniswap':       { symbol: 'UNI', name: 'Uniswap' },
+      'tron':          { symbol: 'TRX', name: 'Tron' },
+      'shiba-inu':     { symbol: 'SHIB', name: 'Shiba Inu' }
+    };
+
+    var CURRENCY_SYMBOLS = { usd: '$', eur: '€', gbp: '£', aud: 'A$' };
+
+    // State
+    var portfolio = []; // [{id, symbol, name, amount}]
+    var prices = {};    // {coinId: {usd, eur, gbp, aud, usd_24h_change}}
+    var currentCurrency = 'usd';
+
+    // --- Storage ---
+    function loadPortfolio() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) portfolio = JSON.parse(raw);
+      } catch(e) { portfolio = []; }
+    }
+    function savePortfolio() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio)); } catch(e) {}
+    }
+
+    // --- Formatting ---
+    function fmtPrice(val, currency) {
+      if (val === null || val === undefined) return '—';
+      var sym = CURRENCY_SYMBOLS[currency || currentCurrency] || '$';
+      if (val >= 10000) return sym + val.toLocaleString('en', { maximumFractionDigits: 2 });
+      if (val >= 1) return sym + val.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      if (val >= 0.0001) return sym + val.toFixed(6);
+      return sym + val.toExponential(4);
+    }
+    function fmtAmount(val) {
+      if (val >= 1000) return val.toLocaleString('en', { maximumFractionDigits: 2 });
+      if (val >= 1) return val.toLocaleString('en', { minimumFractionDigits: 0, maximumFractionDigits: 6 });
+      return val.toLocaleString('en', { minimumFractionDigits: 0, maximumFractionDigits: 8 });
+    }
+    function fmtChange(val) {
+      if (val === null || val === undefined) return '<span class="change-zero">—</span>';
+      var cls = val > 0 ? 'change-positive' : val < 0 ? 'change-negative' : 'change-zero';
+      var arrow = val > 0 ? '▲ ' : val < 0 ? '▼ ' : '';
+      return '<span class="' + cls + '">' + arrow + Math.abs(val).toFixed(2) + '%</span>';
+    }
+
+    // --- API ---
+    function fetchPrices(callback) {
+      if (!portfolio.length) { if (callback) callback(); return; }
+
+      var ids = portfolio.map(function(c) { return c.id; })
+        .filter(function(v, i, a) { return a.indexOf(v) === i; })
+        .join(',');
+
+      var btn = document.getElementById('refresh-btn');
+      if (btn) btn.disabled = true;
+
+      showEl(document.getElementById('portfolio-loading'));
+
+      var url = 'https://api.coingecko.com/api/v3/simple/price?ids=' + ids +
+                '&vs_currencies=usd,eur,gbp,aud&include_24hr_change=true';
+
+      fetch(url)
+        .then(function(r) {
+          if (!r.ok) throw new Error('API ' + r.status);
+          return r.json();
+        })
+        .then(function(data) {
+          prices = data;
+          var now = new Date();
+          var timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          var el = document.getElementById('portfolio-updated');
+          if (el) el.textContent = 'Updated ' + timeStr;
+          if (callback) callback();
+        })
+        .catch(function() {
+          if (window.showToast) window.showToast('Price fetch failed — prices may be delayed. Try refreshing.');
+          if (callback) callback();
+        })
+        .finally(function() {
+          hideEl(document.getElementById('portfolio-loading'));
+          if (btn) btn.disabled = false;
+        });
+    }
+
+    // --- Render ---
+    function renderPortfolio() {
+      var tbody = document.getElementById('portfolio-tbody');
+      var emptyEl = document.getElementById('portfolio-empty');
+      var tableWrap = document.getElementById('portfolio-table-wrap');
+      var summaryEl = document.getElementById('portfolio-summary');
+      var controlsEl = document.getElementById('portfolio-controls');
+
+      if (!portfolio.length) {
+        hideEl(tableWrap);
+        hideEl(summaryEl);
+        hideEl(controlsEl);
+        showEl(emptyEl);
+        return;
+      }
+
+      hideEl(emptyEl);
+      showEl(tableWrap);
+      showEl(summaryEl);
+      showEl(controlsEl);
+
+      var totalValue = 0;
+      var rows = portfolio.map(function(coin, idx) {
+        var priceData = prices[coin.id];
+        var price = priceData ? (priceData[currentCurrency] || null) : null;
+        var change = priceData ? (priceData[currentCurrency + '_24h_change'] || null) : null;
+        var holdingValue = (price !== null) ? price * coin.amount : null;
+        if (holdingValue !== null) totalValue += holdingValue;
+
+        return '<tr data-idx="' + idx + '">' +
+          '<td><span class="coin-name-col">' + escapeHtml(coin.name) + '</span>' +
+          '<span class="coin-sym-col">' + escapeHtml(coin.symbol) + '</span></td>' +
+          '<td>' + fmtAmount(coin.amount) + '</td>' +
+          '<td>' + (price !== null ? fmtPrice(price) : '<span class="change-zero">—</span>') + '</td>' +
+          '<td>' + fmtChange(change) + '</td>' +
+          '<td><strong>' + (holdingValue !== null ? fmtPrice(holdingValue) : '<span class="change-zero">—</span>') + '</strong></td>' +
+          '<td><button class="remove-coin-btn" data-idx="' + idx + '" aria-label="Remove ' + escapeHtml(coin.name) + '">×</button></td>' +
+          '</tr>';
+      });
+
+      tbody.innerHTML = rows.join('');
+
+      // Update total
+      var totalEl = document.getElementById('portfolio-total-value');
+      if (totalEl) {
+        var sym = CURRENCY_SYMBOLS[currentCurrency] || '$';
+        totalEl.textContent = totalValue > 0
+          ? fmtPrice(totalValue)
+          : sym + '0.00';
+      }
+
+      // Wire remove buttons
+      tbody.querySelectorAll('.remove-coin-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(this.dataset.idx, 10);
+          portfolio.splice(idx, 1);
+          savePortfolio();
+          renderPortfolio();
+        });
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // --- Add coin ---
+    function addCoin() {
+      var selectEl = document.getElementById('coin-select');
+      var amountEl = document.getElementById('coin-amount');
+
+      var coinId = selectEl.value;
+      var amount = parseFloat(amountEl.value);
+
+      if (!coinId) {
+        if (window.showToast) window.showToast('Please select a coin.');
+        return;
+      }
+      if (!amount || amount <= 0 || isNaN(amount)) {
+        if (window.showToast) window.showToast('Please enter a valid amount greater than 0.');
+        return;
+      }
+
+      var meta = COIN_META[coinId];
+      if (!meta) return;
+
+      // Check if already exists — update amount instead
+      var existing = null;
+      for (var i = 0; i < portfolio.length; i++) {
+        if (portfolio[i].id === coinId) { existing = portfolio[i]; break; }
+      }
+
+      if (existing) {
+        existing.amount = parseFloat((existing.amount + amount).toFixed(10));
+        if (window.showToast) window.showToast('Added ' + fmtAmount(amount) + ' ' + meta.symbol + ' to existing position.');
+      } else {
+        portfolio.push({ id: coinId, symbol: meta.symbol, name: meta.name, amount: amount });
+      }
+
+      savePortfolio();
+
+      // Reset inputs
+      selectEl.selectedIndex = 0;
+      amountEl.value = '';
+
+      // Fetch prices then render
+      fetchPrices(function() { renderPortfolio(); });
+    }
+
+    // --- Export CSV ---
+    function exportCSV() {
+      if (!portfolio.length) {
+        if (window.showToast) window.showToast('No coins to export.');
+        return;
+      }
+      var sym = CURRENCY_SYMBOLS[currentCurrency] || '$';
+      var lines = ['Coin,Symbol,Amount,' + sym + ' Price,24h Change %,' + sym + ' Total Value'];
+      portfolio.forEach(function(coin) {
+        var priceData = prices[coin.id];
+        var price = priceData ? (priceData[currentCurrency] || '') : '';
+        var change = priceData ? (priceData[currentCurrency + '_24h_change'] || '') : '';
+        var total = (price !== '' && coin.amount) ? (price * coin.amount).toFixed(2) : '';
+        var changeFmt = change !== '' ? parseFloat(change).toFixed(2) + '%' : '';
+        lines.push([
+          coin.name,
+          coin.symbol,
+          coin.amount,
+          price !== '' ? price.toFixed ? price.toFixed(6) : price : '',
+          changeFmt,
+          total
+        ].join(','));
+      });
+      var csv = lines.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'crypto-portfolio-' + new Date().toISOString().slice(0,10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('Portfolio exported as CSV.');
+    }
+
+    // --- Auto-refresh ---
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshTimer = setInterval(function() {
+        if (portfolio.length) {
+          fetchPrices(function() { renderPortfolio(); });
+        }
+      }, REFRESH_INTERVAL);
+    }
+    function stopAutoRefresh() {
+      if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+    }
+
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', function() {
+
+      TeamzTools.renderBreadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Crypto Tools', url: '/crypto/' },
+        { name: 'Crypto Portfolio Tracker' }
+      ]);
+
+      var faqs = [
+        { q: 'Is my portfolio data stored anywhere?', a: 'No. Your holdings are saved locally in your browser only using localStorage. Prices are fetched from CoinGecko\'s public API. Nothing is sent to any server.' },
+        { q: 'Which cryptocurrencies are supported?', a: 'Bitcoin, Ethereum, Solana, BNB, Cardano, XRP, Dogecoin, Polkadot, Avalanche, Chainlink, Litecoin, Stellar, Uniswap, Tron, and Shiba Inu — 15 coins in total.' },
+        { q: 'How often do prices update?', a: 'Automatically every 5 minutes. You can also click Refresh Prices to fetch the latest data at any time.' },
+        { q: 'What currencies are supported for portfolio value?', a: 'USD, EUR, GBP, and AUD. Select your preferred currency from the dropdown and the total portfolio value updates instantly.' },
+        { q: 'Can I export my portfolio?', a: 'Yes, click Export CSV to download your holdings and current values as a spreadsheet file compatible with Excel, Google Sheets, and Numbers.' },
+        { q: 'Does this tool work on mobile?', a: 'Yes, fully responsive and works on all devices and browsers including Chrome, Firefox, Safari, and Edge.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+      TeamzTools.renderRelatedTools([
+        { slug: 'crypto/profit-loss-calculator', name: 'Crypto Profit/Loss Calculator', description: 'Calculate profit or loss on any crypto trade' },
+        { slug: 'crypto/airdrop-tax-calculator', name: 'Crypto Airdrop Tax Calculator', description: 'Calculate tax on cryptocurrency airdrops' },
+        { slug: 'crypto/satoshi-to-btc-converter', name: 'Satoshi to BTC Converter', description: 'Convert between Satoshi and Bitcoin' },
+        { slug: 'crypto/crypto-tax-by-country', name: 'Crypto Tax by Country', description: 'Crypto capital gains tax rates worldwide' },
+        { slug: 'ae/gold-price-calculator', name: 'UAE Gold Price Calculator', description: 'Live gold price in AED by weight and karat' },
+        { slug: 'evergreen/currency-converter', name: 'Currency Converter', description: 'Convert between 150+ world currencies' }
+      ]);
+
+      // Load saved portfolio
+      loadPortfolio();
+
+      // Wire: Add coin button
+      document.getElementById('add-coin-btn').addEventListener('click', addCoin);
+
+      // Wire: Enter key on amount input
+      document.getElementById('coin-amount').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') addCoin();
+      });
+
+      // Wire: Refresh button
+      document.getElementById('refresh-btn').addEventListener('click', function() {
+        fetchPrices(function() { renderPortfolio(); });
+      });
+
+      // Wire: Export CSV button
+      document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+
+      // Wire: Clear portfolio button
+      document.getElementById('clear-portfolio-btn').addEventListener('click', function() {
+        if (!portfolio.length) {
+          if (window.showToast) window.showToast('Portfolio is already empty.');
+          return;
+        }
+        portfolio = [];
+        prices = {};
+        savePortfolio();
+        renderPortfolio();
+        if (window.showToast) window.showToast('Portfolio cleared.');
+      });
+
+      // Wire: Currency selector
+      document.getElementById('portfolio-currency').addEventListener('change', function() {
+        currentCurrency = this.value;
+        if (portfolio.length) {
+          fetchPrices(function() { renderPortfolio(); });
+        }
+      });
+
+      // Initial render (empty or with saved data)
+      if (portfolio.length) {
+        renderPortfolio();
+        fetchPrices(function() { renderPortfolio(); });
+      } else {
+        renderPortfolio();
+      }
+
+      // Start auto-refresh
+      startAutoRefresh();
+    });
+  })();
+  </script>
+</body>
+</html>
