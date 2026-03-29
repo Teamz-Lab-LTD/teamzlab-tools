@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-29 05:38
+# Indexing Report — 2026-03-29 07:46
 
 Total pages: 1
 Checked: 1
@@ -8,4 +8,4 @@ Errors: 0
 
 ## Indexed Pages (1)
 
-- /bd/govt-salary-calculator/
+- /nl/box-3-belasting-berekenen/
