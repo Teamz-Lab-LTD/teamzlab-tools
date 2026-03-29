@@ -12,6 +12,8 @@ Usage:
   python3 build-request-indexing.py --all            # Index ALL pages from sitemap
   python3 build-request-indexing.py --check          # Check indexing status only
   python3 build-request-indexing.py --url URL        # Index a specific URL
+  python3 build-request-indexing.py --indexnow-only  # Submit only to IndexNow
+  python3 build-request-indexing.py --ping-only      # Ping sitemap endpoints only
 """
 import json
 import os
@@ -247,8 +249,14 @@ def get_all_urls_from_sitemap():
 
 
 def main():
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print(__doc__.strip())
+        return
+
     mode = '--top'
     check_only = '--check' in sys.argv
+    indexnow_only = '--indexnow-only' in sys.argv
+    ping_only = '--ping-only' in sys.argv
     specific_url = None
 
     for i, arg in enumerate(sys.argv[1:], 1):
@@ -277,6 +285,14 @@ def main():
     print('=' * 66)
     print(f'  INDEXING REQUEST — {len(full_urls)} pages')
     print('=' * 66)
+
+    if indexnow_only:
+        submit_indexnow(full_urls)
+        return
+
+    if ping_only:
+        ping_sitemaps()
+        return
 
     # ─── Step 1: Google URL Inspection ───────────────────────────────
     token = get_sc_token()

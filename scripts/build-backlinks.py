@@ -9,6 +9,7 @@ Usage:
     python3 scripts/build-backlinks.py submit --auto     # Auto-submit where API available
     python3 scripts/build-backlinks.py ping              # Ping blog/indexing services (automated)
     python3 scripts/build-backlinks.py status            # Show submission status
+    python3 scripts/build-backlinks.py next              # Show next pending directories to work
     python3 scripts/build-backlinks.py clipboard [id]    # Copy submission details to clipboard
 
 Directories are categorized by link type:
@@ -31,6 +32,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 HISTORY_FILE = SCRIPT_DIR / "backlinks-history.json"
+INDEXING_SCRIPT = SCRIPT_DIR / "build-request-indexing.py"
 
 # ──────────────────────────────────────────────────────────────
 # Site Details (used for submissions)
@@ -577,10 +579,31 @@ def show_status():
     print("  Commands:")
     print("    python3 scripts/build-backlinks.py submit          # Open directories to submit")
     print("    python3 scripts/build-backlinks.py submit --auto   # Auto-ping indexing services")
+    print("    python3 scripts/build-backlinks.py ping            # Alias for --auto ping")
+    print("    python3 scripts/build-backlinks.py next 5 1        # Show next 5 pending Priority 1 directories")
     print("    python3 scripts/build-backlinks.py clipboard 1     # Copy details for directory #1")
     print("    python3 scripts/build-backlinks.py done <id>       # Mark as submitted")
     print("    python3 scripts/build-backlinks.py approved <id>   # Mark as approved")
     print()
+
+
+def link_sort_weight(link_type):
+    weights = {
+        "DoFollow": 0,
+        "UGC/Mixed": 1,
+        "NoFollow": 2,
+        "Indexing": 3,
+    }
+    return weights.get(link_type, 9)
+
+
+def get_pending(priority=None):
+    history = load_history()
+    pending = [d for d in DIRECTORIES if d["id"] not in history and not d.get("auto")]
+    if priority is not None:
+        pending = [d for d in pending if d["priority"] == priority]
+    pending.sort(key=lambda x: (x["priority"], link_sort_weight(x["link_type"]), -x["da"]))
+    return pending
 
 
 def generate_clipboard_text():
@@ -619,8 +642,6 @@ Key Features:
 
 
 def do_submit(auto_only=False):
-    history = load_history()
-
     if auto_only:
         # Auto-ping indexing services
         print("\n  AUTO-PINGING indexing services...\n")
@@ -630,8 +651,29 @@ def do_submit(auto_only=False):
             if not d.get("auto"):
                 continue
             if d["id"] == "ping_indexnow":
-                # IndexNow handled by build-request-indexing.py
-                print(f"  [skip] {d['name']} — use build-request-indexing.py instead")
+                if not INDEXING_SCRIPT.exists():
+                    print(f"  [skip] {d['name']} — {INDEXING_SCRIPT.name} not found")
+                    continue
+                try:
+                    result = subprocess.run(
+                        [sys.executable, str(INDEXING_SCRIPT), "--indexnow-only"],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                        check=False,
+                    )
+                    if result.stdout.strip():
+                        for line in result.stdout.strip().splitlines():
+                            print(f"         {line}")
+                    if result.returncode == 0:
+                        print(f"  [ok]   {d['name']} — submitted via {INDEXING_SCRIPT.name}")
+                        mark_submitted(d["id"], d["url"], "Submitted via build-request-indexing.py --indexnow-only")
+                    else:
+                        print(f"  [fail] {d['name']} — {INDEXING_SCRIPT.name} exited {result.returncode}")
+                    if result.stderr.strip():
+                        print(f"         stderr: {result.stderr.strip()[:200]}")
+                except Exception as e:
+                    print(f"  [fail] {d['name']} — {e}")
                 continue
 
             try:
@@ -641,14 +683,20 @@ def do_submit(auto_only=False):
                 status = resp.getcode()
                 print(f"  [ok]   {d['name']} — HTTP {status}")
                 mark_submitted(d["id"], d["url"], f"Auto-pinged, HTTP {status}")
+            except urllib.error.HTTPError as e:
+                if d["id"] == "ping_bing" and e.code == 410:
+                    print(f"  [skip] {d['name']} — endpoint retired (HTTP 410), use IndexNow instead")
+                elif d["id"] == "ping_google" and e.code == 429:
+                    print(f"  [skip] {d['name']} — rate limited (HTTP 429), retry later or rely on sitemap fetch")
+                else:
+                    print(f"  [fail] {d['name']} — HTTP {e.code}: {e.reason}")
             except Exception as e:
                 print(f"  [fail] {d['name']} — {e}")
         print()
         return
 
     # Interactive: open pending directories in browser
-    pending = [d for d in DIRECTORIES if d["id"] not in history and not d.get("auto")]
-    pending.sort(key=lambda x: (x["priority"], -x["da"]))
+    pending = get_pending()
 
     if not pending:
         print("\n  All directories have been submitted!\n")
@@ -692,6 +740,32 @@ def do_submit(auto_only=False):
         print(f"  {remaining} more directories remaining. Run again after finishing these.\n")
 
 
+def show_next(limit=5, priority=None):
+    pending = get_pending(priority)
+
+    if not pending:
+        print("\n  No pending directories match that filter.\n")
+        return
+
+    print("=" * 64)
+    print("  NEXT BACKLINK SUBMISSION QUEUE")
+    print("=" * 64)
+    print()
+
+    for idx, d in enumerate(pending[:limit], start=1):
+        pri = {1: "P1", 2: "P2", 3: "P3"}.get(d["priority"], "P?")
+        print(f"  {idx}. [{pri}] {d['name']} ({d['id']})")
+        print(f"     DA: {d['da']} | Link: {d['link_type']} | Category: {d['category']}")
+        print(f"     URL: {d['url']}")
+        print(f"     Notes: {d['notes']}")
+        print()
+
+    remaining = len(pending) - min(limit, len(pending))
+    if remaining > 0:
+        print(f"  Remaining after this batch: {remaining}")
+        print()
+
+
 def do_clipboard(dir_id=None):
     clip_text = generate_clipboard_text()
 
@@ -732,6 +806,22 @@ def main():
     elif args[0] == "submit":
         auto_only = "--auto" in args
         do_submit(auto_only)
+    elif args[0] == "ping":
+        do_submit(auto_only=True)
+    elif args[0] == "next":
+        limit = 5
+        priority = None
+        if len(args) > 1:
+            try:
+                limit = max(1, int(args[1]))
+            except ValueError:
+                pass
+        if len(args) > 2:
+            try:
+                priority = int(args[2])
+            except ValueError:
+                pass
+        show_next(limit, priority)
     elif args[0] == "clipboard":
         dir_id = args[1] if len(args) > 1 else None
         do_clipboard(dir_id)
