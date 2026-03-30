@@ -76,4 +76,4 @@ The free tier allows 1,200 queries/day. The script uses ~5 queries per run, so y
 - **NEVER commit** `~/.config/teamzlab/search-console-token.json`
 - The auth script uses Google's public OAuth client ID (safe to commit)
 - `scripts/build-search-console-auth.py` is in `.gitignore` as extra precaution
-- API key `AIzaSyBXw0OZH1GEgllYpgKB_vHSpQh3S1ym7Do` is restricted to your domains only
+- API keys used in this project are restricted to specific domains/referrers in Google Cloud Console
