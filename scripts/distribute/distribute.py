@@ -28,6 +28,11 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    import yaml
+except ImportError:  # pragma: no cover - PyYAML is expected locally
+    yaml = None
+
 SCRIPT_DIR = Path(__file__).parent
 CONFIG_FILE = SCRIPT_DIR / "config.json"
 HISTORY_FILE = SCRIPT_DIR / "history.json"
@@ -158,6 +163,21 @@ def slugify(title):
     return slug[:80]
 
 
+def normalize_tags(raw_tags, default="tools,free,web"):
+    """Normalize tag frontmatter from YAML lists or comma-separated strings."""
+    source = raw_tags if raw_tags not in (None, "") else default
+
+    if isinstance(source, list):
+        tags = [str(tag).strip() for tag in source]
+    elif isinstance(source, str):
+        tags = [tag.strip() for tag in source.split(",")]
+    else:
+        tags = [str(source).strip()]
+
+    tags = [tag for tag in tags if tag]
+    return tags or [tag.strip() for tag in default.split(",") if tag.strip()]
+
+
 def read_markdown(filepath):
     with open(filepath) as f:
         content = f.read()
@@ -168,10 +188,21 @@ def read_markdown(filepath):
     if content.startswith("---"):
         parts = content.split("---", 2)
         if len(parts) >= 3:
-            for line in parts[1].strip().split("\n"):
-                if ":" in line:
-                    key, val = line.split(":", 1)
-                    meta[key.strip()] = val.strip().strip('"').strip("'")
+            frontmatter = parts[1].strip()
+            if yaml:
+                try:
+                    parsed = yaml.safe_load(frontmatter)
+                    if isinstance(parsed, dict):
+                        meta = parsed
+                    else:
+                        meta = {}
+                except Exception:
+                    meta = {}
+            if not meta:
+                for line in frontmatter.split("\n"):
+                    if ":" in line:
+                        key, val = line.split(":", 1)
+                        meta[key.strip()] = val.strip().strip('"').strip("'")
             body = parts[2].strip()
 
     return meta, body
@@ -196,7 +227,7 @@ def post_devto(config, title, body, tags, canonical_url):
             "title": title,
             "body_markdown": body,
             "published": True,
-            "tags": [re.sub(r'[^a-zA-Z0-9]', '', t) for t in tags[:4]],  # Dev.to: alphanumeric only, max 4
+            "tags": [clean for clean in (re.sub(r'[^a-zA-Z0-9]', '', t) for t in tags[:4]) if clean],  # Dev.to: alphanumeric only, max 4
         }
     }
     if canonical_url:
@@ -219,7 +250,11 @@ def post_hashnode(config, title, body, tags, canonical_url):
     if not cfg.get("enabled"):
         return None, "Platform disabled in config"
 
-    tag_objects = [{"slug": slugify(t), "name": t} for t in tags[:5]]
+    tag_objects = [
+        {"slug": slugify(tag), "name": tag}
+        for tag in tags[:5]
+        if slugify(tag)
+    ]
 
     query = """
     mutation PublishPost($input: PublishPostInput!) {
@@ -1528,7 +1563,7 @@ def cmd_post(title, filepath, platforms):
 
     meta, body = read_markdown(filepath)
     slug = meta.get("slug", slugify(title))
-    tags = [t.strip() for t in meta.get("tags", "tools,free,web").split(",")]
+    tags = normalize_tags(meta.get("tags"))
     canonical_url = meta.get("canonical_url", meta.get("canonical", ""))
     language = meta.get("language", meta.get("lang", "en"))
 
@@ -1989,7 +2024,7 @@ def cmd_edit(slug, filepath, platforms):
         sys.exit(1)
 
     meta, body = read_markdown(filepath)
-    tags = [t.strip() for t in meta.get("tags", "tools,free,web").split(",")]
+    tags = normalize_tags(meta.get("tags"))
     canonical_url = meta.get("canonical_url", meta.get("canonical", ""))
 
     # Find the history entry
