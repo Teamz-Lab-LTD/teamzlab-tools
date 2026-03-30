@@ -1,4 +1,4 @@
-# Indexing Report — 2026-03-30 22:10
+# Indexing Report — 2026-03-30 22:13
 
 Total pages: 1
 Checked: 1
@@ -8,4 +8,4 @@ Errors: 0
 
 ## Indexed Pages (1)
 
-- /evergreen/personal-inflation-calculator/
+- /ca/freelance-rate-calculator-canada/

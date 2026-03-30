@@ -241,6 +241,18 @@ def post_devto(config, title, body, tags, canonical_url):
 
     if status in (200, 201):
         return resp.get("url", resp.get("canonical_url", "posted")), None
+
+    # If canonical_url is already taken, retry without it
+    if status == 422 and canonical_url and "canonical" in json.dumps(resp).lower():
+        del article["article"]["canonical_url"]
+        status, resp = api_request(
+            "https://dev.to/api/articles",
+            data=article,
+            headers={"api-key": cfg["api_key"]}
+        )
+        if status in (200, 201):
+            return resp.get("url", resp.get("canonical_url", "posted")), None
+
     return None, f"HTTP {status}: {json.dumps(resp)[:200]}"
 
 
