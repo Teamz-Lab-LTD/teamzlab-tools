@@ -125,7 +125,7 @@ fi
 # ── MONTHLY ──
 if [[ "$MODE" == "--monthly" ]]; then
     # Full dashboard
-    DASH=$(run_capture "SEO dashboard" ./build-seo-dashboard.sh --quick)
+    DASH=$(run_capture "SEO dashboard" ./scripts/build-seo-dashboard.sh --quick)
 
     # Content gaps
     GAPS=$(run_capture "Content gaps" python3 scripts/build-content-ideas.py --gaps)
@@ -147,7 +147,7 @@ if [[ "$MODE" == "--monthly" ]]; then
         echo "ACTION NEEDED:"
         echo "  1. Review: python3 scripts/build-keyword-intel.py --top 30  (keyword rankings)"
         echo "  2. Review: python3 scripts/build-content-ideas.py --gaps  (what to build next)"
-        echo "  3. Review: ./build-seo-dashboard.sh  (full dashboard)"
+        echo "  3. Review: ./scripts/build-seo-dashboard.sh  (full dashboard)"
         echo "  4. Review: python3 scripts/build-backlinks-overview.py report  (backlink health)"
     } > "$REPORT_FILE"
 

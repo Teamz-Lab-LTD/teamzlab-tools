@@ -201,7 +201,7 @@ for action in "${ACTIONS[@]}"; do
             ;;
         monthly)
             echo "  --> Running SEO dashboard..."
-            OUTPUT=$(./build-seo-dashboard.sh --quick 2>&1)
+            OUTPUT=$(./scripts/build-seo-dashboard.sh --quick 2>&1)
             ISSUE=$(extract_health_issue "$OUTPUT")
             if [ -n "$ISSUE" ]; then
                 record_health_alert "SEO dashboard: $ISSUE"

@@ -303,31 +303,31 @@ fi
 echo ""
 echo "=== Phase 3: Pull Data (local tokens) ==="
 if can_resolve_host searchconsole.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    run_phase_cmd "Search Console pull" 10 "./build-search-console.sh --status"
+    run_phase_cmd "Search Console pull" 10 "./scripts/build-search-console.sh --status"
 else
     skip_phase "Search Console pull (searchconsole.googleapis.com unavailable)"
 fi
 
 if can_resolve_host analyticsdata.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    run_phase_cmd "GA4 analytics pull" 20 "./build-analytics.sh --all"
+    run_phase_cmd "GA4 analytics pull" 20 "./scripts/build-analytics.sh --all"
 else
     skip_phase "GA4 analytics pull (analyticsdata.googleapis.com unavailable)"
 fi
 
 if can_resolve_host adsense.googleapis.com && can_resolve_host oauth2.googleapis.com; then
-    run_phase_cmd "AdSense pull" 10 "./build-adsense.sh"
+    run_phase_cmd "AdSense pull" 10 "./scripts/build-adsense.sh"
 else
     skip_phase "AdSense pull (adsense.googleapis.com unavailable)"
 fi
 
 if can_resolve_host clarity.ms; then
-    run_phase_cmd "Clarity pull" 20 "./build-clarity.sh 1"
+    run_phase_cmd "Clarity pull" 20 "./scripts/build-clarity.sh 1"
 else
     skip_phase "Clarity pull (clarity.ms unavailable)"
 fi
 
 if can_resolve_host pagespeedonline.googleapis.com; then
-    run_phase_cmd "PageSpeed pull" 10 "./build-pagespeed.sh"
+    run_phase_cmd "PageSpeed pull" 10 "./scripts/build-pagespeed.sh"
 else
     skip_phase "PageSpeed pull (pagespeedonline.googleapis.com unavailable)"
 fi

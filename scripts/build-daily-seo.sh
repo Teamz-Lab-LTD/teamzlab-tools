@@ -62,7 +62,7 @@ fi
 # ── MONTHLY (1st of month) ──
 if [[ "$MODE" == "--monthly" || "$MODE" == "--all" ]]; then
     echo "  [MONTHLY] Full SEO dashboard..."
-    ./build-seo-dashboard.sh --quick 2>&1 | tail -40
+    ./scripts/build-seo-dashboard.sh --quick 2>&1 | tail -40
 
     echo "  [MONTHLY] Content gaps analysis..."
     python3 scripts/build-content-ideas.py --gaps 2>&1 | tail -30

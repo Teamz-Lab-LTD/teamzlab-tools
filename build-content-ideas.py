@@ -1,1 +1,0 @@
-scripts/build-content-ideas.py

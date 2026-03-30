@@ -1,1 +1,0 @@
-scripts/build-adsense-auth.py
