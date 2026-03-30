@@ -1,6 +1,37 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-28 (nightly build #16)*
+*Last updated: 2026-03-30 (nightly build #17)*
+
+---
+
+## Completed This Build (nightly build #17)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| UK Capital Gains Tax Calculator 2025/26 | /uk/ | ✅ Built |
+| Israel Income Tax Calculator 2025 + IL hub | /il/ | ✅ Built |
+| CH Säule 3a Rechner 2025 (German) | /ch/ | ✅ Built |
+| BE Zelfstandige Belasting 2025 (Dutch) | /be/ | ✅ Built |
+| AT Immo-Ertragsteuer Rechner 2025 (German) | /at/ | ✅ Built |
+| IE Director Salary vs Dividend Ireland | /ie/ | ✅ Built |
+| NZ Foreign Investment Fund (FIF) Calculator | /nz/ | ✅ Built |
+| DE Kindergeld Rechner 2025 (German) | /de/ | ✅ Built |
+| NO Formuesskatt Kalkulator 2025 (Norwegian) | /no/ | ✅ Built |
+| CA Quebec Income Tax Calculator 2025 | /ca/ | ✅ Built |
+
+---
+
+## Next Build Queue (prioritized by RPM + gap analysis)
+- CH Pillar 3b / Freizügigkeit calculator (/ch/) — free passage account for job changers
+- AT Kapitalertragsteuer Rechner (/at/) — Austrian CGT on investments (KESt 27.5%)
+- BE Précompte Mobilier (/be/) — Belgian dividend/interest withholding tax (French)
+- NO Freelance ENK Skattekalkulator (/no/) — Norwegian sole proprietor tax + trinnskatt
+- IL VAT Calculator Israel (/il/) — 17% VAT, round out IL hub
+- UK Inheritance Tax Calculator 2025 (/uk/) — £325K nil-rate band, residence NRB
+- AU Employer True Cost Calculator (/au/) — super, payroll tax, WorkCover
+- US Self-Directed IRA Comparison (/us/) — SDIRA vs traditional IRA, RPM $15+
+- CA British Columbia Income Tax 2025 (/ca/) — standalone BC tax (ON/QC/AB done)
+- DE Elterngeld Plus Rechner (/de/) — extended parental benefit variant
 
 ---
 
