@@ -1,12 +1,12 @@
-# Indexing Report — 2026-03-30 05:25
+# Indexing Report — 2026-03-30 21:19
 
 Total pages: 30
 Checked: 30
-Indexed: 30 (100%)
+Indexed: 28 (93%)
 Not indexed: 0
-Errors: 0
+Errors: 2
 
-## Indexed Pages (30)
+## Indexed Pages (28)
 
 - /
 - /diagnostic/dns-leak-test/
@@ -35,6 +35,4 @@ Errors: 0
 - /ramadan/eid-salami-scratch-challenge/
 - /bd/freelancer-tax-calculator/
 - /au/student-visa-cost-calculator/
-- /football/ucl-group-stage-simulator/
-- /health/screen-distance-checker/
 - /health/time-blindness-calculator/
