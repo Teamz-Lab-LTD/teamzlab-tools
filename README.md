@@ -28,6 +28,12 @@ A collection of 1,800+ tools organized across 90+ categories — calculators, ge
 
 ## Automation
 
+Shared SEO, distribution, and API scripts live in the **`teamz-company-automation`** git submodule (`scripts/` uses symlinks so commands like `python3 scripts/distribute/distribute.py` stay the same). After clone run:
+
+`git submodule update --init --recursive`
+
+When you publish **`teamz-company-automation`** to GitHub, change this repo’s `.gitmodules` entry from the local `file://` URL to that remote so CI and other machines can clone it.
+
 Every commit triggers:
 
 - Search index rebuild (all tools searchable from homepage)
