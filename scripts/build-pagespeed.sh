@@ -1,1 +1,1 @@
-../teamz-company-automation/build-pagespeed.sh
+../teamz-company-automation/sh/build-pagespeed.sh

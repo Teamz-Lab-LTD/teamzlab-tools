@@ -1,1 +1,1 @@
-../teamz-company-automation/build-seo-dashboard.sh
+../teamz-company-automation/sh/build-seo-dashboard.sh

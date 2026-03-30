@@ -1,1 +1,1 @@
-../teamz-company-automation/build-search-console-auth.py
+../teamz-company-automation/py/build-search-console-auth.py

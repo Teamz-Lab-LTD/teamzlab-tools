@@ -1,1 +1,1 @@
-../teamz-company-automation/build-adsense.sh
+../teamz-company-automation/sh/build-adsense.sh

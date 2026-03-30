@@ -1,1 +1,1 @@
-../teamz-company-automation/build-content-ideas.py
+../teamz-company-automation/py/build-content-ideas.py

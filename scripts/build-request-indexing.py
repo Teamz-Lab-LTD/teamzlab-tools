@@ -1,1 +1,1 @@
-../teamz-company-automation/build-request-indexing.py
+../teamz-company-automation/py/build-request-indexing.py

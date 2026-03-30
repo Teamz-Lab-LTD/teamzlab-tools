@@ -1,1 +1,1 @@
-../teamz-company-automation/build-rank-tracker.py
+../teamz-company-automation/py/build-rank-tracker.py

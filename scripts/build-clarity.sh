@@ -1,1 +1,1 @@
-../teamz-company-automation/build-clarity.sh
+../teamz-company-automation/sh/build-clarity.sh

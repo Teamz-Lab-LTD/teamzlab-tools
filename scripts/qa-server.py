@@ -1,1 +1,1 @@
-../teamz-company-automation/qa-server.py
+../teamz-company-automation/py/qa-server.py

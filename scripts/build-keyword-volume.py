@@ -1,1 +1,1 @@
-../teamz-company-automation/build-keyword-volume.py
+../teamz-company-automation/py/build-keyword-volume.py

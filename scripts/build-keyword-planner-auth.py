@@ -1,1 +1,1 @@
-../teamz-company-automation/build-keyword-planner-auth.py
+../teamz-company-automation/py/build-keyword-planner-auth.py

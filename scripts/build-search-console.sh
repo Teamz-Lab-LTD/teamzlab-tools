@@ -1,1 +1,1 @@
-../teamz-company-automation/build-search-console.sh
+../teamz-company-automation/sh/build-search-console.sh

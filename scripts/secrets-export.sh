@@ -1,1 +1,1 @@
-../teamz-company-automation/secrets-export.sh
+../teamz-company-automation/sh/secrets-export.sh

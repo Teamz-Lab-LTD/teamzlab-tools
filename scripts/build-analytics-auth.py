@@ -1,1 +1,1 @@
-../teamz-company-automation/build-analytics-auth.py
+../teamz-company-automation/py/build-analytics-auth.py

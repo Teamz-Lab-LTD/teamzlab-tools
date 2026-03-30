@@ -1,1 +1,1 @@
-../teamz-company-automation/build-analytics.sh
+../teamz-company-automation/sh/build-analytics.sh

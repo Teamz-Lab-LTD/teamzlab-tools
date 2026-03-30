@@ -1,1 +1,1 @@
-../teamz-company-automation/build-keyword-intel.py
+../teamz-company-automation/py/build-keyword-intel.py

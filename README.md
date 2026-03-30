@@ -32,7 +32,7 @@ Shared SEO, distribution, and API scripts live in the **`teamz-company-automatio
 
 `git submodule update --init --recursive`
 
-When you publish **`teamz-company-automation`** to GitHub, change this repo’s `.gitmodules` entry from the local `file://` URL to that remote so CI and other machines can clone it.
+Submodule URL: `https://github.com/Teamz-Lab-LTD/teamz-company-automation.git` (shell scripts in `sh/`, Python in `py/` inside that repo).
 
 Every commit triggers:
 

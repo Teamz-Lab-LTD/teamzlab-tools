@@ -1,1 +1,1 @@
-../teamz-company-automation/build-backlinks.py
+../teamz-company-automation/py/build-backlinks.py
