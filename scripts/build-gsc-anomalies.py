@@ -1,0 +1,1 @@
+../teamz-company-automation/py/build-gsc-anomalies.py

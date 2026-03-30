@@ -1,1 +1,0 @@
-scripts/newsletter-export.sh

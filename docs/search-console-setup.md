@@ -10,7 +10,7 @@ pip3 install --break-system-packages google-auth google-auth-oauthlib google-aut
 ### Step 2: Run the auth script
 ```bash
 cd "/path/to/teamzlab-tools"
-python3 build-search-console-auth.py
+python3 scripts/build-search-console-auth.py
 ```
 - A browser window will open
 - Sign in with **teamz.lab.contact@gmail.com**
@@ -19,7 +19,7 @@ python3 build-search-console-auth.py
 
 ### Step 3: Run the data pull script
 ```bash
-./build-search-console.sh
+./scripts/build-search-console.sh
 ```
 
 ---
@@ -28,8 +28,8 @@ python3 build-search-console-auth.py
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `build-search-console-auth.py` | Project root (gitignored) | One-time OAuth login — opens browser, saves token |
-| `build-search-console.sh` | Project root | Pulls Search Console data (queries, pages, indexing status) |
+| `scripts/build-search-console-auth.py` | `scripts/` | One-time OAuth login — opens browser, saves token |
+| `scripts/build-search-console.sh` | `scripts/` | Pulls Search Console data (queries, pages, indexing status) |
 | `search-console-token.json` | `~/.config/teamzlab/` | OAuth token (auto-refreshes, NEVER commit this) |
 
 ---
@@ -55,12 +55,12 @@ If you ever need to redo the Google Cloud side:
 ## Troubleshooting
 
 ### "Token expired"
-Just re-run `python3 build-search-console-auth.py` — it will refresh.
+Just re-run `python3 scripts/build-search-console-auth.py` — it will refresh.
 
 ### "No search data"
 Google hasn't indexed your pages yet. Check indexing status:
 ```bash
-./build-search-console.sh --status
+./scripts/build-search-console.sh --status
 ```
 
 ### "API not enabled"
@@ -75,5 +75,5 @@ The free tier allows 1,200 queries/day. The script uses ~5 queries per run, so y
 
 - **NEVER commit** `~/.config/teamzlab/search-console-token.json`
 - The auth script uses Google's public OAuth client ID (safe to commit)
-- `build-search-console-auth.py` is in `.gitignore` as extra precaution
+- `scripts/build-search-console-auth.py` is in `.gitignore` as extra precaution
 - API key `AIzaSyBXw0OZH1GEgllYpgKB_vHSpQh3S1ym7Do` is restricted to your domains only

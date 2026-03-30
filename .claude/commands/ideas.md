@@ -35,25 +35,25 @@ Check: Is there a seasonal angle for this niche RIGHT NOW? (e.g., tax season = f
 
 ```bash
 # 1. What keywords ALREADY bring us traffic? → Build ADJACENT tools to winners
-./build-search-console.sh 2>/dev/null | head -80
+./scripts/build-search-console.sh 2>/dev/null | head -80
 # LOOK FOR: keywords with high impressions but no dedicated tool → INSTANT opportunity
 # LOOK FOR: keywords where we rank #5-20 → build a better/dedicated tool to push to #1
 
 # 1b. Search Console OPPORTUNITIES — keywords we rank for but don't have dedicated tools
-./build-search-console.sh --opportunities 2>/dev/null | head -40
+./scripts/build-search-console.sh --opportunities 2>/dev/null | head -40
 
 # 2. FULL analytics — users, top pages, traffic sources, device split, ad performance
-./build-analytics.sh --all 2>/dev/null | head -80
+./scripts/build-analytics.sh --all 2>/dev/null | head -80
 # LOOK FOR: which pages make the most money, where traffic comes from, mobile vs desktop split
 
 # 3. What's our current AdSense revenue by page? → Double down on high-RPM pages
-./build-adsense.sh 2>/dev/null | head -30
+./scripts/build-adsense.sh 2>/dev/null | head -30
 
 # 4. What hubs have the most tools? What hubs are thin? → Fill thin hubs for topical authority
 find . -maxdepth 2 -name "index.html" -path "*/*/index.html" | sed 's|/[^/]*$||' | sort | uniq -c | sort -rn | head -20
 
 # 5. What tools are stale/outdated? → Quick wins by UPDATING existing tools (no new build needed)
-./build-seo-audit.sh --freshness 2>/dev/null | head -30
+./scripts/build-seo-audit.sh --freshness 2>/dev/null | head -30
 
 # 6. Internal link health — find orphan pages and cross-linking gaps
 scripts/build-internal-links.sh --quick 2>/dev/null | tail -20
@@ -67,32 +67,32 @@ scripts/build-internal-links.sh --quick 2>/dev/null | tail -20
 
 ```bash
 # 1. Google Autocomplete — find what people ACTUALLY type
-./build-seo-audit.sh --suggest "[main keyword]"
-./build-seo-audit.sh --suggest "[keyword] calculator"
-./build-seo-audit.sh --suggest "[keyword] tool"
-./build-seo-audit.sh --suggest "[keyword] generator"
-./build-seo-audit.sh --suggest "[keyword] checker"
-./build-seo-audit.sh --suggest "[keyword] converter"
-./build-seo-audit.sh --suggest "[keyword] online free"
-./build-seo-audit.sh --suggest "best [keyword]"
-./build-seo-audit.sh --suggest "[keyword] for"
-./build-seo-audit.sh --suggest "free [keyword]"
-./build-seo-audit.sh --suggest "[keyword] vs"
-./build-seo-audit.sh --suggest "free alternative to [keyword]"
+./scripts/build-seo-audit.sh --suggest "[main keyword]"
+./scripts/build-seo-audit.sh --suggest "[keyword] calculator"
+./scripts/build-seo-audit.sh --suggest "[keyword] tool"
+./scripts/build-seo-audit.sh --suggest "[keyword] generator"
+./scripts/build-seo-audit.sh --suggest "[keyword] checker"
+./scripts/build-seo-audit.sh --suggest "[keyword] converter"
+./scripts/build-seo-audit.sh --suggest "[keyword] online free"
+./scripts/build-seo-audit.sh --suggest "best [keyword]"
+./scripts/build-seo-audit.sh --suggest "[keyword] for"
+./scripts/build-seo-audit.sh --suggest "free [keyword]"
+./scripts/build-seo-audit.sh --suggest "[keyword] vs"
+./scripts/build-seo-audit.sh --suggest "free alternative to [keyword]"
 
 # 2. Google Trends — find rising/breakout keywords (compare to pick winners)
-./build-seo-audit.sh --trends "[keyword 1]" "[keyword 2]"
-./build-seo-audit.sh --trends "[keyword 3]" "[keyword 4]"
+./scripts/build-seo-audit.sh --trends "[keyword 1]" "[keyword 2]"
+./scripts/build-seo-audit.sh --trends "[keyword 3]" "[keyword 4]"
 
 # 3. Validate ALL promising candidates — GO/CAUTION/STOP signal
-./build-seo-audit.sh --validate-new "[candidate 1]"
-./build-seo-audit.sh --validate-new "[candidate 2]"
-./build-seo-audit.sh --validate-new "[candidate 3]"
-./build-seo-audit.sh --validate-new "[candidate 4]"
-./build-seo-audit.sh --validate-new "[candidate 5]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 1]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 2]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 3]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 4]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 5]"
 # Validate MORE if autocomplete revealed good candidates
-./build-seo-audit.sh --validate-new "[candidate 6]"
-./build-seo-audit.sh --validate-new "[candidate 7]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 6]"
+./scripts/build-seo-audit.sh --validate-new "[candidate 7]"
 
 # 4. Check for EXISTING duplicates in our site (search BROADLY by concept, not slug)
 find . -path "*keyword1*" -name "index.html" 2>/dev/null
@@ -101,7 +101,7 @@ find . -path "*related-concept*" -name "index.html" 2>/dev/null
 grep -rl "related concept phrase" --include="*.html" -l | head -10
 
 # 5. Check keyword cannibalization against existing tools
-./build-seo-audit.sh --cannibalize
+./scripts/build-seo-audit.sh --cannibalize
 
 # 6. SEO keyword engine for deeper analysis (uses positional args, NOT flags)
 python3 scripts/seo-keyword-engine.py suggest "[main keyword]" 2>/dev/null || true
@@ -111,14 +111,14 @@ python3 scripts/seo-keyword-engine.py validate-new "[main keyword]" 2>/dev/null 
 # Composite score: Autocomplete + Trends + Bing Volume + Search Console
 python3 scripts/build-keyword-volume.py "[candidate 1]" "[candidate 2]" "[candidate 3]" "[candidate 4]" "[candidate 5]" 2>/dev/null
 # Quick Bing-only volume check (real monthly search volume, fast, no rate limits):
-./build-seo-audit.sh --bing-volume "[candidate 1]" "[candidate 2]" "[candidate 3]" "[candidate 4]" "[candidate 5]" 2>/dev/null
+./scripts/build-seo-audit.sh --bing-volume "[candidate 1]" "[candidate 2]" "[candidate 3]" "[candidate 4]" "[candidate 5]" 2>/dev/null
 
 # 8. Virality & share readiness score — how shareable are existing tools in this niche?
-./build-seo-audit.sh --viral 2>/dev/null | head -20
+./scripts/build-seo-audit.sh --viral 2>/dev/null | head -20
 
 # 9. Product Hunt competitor research — what's been launched in this space?
-./build-seo-audit.sh --ph-search "[keyword]" 2>/dev/null
-./build-seo-audit.sh --ph-trending 2>/dev/null | head -20
+./scripts/build-seo-audit.sh --ph-search "[keyword]" 2>/dev/null
+./scripts/build-seo-audit.sh --ph-trending 2>/dev/null | head -20
 # LOOK FOR: popular PH launches with feature gaps we can fill for FREE
 
 # 10. Product Hunt via keyword engine (more detail)
@@ -126,23 +126,23 @@ python3 scripts/seo-keyword-engine.py ph-search "[keyword]" 2>/dev/null || true
 python3 scripts/seo-keyword-engine.py ph-trending 2>/dev/null | head -20 || true
 
 # 11. Full SEO report — hub scores, keyword placement issues, overall health
-./build-seo-audit.sh --report 2>/dev/null | head -40
+./scripts/build-seo-audit.sh --report 2>/dev/null | head -40
 # LOOK FOR: which hubs score lowest → opportunities to improve + add tools
 
 # 12. Internal link audit — find orphans and cross-link gaps
-./build-seo-audit.sh --internal-links 2>/dev/null | head -20
+./scripts/build-seo-audit.sh --internal-links 2>/dev/null | head -20
 
 # 13. Batch trends — compare ALL hubs at once to find trending categories
-./build-seo-audit.sh --batch-trends 2>/dev/null | head -30
+./scripts/build-seo-audit.sh --batch-trends 2>/dev/null | head -30
 # LOOK FOR: hubs with rising trends → build more tools there ASAP
 ```
 
 ### Phase 4b: ASO Research (ONLY if user's input is about a mobile app or app keyword)
 If the user's keyword relates to mobile apps, ALSO run:
 ```bash
-./build-seo-audit.sh --aso-suggest "[keyword]"
-./build-seo-audit.sh --aso-validate "[app idea]"
-./build-seo-audit.sh --aso-compare "[name 1]" "[name 2]"
+./scripts/build-seo-audit.sh --aso-suggest "[keyword]"
+./scripts/build-seo-audit.sh --aso-validate "[app idea]"
+./scripts/build-seo-audit.sh --aso-compare "[name 1]" "[name 2]"
 python3 scripts/seo-keyword-engine.py aso-suggest "[keyword]" 2>/dev/null || true
 ```
 
@@ -173,7 +173,7 @@ Search using WebSearch:
 - For competitor speed, use WebSearch to check their PageSpeed: search `pagespeed insights [competitor URL]`
 - Also check OUR similar pages are fast:
   ```bash
-  ./build-pagespeed.sh --url "/[hub]/[similar-tool]/" 2>/dev/null
+  ./scripts/build-pagespeed.sh --url "/[hub]/[similar-tool]/" 2>/dev/null
   ```
 - Our static site is inherently fast (no server, no database) — this is a competitive edge vs slow dynamic sites
 
@@ -382,8 +382,8 @@ For the "Build NOW" tier:
 ```bash
 # 1. Add new tools to hub page (e.g., /us/index.html, /es/index.html)
 # 2. If new hub created → run: python3 scripts/build-og-images.py
-python3 build-static-schema.py                  # Rebuild all JSON-LD schemas
-./build-search-index.sh                         # Rebuild search + sitemap + llms.txt + counts
+python3 scripts/build-static-schema.py          # Rebuild all JSON-LD schemas
+./scripts/build-search-index.sh                 # Rebuild search + sitemap + llms.txt + counts
 python3 scripts/build-fix-orphans.py fix        # Cross-link new tools (no orphans)
 python3 scripts/build-request-indexing.py       # Submit to Google + Bing/Yandex via IndexNow
 ```
@@ -408,7 +408,7 @@ python3 scripts/build-request-indexing.py       # Submit to Google + Bing/Yandex
 **Month 1 — Optimize:**
 - Check which tools get traffic → build more tools in those hubs
 - Check which tools get zero traffic → improve titles/descriptions or add more content
-- Run `./build-search-console.sh` weekly to track progress
+- Run `./scripts/build-search-console.sh` weekly to track progress
 
 ---
 
