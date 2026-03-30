@@ -1082,7 +1082,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'AI Image Noise Remover',d:'Remove grain and noise from photos free in your browser. AI-powered denoising preserves edges — no signup, no watermark, 100% private.',h:'/image/ai-image-noise-remover/'},
   {t:'AI Image Upscaler',d:'Upscale images to 2x HD quality free in your browser. AI-powered sharpening and enhancement, no signup, no watermark, 100% private.',h:'/image/ai-image-upscaler/'},
   {t:'AI Old Photo Restorer',d:'Restore old damaged photos free in your browser. Auto-repair scratches, enhance fading, sharpen details — 100% private, no signup, no watermark.',h:'/image/ai-old-photo-restorer/'},
-  {t:'AI Photo Colorizer',d:'Colorize black and white photos free in your browser using AI. Choose from natural, warm, cool, and vintage palettes — no signup, no watermark, 100%',h:'/image/ai-photo-colorizer/'},
+  {t:'AI Photo Colorizer',d:'Colorize black and white photos free in browser using AI. Natural, warm, cool, and vintage palettes — no signup, no watermark, 100% private.',h:'/image/ai-photo-colorizer/'},
   {t:'AI Photo Enhancer',d:'Enhance photos free in your browser with AI. Auto-adjust brightness, contrast, saturation, and sharpness — no signup, no watermark, 100% private.',h:'/image/ai-photo-enhancer/'},
   {t:'Blur Image',d:'Blur images online for free with adjustable intensity. Apply Gaussian-like blur using CSS filter on canvas. Preview and download instantly. Private.',h:'/image/blur-image/'},
   {t:'Blur-Up Image Placeholder Generator',d:'Generate tiny blurred base64 image placeholders for progressive loading — copy CSS, HTML, and data URIs for Astro, Next.js, and Gatsby. Free and pri',h:'/image/blur-up-placeholder-generator/'},
