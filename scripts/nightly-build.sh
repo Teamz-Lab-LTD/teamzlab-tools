@@ -222,32 +222,32 @@ rm -f /tmp/nightly-suggestions.txt /tmp/nightly-trends.txt /tmp/nightly-multilan
 # Google Autocomplete suggestions for high-RPM niches
 echo "  Researching keywords..."
 for keyword in "stamp duty calculator" "retirement calculator" "tax calculator" "salary calculator" "mortgage calculator" "budget planner" "loan calculator" "investment calculator" "insurance calculator" "cost of living" "rent vs buy" "salary comparison" "profit margin calculator" "invoice generator" "contract template"; do
-    ./build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
+    ./scripts/build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
 done
 
 # Pinterest-friendly keywords (finance/health/budget perform best on Pinterest)
 echo "  Researching Pinterest-friendly keywords..."
 for keyword in "budget template" "savings plan" "debt payoff" "meal planner" "wedding budget" "baby cost" "home buying checklist" "retirement plan"; do
-    ./build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
+    ./scripts/build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
 done
 
 # Comparison page keywords (X vs Y = high intent)
 echo "  Researching comparison keywords..."
 for keyword in "roth vs traditional" "rent vs buy" "lease vs buy" "term vs whole life" "hsa vs fsa" "fixed vs variable rate" "sole trader vs company" "etf vs mutual fund"; do
-    ./build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
+    ./scripts/build-seo-audit.sh --suggest "$keyword" 2>/dev/null | grep -v "^$" >> /tmp/nightly-suggestions.txt
 done
 
 # Get trending/breakout keywords
 echo "  Checking trends..."
-./build-seo-audit.sh --batch-trends 2>/dev/null | head -30 >> /tmp/nightly-trends.txt
+./scripts/build-seo-audit.sh --batch-trends 2>/dev/null | head -30 >> /tmp/nightly-trends.txt
 
 # Keyword volume estimation
 echo "  Checking keyword volumes..."
-./build-seo-audit.sh --bing-volume "stamp duty calculator" "retirement planner" "salary comparison" "budget calculator" "tax estimator" 2>/dev/null >> /tmp/nightly-research.txt
+./scripts/build-seo-audit.sh --bing-volume "stamp duty calculator" "retirement planner" "salary comparison" "budget calculator" "tax estimator" 2>/dev/null >> /tmp/nightly-research.txt
 
 # Check keyword cannibalization
 echo "  Checking cannibalization..."
-./build-seo-audit.sh --cannibalize 2>/dev/null | head -20 >> /tmp/nightly-research.txt
+./scripts/build-seo-audit.sh --cannibalize 2>/dev/null | head -20 >> /tmp/nightly-research.txt
 
 # Check seasonal relevance
 echo "  Checking seasonal calendar..."
@@ -276,19 +276,19 @@ echo "  Research done. All results saved for Claude to use."
 # Phase 1: Run all maintenance scripts (no Claude needed, zero quota)
 echo ""
 echo "=== Phase 1: Maintenance Scripts (zero quota) ==="
-run_phase_cmd "Static schema rebuild" 3 "python3 build-static-schema.py"
-run_phase_cmd "Search index rebuild" 5 "./build-search-index.sh"
+run_phase_cmd "Static schema rebuild" 3 "python3 scripts/build-static-schema.py"
+run_phase_cmd "Search index rebuild" 5 "./scripts/build-search-index.sh"
 run_phase_cmd "Orphan fix" 3 "python3 scripts/build-fix-orphans.py fix"
-run_phase_cmd "SEO auto-fix" 5 "./build-seo-audit.sh --fix"
+run_phase_cmd "SEO auto-fix" 5 "./scripts/build-seo-audit.sh --fix"
 
 echo "  Checking freshness (stale data)..."
-run_phase_cmd "Freshness validation" 10 "./build-validate-freshness.sh"
+run_phase_cmd "Freshness validation" 10 "./scripts/build-validate-freshness.sh"
 
 echo "  Checking internal link health..."
 run_phase_cmd "Internal link health" 5 "scripts/build-internal-links.sh --quick"
 
 echo "  Running QA check..."
-run_phase_cmd "QA check" 10 "./build-qa-check.sh"
+run_phase_cmd "QA check" 10 "./scripts/build-qa-check.sh"
 
 # Phase 2: Request indexing for any new pages
 echo ""
@@ -489,11 +489,11 @@ echo "  Auto-fixed $FIXES issues."
 
 # Run SEO auto-fixes
 echo "  Running SEO auto-fixes..."
-./build-seo-audit.sh --fix 2>/dev/null | tail -3
+./scripts/build-seo-audit.sh --fix 2>/dev/null | tail -3
 
 # Rebuild schemas and search index after fixes
-python3 build-static-schema.py 2>/dev/null | tail -2
-./build-search-index.sh 2>/dev/null | tail -3
+python3 scripts/build-static-schema.py 2>/dev/null | tail -2
+./scripts/build-search-index.sh 2>/dev/null | tail -3
 python3 scripts/build-fix-orphans.py fix 2>/dev/null | tail -2
 
 # Stage generated/site changes, but leave volatile logs and lock files out of the commit

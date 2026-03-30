@@ -1,1 +1,0 @@
-scripts/build-seo-fix-all.py

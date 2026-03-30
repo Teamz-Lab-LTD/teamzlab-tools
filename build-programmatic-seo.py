@@ -1,1 +1,0 @@
-scripts/build-programmatic-seo.py

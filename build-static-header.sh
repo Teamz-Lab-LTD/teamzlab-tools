@@ -1,1 +1,0 @@
-scripts/build-static-header.sh

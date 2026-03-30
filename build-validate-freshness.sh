@@ -1,1 +1,0 @@
-scripts/build-validate-freshness.sh

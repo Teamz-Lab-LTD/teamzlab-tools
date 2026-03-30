@@ -113,10 +113,10 @@ while true; do
     echo "" | tee -a "$LOG_FILE"
     echo "=== Maintenance — $(time_remaining)min left (no quota) ===" | tee -a "$LOG_FILE"
 
-    python3 build-static-schema.py 2>&1 | tail -2
-    ./build-search-index.sh 2>&1 | tail -3
+    python3 scripts/build-static-schema.py 2>&1 | tail -2
+    ./scripts/build-search-index.sh 2>&1 | tail -3
     python3 scripts/build-fix-orphans.py fix 2>&1 | tail -3
-    ./build-seo-audit.sh --fix 2>&1 | tail -3
+    ./scripts/build-seo-audit.sh --fix 2>&1 | tail -3
     python3 scripts/build-request-indexing.py 2>&1 | tail -5
 
     # Commit and push
