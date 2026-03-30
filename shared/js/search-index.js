@@ -1081,7 +1081,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'AI Face Restorer',d:'Restore and sharpen faces in old or blurry portrait photos free in your browser. AI enhancement for portraits — no signup, no watermark, 100% privat',h:'/image/ai-face-restorer/'},
   {t:'AI Image Noise Remover',d:'Remove grain and noise from photos free in your browser. AI-powered denoising preserves edges — no signup, no watermark, 100% private.',h:'/image/ai-image-noise-remover/'},
   {t:'AI Image Upscaler',d:'Upscale images to 2x HD quality free in your browser. AI-powered sharpening and enhancement, no signup, no watermark, 100% private.',h:'/image/ai-image-upscaler/'},
-  {t:'AI Old Photo Restorer',d:'Restore old damaged photos free in your browser. Swin2SR AI model repairs scratches, enhances fading, sharpens details — 100% private, no signup, no',h:'/image/ai-old-photo-restorer/'},
+  {t:'AI Old Photo Restorer',d:'Restore old damaged photos free in your browser. Swin2SR AI repairs scratches, fading and detail loss — 100% private, no signup, no watermark.',h:'/image/ai-old-photo-restorer/'},
   {t:'AI Photo Colorizer',d:'Colorize black and white photos free in browser using AI. Natural, warm, cool, and vintage palettes — no signup, no watermark, 100% private.',h:'/image/ai-photo-colorizer/'},
   {t:'AI Photo Enhancer',d:'Enhance photos free in your browser with AI. Auto-adjust brightness, contrast, saturation, and sharpness — no signup, no watermark, 100% private.',h:'/image/ai-photo-enhancer/'},
   {t:'Blur Image',d:'Blur images online for free with adjustable intensity. Apply Gaussian-like blur using CSS filter on canvas. Preview and download instantly. Private.',h:'/image/blur-image/'},
