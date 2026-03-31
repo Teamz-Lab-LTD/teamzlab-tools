@@ -1,4 +1,5 @@
 var TOOL_SEARCH_INDEX = [
+  {t:'AI 3D Prompt Generator',d:'Generate optimized AI prompts for 3D model tools like Hyper3D, Meshy, and Tripo3D. Choose style, material, platform and get ready-to-paste prompts fre',h:'/3d/ai-3d-prompt-generator/'},
   {t:'3D Audio Visualizer Online',d:'Visualize your music in stunning 3D. Upload any audio file and watch real-time 3D visuals react to the beat — free, private, no signup required.',h:'/3d/audio-visualizer/'},
   {t:'3D Dice Roller Online',d:'Roll realistic 3D dice with physics simulation. Free virtual dice roller for D&amp;D, board games — supports d4, d6, d8, d10, d12, d20.',h:'/3d/dice-roller/'},
   {t:'WebGL Fluid Simulation',d:'Play with mesmerizing fluid dynamics in your browser. Free interactive WebGL simulation — touch, drag, and create colorful patterns privately.',h:'/3d/fluid-simulation/'},
