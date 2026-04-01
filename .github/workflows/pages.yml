@@ -28,10 +28,22 @@ jobs:
       - name: Checkout branding submodule only
         run: git submodule update --init branding
 
-      - name: Remove private submodule directory
-        # teamz-company-automation is a private repo not needed for the static site.
-        # Its empty checkout causes `tar --hard-dereference` to fail with exit code 1.
-        run: rm -rf teamz-company-automation
+      - name: Prepare site directory
+        # Copy only the static site files to a clean staging dir.
+        # Excludes: private submodule, runtime logs, SEO logs, build scripts, Python cache.
+        # This prevents tar "file changed during archive" race conditions from log rotation,
+        # and keeps the GitHub Pages artifact lean (HTML/CSS/JS/assets only).
+        run: |
+          mkdir -p /tmp/site
+          rsync -a \
+            --exclude='.git' \
+            --exclude='teamz-company-automation' \
+            --exclude='logs/' \
+            --exclude='seo-logs/' \
+            --exclude='__pycache__/' \
+            --exclude='*.pyc' \
+            --exclude='.env' \
+            . /tmp/site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -39,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: /tmp/site
 
       - name: Deploy to GitHub Pages
         id: deployment
