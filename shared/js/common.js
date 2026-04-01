@@ -511,7 +511,13 @@ var TeamzTools = (function () {
       '</div>' +
       '<div class="footer-bottom">' +
         '<p>&copy; ' + year + ' ' + SITE_NAME + '. A project by <a href="' + TEAMZ_URL + '" target="_blank" rel="noopener" class="teamz-logo">Teamz Lab</a>.</p>' +
-      '</div>';
+      '</div>' +
+      // HONEYPOT: hidden from real users via CSS aria-hidden + tabindex=-1.
+      // Any click on this link = 100% bot (humans cannot see or reach it).
+      // aria-hidden keeps it out of screen readers too.
+      '<a href="/sitemap.xml" class="teamz-honeypot" tabindex="-1" aria-hidden="true" ' +
+        'style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;" ' +
+        'data-honeypot="1">Sitemap</a>';
   }
 
   function renderBreadcrumbs(items) {
@@ -1636,13 +1642,195 @@ var TeamzAnalytics = (function () {
   // Skip analytics for site owner — run this once in browser console: localStorage.setItem('teamz_owner','1')
   var _isOwner = (localStorage.getItem('teamz_owner') === '1');
 
-  function init() {
-    if (!_isDevMode && !_isOwner) {
-      _loadFirebase();
-      _trackEngagement();
+  // --- Bot Detection: 8-Signal Behavioral Confidence Scorer ---
+  // Returns a score 0–100 where:
+  //   0–29  = almost certainly a real human
+  //   30–59 = suspicious / uncertain
+  //   60–100 = almost certainly a bot
+  // Also returns a type label and a breakdown of which signals fired.
+
+  var _BOT_UA_PATTERN = /bot|crawler|spider|slurp|scraper|archive|scan|semrush|ahrefs|mj12bot|majestic|screaming.?frog|gptbot|perplexitybot|claudebot|google-extended|oai-searchbot|chatgpt-user|cohere-ai|ccbot|common.?crawl|python-requests|python-urllib|go-http-client|java\/|curl\/|wget\/|libwww|htmlparser|lwp|xenu|mediapartners|facebookexternalhit|twitterbot|linkedinbot|whatsapp|slackbot|telegrambot|discordbot|applebot|pingdom|uptimerobot|statuscake|monitor|360spider|sogou|duckduckbot|baiduspider|yandexbot|bingbot|googlebot/i;
+
+  var _botScore = null; // cached result object
+
+  function _scoreBotSignals() {
+    if (_botScore !== null) return _botScore;
+
+    var score   = 0;
+    var signals = [];  // fired signal names — useful for debugging in GA4
+    var ua      = navigator.userAgent || '';
+    var type    = 'human';
+
+    // Signal 1: Known bot/crawler UA string (+60 — near-certain)
+    if (_BOT_UA_PATTERN.test(ua)) {
+      score += 60;
+      signals.push('ua_match');
+      type = 'crawler';
     }
-    // Local tracker always runs (useful for dev too)
+
+    // Signal 2: navigator.webdriver = true — set by Selenium/Puppeteer/Playwright (+50)
+    if (navigator.webdriver === true) {
+      score += 50;
+      signals.push('webdriver');
+      if (type === 'human') type = 'headless';
+    }
+
+    // Signal 3: Headless Chrome — window.chrome missing in headless mode (+35)
+    if (/Chrome/.test(ua) && typeof window.chrome === 'undefined') {
+      score += 35;
+      signals.push('no_chrome_obj');
+      if (type === 'human') type = 'headless';
+    }
+
+    // Signal 4: PhantomJS fingerprints (+50)
+    if (typeof window.callPhantom !== 'undefined' || typeof window._phantom !== 'undefined') {
+      score += 50;
+      signals.push('phantom');
+      if (type === 'human') type = 'headless';
+    }
+
+    // Signal 5: No plugins at all — real browsers always have at least 1 (+20)
+    // (Chrome headless has 0, real Chrome has PDF viewer etc.)
+    try {
+      if (navigator.plugins && navigator.plugins.length === 0) {
+        score += 20;
+        signals.push('no_plugins');
+      }
+    } catch(e) {}
+
+    // Signal 6: No languages set — automation tools often skip this (+20)
+    try {
+      if (!navigator.languages || navigator.languages.length === 0) {
+        score += 20;
+        signals.push('no_languages');
+      }
+    } catch(e) {}
+
+    // Signal 7: Screen dimensions are 0 or not set — virtual/headless display (+25)
+    try {
+      if (window.screen && (window.screen.width === 0 || window.screen.height === 0)) {
+        score += 25;
+        signals.push('zero_screen');
+      }
+    } catch(e) {}
+
+    // Signal 8: Page loaded but document was never visible — bot fetchers
+    // (document.hidden = true means the tab was never foregrounded)
+    try {
+      if (typeof document.hidden !== 'undefined' && document.hidden === true) {
+        score += 15;
+        signals.push('doc_hidden');
+      }
+    } catch(e) {}
+
+    // Clamp to 100
+    if (score > 100) score = 100;
+
+    // Classify by score
+    var confidence;
+    if (score >= 60)      { confidence = 'bot';         if (type === 'human') type = 'suspicious'; }
+    else if (score >= 30) { confidence = 'suspicious';  }
+    else                  { confidence = 'human'; type = 'human'; }
+
+    _botScore = {
+      score:      score,           // 0–100
+      confidence: confidence,      // 'human' | 'suspicious' | 'bot'
+      type:       type,            // 'human' | 'crawler' | 'headless' | 'suspicious'
+      signals:    signals.join(','), // comma-separated list of fired signals
+      isBot:      (confidence === 'bot')
+    };
+    // Cache ref globally so honeypot handler can mutate it
+    window._teamzBotScoreObj = _botScore;
+    return _botScore;
+  }
+
+  // --- Human Confirmation on First Real Interaction ---
+  var _humanConfirmed = false;
+  function _trackHumanConfirmation() {
+    if (_humanConfirmed) return;
+    var evts = ['mousemove', 'touchstart', 'keydown', 'scroll', 'click'];
+    function onInteraction() {
+      if (_humanConfirmed) return;
+      _humanConfirmed = true;
+      window.TeamzIsHuman = true;
+      evts.forEach(function(ev) {
+        document.removeEventListener(ev, onInteraction, { passive: true });
+      });
+      // Push directly to dataLayer — GA4 buffers events even before gtag script loads.
+      // No polling needed. dataLayer is initialised before the gtag script tag is appended,
+      // so this is always safe regardless of load order.
+      try {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: 'human_confirmed',
+          confirmation_type: 'interaction',
+          page_path: window.location.pathname
+        });
+      } catch(e) {}
+    }
+    evts.forEach(function(ev) {
+      document.addEventListener(ev, onInteraction, { passive: true, once: true });
+    });
+  }
+
+  function init() {
+    var bot = _scoreBotSignals();
+    // Expose globally so any tool/script can read
+    window.TeamzIsBot       = bot.isBot;
+    window.TeamzBotType     = bot.type;       // 'human' | 'crawler' | 'headless' | 'suspicious'
+    window.TeamzBotScore    = bot.score;      // 0–100 confidence score
+    window.TeamzBotSignals  = bot.signals;    // e.g. 'webdriver,no_plugins'
+    window.TeamzBotConfidence = bot.confidence; // 'human' | 'suspicious' | 'bot'
+
+    if (!_isDevMode && !_isOwner) {
+      if (bot.confidence === 'human') {
+        // Full analytics stack — real humans only
+        _loadFirebase();
+        _trackEngagement();
+        _trackHumanConfirmation();
+      } else {
+        // Bots + suspicious visitors: lightweight gtag count only
+        _countBotVisit(bot);
+      }
+    }
     _trackPageView();
+  }
+
+  // --- Lightweight Bot Visit Counter (gtag only, ~28KB vs ~500KB full stack) ---
+  // FIX 1: HTTP-only crawlers (curl, wget, Python) never run JS — we can't count them
+  //         client-side. They ARE caught by the UA check so TeamzIsBot=true is correct,
+  //         but bot_visit won't fire for them. Server-side logs are the only source for those.
+  // FIX 2: bot_type / bot_ua are custom params — GA4 silently drops them unless you register
+  //         them as Custom Dimensions in GA4 Admin → Custom Definitions. See instructions below.
+  //         We map them onto GA4 standard params as a fallback so data is never lost:
+  //           bot_type → event_category   (standard param, always logged)
+  //           bot_ua   → event_label      (standard param, always logged)
+  // bot = object from _scoreBotSignals()
+  function _countBotVisit(bot) {
+    // Queue BEFORE script loads so dataLayer buffers the event
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function() { window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', GA_ID, { send_page_view: false });
+
+    window.gtag('event', 'bot_visit', {
+      // Custom dimensions — register in GA4 Admin → Custom Definitions:
+      bot_type:       bot.type,          // 'crawler' | 'headless' | 'suspicious'
+      bot_score:      bot.score,         // 0–100 confidence score
+      bot_signals:    bot.signals,       // e.g. 'webdriver,no_plugins'
+      bot_ua:         (navigator.userAgent || '').slice(0, 200),
+      // Standard params (always logged as fallback):
+      event_category: bot.type,
+      event_label:    bot.score + ' — ' + (bot.signals || 'none'),
+      page_path:      window.location.pathname,
+      page_title:     document.title
+    });
+
+    var script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    script.onerror = function() {};
+    document.head.appendChild(script);
   }
 
   // --- Firebase + GA4 Loading ---
@@ -2553,6 +2741,41 @@ document.addEventListener('DOMContentLoaded', function () {
   } else {
     setTimeout(function() { TeamzAnalytics.init(); }, 2000);
   }
+
+  // --- Honeypot click handler ---
+  // The honeypot <a> is rendered in the footer with pointer-events:none so real users
+  // can NEVER click it. Any click event here = 100% confirmed bot, zero false positives.
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-honeypot="1"]');
+    if (!el) return;
+    e.preventDefault();
+    // Override the cached bot score to maximum
+    if (window._teamzBotScoreObj) {
+      window._teamzBotScoreObj.score    = 100;
+      window._teamzBotScoreObj.type     = 'honeypot';
+      window._teamzBotScoreObj.signals  += ',honeypot_click';
+      window._teamzBotScoreObj.confidence = 'bot';
+      window._teamzBotScoreObj.isBot    = true;
+    }
+    window.TeamzIsBot      = true;
+    window.TeamzBotType    = 'honeypot';
+    window.TeamzBotScore   = 100;
+    window.TeamzBotSignals = (window.TeamzBotSignals ? window.TeamzBotSignals + ',' : '') + 'honeypot_click';
+
+    // Log confirmed bot hit to GA4 immediately
+    window.dataLayer = window.dataLayer || [];
+    var gtag = window.gtag || function() { window.dataLayer.push(arguments); };
+    try {
+      gtag('event', 'bot_honeypot', {
+        bot_type:       'honeypot',
+        bot_score:      100,
+        bot_signals:    window.TeamzBotSignals,
+        event_category: 'honeypot',
+        event_label:    '100 — honeypot_click',
+        page_path:      window.location.pathname
+      });
+    } catch(err) {}
+  });
 
   // ─── SHARE BAR: Web Share API + Social Buttons + Embed Code ───
   (function initShareBar() {
