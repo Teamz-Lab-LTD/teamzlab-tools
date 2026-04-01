@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WiFi Range Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your WiFi coverage range based on router power, frequency band, walls, and obstacles. Free visual WiFi range estimator. No signup needed.">
+  <meta property="og:title" content="WiFi Range Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your WiFi coverage range based on router power, frequency band, walls, and obstacles. Free visual WiFi range estimator. No signup needed.">
+  <meta property="og:url" content="https://tool.teamzlab.com/diagnostic/wifi-range-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/diagnostic.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="WiFi Range Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate your WiFi coverage range based on router power, frequency band, walls, and obstacles. Free visual WiFi range estimator. No signup needed.">
+  <link rel="canonical" href="https://tool.teamzlab.com/diagnostic/wifi-range-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .wifi-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .wifi-form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .wifi-form-group label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .wifi-form-group select,
+    .wifi-form-group input[type="range"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    .wifi-form-group select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+    .wifi-range-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--border);
+      outline: none;
+      padding: 0 !important;
+    }
+    .wifi-range-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid var(--accent-text);
+    }
+    .wifi-range-slider::-moz-range-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 2px solid var(--accent-text);
+    }
+    .wifi-wall-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .wifi-wall-count {
+      font-weight: 700;
+      color: var(--heading);
+      font-size: 1.1rem;
+    }
+    .wifi-btn-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .wifi-result { display: none; margin-top: 1.5rem; }
+    .wifi-result-main {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .wifi-result-main .big-value {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .wifi-result-main .big-unit {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .wifi-result-main .sub-value {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+    .wifi-result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .wifi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .wifi-card .card-label {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    .wifi-card .card-value {
+      margin: 0.25rem 0 0;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--heading);
+    }
+    .wifi-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 1.5rem 0;
+    }
+    .wifi-circles {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .wifi-circle-usable {
+      border-radius: 50%;
+      border: 2px dashed var(--border);
+      background: var(--surface);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .wifi-circle-good {
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .wifi-router-icon {
+      font-size: 1.5rem;
+      color: var(--heading);
+    }
+    .wifi-circle-label {
+      position: absolute;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .wifi-circle-label.good-label { bottom: -1.5rem; }
+    .wifi-circle-label.usable-label { bottom: -1.5rem; }
+    .wifi-recommendations {
+      padding: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-top: 1rem;
+    }
+    .wifi-recommendations h4 {
+      margin: 0 0 0.5rem;
+      color: var(--heading);
+      font-size: 1rem;
+    }
+    .wifi-recommendations ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      color: var(--text);
+    }
+    .wifi-recommendations li { margin-bottom: 0.35rem; }
+    .wifi-copy-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    .comparison-table th,
+    .comparison-table td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .comparison-table th {
+      background: var(--surface);
+      color: var(--heading);
+      font-weight: 600;
+    }
+    .comparison-table td { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .wifi-form-grid { grid-template-columns: 1fr; }
+      .wifi-btn-row { flex-direction: column; }
+      .wifi-btn-row .btn-primary,
+      .wifi-btn-row .btn-secondary { width: 100%; }
+      .wifi-result-grid { grid-template-columns: 1fr 1fr; }
+      .wifi-copy-row { flex-direction: column; align-items: stretch; }
+      .wifi-copy-row .btn-secondary { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .comparison-table { font-size: 0.8rem; }
+      .comparison-table th,
+      .comparison-table td { padding: 0.4rem 0.5rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Diagnostic Tools", "item": "https://tool.teamzlab.com/diagnostic/"}, {"@type": "ListItem", "position": 3, "name": "WiFi Range Calculator"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How far does WiFi reach indoors?", "acceptedAnswer": {"@type": "Answer", "text": "A typical home WiFi router on the 2.4 GHz band reaches 30-50 meters (100-165 feet) indoors with a few drywall walls. On the 5 GHz band, expect 15-30 meters (50-100 feet). Actual range depends heavily on wall materials, transmit power, and interference from neighboring networks."}}, {"@type": "Question", "name": "Does 5 GHz have less range than 2.4 GHz?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Higher frequencies experience greater path loss over distance and are absorbed more by walls and obstacles. The 5 GHz band typically covers about half the distance of 2.4 GHz. However, 5 GHz offers faster speeds and less interference because fewer devices and networks use it."}}, {"@type": "Question", "name": "How many walls can WiFi go through?", "acceptedAnswer": {"@type": "Answer", "text": "It depends on the wall material. WiFi can penetrate 4-5 drywall walls before the signal becomes unusable, but only 1-2 concrete or brick walls. Metal walls and foil-backed insulation are nearly impenetrable. Each wall reduces signal strength by 2-15 dB depending on material."}}, {"@type": "Question", "name": "Will a WiFi extender improve my range?", "acceptedAnswer": {"@type": "Answer", "text": "A WiFi extender or repeater can push your coverage 10-20 meters further into dead zones. However, traditional repeaters halve your available bandwidth because they use the same radio to receive and retransmit. Mesh systems with dedicated backhaul channels provide better coverage without the speed penalty."}}, {"@type": "Question", "name": "What is a good WiFi signal strength?", "acceptedAnswer": {"@type": "Answer", "text": "Signal strength is measured in dBm (decibels relative to one milliwatt). -30 to -50 dBm is excellent (very close to the router), -50 to -70 dBm is good for streaming and video calls, -70 to -80 dBm is usable for browsing and email, and below -80 dBm the connection becomes unreliable."}}, {"@type": "Question", "name": "How do I check my WiFi range?", "acceptedAnswer": {"@type": "Answer", "text": "Walk through your space with a WiFi analyzer app on your phone, noting signal strength at different locations. On Windows, the command \"netsh wlan show interfaces\" displays current signal quality. On macOS, hold Option and click the WiFi icon for detailed signal info. Our Network Connection Info tool can also show your current connection quality."}}]}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>WiFi Range Calculator</h1>
+      <p class="tool-description">Estimate your WiFi coverage range based on router specifications, frequency band, transmit power, antenna gain, wall materials, and environment type. See visual range circles and get practical recommendations to extend your wireless coverage.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="wifi-form-grid">
+        <div class="wifi-form-group">
+          <label for="freq-band">Frequency Band</label>
+          <select id="freq-band">
+            <option value="2.4">2.4 GHz (longer range, more interference)</option>
+            <option value="5">5 GHz (shorter range, faster speed)</option>
+            <option value="6">6 GHz WiFi 6E (shortest range, fastest)</option>
+          </select>
+        </div>
+
+        <div class="wifi-form-group">
+          <label for="wifi-standard">WiFi Standard</label>
+          <select id="wifi-standard">
+            <option value="n">WiFi 4 (802.11n)</option>
+            <option value="ac">WiFi 5 (802.11ac)</option>
+            <option value="ax" selected>WiFi 6 (802.11ax)</option>
+            <option value="ax6e">WiFi 6E (802.11ax)</option>
+            <option value="be">WiFi 7 (802.11be)</option>
+          </select>
+        </div>
+
+        <div class="wifi-form-group">
+          <label for="tx-power">Transmit Power</label>
+          <select id="tx-power">
+            <option value="14">Low (14 dBm / 25 mW)</option>
+            <option value="17">Medium (17 dBm / 50 mW)</option>
+            <option value="20" selected>Standard (20 dBm / 100 mW)</option>
+            <option value="23">High (23 dBm / 200 mW)</option>
+            <option value="27">Max (27 dBm / 500 mW)</option>
+          </select>
+        </div>
+
+        <div class="wifi-form-group">
+          <label for="antenna-gain">Antenna Gain</label>
+          <select id="antenna-gain">
+            <option value="2" selected>Built-in (2 dBi)</option>
+            <option value="5">Small external (5 dBi)</option>
+            <option value="7">Medium external (7 dBi)</option>
+            <option value="9">High-gain (9 dBi)</option>
+            <option value="12">Directional (12 dBi)</option>
+          </select>
+        </div>
+
+        <div class="wifi-form-group">
+          <label for="environment">Environment</label>
+          <select id="environment">
+            <option value="0">Open air (no obstacles)</option>
+            <option value="3">Indoor — open plan office/loft</option>
+            <option value="6" selected>Indoor — standard home</option>
+            <option value="10">Indoor — dense construction (brick/concrete)</option>
+            <option value="15">Indoor — multi-floor</option>
+          </select>
+        </div>
+
+        <div class="wifi-form-group">
+          <label for="wall-material">Wall Material</label>
+          <select id="wall-material">
+            <option value="3" selected>Drywall / Wood (3 dB loss per wall)</option>
+            <option value="2">Glass (2 dB loss per wall)</option>
+            <option value="6">Brick (6 dB loss per wall)</option>
+            <option value="10">Concrete (10 dB loss per wall)</option>
+            <option value="15">Metal / Foil (15 dB loss per wall)</option>
+          </select>
+        </div>
+
+        <div class="wifi-form-group" style="grid-column: 1 / -1;">
+          <div class="wifi-wall-label">
+            <label for="wall-count">Number of Walls</label>
+            <span class="wifi-wall-count" id="wall-count-display">2</span>
+          </div>
+          <input type="range" id="wall-count" class="wifi-range-slider" min="0" max="6" value="2" step="1">
+        </div>
+      </div>
+
+      <div class="wifi-btn-row">
+        <button class="btn-primary" id="calculate-btn">Calculate Range</button>
+        <button class="btn-secondary tool-clear-btn" id="clear-btn">Clear</button>
+      </div>
+
+      <div class="wifi-result" id="wifi-result">
+        <div class="wifi-result-main" id="result-main"></div>
+
+        <div class="wifi-result-grid" id="result-grid"></div>
+
+        <div class="wifi-visual" id="wifi-visual"></div>
+
+        <div class="wifi-recommendations" id="recommendations" style="display:none;"></div>
+
+        <div class="wifi-copy-row">
+          <button class="btn-secondary" id="copy-btn">Copy Results</button>
+          <button class="btn-secondary" id="share-btn">Share Results</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the WiFi Range Calculator Works</h2>
+      <p>The WiFi Range Calculator is a free browser-based tool that estimates your wireless router's coverage area using the Free Space Path Loss (FSPL) formula. This physics-based equation models how radio signals weaken as they travel through space and encounter obstacles. The calculator takes your router's transmit power, antenna gain, operating frequency, and environment conditions to compute the maximum distance at which devices can maintain a reliable connection.</p>
+      <p>FSPL is expressed as: FSPL (dB) = 20 log10(distance) + 20 log10(frequency) + 20 log10(4 pi / c). By rearranging this formula and subtracting losses from walls, obstacles, and environmental absorption, the tool solves for the maximum distance at two signal strength thresholds: -70 dBm for a good connection suitable for video calls and streaming, and -80 dBm for a usable connection adequate for web browsing and email.</p>
+
+      <h2>Factors That Affect WiFi Range</h2>
+      <p>Several factors determine how far your WiFi signal can reach. Frequency band is the most significant: 2.4 GHz signals travel roughly twice as far as 5 GHz signals because lower frequencies experience less atmospheric absorption and diffract better around obstacles. Transmit power and antenna gain directly increase the signal budget available, while receiver sensitivity determines the minimum signal a device can decode.</p>
+      <p>Physical obstacles cause the most unpredictable losses. Drywall attenuates roughly 3 dB per wall, brick walls absorb about 6 dB, concrete walls block 10 dB or more, and metal surfaces can reflect or block signals almost entirely at 15 dB loss. The number of walls between router and device accumulates these losses quickly. Environmental factors like furniture, appliances, and other WiFi networks add interference that further reduces effective range.</p>
+
+      <h2>WiFi Range by Frequency Band</h2>
+      <p>Each WiFi frequency band offers different tradeoffs between range and speed. The table below summarizes typical indoor ranges for a standard router (20 dBm, 2 dBi antenna) in a typical home environment.</p>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Band</th>
+            <th>Typical Indoor Range</th>
+            <th>Max Speed</th>
+            <th>Interference</th>
+            <th>Best For</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2.4 GHz</td>
+            <td>35-50 m (115-165 ft)</td>
+            <td>Up to 600 Mbps</td>
+            <td>High (crowded band)</td>
+            <td>Coverage, IoT devices</td>
+          </tr>
+          <tr>
+            <td>5 GHz</td>
+            <td>15-30 m (50-100 ft)</td>
+            <td>Up to 3.5 Gbps</td>
+            <td>Low</td>
+            <td>Streaming, gaming</td>
+          </tr>
+          <tr>
+            <td>6 GHz</td>
+            <td>10-20 m (33-66 ft)</td>
+            <td>Up to 9.6 Gbps</td>
+            <td>Very low (new band)</td>
+            <td>High-density, AR/VR</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>WiFi 6E and WiFi 7 routers operating on the 6 GHz band deliver the fastest speeds but cover the smallest area. For whole-home coverage, most users benefit from a dual-band or tri-band router that uses 2.4 GHz for distant devices and 5 GHz or 6 GHz for nearby high-bandwidth tasks.</p>
+
+      <h2>Tips to Extend Your WiFi Coverage</h2>
+      <p>If your calculated range does not cover your entire space, several strategies can help. Place your router in a central, elevated location away from walls and metal objects. Upgrading to a higher-gain external antenna can add 3-10 dBi to your signal budget. Mesh WiFi systems use multiple access points to blanket large homes with seamless coverage, typically adding 100-200 square meters per node.</p>
+      <p>WiFi extenders and repeaters can push coverage into dead zones, though they reduce throughput by half since they share bandwidth between receiving and retransmitting. Powerline adapters with WiFi provide an alternative by using your home electrical wiring to carry the signal to distant rooms. For multi-floor buildings, consider placing an access point on each floor connected by ethernet backhaul for the best performance.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      /* ── Breadcrumbs ── */
+      var breadcrumbs = [
+        { name: 'Home', url: '/' },
+        { name: 'Diagnostic Tools', url: '/diagnostic/' },
+        { name: 'WiFi Range Calculator' }
+      ];
+      TeamzTools.renderBreadcrumbs(breadcrumbs);
+
+      /* ── FAQs ── */
+      var faqs = [
+        { q: 'How far does WiFi reach indoors?', a: 'A typical home WiFi router on the 2.4 GHz band reaches 30-50 meters (100-165 feet) indoors with a few drywall walls. On the 5 GHz band, expect 15-30 meters (50-100 feet). Actual range depends heavily on wall materials, transmit power, and interference from neighboring networks.' },
+        { q: 'Does 5 GHz have less range than 2.4 GHz?', a: 'Yes. Higher frequencies experience greater path loss over distance and are absorbed more by walls and obstacles. The 5 GHz band typically covers about half the distance of 2.4 GHz. However, 5 GHz offers faster speeds and less interference because fewer devices and networks use it.' },
+        { q: 'How many walls can WiFi go through?', a: 'It depends on the wall material. WiFi can penetrate 4-5 drywall walls before the signal becomes unusable, but only 1-2 concrete or brick walls. Metal walls and foil-backed insulation are nearly impenetrable. Each wall reduces signal strength by 2-15 dB depending on material.' },
+        { q: 'Will a WiFi extender improve my range?', a: 'A WiFi extender or repeater can push your coverage 10-20 meters further into dead zones. However, traditional repeaters halve your available bandwidth because they use the same radio to receive and retransmit. Mesh systems with dedicated backhaul channels provide better coverage without the speed penalty.' },
+        { q: 'What is a good WiFi signal strength?', a: 'Signal strength is measured in dBm (decibels relative to one milliwatt). -30 to -50 dBm is excellent (very close to the router), -50 to -70 dBm is good for streaming and video calls, -70 to -80 dBm is usable for browsing and email, and below -80 dBm the connection becomes unreliable.' },
+        { q: 'How do I check my WiFi range?', a: 'Walk through your space with a WiFi analyzer app on your phone, noting signal strength at different locations. On Windows, the command "netsh wlan show interfaces" displays current signal quality. On macOS, hold Option and click the WiFi icon for detailed signal info. Our Network Connection Info tool can also show your current connection quality.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+
+      /* ── Related Tools ── */
+      TeamzTools.renderRelatedTools([
+        { slug: 'diagnostic/network-connection-info', name: 'Network Connection Info', description: 'Check your connection type, effective speed, and latency.' },
+        { slug: 'diagnostic/internet-speed-test', name: 'Internet Speed Test', description: 'Measure your actual download and upload speeds.' },
+        { slug: 'diagnostic/wifi-qr-code-generator', name: 'WiFi QR Code Generator', description: 'Create a QR code to share your WiFi password instantly.' },
+        { slug: 'diagnostic/dns-lookup', name: 'DNS Lookup Tool', description: 'Look up DNS records for any domain name.' },
+        { slug: 'tools/wifi-password-generator', name: 'WiFi Password Generator', description: 'Generate strong, secure WiFi passwords.' },
+        { slug: 'tools/wifi-sharing-card', name: 'WiFi Sharing Card', description: 'Create a beautiful card with your WiFi details to share.' }
+      ]);
+
+      /* ── WebApp Schema ── */
+      TeamzTools.injectWebAppSchema();
+
+      /* ── DOM refs ── */
+      var freqBandEl   = document.getElementById('freq-band');
+      var wifiStdEl    = document.getElementById('wifi-standard');
+      var txPowerEl    = document.getElementById('tx-power');
+      var antennaEl    = document.getElementById('antenna-gain');
+      var envEl        = document.getElementById('environment');
+      var wallCountEl  = document.getElementById('wall-count');
+      var wallMatEl    = document.getElementById('wall-material');
+      var wallDisplay  = document.getElementById('wall-count-display');
+      var calcBtn      = document.getElementById('calculate-btn');
+      var clearBtn     = document.getElementById('clear-btn');
+      var resultDiv    = document.getElementById('wifi-result');
+      var resultMain   = document.getElementById('result-main');
+      var resultGrid   = document.getElementById('result-grid');
+      var visualDiv    = document.getElementById('wifi-visual');
+      var recsDiv      = document.getElementById('recommendations');
+      var copyBtn      = document.getElementById('copy-btn');
+      var shareBtn     = document.getElementById('share-btn');
+
+      /* ── Wall slider label ── */
+      wallCountEl.addEventListener('input', function() {
+        wallDisplay.textContent = this.value;
+      });
+
+      /* ── Constants ── */
+      var C = 299792458; // speed of light m/s
+      var GOOD_SENSITIVITY = -70;   // dBm
+      var USABLE_SENSITIVITY = -80; // dBm
+
+      /* Frequency in Hz for each band */
+      function getFreqHz(band) {
+        if (band === '2.4') return 2.4e9;
+        if (band === '5')   return 5.0e9;
+        return 6.0e9;
+      }
+
+      /* Max theoretical speed by standard + band (Mbps) */
+      function getMaxSpeed(std, band) {
+        var speeds = {
+          'n':    { '2.4': 150,  '5': 300,  '6': 300 },
+          'ac':   { '2.4': 150,  '5': 1733, '6': 1733 },
+          'ax':   { '2.4': 574,  '5': 2402, '6': 2402 },
+          'ax6e': { '2.4': 574,  '5': 2402, '6': 4804 },
+          'be':   { '2.4': 574,  '5': 5764, '6': 11530 }
+        };
+        return (speeds[std] && speeds[std][band]) || 300;
+      }
+
+      /* Estimated speed at edge based on signal quality */
+      function getEdgeSpeed(maxSpeed, isGood) {
+        // Good signal: ~40% of max, Usable: ~15% of max
+        var factor = isGood ? 0.4 : 0.15;
+        var spd = Math.round(maxSpeed * factor);
+        if (spd >= 1000) return (spd / 1000).toFixed(1) + ' Gbps';
+        return spd + ' Mbps';
+      }
+
+      /* ── FSPL calculation ── */
+      function calcRange(txPower, antennaGain, sensitivity, freqHz, envLoss, wallLoss) {
+        // Link budget = txPower + antennaGain - sensitivity - envLoss - wallLoss
+        // FSPL = 20*log10(d) + 20*log10(f) + 20*log10(4*pi/c)
+        // => d = 10^((linkBudget - 20*log10(f) - 20*log10(4*pi/c)) / 20)
+        var linkBudget = txPower + antennaGain - sensitivity - envLoss - wallLoss;
+        if (linkBudget <= 0) return 0;
+        var freqComponent = 20 * Math.log10(freqHz);
+        var constant = 20 * Math.log10((4 * Math.PI) / C);
+        var distDb = linkBudget - freqComponent - constant;
+        var dist = Math.pow(10, distDb / 20);
+        return Math.max(0, dist);
+      }
+
+      function metersToFeet(m) { return m * 3.28084; }
+
+      /* ── Stored result for copy/share ── */
+      var lastResult = null;
+
+      /* ── Calculate ── */
+      calcBtn.addEventListener('click', function() {
+        calcBtn.disabled = true;
+        try {
+          var band      = freqBandEl.value;
+          var std       = wifiStdEl.value;
+          var txPower   = parseFloat(txPowerEl.value);
+          var antenna   = parseFloat(antennaEl.value);
+          var envLoss   = parseFloat(envEl.value);
+          var walls     = parseInt(wallCountEl.value, 10);
+          var wallDb    = parseFloat(wallMatEl.value);
+          var wallLoss  = walls * wallDb;
+          var freqHz    = getFreqHz(band);
+
+          var goodRange   = calcRange(txPower, antenna, GOOD_SENSITIVITY, freqHz, envLoss, wallLoss);
+          var usableRange = calcRange(txPower, antenna, USABLE_SENSITIVITY, freqHz, envLoss, wallLoss);
+          var maxSpeed    = getMaxSpeed(std, band);
+          var goodArea    = Math.PI * goodRange * goodRange;
+          var usableArea  = Math.PI * usableRange * usableRange;
+
+          var goodM  = goodRange.toFixed(1);
+          var goodFt = metersToFeet(goodRange).toFixed(0);
+          var usableM  = usableRange.toFixed(1);
+          var usableFt = metersToFeet(usableRange).toFixed(0);
+
+          /* Main display */
+          resultMain.innerHTML =
+            '<div class="big-value">' + goodM + ' <span class="big-unit">meters</span></div>' +
+            '<div class="sub-value">(' + goodFt + ' feet) — Good signal range</div>';
+
+          /* Cards grid */
+          resultGrid.innerHTML =
+            '<div class="wifi-card"><p class="card-label">Good Range (-70 dBm)</p><p class="card-value">' + goodM + ' m / ' + goodFt + ' ft</p></div>' +
+            '<div class="wifi-card"><p class="card-label">Usable Range (-80 dBm)</p><p class="card-value">' + usableM + ' m / ' + usableFt + ' ft</p></div>' +
+            '<div class="wifi-card"><p class="card-label">Good Coverage Area</p><p class="card-value">' + goodArea.toFixed(0) + ' m&sup2;</p></div>' +
+            '<div class="wifi-card"><p class="card-label">Speed at Good Edge</p><p class="card-value">' + getEdgeSpeed(maxSpeed, true) + '</p></div>' +
+            '<div class="wifi-card"><p class="card-label">Speed at Usable Edge</p><p class="card-value">' + getEdgeSpeed(maxSpeed, false) + '</p></div>' +
+            '<div class="wifi-card"><p class="card-label">Total Wall Loss</p><p class="card-value">' + wallLoss.toFixed(0) + ' dB</p></div>';
+
+          /* Visual circles */
+          var maxDim = 220;
+          var usablePx = maxDim;
+          var goodPx   = usableRange > 0 ? Math.max(40, Math.round((goodRange / usableRange) * maxDim)) : 60;
+          if (goodPx > usablePx) goodPx = usablePx;
+          if (usableRange <= 0) { usablePx = 80; goodPx = 40; }
+
+          visualDiv.innerHTML =
+            '<div class="wifi-circles">' +
+              '<div class="wifi-circle-usable" style="width:' + usablePx + 'px;height:' + usablePx + 'px;">' +
+                '<span class="wifi-circle-label usable-label">Usable: ' + usableM + ' m</span>' +
+                '<div class="wifi-circle-good" style="width:' + goodPx + 'px;height:' + goodPx + 'px;">' +
+                  '<span class="wifi-router-icon">&#128225;</span>' +
+                  '<span class="wifi-circle-label good-label">Good: ' + goodM + ' m</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+
+          /* Recommendations */
+          var recs = [];
+          if (goodRange < 10) recs.push('Your good signal range is very short. Consider a mesh WiFi system with 2-3 nodes for better coverage.');
+          if (goodRange < 20) recs.push('Place your router in a central, elevated location to maximize coverage in all directions.');
+          if (wallLoss > 20) recs.push('Wall losses are significant (' + wallLoss + ' dB). Consider placing an access point on the other side of major walls.');
+          if (band === '5' || band === '6') recs.push('Higher frequency bands provide faster speeds but shorter range. Use 2.4 GHz for devices that need distance over speed.');
+          if (parseFloat(antennaEl.value) <= 2) recs.push('Upgrading to an external antenna (5-9 dBi) can significantly extend your coverage area.');
+          if (walls >= 4) recs.push('With ' + walls + ' walls, consider powerline adapters or ethernet backhaul to carry the signal past the obstacles.');
+          if (usableRange > 50) recs.push('Your coverage is excellent. Ensure channel selection is optimized to avoid interference from neighboring networks.');
+          if (recs.length === 0) recs.push('Your setup provides reasonable coverage. For the best experience, keep the router away from metal objects and microwave ovens.');
+
+          recsDiv.innerHTML = '<h4>Recommendations</h4><ul>' + recs.map(function(r) { return '<li>' + r + '</li>'; }).join('') + '</ul>';
+          window.showEl(recsDiv);
+
+          /* Show result */
+          window.showEl(resultDiv, 'block');
+
+          /* Store for copy/share */
+          lastResult = {
+            band: band + ' GHz',
+            standard: wifiStdEl.options[wifiStdEl.selectedIndex].text,
+            txPower: txPowerEl.options[txPowerEl.selectedIndex].text,
+            antenna: antennaEl.options[antennaEl.selectedIndex].text,
+            environment: envEl.options[envEl.selectedIndex].text,
+            walls: walls,
+            wallMaterial: wallMatEl.options[wallMatEl.selectedIndex].text,
+            goodRange: goodM + ' m (' + goodFt + ' ft)',
+            usableRange: usableM + ' m (' + usableFt + ' ft)',
+            goodArea: goodArea.toFixed(0) + ' sq m',
+            speedGood: getEdgeSpeed(maxSpeed, true),
+            speedUsable: getEdgeSpeed(maxSpeed, false),
+            wallLoss: wallLoss.toFixed(0) + ' dB'
+          };
+        } finally {
+          calcBtn.disabled = false;
+        }
+      });
+
+      /* ── Clear ── */
+      clearBtn.addEventListener('click', function() {
+        freqBandEl.selectedIndex = 0;
+        wifiStdEl.selectedIndex = 2;
+        txPowerEl.selectedIndex = 2;
+        antennaEl.selectedIndex = 0;
+        envEl.selectedIndex = 2;
+        wallCountEl.value = 2;
+        wallDisplay.textContent = '2';
+        wallMatEl.selectedIndex = 0;
+        window.hideEl(resultDiv);
+        window.hideEl(recsDiv);
+        lastResult = null;
+      });
+
+      /* ── Copy ── */
+      copyBtn.addEventListener('click', function() {
+        if (!lastResult) { window.showToast('Calculate first'); return; }
+        var text = 'WiFi Range Calculator Results\n' +
+          'Band: ' + lastResult.band + '\n' +
+          'Standard: ' + lastResult.standard + '\n' +
+          'Transmit Power: ' + lastResult.txPower + '\n' +
+          'Antenna: ' + lastResult.antenna + '\n' +
+          'Environment: ' + lastResult.environment + '\n' +
+          'Walls: ' + lastResult.walls + ' (' + lastResult.wallMaterial + ')\n' +
+          'Total Wall Loss: ' + lastResult.wallLoss + '\n' +
+          '---\n' +
+          'Good Signal Range: ' + lastResult.goodRange + '\n' +
+          'Usable Signal Range: ' + lastResult.usableRange + '\n' +
+          'Good Coverage Area: ' + lastResult.goodArea + '\n' +
+          'Speed at Good Edge: ' + lastResult.speedGood + '\n' +
+          'Speed at Usable Edge: ' + lastResult.speedUsable + '\n' +
+          '---\n' +
+          'Calculated at tool.teamzlab.com/diagnostic/wifi-range-calculator/';
+        navigator.clipboard.writeText(text).then(function() {
+          window.showToast('Results copied to clipboard');
+        }).catch(function() {
+          window.showToast('Could not copy — try selecting the text manually');
+        });
+      });
+
+      /* ── Share ── */
+      shareBtn.addEventListener('click', function() {
+        if (!lastResult) { window.showToast('Calculate first'); return; }
+        var url = window.location.origin + '/diagnostic/wifi-range-calculator/';
+        if (navigator.share) {
+          navigator.share({
+            title: 'WiFi Range Calculator',
+            text: 'My WiFi covers ' + lastResult.goodRange + ' (good signal). Check yours:',
+            url: url
+          }).catch(function() {});
+        } else {
+          navigator.clipboard.writeText(url).then(function() {
+            window.showToast('Link copied to clipboard');
+          }).catch(function() {
+            window.showToast('Could not copy link');
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

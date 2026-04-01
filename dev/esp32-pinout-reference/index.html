@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Pinout Reference — Teamz Lab Tools</title>
+  <meta name="description" content="Interactive ESP32 GPIO pinout guide with ADC, DAC, touch, SPI, I2C pin details. Switch between ESP32, S3, C3, C6 variants. Free, offline-ready.">
+  <meta property="og:title" content="ESP32 Pinout Reference — Teamz Lab Tools">
+  <meta property="og:description" content="Interactive ESP32 GPIO pinout guide with ADC, DAC, touch, SPI, I2C, UART details. Switch between ESP32, S3, C3, C6 variants. Free.">
+  <meta property="og:url" content="https://tool.teamzlab.com/dev/esp32-pinout-reference/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/dev.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="ESP32 Pinout Reference — Teamz Lab Tools">
+  <meta name="twitter:description" content="Interactive ESP32 GPIO pinout guide with ADC, DAC, touch, SPI, I2C, UART details. Switch between ESP32, S3, C3, C6 variants. Free.">
+  <link rel="canonical" href="https://tool.teamzlab.com/dev/esp32-pinout-reference/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .esp-controls { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1.5rem; }
+    .esp-controls .tool-field { margin: 0; flex: 1; min-width: 180px; }
+    .esp-board { display: flex; justify-content: center; gap: 0; margin: 1.5rem auto; max-width: 720px; position: relative; }
+    .esp-board-center { width: 80px; min-height: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .esp-board-center span { writing-mode: vertical-rl; text-orientation: mixed; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
+    .esp-pin-col { display: flex; flex-direction: column; gap: 2px; }
+    .esp-pin-col.left { align-items: flex-end; }
+    .esp-pin-col.right { align-items: flex-start; }
+    .esp-pin { display: flex; align-items: center; gap: 0; cursor: pointer; transition: transform 0.1s; }
+    .esp-pin:hover { transform: scale(1.04); }
+    .esp-pin.left { flex-direction: row-reverse; }
+    .esp-pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); flex-shrink: 0; transition: border-color 0.15s, background 0.15s; }
+    .esp-pin.active .esp-pin-dot,
+    .esp-pin:hover .esp-pin-dot { border-color: var(--heading); background: var(--heading); }
+    .esp-pin-label { padding: 4px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; font-family: 'Courier New', monospace; white-space: nowrap; min-width: 90px; text-align: center; border: 1px solid var(--border); background: var(--surface); color: var(--text); transition: border-color 0.15s, background 0.15s; }
+    .esp-pin.active .esp-pin-label,
+    .esp-pin:hover .esp-pin-label { border-color: var(--heading); }
+    .esp-pin-wire { width: 14px; height: 2px; background: var(--border); flex-shrink: 0; }
+    .esp-pin.active .esp-pin-wire,
+    .esp-pin:hover .esp-pin-wire { background: var(--heading); }
+    /* Category colors using subtle backgrounds */
+    .esp-pin-label.cat-power { background: var(--surface); color: var(--text-muted); font-weight: 700; }
+    .esp-pin-label.cat-adc { border-left: 3px solid var(--info); }
+    .esp-pin-label.cat-touch { border-left: 3px solid var(--success); }
+    .esp-pin-label.cat-comm { border-left: 3px solid var(--warning); }
+    .esp-pin-label.cat-input-only { border-left: 3px solid var(--danger); }
+    .esp-pin-label.cat-strapping { border-left: 3px solid var(--text-muted); }
+    .esp-pin.left .esp-pin-label.cat-adc { border-left: none; border-right: 3px solid var(--info); }
+    .esp-pin.left .esp-pin-label.cat-touch { border-left: none; border-right: 3px solid var(--success); }
+    .esp-pin.left .esp-pin-label.cat-comm { border-left: none; border-right: 3px solid var(--warning); }
+    .esp-pin.left .esp-pin-label.cat-input-only { border-left: none; border-right: 3px solid var(--danger); }
+    .esp-pin.left .esp-pin-label.cat-strapping { border-left: none; border-right: 3px solid var(--text-muted); }
+    .esp-pin.highlight .esp-pin-label { background: var(--heading); color: var(--bg); }
+    .esp-pin.highlight .esp-pin-dot { border-color: var(--heading); background: var(--heading); }
+    .esp-pin.highlight .esp-pin-wire { background: var(--heading); }
+    .esp-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin: 1rem 0 1.5rem; font-size: 0.78rem; }
+    .esp-legend-item { display: flex; align-items: center; gap: 0.35rem; color: var(--text-muted); }
+    .esp-legend-swatch { width: 14px; height: 10px; border-radius: 2px; border: 1px solid var(--border); }
+    .esp-legend-swatch.sw-power { background: var(--surface); }
+    .esp-legend-swatch.sw-adc { background: var(--surface); border-left: 3px solid var(--info); }
+    .esp-legend-swatch.sw-touch { background: var(--surface); border-left: 3px solid var(--success); }
+    .esp-legend-swatch.sw-comm { background: var(--surface); border-left: 3px solid var(--warning); }
+    .esp-legend-swatch.sw-input { background: var(--surface); border-left: 3px solid var(--danger); }
+    .esp-legend-swatch.sw-strap { background: var(--surface); border-left: 3px solid var(--text-muted); }
+    .esp-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-top: 1rem; display: none; }
+    .esp-detail h3 { margin: 0 0 0.5rem; color: var(--heading); font-size: 1rem; }
+    .esp-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; }
+    .esp-detail-item { padding: 0.5rem 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+    .esp-detail-item .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin: 0; }
+    .esp-detail-item .value { font-size: 0.9rem; font-weight: 600; color: var(--heading); margin: 0.15rem 0 0; font-family: 'Courier New', monospace; }
+    .esp-warnings { margin-top: 1.25rem; }
+    .esp-warning { padding: 0.65rem 0.85rem; border-radius: 8px; margin-bottom: 0.5rem; font-size: 0.82rem; line-height: 1.5; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .esp-warning strong { color: var(--heading); }
+    .esp-filter-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+    .esp-filter-tag { padding: 0.3rem 0.7rem; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: background 0.15s, color 0.15s; }
+    .esp-filter-tag:hover,
+    .esp-filter-tag.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    @media (max-width: 600px) {
+      .esp-controls { flex-direction: column; }
+      .esp-board { flex-direction: column; align-items: center; gap: 0; }
+      .esp-board-center { width: 100%; min-height: 36px; border-radius: 6px; margin: 4px 0; }
+      .esp-board-center span { writing-mode: horizontal-tb; }
+      .esp-pin-col { flex-direction: column; align-items: stretch; }
+      .esp-pin-col.left, .esp-pin-col.right { align-items: stretch; }
+      .esp-pin { flex-direction: row !important; }
+      .esp-pin-label { min-width: 0; flex: 1; text-align: left; font-size: 0.68rem; }
+      .esp-pin.left .esp-pin-label.cat-adc,
+      .esp-pin.left .esp-pin-label.cat-touch,
+      .esp-pin.left .esp-pin-label.cat-comm,
+      .esp-pin.left .esp-pin-label.cat-input-only,
+      .esp-pin.left .esp-pin-label.cat-strapping { border-right: none; border-left: 3px solid; }
+      .esp-pin.left .esp-pin-label.cat-adc { border-left-color: var(--info); }
+      .esp-pin.left .esp-pin-label.cat-touch { border-left-color: var(--success); }
+      .esp-pin.left .esp-pin-label.cat-comm { border-left-color: var(--warning); }
+      .esp-pin.left .esp-pin-label.cat-input-only { border-left-color: var(--danger); }
+      .esp-pin.left .esp-pin-label.cat-strapping { border-left-color: var(--text-muted); }
+      .esp-detail-grid { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .tool-actions { flex-direction: column; }
+      .tool-actions button { width: 100%; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Developer Tools", "item": "https://tool.teamzlab.com/dev/"}, {"@type": "ListItem", "position": 3, "name": "ESP32 Pinout Reference"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which ESP32 pins are safe to use?", "acceptedAnswer": {"@type": "Answer", "text": "Most GPIO pins are safe for general use. Avoid GPIO 6-11 (connected to internal flash), be cautious with strapping pins (GPIO 0, 2, 5, 12, 15) during boot, and note that GPIO 34-39 are input-only. For WiFi projects, prefer ADC1 pins (GPIO 32-39) since ADC2 cannot be used while WiFi is active."}}, {"@type": "Question", "name": "Why can't I use GPIO 6-11?", "acceptedAnswer": {"@type": "Answer", "text": "GPIO 6-11 are internally connected to the SPI flash memory that stores your program. Using these pins in your project will interfere with flash read/write operations, causing crashes, boot failures, or data corruption. These pins are exposed on some development boards but should never be connected to external circuits."}}, {"@type": "Question", "name": "What are strapping pins?", "acceptedAnswer": {"@type": "Answer", "text": "Strapping pins (GPIO 0, 2, 5, 12, 15) are read by the ESP32 during boot to determine the boot mode, flash voltage, and debug output settings. GPIO 0 selects between normal boot (HIGH) and flash/download mode (LOW). GPIO 12 sets flash voltage (HIGH = 1.8V, LOW = 3.3V). You can use these pins in your project, but they must be in the correct state at boot time."}}, {"@type": "Question", "name": "Can I use ADC2 with WiFi?", "acceptedAnswer": {"@type": "Answer", "text": "No. When WiFi is active on the ESP32, the ADC2 peripheral is used internally by the WiFi driver and cannot be read by user code. If you need analog readings while using WiFi, use ADC1 channels (GPIO 32-39). This limitation applies to the original ESP32; the ESP32-S3 and newer variants have improved ADC behavior."}}, {"@type": "Question", "name": "What is the difference between ESP32 and ESP32-S3?", "acceptedAnswer": {"@type": "Answer", "text": "The ESP32-S3 upgrades to a faster dual-core Xtensa LX7 processor (vs LX6), adds USB OTG support, increases GPIO count to 45, adds vector instructions for AI/ML workloads, supports up to 16MB PSRAM, and has 14 touch channels (vs 10). However, it removes the DAC peripheral. The S3 is ideal for projects needing USB host/device, camera interfaces, or edge AI."}}, {"@type": "Question", "name": "Which pins support touch sensing?", "acceptedAnswer": {"@type": "Answer", "text": "The original ESP32 has 10 capacitive touch pins: Touch0 (GPIO4), Touch1 (GPIO0), Touch2 (GPIO2), Touch3 (GPIO15), Touch4 (GPIO13), Touch5 (GPIO12), Touch6 (GPIO14), Touch7 (GPIO27), Touch8 (GPIO33), Touch9 (GPIO32). The ESP32-S3 extends this to 14 touch channels. Touch pins detect changes in capacitance when a finger approaches, enabling button-free touch interfaces."}}]}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>ESP32 Pinout Reference</h1>
+      <p class="tool-description">Interactive ESP32 GPIO pinout guide. Click any pin to see its full capabilities including ADC, DAC, touch, SPI, I2C, and UART functions. Switch between ESP32, ESP32-S3, ESP32-C3, and ESP32-C6 variants. Search pins by function. Free, private, and works offline.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="esp-controls">
+        <div class="tool-field">
+          <label for="variant-select" class="tool-label">Board Variant</label>
+          <select id="variant-select" class="tool-input">
+            <option value="esp32" selected>ESP32 (30-pin DevKit V1)</option>
+            <option value="esp32s3">ESP32-S3 (44-pin)</option>
+            <option value="esp32c3">ESP32-C3 (22-pin)</option>
+            <option value="esp32c6">ESP32-C6 (30-pin)</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label for="pin-search" class="tool-label">Search Pins</label>
+          <input type="text" id="pin-search" class="tool-input" placeholder="e.g. ADC, SPI, GPIO18, Touch...">
+        </div>
+      </div>
+
+      <div class="esp-filter-tags" id="filter-tags">
+        <span class="esp-filter-tag" data-filter="all">All</span>
+        <span class="esp-filter-tag" data-filter="adc">ADC</span>
+        <span class="esp-filter-tag" data-filter="dac">DAC</span>
+        <span class="esp-filter-tag" data-filter="touch">Touch</span>
+        <span class="esp-filter-tag" data-filter="spi">SPI</span>
+        <span class="esp-filter-tag" data-filter="i2c">I2C</span>
+        <span class="esp-filter-tag" data-filter="uart">UART</span>
+        <span class="esp-filter-tag" data-filter="pwm">PWM</span>
+        <span class="esp-filter-tag" data-filter="input-only">Input Only</span>
+        <span class="esp-filter-tag" data-filter="strapping">Strapping</span>
+      </div>
+
+      <div class="esp-legend">
+        <span class="esp-legend-item"><span class="esp-legend-swatch sw-power"></span> Power / GND</span>
+        <span class="esp-legend-item"><span class="esp-legend-swatch sw-adc"></span> ADC</span>
+        <span class="esp-legend-item"><span class="esp-legend-swatch sw-touch"></span> Touch</span>
+        <span class="esp-legend-item"><span class="esp-legend-swatch sw-comm"></span> SPI / I2C / UART</span>
+        <span class="esp-legend-item"><span class="esp-legend-swatch sw-input"></span> Input Only</span>
+        <span class="esp-legend-item"><span class="esp-legend-swatch sw-strap"></span> Strapping</span>
+      </div>
+
+      <div class="esp-board" id="esp-board">
+        <div class="esp-pin-col left" id="pin-col-left"></div>
+        <div class="esp-board-center"><span id="board-label">ESP32</span></div>
+        <div class="esp-pin-col right" id="pin-col-right"></div>
+      </div>
+
+      <div class="esp-detail" id="pin-detail">
+        <h3 id="detail-title">Pin Details</h3>
+        <div class="esp-detail-grid" id="detail-grid"></div>
+      </div>
+
+      <div class="esp-warnings">
+        <div class="esp-warning"><strong>GPIO 6-11:</strong> Connected to internal SPI flash. Do NOT use these pins in your projects.</div>
+        <div class="esp-warning"><strong>GPIO 34-39:</strong> Input only pins. They cannot be configured as outputs.</div>
+        <div class="esp-warning"><strong>ADC2 pins:</strong> Cannot read ADC2 channels when WiFi is active. Use ADC1 pins instead.</div>
+        <div class="esp-warning"><strong>Strapping pins (0, 2, 5, 12, 15):</strong> These pins affect boot behavior. Avoid pulling them HIGH/LOW at boot unless you understand the consequences.</div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Use the ESP32 Pinout Reference</h2>
+      <p>The ESP32 Pinout Reference is a free, interactive tool that helps makers, students, and engineers quickly identify the functions of every GPIO pin on ESP32 development boards. Select your board variant from the dropdown to see the correct pin layout for ESP32 (30-pin DevKit V1), ESP32-S3, ESP32-C3, or ESP32-C6. Click or tap any pin on the visual board diagram to see its full capabilities including analog-to-digital converter (ADC) channel, digital-to-analog converter (DAC) output, capacitive touch sensor number, SPI bus assignment, I2C compatibility, UART mapping, and any boot-related strapping behavior. Use the search box to instantly find pins by function name or GPIO number. Filter tags let you highlight all ADC, touch, SPI, I2C, or UART pins at once, making it easy to plan your wiring before writing a single line of code.</p>
+
+      <h2>ESP32 GPIO Pin Functions Explained</h2>
+      <p>The ESP32 provides up to 34 GPIO pins, each capable of multiple functions through a flexible multiplexing system. <strong>ADC (Analog-to-Digital Converter)</strong> pins convert analog voltages (0-3.3V) to 12-bit digital values (0-4095). ADC1 has 8 channels and works alongside WiFi, while ADC2 has 10 channels but cannot be used when WiFi is active. <strong>DAC (Digital-to-Analog Converter)</strong> provides true analog output on GPIO25 (DAC1) and GPIO26 (DAC2), generating voltages between 0-3.3V with 8-bit resolution. <strong>Capacitive Touch</strong> sensing is available on 10 pins (Touch0-Touch9), enabling button-free touch interfaces. <strong>SPI</strong> communication uses HSPI (GPIO12-15) and VSPI (GPIO18-23) buses for high-speed peripheral communication with displays, SD cards, and sensors. <strong>I2C</strong> default pins are GPIO21 (SDA) and GPIO22 (SCL) for connecting sensors, OLEDs, and other I2C devices. <strong>UART</strong> provides three serial ports: UART0 (GPIO1/GPIO3, used by USB), UART1, and UART2 (GPIO16/GPIO17) for serial communication with GPS modules, Bluetooth adapters, and other microcontrollers.</p>
+
+      <h2>ESP32 Strapping Pins and Boot Behavior</h2>
+      <p>Five GPIO pins on the ESP32 are designated as strapping pins that determine the boot mode of the chip when it powers on or resets. <strong>GPIO0</strong> selects between normal boot (HIGH) and download/flash mode (LOW) and is connected to the BOOT button on most development boards. <strong>GPIO2</strong> must be LOW or floating during boot for proper startup and also controls the onboard LED on many boards. <strong>GPIO5</strong> controls the timing of the SDIO slave during boot. <strong>GPIO12 (MTDI)</strong> sets the flash voltage: HIGH selects 1.8V flash, LOW selects 3.3V flash. Setting GPIO12 HIGH accidentally on a 3.3V flash board causes a boot failure, which is one of the most common ESP32 troubleshooting issues. <strong>GPIO15 (MTDO)</strong> controls whether the chip outputs debug logs on UART0 during boot. You can use strapping pins in your projects, but you must ensure they are in the correct state during the boot sequence to prevent startup failures.</p>
+
+      <h2>ESP32 vs ESP32-S3 vs ESP32-C3 Pin Differences</h2>
+      <p>Espressif offers several ESP32 variants optimized for different use cases. The original <strong>ESP32</strong> has a dual-core Xtensa LX6 processor, 34 GPIOs, 18 ADC channels, 2 DAC channels, and 10 touch pins. It remains the most widely used variant for general IoT projects. The <strong>ESP32-S3</strong> upgrades to a dual-core Xtensa LX7 with up to 45 GPIOs, USB OTG support, and improved AI acceleration for edge ML applications. It adds more ADC channels and touch pins but removes DAC. The <strong>ESP32-C3</strong> is a cost-optimized single-core RISC-V chip with 22 GPIOs, WiFi, and Bluetooth 5 LE. It has fewer peripherals but offers excellent value for simple IoT sensors and actuators. The <strong>ESP32-C6</strong> adds WiFi 6, Zigbee, and Thread protocol support to the RISC-V architecture with 30 GPIOs, making it ideal for smart home applications that need Matter protocol compatibility. Choose your variant based on required GPIO count, processing power, wireless protocols, and peripheral needs. Based on Espressif official datasheets, last updated April 2026.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    /* ========== PIN DATA ========== */
+    var PIN_DATA = {
+      esp32: {
+        label: 'ESP32',
+        left: [
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' },
+          { name: 'EN', gpio: null, cat: 'power', detail: 'Enable: chip reset (active LOW)' },
+          { name: 'VP (GPIO36)', gpio: 36, cat: 'input-only', funcs: ['ADC1_CH0', 'RTC_GPIO0'], notes: 'Input only' },
+          { name: 'VN (GPIO39)', gpio: 39, cat: 'input-only', funcs: ['ADC1_CH3', 'RTC_GPIO3'], notes: 'Input only' },
+          { name: 'GPIO34', gpio: 34, cat: 'input-only', funcs: ['ADC1_CH6', 'RTC_GPIO4'], notes: 'Input only' },
+          { name: 'GPIO35', gpio: 35, cat: 'input-only', funcs: ['ADC1_CH7', 'RTC_GPIO5'], notes: 'Input only' },
+          { name: 'GPIO32', gpio: 32, cat: 'touch', funcs: ['ADC1_CH4', 'Touch9', 'RTC_GPIO9', 'XTAL32'], notes: 'PWM capable' },
+          { name: 'GPIO33', gpio: 33, cat: 'touch', funcs: ['ADC1_CH5', 'Touch8', 'RTC_GPIO8', 'XTAL32'], notes: 'PWM capable' },
+          { name: 'GPIO25', gpio: 25, cat: 'adc', funcs: ['ADC2_CH8', 'DAC1', 'RTC_GPIO6'], notes: 'PWM capable, DAC output' },
+          { name: 'GPIO26', gpio: 26, cat: 'adc', funcs: ['ADC2_CH9', 'DAC2', 'RTC_GPIO7'], notes: 'PWM capable, DAC output' },
+          { name: 'GPIO27', gpio: 27, cat: 'touch', funcs: ['ADC2_CH7', 'Touch7', 'RTC_GPIO17'], notes: 'PWM capable' },
+          { name: 'GPIO14', gpio: 14, cat: 'comm', funcs: ['ADC2_CH6', 'Touch6', 'HSPI_CLK', 'RTC_GPIO16'], notes: 'PWM capable' },
+          { name: 'GPIO12', gpio: 12, cat: 'strapping', funcs: ['ADC2_CH5', 'Touch5', 'HSPI_MISO', 'RTC_GPIO15'], notes: 'Boot fail if HIGH (sets flash voltage)' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO13', gpio: 13, cat: 'touch', funcs: ['ADC2_CH4', 'Touch4', 'HSPI_MOSI', 'RTC_GPIO14'], notes: 'PWM capable' },
+          { name: 'D2 (GPIO9)', gpio: 9, cat: 'comm', funcs: ['SD_DATA2', 'SPIHD', 'HS1_DATA2', 'U1RXD'], notes: 'Connected to flash — do NOT use' },
+          { name: 'D3 (GPIO10)', gpio: 10, cat: 'comm', funcs: ['SD_DATA3', 'SPIWP', 'HS1_DATA3', 'U1TXD'], notes: 'Connected to flash — do NOT use' },
+          { name: 'CMD (GPIO11)', gpio: 11, cat: 'comm', funcs: ['SD_CMD', 'SPICS0', 'HS1_CMD', 'U1RTS'], notes: 'Connected to flash — do NOT use' }
+        ],
+        right: [
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO23', gpio: 23, cat: 'comm', funcs: ['VSPI_MOSI'], notes: 'PWM capable' },
+          { name: 'GPIO22', gpio: 22, cat: 'comm', funcs: ['I2C_SCL', 'Wire'], notes: 'PWM capable, default I2C clock' },
+          { name: 'TX (GPIO1)', gpio: 1, cat: 'comm', funcs: ['UART0_TX'], notes: 'USB serial TX — avoid in projects' },
+          { name: 'RX (GPIO3)', gpio: 3, cat: 'comm', funcs: ['UART0_RX'], notes: 'USB serial RX — avoid in projects' },
+          { name: 'GPIO21', gpio: 21, cat: 'comm', funcs: ['I2C_SDA', 'Wire'], notes: 'PWM capable, default I2C data' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO19', gpio: 19, cat: 'comm', funcs: ['VSPI_MISO'], notes: 'PWM capable' },
+          { name: 'GPIO18', gpio: 18, cat: 'comm', funcs: ['VSPI_CLK'], notes: 'PWM capable' },
+          { name: 'GPIO5', gpio: 5, cat: 'strapping', funcs: ['VSPI_SS'], notes: 'Strapping pin (boot mode)' },
+          { name: 'GPIO17', gpio: 17, cat: 'comm', funcs: ['UART2_TX'], notes: 'PWM capable' },
+          { name: 'GPIO16', gpio: 16, cat: 'comm', funcs: ['UART2_RX'], notes: 'PWM capable' },
+          { name: 'GPIO4', gpio: 4, cat: 'touch', funcs: ['ADC2_CH0', 'Touch0', 'RTC_GPIO10'], notes: 'PWM capable' },
+          { name: 'GPIO0', gpio: 0, cat: 'strapping', funcs: ['ADC2_CH1', 'Touch1'], notes: 'Boot button, strapping pin' },
+          { name: 'GPIO2', gpio: 2, cat: 'strapping', funcs: ['ADC2_CH2', 'Touch2', 'RTC_GPIO12'], notes: 'Onboard LED, strapping pin' },
+          { name: 'GPIO15', gpio: 15, cat: 'strapping', funcs: ['ADC2_CH3', 'Touch3', 'HSPI_SS', 'RTC_GPIO13'], notes: 'Strapping pin' },
+          { name: 'D1 (GPIO8)', gpio: 8, cat: 'comm', funcs: ['SD_DATA1', 'SPID', 'HS1_DATA1'], notes: 'Connected to flash — do NOT use' },
+          { name: 'D0 (GPIO7)', gpio: 7, cat: 'comm', funcs: ['SD_DATA0', 'SPIQ', 'HS1_DATA0'], notes: 'Connected to flash — do NOT use' },
+          { name: 'CLK (GPIO6)', gpio: 6, cat: 'comm', funcs: ['SD_CLK', 'SPICLK', 'HS1_CLK'], notes: 'Connected to flash — do NOT use' }
+        ]
+      },
+      esp32s3: {
+        label: 'ESP32-S3',
+        left: [
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO1', gpio: 1, cat: 'touch', funcs: ['ADC1_CH0', 'Touch1'], notes: 'PWM capable' },
+          { name: 'GPIO2', gpio: 2, cat: 'touch', funcs: ['ADC1_CH1', 'Touch2'], notes: 'PWM capable' },
+          { name: 'GPIO3', gpio: 3, cat: 'touch', funcs: ['ADC1_CH2', 'Touch3'], notes: 'PWM capable, strapping pin' },
+          { name: 'GPIO4', gpio: 4, cat: 'touch', funcs: ['ADC1_CH3', 'Touch4'], notes: 'PWM capable' },
+          { name: 'GPIO5', gpio: 5, cat: 'touch', funcs: ['ADC1_CH4', 'Touch5'], notes: 'PWM capable' },
+          { name: 'GPIO6', gpio: 6, cat: 'touch', funcs: ['ADC1_CH5', 'Touch6'], notes: 'PWM capable' },
+          { name: 'GPIO7', gpio: 7, cat: 'touch', funcs: ['ADC1_CH6', 'Touch7'], notes: 'PWM capable' },
+          { name: 'GPIO8', gpio: 8, cat: 'adc', funcs: ['ADC1_CH7'], notes: 'PWM capable' },
+          { name: 'GPIO9', gpio: 9, cat: 'adc', funcs: ['ADC1_CH8', 'Touch9'], notes: 'PWM capable' },
+          { name: 'GPIO10', gpio: 10, cat: 'adc', funcs: ['ADC1_CH9', 'Touch10', 'FSPI_CS'], notes: 'PWM capable' },
+          { name: 'GPIO11', gpio: 11, cat: 'comm', funcs: ['ADC2_CH0', 'Touch11', 'FSPI_MOSI'], notes: 'PWM capable' },
+          { name: 'GPIO12', gpio: 12, cat: 'comm', funcs: ['ADC2_CH1', 'Touch12', 'FSPI_CLK'], notes: 'PWM capable' },
+          { name: 'GPIO13', gpio: 13, cat: 'comm', funcs: ['ADC2_CH2', 'Touch13', 'FSPI_MISO'], notes: 'PWM capable' },
+          { name: 'GPIO14', gpio: 14, cat: 'touch', funcs: ['ADC2_CH3', 'Touch14'], notes: 'PWM capable' },
+          { name: 'GPIO15', gpio: 15, cat: 'adc', funcs: ['ADC2_CH4'], notes: 'PWM capable' },
+          { name: 'GPIO16', gpio: 16, cat: 'adc', funcs: ['ADC2_CH5'], notes: 'PWM capable' },
+          { name: 'GPIO17', gpio: 17, cat: 'adc', funcs: ['ADC2_CH6'], notes: 'PWM capable' },
+          { name: 'GPIO18', gpio: 18, cat: 'adc', funcs: ['ADC2_CH7'], notes: 'PWM capable' },
+          { name: 'GPIO19', gpio: 19, cat: 'adc', funcs: ['ADC2_CH8', 'USB_D-'], notes: 'USB D- pin' },
+          { name: 'GPIO20', gpio: 20, cat: 'adc', funcs: ['ADC2_CH9', 'USB_D+'], notes: 'USB D+ pin' }
+        ],
+        right: [
+          { name: 'VIN (5V)', gpio: null, cat: 'power', detail: 'Power: 5V input' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO21', gpio: 21, cat: 'adc', funcs: ['RTC_GPIO21'], notes: 'PWM capable' },
+          { name: 'GPIO35', gpio: 35, cat: 'comm', funcs: ['SPI_MOSI', 'FSPID_OUT'], notes: 'PWM capable, SPI bus' },
+          { name: 'GPIO36', gpio: 36, cat: 'comm', funcs: ['SPI_CLK', 'FSPICLK_OUT'], notes: 'PWM capable, SPI bus' },
+          { name: 'GPIO37', gpio: 37, cat: 'comm', funcs: ['SPI_MISO', 'FSPIQ_IN'], notes: 'PWM capable, SPI bus' },
+          { name: 'GPIO38', gpio: 38, cat: 'comm', funcs: ['SPI_CS', 'FSPICS0_OUT'], notes: 'PWM capable, SPI bus' },
+          { name: 'GPIO39', gpio: 39, cat: 'comm', funcs: ['JTAG_TCK'], notes: 'PWM capable, JTAG' },
+          { name: 'GPIO40', gpio: 40, cat: 'comm', funcs: ['JTAG_TDO'], notes: 'PWM capable, JTAG' },
+          { name: 'GPIO41', gpio: 41, cat: 'comm', funcs: ['JTAG_TDI'], notes: 'PWM capable, JTAG' },
+          { name: 'GPIO42', gpio: 42, cat: 'comm', funcs: ['JTAG_TMS'], notes: 'PWM capable, JTAG' },
+          { name: 'RX (GPIO44)', gpio: 44, cat: 'comm', funcs: ['UART0_RX'], notes: 'USB serial RX' },
+          { name: 'TX (GPIO43)', gpio: 43, cat: 'comm', funcs: ['UART0_TX'], notes: 'USB serial TX' },
+          { name: 'GPIO44', gpio: 44, cat: 'comm', funcs: ['UART0_RXD'], notes: 'PWM capable' },
+          { name: 'GPIO43', gpio: 43, cat: 'comm', funcs: ['UART0_TXD'], notes: 'PWM capable' },
+          { name: 'GPIO46', gpio: 46, cat: 'strapping', funcs: ['Strapping'], notes: 'Input only, boot mode select' },
+          { name: 'GPIO45', gpio: 45, cat: 'strapping', funcs: ['Strapping'], notes: 'Strapping pin (VDD_SPI voltage)' },
+          { name: 'GPIO48', gpio: 48, cat: 'adc', funcs: ['RGB_LED'], notes: 'Onboard RGB LED (Neopixel)' },
+          { name: 'GPIO47', gpio: 47, cat: 'adc', funcs: [], notes: 'PWM capable' },
+          { name: 'EN', gpio: null, cat: 'power', detail: 'Enable: chip reset (active LOW)' },
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' }
+        ]
+      },
+      esp32c3: {
+        label: 'ESP32-C3',
+        left: [
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO0', gpio: 0, cat: 'adc', funcs: ['ADC1_CH0'], notes: 'PWM capable' },
+          { name: 'GPIO1', gpio: 1, cat: 'adc', funcs: ['ADC1_CH1'], notes: 'PWM capable' },
+          { name: 'GPIO2', gpio: 2, cat: 'strapping', funcs: ['ADC1_CH2'], notes: 'Strapping pin, boot mode' },
+          { name: 'GPIO3', gpio: 3, cat: 'adc', funcs: ['ADC1_CH3'], notes: 'PWM capable' },
+          { name: 'GPIO4', gpio: 4, cat: 'adc', funcs: ['ADC1_CH4', 'FSPI_HD'], notes: 'PWM capable' },
+          { name: 'GPIO5', gpio: 5, cat: 'adc', funcs: ['ADC2_CH0', 'FSPI_CS0'], notes: 'PWM capable' },
+          { name: 'GPIO6', gpio: 6, cat: 'comm', funcs: ['FSPI_CLK'], notes: 'PWM capable, SPI CLK' },
+          { name: 'GPIO7', gpio: 7, cat: 'comm', funcs: ['FSPI_D', 'MOSI'], notes: 'PWM capable, SPI MOSI' },
+          { name: 'GPIO8', gpio: 8, cat: 'strapping', funcs: ['Strapping'], notes: 'Strapping pin' }
+        ],
+        right: [
+          { name: 'VIN (5V)', gpio: null, cat: 'power', detail: 'Power: 5V input' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO10', gpio: 10, cat: 'comm', funcs: ['FSPI_Q', 'MISO'], notes: 'PWM capable, SPI MISO' },
+          { name: 'RX (GPIO20)', gpio: 20, cat: 'comm', funcs: ['UART0_RX', 'USB_D+'], notes: 'USB serial / UART RX' },
+          { name: 'TX (GPIO21)', gpio: 21, cat: 'comm', funcs: ['UART0_TX', 'USB_D-'], notes: 'USB serial / UART TX' },
+          { name: 'GPIO9', gpio: 9, cat: 'strapping', funcs: ['Strapping', 'BOOT'], notes: 'Boot button, strapping pin' },
+          { name: 'GPIO18', gpio: 18, cat: 'comm', funcs: ['USB_D-'], notes: 'Native USB D-' },
+          { name: 'GPIO19', gpio: 19, cat: 'comm', funcs: ['USB_D+'], notes: 'Native USB D+' },
+          { name: 'GPIO8', gpio: 8, cat: 'strapping', funcs: ['Strapping'], notes: 'Strapping pin (shared)' },
+          { name: 'EN', gpio: null, cat: 'power', detail: 'Enable: chip reset (active LOW)' },
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' }
+        ]
+      },
+      esp32c6: {
+        label: 'ESP32-C6',
+        left: [
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO0', gpio: 0, cat: 'adc', funcs: ['ADC1_CH0'], notes: 'PWM capable' },
+          { name: 'GPIO1', gpio: 1, cat: 'adc', funcs: ['ADC1_CH1'], notes: 'PWM capable' },
+          { name: 'GPIO2', gpio: 2, cat: 'adc', funcs: ['ADC1_CH2'], notes: 'PWM capable' },
+          { name: 'GPIO3', gpio: 3, cat: 'adc', funcs: ['ADC1_CH3'], notes: 'PWM capable' },
+          { name: 'GPIO4', gpio: 4, cat: 'comm', funcs: ['ADC1_CH4', 'SPI_HD'], notes: 'PWM capable' },
+          { name: 'GPIO5', gpio: 5, cat: 'comm', funcs: ['ADC1_CH5', 'SPI_CS0'], notes: 'PWM capable' },
+          { name: 'GPIO6', gpio: 6, cat: 'comm', funcs: ['ADC1_CH6', 'SPI_CLK'], notes: 'PWM capable, SPI CLK' },
+          { name: 'GPIO7', gpio: 7, cat: 'comm', funcs: ['SPI_D', 'MOSI'], notes: 'PWM capable, SPI MOSI' },
+          { name: 'GPIO8', gpio: 8, cat: 'strapping', funcs: ['Strapping'], notes: 'Strapping pin' },
+          { name: 'GPIO9', gpio: 9, cat: 'strapping', funcs: ['Strapping', 'BOOT'], notes: 'Boot button' },
+          { name: 'GPIO10', gpio: 10, cat: 'comm', funcs: ['SPI_Q', 'MISO'], notes: 'PWM capable, SPI MISO' },
+          { name: 'GPIO11', gpio: 11, cat: 'comm', funcs: ['SPI_WP'], notes: 'PWM capable' },
+          { name: 'GPIO12', gpio: 12, cat: 'comm', funcs: ['USB_D-'], notes: 'USB D-' }
+        ],
+        right: [
+          { name: 'VIN (5V)', gpio: null, cat: 'power', detail: 'Power: 5V input' },
+          { name: 'GND', gpio: null, cat: 'power', detail: 'Ground' },
+          { name: 'GPIO13', gpio: 13, cat: 'comm', funcs: ['USB_D+'], notes: 'USB D+' },
+          { name: 'GPIO14', gpio: 14, cat: 'comm', funcs: [], notes: 'PWM capable' },
+          { name: 'GPIO15', gpio: 15, cat: 'strapping', funcs: ['Strapping'], notes: 'Strapping pin' },
+          { name: 'RX (GPIO16)', gpio: 16, cat: 'comm', funcs: ['UART0_RX'], notes: 'Default UART RX' },
+          { name: 'TX (GPIO17)', gpio: 17, cat: 'comm', funcs: ['UART0_TX'], notes: 'Default UART TX' },
+          { name: 'GPIO18', gpio: 18, cat: 'comm', funcs: ['SDIO'], notes: 'PWM capable, SDIO' },
+          { name: 'GPIO19', gpio: 19, cat: 'comm', funcs: ['SDIO'], notes: 'PWM capable, SDIO' },
+          { name: 'GPIO20', gpio: 20, cat: 'comm', funcs: ['SDIO'], notes: 'PWM capable, SDIO' },
+          { name: 'GPIO21', gpio: 21, cat: 'comm', funcs: ['SDIO'], notes: 'PWM capable, SDIO' },
+          { name: 'GPIO22', gpio: 22, cat: 'comm', funcs: ['I2C_SDA'], notes: 'Default I2C SDA' },
+          { name: 'GPIO23', gpio: 23, cat: 'comm', funcs: ['I2C_SCL'], notes: 'Default I2C SCL' },
+          { name: 'EN', gpio: null, cat: 'power', detail: 'Enable: chip reset (active LOW)' },
+          { name: '3V3', gpio: null, cat: 'power', detail: 'Power: 3.3V output' }
+        ]
+      }
+    };
+
+    /* ========== DOM REFS ========== */
+    var variantSelect = document.getElementById('variant-select');
+    var pinSearch = document.getElementById('pin-search');
+    var colLeft = document.getElementById('pin-col-left');
+    var colRight = document.getElementById('pin-col-right');
+    var boardLabel = document.getElementById('board-label');
+    var detailPanel = document.getElementById('pin-detail');
+    var detailTitle = document.getElementById('detail-title');
+    var detailGrid = document.getElementById('detail-grid');
+    var filterTags = document.getElementById('filter-tags');
+    var activeFilter = 'all';
+    var selectedPinEl = null;
+
+    /* ========== RENDER BOARD ========== */
+    function renderBoard(variant) {
+      var data = PIN_DATA[variant];
+      if (!data) return;
+      colLeft.innerHTML = '';
+      colRight.innerHTML = '';
+      boardLabel.textContent = data.label;
+      hideEl(detailPanel);
+
+      data.left.forEach(function(pin) {
+        colLeft.appendChild(createPinEl(pin, 'left'));
+      });
+      data.right.forEach(function(pin) {
+        colRight.appendChild(createPinEl(pin, 'right'));
+      });
+
+      applyFilter(activeFilter);
+      applySearch(pinSearch.value);
+    }
+
+    function createPinEl(pin, side) {
+      var el = document.createElement('div');
+      el.className = 'esp-pin ' + side;
+      el.setAttribute('data-gpio', pin.gpio !== null ? pin.gpio : '');
+      el.setAttribute('data-cat', pin.cat);
+      el.setAttribute('data-name', pin.name.toLowerCase());
+      el.setAttribute('data-funcs', (pin.funcs || []).join(' ').toLowerCase());
+
+      var dot = document.createElement('span');
+      dot.className = 'esp-pin-dot';
+
+      var wire = document.createElement('span');
+      wire.className = 'esp-pin-wire';
+
+      var label = document.createElement('span');
+      label.className = 'esp-pin-label cat-' + pin.cat;
+      label.textContent = pin.name;
+
+      if (side === 'left') {
+        el.appendChild(label);
+        el.appendChild(wire);
+        el.appendChild(dot);
+      } else {
+        el.appendChild(dot);
+        el.appendChild(wire);
+        el.appendChild(label);
+      }
+
+      el.addEventListener('click', function() {
+        showPinDetail(pin, el);
+      });
+
+      return el;
+    }
+
+    /* ========== PIN DETAIL ========== */
+    function showPinDetail(pin, el) {
+      if (selectedPinEl) selectedPinEl.classList.remove('active');
+      selectedPinEl = el;
+      el.classList.add('active');
+
+      detailGrid.innerHTML = '';
+
+      if (pin.cat === 'power') {
+        detailTitle.textContent = pin.name;
+        addDetailItem('Type', pin.detail || 'Power pin');
+        showEl(detailPanel);
+        return;
+      }
+
+      detailTitle.textContent = pin.name + (pin.gpio !== null ? ' (GPIO ' + pin.gpio + ')' : '');
+
+      if (pin.gpio !== null) addDetailItem('GPIO Number', 'GPIO' + pin.gpio);
+
+      var dir = 'Input / Output';
+      if (pin.cat === 'input-only') dir = 'Input Only';
+      addDetailItem('Direction', dir);
+
+      if (pin.funcs && pin.funcs.length > 0) {
+        var adcFuncs = pin.funcs.filter(function(f) { return f.indexOf('ADC') === 0; });
+        var dacFuncs = pin.funcs.filter(function(f) { return f.indexOf('DAC') === 0; });
+        var touchFuncs = pin.funcs.filter(function(f) { return f.indexOf('Touch') === 0; });
+        var spiFuncs = pin.funcs.filter(function(f) { return f.indexOf('SPI') !== -1 || f.indexOf('HSPI') !== -1 || f.indexOf('VSPI') !== -1 || f.indexOf('FSPI') !== -1; });
+        var i2cFuncs = pin.funcs.filter(function(f) { return f.indexOf('I2C') !== -1 || f === 'Wire'; });
+        var uartFuncs = pin.funcs.filter(function(f) { return f.indexOf('UART') !== -1; });
+        var rtcFuncs = pin.funcs.filter(function(f) { return f.indexOf('RTC') !== -1; });
+        var otherFuncs = pin.funcs.filter(function(f) { return !adcFuncs.includes(f) && !dacFuncs.includes(f) && !touchFuncs.includes(f) && !spiFuncs.includes(f) && !i2cFuncs.includes(f) && !uartFuncs.includes(f) && !rtcFuncs.includes(f); });
+
+        if (adcFuncs.length) addDetailItem('ADC', adcFuncs.join(', '));
+        if (dacFuncs.length) addDetailItem('DAC', dacFuncs.join(', '));
+        if (touchFuncs.length) addDetailItem('Touch', touchFuncs.join(', '));
+        if (spiFuncs.length) addDetailItem('SPI', spiFuncs.join(', '));
+        if (i2cFuncs.length) addDetailItem('I2C', i2cFuncs.join(', '));
+        if (uartFuncs.length) addDetailItem('UART', uartFuncs.join(', '));
+        if (rtcFuncs.length) addDetailItem('RTC', rtcFuncs.join(', '));
+        if (otherFuncs.length) addDetailItem('Other', otherFuncs.join(', '));
+      }
+
+      addDetailItem('PWM', pin.notes && pin.notes.indexOf('PWM') !== -1 ? 'Yes' : (pin.cat === 'input-only' || pin.cat === 'power' ? 'No' : 'Yes'));
+
+      if (pin.notes) addDetailItem('Notes', pin.notes);
+
+      showEl(detailPanel);
+    }
+
+    function addDetailItem(label, value) {
+      var item = document.createElement('div');
+      item.className = 'esp-detail-item';
+      item.innerHTML = '<p class="label">' + label + '</p><p class="value">' + value + '</p>';
+      detailGrid.appendChild(item);
+    }
+
+    function showEl(el) { el.style.display = 'block'; }
+    function hideEl(el) { el.style.display = 'none'; }
+
+    /* ========== SEARCH ========== */
+    function applySearch(query) {
+      var q = query.trim().toLowerCase();
+      var pins = document.querySelectorAll('.esp-pin');
+
+      pins.forEach(function(pin) {
+        pin.classList.remove('highlight');
+        if (!q) return;
+        var name = pin.getAttribute('data-name');
+        var funcs = pin.getAttribute('data-funcs');
+        var gpio = pin.getAttribute('data-gpio');
+        var cat = pin.getAttribute('data-cat');
+        var searchable = name + ' ' + funcs + ' gpio' + gpio + ' ' + cat;
+        if (searchable.indexOf(q) !== -1) {
+          pin.classList.add('highlight');
+        }
+      });
+    }
+
+    pinSearch.addEventListener('input', function() {
+      applySearch(this.value);
+    });
+
+    /* ========== FILTER TAGS ========== */
+    function applyFilter(filter) {
+      activeFilter = filter;
+      var pins = document.querySelectorAll('.esp-pin');
+      var tags = filterTags.querySelectorAll('.esp-filter-tag');
+
+      tags.forEach(function(tag) {
+        tag.classList.toggle('active', tag.getAttribute('data-filter') === filter);
+      });
+
+      pins.forEach(function(pin) {
+        pin.classList.remove('highlight');
+        if (filter === 'all') return;
+
+        var cat = pin.getAttribute('data-cat');
+        var funcs = pin.getAttribute('data-funcs');
+        var name = pin.getAttribute('data-name');
+        var match = false;
+
+        if (filter === 'adc' && (funcs.indexOf('adc') !== -1)) match = true;
+        if (filter === 'dac' && (funcs.indexOf('dac') !== -1)) match = true;
+        if (filter === 'touch' && (funcs.indexOf('touch') !== -1 || cat === 'touch')) match = true;
+        if (filter === 'spi' && (funcs.indexOf('spi') !== -1)) match = true;
+        if (filter === 'i2c' && (funcs.indexOf('i2c') !== -1 || funcs.indexOf('wire') !== -1)) match = true;
+        if (filter === 'uart' && (funcs.indexOf('uart') !== -1 || name.indexOf('tx') !== -1 || name.indexOf('rx') !== -1)) match = true;
+        if (filter === 'pwm' && cat !== 'power' && cat !== 'input-only') match = true;
+        if (filter === 'input-only' && cat === 'input-only') match = true;
+        if (filter === 'strapping' && cat === 'strapping') match = true;
+
+        if (match) pin.classList.add('highlight');
+      });
+    }
+
+    filterTags.addEventListener('click', function(e) {
+      var tag = e.target.closest('.esp-filter-tag');
+      if (!tag) return;
+      var filter = tag.getAttribute('data-filter');
+      pinSearch.value = '';
+      applyFilter(filter);
+    });
+
+    /* ========== VARIANT SWITCH ========== */
+    variantSelect.addEventListener('change', function() {
+      renderBoard(this.value);
+    });
+
+    /* ========== INIT ========== */
+    renderBoard('esp32');
+
+    /* ========== BREADCRUMBS ========== */
+    var breadcrumbs = [
+      { name: 'Home', url: '/' },
+      { name: 'Developer Tools', url: '/dev/' },
+      { name: 'ESP32 Pinout Reference' }
+    ];
+    TeamzTools.renderBreadcrumbs(breadcrumbs);
+
+    /* ========== FAQs ========== */
+    var faqs = [
+      { q: 'Which ESP32 pins are safe to use?', a: 'Most GPIO pins are safe for general use. Avoid GPIO 6-11 (connected to internal flash), be cautious with strapping pins (GPIO 0, 2, 5, 12, 15) during boot, and note that GPIO 34-39 are input-only. For WiFi projects, prefer ADC1 pins (GPIO 32-39) since ADC2 cannot be used while WiFi is active.' },
+      { q: 'Why can\'t I use GPIO 6-11?', a: 'GPIO 6-11 are internally connected to the SPI flash memory that stores your program. Using these pins in your project will interfere with flash read/write operations, causing crashes, boot failures, or data corruption. These pins are exposed on some development boards but should never be connected to external circuits.' },
+      { q: 'What are strapping pins?', a: 'Strapping pins (GPIO 0, 2, 5, 12, 15) are read by the ESP32 during boot to determine the boot mode, flash voltage, and debug output settings. GPIO 0 selects between normal boot (HIGH) and flash/download mode (LOW). GPIO 12 sets flash voltage (HIGH = 1.8V, LOW = 3.3V). You can use these pins in your project, but they must be in the correct state at boot time.' },
+      { q: 'Can I use ADC2 with WiFi?', a: 'No. When WiFi is active on the ESP32, the ADC2 peripheral is used internally by the WiFi driver and cannot be read by user code. If you need analog readings while using WiFi, use ADC1 channels (GPIO 32-39). This limitation applies to the original ESP32; the ESP32-S3 and newer variants have improved ADC behavior.' },
+      { q: 'What is the difference between ESP32 and ESP32-S3?', a: 'The ESP32-S3 upgrades to a faster dual-core Xtensa LX7 processor (vs LX6), adds USB OTG support, increases GPIO count to 45, adds vector instructions for AI/ML workloads, supports up to 16MB PSRAM, and has 14 touch channels (vs 10). However, it removes the DAC peripheral. The S3 is ideal for projects needing USB host/device, camera interfaces, or edge AI.' },
+      { q: 'Which pins support touch sensing?', a: 'The original ESP32 has 10 capacitive touch pins: Touch0 (GPIO4), Touch1 (GPIO0), Touch2 (GPIO2), Touch3 (GPIO15), Touch4 (GPIO13), Touch5 (GPIO12), Touch6 (GPIO14), Touch7 (GPIO27), Touch8 (GPIO33), Touch9 (GPIO32). The ESP32-S3 extends this to 14 touch channels. Touch pins detect changes in capacitance when a finger approaches, enabling button-free touch interfaces.' }
+    ];
+    TeamzTools.renderFAQs(faqs);
+
+    /* ========== RELATED TOOLS ========== */
+    TeamzTools.renderRelatedTools([
+      { slug: 'dev/subnet-calculator', name: 'Subnet Calculator', description: 'Calculate IP subnets, CIDR notation, and network ranges.' },
+      { slug: 'dev/json-formatter', name: 'JSON Formatter', description: 'Format, validate, and beautify JSON data instantly.' },
+      { slug: 'dev/regex-tester', name: 'Regex Tester', description: 'Test and debug regular expressions with live matching.' },
+      { slug: 'dev/base64-encoder-decoder', name: 'Base64 Encoder/Decoder', description: 'Encode and decode Base64 strings online.' },
+      { slug: 'dev/color-converter', name: 'Color Converter', description: 'Convert between HEX, RGB, HSL, and other color formats.' },
+      { slug: 'dev/unix-timestamp-converter', name: 'Unix Timestamp Converter', description: 'Convert Unix timestamps to human-readable dates.' }
+    ]);
+
+    /* ========== WEBAPP SCHEMA ========== */
+    TeamzTools.injectWebAppSchema();
+  });
+  </script>
+</body>
+</html>
