@@ -21,6 +21,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // User profiles: users can only read/write their own data
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User usage tracking: users can only access their own usage
+    match /usage/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // User saved data (bookmarks, history, preferences): own data only
+    match /user_data/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

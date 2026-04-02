@@ -2372,6 +2372,22 @@ var TeamzAnalytics = (function () {
 // The script is at bottom of body, so #site-header already exists in DOM
 TeamzTools.renderHeader();
 
+// --- Load Auth System (central login/signup) ---
+// Loads auth.css + auth.js after header is rendered so auth button can be injected
+(function _loadTeamzAuth() {
+  // Load auth CSS
+  var authCss = document.createElement('link');
+  authCss.rel = 'stylesheet';
+  authCss.href = '/shared/css/auth.css';
+  document.head.appendChild(authCss);
+
+  // Load auth JS (self-initializing — auto-injects into header)
+  var authJs = document.createElement('script');
+  authJs.src = '/shared/js/auth.js';
+  authJs.defer = true;
+  document.body.appendChild(authJs);
+})();
+
 // Auto-render footer, floating CTA, and init analytics
 document.addEventListener('DOMContentLoaded', function () {
   TeamzTools.renderFooter();
