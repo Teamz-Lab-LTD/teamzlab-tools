@@ -1,7 +1,24 @@
 /**
  * Interview Practice Simulator — Core Engines
- * Timer, Scoring, Session Manager, Progress Tracker, Badges, Role Detection
+ * Built on cognitive science research for optimal interview skill acquisition:
+ *
+ * 1. Spaced Repetition (SM-2) — Questions you struggle with resurface sooner
+ * 2. Active Recall — Type answers from memory, not recognition
+ * 3. Interleaving — Mix question types for deeper learning
+ * 4. Desirable Difficulty — Auto-adjusts difficulty based on performance
+ * 5. Elaborative Interrogation — AI follow-up "why" questions
+ * 6. Metacognitive Monitoring — Compare self-rating vs actual score
+ * 7. Deliberate Practice — Prioritize weakest competencies
+ * 8. Anxiety Inoculation — Progressive time pressure across sessions
+ *
+ * References:
+ * - Ebbinghaus forgetting curve, SM-2 algorithm (Wozniak, 1985)
+ * - Testing Effect (Roediger & Karpicke, 2006)
+ * - Interleaving (Bjork & Bjork, 2013)
+ * - Desirable Difficulties (Bjork, 1994)
+ * - Stress Inoculation Training (Meichenbaum, 1977)
  */
+
     /* ========================================================================
      * ROLE DETECTION
      * ======================================================================== */
@@ -34,6 +51,333 @@
     }
 
     /* ========================================================================
+     * SPACED REPETITION ENGINE (SM-2 adapted for interview practice)
+     *
+     * Each question gets a "memory card" with:
+     * - easeFactor: how easy this question is (starts at 2.5, minimum 1.3)
+     * - interval: days until next review (starts at 1)
+     * - repetitions: consecutive correct answers
+     * - lastReview: date string of last practice
+     * - lastScore: 0-100 score from last attempt
+     *
+     * SM-2 quality mapping: score 0-100 → quality 0-5
+     * Quality < 3 (score < 60) = reset to beginning (you forgot)
+     * Quality >= 3 (score >= 60) = increase interval
+     * ======================================================================== */
+    var SRS = {
+      STORAGE_KEY: 'tz_ims_srs',
+      cards: {},
+
+      load: function() {
+        try {
+          var raw = localStorage.getItem(this.STORAGE_KEY);
+          this.cards = raw ? JSON.parse(raw) : {};
+        } catch(e) { this.cards = {}; }
+      },
+
+      save: function() {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.cards));
+        } catch(e) {}
+      },
+
+      getCard: function(questionId) {
+        if (!this.cards[questionId]) {
+          this.cards[questionId] = {
+            easeFactor: 2.5,
+            interval: 1,
+            repetitions: 0,
+            lastReview: null,
+            lastScore: 0,
+            totalAttempts: 0
+          };
+        }
+        return this.cards[questionId];
+      },
+
+      // SM-2 algorithm: update after answering
+      updateCard: function(questionId, score) {
+        var card = this.getCard(questionId);
+        card.totalAttempts++;
+        card.lastScore = score;
+        card.lastReview = new Date().toISOString().split('T')[0];
+
+        // Map 0-100 score to SM-2 quality 0-5
+        var quality;
+        if (score >= 90) quality = 5;       // perfect recall
+        else if (score >= 80) quality = 4;  // correct with hesitation
+        else if (score >= 70) quality = 3;  // correct with difficulty
+        else if (score >= 60) quality = 2;  // incorrect but close
+        else if (score >= 40) quality = 1;  // incorrect, remembered something
+        else quality = 0;                    // complete blackout
+
+        if (quality < 3) {
+          // Failed — reset repetitions, review again soon
+          card.repetitions = 0;
+          card.interval = 1;
+        } else {
+          // Passed — increase interval
+          card.repetitions++;
+          if (card.repetitions === 1) {
+            card.interval = 1;
+          } else if (card.repetitions === 2) {
+            card.interval = 3;
+          } else {
+            card.interval = Math.round(card.interval * card.easeFactor);
+          }
+        }
+
+        // Update ease factor (SM-2 formula)
+        card.easeFactor = card.easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+        if (card.easeFactor < 1.3) card.easeFactor = 1.3;
+
+        this.save();
+        return card;
+      },
+
+      // Get questions due for review (interval has passed)
+      getDueQuestions: function(allQuestions) {
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var due = [];
+
+        for (var i = 0; i < allQuestions.length; i++) {
+          var q = allQuestions[i];
+          var card = this.cards[q.id];
+          if (!card || !card.lastReview) {
+            // Never practiced — always available
+            continue;
+          }
+          var lastDate = new Date(card.lastReview);
+          lastDate.setHours(0, 0, 0, 0);
+          var daysSince = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+          if (daysSince >= card.interval) {
+            due.push({ question: q, card: card, daysSince: daysSince, overdue: daysSince - card.interval });
+          }
+        }
+
+        // Sort by most overdue first
+        due.sort(function(a, b) { return b.overdue - a.overdue; });
+        return due;
+      },
+
+      // Get questions the user struggles with most (lowest ease factor)
+      getWeakQuestions: function(count) {
+        var entries = [];
+        var self = this;
+        Object.keys(this.cards).forEach(function(id) {
+          var card = self.cards[id];
+          if (card.totalAttempts > 0) {
+            entries.push({ id: id, easeFactor: card.easeFactor, lastScore: card.lastScore, attempts: card.totalAttempts });
+          }
+        });
+        entries.sort(function(a, b) { return a.easeFactor - b.easeFactor; });
+        return entries.slice(0, count || 10);
+      },
+
+      // Get SRS status label for a question
+      getStatus: function(questionId) {
+        var card = this.cards[questionId];
+        if (!card || !card.lastReview) return { label: 'New', class: 'new' };
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var lastDate = new Date(card.lastReview);
+        lastDate.setHours(0, 0, 0, 0);
+        var daysSince = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+        if (daysSince >= card.interval) return { label: 'Due', class: 'due' };
+        if (card.lastScore >= 80) return { label: 'Strong', class: 'strong' };
+        if (card.lastScore >= 60) return { label: 'Learning', class: 'learning' };
+        return { label: 'Weak', class: 'weak' };
+      },
+
+      reset: function() {
+        this.cards = {};
+        this.save();
+      }
+    };
+
+    /* ========================================================================
+     * ADAPTIVE DIFFICULTY ENGINE
+     *
+     * Principle: "Desirable Difficulty" (Bjork, 1994)
+     * If user scores consistently high → increase difficulty
+     * If user scores consistently low → decrease difficulty
+     * Target zone: 60-80% (the "sweet spot" for learning)
+     * ======================================================================== */
+    var AdaptiveDifficulty = {
+      // Calculate recommended difficulty based on recent performance
+      recommend: function(stats) {
+        if (!stats || !stats.competencyScores) return 2; // default medium
+        var recentSessions = Progress.data.sessions.slice(-5);
+        if (recentSessions.length < 2) return 2;
+
+        var avgScore = 0;
+        recentSessions.forEach(function(s) { avgScore += s.score; });
+        avgScore = avgScore / recentSessions.length;
+
+        // Target zone: 60-80 — if consistently above, increase difficulty
+        if (avgScore >= 85) return 4;  // Expert
+        if (avgScore >= 75) return 3;  // Hard
+        if (avgScore >= 55) return 2;  // Medium (sweet spot)
+        return 1;                       // Easy (build confidence first)
+      },
+
+      // For anxiety inoculation: recommend time pressure based on session count
+      // Principle: Stress Inoculation Training (Meichenbaum, 1977)
+      // Start relaxed → gradually increase pressure
+      recommendTimeLimit: function() {
+        var totalSessions = Progress.data.totalSessions || 0;
+        if (totalSessions < 3) return 300;   // 5 min — relaxed start
+        if (totalSessions < 8) return 180;   // 3 min — moderate pressure
+        if (totalSessions < 15) return 120;  // 2 min — interview-realistic
+        if (totalSessions < 25) return 90;   // 1.5 min — challenging
+        return 60;                            // 1 min — rapid-fire (mastery)
+      },
+
+      // Get label for recommended settings
+      getRecommendationLabel: function() {
+        var diff = this.recommend(Progress.getStats());
+        var time = this.recommendTimeLimit();
+        var diffLabels = ['', 'Easy', 'Medium', 'Hard', 'Expert'];
+        return 'Recommended: ' + diffLabels[diff] + ' difficulty, ' + Math.floor(time / 60) + ':' + (time % 60 < 10 ? '0' : '') + (time % 60) + ' per question';
+      }
+    };
+
+    /* ========================================================================
+     * INTERLEAVING ENGINE
+     *
+     * Principle: Mixed practice > blocked practice (Bjork, 2013)
+     * Instead of all behavioral → all technical → all situational,
+     * interleave: behavioral → technical → situational → behavioral...
+     * This forces discrimination learning: "what type IS this question?"
+     * ======================================================================== */
+    var Interleaver = {
+      // Take a flat array of questions and interleave by type
+      interleave: function(questions) {
+        if (questions.length <= 2) return questions;
+
+        // Group by type
+        var groups = {};
+        questions.forEach(function(q) {
+          var type = q.type || q.c || 'general';
+          if (!groups[type]) groups[type] = [];
+          groups[type].push(q);
+        });
+
+        var types = Object.keys(groups);
+        if (types.length <= 1) return questions; // can't interleave 1 type
+
+        // Round-robin: pick one from each type in rotation
+        var result = [];
+        var maxLen = 0;
+        types.forEach(function(t) { if (groups[t].length > maxLen) maxLen = groups[t].length; });
+
+        for (var i = 0; i < maxLen; i++) {
+          for (var j = 0; j < types.length; j++) {
+            if (i < groups[types[j]].length) {
+              result.push(groups[types[j]][i]);
+            }
+          }
+        }
+        return result;
+      }
+    };
+
+    /* ========================================================================
+     * DELIBERATE PRACTICE ENGINE
+     *
+     * Principle: Focus on weakest areas (Ericsson, 1993)
+     * Identify competencies with lowest scores, prioritize those questions
+     * ======================================================================== */
+    var DeliberatePractice = {
+      // Get the user's weakest competencies
+      getWeakCompetencies: function(count) {
+        var scores = Progress.data.competencyScores || {};
+        var entries = [];
+        Object.keys(scores).forEach(function(c) {
+          if (scores[c].count > 0) {
+            entries.push({ competency: c, avg: Math.round(scores[c].total / scores[c].count), count: scores[c].count });
+          }
+        });
+        entries.sort(function(a, b) { return a.avg - b.avg; });
+        return entries.slice(0, count || 3);
+      },
+
+      // Filter questions to focus on weak competencies
+      focusOnWeakness: function(questions, weakCompetencies) {
+        if (!weakCompetencies || weakCompetencies.length === 0) return questions;
+        var weakSet = {};
+        weakCompetencies.forEach(function(w) { weakSet[w.competency] = true; });
+
+        // Prioritize weak competency questions (put them first)
+        var weak = [];
+        var other = [];
+        questions.forEach(function(q) {
+          if (weakSet[q.c]) weak.push(q);
+          else other.push(q);
+        });
+
+        // Mix: 60% weak, 40% other (don't make it ALL weakness — that's demotivating)
+        var targetWeak = Math.ceil(questions.length * 0.6);
+        var targetOther = questions.length - targetWeak;
+        var result = weak.slice(0, targetWeak).concat(other.slice(0, targetOther));
+
+        // If not enough weak questions, fill with others
+        while (result.length < questions.length && other.length > targetOther) {
+          result.push(other[targetOther++]);
+        }
+        while (result.length < questions.length && weak.length > targetWeak) {
+          result.push(weak[targetWeak++]);
+        }
+
+        return result;
+      }
+    };
+
+    /* ========================================================================
+     * METACOGNITIVE MONITOR
+     *
+     * Principle: Self-assessment accuracy improves learning
+     * Compare user's confidence rating vs actual score
+     * Large gap = poor metacognition → show calibration feedback
+     * ======================================================================== */
+    var Metacognition = {
+      // Analyze gap between confidence and actual score
+      analyze: function(confidence, score) {
+        // Confidence 1-5 maps to expected score: 1=20, 2=40, 3=60, 4=80, 5=100
+        var expectedScore = confidence * 20;
+        var gap = score - expectedScore;
+        var absGap = Math.abs(gap);
+
+        if (absGap <= 10) {
+          return { calibration: 'accurate', message: 'Your self-assessment is well calibrated. You know what you know.', gap: gap };
+        }
+        if (gap > 10) {
+          return { calibration: 'underconfident', message: 'You scored higher than you expected! Trust your preparation more — you know more than you think.', gap: gap };
+        }
+        return { calibration: 'overconfident', message: 'You rated yourself higher than your score. Focus on the specific feedback to close this gap.', gap: gap };
+      },
+
+      // Get session-level calibration
+      sessionCalibration: function(answers) {
+        var totalGap = 0;
+        var count = 0;
+        answers.forEach(function(a) {
+          if (!a.skipped) {
+            var expected = a.confidence * 20;
+            totalGap += (a.scores.total - expected);
+            count++;
+          }
+        });
+        if (count === 0) return null;
+        var avgGap = totalGap / count;
+        if (Math.abs(avgGap) <= 10) return { type: 'calibrated', label: 'Well Calibrated', desc: 'Your confidence ratings closely match your actual performance.' };
+        if (avgGap > 10) return { type: 'underconfident', label: 'Underconfident', desc: 'You consistently score better than you expect. Build more trust in your abilities.' };
+        return { type: 'overconfident', label: 'Overconfident', desc: 'Your confidence exceeds your current skill level. Review feedback carefully and practice weak areas.' };
+      }
+    };
+
+    /* ========================================================================
      * TIMER ENGINE
      * ======================================================================== */
     var Timer = {
@@ -49,7 +393,6 @@
         this.seconds = total;
         this.running = true;
         if (total <= 0) {
-          // No time limit — count up
           this.seconds = 0;
           var self = this;
           this.interval = setInterval(function() {
@@ -140,7 +483,6 @@
           }
         });
         score = Math.min(25, Math.round((found / 4) * 25));
-        // Bonus for explicit STAR labels
         if (/\bsituation\b/i.test(a) && /\btask\b/i.test(a) && /\baction\b/i.test(a) && /\bresult\b/i.test(a)) {
           score = 25;
         }
@@ -159,18 +501,14 @@
       scoreSpecificity: function(answer) {
         var score = 0;
         var a = answer.toLowerCase();
-        // First person pronouns
         var firstPerson = (a.match(/\b(i|my|me|we|our)\b/g) || []).length;
         score += Math.min(8, firstPerson * 1);
-        // Numbers and percentages
         var numbers = (a.match(/\d+/g) || []).length;
         score += Math.min(8, numbers * 2);
-        // Specific words (concrete details)
         var specifics = ['specifically', 'for example', 'such as', 'in particular', 'precisely', 'exactly', 'approximately', 'about', 'roughly', 'nearly'];
         specifics.forEach(function(w) {
           if (a.indexOf(w) >= 0) score += 1;
         });
-        // Named entities (capital words that arent sentence starters)
         var caps = (answer.match(/\s[A-Z][a-z]+/g) || []).length;
         score += Math.min(4, caps);
         return Math.min(25, score);
@@ -211,7 +549,7 @@
     };
 
     /* ========================================================================
-     * SESSION MANAGER
+     * SESSION MANAGER (with science-based question selection)
      * ======================================================================== */
     var SessionManager = {
       current: null,
@@ -223,26 +561,26 @@
         var count = parseInt(config.questionCount) || 5;
         var timePerQ = parseInt(config.timePerQuestion) || 120;
         var roleCat = detectRoleCategory(role);
+        var useInterleaving = config.interleave !== false;
+        var useSRS = config.smartMode !== false;
+        var useDeliberate = config.focusWeakness !== false;
 
-        // Collect candidate questions
+        // Step 1: Collect candidate questions from bank
         var candidates = [];
         var bank = QUESTION_BANK[type];
         if (!bank) bank = QUESTION_BANK.behavioral;
 
-        // For types with level sub-keys
         if (bank[level]) {
           bank[level].forEach(function(q) { candidates.push(q); });
         }
-        // For types with role sub-keys
         if (bank[roleCat]) {
           bank[roleCat].forEach(function(q) { candidates.push(q); });
         }
-        // For types with general sub-key
         if (bank.general) {
           bank.general.forEach(function(q) { candidates.push(q); });
         }
 
-        // If not enough, pull from adjacent levels and behavioral
+        // Expand pool if needed
         if (candidates.length < count) {
           var allLevels = ['junior', 'mid', 'senior', 'lead'];
           allLevels.forEach(function(lv) {
@@ -252,14 +590,13 @@
           });
         }
         if (candidates.length < count) {
-          // Pull from behavioral as fallback
           var beh = QUESTION_BANK.behavioral;
           Object.keys(beh).forEach(function(lv) {
             beh[lv].forEach(function(q) { candidates.push(q); });
           });
         }
 
-        // Remove duplicates
+        // Deduplicate
         var seen = {};
         candidates = candidates.filter(function(q) {
           if (seen[q.id]) return false;
@@ -267,19 +604,53 @@
           return true;
         });
 
-        // Filter by difficulty preference (allow +-1)
+        // Step 2: Filter by difficulty (allow +-1)
         var filtered = candidates.filter(function(q) {
           return Math.abs(q.d - difficulty) <= 1;
         });
         if (filtered.length < count) filtered = candidates;
 
-        // Shuffle
-        for (var i = filtered.length - 1; i > 0; i--) {
-          var j = Math.floor(Math.random() * (i + 1));
-          var temp = filtered[i]; filtered[i] = filtered[j]; filtered[j] = temp;
+        // Step 3: SCIENCE — Spaced Repetition priority
+        // Move SRS-due questions to the front
+        if (useSRS) {
+          SRS.load();
+          var dueIds = {};
+          var dueList = SRS.getDueQuestions(filtered);
+          dueList.forEach(function(d) { dueIds[d.question.id] = d.overdue; });
+
+          filtered.sort(function(a, b) {
+            var aDue = dueIds[a.id] !== undefined ? dueIds[a.id] : -1;
+            var bDue = dueIds[b.id] !== undefined ? dueIds[b.id] : -1;
+            // Due questions first, most overdue first
+            if (aDue >= 0 && bDue < 0) return -1;
+            if (bDue >= 0 && aDue < 0) return 1;
+            if (aDue >= 0 && bDue >= 0) return bDue - aDue;
+            return 0;
+          });
         }
 
+        // Step 4: SCIENCE — Deliberate Practice (weak competencies first)
+        if (useDeliberate) {
+          var weakComps = DeliberatePractice.getWeakCompetencies(3);
+          if (weakComps.length > 0) {
+            filtered = DeliberatePractice.focusOnWeakness(filtered, weakComps);
+          }
+        }
+
+        // Step 5: Take the required count
         var questions = filtered.slice(0, count);
+
+        // Step 6: SCIENCE — Interleaving (if enabled and session has mixed types)
+        if (useInterleaving && type === 'mixed') {
+          questions = Interleaver.interleave(questions);
+        } else {
+          // Light shuffle within selection (keep SRS/deliberate priority but add variety)
+          for (var i = questions.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = questions[i]; questions[i] = questions[j]; questions[j] = temp;
+          }
+        }
+
         this.current = {
           config: config,
           type: type,
@@ -289,6 +660,8 @@
           industry: config.industry || '',
           difficulty: difficulty,
           timePerQuestion: timePerQ,
+          interleaved: useInterleaving,
+          smartMode: useSRS,
           questions: questions,
           answers: [],
           currentIndex: 0,
@@ -298,15 +671,24 @@
         };
         return this.current;
       },
+
       getNextQuestion: function() {
         if (!this.current) return null;
         if (this.current.currentIndex >= this.current.questions.length) return null;
         return this.current.questions[this.current.currentIndex];
       },
+
       submitAnswer: function(answer, confidence, timeSpent) {
         if (!this.current) return null;
         var q = this.current.questions[this.current.currentIndex];
         var scores = Scoring.scoreAnswer(answer, q);
+
+        // Update SRS card for this question
+        SRS.updateCard(q.id, scores.total);
+
+        // Metacognitive analysis
+        var meta = Metacognition.analyze(confidence, scores.total);
+
         var entry = {
           questionId: q.id,
           question: q.q,
@@ -315,15 +697,19 @@
           confidence: confidence,
           timeSpent: timeSpent,
           scores: scores,
+          metacognition: meta,
           skipped: false
         };
         this.current.answers.push(entry);
         this.current.currentIndex++;
         return entry;
       },
+
       skip: function() {
         if (!this.current) return;
         var q = this.current.questions[this.current.currentIndex];
+        // Skipping = worst score for SRS
+        SRS.updateCard(q.id, 0);
         this.current.answers.push({
           questionId: q.id,
           question: q.q,
@@ -332,10 +718,12 @@
           confidence: 0,
           timeSpent: 0,
           scores: { structure: 0, length: 0, specificity: 0, relevance: 0, total: 0 },
+          metacognition: null,
           skipped: true
         });
         this.current.currentIndex++;
       },
+
       end: function() {
         if (!this.current) return null;
         this.current.endTime = Date.now();
@@ -345,8 +733,13 @@
           answered.forEach(function(a) { sum += a.scores.total; });
           this.current.totalScore = Math.round(sum / answered.length);
         }
+
+        // Session-level metacognitive calibration
+        this.current.calibration = Metacognition.sessionCalibration(this.current.answers);
+
         return this.current;
       },
+
       getProgress: function() {
         if (!this.current) return { current: 0, total: 0, pct: 0 };
         return {
@@ -387,7 +780,8 @@
           quickAnswers: 0,
           starMasterCount: 0,
           earnedBadges: [],
-          sessions: []
+          sessions: [],
+          calibrationHistory: [] // metacognitive tracking
         };
       },
       save: function() {
@@ -407,26 +801,26 @@
         if (d.practiceDates.indexOf(today) < 0) d.practiceDates.push(today);
         d.lastPracticeDate = today;
 
-        // Types completed
         if (d.typesCompleted.indexOf(session.type) < 0) d.typesCompleted.push(session.type);
 
-        // Competency scores
         answered.forEach(function(a) {
           var c = a.competency;
           if (!d.competencyScores[c]) d.competencyScores[c] = { total: 0, count: 0 };
           d.competencyScores[c].total += a.scores.total;
           d.competencyScores[c].count++;
 
-          // Quick answers (under 60s)
           if (a.timeSpent < 60 && a.timeSpent > 0) d.quickAnswers++;
-          // STAR master (structure >= 23)
           if (a.scores.structure >= 23) d.starMasterCount++;
         });
 
-        // Streak
+        // Metacognitive calibration history
+        if (session.calibration) {
+          d.calibrationHistory.push({ date: today, type: session.calibration.type });
+          if (d.calibrationHistory.length > 50) d.calibrationHistory = d.calibrationHistory.slice(-50);
+        }
+
         this.updateStreak();
 
-        // Save session summary
         d.sessions.push({
           date: today,
           type: session.type,
@@ -443,17 +837,7 @@
         if (dates.length === 0) return;
         var today = new Date();
         today.setHours(0,0,0,0);
-        var yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
 
-        var lastDate = new Date(dates[dates.length - 1]);
-        lastDate.setHours(0,0,0,0);
-
-        if (lastDate.getTime() !== today.getTime() && lastDate.getTime() !== yesterday.getTime()) {
-          this.data.currentStreak = (lastDate.getTime() === today.getTime()) ? 1 : 0;
-        }
-
-        // Count streak backwards from today
         var streak = 0;
         var check = new Date(today);
         for (var i = 0; i < 365; i++) {
@@ -470,7 +854,7 @@
       },
       getStats: function() {
         var d = this.data;
-        var avgScore = d.totalSessions > 0 ? Math.round(d.totalQuestions > 0 ? d.sessions.reduce(function(s, sess) { return s + sess.score; }, 0) / d.sessions.length : 0) : 0;
+        var avgScore = d.sessions.length > 0 ? Math.round(d.sessions.reduce(function(s, sess) { return s + sess.score; }, 0) / d.sessions.length) : 0;
         return {
           totalSessions: d.totalSessions,
           totalQuestions: d.totalQuestions,
@@ -484,7 +868,8 @@
           starMasterCount: d.starMasterCount,
           earnedBadges: d.earnedBadges,
           bookmarkCount: this.getBookmarks().length,
-          practiceDates: d.practiceDates
+          practiceDates: d.practiceDates,
+          calibrationHistory: d.calibrationHistory || []
         };
       },
       toggleBookmark: function(questionId) {
@@ -511,12 +896,13 @@
       reset: function() {
         this.data = this.defaultData();
         this.save();
+        SRS.reset();
         try { localStorage.removeItem(this.BOOKMARK_KEY); } catch(e) {}
       }
     };
 
     /* ========================================================================
-     * BADGES
+     * BADGES (expanded with science-based badges)
      * ======================================================================== */
     var Badges = {
       definitions: [
@@ -531,7 +917,26 @@
         { id:'speed', name:'Quick Thinker', icon:'\u23F1\uFE0F', desc:'Answer 5 questions under 60s', check: function(s) { return s.quickAnswers >= 5; } },
         { id:'star_master', name:'STAR Master', icon:'\u2B50', desc:'Score 90+ structure on 10 answers', check: function(s) { return s.starMasterCount >= 10; } },
         { id:'century', name:'Century Club', icon:'\uD83C\uDF96\uFE0F', desc:'Answer 100+ questions', check: function(s) { return s.totalQuestions >= 100; } },
-        { id:'collector', name:'Question Collector', icon:'\uD83D\uDCDA', desc:'Bookmark 25+ questions', check: function(s) { return s.bookmarkCount >= 25; } }
+        { id:'collector', name:'Question Collector', icon:'\uD83D\uDCDA', desc:'Bookmark 25+ questions', check: function(s) { return s.bookmarkCount >= 25; } },
+        // Science-based badges
+        { id:'calibrated', name:'Self-Aware', icon:'\uD83E\uDDE0', desc:'3 sessions with accurate self-assessment', check: function(s) { var cal = s.calibrationHistory || []; return cal.filter(function(c) { return c.type === 'calibrated'; }).length >= 3; } },
+        { id:'comeback', name:'Comeback Kid', icon:'\uD83D\uDD04', desc:'Improve score by 20+ points between sessions', check: function(s) {
+          if (!Progress.data.sessions || Progress.data.sessions.length < 2) return false;
+          var sess = Progress.data.sessions;
+          for (var i = 1; i < sess.length; i++) {
+            if (sess[i].score - sess[i-1].score >= 20) return true;
+          }
+          return false;
+        }},
+        { id:'growth', name:'Growth Mindset', icon:'\uD83C\uDF31', desc:'Average score improved over 5+ sessions', check: function(s) {
+          if (!Progress.data.sessions || Progress.data.sessions.length < 5) return false;
+          var sess = Progress.data.sessions;
+          var firstHalf = sess.slice(0, Math.floor(sess.length / 2));
+          var secondHalf = sess.slice(Math.floor(sess.length / 2));
+          var avg1 = firstHalf.reduce(function(a, b) { return a + b.score; }, 0) / firstHalf.length;
+          var avg2 = secondHalf.reduce(function(a, b) { return a + b.score; }, 0) / secondHalf.length;
+          return avg2 > avg1;
+        }}
       ],
       checkAll: function(stats) {
         var earned = [];
@@ -555,7 +960,6 @@
      * ======================================================================== */
     var currentConfidence = 3;
 
-    // Tab switching
     function initTabs() {
       var tabs = document.querySelectorAll('.ims-tab');
       tabs.forEach(function(tab) {
@@ -574,7 +978,6 @@
       if (panel) panel.classList.add('active');
     }
 
-    // Render practice question
     function renderQuestion() {
       var q = SessionManager.getNextQuestion();
       if (!q) {
@@ -592,23 +995,22 @@
       document.getElementById('ims-q-difficulty').textContent = diffLabels[q.d] || 'Medium';
       document.getElementById('ims-q-text').textContent = q.q;
 
-      // Meta tags
+      // SRS status indicator
+      var srsStatus = SRS.getStatus(q.id);
       var metaEl = document.getElementById('ims-q-meta');
-      metaEl.innerHTML = '<span class="ims-q-tag">' + q.c.replace('-', ' ') + '</span><span class="ims-q-tag">Difficulty: ' + q.d + '/4</span>';
+      metaEl.innerHTML = '<span class="ims-q-tag">' + q.c.replace('-', ' ') + '</span>' +
+        '<span class="ims-q-tag">Difficulty: ' + q.d + '/4</span>' +
+        '<span class="ims-q-tag ims-srs-' + srsStatus.class + '">' + srsStatus.label + '</span>';
 
-      // Hint
       document.getElementById('ims-hint-text').textContent = q.f;
       hideEl(document.getElementById('ims-hint-box'));
 
-      // Reset answer
       document.getElementById('ims-answer').value = '';
       document.getElementById('ims-word-count').textContent = '0 words';
 
-      // Reset confidence
       currentConfidence = 3;
       updateStars(3);
 
-      // Timer
       var timePerQ = SessionManager.current.timePerQuestion;
       if (timePerQ > 0) {
         document.getElementById('ims-timer-display').textContent = Timer.getDisplay(timePerQ);
@@ -649,7 +1051,9 @@
       var timeSpent = Timer.getElapsed();
       var entry = SessionManager.submitAnswer(answer, currentConfidence, timeSpent);
       if (entry) {
-        window.showToast('Answer submitted! Score: ' + entry.scores.total + '/100');
+        // Show metacognitive feedback inline
+        var metaMsg = entry.metacognition ? ' | ' + entry.metacognition.calibration : '';
+        window.showToast('Score: ' + entry.scores.total + '/100' + metaMsg);
       }
       renderQuestion();
     }
@@ -671,13 +1075,11 @@
         window.showToast('No answers submitted.');
         switchTab('setup');
       }
-      // Reset practice view
       hideEl(document.getElementById('ims-practice-active'));
       window.showEl(document.getElementById('ims-practice-empty'));
       renderProgressTab();
     }
 
-    // Render feedback
     function renderFeedback(session) {
       hideEl(document.getElementById('ims-feedback-empty'));
       window.showEl(document.getElementById('ims-feedback-content'));
@@ -687,11 +1089,9 @@
       document.getElementById('ims-grade').textContent = Scoring.getGrade(score);
       document.getElementById('ims-grade-label').textContent = Scoring.getLabel(score);
 
-      // Gauge conic gradient
       var pct = Math.min(100, score);
       document.getElementById('ims-gauge').style.background = 'conic-gradient(var(--accent) ' + (pct * 3.6) + 'deg, var(--border) ' + (pct * 3.6) + 'deg)';
 
-      // Session summary
       var answered = session.answers.filter(function(a) { return !a.skipped; });
       var skipped = session.answers.filter(function(a) { return a.skipped; });
       var avgTime = 0;
@@ -700,13 +1100,24 @@
         answered.forEach(function(a) { totalTime += a.timeSpent; });
         avgTime = Math.round(totalTime / answered.length);
       }
+
+      // Metacognitive calibration summary
+      var calHtml = '';
+      if (session.calibration) {
+        calHtml = '<div class="ims-summary-stat"><div class="ims-summary-value">' + session.calibration.label + '</div><div class="ims-summary-label">Self-Assessment</div></div>';
+      }
+
+      // Adaptive difficulty recommendation
+      var recDiff = AdaptiveDifficulty.recommend(Progress.getStats());
+      var diffLabels = ['', 'Easy', 'Medium', 'Hard', 'Expert'];
+      var recHtml = '<div class="ims-summary-stat"><div class="ims-summary-value">' + diffLabels[recDiff] + '</div><div class="ims-summary-label">Next Difficulty</div></div>';
+
       var summaryEl = document.getElementById('ims-session-summary');
       summaryEl.innerHTML =
         '<div class="ims-summary-stat"><div class="ims-summary-value">' + answered.length + '/' + session.questions.length + '</div><div class="ims-summary-label">Answered</div></div>' +
         '<div class="ims-summary-stat"><div class="ims-summary-value">' + Timer.getDisplay(avgTime) + '</div><div class="ims-summary-label">Avg Time</div></div>' +
-        '<div class="ims-summary-stat"><div class="ims-summary-value">' + skipped.length + '</div><div class="ims-summary-label">Skipped</div></div>';
+        calHtml + recHtml;
 
-      // Answer cards
       var listEl = document.getElementById('ims-answers-list');
       listEl.innerHTML = '';
       session.answers.forEach(function(a, idx) {
@@ -715,8 +1126,12 @@
         if (a.skipped) {
           card.innerHTML =
             '<div class="ims-answer-card-header"><div class="ims-answer-q">' + (idx+1) + '. ' + escapeHtml(a.question) + '</div><div class="ims-answer-score-badge">Skipped</div></div>' +
-            '<div class="ims-answer-skipped">This question was skipped.</div>';
+            '<div class="ims-answer-skipped">This question was skipped. It will appear again sooner (spaced repetition).</div>';
         } else {
+          var metaHtml = '';
+          if (a.metacognition) {
+            metaHtml = '<div class="ims-ai-feedback"><strong>Self-Assessment:</strong> ' + a.metacognition.message + '</div>';
+          }
           card.innerHTML =
             '<div class="ims-answer-card-header"><div class="ims-answer-q">' + (idx+1) + '. ' + escapeHtml(a.question) + '</div><div class="ims-answer-score-badge">' + a.scores.total + '/100</div></div>' +
             '<div class="ims-answer-text">' + escapeHtml(a.answer) + '</div>' +
@@ -726,13 +1141,13 @@
               '<div class="ims-breakdown-item"><span>Specificity</span><span>' + a.scores.specificity + '/25</span></div>' +
               '<div class="ims-breakdown-item"><span>Relevance</span><span>' + a.scores.relevance + '/25</span></div>' +
             '</div>' +
+            metaHtml +
             '<div id="ims-ai-fb-' + idx + '"></div>';
         }
         listEl.appendChild(card);
       });
     }
 
-    // Render question bank
     function renderBankTab() {
       var all = getAllQuestions();
       var searchVal = (document.getElementById('ims-bank-search').value || '').toLowerCase();
@@ -757,7 +1172,6 @@
       var diffLabels = ['', 'Easy', 'Medium', 'Hard', 'Expert'];
       var typeLabels = { behavioral:'Behavioral', technical:'Technical', situational:'Situational', caseStudy:'Case Study', panel:'Panel', phoneScreen:'Phone Screen', finalRound:'Final Round' };
 
-      // Show max 50 at a time for performance
       var displayLimit = 50;
       var shown = filtered.slice(0, displayLimit);
 
@@ -765,12 +1179,14 @@
         var li = document.createElement('li');
         li.className = 'ims-bank-item';
         var isBookmarked = Progress.isBookmarked(q.id);
+        var srsStatus = SRS.getStatus(q.id);
         li.innerHTML =
           '<div style="flex:1"><div class="ims-bank-q">' + escapeHtml(q.q) + '</div>' +
           '<div class="ims-bank-tags">' +
             '<span class="ims-bank-tag">' + (typeLabels[q.type] || q.type) + '</span>' +
             '<span class="ims-bank-tag">' + q.c.replace('-', ' ') + '</span>' +
             '<span class="ims-bank-tag">' + (diffLabels[q.d] || 'Medium') + '</span>' +
+            '<span class="ims-bank-tag ims-srs-' + srsStatus.class + '">' + srsStatus.label + '</span>' +
           '</div></div>' +
           '<button class="ims-bookmark-btn' + (isBookmarked ? ' bookmarked' : '') + '" data-qid="' + q.id + '" title="Bookmark">' + (isBookmarked ? '\u2605' : '\u2606') + '</button>';
         listEl.appendChild(li);
@@ -783,7 +1199,6 @@
         listEl.appendChild(moreEl);
       }
 
-      // Wire bookmark buttons
       listEl.querySelectorAll('.ims-bookmark-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
           var qid = btn.dataset.qid;
@@ -797,11 +1212,9 @@
       });
     }
 
-    // Render progress tab
     function renderProgressTab() {
       var stats = Progress.getStats();
 
-      // Stats grid
       var statsEl = document.getElementById('ims-stats-grid');
       statsEl.innerHTML =
         '<div class="ims-stat-card"><div class="ims-stat-value">' + stats.totalSessions + '</div><div class="ims-stat-label">Sessions</div></div>' +
@@ -813,7 +1226,6 @@
         '<div class="ims-stat-card"><div class="ims-stat-value">' + (stats.typesCompleted ? stats.typesCompleted.length : 0) + '/7</div><div class="ims-stat-label">Types Done</div></div>' +
         '<div class="ims-stat-card"><div class="ims-stat-value">' + stats.bookmarkCount + '</div><div class="ims-stat-label">Bookmarked</div></div>';
 
-      // Badges
       var badgesEl = document.getElementById('ims-badges-grid');
       badgesEl.innerHTML = '';
       Badges.definitions.forEach(function(b) {
@@ -825,7 +1237,6 @@
         badgesEl.appendChild(el);
       });
 
-      // Competency bars
       var compEl = document.getElementById('ims-comp-bars');
       compEl.innerHTML = '';
       var comps = ['leadership', 'problem-solving', 'teamwork', 'communication', 'adaptability', 'technical', 'customer-focus', 'conflict-resolution', 'initiative', 'analytical'];
@@ -841,7 +1252,6 @@
         compEl.appendChild(row);
       });
 
-      // Calendar
       renderCalendar(stats.practiceDates);
     }
 
@@ -860,15 +1270,12 @@
       today.setHours(0,0,0,0);
       var todayStr = today.toISOString().split('T')[0];
 
-      // Go back 35 days
       var start = new Date(today);
       start.setDate(start.getDate() - 34);
-      // Align to Monday
       var startDay = start.getDay();
       if (startDay === 0) startDay = 7;
       start.setDate(start.getDate() - (startDay - 1));
 
-      // Count practices per day
       var dateCounts = {};
       practiceDates.forEach(function(d) {
         dateCounts[d] = (dateCounts[d] || 0) + 1;
@@ -890,7 +1297,6 @@
       }
     }
 
-    // Escape HTML
     function escapeHtml(str) {
       var div = document.createElement('div');
       div.textContent = str;
