@@ -640,6 +640,59 @@ var TeamzAuth = (function () {
     refreshUI: function () {
       _injectAuthContainer();
       _renderHeaderAuth();
+    },
+
+    /**
+     * Call a Firebase Cloud Function (authenticated).
+     * Loads the Functions SDK on first use.
+     *
+     * Usage:
+     *   TeamzAuth.callFunction('aiGenerate', {
+     *     feature: 'interview-practice',
+     *     prompt: 'Give me 5 behavioral questions',
+     *     options: { maxTokens: 500 }
+     *   }).then(function(result) { console.log(result.data.text); });
+     *
+     * @param {string} name - Cloud Function name
+     * @param {Object} data - payload
+     * @returns {Promise<Object>} - function response
+     */
+    callFunction: function (name, data) {
+      return new Promise(function (resolve, reject) {
+        _loadAuthSDK(function () {
+          // Load Functions SDK if not loaded
+          if (!firebase.functions) {
+            var script = document.createElement('script');
+            script.src = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-functions-compat.js';
+            script.onload = function () {
+              _callFn(name, data, resolve, reject);
+            };
+            script.onerror = function () {
+              reject(new Error('Failed to load Cloud Functions SDK'));
+            };
+            document.head.appendChild(script);
+          } else {
+            _callFn(name, data, resolve, reject);
+          }
+        });
+      });
     }
   };
+
+  function _callFn(name, data, resolve, reject) {
+    var functions = firebase.app().functions('us-central1');
+    var callable = functions.httpsCallable(name);
+    callable(data).then(function (result) {
+      resolve(result.data);
+    }).catch(function (err) {
+      if (err.code === 'unauthenticated') {
+        // Token expired — re-login
+        _user = null;
+        _setCachedUser(null);
+        _renderHeaderAuth();
+        if (window.showToast) window.showToast('Session expired. Please sign in again.');
+      }
+      reject(err);
+    });
+  }
 })();
