@@ -44,8 +44,55 @@
       color: var(--heading);
       border-bottom-color: var(--heading);
     }
-    .ims-panel { display: none; }
+    .ims-panel { display: none; padding: var(--space-4) 0; }
     .ims-panel.active { display: block; }
+
+    /* === Practice header row === */
+    .ims-practice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2);
+    }
+    .ims-q-counter {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .ims-type-badge {
+      font-size: 0.6875rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* === Word count === */
+    .ims-word-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      text-align: right;
+    }
+
+    /* === Start button wrapper === */
+    .ims-start-wrap {
+      margin-top: var(--space-4);
+    }
+
+    /* === Hint button wrap === */
+    .ims-hint-wrap {
+      margin-bottom: var(--space-2);
+    }
+    .ims-hint-wrap .btn-secondary {
+      font-size: 0.8125rem;
+    }
+
+    /* === Reset progress wrap === */
+    .ims-reset-wrap {
+      margin-top: var(--space-3);
+    }
 
     /* === Setup form === */
     .ims-form-grid {
@@ -666,7 +713,7 @@
               </select>
             </div>
           </div>
-          <div style="margin-top: var(--space-4);">
+          <div class="ims-start-wrap">
             <button class="btn-primary" id="ims-start-btn">Start Practice Session</button>
           </div>
         </div>
@@ -679,9 +726,9 @@
               <div class="ims-empty-text">Set up a session in the Setup tab to start practicing.</div>
             </div>
             <div id="ims-practice-active" style="display:none">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
-                <span id="ims-q-counter" style="font-size:0.875rem; font-weight:600; color:var(--text-muted);">Question 1 of 5</span>
-                <span id="ims-q-type-badge" style="font-size:0.6875rem; padding:2px 8px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--text-muted);">Behavioral</span>
+              <div class="ims-practice-header">
+                <span class="ims-q-counter" id="ims-q-counter">Question 1 of 5</span>
+                <span class="ims-type-badge" id="ims-q-type-badge">Behavioral</span>
               </div>
               <div class="ims-progress">
                 <div class="ims-progress-fill" id="ims-progress-bar" style="width:0%"></div>
@@ -692,8 +739,8 @@
                 <div class="ims-q-text" id="ims-q-text">Question will appear here</div>
                 <div class="ims-q-meta" id="ims-q-meta"></div>
               </div>
-              <div style="margin-bottom:var(--space-2);">
-                <button class="btn-secondary" id="ims-hint-toggle" style="font-size:0.8125rem;">Show Framework Hint</button>
+              <div class="ims-hint-wrap">
+                <button class="btn-secondary" id="ims-hint-toggle">Show Framework Hint</button>
               </div>
               <div class="ims-hint" id="ims-hint-box">
                 <div class="ims-hint-title">Answer Framework</div>
@@ -713,7 +760,7 @@
                 <label for="ims-answer">Your Answer</label>
                 <textarea id="ims-answer" rows="8" placeholder="Type your answer here. Use the STAR method for behavioral questions: describe the Situation, Task, Action, and Result."></textarea>
               </div>
-              <div id="ims-word-count" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem; text-align:right;">0 words</div>
+              <div class="ims-word-count" id="ims-word-count">0 words</div>
               <div class="ims-practice-actions">
                 <button class="btn-primary" id="ims-submit-btn">Submit Answer</button>
                 <button class="btn-secondary" id="ims-skip-btn">Skip Question</button>
@@ -810,7 +857,7 @@
               <h3 class="ims-section-title">Practice Calendar (Last 35 Days)</h3>
               <div class="ims-calendar" id="ims-calendar"></div>
             </div>
-            <div style="margin-top:var(--space-3);">
+            <div class="ims-reset-wrap">
               <button class="btn-secondary" id="ims-reset-progress-btn">Reset All Progress</button>
             </div>
           </div>
@@ -1007,7 +1054,8 @@
       });
 
       function _runAIFeedback(btn, session, answered, useCloud) {
-        // Use TeamzAI for client-side feedback (or cloud if authenticated)
+        // Priority: Cloud Functions AI (real AI via teamz-cloud-kit) → rule-based fallback
+        // Local models (Transformers.js/Chrome AI) are skipped — not good enough for interview coaching
         var processed = 0;
         function processNext() {
           if (processed >= answered.length) {
@@ -1018,30 +1066,39 @@
           }
           var a = answered[processed];
           var idx = session.answers.indexOf(a);
-          var prompt = 'You are an interview coach. Analyze this interview answer and give 2-3 specific improvement suggestions in 100 words or less.\n\nQuestion: ' + a.question + '\n\nAnswer: ' + a.answer + '\n\nScore breakdown: Structure ' + a.scores.structure + '/25, Length ' + a.scores.length + '/25, Specificity ' + a.scores.specificity + '/25, Relevance ' + a.scores.relevance + '/25.';
+          btn.textContent = 'Analyzing answer ' + (processed + 1) + ' of ' + answered.length + '...';
 
-          if (typeof TeamzAI !== 'undefined' && TeamzAI.generate) {
-            TeamzAI.generate({
-              chromePrompt: prompt,
-              chromeSystemPrompt: 'You are a professional interview coach. Give brief, actionable feedback.',
-              transformersTask: 'text2text-generation',
-              transformersModel: 'Xenova/flan-t5-base',
-              transformersPrompt: 'Analyze this interview answer and suggest improvements: ' + a.answer.substring(0, 200),
-              transformersOptions: { max_new_tokens: 120, num_beams: 2 },
-              fallback: function() { return generateRuleFeedback(a); },
-              onProgress: function(pct) {
-                btn.textContent = 'Generating... ' + Math.round(pct) + '%';
-              },
-              onStatus: function(msg) {},
-              qualityCheck: function(text) { return text && text.length > 20; }
+          var prompt = 'You are an expert interview coach reviewing a candidate\'s practice answer. ' +
+            'Analyze the answer and provide:\n' +
+            '1. What was done well (1 sentence)\n' +
+            '2. What\'s missing or weak (1-2 sentences)\n' +
+            '3. A specific rewrite suggestion for the weakest part (1 sentence)\n\n' +
+            'Interview type: ' + (session.config.type || 'behavioral') + '\n' +
+            'Role: ' + (session.config.role || 'general') + '\n' +
+            'Level: ' + (session.config.level || 'mid') + '\n\n' +
+            'Question: ' + a.question + '\n\n' +
+            'Candidate\'s answer: ' + a.answer + '\n\n' +
+            'Score breakdown: Structure ' + a.scores.structure + '/25, Length ' + a.scores.length +
+            '/25, Specificity ' + a.scores.specificity + '/25, Relevance ' + a.scores.relevance + '/25.\n\n' +
+            'Keep feedback under 150 words. Be specific and actionable.';
+
+          // Use Cloud Functions AI (real AI backend)
+          if (useCloud && typeof TeamzAuth !== 'undefined' && TeamzAuth.callFunction) {
+            TeamzAuth.callFunction('aiGenerate', {
+              feature: 'interview-feedback',
+              prompt: prompt,
+              options: { maxTokens: 300 }
             }).then(function(result) {
+              var text = result.text || result;
               var fbEl = document.getElementById('ims-ai-fb-' + idx);
               if (fbEl) {
-                fbEl.innerHTML = '<div class="ims-ai-feedback"><strong>AI Feedback' + (result.source !== 'fallback' ? ' (' + result.source + ')' : '') + ':</strong><br>' + escapeHtml(result.text) + '</div>';
+                var source = result.configured === false ? '' : ' (AI)';
+                fbEl.innerHTML = '<div class="ims-ai-feedback"><strong>AI Coach Feedback' + source + ':</strong><br>' + escapeHtml(typeof text === 'string' ? text : JSON.stringify(text)) + '</div>';
               }
               processed++;
               processNext();
-            }).catch(function() {
+            }).catch(function(err) {
+              // Cloud AI failed — fall back to rule-based
               var fb = generateRuleFeedback(a);
               var fbEl = document.getElementById('ims-ai-fb-' + idx);
               if (fbEl) {
@@ -1051,6 +1108,7 @@
               processNext();
             });
           } else {
+            // No cloud — use rule-based feedback
             var fb = generateRuleFeedback(a);
             var fbEl = document.getElementById('ims-ai-fb-' + idx);
             if (fbEl) {
