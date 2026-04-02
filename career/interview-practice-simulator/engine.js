@@ -1186,9 +1186,45 @@
             '</div>' +
             metaHtml +
             modelHtml +
+            // Self-grading buttons (Gap 1: Active Recall completion)
+            '<div class="ims-self-grade" data-qid="' + a.questionId + '">' +
+              '<button class="ims-grade-btn" data-grade="nailed">Nailed It</button>' +
+              '<button class="ims-grade-btn" data-grade="partial">Partial</button>' +
+              '<button class="ims-grade-btn" data-grade="missed">Missed</button>' +
+            '</div>' +
+            // Filler word report (Gap 6)
+            (function() {
+              if (typeof FillerDetector === 'undefined') return '';
+              var result = FillerDetector.detect(a.answer);
+              if (result.total === 0) return '<div class="ims-filler-report">No filler words detected.</div>';
+              return '<div class="ims-filler-report">' +
+                '<strong>Filler Words (' + result.total + '):</strong> ' +
+                result.fillers.map(function(f) { return '<span class="ims-filler-word">"' + f.filler + '" x' + f.count + '</span>'; }).join(' ') +
+                '<br>' + FillerDetector.getFeedback(result) +
+                '</div>';
+            })() +
             '<div id="ims-ai-fb-' + idx + '"></div>';
         }
         listEl.appendChild(card);
+      });
+
+      // Wire self-grading buttons via event delegation
+      listEl.addEventListener('click', function(e) {
+        var btn = e.target.closest('.ims-grade-btn');
+        if (!btn) return;
+        var gradeDiv = btn.closest('.ims-self-grade');
+        if (!gradeDiv) return;
+        var qid = gradeDiv.dataset.qid;
+        var grade = btn.dataset.grade;
+        // Visual feedback
+        gradeDiv.querySelectorAll('.ims-grade-btn').forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        // Apply to SRS
+        if (typeof SelfGrade !== 'undefined') {
+          SelfGrade.apply(qid, grade);
+          var labels = { nailed: 'Nailed it! This question will appear less often.', partial: 'Noted. This question stays on regular schedule.', missed: 'This question will appear again soon for more practice.' };
+          window.showToast(labels[grade] || 'Rated!');
+        }
       });
     }
 
@@ -1714,6 +1750,382 @@
         'Demonstrate you\'ve done deep research on the company',
         'Ask forward-looking questions about team vision and goals'
       ]
+    };
+
+    /* ========================================================================
+     * GAP 1: SELF-GRADING (Active Recall completion)
+     * After seeing model answer, user rates: Nailed / Partial / Missed
+     * This feeds back into SRS — self-grading adjusts future scheduling
+     * Science: Self-testing + judgment improves retention (Kornell & Son, 2009)
+     * ======================================================================== */
+    var SelfGrade = {
+      // Adjust SRS based on self-grade (supplements the auto-score)
+      apply: function(questionId, grade) {
+        // grade: 'nailed' (boost interval), 'partial' (keep), 'missed' (reset)
+        var card = SRS.getCard(questionId);
+        if (grade === 'nailed') {
+          card.easeFactor = Math.min(3.0, card.easeFactor + 0.15);
+          card.interval = Math.round(card.interval * 1.3);
+        } else if (grade === 'missed') {
+          card.easeFactor = Math.max(1.3, card.easeFactor - 0.2);
+          card.interval = 1;
+          card.repetitions = 0;
+        }
+        // 'partial' — no change, keep current schedule
+        SRS.save();
+        return card;
+      }
+    };
+
+    /* ========================================================================
+     * GAP 2: MULTIPLE FRAMEWORKS
+     * Beyond STAR: CIRCLES (PM), RICE (prioritization), MECE (consulting),
+     * Porter's 5 Forces, SOAR, PAR, CAR
+     * Science: Chunking — frameworks reduce cognitive load (Miller, 1956)
+     * ======================================================================== */
+    var Frameworks = {
+      definitions: {
+        STAR: {
+          name: 'STAR Method',
+          for: 'Behavioral questions',
+          steps: ['Situation — Set the context', 'Task — Your specific responsibility', 'Action — Steps YOU took', 'Result — Measurable outcome'],
+          fields: ['situation', 'task', 'action', 'result'],
+          tip: 'Use first person "I". Quantify results with numbers.'
+        },
+        CIRCLES: {
+          name: 'CIRCLES Framework',
+          for: 'Product management / design questions',
+          steps: ['Comprehend the situation', 'Identify the customer', 'Report customer needs', 'Cut through prioritization', 'List solutions', 'Evaluate trade-offs', 'Summarize recommendation'],
+          fields: ['comprehend', 'customer', 'needs', 'prioritize', 'solutions', 'tradeoffs', 'summary'],
+          tip: 'Start by asking clarifying questions. Think user-first.'
+        },
+        RICE: {
+          name: 'RICE Scoring',
+          for: 'Prioritization questions',
+          steps: ['Reach — How many users affected?', 'Impact — How much improvement per user?', 'Confidence — How sure are you?', 'Effort — How much work to build?'],
+          fields: ['reach', 'impact', 'confidence', 'effort'],
+          tip: 'Score = (Reach × Impact × Confidence) / Effort'
+        },
+        MECE: {
+          name: 'MECE Framework',
+          for: 'Case study / consulting questions',
+          steps: ['Mutually Exclusive — No overlapping categories', 'Collectively Exhaustive — All possibilities covered', 'Break problem into independent segments', 'Analyze each segment systematically'],
+          fields: ['segment1', 'segment2', 'segment3', 'analysis'],
+          tip: 'Draw a tree structure. Each branch must not overlap.'
+        },
+        PORTER: {
+          name: 'Porter\'s 5 Forces',
+          for: 'Market analysis / strategy questions',
+          steps: ['Threat of new entrants', 'Bargaining power of suppliers', 'Bargaining power of buyers', 'Threat of substitutes', 'Industry rivalry'],
+          fields: ['entrants', 'suppliers', 'buyers', 'substitutes', 'rivalry'],
+          tip: 'Rate each force High/Medium/Low and explain why.'
+        },
+        SOAR: {
+          name: 'SOAR Method',
+          for: 'Achievement / accomplishment questions',
+          steps: ['Situation — The challenge', 'Obstacle — What stood in the way', 'Action — How you overcame it', 'Result — The positive outcome'],
+          fields: ['situation', 'obstacle', 'action', 'result'],
+          tip: 'Emphasize the obstacle to make your action more impressive.'
+        }
+      },
+
+      // Recommend the best framework for a question type
+      recommend: function(questionType, competency) {
+        if (questionType === 'behavioral') return 'STAR';
+        if (questionType === 'caseStudy') return 'MECE';
+        if (questionType === 'technical' && competency === 'analytical') return 'RICE';
+        if (questionType === 'situational') return 'SOAR';
+        if (questionType === 'panel') return 'STAR';
+        if (questionType === 'finalRound') return 'PORTER';
+        return 'STAR';
+      },
+
+      // Get framework details
+      get: function(name) {
+        return this.definitions[name] || this.definitions.STAR;
+      },
+
+      // List all framework names
+      list: function() {
+        return Object.keys(this.definitions);
+      }
+    };
+
+    /* ========================================================================
+     * GAP 3: PROJECT / PORTFOLIO DEFENSE
+     * Structured template for "Walk me through a project" questions
+     * Science: Elaborative rehearsal of own work deepens ownership
+     * ======================================================================== */
+    var ProjectDefense = {
+      STORAGE_KEY: 'tz_ims_projects',
+
+      template: {
+        fields: [
+          { id: 'name', label: 'Project Name', placeholder: 'e.g. Customer Dashboard Redesign', rows: 1 },
+          { id: 'context', label: 'Context & Problem', placeholder: 'What was the business problem? Why did this project exist?', rows: 2 },
+          { id: 'role', label: 'Your Role', placeholder: 'What was your specific role? Title, responsibilities, team size.', rows: 2 },
+          { id: 'approach', label: 'Technical Approach', placeholder: 'What architecture/tech/methodology did you choose and WHY?', rows: 3 },
+          { id: 'tradeoffs', label: 'Trade-offs & Decisions', placeholder: 'What alternatives did you consider? Why did you choose this path?', rows: 2 },
+          { id: 'challenges', label: 'Challenges & How You Overcame Them', placeholder: 'What went wrong? What was hardest? How did you solve it?', rows: 2 },
+          { id: 'impact', label: 'Impact & Results', placeholder: 'Measurable outcomes: revenue, users, performance, time saved. Use numbers.', rows: 2 },
+          { id: 'change', label: 'What Would You Do Differently?', placeholder: 'Hindsight improvements. Shows self-awareness and growth mindset.', rows: 2 },
+          { id: 'learnings', label: 'Key Learnings', placeholder: 'What did you learn? How did it make you a better professional?', rows: 2 }
+        ],
+        followUpQuestions: [
+          'How would you scale this to 10x the users?',
+          'What was the biggest technical risk and how did you mitigate it?',
+          'If you had unlimited resources, what would you add?',
+          'How did you handle disagreements within the team?',
+          'What metrics did you track to measure success?',
+          'How did you communicate progress to stakeholders?',
+          'What would you do differently with more time?'
+        ]
+      },
+
+      // Save a project
+      save: function(project) {
+        try {
+          var projects = this.loadAll();
+          var existing = projects.findIndex(function(p) { return p.id === project.id; });
+          if (existing >= 0) {
+            projects[existing] = project;
+          } else {
+            project.id = 'proj_' + Date.now();
+            project.createdAt = new Date().toISOString();
+            projects.unshift(project);
+          }
+          if (projects.length > 20) projects = projects.slice(0, 20);
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects));
+        } catch(e) {}
+        return project;
+      },
+
+      loadAll: function() {
+        try {
+          var raw = localStorage.getItem(this.STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch(e) { return []; }
+      },
+
+      delete: function(id) {
+        var projects = this.loadAll().filter(function(p) { return p.id !== id; });
+        try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects)); } catch(e) {}
+      }
+    };
+
+    /* ========================================================================
+     * GAP 4: SALARY NEGOTIATION TRAINER
+     * Structured roleplay: offer → counter → response
+     * Science: Scripted rehearsal reduces anxiety (Bandura, 1977)
+     * ======================================================================== */
+    var NegotiationTrainer = {
+      scenarios: [
+        {
+          id: 'initial_offer',
+          name: 'Responding to Initial Offer',
+          prompt: 'The recruiter says: "We\'d like to offer you the position at $95,000 base salary with standard benefits. How does that sound?"',
+          tips: [
+            'Never accept the first offer immediately — even if it\'s good',
+            'Express enthusiasm for the role first',
+            'Ask for time: "I\'m very excited about this opportunity. Could I have a couple of days to review the full package?"',
+            'Research market rate before responding with a counter'
+          ],
+          frameworkSteps: ['Express gratitude', 'Show enthusiasm', 'Ask for the complete package in writing', 'Request 2-3 days to review', 'Prepare your counter-offer with data']
+        },
+        {
+          id: 'counter_offer',
+          name: 'Making a Counter-Offer',
+          prompt: 'You\'ve researched the market rate ($105K-$120K for your level). Time to make your counter-offer. What do you say?',
+          tips: [
+            'Anchor high but reasonable — ask for the top of the range',
+            'Use specific numbers, not ranges (ranges anchor to the low end)',
+            'Justify with data: "Based on my research and experience..."',
+            'Focus on total compensation, not just base salary'
+          ],
+          frameworkSteps: ['State your target number', 'Justify with market data + your unique value', 'Mention competing offers if you have them', 'Suggest non-salary alternatives (signing bonus, equity, remote)']
+        },
+        {
+          id: 'pushback',
+          name: 'Handling Pushback',
+          prompt: 'The recruiter says: "Unfortunately, $95K is the maximum we can offer for this role. Our budget is fixed."',
+          tips: [
+            'Don\'t take "no" as final — explore alternatives',
+            'Ask: "Is there flexibility in signing bonus, equity, or review timeline?"',
+            'Propose: "What if we agreed on a 6-month performance review with a defined path to $X?"',
+            'Never make ultimatums unless you\'re willing to walk away'
+          ],
+          frameworkSteps: ['Acknowledge their constraint', 'Pivot to non-salary compensation', 'Propose accelerated review timeline', 'Ask about equity, bonus, or benefits flexibility', 'Get any verbal commitments in writing']
+        },
+        {
+          id: 'multiple_offers',
+          name: 'Leveraging Multiple Offers',
+          prompt: 'You have another offer at $110K. How do you use this ethically in negotiation?',
+          tips: [
+            'Be honest — never fabricate offers',
+            'Frame it positively: "I have another strong offer, but your company is my first choice because..."',
+            'Give them a chance to match, not an ultimatum',
+            'Set a deadline: "I need to respond to them by Friday"'
+          ],
+          frameworkSteps: ['Reaffirm your preference for this company', 'Mention the competing offer honestly', 'Ask if they can get closer to that number', 'Set a reasonable deadline', 'Be prepared to choose']
+        }
+      ],
+
+      getScenario: function(id) {
+        for (var i = 0; i < this.scenarios.length; i++) {
+          if (this.scenarios[i].id === id) return this.scenarios[i];
+        }
+        return this.scenarios[0];
+      }
+    };
+
+    /* ========================================================================
+     * GAP 5: WHITEBOARD / CANVAS for visual thinking
+     * Simple drawing canvas for system design, flowcharts, diagrams
+     * Science: Dual coding — visual + verbal = 2x encoding (Paivio, 1986)
+     * ======================================================================== */
+    var Whiteboard = {
+      canvas: null,
+      ctx: null,
+      drawing: false,
+      color: 'var(--heading)',
+      lineWidth: 2,
+      history: [],
+
+      init: function(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) return;
+        this.ctx = this.canvas.getContext('2d');
+        this.resize();
+
+        var self = this;
+        // Mouse events
+        this.canvas.addEventListener('mousedown', function(e) { self.startDraw(e); });
+        this.canvas.addEventListener('mousemove', function(e) { self.draw(e); });
+        this.canvas.addEventListener('mouseup', function() { self.stopDraw(); });
+        this.canvas.addEventListener('mouseleave', function() { self.stopDraw(); });
+        // Touch events
+        this.canvas.addEventListener('touchstart', function(e) { e.preventDefault(); self.startDraw(e.touches[0]); });
+        this.canvas.addEventListener('touchmove', function(e) { e.preventDefault(); self.draw(e.touches[0]); });
+        this.canvas.addEventListener('touchend', function() { self.stopDraw(); });
+      },
+
+      resize: function() {
+        if (!this.canvas) return;
+        var rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width;
+        this.canvas.height = Math.max(300, rect.width * 0.5);
+        // Restore drawing after resize
+        this.redraw();
+      },
+
+      startDraw: function(e) {
+        this.drawing = true;
+        var pos = this.getPos(e);
+        this.ctx.beginPath();
+        this.ctx.moveTo(pos.x, pos.y);
+        // Save state for undo
+        this.history.push(this.canvas.toDataURL());
+        if (this.history.length > 30) this.history.shift();
+      },
+
+      draw: function(e) {
+        if (!this.drawing) return;
+        var pos = this.getPos(e);
+        // Get computed color from CSS variable
+        var style = getComputedStyle(document.documentElement);
+        this.ctx.strokeStyle = style.getPropertyValue('--heading').trim() || '#ffffff';
+        this.ctx.lineWidth = this.lineWidth;
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.lineTo(pos.x, pos.y);
+        this.ctx.stroke();
+      },
+
+      stopDraw: function() {
+        this.drawing = false;
+      },
+
+      getPos: function(e) {
+        var rect = this.canvas.getBoundingClientRect();
+        return {
+          x: (e.clientX || e.pageX) - rect.left,
+          y: (e.clientY || e.pageY) - rect.top
+        };
+      },
+
+      clear: function() {
+        if (!this.ctx) return;
+        this.history.push(this.canvas.toDataURL());
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      },
+
+      undo: function() {
+        if (this.history.length === 0) return;
+        var img = new Image();
+        var self = this;
+        img.onload = function() {
+          self.ctx.clearRect(0, 0, self.canvas.width, self.canvas.height);
+          self.ctx.drawImage(img, 0, 0);
+        };
+        img.src = this.history.pop();
+      },
+
+      redraw: function() {
+        // placeholder for restore after resize
+      },
+
+      toImage: function() {
+        if (!this.canvas) return null;
+        return this.canvas.toDataURL('image/png');
+      }
+    };
+
+    /* ========================================================================
+     * GAP 6: FILLER WORD DETECTOR
+     * Scans typed answers for filler words and phrases
+     * Science: Awareness of verbal habits is first step to correction
+     * ======================================================================== */
+    var FillerDetector = {
+      fillers: [
+        'um', 'uh', 'like', 'basically', 'literally', 'you know',
+        'sort of', 'kind of', 'i mean', 'i guess', 'actually',
+        'honestly', 'right', 'so yeah', 'and stuff', 'or whatever',
+        'i think maybe', 'in terms of', 'at the end of the day',
+        'to be honest', 'the thing is'
+      ],
+
+      // Detect fillers in text, return array of { filler, count, positions }
+      detect: function(text) {
+        if (!text) return { fillers: [], total: 0, cleanScore: 100 };
+        var lower = text.toLowerCase();
+        var found = [];
+        var total = 0;
+
+        this.fillers.forEach(function(f) {
+          var regex = new RegExp('\\b' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+          var matches = lower.match(regex);
+          if (matches && matches.length > 0) {
+            found.push({ filler: f, count: matches.length });
+            total += matches.length;
+          }
+        });
+
+        // Clean score: 100 = no fillers, decreases by 5 per filler
+        var words = text.trim().split(/\s+/).length;
+        var fillerRatio = words > 0 ? (total / words) * 100 : 0;
+        var cleanScore = Math.max(0, Math.round(100 - fillerRatio * 20));
+
+        found.sort(function(a, b) { return b.count - a.count; });
+        return { fillers: found, total: total, cleanScore: cleanScore, ratio: Math.round(fillerRatio * 10) / 10 };
+      },
+
+      // Get feedback message
+      getFeedback: function(result) {
+        if (result.total === 0) return 'Excellent! No filler words detected. Your answer sounds confident and polished.';
+        if (result.total <= 2) return 'Good. Only ' + result.total + ' filler word(s) found. Minor cleanup needed.';
+        if (result.total <= 5) return 'Watch out for filler words (' + result.total + ' found). Common ones: ' + result.fillers.slice(0, 3).map(function(f) { return '"' + f.filler + '"'; }).join(', ') + '. Practice saying your answer without these.';
+        return 'Too many filler words (' + result.total + ' found). This weakens your perceived confidence. Practice your answer aloud and consciously remove: ' + result.fillers.slice(0, 3).map(function(f) { return '"' + f.filler + '"'; }).join(', ');
+      }
     };
 
     /* ========================================================================
