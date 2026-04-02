@@ -273,6 +273,7 @@
             <button type="button" class="sketch-style-btn" data-style="soft">Soft Pencil</button>
             <button type="button" class="sketch-style-btn" data-style="detailed">Detailed Sketch</button>
             <button type="button" class="sketch-style-btn" data-style="rough">Rough Sketch</button>
+            <button type="button" class="sketch-style-btn" data-style="hyperreal">Hyper Realistic</button>
           </div>
         </div>
         <div class="sketch-control-group">
@@ -368,7 +369,7 @@
       {q:'How does the pencil sketch effect work?', a:'The tool converts your image to grayscale, inverts it, applies a Gaussian blur, then blends the layers using a Color Dodge operation. This mathematical technique produces realistic pencil lines where edges exist in the original photo.'},
       {q:'Can I use this on my phone?', a:'Yes, this tool is fully mobile-responsive and works on any device with a modern browser — iPhone, Android, tablet, or desktop. Just tap to upload a photo from your camera roll.'},
       {q:'Are my photos private?', a:'Absolutely. All processing happens locally in your browser using the HTML5 Canvas API. Your photos are never uploaded to any server, making this tool completely private and secure.'},
-      {q:'What sketch styles are available?', a:'We offer 6 styles: Pencil Sketch for light detailed lines, Charcoal Drawing for bold dark strokes, Ink Sketch for high-contrast black and white, Soft Pencil for dreamy effects, Detailed Sketch for sharp edges, and Rough Sketch for a textured hand-drawn look.'},
+      {q:'What sketch styles are available?', a:'We offer 7 styles: Pencil Sketch for light detailed lines, Charcoal Drawing for bold dark strokes, Ink Sketch for high-contrast black and white, Soft Pencil for dreamy effects, Detailed Sketch for sharp edges, Rough Sketch for a textured hand-drawn look, and Hyper Realistic for deep volumetric shading with cross-hatching strokes that mimic classical graphite portraiture.'},
       {q:'Can I adjust the sketch intensity?', a:'Yes, use the intensity slider to control how pronounced the pencil lines appear, the line thickness slider to adjust stroke weight, and the contrast slider to control the light-dark balance. All changes apply in real time.'},
       {q:'What image formats are supported?', a:'You can upload JPG, PNG, and WebP images up to 20MB. The output is always downloaded as a high-quality PNG file that preserves the full resolution of your original photo.'}
     ];
@@ -405,7 +406,8 @@
       ink:      { blur: 8,  contrast: 2.5, brightness: 0.9, invert: true, threshold: 120, noise: 0 },
       soft:     { blur: 35, contrast: 0.8, brightness: 1.1, invert: true, threshold: 0, noise: 0 },
       detailed: { blur: 6,  contrast: 1.3, brightness: 1.0, invert: true, threshold: 0, noise: 0 },
-      rough:    { blur: 14, contrast: 1.4, brightness: 0.95, invert: true, threshold: 0, noise: 20 }
+      rough:    { blur: 14, contrast: 1.4, brightness: 0.95, invert: true, threshold: 0, noise: 20 },
+      hyperreal:{ blur: 4,  contrast: 1.8, brightness: 0.88, invert: true, threshold: 0, noise: 5, multiPass: true, shadeBlend: 0.45, strokeTexture: true }
     };
 
     // --- Upload Handling ---
@@ -563,6 +565,48 @@
       // Step 8: Apply brightness
       for (var i = 0; i < result.length; i++) {
         result[i] = Math.max(0, Math.min(255, result[i] * brightness));
+      }
+
+      // Step 9: Hyper-Realistic multi-pass shading + stroke texture
+      if (preset.multiPass) {
+        // Second edge pass with tighter blur for fine detail
+        var fineBlur = gaussianBlur(inverted, w, h, Math.max(1, Math.round(blurRadius * 0.4)));
+        var fineEdge = new Float32Array(w * h);
+        for (var i = 0; i < gray.length; i++) {
+          var b = gray[i];
+          var bl = fineBlur[i];
+          if (bl >= 255) { fineEdge[i] = 255; }
+          else { fineEdge[i] = Math.min(255, b / (1 - bl / 255)); }
+        }
+        // Blend fine edges with main result for layered detail
+        for (var i = 0; i < result.length; i++) {
+          result[i] = result[i] * 0.6 + fineEdge[i] * 0.4;
+        }
+        // Blend original grayscale back for volumetric shading
+        var blend = preset.shadeBlend || 0.4;
+        for (var i = 0; i < result.length; i++) {
+          var shade = gray[i] * 0.9;
+          result[i] = result[i] * (1 - blend) + shade * blend;
+          result[i] = Math.max(0, Math.min(255, result[i]));
+        }
+      }
+
+      // Step 10: Directional stroke texture overlay
+      if (preset.strokeTexture) {
+        for (var y = 0; y < h; y++) {
+          for (var x = 0; x < w; x++) {
+            var idx = y * w + x;
+            // Diagonal hatching pattern — varies intensity by position
+            var hatch1 = Math.sin((x + y) * 0.8) * 0.5 + 0.5;
+            var hatch2 = Math.sin((x - y) * 1.2) * 0.5 + 0.5;
+            // Only apply hatching in mid-tone areas (not white highlights or deep shadows)
+            var val = result[idx];
+            var midFactor = 1 - Math.abs(val - 128) / 128; // peaks at mid-gray
+            var hatchStrength = midFactor * 18;
+            var tex = (hatch1 * 0.6 + hatch2 * 0.4) * hatchStrength;
+            result[idx] = Math.max(0, Math.min(255, val - tex));
+          }
+        }
       }
 
       // Write to result canvas
@@ -740,7 +784,8 @@
               ink: 'Crisp ink lines define the subject with striking clarity, the stark contrast between black and white creating a bold graphic statement.',
               soft: 'Gentle pencil marks float across the surface like whispered lines, creating a dreamy atmosphere where details dissolve into soft light.',
               detailed: 'Every fine line is rendered with meticulous precision, capturing intricate textures and subtle tonal variations in remarkable detail.',
-              rough: 'Energetic, textured strokes lend a raw authenticity to this sketch, each mark carrying the spontaneous energy of an artist working from life.'
+              rough: 'Energetic, textured strokes lend a raw authenticity to this sketch, each mark carrying the spontaneous energy of an artist working from life.',
+              hyperreal: 'Masterful graphite rendering captures every nuance of light and form, layered cross-hatching building volume with the depth and precision of a classical portrait study.'
             };
             return descriptions[currentStyle] || descriptions.pencil;
           }

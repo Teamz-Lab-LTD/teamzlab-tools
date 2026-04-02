@@ -43,7 +43,7 @@
       Object.keys(QUESTION_BANK).forEach(function(type) {
         Object.keys(QUESTION_BANK[type]).forEach(function(sub) {
           QUESTION_BANK[type][sub].forEach(function(q) {
-            all.push({ type: type, sub: sub, id: q.id, q: q.q, f: q.f, c: q.c, d: q.d });
+            all.push({ type: type, sub: sub, id: q.id, q: q.q, f: q.f, c: q.c, d: q.d, a: q.a || '', why: q.why || '' });
           });
         });
       });
@@ -1005,6 +1005,16 @@
       document.getElementById('ims-hint-text').textContent = q.f;
       hideEl(document.getElementById('ims-hint-box'));
 
+      // "Why is this asked?" content
+      var whyBox = document.getElementById('ims-why-box');
+      var whyText = document.getElementById('ims-why-text');
+      if (whyBox) hideEl(whyBox);
+      if (whyText) {
+        whyText.textContent = q.why || ('This tests: ' + q.c.replace(/-/g, ' ') + '. Interviewers look for structured thinking, specific examples, and measurable outcomes.');
+      }
+      var whyToggle = document.getElementById('ims-why-toggle');
+      if (whyToggle) whyToggle.textContent = 'Why Is This Asked?';
+
       document.getElementById('ims-answer').value = '';
       document.getElementById('ims-word-count').textContent = '0 words';
 
@@ -1132,6 +1142,15 @@
           if (a.metacognition) {
             metaHtml = '<div class="ims-ai-feedback"><strong>Self-Assessment:</strong> ' + a.metacognition.message + '</div>';
           }
+          // Find model answer from question bank
+          var modelHtml = '';
+          var allQs = getAllQuestions();
+          for (var qi = 0; qi < allQs.length; qi++) {
+            if (allQs[qi].id === a.questionId && allQs[qi].a) {
+              modelHtml = '<div class="ims-model-answer"><div class="ims-model-answer-title">Model Answer</div><div class="ims-model-answer-text">' + escapeHtml(allQs[qi].a) + '</div></div>';
+              break;
+            }
+          }
           card.innerHTML =
             '<div class="ims-answer-card-header"><div class="ims-answer-q">' + (idx+1) + '. ' + escapeHtml(a.question) + '</div><div class="ims-answer-score-badge">' + a.scores.total + '/100</div></div>' +
             '<div class="ims-answer-text">' + escapeHtml(a.answer) + '</div>' +
@@ -1142,6 +1161,7 @@
               '<div class="ims-breakdown-item"><span>Relevance</span><span>' + a.scores.relevance + '/25</span></div>' +
             '</div>' +
             metaHtml +
+            modelHtml +
             '<div id="ims-ai-fb-' + idx + '"></div>';
         }
         listEl.appendChild(card);
@@ -1302,6 +1322,375 @@
       div.textContent = str;
       return div.innerHTML;
     }
+
+    /* ========================================================================
+     * STAR BUILDER SCORING (for guided STAR mode)
+     * ======================================================================== */
+    var STARBuilder = {
+      // Score individual STAR components
+      scoreComponent: function(text, component) {
+        // component: 'situation', 'task', 'action', 'result'
+        var words = text.trim().split(/\s+/).length;
+        var score = 0;
+
+        // Word count (each component should be 20-75 words)
+        if (words < 5) return 2;
+        if (words < 15) score += 8;
+        else if (words <= 75) score += 15;
+        else score += 10; // too verbose
+
+        // Component-specific keywords
+        var keywords = {
+          situation: ['when', 'at', 'during', 'while', 'our team', 'the company', 'my role', 'working', 'project', 'department'],
+          task: ['responsible', 'needed', 'goal', 'objective', 'asked', 'required', 'my job', 'challenge', 'assigned', 'expected'],
+          action: ['i decided', 'i created', 'i built', 'i led', 'i implemented', 'i organized', 'i developed', 'i initiated', 'i proposed', 'i analyzed', 'i designed', 'i coordinated'],
+          result: ['resulted', 'achieved', 'increased', 'decreased', 'reduced', 'improved', 'saved', 'generated', 'delivered', 'led to', '%', 'percent', 'revenue', 'efficiency']
+        };
+
+        var found = 0;
+        var kw = keywords[component] || [];
+        var lower = text.toLowerCase();
+        kw.forEach(function(k) {
+          if (lower.indexOf(k) >= 0) found++;
+        });
+        score += Math.min(10, found * 3);
+
+        return Math.min(25, score);
+      },
+
+      // Score all 4 components combined
+      scoreAll: function(situation, task, action, result) {
+        return {
+          structure: this.scoreComponent(situation, 'situation'),
+          length: this.scoreComponent(task, 'task'), // reusing field names for compatibility
+          specificity: this.scoreComponent(action, 'action'),
+          relevance: this.scoreComponent(result, 'result'),
+          total: 0 // calculated below
+        };
+      },
+
+      // Get feedback per component
+      getFeedback: function(text, component, score) {
+        var words = text.trim().split(/\s+/).length;
+        if (words < 5) return 'Too brief. Add more context about the ' + component + '.';
+        if (score >= 20) return 'Strong ' + component + ' section!';
+        if (score >= 12) return 'Good, but add more specific details.';
+
+        var tips = {
+          situation: 'Set the scene: When was this? What company/team? What was happening?',
+          task: 'Clarify YOUR specific responsibility. What were you personally expected to do?',
+          action: 'Use "I" not "we". List specific steps YOU took. Be concrete.',
+          result: 'Add numbers! Percentages, dollar amounts, time saved, people impacted.'
+        };
+        return tips[component] || 'Add more detail.';
+      },
+
+      // Combine 4 fields into a single answer string (for storage/comparison)
+      combineAnswer: function(situation, task, action, result) {
+        var parts = [];
+        if (situation.trim()) parts.push('Situation: ' + situation.trim());
+        if (task.trim()) parts.push('Task: ' + task.trim());
+        if (action.trim()) parts.push('Action: ' + action.trim());
+        if (result.trim()) parts.push('Result: ' + result.trim());
+        return parts.join('\n\n');
+      }
+    };
+
+    /* ========================================================================
+     * PITCH TIMER & SCORING
+     * ======================================================================== */
+    var PitchEngine = {
+      STORAGE_KEY: 'tz_ims_pitches',
+
+      // Pitch types with target durations and word counts
+      types: {
+        elevator: { name: '30-Second Elevator Pitch', seconds: 30, targetWords: [40, 60], description: 'Quick networking intro' },
+        intro: { name: '60-Second Introduction', seconds: 60, targetWords: [80, 130], description: 'Phone screen opener' },
+        story: { name: '2-Minute Career Story', seconds: 120, targetWords: [200, 300], description: 'Deep behavioral intro' }
+      },
+
+      // Template fields
+      templateFields: [
+        { id: 'background', label: 'Background', placeholder: "I'm a [role] with [X] years of experience in [industry/domain]", hint: 'Who are you professionally?' },
+        { id: 'current', label: 'Current Role', placeholder: 'Currently at [company], I [key achievement or responsibility]', hint: 'What do you do now? Include a measurable achievement.' },
+        { id: 'highlight', label: 'Key Achievement', placeholder: 'One accomplishment I\'m proud of is [specific result with numbers]', hint: 'Your strongest selling point. Use numbers.' },
+        { id: 'why', label: 'Why This Role/Company', placeholder: 'I\'m excited about [company/role] because [specific reason]', hint: 'Show you researched them. Be specific.' },
+        { id: 'goal', label: 'Goal', placeholder: 'I\'m looking to [career goal that aligns with this role]', hint: 'Connect your goal to what they need.' }
+      ],
+
+      // Score a pitch
+      scorePitch: function(text, pitchType) {
+        var config = this.types[pitchType];
+        if (!config) return { total: 0 };
+
+        var words = text.trim().split(/\s+/).length;
+        var score = { wordCount: words, targetMin: config.targetWords[0], targetMax: config.targetWords[1] };
+
+        // Length score (0-25)
+        if (words >= config.targetWords[0] && words <= config.targetWords[1]) {
+          score.length = 25;
+        } else if (words < config.targetWords[0]) {
+          score.length = Math.round((words / config.targetWords[0]) * 25);
+        } else {
+          score.length = Math.max(5, 25 - Math.round((words - config.targetWords[1]) / 10) * 3);
+        }
+
+        // Structure score (0-25) — checks for key components
+        var lower = text.toLowerCase();
+        var components = 0;
+        if (/\b(i am|i'm|i have|my background|my experience|years? of|years? in)\b/i.test(lower)) components++;
+        if (/\b(currently|at \w+|my role|i work|i lead|i manage)\b/i.test(lower)) components++;
+        if (/\b(\d+%|increased|decreased|saved|generated|delivered|built|launched|improved)\b/i.test(lower)) components++;
+        if (/\b(excited|passionate|interested|looking to|goal|future|grow|contribute)\b/i.test(lower)) components++;
+        score.structure = Math.min(25, components * 7);
+
+        // Specificity (0-25)
+        var numbers = (lower.match(/\d+/g) || []).length;
+        var namedEntities = (text.match(/\s[A-Z][a-z]+/g) || []).length;
+        score.specificity = Math.min(25, numbers * 4 + namedEntities * 2 + 5);
+
+        // Confidence markers (0-25)
+        var confident = 0;
+        if (!/\b(um|uh|like|basically|kind of|sort of|maybe|i guess|i think maybe)\b/i.test(lower)) confident += 10;
+        if (/\b(i led|i drove|i built|i created|i achieved|i delivered)\b/i.test(lower)) confident += 8;
+        if ((text.match(/\./g) || []).length >= 2) confident += 7; // complete sentences
+        score.confidence = Math.min(25, confident);
+
+        score.total = score.length + score.structure + score.specificity + score.confidence;
+        return score;
+      },
+
+      // Save pitch to localStorage
+      savePitch: function(pitchType, text, score) {
+        try {
+          var data = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+          if (!data.pitches) data.pitches = {};
+          data.pitches[pitchType] = {
+            text: text,
+            score: score,
+            savedAt: new Date().toISOString()
+          };
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+        } catch(e) {}
+      },
+
+      // Load saved pitch
+      loadPitch: function(pitchType) {
+        try {
+          var data = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+          return (data.pitches && data.pitches[pitchType]) || null;
+        } catch(e) { return null; }
+      }
+    };
+
+    /* ========================================================================
+     * WPM CALCULATOR (Words Per Minute during practice)
+     * ======================================================================== */
+    var WPMTracker = {
+      startTime: null,
+
+      start: function() {
+        this.startTime = Date.now();
+      },
+
+      getWPM: function(wordCount) {
+        if (!this.startTime || wordCount < 5) return 0;
+        var elapsedMin = (Date.now() - this.startTime) / 60000;
+        if (elapsedMin < 0.1) return 0;
+        return Math.round(wordCount / elapsedMin);
+      },
+
+      // Ideal speaking pace for interviews: 130-150 WPM
+      getLabel: function(wpm) {
+        if (wpm === 0) return '';
+        if (wpm < 100) return 'Slow pace \u2014 try to be more fluent';
+        if (wpm <= 150) return 'Good pace for interviews';
+        if (wpm <= 180) return 'Slightly fast \u2014 slow down for clarity';
+        return 'Too fast \u2014 interviewers may struggle to follow';
+      }
+    };
+
+    /* ========================================================================
+     * INTERVIEW JOURNAL (Post-interview tracking)
+     * ======================================================================== */
+    var Journal = {
+      STORAGE_KEY: 'tz_ims_journal',
+
+      load: function() {
+        try {
+          var raw = localStorage.getItem(this.STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch(e) { return []; }
+      },
+
+      save: function(entries) {
+        try {
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(entries));
+        } catch(e) {}
+      },
+
+      addEntry: function(entry) {
+        // entry: { date, company, role, type, interviewer, questions, rating, outcome, notes }
+        var entries = this.load();
+        entry.id = 'j_' + Date.now();
+        entry.createdAt = new Date().toISOString();
+        entries.unshift(entry); // newest first
+        if (entries.length > 200) entries = entries.slice(0, 200);
+        this.save(entries);
+        return entry;
+      },
+
+      updateEntry: function(id, updates) {
+        var entries = this.load();
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].id === id) {
+            Object.keys(updates).forEach(function(key) {
+              entries[i][key] = updates[key];
+            });
+            entries[i].updatedAt = new Date().toISOString();
+            break;
+          }
+        }
+        this.save(entries);
+      },
+
+      deleteEntry: function(id) {
+        var entries = this.load();
+        entries = entries.filter(function(e) { return e.id !== id; });
+        this.save(entries);
+      },
+
+      // Analyze patterns across all journal entries
+      getPatterns: function() {
+        var entries = this.load();
+        if (entries.length === 0) return null;
+
+        // Count question topics
+        var topicCounts = {};
+        entries.forEach(function(e) {
+          if (e.questions) {
+            var qs = e.questions.split('\n').filter(function(q) { return q.trim().length > 0; });
+            qs.forEach(function(q) {
+              var lower = q.toLowerCase();
+              // Simple topic detection
+              var topics = ['leadership', 'teamwork', 'conflict', 'failure', 'weakness', 'strength',
+                'challenge', 'pressure', 'deadline', 'technical', 'system design', 'coding',
+                'tell me about yourself', 'why this company', 'salary', 'management', 'communication'];
+              topics.forEach(function(t) {
+                if (lower.indexOf(t) >= 0) {
+                  topicCounts[t] = (topicCounts[t] || 0) + 1;
+                }
+              });
+            });
+          }
+        });
+
+        // Sort by frequency
+        var sorted = Object.keys(topicCounts).map(function(t) {
+          return { topic: t, count: topicCounts[t] };
+        }).sort(function(a, b) { return b.count - a.count; });
+
+        // Outcome stats
+        var outcomes = { passed: 0, rejected: 0, pending: 0 };
+        entries.forEach(function(e) {
+          if (e.outcome === 'passed') outcomes.passed++;
+          else if (e.outcome === 'rejected') outcomes.rejected++;
+          else outcomes.pending++;
+        });
+
+        return {
+          totalInterviews: entries.length,
+          topTopics: sorted.slice(0, 5),
+          outcomes: outcomes,
+          avgRating: entries.reduce(function(s, e) { return s + (e.rating || 0); }, 0) / entries.length
+        };
+      }
+    };
+
+    /* ========================================================================
+     * COMPANY PREP MODULE
+     * ======================================================================== */
+    var CompanyPrep = {
+      STORAGE_KEY: 'tz_ims_company_prep',
+
+      // Checklist items (static)
+      checklist: [
+        { id: 'mission', label: 'Research company mission and values', tip: 'Check their About page and annual report' },
+        { id: 'news', label: 'Find 3 recent news articles about the company', tip: 'Google News, TechCrunch, industry publications' },
+        { id: 'product', label: 'Try their product/service yourself', tip: 'First-hand experience shows genuine interest' },
+        { id: 'why', label: 'Prepare your "Why this company?" answer', tip: 'Use the builder below to structure your answer' },
+        { id: 'interviewer', label: 'Research the interviewer on LinkedIn', tip: 'Find common ground, shared interests, their background' },
+        { id: 'questions', label: 'Prepare 3 thoughtful questions to ask', tip: 'About team culture, growth, current challenges' },
+        { id: 'dress', label: 'Plan your outfit (match company culture)', tip: 'Business formal for finance/law, smart casual for tech/startups' },
+        { id: 'logistics', label: 'Confirm date, time, location/link', tip: 'Test video call software beforehand if remote' }
+      ],
+
+      // Load saved prep for a company
+      load: function(company) {
+        try {
+          var data = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+          return data[company.toLowerCase().trim()] || { checked: {}, whyAnswer: '' };
+        } catch(e) { return { checked: {}, whyAnswer: '' }; }
+      },
+
+      // Save prep for a company
+      save: function(company, prepData) {
+        try {
+          var data = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
+          data[company.toLowerCase().trim()] = prepData;
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+        } catch(e) {}
+      }
+    };
+
+    /* ========================================================================
+     * DELIVERY COACHING TIPS DATA
+     * ======================================================================== */
+    var DeliveryTips = {
+      general: [
+        'Speak at 130-150 words per minute \u2014 this is the ideal interview pace',
+        'Pause for 1-2 seconds between STAR sections to let points sink in',
+        'Avoid filler words: um, uh, like, basically, literally, you know, sort of, kind of',
+        'Use "I" instead of "we" to highlight YOUR contributions',
+        'End answers confidently \u2014 don\'t trail off or say "...so yeah"'
+      ],
+      behavioral: [
+        'Maintain eye contact (or look at camera if video)',
+        'Use hand gestures to emphasize key points',
+        'Smile when describing positive outcomes',
+        'Keep answers to 2-3 minutes maximum'
+      ],
+      technical: [
+        'Think aloud \u2014 explain your reasoning process',
+        'Ask clarifying questions before diving into the answer',
+        'Structure: understand \u2192 plan \u2192 execute \u2192 test/verify',
+        'It\'s OK to say "Let me think about that for a moment"'
+      ],
+      caseStudy: [
+        'Repeat the question back to confirm understanding',
+        'State your framework before diving into analysis',
+        'Round numbers for easier mental math',
+        'Summarize your conclusion at the end'
+      ],
+      panel: [
+        'Address each panelist by name when possible',
+        'Make eye contact with the person who asked the question, then scan others',
+        'Pivot your body toward whoever you\'re addressing',
+        'Don\'t fixate on one person \u2014 include everyone'
+      ],
+      phoneScreen: [
+        'Stand up or sit straight \u2014 posture affects vocal energy',
+        'Smile while speaking \u2014 it\'s audible in your voice',
+        'Have your resume and notes visible (they can\'t see you)',
+        'Keep a glass of water nearby'
+      ],
+      finalRound: [
+        'Show executive presence \u2014 confident, composed, strategic',
+        'Connect your answers to business impact and company goals',
+        'Demonstrate you\'ve done deep research on the company',
+        'Ask forward-looking questions about team vision and goals'
+      ]
+    };
 
     /* ========================================================================
      * EVENT WIRING
