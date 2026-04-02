@@ -553,109 +553,133 @@
      * ======================================================================== */
     var SessionManager = {
       current: null,
-      create: function(config) {
+
+      /**
+       * Create session — calls AI to generate questions via Cloud Functions.
+       * Falls back to local bank ONLY if AI fails.
+       * Returns a Promise that resolves with the session object.
+       *
+       * @param {Object} config - session configuration
+       * @param {Function} onStatus - callback for status updates
+       * @returns {Promise<Object>} session
+       */
+      create: function(config, onStatus) {
+        var self = this;
         var type = config.type;
         var level = config.level;
         var role = config.role;
         var difficulty = parseInt(config.difficulty) || 2;
         var count = parseInt(config.questionCount) || 5;
         var timePerQ = parseInt(config.timePerQuestion) || 120;
-        var roleCat = detectRoleCategory(role);
-        var useInterleaving = config.interleave !== false;
-        var useSRS = config.smartMode !== false;
-        var useDeliberate = config.focusWeakness !== false;
 
-        // Step 1: Collect candidate questions from bank
-        var candidates = [];
-        var bank = QUESTION_BANK[type];
-        if (!bank) bank = QUESTION_BANK.behavioral;
+        var statusFn = onStatus || function() {};
 
-        if (bank[level]) {
-          bank[level].forEach(function(q) { candidates.push(q); });
-        }
-        if (bank[roleCat]) {
-          bank[roleCat].forEach(function(q) { candidates.push(q); });
-        }
-        if (bank.general) {
-          bank.general.forEach(function(q) { candidates.push(q); });
-        }
+        // Try AI-generated questions first (requires login)
+        return new Promise(function(resolve) {
+          if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn()) {
+            statusFn('Generating personalized questions with AI...');
 
-        // Expand pool if needed
-        if (candidates.length < count) {
-          var allLevels = ['junior', 'mid', 'senior', 'lead'];
-          allLevels.forEach(function(lv) {
-            if (bank[lv] && lv !== level) {
-              bank[lv].forEach(function(q) { candidates.push(q); });
+            TeamzAuth.callFunction('generateQuestions', {
+              role: role || 'general professional',
+              company: config.company || '',
+              level: level,
+              type: type === 'mixed' ? 'mixed (behavioral + technical + situational)' : type,
+              industry: config.industry || '',
+              count: count,
+              difficulty: difficulty
+            }).then(function(result) {
+              if (result && result.questions && result.questions.length > 0) {
+                // AI generated questions successfully
+                var questions = result.questions.map(function(q, idx) {
+                  return {
+                    id: 'ai_' + Date.now() + '_' + idx,
+                    q: q.q,
+                    f: q.f || '',
+                    c: q.c || 'general',
+                    d: difficulty,
+                    why: q.why || '',
+                    a: q.a || ''
+                  };
+                });
+                statusFn('AI generated ' + questions.length + ' questions!');
+                self._initSession(config, questions, timePerQ);
+                resolve(self.current);
+              } else {
+                // AI returned empty — fall back
+                statusFn('AI unavailable. Using practice questions...');
+                self._createFromFallback(config, count, timePerQ);
+                resolve(self.current);
+              }
+            }).catch(function(err) {
+              statusFn('AI unavailable. Using practice questions...');
+              self._createFromFallback(config, count, timePerQ);
+              resolve(self.current);
+            });
+          } else {
+            // Not logged in — show login prompt, then try again
+            if (typeof TeamzAuth !== 'undefined') {
+              TeamzAuth.requireAuth(function(user) {
+                statusFn('Signed in! Generating questions...');
+                // Retry with auth
+                self.create(config, onStatus).then(resolve);
+              });
+            } else {
+              // No auth module — use fallback
+              statusFn('Sign in for AI-generated questions. Using practice questions...');
+              self._createFromFallback(config, count, timePerQ);
+              resolve(self.current);
             }
-          });
-        }
-        if (candidates.length < count) {
-          var beh = QUESTION_BANK.behavioral;
-          Object.keys(beh).forEach(function(lv) {
-            beh[lv].forEach(function(q) { candidates.push(q); });
-          });
-        }
+          }
+        });
+      },
 
-        // Deduplicate
-        var seen = {};
-        candidates = candidates.filter(function(q) {
-          if (seen[q.id]) return false;
-          seen[q.id] = true;
-          return true;
+      /**
+       * Fallback: create session from local question bank (when AI unavailable)
+       */
+      _createFromFallback: function(config, count, timePerQ) {
+        var type = config.type;
+        var candidates = [];
+
+        // Collect from fallback bank
+        Object.keys(QUESTION_BANK).forEach(function(t) {
+          if (type !== 'mixed' && t !== type) return;
+          Object.keys(QUESTION_BANK[t]).forEach(function(sub) {
+            QUESTION_BANK[t][sub].forEach(function(q) {
+              candidates.push(q);
+            });
+          });
         });
 
-        // Step 2: Filter by difficulty (allow +-1)
-        var filtered = candidates.filter(function(q) {
-          return Math.abs(q.d - difficulty) <= 1;
-        });
-        if (filtered.length < count) filtered = candidates;
-
-        // Step 3: SCIENCE — Spaced Repetition priority
-        // Move SRS-due questions to the front
-        if (useSRS) {
-          SRS.load();
-          var dueIds = {};
-          var dueList = SRS.getDueQuestions(filtered);
-          dueList.forEach(function(d) { dueIds[d.question.id] = d.overdue; });
-
-          filtered.sort(function(a, b) {
-            var aDue = dueIds[a.id] !== undefined ? dueIds[a.id] : -1;
-            var bDue = dueIds[b.id] !== undefined ? dueIds[b.id] : -1;
-            // Due questions first, most overdue first
-            if (aDue >= 0 && bDue < 0) return -1;
-            if (bDue >= 0 && aDue < 0) return 1;
-            if (aDue >= 0 && bDue >= 0) return bDue - aDue;
-            return 0;
+        // If no match, collect ALL fallback questions
+        if (candidates.length === 0) {
+          Object.keys(QUESTION_BANK).forEach(function(t) {
+            Object.keys(QUESTION_BANK[t]).forEach(function(sub) {
+              QUESTION_BANK[t][sub].forEach(function(q) {
+                candidates.push(q);
+              });
+            });
           });
         }
 
-        // Step 4: SCIENCE — Deliberate Practice (weak competencies first)
-        if (useDeliberate) {
-          var weakComps = DeliberatePractice.getWeakCompetencies(3);
-          if (weakComps.length > 0) {
-            filtered = DeliberatePractice.focusOnWeakness(filtered, weakComps);
-          }
+        // Shuffle
+        for (var i = candidates.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var temp = candidates[i]; candidates[i] = candidates[j]; candidates[j] = temp;
         }
 
-        // Step 5: Take the required count
-        var questions = filtered.slice(0, count);
+        var questions = candidates.slice(0, Math.min(count, candidates.length));
+        this._initSession(config, questions, timePerQ);
+      },
 
-        // Step 6: SCIENCE — Interleaving (if enabled and session has mixed types)
-        if (useInterleaving && type === 'mixed') {
-          questions = Interleaver.interleave(questions);
-        } else {
-          // Light shuffle within selection (keep SRS/deliberate priority but add variety)
-          for (var i = questions.length - 1; i > 0; i--) {
-            var j = Math.floor(Math.random() * (i + 1));
-            var temp = questions[i]; questions[i] = questions[j]; questions[j] = temp;
-          }
-        }
-
+      /**
+       * Initialize session object with given questions
+       */
+      _initSession: function(config, questions, timePerQ) {
         this.current = {
           config: config,
-          type: type,
-          level: level,
-          role: role,
+          type: config.type,
+          level: config.level,
+          role: config.role,
           company: config.company || '',
           industry: config.industry || '',
           difficulty: difficulty,

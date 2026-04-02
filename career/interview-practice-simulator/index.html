@@ -1389,18 +1389,41 @@
           questionCount: document.getElementById('ims-qcount').value,
           timePerQuestion: document.getElementById('ims-time').value
         };
-        SessionManager.create(config);
+        // SessionManager.create is now async (calls AI for questions)
+        var startBtn = document.getElementById('ims-start-btn');
+        startBtn.disabled = true;
+        startBtn.textContent = 'Generating questions...';
+
         switchTab('practice');
-        hideEl(document.getElementById('ims-practice-empty'));
-        window.showEl(document.getElementById('ims-practice-active'));
+        document.getElementById('ims-practice-empty').innerHTML =
+          '<div class="ims-empty-icon">&#129504;</div>' +
+          '<div class="ims-empty-text" id="ims-loading-status">Generating personalized interview questions with AI...</div>';
 
-        // Init WPM tracker for this session
-        if (typeof WPMTracker !== 'undefined') WPMTracker.start();
+        SessionManager.create(config, function(status) {
+          var statusEl = document.getElementById('ims-loading-status');
+          if (statusEl) statusEl.textContent = status;
+        }).then(function(session) {
+          startBtn.disabled = false;
+          startBtn.textContent = 'Start Practice Session';
 
-        // Render delivery tips for this interview type
-        if (typeof renderDeliveryTips === 'function') renderDeliveryTips(config.type);
+          if (!session || !session.questions || session.questions.length === 0) {
+            document.getElementById('ims-practice-empty').innerHTML =
+              '<div class="ims-empty-icon">&#128533;</div>' +
+              '<div class="ims-empty-text">Could not generate questions. Please sign in and try again.</div>';
+            return;
+          }
 
-        renderQuestion();
+          hideEl(document.getElementById('ims-practice-empty'));
+          window.showEl(document.getElementById('ims-practice-active'));
+
+          // Init WPM tracker for this session
+          if (typeof WPMTracker !== 'undefined') WPMTracker.start();
+
+          // Render delivery tips for this interview type
+          if (typeof renderDeliveryTips === 'function') renderDeliveryTips(config.type);
+
+          renderQuestion();
+        });
       });
 
       // Submit answer (handles both freeform and guided STAR modes)

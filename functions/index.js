@@ -109,6 +109,88 @@ export const aiGenerate = onCall(
 );
 
 /**
+ * Generate Interview Questions — AI creates tailored questions in real-time.
+ * Every session is unique, personalized to the user's role, company, level.
+ *
+ * Client usage:
+ *   const result = await firebase.functions().httpsCallable('generateQuestions')({
+ *     role: 'Software Engineer',
+ *     company: 'Google',
+ *     level: 'senior',
+ *     type: 'behavioral',
+ *     industry: 'Technology',
+ *     count: 5,
+ *     difficulty: 3
+ *   });
+ *   // Returns: { questions: [{ q, f, c, why }], source: 'ai' }
+ */
+export const generateQuestions = onCall(
+  { region: "us-central1", cors: true },
+  async (request) => {
+    const auth = requireAuth(request);
+    const { role, company, level, type, industry, count, difficulty } = request.data;
+
+    if (!role && !type) {
+      throw new HttpsError("invalid-argument", "Please provide a role or interview type.");
+    }
+
+    const numQuestions = Math.min(Math.max(parseInt(count) || 5, 1), 15);
+    const diffLabel = ["", "easy", "medium", "hard", "expert"][parseInt(difficulty) || 2];
+    const typeLabel = type || "behavioral";
+    const levelLabel = level || "mid";
+
+    // Check usage (20 sessions/day for free tier)
+    const usage = await checkAndIncrementUsage(auth.uid, "interview-questions", 20);
+
+    const prompt = `You are an expert interview coach. Generate exactly ${numQuestions} unique ${typeLabel} interview questions for a ${levelLabel}-level ${role || "professional"}${company ? " applying at " + company : ""}${industry ? " in the " + industry + " industry" : ""}.
+
+Difficulty: ${diffLabel}
+
+For each question, provide a JSON array with these fields:
+- "q": the interview question (specific, realistic, what real interviewers ask)
+- "f": answer framework hint (STAR method for behavioral, structured approach for technical, etc.) — 1-2 sentences
+- "c": competency being tested (one of: leadership, problem-solving, teamwork, communication, adaptability, technical, customer-focus, conflict-resolution, initiative, analytical)
+- "why": why interviewers ask this — what they look for in a strong answer (1-2 sentences)
+
+${typeLabel === "behavioral" ? "Use STAR-method format questions (Tell me about a time when...)." : ""}
+${typeLabel === "technical" ? "Include system design, architecture, and domain-specific questions for " + (role || "the role") + "." : ""}
+${typeLabel === "caseStudy" ? "Include market sizing, business strategy, and analytical framework questions." : ""}
+${typeLabel === "situational" ? "Use hypothetical scenarios (What would you do if...)." : ""}
+${company ? "Tailor questions to " + company + "'s known interview style and values." : ""}
+
+Return ONLY a valid JSON array, no markdown, no explanation. Example:
+[{"q":"Tell me about...","f":"STAR: Focus on...","c":"leadership","why":"Tests your ability to..."}]`;
+
+    // Sanitize
+    const cleanPrompt = sanitizeInput(prompt, { maxLength: 3000 });
+
+    // TODO: Replace with actual AI call when API key is configured
+    // import { OpenRouterClient } from "@teamzlab/cloud-kit";
+    // const ai = new OpenRouterClient({ apiKey: process.env.OPENROUTER_API_KEY });
+    // const result = await ai.chat({
+    //   model: "anthropic/claude-sonnet-4",
+    //   messages: [{ role: "user", content: cleanPrompt }],
+    //   maxTokens: 2000
+    // });
+    // try {
+    //   const questions = JSON.parse(result.content);
+    //   return { questions, source: "ai", usage };
+    // } catch (e) {
+    //   return { questions: [], source: "ai-parse-error", usage, raw: result.content };
+    // }
+
+    // Placeholder: return empty until AI provider configured
+    return {
+      questions: [],
+      source: "not-configured",
+      usage,
+      configured: false,
+      message: "AI backend not configured. Add OPENROUTER_API_KEY to Firebase secrets and uncomment the AI call above."
+    };
+  }
+);
+
+/**
  * Get user profile + usage stats
  *
  * Client usage:
