@@ -20,6 +20,22 @@
  */
 
     /* ========================================================================
+     * LOCAL STORAGE + optional Firestore sync (shared/js/user-data-firestore.js)
+     * ======================================================================== */
+    function imsPersistStorageKey(storageKey, valueOrNull) {
+      try {
+        if (valueOrNull === null || valueOrNull === undefined) {
+          localStorage.removeItem(storageKey);
+        } else {
+          localStorage.setItem(storageKey, valueOrNull);
+        }
+      } catch (e) {}
+      if (typeof TeamzUserData !== 'undefined' && TeamzUserData.scheduleInterviewSimulatorSave) {
+        TeamzUserData.scheduleInterviewSimulatorSave();
+      }
+    }
+
+    /* ========================================================================
      * ROLE DETECTION
      * ======================================================================== */
     function detectRoleCategory(role) {
@@ -76,9 +92,7 @@
       },
 
       save: function() {
-        try {
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.cards));
-        } catch(e) {}
+        imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(this.cards));
       },
 
       getCard: function(questionId) {
@@ -574,7 +588,8 @@
 
         var statusFn = onStatus || function() {};
 
-        // Try AI-generated questions first (requires login)
+        // Try AI-generated questions first for signed-in users.
+        // Logged-out users should still be able to practice with the fallback bank.
         return new Promise(function(resolve) {
           if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn()) {
             statusFn('Generating personalized questions with AI...');
@@ -585,6 +600,9 @@
               level: level,
               type: type === 'mixed' ? 'mixed (behavioral + technical + situational)' : type,
               industry: config.industry || '',
+              jobDescription: (config.jobDescription && String(config.jobDescription).trim()) || '',
+              jobPostUrl: (config.jobPostUrl && String(config.jobPostUrl).trim()) || '',
+              companyUrl: (config.companyUrl && String(config.companyUrl).trim()) || '',
               count: count,
               difficulty: difficulty
             }).then(function(result) {
@@ -616,19 +634,9 @@
               resolve(self.current);
             });
           } else {
-            // Not logged in — show login prompt, then try again
-            if (typeof TeamzAuth !== 'undefined') {
-              TeamzAuth.requireAuth(function(user) {
-                statusFn('Signed in! Generating questions...');
-                // Retry with auth
-                self.create(config, onStatus).then(resolve);
-              });
-            } else {
-              // No auth module — use fallback
-              statusFn('Sign in for AI-generated questions. Using practice questions...');
-              self._createFromFallback(config, count, timePerQ);
-              resolve(self.current);
-            }
+            statusFn('Using free practice questions. Sign in for AI-generated sessions.');
+            self._createFromFallback(config, count, timePerQ);
+            resolve(self.current);
           }
         });
       },
@@ -645,7 +653,17 @@
           if (type !== 'mixed' && t !== type) return;
           Object.keys(QUESTION_BANK[t]).forEach(function(sub) {
             QUESTION_BANK[t][sub].forEach(function(q) {
-              candidates.push(q);
+              candidates.push({
+                id: q.id,
+                q: q.q,
+                f: q.f,
+                c: q.c,
+                d: q.d,
+                a: q.a || '',
+                why: q.why || '',
+                type: t,
+                sub: sub
+              });
             });
           });
         });
@@ -655,7 +673,17 @@
           Object.keys(QUESTION_BANK).forEach(function(t) {
             Object.keys(QUESTION_BANK[t]).forEach(function(sub) {
               QUESTION_BANK[t][sub].forEach(function(q) {
-                candidates.push(q);
+                candidates.push({
+                  id: q.id,
+                  q: q.q,
+                  f: q.f,
+                  c: q.c,
+                  d: q.d,
+                  a: q.a || '',
+                  why: q.why || '',
+                  type: t,
+                  sub: sub
+                });
               });
             });
           });
@@ -667,6 +695,13 @@
           var temp = candidates[i]; candidates[i] = candidates[j]; candidates[j] = temp;
         }
 
+        if (type === 'mixed') {
+          candidates = Interleaver.interleave(candidates);
+        }
+
+        var weakCompetencies = DeliberatePractice.getWeakCompetencies(3);
+        candidates = DeliberatePractice.focusOnWeakness(candidates, weakCompetencies);
+
         var questions = candidates.slice(0, Math.min(count, candidates.length));
         this._initSession(config, questions, timePerQ);
       },
@@ -675,6 +710,9 @@
        * Initialize session object with given questions
        */
       _initSession: function(config, questions, timePerQ) {
+        var diff = parseInt(config.difficulty, 10) || 2;
+        var useInterleaving = config.type === 'mixed';
+        var useSRS = true;
         this.current = {
           config: config,
           type: config.type,
@@ -682,7 +720,7 @@
           role: config.role,
           company: config.company || '',
           industry: config.industry || '',
-          difficulty: difficulty,
+          difficulty: diff,
           timePerQuestion: timePerQ,
           interleaved: useInterleaving,
           smartMode: useSRS,
@@ -809,9 +847,7 @@
         };
       },
       save: function() {
-        try {
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
-        } catch(e) {}
+        imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(this.data));
       },
       addSession: function(session) {
         var d = this.data;
@@ -904,9 +940,7 @@
         } else {
           bookmarks.push(questionId);
         }
-        try {
-          localStorage.setItem(this.BOOKMARK_KEY, JSON.stringify(bookmarks));
-        } catch(e) {}
+        imsPersistStorageKey(this.BOOKMARK_KEY, JSON.stringify(bookmarks));
       },
       isBookmarked: function(questionId) {
         return this.getBookmarks().indexOf(questionId) >= 0;
@@ -921,7 +955,11 @@
         this.data = this.defaultData();
         this.save();
         SRS.reset();
-        try { localStorage.removeItem(this.BOOKMARK_KEY); } catch(e) {}
+        imsPersistStorageKey(this.BOOKMARK_KEY, null);
+        imsPersistStorageKey('tz_ims_pitches', null);
+        imsPersistStorageKey('tz_ims_journal', null);
+        imsPersistStorageKey('tz_ims_company_prep', null);
+        imsPersistStorageKey('tz_ims_projects', null);
       }
     };
 
@@ -1295,6 +1333,17 @@
     function renderProgressTab() {
       var stats = Progress.getStats();
 
+      var syncBanner = document.getElementById('ims-cloud-sync-banner');
+      if (syncBanner) {
+        if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn && TeamzAuth.isLoggedIn()) {
+          syncBanner.textContent =
+            'Signed in: interview progress, bookmarks, journal, pitch drafts, company prep, and saved projects sync to your account when you use this site. Data is also kept in this browser for speed.';
+        } else {
+          syncBanner.textContent =
+            'Sign in with Google to save interview progress to your account and sync across devices (Firestore). Until then, data stays only in this browser.';
+        }
+      }
+
       var statsEl = document.getElementById('ims-stats-grid');
       statsEl.innerHTML =
         '<div class="ims-stat-card"><div class="ims-stat-value">' + stats.totalSessions + '</div><div class="ims-stat-label">Sessions</div></div>' +
@@ -1530,7 +1579,7 @@
             score: score,
             savedAt: new Date().toISOString()
           };
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+          imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(data));
         } catch(e) {}
       },
 
@@ -1584,9 +1633,7 @@
       },
 
       save: function(entries) {
-        try {
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(entries));
-        } catch(e) {}
+        imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(entries));
       },
 
       addEntry: function(entry) {
@@ -1698,7 +1745,7 @@
         try {
           var data = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '{}');
           data[company.toLowerCase().trim()] = prepData;
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+          imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(data));
         } catch(e) {}
       }
     };
@@ -1895,7 +1942,7 @@
             projects.unshift(project);
           }
           if (projects.length > 20) projects = projects.slice(0, 20);
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects));
+          imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(projects));
         } catch(e) {}
         return project;
       },
@@ -1909,7 +1956,7 @@
 
       delete: function(id) {
         var projects = this.loadAll().filter(function(p) { return p.id !== id; });
-        try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(projects)); } catch(e) {}
+        imsPersistStorageKey(this.STORAGE_KEY, JSON.stringify(projects));
       }
     };
 
