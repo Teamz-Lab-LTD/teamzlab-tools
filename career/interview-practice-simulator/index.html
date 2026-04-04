@@ -2367,9 +2367,11 @@
         startBtn.textContent = 'Generating questions...';
 
         switchTab('practice');
+        window.showEl(document.getElementById('ims-practice-empty'));
+        hideEl(document.getElementById('ims-practice-active'));
         document.getElementById('ims-practice-empty').innerHTML =
           '<div class="ims-empty-icon">&#129504;</div>' +
-          '<div class="ims-empty-text" id="ims-loading-status">Generating personalized interview questions with AI...</div>';
+          '<div class="ims-empty-text" id="ims-loading-status">Preparing your practice session...</div>';
 
         SessionManager.create(config, function(status) {
           var statusEl = document.getElementById('ims-loading-status');
@@ -2381,7 +2383,7 @@
           if (!session || !session.questions || session.questions.length === 0) {
             document.getElementById('ims-practice-empty').innerHTML =
               '<div class="ims-empty-icon">&#128533;</div>' +
-              '<div class="ims-empty-text">Could not generate questions. Please sign in and try again.</div>';
+              '<div class="ims-empty-text">Could not generate questions. Try again in a moment.</div>';
             return;
           }
 
@@ -2423,52 +2425,57 @@
           window.showToast('Add a job role or paste a job description first.');
           return;
         }
-        if (typeof TeamzAuth === 'undefined') {
-          window.showToast('Sign in to generate a prep plan.');
-          return;
-        }
-        TeamzAuth.requireAuth(function() {
-          btn.disabled = true;
-          btn.textContent = 'Generating plan...';
-          var wrap = document.getElementById('ims-prep-plan-result-wrap');
-          var out = document.getElementById('ims-prep-plan-result');
-          var prompt =
-            'You are an expert interview coach. Create a practical interview preparation plan for this candidate.\n\n' +
-            'CONTEXT (you cannot browse the web; URLs are labels only):\n' +
-            '- Interview format focus: ' + ctx.typeLabel + ' (value: ' + ctx.type + ')\n' +
-            '- Level: ' + ctx.level + '\n' +
-            '- Target role: ' + (ctx.role || 'not specified') + '\n' +
-            '- Company: ' + (ctx.company || 'not specified') + '\n' +
-            '- Industry: ' + (ctx.industry || 'not specified') + '\n' +
-            (ctx.jobPostUrl ? '- Job posting URL (reference): ' + ctx.jobPostUrl + '\n' : '') +
-            (ctx.companyUrl ? '- Company website URL (reference): ' + ctx.companyUrl + '\n' : '') +
-            (ctx.jobDescription ? '\nJOB DESCRIPTION (prioritize skills, tools, seniority from this text):\n' + ctx.jobDescription + '\n' : '') +
-            '\nOUTPUT — plain text with headings and bullet lines (no JSON). Include:\n' +
-            '1) Overview (2–4 short sentences)\n' +
-            '2) Seven-day plan: label Day 1 through Day 7, each with 3–5 concrete bullet tasks\n' +
-            '3) Topics to study or refresh (bulleted)\n' +
-            '4) How to use this app: Practice tab for timed mocks, Pitch tab, Negotiate tab, Projects tab for deep-dive stories, Questions tab to browse, Progress for streaks; use Company prep when a company is set\n' +
-            '5) Gaps and risks to close before the interview (bulleted)\n' +
-            'Keep under 900 words. Be specific when the job description lists requirements.\n';
+        btn.disabled = true;
+        btn.textContent = 'Generating plan...';
+        var wrap = document.getElementById('ims-prep-plan-result-wrap');
+        var out = document.getElementById('ims-prep-plan-result');
+        var prompt =
+          'You are an expert interview coach. Create a practical interview preparation plan for this candidate.\n\n' +
+          'CONTEXT (you cannot browse the web; URLs are labels only):\n' +
+          '- Interview format focus: ' + ctx.typeLabel + ' (value: ' + ctx.type + ')\n' +
+          '- Level: ' + ctx.level + '\n' +
+          '- Target role: ' + (ctx.role || 'not specified') + '\n' +
+          '- Company: ' + (ctx.company || 'not specified') + '\n' +
+          '- Industry: ' + (ctx.industry || 'not specified') + '\n' +
+          (ctx.jobPostUrl ? '- Job posting URL (reference): ' + ctx.jobPostUrl + '\n' : '') +
+          (ctx.companyUrl ? '- Company website URL (reference): ' + ctx.companyUrl + '\n' : '') +
+          (ctx.jobDescription ? '\nJOB DESCRIPTION (prioritize skills, tools, seniority from this text):\n' + ctx.jobDescription + '\n' : '') +
+          '\nOUTPUT — plain text with headings and bullet lines (no JSON). Include:\n' +
+          '1) Overview (2–4 short sentences)\n' +
+          '2) Seven-day plan: label Day 1 through Day 7, each with 3–5 concrete bullet tasks\n' +
+          '3) Topics to study or refresh (bulleted)\n' +
+          '4) How to use this app: Practice tab for timed mocks, Pitch tab, Negotiate tab, Projects tab for deep-dive stories, Questions tab to browse, Progress for streaks; use Company prep when a company is set\n' +
+          '5) Gaps and risks to close before the interview (bulleted)\n' +
+          'Keep under 900 words. Be specific when the job description lists requirements.\n';
 
+        function finishPrepPlan(text, toastText) {
+          btn.disabled = false;
+          btn.textContent = 'Generate prep plan';
+          out.textContent = text;
+          window.showEl(wrap);
+          window.showToast(toastText);
+        }
+
+        if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn && TeamzAuth.isLoggedIn() && TeamzAuth.callFunction) {
           TeamzAuth.callFunction('aiGenerate', {
             feature: 'interview-prep-plan',
             prompt: prompt,
             options: { maxTokens: 1200, dailyLimit: 5 }
           }).then(function(result) {
-            btn.disabled = false;
-            btn.textContent = 'Generate prep plan';
-            var text = result.text != null ? result.text : result;
+            var text = result && result.text != null ? result.text : result;
+            if (result && result.configured === false) {
+              finishPrepPlan(buildLocalPrepPlan(ctx), 'AI unavailable. Showing structured prep plan.');
+              return;
+            }
             if (typeof text !== 'string') text = JSON.stringify(text);
-            out.textContent = text;
-            window.showEl(wrap);
-            window.showToast('Prep plan ready.');
+            finishPrepPlan(text, 'Prep plan ready.');
           }).catch(function() {
-            btn.disabled = false;
-            btn.textContent = 'Generate prep plan';
-            window.showToast('Could not generate plan. Try again when signed in.');
+            finishPrepPlan(buildLocalPrepPlan(ctx), 'Using built-in prep plan.');
           });
-        }, { feature: 'interview-prep-plan', dailyLimit: 5 });
+          return;
+        }
+
+        finishPrepPlan(buildLocalPrepPlan(ctx), 'Using built-in prep plan.');
       });
 
       // Submit answer (handles both freeform and guided STAR modes)
@@ -2547,20 +2554,14 @@
         var answered = session.answers.filter(function(a) { return !a.skipped; });
         if (answered.length === 0) { window.showToast('No answered questions to analyze.'); return; }
 
-        // Gate behind auth — if logged in, use cloud AI; if not, show login modal
-        if (typeof TeamzAuth !== 'undefined') {
-          TeamzAuth.requireAuth(function(user) {
-            btn.disabled = true;
-            btn.textContent = 'Generating AI Feedback...';
-            _runAIFeedback(btn, session, answered, true);
-          }, { feature: 'interview-feedback', dailyLimit: 10 });
-          return;
-        }
-
-        // Fallback: no auth module loaded — use client-side only
         btn.disabled = true;
         btn.textContent = 'Generating AI Feedback...';
-        _runAIFeedback(btn, session, answered, false);
+        _runAIFeedback(
+          btn,
+          session,
+          answered,
+          !!(typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn && TeamzAuth.isLoggedIn() && TeamzAuth.callFunction)
+        );
       });
 
       function _runAIFeedback(btn, session, answered, useCloud) {
@@ -2571,7 +2572,7 @@
           if (processed >= answered.length) {
             btn.disabled = false;
             btn.textContent = 'Get AI Feedback';
-            window.showToast('AI feedback generated for all answers!');
+            window.showToast(useCloud ? 'Coach feedback ready.' : 'Built-in feedback ready.');
             return;
           }
           var a = answered[processed];
@@ -2607,11 +2608,20 @@
               prompt: prompt,
               options: { maxTokens: 300 }
             }).then(function(result) {
+              if (result && result.configured === false) {
+                var fallback = generateRuleFeedback(a);
+                var fallbackEl = document.getElementById('ims-ai-fb-' + idx);
+                if (fallbackEl) {
+                  fallbackEl.innerHTML = '<div class="ims-ai-feedback"><strong>Feedback:</strong><br>' + escapeHtml(fallback) + '</div>';
+                }
+                processed++;
+                processNext();
+                return;
+              }
               var text = result.text || result;
               var fbEl = document.getElementById('ims-ai-fb-' + idx);
               if (fbEl) {
-                var source = result.configured === false ? '' : ' (AI)';
-                fbEl.innerHTML = '<div class="ims-ai-feedback"><strong>AI Coach Feedback' + source + ':</strong><br>' + escapeHtml(typeof text === 'string' ? text : JSON.stringify(text)) + '</div>';
+                fbEl.innerHTML = '<div class="ims-ai-feedback"><strong>AI Coach Feedback (AI):</strong><br>' + escapeHtml(typeof text === 'string' ? text : JSON.stringify(text)) + '</div>';
               }
               processed++;
               processNext();
@@ -2649,8 +2659,14 @@
       // Reset progress
       document.getElementById('ims-reset-progress-btn').addEventListener('click', function() {
         Progress.reset();
+        renderBankTab();
         renderProgressTab();
-        window.showToast('All progress data has been reset.');
+        renderJournalList();
+        renderJournalPatterns();
+        renderSavedProjectsList();
+        document.getElementById('ims-why-company').value = '';
+        hideEl(document.getElementById('ims-company-prep'));
+        window.showToast('All interview data has been reset.');
       });
 
       // --- "Why Is This Asked?" toggle ---
@@ -2729,6 +2745,7 @@
             if (typeof CompanyPrep !== 'undefined') {
               var checklistEl = document.getElementById('ims-checklist');
               var saved = CompanyPrep.load(this.value);
+              document.getElementById('ims-why-company').value = saved.whyAnswer || '';
               checklistEl.innerHTML = '';
               CompanyPrep.checklist.forEach(function(item) {
                 var div = document.createElement('div');
@@ -2752,6 +2769,16 @@
           } else {
             hideEl(prepEl);
           }
+        });
+      }
+      var whyCompanyInput = document.getElementById('ims-why-company');
+      if (whyCompanyInput) {
+        whyCompanyInput.addEventListener('input', function() {
+          if (typeof CompanyPrep === 'undefined') return;
+          if (!companyInput || !companyInput.value.trim()) return;
+          var data = CompanyPrep.load(companyInput.value);
+          data.whyAnswer = whyCompanyInput.value;
+          CompanyPrep.save(companyInput.value, data);
         });
       }
 
@@ -2836,31 +2863,35 @@
 
       // --- Pitch: AI Critique ---
       document.getElementById('ims-pitch-ai-btn').addEventListener('click', function() {
+        var btn = document.getElementById('ims-pitch-ai-btn');
         var text = document.getElementById('ims-pitch-preview-text').textContent;
         if (!text || text.indexOf('Start filling') >= 0) { window.showToast('Write your pitch first.'); return; }
-        if (typeof TeamzAuth !== 'undefined') {
-          TeamzAuth.requireAuth(function(user) {
-            var btn = document.getElementById('ims-pitch-ai-btn');
-            btn.disabled = true;
-            btn.textContent = 'Analyzing...';
-            TeamzAuth.callFunction('aiGenerate', {
-              feature: 'interview-pitch',
-              prompt: 'You are an interview coach. Critique this "Tell me about yourself" pitch and suggest 3 specific improvements:\n\n' + text,
-              options: { maxTokens: 300 }
-            }).then(function(result) {
-              var aiEl = document.getElementById('ims-pitch-ai-result');
-              aiEl.innerHTML = '<div class="ims-ai-feedback"><strong>AI Coach Feedback:</strong><br>' + escapeHtml(result.text || result) + '</div>';
-              btn.disabled = false;
-              btn.textContent = 'Get AI Critique';
-            }).catch(function() {
-              window.showToast('AI feedback unavailable. Try again later.');
-              btn.disabled = false;
-              btn.textContent = 'Get AI Critique';
-            });
-          }, { feature: 'interview-pitch', dailyLimit: 5 });
-        } else {
-          window.showToast('Sign in for AI critique.');
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+        var aiEl = document.getElementById('ims-pitch-ai-result');
+        function finishPitchFeedback(text, toastText, label) {
+          aiEl.innerHTML = '<div class="ims-ai-feedback"><strong>' + label + ':</strong><br>' + escapeHtml(text) + '</div>';
+          btn.disabled = false;
+          btn.textContent = 'Get AI Critique';
+          if (toastText) window.showToast(toastText);
         }
+        if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn && TeamzAuth.isLoggedIn() && TeamzAuth.callFunction) {
+          TeamzAuth.callFunction('aiGenerate', {
+            feature: 'interview-pitch',
+            prompt: 'You are an interview coach. Critique this "Tell me about yourself" pitch and suggest 3 specific improvements:\n\n' + text,
+            options: { maxTokens: 300 }
+          }).then(function(result) {
+            if (result && result.configured === false) {
+              finishPitchFeedback(buildLocalPitchCritique(text, currentPitchType), 'AI unavailable. Showing built-in critique.', 'Coach Feedback');
+              return;
+            }
+            finishPitchFeedback(result.text || String(result), null, 'AI Coach Feedback');
+          }).catch(function() {
+            finishPitchFeedback(buildLocalPitchCritique(text, currentPitchType), 'Using built-in critique.', 'Coach Feedback');
+          });
+          return;
+        }
+        finishPitchFeedback(buildLocalPitchCritique(text, currentPitchType), 'Using built-in critique.', 'Coach Feedback');
       });
 
       // --- Pitch: Copy ---
@@ -3037,21 +3068,34 @@
       document.getElementById('ims-negotiate-ai-btn').addEventListener('click', function() {
         var response = document.getElementById('ims-negotiate-response').value.trim();
         if (!response) { window.showToast('Write your response first.'); return; }
-        if (typeof TeamzAuth !== 'undefined') {
-          TeamzAuth.requireAuth(function() {
-            var btn = document.getElementById('ims-negotiate-ai-btn');
-            btn.disabled = true; btn.textContent = 'Analyzing...';
-            var scenarioText = document.getElementById('ims-negotiate-prompt-text').textContent;
-            TeamzAuth.callFunction('aiGenerate', {
-              feature: 'interview-negotiate',
-              prompt: 'You are a salary negotiation coach. The scenario: "' + scenarioText + '"\n\nCandidate\'s response: "' + response + '"\n\nRate this response and give 3 specific improvements. Be direct and actionable.',
-              options: { maxTokens: 300 }
-            }).then(function(result) {
-              document.getElementById('ims-negotiate-ai-result').innerHTML = '<div class="ims-ai-feedback"><strong>AI Coach:</strong><br>' + escapeHtml(result.text || result) + '</div>';
-              btn.disabled = false; btn.textContent = 'Get AI Coaching';
-            }).catch(function() { btn.disabled = false; btn.textContent = 'Get AI Coaching'; window.showToast('AI unavailable.'); });
-          }, { feature: 'interview-negotiate', dailyLimit: 5 });
+        var btn = document.getElementById('ims-negotiate-ai-btn');
+        var scenarioText = document.getElementById('ims-negotiate-prompt-text').textContent;
+        var out = document.getElementById('ims-negotiate-ai-result');
+        function finishNegotiationFeedback(text, toastText, label) {
+          out.innerHTML = '<div class="ims-ai-feedback"><strong>' + label + ':</strong><br>' + escapeHtml(text) + '</div>';
+          btn.disabled = false;
+          btn.textContent = 'Get AI Coaching';
+          if (toastText) window.showToast(toastText);
         }
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+        if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn && TeamzAuth.isLoggedIn() && TeamzAuth.callFunction) {
+          TeamzAuth.callFunction('aiGenerate', {
+            feature: 'interview-negotiate',
+            prompt: 'You are a salary negotiation coach. The scenario: "' + scenarioText + '"\n\nCandidate\'s response: "' + response + '"\n\nRate this response and give 3 specific improvements. Be direct and actionable.',
+            options: { maxTokens: 300 }
+          }).then(function(result) {
+            if (result && result.configured === false) {
+              finishNegotiationFeedback(buildLocalNegotiationFeedback(response, scenarioText), 'AI unavailable. Showing built-in coaching.', 'Coach Feedback');
+              return;
+            }
+            finishNegotiationFeedback(result.text || String(result), null, 'AI Coach');
+          }).catch(function() {
+            finishNegotiationFeedback(buildLocalNegotiationFeedback(response, scenarioText), 'Using built-in coaching.', 'Coach Feedback');
+          });
+          return;
+        }
+        finishNegotiationFeedback(buildLocalNegotiationFeedback(response, scenarioText), 'Using built-in coaching.', 'Coach Feedback');
       });
 
       document.getElementById('ims-negotiate-copy-btn').addEventListener('click', function() {
@@ -3104,26 +3148,40 @@
       });
 
       document.getElementById('ims-project-ai-btn').addEventListener('click', function() {
-        if (typeof TeamzAuth !== 'undefined' && typeof ProjectDefense !== 'undefined') {
-          var projectText = '';
-          ProjectDefense.template.fields.forEach(function(f) {
-            var el = document.getElementById('ims-proj-' + f.id);
-            if (el && el.value.trim()) projectText += f.label + ': ' + el.value.trim() + '\n';
-          });
-          if (!projectText) { window.showToast('Fill in your project details first.'); return; }
-          TeamzAuth.requireAuth(function() {
-            var btn = document.getElementById('ims-project-ai-btn');
-            btn.disabled = true; btn.textContent = 'Generating...';
-            TeamzAuth.callFunction('aiGenerate', {
-              feature: 'interview-project',
-              prompt: 'You are a technical interviewer. Based on this project description, generate 5 tough follow-up questions you would ask:\n\n' + projectText,
-              options: { maxTokens: 400 }
-            }).then(function(result) {
-              document.getElementById('ims-project-ai-result').innerHTML = '<div class="ims-ai-feedback"><strong>AI Follow-up Questions:</strong><br>' + escapeHtml(result.text || result) + '</div>';
-              btn.disabled = false; btn.textContent = 'Get AI Follow-up Questions';
-            }).catch(function() { btn.disabled = false; btn.textContent = 'Get AI Follow-up Questions'; window.showToast('AI unavailable.'); });
-          }, { feature: 'interview-project', dailyLimit: 5 });
+        if (typeof ProjectDefense === 'undefined') return;
+        var projectText = '';
+        ProjectDefense.template.fields.forEach(function(f) {
+          var el = document.getElementById('ims-proj-' + f.id);
+          if (el && el.value.trim()) projectText += f.label + ': ' + el.value.trim() + '\n';
+        });
+        if (!projectText) { window.showToast('Fill in your project details first.'); return; }
+        var btn = document.getElementById('ims-project-ai-btn');
+        var out = document.getElementById('ims-project-ai-result');
+        function finishProjectFeedback(text, toastText, label) {
+          out.innerHTML = '<div class="ims-ai-feedback"><strong>' + label + ':</strong><br>' + escapeHtml(text) + '</div>';
+          btn.disabled = false;
+          btn.textContent = 'Get AI Follow-up Questions';
+          if (toastText) window.showToast(toastText);
         }
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+        if (typeof TeamzAuth !== 'undefined' && TeamzAuth.isLoggedIn && TeamzAuth.isLoggedIn() && TeamzAuth.callFunction) {
+          TeamzAuth.callFunction('aiGenerate', {
+            feature: 'interview-project',
+            prompt: 'You are a technical interviewer. Based on this project description, generate 5 tough follow-up questions you would ask:\n\n' + projectText,
+            options: { maxTokens: 400 }
+          }).then(function(result) {
+            if (result && result.configured === false) {
+              finishProjectFeedback(buildLocalProjectFollowUps(projectText), 'AI unavailable. Showing built-in follow-up questions.', 'Follow-up Questions');
+              return;
+            }
+            finishProjectFeedback(result.text || String(result), null, 'AI Follow-up Questions');
+          }).catch(function() {
+            finishProjectFeedback(buildLocalProjectFollowUps(projectText), 'Using built-in follow-up questions.', 'Follow-up Questions');
+          });
+          return;
+        }
+        finishProjectFeedback(buildLocalProjectFollowUps(projectText), 'Using built-in follow-up questions.', 'Follow-up Questions');
       });
 
       // --- Whiteboard ---
@@ -3161,6 +3219,171 @@
         }
       }
     });
+
+    function buildLocalPrepPlan(ctx) {
+      var role = ctx.role || 'your target role';
+      var company = ctx.company || 'your target company';
+      var typeLabel = ctx.typeLabel || 'interview';
+      var topics = [];
+      if (ctx.role) topics.push(ctx.role + ' fundamentals');
+      if (ctx.company) topics.push(ctx.company + ' products, customers, and values');
+      if (ctx.industry) topics.push(ctx.industry + ' trends and challenges');
+      if (ctx.jobDescription) {
+        topics.push('Responsibilities and must-have skills from the pasted job description');
+        if (/system design|architecture|scal/i.test(ctx.jobDescription)) topics.push('System design and scaling trade-offs');
+        if (/stakeholder|cross-functional|communicat/i.test(ctx.jobDescription)) topics.push('Stakeholder communication stories');
+        if (/metric|kpi|analysis|analytical|sql|data/i.test(ctx.jobDescription)) topics.push('Metrics, analysis, and business impact examples');
+      }
+      if (/behavioral/i.test(typeLabel)) topics.push('STAR stories for leadership, conflict, and ownership');
+      if (/technical/i.test(typeLabel)) topics.push('Technical depth, debugging, trade-offs, and architecture');
+      if (/case/i.test(typeLabel)) topics.push('Structured problem solving and market-sizing frameworks');
+      if (/phone/i.test(typeLabel) || /final/i.test(typeLabel)) topics.push('Concise positioning, motivation, and executive presence');
+      topics = topics.filter(function(item, idx, arr) { return arr.indexOf(item) === idx; }).slice(0, 6);
+
+      return [
+        'Overview',
+        'You are preparing for a ' + typeLabel + ' focused on ' + role + (ctx.company ? ' at ' + company : '') + '.',
+        'Use this week to tighten your strongest stories, close the biggest job-fit gaps, and practice under realistic timing.',
+        '',
+        'Day 1',
+        '- Review the job description and highlight the top 5 skills or responsibilities.',
+        '- Match each requirement to one proof point from your experience.',
+        '- Write one strong "Tell me about yourself" answer tailored to ' + role + '.',
+        '',
+        'Day 2',
+        '- Practice 5 timed questions in the Practice tab.',
+        '- Use the Questions tab to bookmark the hardest prompts.',
+        '- Rewrite weak answers using STAR or a structured technical format.',
+        '',
+        'Day 3',
+        '- Build 3 high-signal stories: biggest win, hardest challenge, and a failure you learned from.',
+        '- Add numbers, scope, and outcomes to each story.',
+        '- Review company prep notes and refine your "Why this company?" answer.',
+        '',
+        'Day 4',
+        '- Use the Pitch tab to tighten your opening pitch.',
+        '- Practice speaking at a calm, steady pace with clear transitions.',
+        '- Rehearse answers aloud until they sound natural instead of memorized.',
+        '',
+        'Day 5',
+        '- Run a tougher mock with shorter time limits.',
+        '- Use the Projects tab for a deep-dive story if the role expects technical or portfolio discussion.',
+        '- Prepare 3 thoughtful questions to ask the interviewer.',
+        '',
+        'Day 6',
+        '- Focus on weak areas from recent practice scores.',
+        '- Practice negotiation or compensation responses in the Negotiate tab.',
+        '- Review likely follow-up questions and tighten vague answers.',
+        '',
+        'Day 7',
+        '- Run one final mock session in interview conditions.',
+        '- Review bookmarked questions, your pitch, and company-specific notes.',
+        '- Stop studying early enough to rest and go into the interview composed.',
+        '',
+        'Topics to study or refresh',
+        '- ' + (topics.length ? topics.join('\n- ') : 'Role fundamentals, company research, measurable stories, and concise communication'),
+        '',
+        'How to use this app',
+        '- Practice tab: timed mock sessions and answer scoring',
+        '- Pitch tab: sharpen your introduction and opening narrative',
+        '- Negotiate tab: rehearse offer and compensation responses',
+        '- Projects tab: prepare deep-dive stories with trade-offs and impact',
+        '- Questions tab: browse, filter, and bookmark prompts',
+        '- Progress tab: track scores, patterns, and streaks',
+        '',
+        'Gaps and risks to close before the interview',
+        '- Any story without clear numbers, scope, or business impact',
+        '- Any answer that takes too long to get to the point',
+        '- Any requirement in the job description that you cannot support with a concrete example',
+        '- Weak company knowledge, especially product, values, and role motivation'
+      ].join('\n');
+    }
+
+    function buildLocalPitchCritique(text, pitchType) {
+      if (typeof PitchEngine === 'undefined') {
+        return 'Keep your pitch concise, specific, and aligned to the role. Add one measurable win and a clear reason for your interest.';
+      }
+      var score = PitchEngine.scorePitch(text, pitchType);
+      var strengths = [];
+      var improvements = [];
+      if (score.length >= 20) strengths.push('Your length is close to the target range.');
+      else improvements.push('Tighten the pitch to match the target length more closely.');
+      if (score.structure >= 20) strengths.push('The pitch covers a clear background, current role, and forward-looking goal.');
+      else improvements.push('Add a cleaner structure: background, current work, strongest win, and why this role.');
+      if (score.specificity >= 18) strengths.push('You already include useful specifics that make the pitch credible.');
+      else improvements.push('Add one concrete number or named outcome to make the pitch more memorable.');
+      if (score.confidence >= 18) strengths.push('The wording sounds reasonably direct and confident.');
+      else improvements.push('Use firmer verbs such as "led", "built", "improved", or "delivered" instead of softer wording.');
+      if (!improvements.length) improvements.push('For the next version, make the company-fit sentence even more specific.');
+      return [
+        'Current score: ' + score.total + '/100.',
+        '',
+        'What works',
+        '- ' + strengths.join('\n- '),
+        '',
+        'What to improve',
+        '- ' + improvements.join('\n- '),
+        '',
+        'Rewrite tip',
+        'End with one sentence that connects your strongest past result to the value you can create in the target role.'
+      ].join('\n');
+    }
+
+    function buildLocalNegotiationFeedback(response, scenarioText) {
+      var lower = response.toLowerCase();
+      var strengths = [];
+      var improvements = [];
+      if (/thank|appreciate/.test(lower)) strengths.push('You acknowledge the offer respectfully.');
+      else improvements.push('Open by thanking them for the offer and showing interest before negotiating.');
+      if (/\$|\d/.test(response)) strengths.push('You anchor the discussion with a concrete number or range.');
+      else improvements.push('Use a specific number or range so the conversation has a clear anchor.');
+      if (/market|scope|impact|experience|value/.test(lower)) strengths.push('You give at least one business reason for your ask.');
+      else improvements.push('Justify your ask with market data, scope, experience, or the value you will deliver.');
+      if (/equity|bonus|benefit|review|timeline/.test(lower)) strengths.push('You explore alternatives beyond base salary.');
+      else improvements.push('If salary flexibility is limited, pivot to bonus, equity, benefits, or an accelerated review timeline.');
+      if (!/question|\?/.test(response)) improvements.push('Close with a question that keeps the discussion collaborative.');
+      if (!strengths.length) strengths.push('You are engaging with the scenario instead of avoiding the negotiation.');
+      return [
+        'Scenario',
+        scenarioText,
+        '',
+        'What works',
+        '- ' + strengths.join('\n- '),
+        '',
+        'What to improve',
+        '- ' + improvements.join('\n- '),
+        '',
+        'Next response shape',
+        'Thank them, state your target range, justify it with value or market evidence, and ask what flexibility exists across salary, bonus, equity, or review timing.'
+      ].join('\n');
+    }
+
+    function buildLocalProjectFollowUps(projectText) {
+      var questions = [];
+      if (/scale|user|traffic|latency|performance/i.test(projectText)) {
+        questions.push('If usage doubled next quarter, what part of this project would become the first bottleneck and how would you address it?');
+      }
+      if (/trade-off|decision|architecture|technical/i.test(projectText)) {
+        questions.push('What alternative approach did you reject, and what evidence made you choose the final design?');
+      }
+      if (/team|stakeholder|cross-functional/i.test(projectText)) {
+        questions.push('Where did stakeholders disagree, and how did you align them without slowing delivery?');
+      }
+      if (/metric|impact|result|revenue|cost/i.test(projectText)) {
+        questions.push('Which metric best proved success, and how did you separate project impact from outside factors?');
+      }
+      if (/challenge|problem|incident|risk/i.test(projectText)) {
+        questions.push('What risk did you underestimate early on, and how would you catch it sooner next time?');
+      }
+      if (typeof ProjectDefense !== 'undefined' && ProjectDefense.template && ProjectDefense.template.followUpQuestions) {
+        ProjectDefense.template.followUpQuestions.forEach(function(q) {
+          if (questions.indexOf(q) < 0) questions.push(q);
+        });
+      }
+      return questions.slice(0, 5).map(function(q, idx) {
+        return (idx + 1) + '. ' + q;
+      }).join('\n');
+    }
 
     /* ========================================================================
      * RULE-BASED FEEDBACK GENERATOR (fallback when AI unavailable)
