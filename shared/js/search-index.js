@@ -1708,6 +1708,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Birthday Wishes Generator',d:'Generate heartfelt birthday wishes for family, friends, and loved ones. 200+ messages with beautiful card designs. Copy, download, or share. Free.',h:'/tools/birthday-wishes-generator/'},
   {t:'Body Pose Estimator',d:'Detect body poses in images using AI running in your browser. Free, private, no upload required. Visualize skeleton landmarks for fitness and yoga.',h:'/tools/body-pose-estimator/'},
   {t:'Book Search &amp; ISBN Lookup',d:'Search millions of books by title, author, or ISBN. Get cover images, descriptions, publication details, and preview links. Free, no signup needed.',h:'/tools/book-search/'},
+  {t:'Business Card Maker',d:'Create professional business cards with 10+ templates. Download print-ready PNG, QR code, vCard. Free, private, no signup required.',h:'/tools/business-card-maker/'},
   {t:'Code Typing Practice — Dev Speed Test',d:'Practice typing code in JavaScript, Python, HTML, CSS, Java, and C++. Track WPM and special character accuracy. Free and private in your browser.',h:'/tools/code-typing-practice/'},
   {t:'Color Personality Test',d:'Discover what your color preferences reveal about your personality. Pick colors in 8 questions and get your personality profile. Free, shareable quiz.',h:'/tools/color-personality-test/'},
   {t:'Cookie Consent Banner Generator',d:'Generate a free, GDPR-compliant cookie consent banner with HTML, CSS, and JavaScript. Choose bar, popup, or corner style with theme options.',h:'/tools/cookie-consent-generator/'},
