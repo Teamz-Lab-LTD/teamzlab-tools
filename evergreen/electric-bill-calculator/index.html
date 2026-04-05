@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Electric Bill Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Estimate your monthly electricity bill from appliance usage. Free calculator shows kWh and cost per appliance with energy-saving tips. 100% private.">
+  <meta property="og:title" content="Electric Bill Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Estimate your monthly electricity bill from appliance usage and electricity rate. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/electric-bill-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Electric Bill Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Estimate your monthly electricity bill from appliance usage and electricity rate. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/electric-bill-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .elec-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+    .elec-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .elec-card .elec-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+    .elec-card .elec-val { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .elec-card .elec-unit { font-size: 0.85rem; color: var(--text-muted); }
+    .elec-card.highlight { border-color: var(--heading); }
+    .appliance-list { margin-top: 16px; }
+    .appliance-row { display: grid; grid-template-columns: 1fr 100px 100px 90px 70px; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .appliance-row.header { font-weight: 600; color: var(--heading); font-size: 0.85rem; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    .appliance-row label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text); cursor: pointer; }
+    .appliance-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--heading); }
+    .appliance-row input[type="number"] { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 0.85rem; }
+    .appliance-row .cost-col { font-weight: 600; color: var(--heading); font-size: 0.9rem; text-align: right; }
+    .appliance-row .kwh-col { color: var(--text-muted); font-size: 0.85rem; text-align: right; }
+    .rate-field { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .rate-field label { font-weight: 600; color: var(--heading); font-size: 0.9rem; white-space: nowrap; }
+    .rate-field input { width: 120px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 0.95rem; }
+    .add-custom { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .add-custom input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 0.85rem; }
+    .tips-list { margin-top: 8px; padding-left: 20px; }
+    .tips-list li { margin-bottom: 6px; color: var(--text); font-size: 0.95rem; line-height: 1.6; }
+    @media (max-width: 600px) {
+      .elec-summary { grid-template-columns: 1fr; }
+      .appliance-row { grid-template-columns: 1fr 70px 70px 70px 60px; gap: 4px; font-size: 0.8rem; }
+      .appliance-row.header { font-size: 0.75rem; }
+      .appliance-row input[type="number"] { font-size: 0.8rem; padding: 4px 6px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .add-custom { flex-direction: column; }
+      .add-custom input { width: 100%; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Electric Bill Calculator", "description": "Estimate your monthly electricity bill from appliance usage.", "url": "https://tool.teamzlab.com/evergreen/electric-bill-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Electric Bill Calculator</h1>
+      <p class="tool-description">Estimate your monthly electricity bill based on appliance usage. Select your appliances, enter hours of daily use, and see the cost breakdown per appliance and total monthly bill.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="rate-field">
+        <label for="rate">Electricity Rate:</label>
+        <input type="number" id="rate" value="0.15" min="0.01" max="2" step="0.01">
+        <span style="color:var(--text-muted); font-size:0.85rem;">$/kWh (US avg: $0.15)</span>
+      </div>
+
+      <div class="appliance-list">
+        <div class="appliance-row header">
+          <span>Appliance</span>
+          <span>Watts</span>
+          <span>Hours/Day</span>
+          <span>kWh/mo</span>
+          <span>$/mo</span>
+        </div>
+        <div id="appliance-rows"></div>
+      </div>
+
+      <div class="add-custom">
+        <input type="text" id="custom-name" placeholder="Custom appliance name">
+        <input type="number" id="custom-watts" placeholder="Watts" min="1" max="50000">
+        <button type="button" id="add-custom-btn" class="btn-pill-ghost" style="padding:8px 16px; font-size:0.85rem;">+ Add Appliance</button>
+      </div>
+
+      <div class="tool-actions" style="margin-top:16px;">
+        <button type="button" id="calculate-btn" class="btn-pill tool-calculate-btn">Calculate Bill</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+
+      <div id="result" style="display:none;">
+        <h2>Your Estimated Electric Bill</h2>
+        <div class="elec-summary">
+          <div class="elec-card"><div class="elec-label">Daily Usage</div><div class="elec-val" id="daily-kwh">—</div><div class="elec-unit">kWh/day</div></div>
+          <div class="elec-card"><div class="elec-label">Monthly Usage</div><div class="elec-val" id="monthly-kwh">—</div><div class="elec-unit">kWh/month</div></div>
+          <div class="elec-card highlight"><div class="elec-label">Monthly Bill</div><div class="elec-val" id="monthly-cost">—</div><div class="elec-unit">estimated</div></div>
+        </div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is an Electric Bill Calculator?</h2>
+      <p>An electric bill calculator is a tool that estimates your monthly electricity cost by adding up the energy consumption of individual appliances in your home. Each appliance uses a certain number of watts, and by multiplying wattage by hours of daily use, you get daily kilowatt-hours (kWh). Multiply daily kWh by 30 days and your electricity rate ($/kWh) to get the monthly cost. The average US household uses about 886 kWh per month at a rate of approximately $0.15/kWh, resulting in a bill of around $133 according to the US Energy Information Administration (EIA) 2025 data.</p>
+
+      <h2>Common Appliance Energy Usage</h2>
+      <p>The biggest energy consumers in most homes are heating and cooling systems. A central air conditioner uses 3,000-5,000 watts, while a space heater draws 1,500 watts. A refrigerator runs 24/7 but uses only 150-400 watts on average due to cycling. A clothes dryer uses about 5,000 watts per load. Water heaters are often the second-largest energy expense at 4,000-5,500 watts. LED light bulbs use just 10 watts compared to 60 watts for traditional incandescent bulbs — switching to LED can cut lighting costs by 83%.</p>
+
+      <h2>How to Reduce Your Electric Bill</h2>
+      <p>The most effective way to reduce electricity costs is to address the highest-consuming appliances first. Set your AC thermostat 2 degrees higher in summer to save 6-8% on cooling costs. Use a programmable thermostat to reduce usage when you are away. Switch to LED bulbs throughout your home. Run dishwashers and washing machines with full loads only. Unplug devices with standby power draw — "vampire power" from idle electronics can account for 5-10% of your total bill. Consider Energy Star rated appliances when replacing old equipment — they use 10-50% less energy.</p>
+
+      <h2>Understanding Your Electricity Rate</h2>
+      <p>Electricity rates vary significantly by location and provider. The US national average is approximately $0.15 per kWh, but rates range from $0.10 in states like Louisiana and Idaho to over $0.30 in Hawaii and Connecticut. Many utilities offer time-of-use pricing where rates are lower during off-peak hours (nights and weekends). Running high-wattage appliances like dryers and dishwashers during off-peak hours can reduce costs by 15-25%. Check your utility bill or provider website for your exact rate to get the most accurate estimate from this calculator.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var appliances = [
+        { name: 'Central Air Conditioner', watts: 3500, hours: 8, on: true },
+        { name: 'Refrigerator', watts: 200, hours: 24, on: true },
+        { name: 'Washing Machine', watts: 500, hours: 1, on: true },
+        { name: 'Clothes Dryer', watts: 5000, hours: 1, on: false },
+        { name: 'Television', watts: 100, hours: 5, on: true },
+        { name: 'Desktop Computer', watts: 200, hours: 8, on: true },
+        { name: 'Laptop', watts: 60, hours: 8, on: false },
+        { name: 'LED Lights (10 bulbs)', watts: 100, hours: 8, on: true },
+        { name: 'Oven / Stove', watts: 2500, hours: 1, on: false },
+        { name: 'Dishwasher', watts: 1800, hours: 1, on: false },
+        { name: 'Water Heater', watts: 4500, hours: 3, on: true },
+        { name: 'Space Heater', watts: 1500, hours: 0, on: false },
+        { name: 'Ceiling Fan', watts: 75, hours: 8, on: true },
+        { name: 'Microwave', watts: 1000, hours: 0.5, on: false },
+        { name: 'Hair Dryer', watts: 1500, hours: 0.25, on: false },
+        { name: 'Wi-Fi Router', watts: 10, hours: 24, on: true }
+      ];
+
+      var container = document.getElementById('appliance-rows');
+
+      function renderAppliances() {
+        var html = '';
+        appliances.forEach(function(a, i) {
+          var dailyKwh = a.on ? (a.watts * a.hours / 1000) : 0;
+          var monthlyKwh = dailyKwh * 30;
+          var rate = parseFloat(document.getElementById('rate').value) || 0.15;
+          var monthlyCost = monthlyKwh * rate;
+          html += '<div class="appliance-row">';
+          html += '<label><input type="checkbox" data-idx="' + i + '" ' + (a.on ? 'checked' : '') + '> ' + a.name + '</label>';
+          html += '<input type="number" data-watts="' + i + '" value="' + a.watts + '" min="1" max="50000">';
+          html += '<input type="number" data-hours="' + i + '" value="' + a.hours + '" min="0" max="24" step="0.25">';
+          html += '<span class="kwh-col">' + monthlyKwh.toFixed(1) + '</span>';
+          html += '<span class="cost-col">$' + monthlyCost.toFixed(2) + '</span>';
+          html += '</div>';
+        });
+        container.innerHTML = html;
+        attachRowEvents();
+      }
+
+      function attachRowEvents() {
+        var checks = container.querySelectorAll('input[type="checkbox"]');
+        var watts = container.querySelectorAll('input[data-watts]');
+        var hours = container.querySelectorAll('input[data-hours]');
+        checks.forEach(function(cb) {
+          cb.addEventListener('change', function() {
+            var idx = parseInt(this.dataset.idx);
+            appliances[idx].on = this.checked;
+            renderAppliances();
+          });
+        });
+        watts.forEach(function(inp) {
+          inp.addEventListener('input', function() {
+            var idx = parseInt(this.dataset.watts);
+            appliances[idx].watts = parseFloat(this.value) || 0;
+            renderAppliances();
+          });
+        });
+        hours.forEach(function(inp) {
+          inp.addEventListener('input', function() {
+            var idx = parseInt(this.dataset.hours);
+            appliances[idx].hours = parseFloat(this.value) || 0;
+            renderAppliances();
+          });
+        });
+      }
+
+      renderAppliances();
+
+      /* Add custom appliance */
+      document.getElementById('add-custom-btn').addEventListener('click', function() {
+        var name = document.getElementById('custom-name').value.trim();
+        var watts = parseInt(document.getElementById('custom-watts').value);
+        if (!name || !watts) { window.showToast('Enter appliance name and watts.'); return; }
+        appliances.push({ name: name, watts: watts, hours: 4, on: true });
+        document.getElementById('custom-name').value = '';
+        document.getElementById('custom-watts').value = '';
+        renderAppliances();
+        window.showToast(name + ' added.');
+      });
+
+      /* Rate change triggers re-render */
+      document.getElementById('rate').addEventListener('input', function() {
+        renderAppliances();
+      });
+
+      /* Calculate */
+      document.getElementById('calculate-btn').addEventListener('click', function() {
+        var rate = parseFloat(document.getElementById('rate').value) || 0.15;
+        var totalDailyKwh = 0;
+        appliances.forEach(function(a) {
+          if (a.on) totalDailyKwh += (a.watts * a.hours) / 1000;
+        });
+        var monthlyKwh = totalDailyKwh * 30;
+        var monthlyCost = monthlyKwh * rate;
+
+        document.getElementById('daily-kwh').textContent = totalDailyKwh.toFixed(1);
+        document.getElementById('monthly-kwh').textContent = monthlyKwh.toFixed(0);
+        document.getElementById('monthly-cost').textContent = '$' + monthlyCost.toFixed(2);
+        document.getElementById('result').style.display = 'block';
+      });
+
+      /* Clear */
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('result').style.display = 'none';
+        appliances.forEach(function(a) { a.on = false; a.hours = 0; });
+        document.getElementById('rate').value = '0.15';
+        renderAppliances();
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Electric Bill Calculator' }];
+      var FAQS = [
+        { q: 'How do I calculate my electric bill from appliance usage?', a: 'Multiply each appliance wattage by hours of daily use to get watt-hours. Divide by 1,000 to get kWh. Multiply daily kWh by 30 for monthly usage, then multiply by your electricity rate ($/kWh) to get the monthly cost. Add up all appliances for your total bill.' },
+        { q: 'What is the average electricity rate in the US?', a: 'The US national average electricity rate is approximately $0.15 per kWh as of 2025, according to the EIA. Rates range from about $0.10 in states like Louisiana to over $0.30 in Hawaii. Check your utility bill for your exact rate.' },
+        { q: 'Which appliances use the most electricity?', a: 'Heating and cooling systems are the biggest energy consumers, followed by water heaters, clothes dryers, and ovens. Air conditioners can use 3,000-5,000 watts, while a water heater uses 4,000-5,500 watts. Refrigerators use less per hour but run 24/7.' },
+        { q: 'How can I reduce my electric bill?', a: 'Set AC 2 degrees higher, switch to LED bulbs, use programmable thermostats, run full loads in washers/dishwashers, unplug idle electronics, and consider Energy Star appliances. Time-of-use pricing lets you save by running high-watt appliances during off-peak hours.' },
+        { q: 'What is a kilowatt-hour (kWh)?', a: 'A kilowatt-hour is a unit of energy equal to using 1,000 watts for one hour. For example, a 100-watt light bulb running for 10 hours uses 1 kWh. Your electric bill is based on the total kWh consumed during the billing period.' },
+        { q: 'Is my data private?', a: 'Yes. All calculations run entirely in your browser. No usage data is sent to any server.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'evergreen/solar-panel-calculator', name: 'Solar Panel Calculator', description: 'Estimate solar savings for your home.' },
+        { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal Calculator', description: 'Calculate monthly savings needed.' },
+        { slug: 'evergreen/cost-of-living-calculator', name: 'Cost of Living Calculator', description: 'Compare expenses across cities.' },
+        { slug: 'evergreen/50-30-20-budget-calculator', name: '50/30/20 Budget Calculator', description: 'Plan your budget allocation.' },
+        { slug: 'evergreen/electricity-cost-calculator', name: 'Electricity Cost Calculator', description: 'Calculate electricity costs for any device.' },
+        { slug: 'evergreen/inflation-calculator', name: 'Inflation Calculator', description: 'See how inflation affects purchasing power.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

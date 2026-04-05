@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VO2 Max Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Estimate your VO2 Max from Cooper, 1.5-mile run, Rockport walk, or step tests. Free fitness calculator with age and gender norms. 100% private.">
+  <meta property="og:title" content="VO2 Max Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Estimate your VO2 Max score and fitness level from multiple test methods. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/vo2-max-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="VO2 Max Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Estimate your VO2 Max score and fitness level from multiple test methods. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/vo2-max-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .vo2-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+    .vo2-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .vo2-card .vo2-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+    .vo2-card .vo2-val { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .vo2-card .vo2-unit { font-size: 0.85rem; color: var(--text-muted); }
+    .vo2-card.highlight { border-color: var(--heading); }
+    .vo2-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.85rem; }
+    .vo2-table th, .vo2-table td { padding: 8px 10px; border: 1px solid var(--border); text-align: center; }
+    .vo2-table th { background: var(--surface); color: var(--heading); font-weight: 600; }
+    .vo2-table td { color: var(--text); }
+    .vo2-table tr.active-row { background: var(--surface); font-weight: 600; }
+    .test-fields { display: none; }
+    .test-fields.active { display: block; }
+    .unit-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; max-width: 200px; }
+    .unit-btn { flex: 1; padding: 0.4rem 0.75rem; border: none; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; font-family: inherit; }
+    .unit-btn.active { background: var(--heading); color: var(--bg); }
+    @media (max-width: 600px) {
+      .vo2-results { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .vo2-table { font-size: 0.75rem; }
+      .vo2-table th, .vo2-table td { padding: 6px 4px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "VO2 Max Calculator", "description": "Estimate your VO2 Max score and fitness level from multiple test methods.", "url": "https://tool.teamzlab.com/health/vo2-max-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>VO2 Max Calculator</h1>
+      <p class="tool-description">Estimate your VO2 Max (maximal oxygen uptake) from the Cooper 12-minute run, 1.5-mile run, Rockport walk test, or step test. See your fitness category and percentile for your age and gender.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="tool-field">
+        <label class="tool-label">Units</label>
+        <div class="unit-toggle">
+          <button type="button" class="unit-btn active" id="unit-metric">Metric</button>
+          <button type="button" class="unit-btn" id="unit-imperial">Imperial</button>
+        </div>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-field">
+          <label class="tool-label" for="test-type">Test Method</label>
+          <select id="test-type" class="tool-select">
+            <option value="cooper">Cooper 12-Minute Run Test</option>
+            <option value="mile15">1.5-Mile Run Test</option>
+            <option value="rockport">Rockport Walk Test (1 mile)</option>
+            <option value="step">3-Minute Step Test</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="gender">Gender</label>
+          <select id="gender" class="tool-select">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="age">Age</label>
+          <input type="number" id="age" class="tool-input" placeholder="e.g. 30" min="13" max="80">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="weight" id="weight-label">Weight (kg)</label>
+          <input type="number" id="weight" class="tool-input" placeholder="e.g. 70" min="30" max="300" step="0.1">
+        </div>
+      </div>
+
+      <!-- Cooper Test Fields -->
+      <div id="fields-cooper" class="test-fields active">
+        <div class="tool-grid">
+          <div class="tool-field" style="grid-column: 1 / -1;">
+            <label class="tool-label" for="cooper-distance" id="cooper-label">Distance Covered in 12 Minutes (meters)</label>
+            <input type="number" id="cooper-distance" class="tool-input" placeholder="e.g. 2400" min="0" step="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.5 Mile Test Fields -->
+      <div id="fields-mile15" class="test-fields">
+        <div class="tool-grid">
+          <div class="tool-field">
+            <label class="tool-label" for="mile15-min">Time — Minutes</label>
+            <input type="number" id="mile15-min" class="tool-input" placeholder="e.g. 12" min="0" max="60">
+          </div>
+          <div class="tool-field">
+            <label class="tool-label" for="mile15-sec">Time — Seconds</label>
+            <input type="number" id="mile15-sec" class="tool-input" placeholder="e.g. 30" min="0" max="59">
+          </div>
+        </div>
+      </div>
+
+      <!-- Rockport Walk Test Fields -->
+      <div id="fields-rockport" class="test-fields">
+        <div class="tool-grid">
+          <div class="tool-field">
+            <label class="tool-label" for="rockport-min">Walk Time — Minutes</label>
+            <input type="number" id="rockport-min" class="tool-input" placeholder="e.g. 14" min="0" max="30">
+          </div>
+          <div class="tool-field">
+            <label class="tool-label" for="rockport-sec">Walk Time — Seconds</label>
+            <input type="number" id="rockport-sec" class="tool-input" placeholder="e.g. 30" min="0" max="59">
+          </div>
+          <div class="tool-field">
+            <label class="tool-label" for="rockport-hr">Heart Rate After Walk (bpm)</label>
+            <input type="number" id="rockport-hr" class="tool-input" placeholder="e.g. 140" min="40" max="220">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step Test Fields -->
+      <div id="fields-step" class="test-fields">
+        <div class="tool-grid">
+          <div class="tool-field" style="grid-column: 1 / -1;">
+            <label class="tool-label" for="step-hr">Heart Rate 1 Minute After Step Test (bpm)</label>
+            <input type="number" id="step-hr" class="tool-input" placeholder="e.g. 100" min="40" max="220">
+          </div>
+        </div>
+      </div>
+
+      <div class="tool-actions">
+        <button type="button" id="calculate-btn" class="btn-pill tool-calculate-btn">Calculate VO2 Max</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+
+      <div id="result" style="display:none;">
+        <h2>Your VO2 Max Results</h2>
+        <div class="vo2-results">
+          <div class="vo2-card highlight"><div class="vo2-label">VO2 Max</div><div class="vo2-val" id="vo2-val">—</div><div class="vo2-unit">mL/kg/min</div></div>
+          <div class="vo2-card"><div class="vo2-label">Fitness Category</div><div class="vo2-val" id="category-val">—</div><div class="vo2-unit" id="category-desc"></div></div>
+          <div class="vo2-card"><div class="vo2-label">Percentile</div><div class="vo2-val" id="percentile-val">—</div><div class="vo2-unit">for your age/gender</div></div>
+        </div>
+        <h3 style="margin-top:1.5rem; color:var(--heading);">VO2 Max Norms by Age and Gender</h3>
+        <div id="norms-table"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is VO2 Max?</h2>
+      <p>VO2 Max is the maximum rate of oxygen consumption your body can achieve during intense exercise, measured in milliliters of oxygen per kilogram of body weight per minute (mL/kg/min). It is widely regarded as the gold standard indicator of cardiovascular fitness and aerobic endurance. Higher VO2 Max values indicate a greater capacity to transport and use oxygen during exercise, which correlates strongly with overall health, longevity, and athletic performance. Research published in the Journal of the American Medical Association shows that VO2 Max is one of the strongest predictors of all-cause mortality.</p>
+
+      <h2>VO2 Max Test Methods Explained</h2>
+      <p>The <strong>Cooper 12-Minute Run Test</strong> measures the maximum distance you can cover in 12 minutes of running. The formula converts distance to VO2 Max: (distance in meters - 504.9) / 44.73. The <strong>1.5-Mile Run Test</strong> measures how fast you can run 1.5 miles: VO2 Max = 483 / time in minutes + 3.5. The <strong>Rockport Walk Test</strong> is ideal for beginners — walk 1 mile as fast as possible while recording heart rate and time. The <strong>3-Minute Step Test</strong> uses your recovery heart rate after stepping up and down on a 12-inch bench for 3 minutes at a cadence of 24 steps per minute.</p>
+
+      <h2>How to Improve Your VO2 Max</h2>
+      <p>Improving VO2 Max requires consistent aerobic training. High-intensity interval training (HIIT) is the most effective method — studies show 4x4 minute intervals at 90-95% max heart rate can improve VO2 Max by 5-8% in 8 weeks. Zone 2 training (60-70% max HR) for 150+ minutes per week builds the aerobic base. Combining both HIIT and steady-state cardio produces the best results. Other factors include body composition (lower body fat improves relative VO2 Max), altitude training, and adequate recovery between sessions.</p>
+
+      <h2>VO2 Max Fitness Categories</h2>
+      <p>VO2 Max values are categorized relative to age and gender. For a 30-year-old male, a score below 33 is considered "Poor," 33-36 is "Fair," 37-42 is "Good," 43-48 is "Excellent," and above 48 is "Superior." Elite endurance athletes often exceed 70 mL/kg/min. Women typically have VO2 Max values 15-20% lower than men of the same age due to differences in body composition and hemoglobin levels. VO2 Max naturally declines about 1% per year after age 25, but regular exercise can slow this decline significantly.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var isMetric = true;
+
+      /* VO2 Max norms: [Poor, Fair, Good, Excellent, Superior] thresholds by age group and gender */
+      var norms = {
+        male: {
+          '13-19': [35.0, 38.4, 45.2, 50.9, 55.9],
+          '20-29': [33.0, 36.5, 42.5, 48.0, 53.0],
+          '30-39': [31.5, 35.5, 41.0, 45.0, 49.5],
+          '40-49': [30.2, 33.6, 38.9, 43.8, 48.0],
+          '50-59': [26.1, 30.2, 35.8, 40.9, 45.3],
+          '60-69': [20.5, 26.1, 32.3, 36.5, 41.1],
+          '70+':   [17.5, 22.0, 28.0, 33.0, 37.0]
+        },
+        female: {
+          '13-19': [25.0, 31.0, 35.0, 39.0, 42.0],
+          '20-29': [23.6, 28.9, 33.0, 37.0, 41.0],
+          '30-39': [22.8, 27.0, 31.5, 35.7, 40.0],
+          '40-49': [21.0, 24.5, 29.0, 32.9, 36.9],
+          '50-59': [20.2, 22.8, 27.0, 31.5, 35.7],
+          '60-69': [17.5, 20.2, 24.5, 29.4, 32.3],
+          '70+':   [15.5, 18.0, 22.0, 26.0, 30.0]
+        }
+      };
+
+      function getAgeGroup(age) {
+        if (age < 20) return '13-19';
+        if (age < 30) return '20-29';
+        if (age < 40) return '30-39';
+        if (age < 50) return '40-49';
+        if (age < 60) return '50-59';
+        if (age < 70) return '60-69';
+        return '70+';
+      }
+
+      function getCategory(vo2, gender, age) {
+        var group = getAgeGroup(age);
+        var t = norms[gender][group];
+        if (vo2 < t[0]) return { cat: 'Poor', idx: 0 };
+        if (vo2 < t[1]) return { cat: 'Fair', idx: 1 };
+        if (vo2 < t[2]) return { cat: 'Good', idx: 2 };
+        if (vo2 < t[3]) return { cat: 'Excellent', idx: 3 };
+        return { cat: 'Superior', idx: 4 };
+      }
+
+      function getPercentile(vo2, gender, age) {
+        var group = getAgeGroup(age);
+        var t = norms[gender][group];
+        if (vo2 < t[0]) return Math.round((vo2 / t[0]) * 20);
+        if (vo2 < t[1]) return 20 + Math.round(((vo2 - t[0]) / (t[1] - t[0])) * 20);
+        if (vo2 < t[2]) return 40 + Math.round(((vo2 - t[1]) / (t[2] - t[1])) * 20);
+        if (vo2 < t[3]) return 60 + Math.round(((vo2 - t[2]) / (t[3] - t[2])) * 20);
+        if (vo2 < t[4]) return 80 + Math.round(((vo2 - t[3]) / (t[4] - t[3])) * 15);
+        return Math.min(99, 95 + Math.round(((vo2 - t[4]) / t[4]) * 40));
+      }
+
+      function buildNormsTable(gender, age) {
+        var group = getAgeGroup(age);
+        var groups = Object.keys(norms[gender]);
+        var cats = ['Poor', 'Fair', 'Good', 'Excellent', 'Superior'];
+        var html = '<table class="vo2-table"><thead><tr><th>Age Group</th>';
+        cats.forEach(function(c) { html += '<th>' + c + '</th>'; });
+        html += '</tr></thead><tbody>';
+        groups.forEach(function(g) {
+          var t = norms[gender][g];
+          var isActive = g === group;
+          html += '<tr' + (isActive ? ' class="active-row"' : '') + '>';
+          html += '<td>' + g + '</td>';
+          html += '<td>&lt; ' + t[0] + '</td>';
+          html += '<td>' + t[0] + ' - ' + t[1] + '</td>';
+          html += '<td>' + t[1] + ' - ' + t[2] + '</td>';
+          html += '<td>' + t[2] + ' - ' + t[3] + '</td>';
+          html += '<td>&gt; ' + t[3] + '</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table>';
+        return html;
+      }
+
+      /* Unit toggle */
+      document.getElementById('unit-metric').addEventListener('click', function() {
+        isMetric = true;
+        this.classList.add('active');
+        document.getElementById('unit-imperial').classList.remove('active');
+        document.getElementById('weight-label').textContent = 'Weight (kg)';
+        document.getElementById('cooper-label').textContent = 'Distance Covered in 12 Minutes (meters)';
+      });
+      document.getElementById('unit-imperial').addEventListener('click', function() {
+        isMetric = false;
+        this.classList.add('active');
+        document.getElementById('unit-metric').classList.remove('active');
+        document.getElementById('weight-label').textContent = 'Weight (lbs)';
+        document.getElementById('cooper-label').textContent = 'Distance Covered in 12 Minutes (yards)';
+      });
+
+      /* Test type toggle */
+      document.getElementById('test-type').addEventListener('change', function() {
+        var all = document.querySelectorAll('.test-fields');
+        for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
+        var target = document.getElementById('fields-' + this.value);
+        if (target) target.classList.add('active');
+      });
+
+      /* Calculate */
+      document.getElementById('calculate-btn').addEventListener('click', function() {
+        var testType = document.getElementById('test-type').value;
+        var gender = document.getElementById('gender').value;
+        var age = parseInt(document.getElementById('age').value);
+        var weight = parseFloat(document.getElementById('weight').value);
+
+        if (!age) { window.showToast('Please enter your age.'); return; }
+
+        var weightKg = weight ? (isMetric ? weight : weight * 0.453592) : 0;
+        var vo2 = 0;
+
+        if (testType === 'cooper') {
+          var dist = parseFloat(document.getElementById('cooper-distance').value);
+          if (!dist) { window.showToast('Please enter the distance covered.'); return; }
+          var distMeters = isMetric ? dist : dist * 0.9144;
+          vo2 = (distMeters - 504.9) / 44.73;
+
+        } else if (testType === 'mile15') {
+          var mins = parseInt(document.getElementById('mile15-min').value) || 0;
+          var secs = parseInt(document.getElementById('mile15-sec').value) || 0;
+          var totalMin = mins + secs / 60;
+          if (totalMin <= 0) { window.showToast('Please enter your 1.5-mile run time.'); return; }
+          vo2 = 483 / totalMin + 3.5;
+
+        } else if (testType === 'rockport') {
+          var rMins = parseInt(document.getElementById('rockport-min').value) || 0;
+          var rSecs = parseInt(document.getElementById('rockport-sec').value) || 0;
+          var rTime = rMins + rSecs / 60;
+          var hr = parseFloat(document.getElementById('rockport-hr').value);
+          if (!rTime || !hr || !weightKg) { window.showToast('Please fill in walk time, heart rate, and weight.'); return; }
+          var weightLbs = isMetric ? weight * 2.20462 : weight;
+          var genderVal = gender === 'male' ? 1 : 0;
+          vo2 = 132.853 - (0.0769 * weightLbs) - (0.3877 * age) + (6.315 * genderVal) - (3.2649 * rTime) - (0.1565 * hr);
+
+        } else if (testType === 'step') {
+          var stepHR = parseFloat(document.getElementById('step-hr').value);
+          if (!stepHR) { window.showToast('Please enter your recovery heart rate.'); return; }
+          if (gender === 'male') {
+            vo2 = 111.33 - (0.42 * stepHR);
+          } else {
+            vo2 = 65.81 - (0.1847 * stepHR);
+          }
+        }
+
+        if (vo2 <= 0) { window.showToast('Result is invalid. Please check your inputs.'); return; }
+
+        vo2 = Math.round(vo2 * 10) / 10;
+        var catData = getCategory(vo2, gender, age);
+        var percentile = getPercentile(vo2, gender, age);
+
+        document.getElementById('vo2-val').textContent = vo2;
+        document.getElementById('category-val').textContent = catData.cat;
+        document.getElementById('category-desc').textContent = catData.cat === 'Superior' ? 'Top tier fitness' : catData.cat === 'Excellent' ? 'Well above average' : catData.cat === 'Good' ? 'Above average' : catData.cat === 'Fair' ? 'Below average' : 'Needs improvement';
+        document.getElementById('percentile-val').textContent = percentile + 'th';
+        document.getElementById('norms-table').innerHTML = buildNormsTable(gender, age);
+        document.getElementById('result').style.display = 'block';
+      });
+
+      /* Clear */
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('result').style.display = 'none';
+        var inputs = document.querySelectorAll('.tool-calculator input[type="number"]');
+        for (var i = 0; i < inputs.length; i++) inputs[i].value = '';
+        document.getElementById('test-type').selectedIndex = 0;
+        document.getElementById('gender').selectedIndex = 0;
+        var all = document.querySelectorAll('.test-fields');
+        for (var j = 0; j < all.length; j++) all[j].classList.remove('active');
+        document.getElementById('fields-cooper').classList.add('active');
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Health Tools', url: '/health/' }, { name: 'VO2 Max Calculator' }];
+      var FAQS = [
+        { q: 'What is a good VO2 Max score?', a: 'A good VO2 Max depends on age and gender. For a 30-year-old male, 37-42 mL/kg/min is considered "Good," while above 48 is "Superior." For a 30-year-old female, 31-35 mL/kg/min is "Good" and above 40 is "Superior." Elite endurance athletes often exceed 70 mL/kg/min.' },
+        { q: 'Which VO2 Max test is most accurate?', a: 'The Cooper 12-minute run test and 1.5-mile run test are the most validated field tests. The Rockport walk test is best for beginners or those who cannot run. The step test is the most convenient but slightly less accurate. A lab-based graded exercise test with gas analysis is the gold standard.' },
+        { q: 'How often should I test my VO2 Max?', a: 'Test every 6-8 weeks to track progress. Allow at least 48 hours of rest before testing. Use the same test method each time for consistent comparisons. Significant improvements typically take 6-12 weeks of consistent training.' },
+        { q: 'Can I improve my VO2 Max?', a: 'Yes. High-intensity interval training (HIIT) is the most effective method, with studies showing 5-8% improvement in 8 weeks. Combining HIIT with steady-state Zone 2 cardio produces the best results. Untrained individuals can see improvements of 15-20% with consistent training.' },
+        { q: 'Why does VO2 Max decline with age?', a: 'VO2 Max decreases approximately 1% per year after age 25 due to reduced maximum heart rate, decreased cardiac output, loss of muscle mass, and reduced oxygen extraction efficiency. Regular exercise can slow this decline to 0.5% per year.' },
+        { q: 'Is my health data private?', a: 'Yes. All calculations run entirely in your browser. No personal health data is sent to any server.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'health/tdee-calculator', name: 'TDEE Calculator', description: 'Calculate your daily calorie expenditure.' },
+        { slug: 'health/bmi-health-checker', name: 'BMI Health Checker', description: 'Check your BMI and health range.' },
+        { slug: 'health/body-fat-calculator', name: 'Body Fat Calculator', description: 'Estimate your body fat percentage.' },
+        { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate daily calorie needs.' },
+        { slug: 'sports/one-rep-max-calculator', name: 'One Rep Max Calculator', description: 'Calculate your 1RM for any lift.' },
+        { slug: 'health/water-intake-calculator', name: 'Water Intake Calculator', description: 'Calculate daily water needs.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>

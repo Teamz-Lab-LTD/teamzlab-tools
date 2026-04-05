@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flight Time Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Estimate flight duration between cities worldwide. Free calculator with great circle distance, jet lag estimate, and layover options for 50+ airports.">
+  <meta property="og:title" content="Flight Time Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate flight time between any two cities. Free with distance, jet lag, and layover estimates.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/flight-time-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Flight Time Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate flight time between any two cities. Free with distance, jet lag, and layover estimates.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/flight-time-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .ftc-result { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .ftc-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .ftc-card h4 { margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-transform: uppercase; }
+    .ftc-card .ftc-val { font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 6px 0 2px; }
+    .ftc-card .ftc-sub { font-size: var(--text-sm); color: var(--text-muted); }
+    .ftc-details { margin-top: 16px; padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .ftc-details h4 { margin: 0 0 10px; color: var(--heading); }
+    .ftc-detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
+    .ftc-detail-row:last-child { border-bottom: none; }
+    .ftc-detail-label { color: var(--text-muted); }
+    .ftc-detail-val { color: var(--heading); font-weight: 600; }
+    .ftc-jetlag { margin-top: 16px; padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .ftc-jetlag h4 { margin: 0 0 8px; color: var(--heading); }
+    .ftc-jetlag p { margin: 0; color: var(--text); font-size: var(--text-sm); }
+    @media (max-width: 600px) {
+      .ftc-result { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+      .tool-form { padding: 18px; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Flight Time Calculator", "description": "Estimate flight duration between cities with great circle distance and jet lag estimates.", "url": "https://tool.teamzlab.com/evergreen/flight-time-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Flight Time Calculator</h1>
+      <p class="tool-description">Estimate flight duration between any two cities worldwide. Select departure and arrival airports from 50+ major cities, adjust aircraft speed, add layover time, and see distance, flight time, and jet lag estimates.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="tool-form">
+        <div class="form-group">
+          <label for="departure">Departure City</label>
+          <input type="text" id="departure" list="airports-list" placeholder="Type a city name...">
+        </div>
+        <div class="form-group">
+          <label for="arrival">Arrival City</label>
+          <input type="text" id="arrival" list="airports-list" placeholder="Type a city name...">
+        </div>
+        <datalist id="airports-list"></datalist>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group">
+            <label for="speed">Aircraft Speed (mph)</label>
+            <input type="number" id="speed" value="550" min="100" max="2000" step="10">
+          </div>
+          <div class="form-group">
+            <label for="layover">Layover Time (hours)</label>
+            <input type="number" id="layover" value="0" min="0" max="24" step="0.5">
+          </div>
+        </div>
+        <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn-primary" id="calculate-btn">Calculate Flight Time</button>
+          <button class="btn-secondary tool-clear-btn" id="clear-btn">Clear</button>
+        </div>
+      </div>
+      <div class="tool-result" id="result-area" style="display:none;"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Flight Time Calculator Works</h2>
+      <p>A flight time calculator is a free tool that estimates the duration of a flight between two cities using the Haversine formula to compute great circle distance — the shortest path between two points on Earth's surface. It takes the latitude and longitude of both airports, calculates the distance in kilometers and miles, then divides by aircraft cruising speed to estimate flight time. A 30-minute buffer is added for takeoff and landing procedures. The calculator also estimates jet lag based on timezone differences between departure and arrival cities. All calculations run locally in your browser with no data sent to any server.</p>
+
+      <h2>Understanding Great Circle Distance</h2>
+      <p>Aircraft fly along great circle routes — the shortest path between two points on a sphere. This is why flight paths on flat maps appear curved. A flight from New York to Tokyo follows an arc over the North Pacific rather than a straight line across the map. The Haversine formula calculates this distance using GPS coordinates, producing results accurate to within 0.5% of actual flight distances. Real flight distances may vary slightly due to air traffic control routing, weather diversions, and restricted airspace. The calculator includes a database of 50+ major world airports with precise coordinates for instant calculations.</p>
+
+      <h2>Factors That Affect Flight Duration</h2>
+      <p>Several factors cause actual flight times to differ from calculated estimates. Jet streams — high-altitude wind currents flowing west to east at 100-200 mph — make eastbound flights faster and westbound flights slower by 30-60 minutes on long-haul routes. Headwinds and tailwinds at cruising altitude can add or subtract 10-15% from estimated flight time. Air traffic congestion near busy airports adds holding patterns that extend flights by 10-30 minutes. Aircraft type matters too: the average commercial jet cruises at 550 mph, but regional turboprops fly at 300-350 mph. Weather diversions can add significant time to any route.</p>
+
+      <h2>Managing Jet Lag Across Time Zones</h2>
+      <p>Jet lag occurs when you cross three or more time zones, disrupting your circadian rhythm. The general rule is that your body needs one day to adjust per timezone crossed. Eastward travel is typically harder than westward because it requires advancing your body clock, which is more difficult than delaying it. To minimize jet lag, start adjusting your sleep schedule 2-3 days before departure by shifting bedtime 30-60 minutes toward your destination timezone. Stay hydrated during the flight, avoid excessive caffeine and alcohol, and expose yourself to sunlight at your destination to help reset your internal clock. This calculator shows the timezone difference to help you plan your adjustment strategy.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var airports = [
+      { city: 'New York (JFK)', code: 'JFK', lat: 40.6413, lon: -73.7781, tz: -5 },
+      { city: 'Los Angeles (LAX)', code: 'LAX', lat: 33.9425, lon: -118.4081, tz: -8 },
+      { city: 'Chicago (ORD)', code: 'ORD', lat: 41.9742, lon: -87.9073, tz: -6 },
+      { city: 'London (LHR)', code: 'LHR', lat: 51.4700, lon: -0.4543, tz: 0 },
+      { city: 'Paris (CDG)', code: 'CDG', lat: 49.0097, lon: 2.5479, tz: 1 },
+      { city: 'Tokyo (NRT)', code: 'NRT', lat: 35.7647, lon: 140.3864, tz: 9 },
+      { city: 'Dubai (DXB)', code: 'DXB', lat: 25.2532, lon: 55.3657, tz: 4 },
+      { city: 'Singapore (SIN)', code: 'SIN', lat: 1.3644, lon: 103.9915, tz: 8 },
+      { city: 'Hong Kong (HKG)', code: 'HKG', lat: 22.3080, lon: 113.9185, tz: 8 },
+      { city: 'Sydney (SYD)', code: 'SYD', lat: -33.9461, lon: 151.1772, tz: 10 },
+      { city: 'Toronto (YYZ)', code: 'YYZ', lat: 43.6777, lon: -79.6248, tz: -5 },
+      { city: 'San Francisco (SFO)', code: 'SFO', lat: 37.6213, lon: -122.3790, tz: -8 },
+      { city: 'Miami (MIA)', code: 'MIA', lat: 25.7959, lon: -80.2870, tz: -5 },
+      { city: 'Berlin (BER)', code: 'BER', lat: 52.3667, lon: 13.5033, tz: 1 },
+      { city: 'Frankfurt (FRA)', code: 'FRA', lat: 50.0379, lon: 8.5622, tz: 1 },
+      { city: 'Amsterdam (AMS)', code: 'AMS', lat: 52.3105, lon: 4.7683, tz: 1 },
+      { city: 'Madrid (MAD)', code: 'MAD', lat: 40.4983, lon: -3.5676, tz: 1 },
+      { city: 'Rome (FCO)', code: 'FCO', lat: 41.8003, lon: 12.2389, tz: 1 },
+      { city: 'Istanbul (IST)', code: 'IST', lat: 41.2753, lon: 28.7519, tz: 3 },
+      { city: 'Bangkok (BKK)', code: 'BKK', lat: 13.6900, lon: 100.7501, tz: 7 },
+      { city: 'Seoul (ICN)', code: 'ICN', lat: 37.4602, lon: 126.4407, tz: 9 },
+      { city: 'Mumbai (BOM)', code: 'BOM', lat: 19.0896, lon: 72.8656, tz: 5.5 },
+      { city: 'Delhi (DEL)', code: 'DEL', lat: 28.5562, lon: 77.1000, tz: 5.5 },
+      { city: 'Beijing (PEK)', code: 'PEK', lat: 40.0799, lon: 116.6031, tz: 8 },
+      { city: 'Shanghai (PVG)', code: 'PVG', lat: 31.1443, lon: 121.8083, tz: 8 },
+      { city: 'Sao Paulo (GRU)', code: 'GRU', lat: -23.4356, lon: -46.4731, tz: -3 },
+      { city: 'Mexico City (MEX)', code: 'MEX', lat: 19.4361, lon: -99.0719, tz: -6 },
+      { city: 'Johannesburg (JNB)', code: 'JNB', lat: -26.1367, lon: 28.2411, tz: 2 },
+      { city: 'Cairo (CAI)', code: 'CAI', lat: 30.1219, lon: 31.4056, tz: 2 },
+      { city: 'Moscow (SVO)', code: 'SVO', lat: 55.9726, lon: 37.4146, tz: 3 },
+      { city: 'Zurich (ZRH)', code: 'ZRH', lat: 47.4647, lon: 8.5492, tz: 1 },
+      { city: 'Vienna (VIE)', code: 'VIE', lat: 48.1103, lon: 16.5697, tz: 1 },
+      { city: 'Dublin (DUB)', code: 'DUB', lat: 53.4264, lon: -6.2499, tz: 0 },
+      { city: 'Lisbon (LIS)', code: 'LIS', lat: 38.7756, lon: -9.1354, tz: 0 },
+      { city: 'Athens (ATH)', code: 'ATH', lat: 37.9364, lon: 23.9445, tz: 2 },
+      { city: 'Doha (DOH)', code: 'DOH', lat: 25.2731, lon: 51.6081, tz: 3 },
+      { city: 'Abu Dhabi (AUH)', code: 'AUH', lat: 24.4430, lon: 54.6511, tz: 4 },
+      { city: 'Kuala Lumpur (KUL)', code: 'KUL', lat: 2.7456, lon: 101.7099, tz: 8 },
+      { city: 'Jakarta (CGK)', code: 'CGK', lat: -6.1256, lon: 106.6559, tz: 7 },
+      { city: 'Melbourne (MEL)', code: 'MEL', lat: -37.6690, lon: 144.8410, tz: 10 },
+      { city: 'Auckland (AKL)', code: 'AKL', lat: -37.0082, lon: 174.7850, tz: 12 },
+      { city: 'Denver (DEN)', code: 'DEN', lat: 39.8561, lon: -104.6737, tz: -7 },
+      { city: 'Atlanta (ATL)', code: 'ATL', lat: 33.6407, lon: -84.4277, tz: -5 },
+      { city: 'Dallas (DFW)', code: 'DFW', lat: 32.8998, lon: -97.0403, tz: -6 },
+      { city: 'Seattle (SEA)', code: 'SEA', lat: 47.4502, lon: -122.3088, tz: -8 },
+      { city: 'Boston (BOS)', code: 'BOS', lat: 42.3656, lon: -71.0096, tz: -5 },
+      { city: 'Washington DC (IAD)', code: 'IAD', lat: 38.9531, lon: -77.4565, tz: -5 },
+      { city: 'Lima (LIM)', code: 'LIM', lat: -12.0219, lon: -77.1143, tz: -5 },
+      { city: 'Buenos Aires (EZE)', code: 'EZE', lat: -34.8222, lon: -58.5358, tz: -3 },
+      { city: 'Nairobi (NBO)', code: 'NBO', lat: -1.3192, lon: 36.9278, tz: 3 },
+      { city: 'Lagos (LOS)', code: 'LOS', lat: 6.5774, lon: 3.3212, tz: 1 },
+      { city: 'Dhaka (DAC)', code: 'DAC', lat: 23.8433, lon: 90.3978, tz: 6 },
+      { city: 'Colombo (CMB)', code: 'CMB', lat: 7.1808, lon: 79.8841, tz: 5.5 },
+      { city: 'Hanoi (HAN)', code: 'HAN', lat: 21.2212, lon: 105.8070, tz: 7 },
+      { city: 'Manila (MNL)', code: 'MNL', lat: 14.5086, lon: 121.0198, tz: 8 },
+      { city: 'Taipei (TPE)', code: 'TPE', lat: 25.0797, lon: 121.2342, tz: 8 }
+    ];
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      var R = 6371;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+      var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function findAirport(text) {
+      var t = text.trim().toLowerCase();
+      for (var i = 0; i < airports.length; i++) {
+        if (airports[i].city.toLowerCase() === t || airports[i].code.toLowerCase() === t) return airports[i];
+        if (airports[i].city.toLowerCase().indexOf(t) !== -1) return airports[i];
+      }
+      return null;
+    }
+
+    function formatHM(hours) {
+      var h = Math.floor(hours);
+      var m = Math.round((hours - h) * 60);
+      if (m === 60) { h++; m = 0; }
+      return h + 'h ' + m + 'm';
+    }
+
+    function calculate() {
+      var depText = document.getElementById('departure').value;
+      var arrText = document.getElementById('arrival').value;
+      var speed = parseFloat(document.getElementById('speed').value) || 550;
+      var layover = parseFloat(document.getElementById('layover').value) || 0;
+
+      var dep = findAirport(depText);
+      var arr = findAirport(arrText);
+
+      if (!dep) { if (window.showToast) window.showToast('Departure city not found. Select from the list.'); return; }
+      if (!arr) { if (window.showToast) window.showToast('Arrival city not found. Select from the list.'); return; }
+      if (dep.code === arr.code) { if (window.showToast) window.showToast('Departure and arrival must be different cities.'); return; }
+
+      var distKm = haversine(dep.lat, dep.lon, arr.lat, arr.lon);
+      var distMiles = distKm * 0.621371;
+      var flightHours = distMiles / speed + 0.5; // +30min takeoff/landing buffer
+      var totalHours = flightHours + layover;
+      var tzDiff = Math.abs(arr.tz - dep.tz);
+      var jetlagDays = Math.ceil(tzDiff / 1.5);
+
+      var html = '<div class="ftc-result">';
+      html += '<div class="ftc-card"><h4>Flight Time</h4><div class="ftc-val">' + formatHM(flightHours) + '</div><div class="ftc-sub">Direct flight estimate</div></div>';
+      html += '<div class="ftc-card"><h4>Distance</h4><div class="ftc-val">' + Math.round(distKm).toLocaleString() + ' km</div><div class="ftc-sub">' + Math.round(distMiles).toLocaleString() + ' miles</div></div>';
+      if (layover > 0) {
+        html += '<div class="ftc-card"><h4>Total with Layover</h4><div class="ftc-val">' + formatHM(totalHours) + '</div><div class="ftc-sub">' + layover + 'h layover included</div></div>';
+      }
+      html += '<div class="ftc-card"><h4>Timezone Difference</h4><div class="ftc-val">' + tzDiff + ' hours</div><div class="ftc-sub">' + (tzDiff >= 3 ? 'Jet lag likely' : 'Minimal jet lag') + '</div></div>';
+      html += '</div>';
+
+      html += '<div class="ftc-details"><h4>Flight Details</h4>';
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">From</span><span class="ftc-detail-val">' + dep.city + '</span></div>';
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">To</span><span class="ftc-detail-val">' + arr.city + '</span></div>';
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Great Circle Distance</span><span class="ftc-detail-val">' + Math.round(distKm).toLocaleString() + ' km / ' + Math.round(distMiles).toLocaleString() + ' mi</span></div>';
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Aircraft Speed</span><span class="ftc-detail-val">' + speed + ' mph (' + Math.round(speed * 1.60934) + ' km/h)</span></div>';
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Flight Time (direct)</span><span class="ftc-detail-val">' + formatHM(flightHours) + '</span></div>';
+      if (layover > 0) {
+        html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Layover</span><span class="ftc-detail-val">' + layover + ' hours</span></div>';
+        html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Total Travel Time</span><span class="ftc-detail-val">' + formatHM(totalHours) + '</span></div>';
+      }
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Timezone (departure)</span><span class="ftc-detail-val">UTC' + (dep.tz >= 0 ? '+' : '') + dep.tz + '</span></div>';
+      html += '<div class="ftc-detail-row"><span class="ftc-detail-label">Timezone (arrival)</span><span class="ftc-detail-val">UTC' + (arr.tz >= 0 ? '+' : '') + arr.tz + '</span></div>';
+      html += '</div>';
+
+      if (tzDiff >= 3) {
+        html += '<div class="ftc-jetlag"><h4>Jet Lag Estimate</h4>';
+        html += '<p>Crossing ' + tzDiff + ' time zones, expect approximately ' + jetlagDays + ' day' + (jetlagDays > 1 ? 's' : '') + ' of jet lag adjustment. ';
+        if (arr.tz > dep.tz) {
+          html += 'Traveling eastward is typically harder on your body clock. Start shifting your sleep 2-3 days early.</p>';
+        } else {
+          html += 'Traveling westward is generally easier to adjust to. Expose yourself to evening sunlight at your destination.</p>';
+        }
+        html += '</div>';
+      }
+
+      var resultEl = document.getElementById('result-area');
+      resultEl.innerHTML = html;
+      if (window.showEl) window.showEl(resultEl); else resultEl.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Flight Time Calculator' }];
+      var FAQS = [
+        { q: 'How accurate is the flight time estimate?', a: 'The calculator uses the Haversine formula for great circle distance, which is accurate to within 0.5% of actual flight paths. A 30-minute buffer is added for takeoff and landing. Real flight times may vary by 10-20% due to jet streams, weather, air traffic routing, and aircraft type.' },
+        { q: 'What speed does a commercial airplane fly at?', a: 'Most commercial jets cruise at 550-580 mph (885-933 km/h). Wide-body aircraft like the Boeing 777 cruise at 560 mph, while narrow-body planes like the Airbus A320 fly at about 530 mph. The calculator defaults to 550 mph as a standard commercial average.' },
+        { q: 'Why are eastbound flights longer than westbound?', a: 'Jet streams flow west to east at 100-200 mph in the upper atmosphere. Westbound flights face headwinds that slow them down, while eastbound flights get a tailwind boost. This can cause a 30-60 minute difference on transatlantic routes.' },
+        { q: 'How is great circle distance calculated?', a: 'The Haversine formula computes the shortest distance between two points on a sphere using their latitude and longitude coordinates. This produces the actual flight path distance, which is shorter than what appears on flat maps due to map projection distortion.' },
+        { q: 'How long does jet lag last?', a: 'As a general rule, your body needs approximately 1 day to adjust per 1.5 timezone crossed. A flight crossing 6 timezones may require 4 days of adjustment. Eastward travel typically causes more severe jet lag than westward travel.' },
+        { q: 'Is my flight data kept private?', a: 'Yes. All calculations run entirely in your browser using a built-in airport database. No search queries, routes, or personal data are sent to any server.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'evergreen/age-calculator', name: 'Age Calculator', description: 'Calculate exact age between two dates.' },
+        { slug: 'tools/time-zone-converter', name: 'Time Zone Converter', description: 'Convert times between time zones.' },
+        { slug: 'evergreen/travel-cost-calculator', name: 'Travel Cost Calculator', description: 'Estimate total trip expenses.' },
+        { slug: 'auto/fuel-cost-calculator', name: 'Fuel Cost Calculator', description: 'Calculate trip fuel costs.' },
+        { slug: 'auto/road-trip-cost-planner', name: 'Road Trip Cost Planner', description: 'Plan your road trip budget.' },
+        { slug: 'evergreen/cost-of-living-calculator', name: 'Cost of Living Calculator', description: 'Compare cost of living between cities.' },
+        { slug: 'evergreen/financial-independence-calculator', name: 'Financial Independence Calculator', description: 'Calculate your financial independence number and timeline.' }
+    ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      // Populate datalist
+      var datalist = document.getElementById('airports-list');
+      airports.forEach(function(a) {
+        var opt = document.createElement('option');
+        opt.value = a.city;
+        datalist.appendChild(opt);
+      });
+
+      document.getElementById('calculate-btn').addEventListener('click', calculate);
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('departure').value = '';
+        document.getElementById('arrival').value = '';
+        document.getElementById('speed').value = '550';
+        document.getElementById('layover').value = '0';
+        var resultEl = document.getElementById('result-area');
+        if (window.hideEl) window.hideEl(resultEl); else resultEl.style.display = 'none';
+      });
+    });
+  </script>
+</body>
+</html>

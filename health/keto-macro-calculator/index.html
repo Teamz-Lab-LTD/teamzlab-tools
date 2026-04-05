@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keto Macro Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate your keto macros for fat, protein, and net carbs. Free ketogenic diet calculator based on TDEE with custom calorie goals. 100% private.">
+  <meta property="og:title" content="Keto Macro Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate your ketogenic diet macros for fat, protein, and net carbs. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/health/keto-macro-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Keto Macro Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate your ketogenic diet macros for fat, protein, and net carbs. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/health/keto-macro-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .keto-results { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+    .keto-card { padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); text-align: center; }
+    .keto-card .keto-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+    .keto-card .keto-val { font-size: 1.5rem; font-weight: 800; color: var(--heading); }
+    .keto-card .keto-unit { font-size: 0.85rem; color: var(--text-muted); }
+    .keto-card.highlight { border-color: var(--heading); }
+    .keto-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .keto-detail-item { padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
+    .keto-detail-item .kd-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .keto-detail-item .kd-val { font-size: 1.1rem; font-weight: 700; color: var(--heading); }
+    .meal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+    .meal-card { padding: 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .meal-card h4 { margin: 0 0 8px; font-size: 0.9rem; color: var(--heading); }
+    .meal-card p { margin: 2px 0; font-size: 0.85rem; color: var(--text); }
+    .unit-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; max-width: 200px; }
+    .unit-btn { flex: 1; padding: 0.4rem 0.75rem; border: none; background: var(--surface); color: var(--text); font-weight: 600; cursor: pointer; font-size: 0.8rem; transition: all 0.2s; font-family: inherit; }
+    .unit-btn.active { background: var(--heading); color: var(--bg); }
+    @media (max-width: 600px) {
+      .keto-results { grid-template-columns: repeat(2, 1fr); }
+      .keto-detail { grid-template-columns: 1fr; }
+      .meal-grid { grid-template-columns: 1fr; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Keto Macro Calculator", "description": "Calculate your ketogenic diet macros for fat, protein, and net carbs.", "url": "https://tool.teamzlab.com/health/keto-macro-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Keto Macro Calculator</h1>
+      <p class="tool-description">Calculate your ideal macros for a ketogenic diet. Get personalized fat, protein, and net carb targets based on your body stats, activity level, and calorie goal. Includes meal breakdown.</p>
+    </section>
+    <section class="tool-calculator">
+      <div class="tool-field">
+        <label class="tool-label">Units</label>
+        <div class="unit-toggle">
+          <button type="button" class="unit-btn active" id="unit-metric">Metric</button>
+          <button type="button" class="unit-btn" id="unit-imperial">Imperial</button>
+        </div>
+      </div>
+      <div class="tool-grid">
+        <div class="tool-field">
+          <label class="tool-label" for="gender">Gender</label>
+          <select id="gender" class="tool-select">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="age">Age</label>
+          <input type="number" id="age" class="tool-input" placeholder="e.g. 30" min="15" max="100">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="weight" id="weight-label">Weight (kg)</label>
+          <input type="number" id="weight" class="tool-input" placeholder="e.g. 70" min="30" max="300" step="0.1">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="height" id="height-label">Height (cm)</label>
+          <input type="number" id="height" class="tool-input" placeholder="e.g. 175" min="100" max="250" step="0.1">
+        </div>
+        <div class="tool-field" style="grid-column: 1 / -1;">
+          <label class="tool-label" for="activity">Activity Level</label>
+          <select id="activity" class="tool-select">
+            <option value="1.2">Sedentary (office job, little exercise)</option>
+            <option value="1.375">Lightly Active (1-3 days/week)</option>
+            <option value="1.55" selected>Moderately Active (3-5 days/week)</option>
+            <option value="1.725">Very Active (6-7 days/week)</option>
+            <option value="1.9">Extra Active (athlete, physical job)</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="bodyfat">Body Fat % (optional)</label>
+          <input type="number" id="bodyfat" class="tool-input" placeholder="e.g. 20" min="3" max="60" step="0.1">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="calorie-goal">Calorie Goal</label>
+          <select id="calorie-goal" class="tool-select">
+            <option value="-500">Weight Loss (-500 cal)</option>
+            <option value="-250">Mild Weight Loss (-250 cal)</option>
+            <option value="0" selected>Maintenance</option>
+            <option value="250">Lean Bulk (+250 cal)</option>
+            <option value="500">Muscle Gain (+500 cal)</option>
+          </select>
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="net-carbs">Net Carb Limit (g)</label>
+          <input type="number" id="net-carbs" class="tool-input" placeholder="20" min="10" max="50" step="1" value="20">
+        </div>
+        <div class="tool-field">
+          <label class="tool-label" for="keto-type">Keto Ratio</label>
+          <select id="keto-type" class="tool-select">
+            <option value="standard" selected>Standard (70/25/5)</option>
+            <option value="moderate">Moderate (65/25/10)</option>
+            <option value="high-protein">High Protein (60/35/5)</option>
+          </select>
+        </div>
+      </div>
+      <div class="tool-actions">
+        <button type="button" id="calculate-btn" class="btn-pill tool-calculate-btn">Calculate Keto Macros</button>
+        <button type="button" id="clear-btn" class="btn-pill-ghost tool-clear-btn">Clear</button>
+      </div>
+
+      <div id="result" style="display:none;">
+        <h2>Your Keto Macros</h2>
+        <div class="keto-results">
+          <div class="keto-card highlight"><div class="keto-label">Daily Calories</div><div class="keto-val" id="cal-val">—</div><div class="keto-unit">kcal/day</div></div>
+          <div class="keto-card"><div class="keto-label">Fat</div><div class="keto-val" id="fat-val">—</div><div class="keto-unit" id="fat-pct"></div></div>
+          <div class="keto-card"><div class="keto-label">Protein</div><div class="keto-val" id="protein-val">—</div><div class="keto-unit" id="protein-pct"></div></div>
+          <div class="keto-card"><div class="keto-label">Net Carbs</div><div class="keto-val" id="carbs-val">—</div><div class="keto-unit" id="carbs-pct"></div></div>
+        </div>
+
+        <h3 style="margin-top:1.5rem; color:var(--heading);">Daily Breakdown</h3>
+        <div class="keto-detail">
+          <div class="keto-detail-item"><div class="kd-label">BMR (Basal Metabolic Rate)</div><div class="kd-val" id="bmr-val">—</div></div>
+          <div class="keto-detail-item"><div class="kd-label">TDEE (Maintenance Calories)</div><div class="kd-val" id="tdee-val">—</div></div>
+          <div class="keto-detail-item"><div class="kd-label">Fiber Goal</div><div class="kd-val" id="fiber-val">—</div></div>
+          <div class="keto-detail-item"><div class="kd-label">Water Intake</div><div class="kd-val" id="water-val">—</div></div>
+        </div>
+
+        <h3 style="margin-top:1.5rem; color:var(--heading);">Meal Breakdown (3 Meals + Snack)</h3>
+        <div class="meal-grid" id="meals"></div>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is a Keto Macro Calculator?</h2>
+      <p>A keto macro calculator is a tool that determines your optimal daily intake of fat, protein, and net carbohydrates for a ketogenic diet. The ketogenic diet is a high-fat, moderate-protein, very-low-carbohydrate eating plan that shifts your body into ketosis — a metabolic state where fat becomes the primary fuel source instead of glucose. This calculator uses the Mifflin-St Jeor equation to estimate your Total Daily Energy Expenditure (TDEE), then splits calories into keto-appropriate macro ratios: typically 70% fat, 25% protein, and 5% carbohydrates.</p>
+
+      <h2>Standard Keto Macro Ratios</h2>
+      <p>The <strong>Standard Ketogenic Diet (SKD)</strong> follows a 70/25/5 ratio — 70% of calories from fat, 25% from protein, and 5% from carbs. Net carbs are usually limited to 20-25g per day to maintain ketosis. The <strong>Moderate Keto</strong> ratio (65/25/10) allows slightly more carbs at 30-50g per day, making it easier to sustain. The <strong>High-Protein Keto</strong> ratio (60/35/5) is popular for athletes and those building muscle, as it provides more protein while keeping carbs minimal. All three ratios reliably produce ketosis when net carbs stay below 50g daily.</p>
+
+      <h2>How to Use Your Keto Macros</h2>
+      <p>Focus on hitting your net carb limit first — this is the most critical macro for staying in ketosis. Net carbs equal total carbs minus fiber. Hit your protein target within 10g to prevent muscle loss. Fill the remaining calories with healthy fats like avocado, olive oil, nuts, butter, and fatty fish. During the first 1-2 weeks (keto adaptation), increase sodium to 3,000-5,000mg daily and supplement magnesium and potassium to avoid "keto flu" symptoms. Track macros with a food diary for at least the first month until you develop an intuitive sense of portion sizes.</p>
+
+      <h2>Keto for Weight Loss vs Muscle Gain</h2>
+      <p>For weight loss, set a calorie deficit of 250-500 calories below your TDEE. A 500-calorie deficit produces approximately 0.5 kg (1 lb) of fat loss per week. Keep protein high (at least 1.2g per kg of lean body mass) to preserve muscle during a deficit. For muscle gain on keto, set a surplus of 250-500 calories and increase protein to 1.6-2.0g per kg. Pair this with resistance training 3-4 times per week. The meal breakdown in this calculator divides your daily targets across 3 meals and 1 snack to help you plan your eating schedule effectively.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var isMetric = true;
+
+      document.getElementById('unit-metric').addEventListener('click', function() {
+        isMetric = true;
+        this.classList.add('active');
+        document.getElementById('unit-imperial').classList.remove('active');
+        document.getElementById('weight-label').textContent = 'Weight (kg)';
+        document.getElementById('height-label').textContent = 'Height (cm)';
+      });
+      document.getElementById('unit-imperial').addEventListener('click', function() {
+        isMetric = false;
+        this.classList.add('active');
+        document.getElementById('unit-metric').classList.remove('active');
+        document.getElementById('weight-label').textContent = 'Weight (lbs)';
+        document.getElementById('height-label').textContent = 'Height (inches)';
+      });
+
+      document.getElementById('calculate-btn').addEventListener('click', function() {
+        var gender = document.getElementById('gender').value;
+        var age = parseInt(document.getElementById('age').value);
+        var weight = parseFloat(document.getElementById('weight').value);
+        var height = parseFloat(document.getElementById('height').value);
+        var activity = parseFloat(document.getElementById('activity').value);
+        var bodyfat = parseFloat(document.getElementById('bodyfat').value);
+        var calorieAdj = parseInt(document.getElementById('calorie-goal').value);
+        var netCarbLimit = parseInt(document.getElementById('net-carbs').value) || 20;
+        var ketoType = document.getElementById('keto-type').value;
+
+        if (!age || !weight || !height) { window.showToast('Please fill in age, weight, and height.'); return; }
+
+        var weightKg = isMetric ? weight : weight * 0.453592;
+        var heightCm = isMetric ? height : height * 2.54;
+
+        /* BMR via Mifflin-St Jeor */
+        var bmr;
+        if (gender === 'male') {
+          bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5;
+        } else {
+          bmr = (10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161;
+        }
+
+        var tdee = bmr * activity;
+        var targetCal = Math.round(tdee + calorieAdj);
+        if (targetCal < 1200) targetCal = 1200;
+
+        /* Keto ratios */
+        var ratios = { standard: { fat: 0.70, protein: 0.25, carb: 0.05 }, moderate: { fat: 0.65, protein: 0.25, carb: 0.10 }, 'high-protein': { fat: 0.60, protein: 0.35, carb: 0.05 } };
+        var r = ratios[ketoType] || ratios.standard;
+
+        /* Calculate grams */
+        var carbCal = netCarbLimit * 4;
+        var carbPct = carbCal / targetCal;
+        /* If carb limit is less than ratio allows, redistribute to fat */
+        var proteinCal = targetCal * r.protein;
+        var fatCal = targetCal - proteinCal - carbCal;
+        if (fatCal < 0) fatCal = 0;
+
+        var fatG = Math.round(fatCal / 9);
+        var proteinG = Math.round(proteinCal / 4);
+        var carbG = netCarbLimit;
+        var actualFatPct = Math.round((fatCal / targetCal) * 100);
+        var actualProtPct = Math.round((proteinCal / targetCal) * 100);
+        var actualCarbPct = Math.round((carbCal / targetCal) * 100);
+
+        var fiberGoal = gender === 'male' ? '25-30g' : '20-25g';
+        var waterLiters = Math.round(weightKg * 0.035 * 10) / 10;
+
+        document.getElementById('cal-val').textContent = targetCal.toLocaleString();
+        document.getElementById('fat-val').textContent = fatG + 'g';
+        document.getElementById('fat-pct').textContent = actualFatPct + '% of calories';
+        document.getElementById('protein-val').textContent = proteinG + 'g';
+        document.getElementById('protein-pct').textContent = actualProtPct + '% of calories';
+        document.getElementById('carbs-val').textContent = carbG + 'g';
+        document.getElementById('carbs-pct').textContent = actualCarbPct + '% of calories';
+        document.getElementById('bmr-val').textContent = Math.round(bmr).toLocaleString() + ' kcal';
+        document.getElementById('tdee-val').textContent = Math.round(tdee).toLocaleString() + ' kcal';
+        document.getElementById('fiber-val').textContent = fiberGoal;
+        document.getElementById('water-val').textContent = waterLiters + ' liters/day';
+
+        /* Meal breakdown: 30% breakfast, 35% lunch, 25% dinner, 10% snack */
+        var meals = [
+          { name: 'Breakfast', pct: 0.30 },
+          { name: 'Lunch', pct: 0.35 },
+          { name: 'Dinner', pct: 0.25 },
+          { name: 'Snack', pct: 0.10 }
+        ];
+        var mealHtml = '';
+        meals.forEach(function(m) {
+          var mCal = Math.round(targetCal * m.pct);
+          var mFat = Math.round(fatG * m.pct);
+          var mProt = Math.round(proteinG * m.pct);
+          var mCarb = Math.round(carbG * m.pct);
+          mealHtml += '<div class="meal-card"><h4>' + m.name + ' (' + Math.round(m.pct * 100) + '%)</h4>';
+          mealHtml += '<p>' + mCal + ' kcal</p>';
+          mealHtml += '<p>Fat: ' + mFat + 'g · Protein: ' + mProt + 'g · Carbs: ' + mCarb + 'g</p></div>';
+        });
+        document.getElementById('meals').innerHTML = mealHtml;
+        document.getElementById('result').style.display = 'block';
+      });
+
+      document.getElementById('clear-btn').addEventListener('click', function() {
+        document.getElementById('result').style.display = 'none';
+        var inputs = document.querySelectorAll('.tool-calculator input[type="number"]');
+        for (var i = 0; i < inputs.length; i++) inputs[i].value = '';
+        document.getElementById('net-carbs').value = '20';
+        document.getElementById('gender').selectedIndex = 0;
+        document.getElementById('activity').selectedIndex = 2;
+        document.getElementById('calorie-goal').selectedIndex = 2;
+        document.getElementById('keto-type').selectedIndex = 0;
+      });
+
+      var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Health Tools', url: '/health/' }, { name: 'Keto Macro Calculator' }];
+      var FAQS = [
+        { q: 'How many carbs should I eat on keto?', a: 'Most people enter and maintain ketosis with 20-25g of net carbs per day. Net carbs equal total carbohydrates minus fiber. Some individuals can stay in ketosis with up to 50g, but 20g is the safest target to guarantee ketosis for everyone.' },
+        { q: 'How much protein should I eat on keto?', a: 'Aim for 1.2-1.7g of protein per kg of lean body mass. Too little protein causes muscle loss, while moderate protein intake does not kick you out of ketosis. The old fear of excess protein converting to glucose (gluconeogenesis) is demand-driven, not supply-driven.' },
+        { q: 'Will keto work for weight loss?', a: 'Yes. Keto reduces appetite through ketone production and stable blood sugar, making it easier to maintain a calorie deficit. Studies show keto produces similar or slightly better weight loss compared to low-fat diets over 6-12 months, with better preservation of muscle mass.' },
+        { q: 'What is the keto flu?', a: 'Keto flu refers to symptoms like headache, fatigue, nausea, and brain fog during the first 1-2 weeks as your body adapts to burning fat. It is caused by electrolyte loss. Increasing sodium to 3,000-5,000mg/day and supplementing magnesium and potassium typically resolves symptoms within days.' },
+        { q: 'How long does it take to enter ketosis?', a: 'Most people enter ketosis within 2-4 days of restricting carbs to under 20-50g per day. The speed depends on your glycogen stores, activity level, and metabolism. Exercise can accelerate the process by depleting glycogen faster.' },
+        { q: 'Is my data private?', a: 'Yes. All calculations run entirely in your browser. No personal health data is sent to any server.' }
+      ];
+      var RELATED_TOOLS = [
+        { slug: 'health/tdee-calculator', name: 'TDEE Calculator', description: 'Calculate your daily calorie expenditure.' },
+        { slug: 'health/macro-calculator', name: 'Macro Calculator', description: 'Calculate protein, carb, and fat targets.' },
+        { slug: 'health/calorie-deficit-calculator', name: 'Calorie Deficit Calculator', description: 'Find your ideal calorie deficit.' },
+        { slug: 'health/calorie-intake-calculator', name: 'Calorie Intake Calculator', description: 'Calculate daily calorie needs.' },
+        { slug: 'health/body-fat-calculator', name: 'Body Fat Calculator', description: 'Estimate your body fat percentage.' },
+        { slug: 'health/water-intake-calculator', name: 'Water Intake Calculator', description: 'Calculate daily water needs.' }
+      ];
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
