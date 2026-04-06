@@ -1092,6 +1092,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Tile & Flooring Calculator',d:'Calculate how many tiles you need for floors or walls. Enter room and tile sizes, get exact quantity with waste allowance and cost estimate. Free tool',h:'/housing/tile-calculator/'},
   {t:'Utilities Cost Calculator',d:'Calculate monthly utilities cost for electricity, gas, water, internet, and phone. Compare costs and find savings opportunities. Free, private.',h:'/housing/utilities-cost-calculator/'},
   {t:'Washing Machine Cost Calculator',d:'Calculate exactly how much each washing machine cycle costs in electricity. Compare temperatures and cycle lengths to find the cheapest way to wash.',h:'/housing/washing-machine-cost-per-cycle-calculator/'},
+  {t:'Water Heater Size Calculator',d:'Calculate the right water heater size for your home. Determine tank capacity or tankless flow rate based on household size and hot water usage. Free, ',h:'/housing/water-heater-size-calculator/'},
   {t:'Checklist Persiapan Coretax',d:'Dapatkan checklist lengkap persiapan aktivasi Coretax DJP berdasarkan jenis wajib pajak. Panduan langkah demi langkah untuk transisi ke sistem pajak b',h:'/id/coretax-checklist/'},
   {t:'Cek Kesiapan Coretax DJP',d:'Cek kesiapan bisnis Anda untuk sistem Coretax DJP. Evaluasi aktivasi akun, validitas NPWP, dan kesiapan pelaporan pajak secara online gratis.',h:'/id/coretax-readiness-checker/'},
   {t:'Alat Indonesia',d:'Cek kesiapan Coretax DJP dan persiapkan checklist wajib pajak Anda dengan alat gratis untuk Indonesia. Privat, aman, tanpa perlu daftar akun.',h:'/id/'},

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Water Heater Size Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate the right water heater size for your home. Determine tank capacity or tankless flow rate based on household size and hot water usage. Free, private.">
+  <meta property="og:title" content="Water Heater Size Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate the right water heater size for your home. Determine tank capacity or tankless flow rate based on household size and hot water usage. Free, private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/housing/water-heater-size-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/housing.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Water Heater Size Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate the right water heater size for your home. Determine tank capacity or tankless flow rate based on household size and hot water usage. Free, private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/housing/water-heater-size-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .wh-result { display: none; margin-top: 32px; }
+    .wh-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .wh-summary-card {
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      text-align: center;
+    }
+    .wh-summary-card .label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .wh-summary-card .value {
+      font-size: clamp(22px, 4vw, 30px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+    }
+    .wh-breakdown {
+      margin-top: 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .wh-breakdown-title {
+      padding: 14px 20px;
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .wh-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: var(--text-sm);
+    }
+    .wh-breakdown-row:last-child { border-bottom: none; }
+    .wh-breakdown-row .row-label { color: var(--text); }
+    .wh-breakdown-row .row-value { font-weight: 700; color: var(--heading); }
+    .wh-energy-compare {
+      margin-top: 28px;
+    }
+    .wh-energy-compare h3 {
+      font-size: var(--text-lg);
+      color: var(--heading);
+      margin-bottom: 16px;
+    }
+    .wh-compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .wh-compare-card {
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .wh-compare-card .type-label {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 12px;
+    }
+    .wh-compare-card .cost-value {
+      font-size: clamp(20px, 3.5vw, 28px);
+      font-weight: 800;
+      color: var(--heading);
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .wh-compare-card .cost-label {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+    }
+    .wh-compare-card .detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: var(--text-xs);
+      color: var(--text);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .wh-recommendation {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .wh-recommendation .rec-title {
+      font-size: var(--text-base);
+      font-weight: 700;
+      color: var(--heading);
+      margin-bottom: 8px;
+    }
+    .wh-recommendation .rec-text {
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wh-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 600px) {
+      .wh-summary-grid { grid-template-columns: 1fr; }
+      .wh-compare-grid { grid-template-columns: 1fr; }
+      .wh-actions { flex-direction: column; }
+      .wh-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Water Heater Size Calculator", "description": "Calculate the right water heater size for your home based on household size and hot water usage patterns.", "url": "https://tool.teamzlab.com/housing/water-heater-size-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-hero">
+      <h1>Water Heater Size Calculator</h1>
+      <p class="tool-description">Determine the right water heater size for your home based on household size, number of bathrooms, and daily hot water usage patterns. Get recommendations for both tank and tankless systems with annual energy cost estimates.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="tool-form">
+        <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group">
+            <label for="wh-household">Household Size (people)</label>
+            <select id="wh-household">
+              <option value="1">1 person</option>
+              <option value="2">2 people</option>
+              <option value="3" selected>3 people</option>
+              <option value="4">4 people</option>
+              <option value="5">5 people</option>
+              <option value="6">6 people</option>
+              <option value="7">7 people</option>
+              <option value="8">8 people</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wh-bathrooms">Number of Bathrooms</label>
+            <select id="wh-bathrooms">
+              <option value="1">1 bathroom</option>
+              <option value="2" selected>2 bathrooms</option>
+              <option value="3">3 bathrooms</option>
+              <option value="4">4 bathrooms</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wh-showers">Simultaneous Showers Possible</label>
+            <select id="wh-showers">
+              <option value="1" selected>1 shower</option>
+              <option value="2">2 showers</option>
+              <option value="3">3 showers</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wh-dishwasher">Has Dishwasher?</label>
+            <select id="wh-dishwasher">
+              <option value="yes" selected>Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wh-laundry">Laundry Loads per Day</label>
+            <select id="wh-laundry">
+              <option value="0">0 loads</option>
+              <option value="1" selected>1 load</option>
+              <option value="2">2 loads</option>
+              <option value="3">3 loads</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="wh-inlettemp">Incoming Water Temp (°F)</label>
+            <input type="number" id="wh-inlettemp" value="55" min="30" max="80" step="1" placeholder="e.g. 55">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+          <button class="btn-primary" id="wh-calculate-btn">Calculate Size</button>
+          <button class="btn-secondary" id="wh-clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <div class="wh-result" id="wh-result">
+        <div class="wh-summary-grid" id="wh-summary-grid"></div>
+        <div class="wh-breakdown" id="wh-breakdown"></div>
+        <div class="wh-energy-compare" id="wh-energy-compare"></div>
+        <div class="wh-recommendation" id="wh-recommendation"></div>
+        <div class="wh-actions">
+          <button class="btn-secondary" id="wh-copy-btn">Copy Results</button>
+          <button class="btn-secondary" id="wh-share-btn">Share Link</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Water Heater Size Calculator Works</h2>
+      <p>A water heater size calculator determines the optimal tank capacity or tankless flow rate your home needs by analyzing your household's peak hour demand. Peak hour demand is the maximum amount of hot water your family uses during the busiest hour of the day — typically mornings when multiple people shower, the dishwasher runs, and laundry starts. The calculator adds up the gallons used by each fixture and appliance during that peak window, then matches it to the industry-standard First Hour Rating (FHR) to recommend the correct tank size. For tankless systems, it calculates the total gallons per minute (GPM) needed for simultaneous fixtures and the temperature rise required based on your incoming water temperature.</p>
+
+      <h2>Tank vs Tankless Water Heater Sizing</h2>
+      <p>Tank water heaters store a fixed volume of hot water (typically 30 to 80 gallons) and are sized by First Hour Rating — the gallons of hot water the unit can deliver in the first hour of use. The FHR should match or exceed your peak hour demand. According to the US Department of Energy, a household of 1 to 2 people typically needs a 30 to 50 gallon tank, while families of 5 or more need 60 to 80 gallons. Tankless water heaters heat water on demand and are sized by flow rate in GPM and temperature rise. A standard shower uses approximately 2 GPM, a kitchen faucet uses 1.5 GPM, and a dishwasher uses about 1.5 GPM. To run two showers simultaneously, you need at least 4 GPM — a critical factor when choosing tankless capacity.</p>
+
+      <h2>Incoming Water Temperature and Energy Costs</h2>
+      <p>Your incoming water temperature directly affects water heater performance and energy costs. In northern US states, groundwater temperatures can be as low as 40°F in winter, requiring a 70°F temperature rise to reach the standard 110°F delivery temperature. Southern states may have incoming water at 65 to 70°F, needing only a 40 to 45°F rise. This difference significantly impacts both the size of tankless heater needed and annual energy consumption. Based on 2026 US Department of Energy data, a standard 50-gallon electric tank water heater costs approximately $550 to $700 per year to operate, while a gas tank heater costs $350 to $500. Tankless gas units typically cost $200 to $350 annually due to their higher efficiency, though the upfront installation cost is $1,500 to $3,500 compared to $800 to $1,500 for tank systems.</p>
+
+      <h2>Tips for Choosing the Right Water Heater</h2>
+      <p>Consider future household changes when sizing your water heater — if your family is growing, size up by one tier. Energy Star-certified models use 8 to 15 percent less energy than standard units and qualify for federal tax credits under the Inflation Reduction Act of 2022. For homes with natural gas, a condensing tankless unit offers the best long-term savings. Heat pump water heaters are 2 to 3 times more efficient than conventional electric tanks and work well in warm climates where they also provide free dehumidification. Always verify that your electrical panel or gas line can support the unit before purchasing, especially for tankless installations that may require upgraded gas lines or dedicated electrical circuits.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Breadcrumbs
+      TeamzTools.renderBreadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Housing Tools', url: '/housing/' },
+        { name: 'Water Heater Size Calculator' }
+      ]);
+
+      // FAQs
+      var faqs = [
+        {
+          q: 'What size water heater do I need for a family of 4?',
+          a: 'A family of 4 typically needs a 50 to 60 gallon tank water heater with a First Hour Rating (FHR) of at least 60 gallons. This accounts for peak morning usage including 2 to 3 showers, dishwasher, and hand washing. If your family takes baths instead of showers, consider a 60 to 80 gallon tank since a single bath uses approximately 20 gallons compared to 10 gallons for a shower. For tankless systems, a flow rate of 5 to 7 GPM handles most family-of-4 scenarios comfortably.'
+        },
+        {
+          q: 'What is First Hour Rating and why does it matter?',
+          a: 'First Hour Rating (FHR) is the number of gallons of hot water a tank water heater can deliver in the first hour of use starting with a fully heated tank. It combines the tank capacity with the burner or element recovery rate. FHR is the most important specification when choosing a tank water heater because it measures real-world delivery capacity during your peak usage hour. The US Department of Energy requires all tank water heaters to display the FHR on the EnergyGuide label. Your peak hour demand should not exceed the FHR of the unit you choose.'
+        },
+        {
+          q: 'How do I determine my peak hour hot water demand?',
+          a: 'To calculate peak hour demand, list every hot water activity that occurs during your busiest hour of the day. Typical usage rates are: shower (10 gallons), bath (20 gallons), shaving or hand washing (2 gallons per person), dishwasher cycle (6 gallons), and washing machine load (7 gallons). Add up the gallons for all activities happening in that peak hour. For example, if 3 people shower and you run the dishwasher during the morning rush, your peak demand is 3 times 10 plus 6 equals 36 gallons. Choose a water heater with an FHR that meets or exceeds this total.'
+        },
+        {
+          q: 'What size tankless water heater do I need?',
+          a: 'Tankless water heaters are sized by flow rate in gallons per minute (GPM) and required temperature rise. First determine how many fixtures you want to run simultaneously — a shower uses about 2 GPM, a kitchen faucet 1.5 GPM, and a dishwasher 1.5 GPM. Add the GPM for all simultaneous fixtures. Then calculate the temperature rise needed by subtracting your incoming water temperature from 110 degrees Fahrenheit. A typical home needs 5 to 7 GPM with a 50 to 60 degree rise. Gas tankless units handle higher flow rates than electric models and are recommended for homes needing more than 4 GPM.'
+        },
+        {
+          q: 'Is a tankless water heater more efficient than a tank heater?',
+          a: 'Yes, tankless water heaters are 24 to 34 percent more efficient than conventional tank heaters for homes using 41 gallons or less of hot water daily, according to the US Department of Energy. They eliminate standby heat loss — the energy wasted keeping a tank of water hot 24 hours a day. However, for homes using over 86 gallons per day, the efficiency advantage drops to 8 to 14 percent. The annual energy cost for a tankless gas unit averages $200 to $350 compared to $350 to $500 for a gas tank. The higher upfront cost of $1,500 to $3,500 versus $800 to $1,500 for tank systems means the payback period is typically 6 to 12 years.'
+        },
+        {
+          q: 'How does incoming water temperature affect water heater sizing?',
+          a: 'Incoming water temperature varies by geographic region from about 40 degrees Fahrenheit in northern states during winter to 70 degrees in southern states. Lower incoming temperatures require a greater temperature rise to reach the standard 110 to 120 degree delivery temperature, which directly affects heater sizing. For tankless heaters, a unit rated at 7 GPM with a 35-degree rise may only deliver 4 GPM with a 70-degree rise. For tank heaters, colder inlet water means slower recovery time between uses. This calculator factors in your inlet temperature to give accurate recommendations for your specific location.'
+        }
+      ];
+      TeamzTools.renderFAQs(faqs);
+
+      // Related tools
+      TeamzTools.renderRelatedTools([
+        { slug: 'housing/utilities-cost-calculator', name: 'Utilities Cost Calculator', description: 'Calculate total monthly utilities cost for electricity, gas, water, internet, and phone bills.' },
+        { slug: 'housing/kwh-cost-calculator', name: 'kWh Cost Calculator', description: 'Calculate your electricity cost from kWh usage with daily, monthly, and annual breakdowns.' },
+        { slug: 'housing/appliance-running-cost-calculator', name: 'Appliance Running Cost Calculator', description: 'Calculate how much it costs to run any appliance based on wattage and usage hours.' },
+        { slug: 'housing/heat-pump-vs-gas-cost-calculator', name: 'Heat Pump vs Gas Cost Calculator', description: 'Compare annual heating costs between a heat pump and gas boiler based on your rates.' },
+        { slug: 'housing/ac-energy-cost-calculator', name: 'AC Energy Cost Calculator', description: 'Calculate your air conditioning running costs based on unit size, hours, and electricity rate.' },
+        { slug: 'evergreen/electricity-cost-calculator', name: 'Electricity Cost Calculator', description: 'Estimate your electricity bill from usage, rate, and provider to find potential savings.' }
+      ]);
+
+      // WebApp schema
+
+      // --- Calculator Logic ---
+      var calcBtn = document.getElementById('wh-calculate-btn');
+      var clearBtn = document.getElementById('wh-clear-btn');
+      var copyBtn = document.getElementById('wh-copy-btn');
+      var shareBtn = document.getElementById('wh-share-btn');
+      var resultDiv = document.getElementById('wh-result');
+
+      calcBtn.addEventListener('click', calculate);
+      clearBtn.addEventListener('click', clearForm);
+      copyBtn.addEventListener('click', copyResults);
+      shareBtn.addEventListener('click', shareLink);
+
+      // Check for share params
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('household')) {
+        var fields = ['household', 'bathrooms', 'showers', 'dishwasher', 'laundry', 'inlettemp'];
+        fields.forEach(function (f) {
+          var el = document.getElementById('wh-' + f);
+          var val = params.get(f);
+          if (el && val) el.value = val;
+        });
+        calculate();
+      }
+
+      var lastResult = null;
+
+      function getValues() {
+        return {
+          household: parseInt(document.getElementById('wh-household').value) || 3,
+          bathrooms: parseInt(document.getElementById('wh-bathrooms').value) || 2,
+          showers: parseInt(document.getElementById('wh-showers').value) || 1,
+          dishwasher: document.getElementById('wh-dishwasher').value === 'yes',
+          laundry: parseInt(document.getElementById('wh-laundry').value) || 0,
+          inletTemp: parseFloat(document.getElementById('wh-inlettemp').value) || 55
+        };
+      }
+
+      function calculate() {
+        var v = getValues();
+        var targetTemp = 120; // standard delivery temp
+        var tempRise = targetTemp - v.inletTemp;
+
+        // --- Peak Hour Demand Breakdown ---
+        var showerGal = v.showers * 10;
+        var handWashGal = v.household * 2;
+        var dishwasherGal = v.dishwasher ? 6 : 0;
+        var laundryGal = v.laundry * 7;
+        // If more people than showers, assume remaining do hand wash / wait
+        var bathActivities = Math.min(v.household, v.bathrooms);
+        var extraHandWash = Math.max(0, bathActivities - v.showers) * 2;
+        var peakDemand = showerGal + handWashGal + extraHandWash + dishwasherGal + laundryGal;
+
+        // --- Tank Sizing (FHR-based) ---
+        var fhrNeeded = Math.ceil(peakDemand / 5) * 5; // round up to nearest 5
+        if (fhrNeeded < 30) fhrNeeded = 30;
+
+        // Map FHR to recommended tank size
+        var tankSize;
+        if (fhrNeeded <= 40) tankSize = 40;
+        else if (fhrNeeded <= 50) tankSize = 50;
+        else if (fhrNeeded <= 60) tankSize = 60;
+        else if (fhrNeeded <= 70) tankSize = 70;
+        else tankSize = 80;
+
+        // Cross-check with household size baseline
+        var householdBaseline;
+        if (v.household <= 1) householdBaseline = 30;
+        else if (v.household <= 2) householdBaseline = 40;
+        else if (v.household <= 3) householdBaseline = 50;
+        else if (v.household <= 4) householdBaseline = 50;
+        else if (v.household <= 5) householdBaseline = 60;
+        else householdBaseline = 80;
+
+        tankSize = Math.max(tankSize, householdBaseline);
+
+        // --- Tankless Sizing ---
+        var showerGPM = v.showers * 2.0;
+        var faucetGPM = 1.5; // kitchen faucet
+        var dishwasherGPM = v.dishwasher ? 1.5 : 0;
+        var laundryGPM = v.laundry > 0 ? 2.0 : 0;
+        var totalGPM = showerGPM + faucetGPM + dishwasherGPM + laundryGPM;
+        totalGPM = Math.round(totalGPM * 10) / 10;
+
+        // --- Energy Cost Estimates (annual) ---
+        // Tank electric: ~4500W element, standby + usage
+        // Average household uses ~64 gal/day hot water
+        var dailyGallons = v.household * 20; // ~20 gal/person/day avg
+        var btuPerDay = dailyGallons * 8.33 * tempRise; // BTU = gal * 8.33 lb/gal * tempRise
+        var kwhPerDay = btuPerDay / 3412; // 1 kWh = 3412 BTU
+        var standbyLossKwh = 1.5; // avg daily standby loss for tank
+        var tankElectricAnnual = (kwhPerDay + standbyLossKwh) * 365 * 0.16; // $0.16/kWh avg US
+
+        // Tank gas
+        var thermsPerDay = btuPerDay / 100000 / 0.60; // 60% efficiency for gas tank
+        var standbyTherms = 0.15; // daily standby
+        var tankGasAnnual = (thermsPerDay + standbyTherms) * 365 * 1.20; // $1.20/therm avg
+
+        // Tankless gas (no standby, 95% efficient)
+        var tanklessGasAnnual = (btuPerDay / 100000 / 0.95) * 365 * 1.20;
+
+        // Tankless electric
+        var tanklessElectricAnnual = (kwhPerDay) * 365 * 0.16; // no standby loss
+
+        tankElectricAnnual = Math.round(tankElectricAnnual);
+        tankGasAnnual = Math.round(tankGasAnnual);
+        tanklessGasAnnual = Math.round(tanklessGasAnnual);
+        tanklessElectricAnnual = Math.round(tanklessElectricAnnual);
+
+        // --- Render ---
+        // Summary cards
+        var summaryHTML = '';
+        summaryHTML += '<div class="wh-summary-card"><div class="label">Tank Size</div><div class="value">' + tankSize + ' gal</div></div>';
+        summaryHTML += '<div class="wh-summary-card"><div class="label">First Hour Rating</div><div class="value">' + fhrNeeded + ' gal</div></div>';
+        summaryHTML += '<div class="wh-summary-card"><div class="label">Tankless Flow Rate</div><div class="value">' + totalGPM + ' GPM</div></div>';
+        document.getElementById('wh-summary-grid').innerHTML = summaryHTML;
+
+        // Peak demand breakdown
+        var breakdownHTML = '<div class="wh-breakdown-title">Peak Hour Demand Breakdown</div>';
+        if (showerGal > 0) breakdownHTML += '<div class="wh-breakdown-row"><span class="row-label">Showers (' + v.showers + ' &times; 10 gal)</span><span class="row-value">' + showerGal + ' gal</span></div>';
+        breakdownHTML += '<div class="wh-breakdown-row"><span class="row-label">Hand Washing (' + v.household + ' people &times; 2 gal)</span><span class="row-value">' + handWashGal + ' gal</span></div>';
+        if (extraHandWash > 0) breakdownHTML += '<div class="wh-breakdown-row"><span class="row-label">Extra Hand Wash (waiting)</span><span class="row-value">' + extraHandWash + ' gal</span></div>';
+        if (dishwasherGal > 0) breakdownHTML += '<div class="wh-breakdown-row"><span class="row-label">Dishwasher (1 cycle)</span><span class="row-value">' + dishwasherGal + ' gal</span></div>';
+        if (laundryGal > 0) breakdownHTML += '<div class="wh-breakdown-row"><span class="row-label">Laundry (' + v.laundry + ' load' + (v.laundry > 1 ? 's' : '') + ' &times; 7 gal)</span><span class="row-value">' + laundryGal + ' gal</span></div>';
+        breakdownHTML += '<div class="wh-breakdown-row" style="font-weight:700;"><span class="row-label">Total Peak Demand</span><span class="row-value">' + peakDemand + ' gal</span></div>';
+        breakdownHTML += '<div class="wh-breakdown-row"><span class="row-label">Temperature Rise Needed</span><span class="row-value">' + tempRise + '°F (' + v.inletTemp + '°F → ' + targetTemp + '°F)</span></div>';
+        document.getElementById('wh-breakdown').innerHTML = breakdownHTML;
+
+        // Energy comparison
+        var energyHTML = '<h3>Annual Energy Cost Comparison</h3>';
+        energyHTML += '<div class="wh-compare-grid">';
+        energyHTML += '<div class="wh-compare-card"><div class="type-label">Tank (Electric)</div><div class="cost-value">$' + tankElectricAnnual + '/yr</div><div class="cost-label">@ $0.16/kWh avg</div><div class="detail-row"><span>Daily hot water</span><span>' + kwhPerDay.toFixed(1) + ' kWh</span></div><div class="detail-row"><span>Standby loss</span><span>1.5 kWh/day</span></div></div>';
+        energyHTML += '<div class="wh-compare-card"><div class="type-label">Tank (Gas)</div><div class="cost-value">$' + tankGasAnnual + '/yr</div><div class="cost-label">@ $1.20/therm avg</div><div class="detail-row"><span>Efficiency</span><span>60%</span></div><div class="detail-row"><span>Standby loss</span><span>0.15 therms/day</span></div></div>';
+        energyHTML += '<div class="wh-compare-card"><div class="type-label">Tankless (Electric)</div><div class="cost-value">$' + tanklessElectricAnnual + '/yr</div><div class="cost-label">@ $0.16/kWh avg</div><div class="detail-row"><span>No standby loss</span><span>On-demand</span></div><div class="detail-row"><span>Efficiency</span><span>~99%</span></div></div>';
+        energyHTML += '<div class="wh-compare-card"><div class="type-label">Tankless (Gas)</div><div class="cost-value">$' + tanklessGasAnnual + '/yr</div><div class="cost-label">@ $1.20/therm avg</div><div class="detail-row"><span>No standby loss</span><span>On-demand</span></div><div class="detail-row"><span>Efficiency</span><span>95%</span></div></div>';
+        energyHTML += '</div>';
+        document.getElementById('wh-energy-compare').innerHTML = energyHTML;
+
+        // Recommendation
+        var cheapest = Math.min(tankElectricAnnual, tankGasAnnual, tanklessElectricAnnual, tanklessGasAnnual);
+        var cheapestType = '';
+        if (cheapest === tanklessGasAnnual) cheapestType = 'tankless gas';
+        else if (cheapest === tanklessElectricAnnual) cheapestType = 'tankless electric';
+        else if (cheapest === tankGasAnnual) cheapestType = 'tank gas';
+        else cheapestType = 'tank electric';
+
+        var recHTML = '<div class="rec-title">Recommendation</div>';
+        recHTML += '<div class="rec-text">For a household of ' + v.household + ' with ' + v.bathrooms + ' bathroom' + (v.bathrooms > 1 ? 's' : '') + ', ';
+        recHTML += 'you need a <strong>' + tankSize + '-gallon tank water heater</strong> (FHR ' + fhrNeeded + '+ gallons) or a <strong>tankless unit rated at ' + totalGPM + '+ GPM</strong> with ' + tempRise + '°F temperature rise. ';
+        recHTML += 'The most cost-effective option to operate is a <strong>' + cheapestType + ' water heater</strong> at approximately $' + cheapest + ' per year in energy costs. ';
+        if (totalGPM > 5) {
+          recHTML += 'With ' + totalGPM + ' GPM demand, consider a gas tankless unit — electric tankless models may not deliver sufficient flow at this temperature rise.';
+        } else {
+          recHTML += 'An Energy Star-certified model can reduce these costs by an additional 8 to 15 percent.';
+        }
+        recHTML += '</div>';
+        document.getElementById('wh-recommendation').innerHTML = recHTML;
+
+        // Store result for copy
+        lastResult = {
+          tankSize: tankSize,
+          fhr: fhrNeeded,
+          gpm: totalGPM,
+          peakDemand: peakDemand,
+          tempRise: tempRise,
+          tankElectric: tankElectricAnnual,
+          tankGas: tankGasAnnual,
+          tanklessElectric: tanklessElectricAnnual,
+          tanklessGas: tanklessGasAnnual,
+          cheapestType: cheapestType,
+          cheapestCost: cheapest,
+          household: v.household,
+          bathrooms: v.bathrooms
+        };
+
+        window.showEl(resultDiv);
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      function clearForm() {
+        document.getElementById('wh-household').selectedIndex = 2;
+        document.getElementById('wh-bathrooms').selectedIndex = 1;
+        document.getElementById('wh-showers').selectedIndex = 0;
+        document.getElementById('wh-dishwasher').selectedIndex = 0;
+        document.getElementById('wh-laundry').selectedIndex = 1;
+        document.getElementById('wh-inlettemp').value = '55';
+        window.hideEl(resultDiv);
+        lastResult = null;
+      }
+
+      function copyResults() {
+        if (!lastResult) return;
+        var r = lastResult;
+        var text = 'Water Heater Size Calculator Results\n';
+        text += '====================================\n';
+        text += 'Household: ' + r.household + ' people, ' + r.bathrooms + ' bathrooms\n';
+        text += 'Recommended Tank Size: ' + r.tankSize + ' gallons\n';
+        text += 'First Hour Rating Needed: ' + r.fhr + ' gallons\n';
+        text += 'Tankless Flow Rate: ' + r.gpm + ' GPM\n';
+        text += 'Peak Hour Demand: ' + r.peakDemand + ' gallons\n';
+        text += 'Temperature Rise: ' + r.tempRise + '°F\n\n';
+        text += 'Annual Energy Costs:\n';
+        text += '  Tank Electric: $' + r.tankElectric + '/yr\n';
+        text += '  Tank Gas: $' + r.tankGas + '/yr\n';
+        text += '  Tankless Electric: $' + r.tanklessElectric + '/yr\n';
+        text += '  Tankless Gas: $' + r.tanklessGas + '/yr\n\n';
+        text += 'Best Value: ' + r.cheapestType + ' ($' + r.cheapestCost + '/yr)\n';
+        text += '\nCalculated at tool.teamzlab.com/housing/water-heater-size-calculator/';
+
+        navigator.clipboard.writeText(text).then(function () {
+          if (window.showToast) window.showToast('Results copied to clipboard');
+        }).catch(function () {
+          if (window.showToast) window.showToast('Could not copy — try manually');
+        });
+      }
+
+      function shareLink() {
+        var v = getValues();
+        var url = window.location.origin + '/housing/water-heater-size-calculator/';
+        url += '?household=' + v.household;
+        url += '&bathrooms=' + v.bathrooms;
+        url += '&showers=' + v.showers;
+        url += '&dishwasher=' + (v.dishwasher ? 'yes' : 'no');
+        url += '&laundry=' + v.laundry;
+        url += '&inlettemp=' + v.inletTemp;
+
+        navigator.clipboard.writeText(url).then(function () {
+          if (window.showToast) window.showToast('Share link copied to clipboard');
+        }).catch(function () {
+          if (window.showToast) window.showToast('Could not copy — try manually');
+        });
+      }
+    });
+  </script>
+</body>
+</html>
