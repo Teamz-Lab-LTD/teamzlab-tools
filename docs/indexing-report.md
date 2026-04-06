@@ -1,14 +1,11 @@
-# Indexing Report — 2026-04-06 07:38
+# Indexing Report — 2026-04-06 07:54
 
 Total pages: 1
 Checked: 1
-Indexed: 0 (0%)
-Not indexed: 1
+Indexed: 1 (100%)
+Not indexed: 0
 Errors: 0
 
-## Not Indexed Pages
+## Indexed Pages (1)
 
-| Page | Reason |
-|---|---|
-| /au/income-tax-calculator/ | URL is unknown to Google |
-
+- /evergreen/
