@@ -1158,6 +1158,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Old vs New Tax Regime Calculator India',d:'Compare tax under India\'s old and new tax regime for FY 2025-26. See which regime saves more based on your deductions. Free calculator.',h:'/in/old-vs-new-tax-regime-calculator/'},
   {t:'Passport Photo Resize India',d:'Use this free passport photo resizer for India. Resize photos for Indian passport, Aadhaar, PAN card, and US visa with exact dimensions under 200KB.',h:'/in/passport-photo-resize/'},
   {t:'PPF Calculator India',d:'Calculate PPF maturity amount for 15 years. See how your annual investment grows tax-free with compound interest in India.',h:'/in/ppf-calculator/'},
+  {t:'Rent Receipt Generator India',d:'Generate free rent receipts for HRA tax exemption in India. Create printable monthly receipts with landlord, tenant, and property details privately.',h:'/in/rent-receipt-generator/'},
   {t:'Resize Image to 100KB',d:'Resize any image to under 100KB online for free. Perfect for Indian government forms, IBPS, SSC, and UPSC uploads. No server upload required.',h:'/in/resize-image-to-100kb/'},
   {t:'Resize Photo for Job Application India',d:'Resize photo for Indian job applications. Passport size, stamp size, and standard sizes for IBPS, SSC, RRB, UPSC forms. Free browser-based tool, no up',h:'/in/resize-photo-for-job-application/'},
   {t:'Section 80C Tax Savings Calculator',d:'Calculate your tax savings under Section 80C. Plan investments in PPF, ELSS, LIC, and more to save up to ₹46,800 in tax.',h:'/in/section-80c-tax-savings-calculator/'},
