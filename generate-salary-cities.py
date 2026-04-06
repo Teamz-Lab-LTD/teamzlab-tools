@@ -1,0 +1,1 @@
+scripts/generate-salary-cities.py

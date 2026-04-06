@@ -1,0 +1,1 @@
+scripts/build-daily-seo-notify.sh

@@ -1,0 +1,1 @@
+scripts/build-qa-check.sh

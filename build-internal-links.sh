@@ -1,0 +1,1 @@
+scripts/build-internal-links.sh

@@ -1,0 +1,1 @@
+scripts/nightly-build.sh

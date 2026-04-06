@@ -1,0 +1,1 @@
+scripts/build-gsc-anomalies.py
