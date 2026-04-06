@@ -1654,6 +1654,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'CSV to Quiz Converter',d:'Convert CSV spreadsheet data into interactive quiz format with numbered questions, radio buttons, toggleable answer key, and take-quiz mode. Free.',h:'/student/csv-to-quiz/'},
   {t:'Exam Countdown Planner',d:'Count days until your exam and build a study plan by subject. Calculate available study days, total hours, and hours per subject instantly.',h:'/student/exam-countdown-planner/'},
   {t:'Online Exam Timer',d:'Use this online exam timer with countdown display, progress bar, warning alerts, pause or resume, and fullscreen mode for timed tests and practice exa',h:'/student/exam-timer/'},
+  {t:'FAFSA SAI Calculator 2026',d:'Estimate your Student Aid Index (SAI) for FAFSA 2026-27. Calculate expected family contribution for college financial aid eligibility — free and pri',h:'/student/fafsa-sai-calculator/'},
   {t:'Flashcard Maker',d:'Create interactive flashcards online for free. Enter terms and definitions, then study with flip animations, shuffle, and navigation. No sign-up requi',h:'/student/flashcard-maker/'},
   {t:'GPA to Percentage Converter',d:'Use a GPA to percentage converter for 4.0, 5.0, and 10-point CGPA scales, including common checks like 2.0 GPA in percentage.',h:'/student/gpa-to-percentage/'},
   {t:'Graduation Party Budget Calculator',d:'Calculate graduation party costs by guest count and venue type. Free budget planner with cost breakdowns, per-guest estimates, and savings tips.',h:'/student/graduation-party-budget-calculator/'},
