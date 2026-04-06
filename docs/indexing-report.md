@@ -1,14 +1,11 @@
-# Indexing Report — 2026-04-07 00:09
+# Indexing Report — 2026-04-07 00:21
 
 Total pages: 1
 Checked: 1
-Indexed: 0 (0%)
-Not indexed: 1
+Indexed: 1 (100%)
+Not indexed: 0
 Errors: 0
 
-## Not Indexed Pages
+## Indexed Pages (1)
 
-| Page | Reason |
-|---|---|
-| /evergreen/days-between-dates-calculator/ | URL is unknown to Google |
-
+- /games/
