@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vacation Budget Planner — Teamz Lab Tools</title>
+  <meta name="description" content="Plan your summer vacation budget with estimated costs for flights, hotels, food, and activities. Calculate total trip cost per person. Free and private.">
+  <meta property="og:title" content="Vacation Budget Planner — Teamz Lab Tools">
+  <meta property="og:description" content="Plan your vacation budget with flight, hotel, food, and activity costs. Free tool.">
+  <meta property="og:url" content="https://tool.teamzlab.com/travel/summer-vacation-budget-planner/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/travel.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Vacation Budget Planner — Teamz Lab Tools">
+  <meta name="twitter:description" content="Plan your vacation budget with flight, hotel, food, and activity costs. Free tool.">
+  <link rel="canonical" href="https://tool.teamzlab.com/travel/summer-vacation-budget-planner/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .vbp-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .vbp-form label { display: block; font-weight: 600; color: var(--heading); margin-bottom: 0.25rem; font-size: var(--text-sm); }
+    .vbp-form input, .vbp-form select {
+      width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--border);
+      border-radius: 8px; font-size: var(--text-md); font-family: inherit;
+      background: var(--surface); color: var(--heading); box-sizing: border-box;
+    }
+    .vbp-form input:focus, .vbp-form select:focus { outline: none; border-color: var(--heading); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent); }
+    .vbp-full { grid-column: 1 / -1; }
+    .vbp-section-title { grid-column: 1 / -1; font-size: var(--text-lg); font-weight: 700; color: var(--heading); margin: 0.5rem 0 0 0; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+    .vbp-section-title:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    .vbp-actions { grid-column: 1 / -1; display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+    .vbp-actions button { padding: 0.7rem 1.5rem; border-radius: 999px; font-weight: 600; font-size: var(--text-md); border: none; cursor: pointer; transition: opacity 0.2s; }
+    .vbp-btn-calc { background: var(--heading); color: var(--bg); }
+    .vbp-btn-calc:hover { opacity: 0.85; }
+    .vbp-btn-clear { background: var(--surface); color: var(--heading); border: 1px solid var(--border) !important; }
+    .vbp-btn-clear:hover { border-color: var(--heading) !important; }
+    .vbp-result { display: none; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .vbp-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .vbp-summary-card { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; }
+    .vbp-summary-card .vbp-label { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 0.15rem; }
+    .vbp-summary-card .vbp-value { font-size: var(--text-lg); font-weight: 700; color: var(--heading); }
+    .vbp-grand { grid-column: 1 / -1; background: var(--surface); }
+    .vbp-grand .vbp-value { font-size: clamp(20px, 4vw, 28px); }
+    .vbp-breakdown { margin-top: 1rem; }
+    .vbp-breakdown h3 { font-size: var(--text-md); font-weight: 700; color: var(--heading); margin: 0 0 0.75rem 0; }
+    .vbp-bar-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+    .vbp-bar-label { width: 120px; font-size: var(--text-sm); color: var(--text); flex-shrink: 0; }
+    .vbp-bar-track { flex: 1; height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; }
+    .vbp-bar-fill { height: 100%; border-radius: 5px; background: var(--heading); transition: width 0.4s ease; }
+    .vbp-bar-amount { width: 80px; text-align: right; font-size: var(--text-sm); font-weight: 600; color: var(--heading); flex-shrink: 0; }
+    .vbp-result-actions { display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    .vbp-result-actions button { padding: 0.6rem 1.25rem; border-radius: 999px; font-weight: 600; font-size: var(--text-sm); border: 1px solid var(--border); background: var(--surface); color: var(--heading); cursor: pointer; transition: border-color 0.2s; }
+    .vbp-result-actions button:hover { border-color: var(--heading); }
+    @media (max-width: 600px) {
+      .vbp-form { grid-template-columns: 1fr; }
+      .vbp-actions { flex-direction: column; }
+      .vbp-actions button { width: 100%; }
+      .vbp-summary { grid-template-columns: 1fr; }
+      .vbp-bar-label { width: 90px; }
+      .vbp-bar-amount { width: 70px; }
+      .vbp-result-actions { flex-direction: column; }
+      .vbp-result-actions button { width: 100%; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.comhttps://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Travel Tools", "item": "https://tool.teamzlab.comhttps://tool.teamzlab.com/travel/"}, {"@type": "ListItem", "position": 3, "name": "Vacation Budget Planner"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What costs does the vacation budget planner include?", "acceptedAnswer": {"@type": "Answer", "text": "It covers flights, accommodation, meals, activities, local transportation, travel insurance, shopping/souvenirs, and an emergency fund percentage. Each category is calculated separately and then summed into a grand total."}}, {"@type": "Question", "name": "How is the emergency fund calculated?", "acceptedAnswer": {"@type": "Answer", "text": "The emergency fund is a percentage of the subtotal (all costs before the buffer). For example, a 10% emergency fund on a $3,000 subtotal adds $300, bringing the grand total to $3,300. Most travel experts recommend 10-15%."}}, {"@type": "Question", "name": "Can I use this for international trips?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Enter costs in any currency you prefer. The planner supports USD, EUR, GBP, CAD, AUD, JPY, INR, and BDT. For exact conversion, use a live currency converter alongside this tool."}}, {"@type": "Question", "name": "How accurate is this vacation budget estimate?", "acceptedAnswer": {"@type": "Answer", "text": "The estimate is as accurate as the numbers you input. Use real prices from booking sites for flights and hotels, check restaurant menus for meal costs, and look up attraction prices for activities. The emergency fund covers unpredictable expenses like surge pricing or weather detours."}}, {"@type": "Question", "name": "Is my budget data saved or shared?", "acceptedAnswer": {"@type": "Answer", "text": "No. All calculations run entirely in your browser. Nothing is sent to any server. Your inputs are auto-saved locally so you can return and adjust your budget anytime."}}, {"@type": "Question", "name": "How do I budget for a family vacation?", "acceptedAnswer": {"@type": "Answer", "text": "Set the number of travelers to your family size. Enter the flight cost per person (children may have lower fares). Hotel cost is per night for the room, not per person. Meals and activities budgets should reflect the whole group per day. The planner shows both the grand total and cost per person."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Summer Vacation Budget Planner", "description": "Plan your summer vacation budget with estimated costs for flights, hotels, food, and activities. Calculate total trip cost per person.", "url": "https://tool.teamzlab.com/travel/summer-vacation-budget-planner/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Summer Vacation Budget Planner</h1>
+      <p>Estimate your total trip cost by entering costs for flights, hotels, food, activities, and more. See a full breakdown per person and per day.</p>
+    </section>
+
+    <section class="tool-calculator">
+      <div class="vbp-form">
+        <p class="vbp-section-title" style="border-top:none;padding-top:0;margin-top:0">Trip Details</p>
+        <div>
+          <label for="vbp-travelers">Number of Travelers</label>
+          <input type="number" id="vbp-travelers" min="1" max="50" value="2" step="1">
+        </div>
+        <div>
+          <label for="vbp-days">Trip Duration (Days)</label>
+          <input type="number" id="vbp-days" min="1" max="365" value="7" step="1">
+        </div>
+        <div>
+          <label for="vbp-currency">Currency</label>
+          <select id="vbp-currency">
+            <option value="$" selected>USD ($)</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="CAD">CAD</option>
+            <option value="AUD">AUD</option>
+            <option value="JPY">JPY</option>
+            <option value="INR">INR</option>
+            <option value="BDT">BDT</option>
+          </select>
+        </div>
+
+        <p class="vbp-section-title">Travel Costs</p>
+        <div>
+          <label for="vbp-flight">Flight Cost Per Person</label>
+          <input type="number" id="vbp-flight" min="0" value="450" step="10" placeholder="e.g. 450">
+        </div>
+        <div>
+          <label for="vbp-insurance">Travel Insurance (Total)</label>
+          <input type="number" id="vbp-insurance" min="0" value="80" step="5" placeholder="e.g. 80">
+        </div>
+
+        <p class="vbp-section-title">Accommodation</p>
+        <div>
+          <label for="vbp-hotel">Hotel / Accommodation Per Night</label>
+          <input type="number" id="vbp-hotel" min="0" value="120" step="5" placeholder="e.g. 120">
+        </div>
+
+        <p class="vbp-section-title">Daily Expenses</p>
+        <div>
+          <label for="vbp-meals">Meals Budget Per Day (All Travelers)</label>
+          <input type="number" id="vbp-meals" min="0" value="80" step="5" placeholder="e.g. 80">
+        </div>
+        <div>
+          <label for="vbp-activities">Activities Budget Per Day</label>
+          <input type="number" id="vbp-activities" min="0" value="50" step="5" placeholder="e.g. 50">
+        </div>
+        <div>
+          <label for="vbp-transport">Local Transportation Per Day</label>
+          <input type="number" id="vbp-transport" min="0" value="25" step="5" placeholder="e.g. 25">
+        </div>
+
+        <p class="vbp-section-title">Extras</p>
+        <div>
+          <label for="vbp-shopping">Shopping / Souvenirs (Total)</label>
+          <input type="number" id="vbp-shopping" min="0" value="200" step="10" placeholder="e.g. 200">
+        </div>
+        <div>
+          <label for="vbp-emergency">Emergency Fund (%)</label>
+          <input type="number" id="vbp-emergency" min="0" max="50" value="10" step="1" placeholder="e.g. 10">
+        </div>
+
+        <div class="vbp-actions">
+          <button type="button" class="vbp-btn-calc" id="vbp-calculate">Calculate Budget</button>
+          <button type="button" class="vbp-btn-clear" id="vbp-clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="vbp-result" id="vbp-result">
+        <div class="vbp-summary" id="vbp-summary"></div>
+        <div class="vbp-breakdown" id="vbp-breakdown"></div>
+        <div class="vbp-result-actions">
+          <button type="button" id="vbp-copy">Copy Summary</button>
+          <button type="button" id="vbp-share">Share Link</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Summer Vacation Budget Planner Works</h2>
+      <p>A summer vacation budget planner is a free calculator that estimates the total cost of a trip by combining fixed expenses (flights, insurance) with daily recurring costs (meals, activities, transport) and one-time extras (shopping, souvenirs). It then applies an emergency fund percentage to produce a realistic grand total. According to the American Automobile Association (AAA), the average American family spends between $2,000 and $5,000 on a domestic summer vacation, making advance budgeting essential.</p>
+      <p>Enter the number of travelers, trip duration, and individual cost categories. The planner multiplies per-person and per-night amounts by the correct factors, sums every category, adds the emergency buffer, and shows cost per person and cost per day. All calculations happen in your browser with no data sent to any server.</p>
+
+      <h2>Vacation Budget Planner for Families and Groups</h2>
+      <p>When planning a trip for a family or group, costs multiply quickly. Flights alone for a family of four at $400 per ticket total $1,600 before any other expense. This planner helps you see the full picture before you book anything. Adjust the hotel cost to reflect room sharing, split the meals budget across group members, and set a realistic activities allowance. The per-person breakdown lets every traveler know their share, reducing post-trip financial surprises.</p>
+      <p>For group trips, try different scenarios: a budget-friendly version with hostels and street food versus a comfortable version with hotels and restaurants. Compare the two totals to find the balance between comfort and cost.</p>
+
+      <h2>Tips to Reduce Your Vacation Budget</h2>
+      <p>Experienced travelers recommend several strategies to keep costs down. Book flights 6 to 8 weeks in advance for domestic trips and 3 months ahead for international ones, per Google Flights data. Choose accommodations with a kitchen to cut meal costs by up to 40%. Use public transit instead of taxis to save on local transport. Set your emergency fund to 10-15% to cover unexpected expenses without over-budgeting.</p>
+      <p>Travel during shoulder season (late May or early September) when prices drop 15-30% compared to peak summer weeks. Look for city passes that bundle attractions and transit at a discount. Finally, convert your grand total into the local currency using a live converter to see exactly how much cash you need.</p>
+
+      <h2>Vacation Budget vs. Travel Cost Calculator</h2>
+      <p>A vacation budget planner focuses on pre-trip estimation with category-based inputs, emergency funds, and per-person splits. A travel cost calculator (like the one in our Evergreen collection) tracks actual expenses during a trip. Use the budget planner before your trip to set spending limits, then use the cost calculator while traveling to stay on track. Together, these tools form a complete financial workflow for any vacation. Last updated: April 2026.</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      /* --- Breadcrumbs & Schemas --- */
+      var TOOL_CONFIG = {
+        slug: 'travel/summer-vacation-budget-planner',
+        title: 'Summer Vacation Budget Planner',
+        description: 'Plan your summer vacation budget with estimated costs for flights, hotels, food, and activities. Calculate total trip cost per person.'
+      };
+
+      if (typeof TeamzTools !== 'undefined') {
+        TeamzTools.renderBreadcrumbs([
+          { name: 'Home', url: '/' },
+          { name: 'Travel Tools', url: '/travel/' },
+          { name: 'Vacation Budget Planner' }
+        ]);
+
+        /* --- FAQs --- */
+        var faqs = [
+          { q: 'What costs does the vacation budget planner include?', a: 'It covers flights, accommodation, meals, activities, local transportation, travel insurance, shopping/souvenirs, and an emergency fund percentage. Each category is calculated separately and then summed into a grand total.' },
+          { q: 'How is the emergency fund calculated?', a: 'The emergency fund is a percentage of the subtotal (all costs before the buffer). For example, a 10% emergency fund on a $3,000 subtotal adds $300, bringing the grand total to $3,300. Most travel experts recommend 10-15%.' },
+          { q: 'Can I use this for international trips?', a: 'Yes. Enter costs in any currency you prefer. The planner supports USD, EUR, GBP, CAD, AUD, JPY, INR, and BDT. For exact conversion, use a live currency converter alongside this tool.' },
+          { q: 'How accurate is this vacation budget estimate?', a: 'The estimate is as accurate as the numbers you input. Use real prices from booking sites for flights and hotels, check restaurant menus for meal costs, and look up attraction prices for activities. The emergency fund covers unpredictable expenses like surge pricing or weather detours.' },
+          { q: 'Is my budget data saved or shared?', a: 'No. All calculations run entirely in your browser. Nothing is sent to any server. Your inputs are auto-saved locally so you can return and adjust your budget anytime.' },
+          { q: 'How do I budget for a family vacation?', a: 'Set the number of travelers to your family size. Enter the flight cost per person (children may have lower fares). Hotel cost is per night for the room, not per person. Meals and activities budgets should reflect the whole group per day. The planner shows both the grand total and cost per person.' }
+        ];
+        TeamzTools.renderFAQs(faqs);
+
+        /* --- Related Tools --- */
+        TeamzTools.renderRelatedTools([
+          { slug: 'evergreen/travel-cost-calculator', name: 'Travel Cost Calculator', description: 'Track actual trip expenses with category breakdowns and multi-currency support.' },
+          { slug: 'evergreen/flight-time-calculator', name: 'Flight Time Calculator', description: 'Estimate flight duration between cities including layovers and time zones.' },
+          { slug: 'evergreen/expense-tracker', name: 'Expense Tracker', description: 'Log daily spending and view monthly trends with charts and category tags.' },
+          { slug: 'evergreen/savings-goal-calculator', name: 'Savings Goal Calculator', description: 'Calculate how much to save each month to reach your vacation fund target.' },
+          { slug: 'evergreen/discount-calculator', name: 'Discount Calculator', description: 'Find the final price after percentage or fixed-amount discounts on any purchase.' },
+          { slug: 'tools/live-currency-converter', name: 'Live Currency Converter', description: 'Convert between 150+ currencies with live exchange rates updated every hour.' }
+        ]);
+      }
+
+      /* --- Calculator Logic --- */
+      var calcBtn = document.getElementById('vbp-calculate');
+      var clearBtn = document.getElementById('vbp-clear');
+      var copyBtn = document.getElementById('vbp-copy');
+      var shareBtn = document.getElementById('vbp-share');
+      var resultEl = document.getElementById('vbp-result');
+
+      function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+      function calculate() {
+        var travelers = Math.max(1, Math.round(getVal('vbp-travelers')));
+        var days = Math.max(1, Math.round(getVal('vbp-days')));
+        var nights = Math.max(days - 1, 1);
+        var currency = document.getElementById('vbp-currency').value;
+
+        var totalFlights = getVal('vbp-flight') * travelers;
+        var totalHotel = getVal('vbp-hotel') * nights;
+        var totalMeals = getVal('vbp-meals') * days;
+        var totalActivities = getVal('vbp-activities') * days;
+        var totalTransport = getVal('vbp-transport') * days;
+        var insurance = getVal('vbp-insurance');
+        var shopping = getVal('vbp-shopping');
+
+        var subtotal = totalFlights + totalHotel + totalMeals + totalActivities + totalTransport + insurance + shopping;
+        var emergencyPct = Math.min(50, Math.max(0, getVal('vbp-emergency')));
+        var emergencyAmt = subtotal * (emergencyPct / 100);
+        var grandTotal = subtotal + emergencyAmt;
+        var perPerson = grandTotal / travelers;
+        var perDay = grandTotal / days;
+
+        /* Build summary cards */
+        var summaryHTML = '';
+        summaryHTML += '<div class="vbp-summary-card vbp-grand"><div class="vbp-label">Grand Total</div><div class="vbp-value">' + currency + formatNum(grandTotal) + '</div></div>';
+        summaryHTML += '<div class="vbp-summary-card"><div class="vbp-label">Cost Per Person</div><div class="vbp-value">' + currency + formatNum(perPerson) + '</div></div>';
+        summaryHTML += '<div class="vbp-summary-card"><div class="vbp-label">Cost Per Day</div><div class="vbp-value">' + currency + formatNum(perDay) + '</div></div>';
+        summaryHTML += '<div class="vbp-summary-card"><div class="vbp-label">Emergency Buffer (' + emergencyPct + '%)</div><div class="vbp-value">' + currency + formatNum(emergencyAmt) + '</div></div>';
+        document.getElementById('vbp-summary').innerHTML = summaryHTML;
+
+        /* Build breakdown bars */
+        var categories = [
+          { label: 'Flights', amount: totalFlights },
+          { label: 'Accommodation', amount: totalHotel },
+          { label: 'Meals', amount: totalMeals },
+          { label: 'Activities', amount: totalActivities },
+          { label: 'Transport', amount: totalTransport },
+          { label: 'Insurance', amount: insurance },
+          { label: 'Shopping', amount: shopping },
+          { label: 'Emergency', amount: emergencyAmt }
+        ];
+        var maxCat = Math.max.apply(null, categories.map(function(c) { return c.amount; })) || 1;
+
+        var barHTML = '<h3>Budget Breakdown</h3>';
+        categories.forEach(function(cat) {
+          var pct = (cat.amount / maxCat) * 100;
+          barHTML += '<div class="vbp-bar-row">';
+          barHTML += '<span class="vbp-bar-label">' + cat.label + '</span>';
+          barHTML += '<div class="vbp-bar-track"><div class="vbp-bar-fill" style="width:' + pct.toFixed(1) + '%"></div></div>';
+          barHTML += '<span class="vbp-bar-amount">' + currency + formatNum(cat.amount) + '</span>';
+          barHTML += '</div>';
+        });
+        document.getElementById('vbp-breakdown').innerHTML = barHTML;
+
+        if (window.showEl) { window.showEl(resultEl, 'block'); } else { resultEl.style.display = 'block'; }
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        /* Store last calculation for copy/share */
+        resultEl._data = {
+          travelers: travelers, days: days, nights: nights, currency: currency,
+          totalFlights: totalFlights, totalHotel: totalHotel, totalMeals: totalMeals,
+          totalActivities: totalActivities, totalTransport: totalTransport,
+          insurance: insurance, shopping: shopping, subtotal: subtotal,
+          emergencyPct: emergencyPct, emergencyAmt: emergencyAmt,
+          grandTotal: grandTotal, perPerson: perPerson, perDay: perDay
+        };
+      }
+
+      function formatNum(n) {
+        return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      }
+
+      calcBtn.addEventListener('click', calculate);
+
+      /* Clear */
+      clearBtn.addEventListener('click', function() {
+        var ids = ['vbp-travelers','vbp-days','vbp-flight','vbp-insurance','vbp-hotel','vbp-meals','vbp-activities','vbp-transport','vbp-shopping','vbp-emergency'];
+        var defaults = [2, 7, 450, 80, 120, 80, 50, 25, 200, 10];
+        ids.forEach(function(id, i) { document.getElementById(id).value = defaults[i]; });
+        document.getElementById('vbp-currency').selectedIndex = 0;
+        if (window.hideEl) { window.hideEl(resultEl); } else { resultEl.style.display = 'none'; }
+      });
+
+      /* Copy summary */
+      copyBtn.addEventListener('click', function() {
+        var d = resultEl._data;
+        if (!d) return;
+        var text = 'Vacation Budget Summary\n';
+        text += '========================\n';
+        text += 'Travelers: ' + d.travelers + ' | Days: ' + d.days + ' | Nights: ' + d.nights + '\n\n';
+        text += 'Flights: ' + d.currency + formatNum(d.totalFlights) + '\n';
+        text += 'Accommodation: ' + d.currency + formatNum(d.totalHotel) + '\n';
+        text += 'Meals: ' + d.currency + formatNum(d.totalMeals) + '\n';
+        text += 'Activities: ' + d.currency + formatNum(d.totalActivities) + '\n';
+        text += 'Transport: ' + d.currency + formatNum(d.totalTransport) + '\n';
+        text += 'Insurance: ' + d.currency + formatNum(d.insurance) + '\n';
+        text += 'Shopping: ' + d.currency + formatNum(d.shopping) + '\n';
+        text += '------------------------\n';
+        text += 'Subtotal: ' + d.currency + formatNum(d.subtotal) + '\n';
+        text += 'Emergency (' + d.emergencyPct + '%): ' + d.currency + formatNum(d.emergencyAmt) + '\n';
+        text += 'Grand Total: ' + d.currency + formatNum(d.grandTotal) + '\n';
+        text += 'Per Person: ' + d.currency + formatNum(d.perPerson) + '\n';
+        text += 'Per Day: ' + d.currency + formatNum(d.perDay) + '\n';
+
+        navigator.clipboard.writeText(text).then(function() {
+          if (window.showToast) window.showToast('Budget summary copied!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Could not copy — try selecting text manually');
+        });
+      });
+
+      /* Share link */
+      shareBtn.addEventListener('click', function() {
+        var params = new URLSearchParams();
+        params.set('t', document.getElementById('vbp-travelers').value);
+        params.set('d', document.getElementById('vbp-days').value);
+        params.set('f', document.getElementById('vbp-flight').value);
+        params.set('i', document.getElementById('vbp-insurance').value);
+        params.set('h', document.getElementById('vbp-hotel').value);
+        params.set('m', document.getElementById('vbp-meals').value);
+        params.set('a', document.getElementById('vbp-activities').value);
+        params.set('tr', document.getElementById('vbp-transport').value);
+        params.set('s', document.getElementById('vbp-shopping').value);
+        params.set('e', document.getElementById('vbp-emergency').value);
+        params.set('c', document.getElementById('vbp-currency').value);
+        var url = window.location.origin + window.location.pathname + '?' + params.toString();
+        navigator.clipboard.writeText(url).then(function() {
+          if (window.showToast) window.showToast('Share link copied!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Could not copy link');
+        });
+      });
+
+      /* Decode share link */
+      var sp = new URLSearchParams(window.location.search);
+      if (sp.has('t')) {
+        var map = { t: 'vbp-travelers', d: 'vbp-days', f: 'vbp-flight', i: 'vbp-insurance', h: 'vbp-hotel', m: 'vbp-meals', a: 'vbp-activities', tr: 'vbp-transport', s: 'vbp-shopping', e: 'vbp-emergency' };
+        Object.keys(map).forEach(function(k) {
+          if (sp.has(k)) document.getElementById(map[k]).value = sp.get(k);
+        });
+        if (sp.has('c')) {
+          var sel = document.getElementById('vbp-currency');
+          var cv = sp.get('c');
+          for (var oi = 0; oi < sel.options.length; oi++) {
+            if (sel.options[oi].value === cv) { sel.selectedIndex = oi; break; }
+          }
+        }
+        calculate();
+      }
+    });
+  </script>
+</body>
+</html>
