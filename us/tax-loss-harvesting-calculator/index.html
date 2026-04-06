@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tax-Loss Harvesting Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate tax savings from tax-loss harvesting. See how selling investment losses offsets capital gains and reduces your federal tax bill. Free, private.">
+  <meta property="og:title" content="Tax-Loss Harvesting Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate tax savings from tax-loss harvesting. See how selling investment losses offsets capital gains and reduces your federal tax bill. Free, private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/us/tax-loss-harvesting-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/us.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Tax-Loss Harvesting Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate tax savings from tax-loss harvesting. See how selling investment losses offsets capital gains and reduces your federal tax bill. Free, private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/us/tax-loss-harvesting-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .tlh-results { margin-top: 28px; }
+    .tlh-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .tlh-summary-card {
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .tlh-summary-card .tlh-label {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .tlh-summary-card .tlh-value {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      color: var(--heading);
+    }
+    .tlh-summary-card .tlh-sub {
+      font-size: var(--text-sm);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .tlh-summary-card.tlh-highlight {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+    .tlh-breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    .tlh-breakdown-table th,
+    .tlh-breakdown-table td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: var(--text-sm);
+      color: var(--text);
+    }
+    .tlh-breakdown-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .tlh-wash-sale-note {
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      margin-top: 20px;
+      font-size: var(--text-sm);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .tlh-wash-sale-note strong {
+      color: var(--heading);
+    }
+    @media (max-width: 600px) {
+      .tlh-summary-grid {
+        grid-template-columns: 1fr;
+      }
+      .tool-content h2 {
+        font-size: var(--text-lg);
+      }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Tax-Loss Harvesting Calculator", "description": "Calculate tax savings from tax-loss harvesting. See how selling investment losses offsets capital gains and reduces your federal tax bill.", "url": "https://tool.teamzlab.com/us/tax-loss-harvesting-calculator/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Tax-Loss Harvesting Calculator</h1>
+      <p class="tool-description">Calculate how much you can save by selling investments at a loss to offset capital gains. See your tax savings, ordinary income offset, and loss carryforward — all calculated privately in your browser.</p>
+    </section>
+
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="form-group">
+        <label for="tlh-filing">Filing Status</label>
+        <select id="tlh-filing">
+          <option value="single">Single</option>
+          <option value="mfj">Married Filing Jointly</option>
+          <option value="mfs">Married Filing Separately</option>
+          <option value="hoh">Head of Household</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="tlh-bracket">Federal Tax Bracket (%)</label>
+        <select id="tlh-bracket">
+          <option value="10">10%</option>
+          <option value="12">12%</option>
+          <option value="22" selected>22%</option>
+          <option value="24">24%</option>
+          <option value="32">32%</option>
+          <option value="35">35%</option>
+          <option value="37">37%</option>
+        </select>
+        <small style="color:var(--text-muted);">Your marginal federal income tax rate on ordinary income</small>
+      </div>
+
+      <div class="form-group">
+        <label for="tlh-st-gains">Short-Term Capital Gains ($)</label>
+        <input type="number" id="tlh-st-gains" placeholder="e.g. 15000" min="0" step="100">
+        <small style="color:var(--text-muted);">Gains from assets held 1 year or less</small>
+      </div>
+
+      <div class="form-group">
+        <label for="tlh-lt-gains">Long-Term Capital Gains ($)</label>
+        <input type="number" id="tlh-lt-gains" placeholder="e.g. 25000" min="0" step="100">
+        <small style="color:var(--text-muted);">Gains from assets held more than 1 year</small>
+      </div>
+
+      <div class="form-group">
+        <label for="tlh-st-losses">Short-Term Losses Available ($)</label>
+        <input type="number" id="tlh-st-losses" placeholder="e.g. 8000" min="0" step="100">
+        <small style="color:var(--text-muted);">Losses from selling assets held 1 year or less</small>
+      </div>
+
+      <div class="form-group">
+        <label for="tlh-lt-losses">Long-Term Losses Available ($)</label>
+        <input type="number" id="tlh-lt-losses" placeholder="e.g. 12000" min="0" step="100">
+        <small style="color:var(--text-muted);">Losses from selling assets held more than 1 year</small>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button type="button" class="btn-primary" id="tlh-calculate-btn" style="width:100%;padding:14px;font-size:var(--text-base);font-weight:600;border:none;border-radius:8px;cursor:pointer;">Calculate Tax Savings</button>
+      </div>
+
+      <div id="tlh-results" class="tlh-results" style="display:none;">
+        <div class="tool-result" style="border-top:2px solid var(--border);padding-top:20px;margin-top:20px;">
+          <h3 style="color:var(--heading);margin-bottom:16px;">Tax-Loss Harvesting Results</h3>
+          <div id="tlh-summary" class="tlh-summary-grid"></div>
+          <div id="tlh-breakdown"></div>
+          <div class="tlh-wash-sale-note">
+            <strong>Wash Sale Rule Reminder:</strong> You cannot claim a loss if you buy a "substantially identical" security within 30 days before or after the sale. Consider replacing with a similar (but not identical) ETF or fund to stay invested while harvesting the loss.
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button type="button" class="btn-secondary" id="tlh-copy-btn" style="flex:1;">Copy Results</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How Tax-Loss Harvesting Works</h2>
+      <p>Tax-loss harvesting is a strategy where you sell investments at a loss to offset capital gains and reduce your tax bill. Under IRS rules, capital losses first offset gains of the same type — short-term losses offset short-term gains, and long-term losses offset long-term gains. Any remaining losses then cross over to offset the other type. If net losses exceed total gains, up to $3,000 ($1,500 for married filing separately) can be deducted against ordinary income like wages and salary. Excess losses beyond that carry forward to future tax years indefinitely.</p>
+      <p>This calculator shows exactly how much you can save by harvesting losses across your portfolio. Enter your short-term and long-term gains and losses to see the dollar-for-dollar tax reduction, ordinary income offset, and any carryforward amount for future years.</p>
+
+      <h2>Tax-Loss Harvesting Rules and Limits</h2>
+      <p>The IRS requires losses to offset gains in a specific order. Short-term losses first reduce short-term gains, which are taxed at your ordinary income rate (10% to 37%). Long-term losses first reduce long-term gains, taxed at the preferential 0%, 15%, or 20% rate. After same-type netting, remaining losses cross over. This ordering matters because short-term losses offsetting short-term gains save more per dollar than long-term losses offsetting long-term gains.</p>
+      <p>The $3,000 annual deduction limit against ordinary income ($1,500 for married filing separately) applies only to net capital losses that exceed total capital gains. Based on 2026 IRS rules, any unused losses carry forward indefinitely and retain their character as short-term or long-term. There is no expiration on capital loss carryforwards, making tax-loss harvesting valuable even in years when you have no gains to offset.</p>
+
+      <h2>Wash Sale Rule Explained</h2>
+      <p>The wash sale rule prevents you from claiming a tax loss if you purchase a "substantially identical" security within 30 days before or after the sale. This 61-day window (30 days before, the sale date, and 30 days after) applies across all your accounts, including IRAs. If triggered, the disallowed loss is added to the cost basis of the replacement shares, deferring rather than eliminating the tax benefit.</p>
+      <p>To harvest losses while staying invested, you can replace the sold security with a similar but not identical investment. For example, selling an S&amp;P 500 index fund and buying a total stock market fund maintains similar market exposure without triggering the wash sale rule. The IRS has not defined "substantially identical" precisely for ETFs tracking different indexes, giving investors some flexibility in choosing replacement securities.</p>
+
+      <h2>When Tax-Loss Harvesting Saves the Most</h2>
+      <p>Tax-loss harvesting delivers the greatest savings when you have large short-term capital gains and are in a high tax bracket. A taxpayer in the 37% bracket who offsets $50,000 in short-term gains saves $18,500 in federal tax alone. The strategy is also valuable during market downturns when unrealized losses are widespread — a bear market is an opportunity to lock in losses for future tax benefits. Year-end is the most common time to harvest, but monitoring throughout the year captures more opportunities and avoids the December rush that can affect market prices.</p>
+    </section>
+
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    /* ===== Long-term capital gains rate by filing status ===== */
+    var LTCG_RATES = {
+      single:  { 0: 47025,  15: 518900,  20: Infinity },
+      mfj:     { 0: 94050,  15: 583750,  20: Infinity },
+      mfs:     { 0: 47025,  15: 291850,  20: Infinity },
+      hoh:     { 0: 63000,  15: 551350,  20: Infinity }
+    };
+
+    /* ===== Helpers ===== */
+    function fmt(n) {
+      var sign = n < 0 ? '-' : '';
+      return sign + '$' + Math.abs(Math.round(n)).toLocaleString();
+    }
+
+    function getLtcgRate(filing) {
+      /* Use 15% as default for most filers — user provides bracket for ordinary income */
+      return 15;
+    }
+
+    /* ===== Main Calculation ===== */
+    function calculate() {
+      var filing = document.getElementById('tlh-filing').value;
+      var bracket = parseFloat(document.getElementById('tlh-bracket').value) || 22;
+      var stGains = parseFloat(document.getElementById('tlh-st-gains').value) || 0;
+      var ltGains = parseFloat(document.getElementById('tlh-lt-gains').value) || 0;
+      var stLosses = parseFloat(document.getElementById('tlh-st-losses').value) || 0;
+      var ltLosses = parseFloat(document.getElementById('tlh-lt-losses').value) || 0;
+
+      if (stGains === 0 && ltGains === 0 && stLosses === 0 && ltLosses === 0) {
+        if (window.showToast) window.showToast('Enter at least one gain or loss amount.');
+        return;
+      }
+
+      var bracketRate = bracket / 100;
+      var ltcgRate = 0.15; /* default LTCG rate for most filers */
+      var ordinaryIncomeLimit = (filing === 'mfs') ? 1500 : 3000;
+
+      /* === Step 1: Net same-type first === */
+      var netST = stGains - stLosses;
+      var netLT = ltGains - ltLosses;
+
+      /* === Step 2: Cross-type netting === */
+      var finalNetST = netST;
+      var finalNetLT = netLT;
+
+      if (netST < 0 && netLT > 0) {
+        /* Excess ST losses offset LT gains */
+        var crossover = Math.min(Math.abs(netST), netLT);
+        finalNetST = netST + crossover;
+        finalNetLT = netLT - crossover;
+      } else if (netLT < 0 && netST > 0) {
+        /* Excess LT losses offset ST gains */
+        var crossover = Math.min(Math.abs(netLT), netST);
+        finalNetLT = netLT + crossover;
+        finalNetST = netST - crossover;
+      }
+
+      /* === Step 3: Tax WITHOUT harvesting (no losses applied) === */
+      var taxWithout = (stGains * bracketRate) + (ltGains * ltcgRate);
+
+      /* === Step 4: Tax WITH harvesting === */
+      var taxableST = Math.max(finalNetST, 0);
+      var taxableLT = Math.max(finalNetLT, 0);
+      var taxWith = (taxableST * bracketRate) + (taxableLT * ltcgRate);
+
+      /* === Step 5: Ordinary income offset === */
+      var totalNetLoss = 0;
+      if (finalNetST < 0) totalNetLoss += Math.abs(finalNetST);
+      if (finalNetLT < 0) totalNetLoss += Math.abs(finalNetLT);
+
+      var ordinaryOffset = Math.min(totalNetLoss, ordinaryIncomeLimit);
+      var ordinaryTaxSaved = ordinaryOffset * bracketRate;
+
+      /* === Step 6: Carryforward === */
+      var carryforward = Math.max(totalNetLoss - ordinaryIncomeLimit, 0);
+
+      /* === Step 7: Total savings === */
+      var taxSavings = taxWithout - taxWith + ordinaryTaxSaved;
+
+      /* === Step 8: Effective savings rate === */
+      var totalLosses = stLosses + ltLosses;
+      var effectiveRate = totalLosses > 0 ? (taxSavings / totalLosses) * 100 : 0;
+
+      /* === Render Results === */
+      document.getElementById('tlh-results').style.display = 'block';
+
+      var html = '';
+      html += '<div class="tlh-summary-card tlh-highlight"><div class="tlh-label">Total Tax Savings</div><div class="tlh-value">' + fmt(taxSavings) + '</div><div class="tlh-sub">By harvesting ' + fmt(totalLosses) + ' in losses</div></div>';
+      html += '<div class="tlh-summary-card"><div class="tlh-label">Effective Savings Rate</div><div class="tlh-value">' + effectiveRate.toFixed(1) + '%</div><div class="tlh-sub">Tax saved per dollar of losses harvested</div></div>';
+      html += '<div class="tlh-summary-card"><div class="tlh-label">Tax Without Harvesting</div><div class="tlh-value">' + fmt(taxWithout) + '</div><div class="tlh-sub">On ' + fmt(stGains + ltGains) + ' total gains</div></div>';
+      html += '<div class="tlh-summary-card"><div class="tlh-label">Tax With Harvesting</div><div class="tlh-value">' + fmt(taxWith) + '</div><div class="tlh-sub">After offsetting with losses</div></div>';
+      html += '<div class="tlh-summary-card"><div class="tlh-label">Ordinary Income Offset</div><div class="tlh-value">' + fmt(ordinaryOffset) + '</div><div class="tlh-sub">Saves ' + fmt(ordinaryTaxSaved) + ' at ' + bracket + '% bracket</div></div>';
+      html += '<div class="tlh-summary-card"><div class="tlh-label">Loss Carryforward</div><div class="tlh-value">' + fmt(carryforward) + '</div><div class="tlh-sub">' + (carryforward > 0 ? 'Carries forward to future tax years' : 'No excess losses to carry forward') + '</div></div>';
+
+      document.getElementById('tlh-summary').innerHTML = html;
+
+      /* Breakdown table */
+      var tableHTML = '<h3 style="color:var(--heading);margin-top:20px;">Netting Breakdown</h3>';
+      tableHTML += '<table class="tlh-breakdown-table">';
+      tableHTML += '<thead><tr><th>Category</th><th>Gains</th><th>Losses</th><th>Net</th><th>Tax Rate</th></tr></thead>';
+      tableHTML += '<tbody>';
+      tableHTML += '<tr><td>Short-Term</td><td>' + fmt(stGains) + '</td><td>' + fmt(stLosses) + '</td><td>' + fmt(netST) + '</td><td>' + bracket + '% (ordinary)</td></tr>';
+      tableHTML += '<tr><td>Long-Term</td><td>' + fmt(ltGains) + '</td><td>' + fmt(ltLosses) + '</td><td>' + fmt(netLT) + '</td><td>15% (LTCG)</td></tr>';
+      tableHTML += '<tr style="border-top:2px solid var(--border);font-weight:600;"><td>After Cross-Netting</td><td colspan="2"></td><td>ST: ' + fmt(finalNetST) + ' / LT: ' + fmt(finalNetLT) + '</td><td></td></tr>';
+      if (ordinaryOffset > 0) {
+        tableHTML += '<tr><td>Ordinary Income Offset</td><td colspan="2"></td><td>' + fmt(ordinaryOffset) + '</td><td>' + bracket + '%</td></tr>';
+      }
+      if (carryforward > 0) {
+        tableHTML += '<tr><td>Carryforward to Next Year</td><td colspan="2"></td><td>' + fmt(carryforward) + '</td><td>Future use</td></tr>';
+      }
+      tableHTML += '</tbody></table>';
+
+      document.getElementById('tlh-breakdown').innerHTML = tableHTML;
+
+      document.getElementById('tlh-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ===== Copy Results ===== */
+    document.getElementById('tlh-copy-btn').addEventListener('click', function() {
+      var el = document.getElementById('tlh-summary');
+      if (!el) return;
+      var cards = el.querySelectorAll('.tlh-summary-card');
+      var lines = ['Tax-Loss Harvesting Results'];
+      cards.forEach(function(card) {
+        var label = card.querySelector('.tlh-label');
+        var value = card.querySelector('.tlh-value');
+        var sub = card.querySelector('.tlh-sub');
+        if (label && value) {
+          lines.push(label.textContent + ': ' + value.textContent + (sub ? ' (' + sub.textContent + ')' : ''));
+        }
+      });
+      lines.push('', 'Calculated at tool.teamzlab.com/us/tax-loss-harvesting-calculator/');
+      window.safeClipboardText(lines.join('\n'), 'Results copied!', 'Could not copy results.');
+    });
+
+    /* ===== Calculate button ===== */
+    document.getElementById('tlh-calculate-btn').addEventListener('click', calculate);
+
+    /* ===== Init ===== */
+    var BREADCRUMBS = [
+      { name: 'Home', url: '/' },
+      { name: 'US Tools', url: '/us/' },
+      { name: 'Tax-Loss Harvesting Calculator' }
+    ];
+
+    var TOOL_CONFIG = {
+      slug: 'us/tax-loss-harvesting-calculator',
+      title: 'Tax-Loss Harvesting Calculator',
+      description: 'Calculate tax savings from tax-loss harvesting. See how selling investment losses offsets capital gains and reduces your federal tax bill.'
+    };
+
+    var FAQS = [
+      { q: 'What is tax-loss harvesting?', a: 'Tax-loss harvesting is the strategy of selling investments at a loss to offset capital gains taxes. Losses reduce your taxable gains dollar-for-dollar, and up to $3,000 of excess losses can offset ordinary income annually.' },
+      { q: 'How do short-term and long-term losses offset gains?', a: 'Short-term losses first offset short-term gains (taxed at ordinary income rates). Long-term losses first offset long-term gains (taxed at 0%, 15%, or 20%). Any remaining losses then cross over to offset the other type.' },
+      { q: 'What is the $3,000 loss deduction limit?', a: 'If your total capital losses exceed your total capital gains, you can deduct up to $3,000 of the net loss against ordinary income ($1,500 if married filing separately). Excess losses carry forward to future years.' },
+      { q: 'What is the wash sale rule?', a: 'The wash sale rule prevents you from claiming a loss if you buy a substantially identical security within 30 days before or after the sale. The 61-day window applies across all your accounts, including IRAs.' },
+      { q: 'Do capital loss carryforwards expire?', a: 'No. Under current IRS rules, unused capital losses carry forward indefinitely until they are fully used. They retain their character as short-term or long-term losses in future years.' },
+      { q: 'Is this calculator free and private?', a: 'Yes, completely free with no signup required. All calculations happen in your browser — your financial data never leaves your device.' }
+    ];
+
+    var RELATED_TOOLS = [
+      { slug: 'us/capital-gains-tax-calculator', name: 'Capital Gains Tax Calculator', description: 'Calculate federal capital gains tax on stocks, crypto, and real estate.' },
+      { slug: 'us/income-tax-calculator', name: 'US Income Tax Calculator', description: 'Calculate your federal income tax for 2026.' },
+      { slug: 'us/roth-conversion-calculator', name: 'Roth Conversion Calculator', description: 'See if converting to Roth IRA saves you money.' },
+      { slug: 'evergreen/stock-return-calculator', name: 'Stock Return Calculator', description: 'Calculate total return on stock investments.' },
+      { slug: 'evergreen/investment-return-calculator', name: 'Investment Return Calculator', description: 'Calculate investment returns over time.' },
+      { slug: 'evergreen/options-profit-calculator', name: 'Options Profit Calculator', description: 'Calculate potential profit and loss on options trades.' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+    });
+  </script>
+</body>
+</html>
