@@ -74,12 +74,11 @@
     /* ── Hand ── */
     .cc-hand-label { text-align: center; font-weight: 700; color: var(--heading); margin: 0.75rem 0 0.5rem; font-size: 0.95rem; }
     .cc-hand { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 110px; padding: 0.25rem; }
-    .cc-hand .cc-card { width: 120px; height: 180px; border-radius: 14px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; flex-shrink: 0; }
-    .cc-hand .cc-card.playable { animation: cc-glow 1.5s ease-in-out infinite alternate; }
-    .cc-hand .cc-card.playable:hover { transform: translateY(-12px); z-index: 10; }
+    .cc-hand .cc-card { width: 120px; height: 180px; border-radius: 14px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; flex-shrink: 0; background: transparent; line-height: 0; }
+    .cc-hand .cc-card.playable { box-shadow: 0 0 14px 4px rgba(0,0,0,0.35); }
+    .cc-hand .cc-card.playable:hover { transform: translateY(-12px); box-shadow: 0 0 22px 6px rgba(0,0,0,0.5); z-index: 10; }
     .cc-hand .cc-card.disabled { cursor: not-allowed; opacity: 0.5; }
     .cc-hand .cc-card.disabled:hover { transform: none; }
-    @keyframes cc-glow { 0% { box-shadow: 0 0 6px 2px rgba(255,255,255,0.15); } 100% { box-shadow: 0 0 18px 4px rgba(255,255,255,0.4); } }
 
     /* ── Action bar ── */
     .cc-actions { display: flex; justify-content: center; gap: 0.5rem; margin: 0.75rem 0; flex-wrap: wrap; }
@@ -276,7 +275,7 @@
       green: 'rgb(255,255,255)',
       yellow: 'rgb(0,0,0)'
     };
-    var SYMBOL_MAP = { skip: '\u2298', reverse: '\u21C4', draw2: '+2', wild: '\u2605', wild4: '+4' };
+    var SYMBOL_MAP = { skip: '\u2205', reverse: '\u21BB', draw2: '+2', wild: '\u2605', wild4: '+4' };
 
     /* ═══════════════════════════════════════════
        STATE
@@ -446,20 +445,12 @@
       var ctx = canvas.getContext('2d');
       ctx.scale(2, 2); // retina scaling
 
-      var r = Math.min(w, h) * 0.1; // corner radius
       var bg = CARD_COLORS[card.color] || 'rgb(30,30,30)';
       var fg = CARD_TEXT[card.color] || 'rgb(255,255,255)';
       var display = SYMBOL_MAP[card.value] || card.value;
       var isWild = card.value === 'wild' || card.value === 'wild4';
 
-      // ── Background with rounded rect ──
-      ctx.beginPath();
-      ctx.moveTo(r, 0); ctx.lineTo(w - r, 0); ctx.quadraticCurveTo(w, 0, w, r);
-      ctx.lineTo(w, h - r); ctx.quadraticCurveTo(w, h, w - r, h);
-      ctx.lineTo(r, h); ctx.quadraticCurveTo(0, h, 0, h - r);
-      ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.closePath();
-      ctx.clip();
+      // ── Fill entire canvas (CSS border-radius handles rounding) ──
 
       if (isWild) {
         // 4-color quadrants
@@ -639,7 +630,12 @@
       var card = drawFromDeck();
       player.hand.push(card);
       state.hasDrawn = true;
-      $status.textContent = 'Drew a card. Play it or tap deck again to pass.';
+      if (canPlay(card)) {
+        $status.textContent = 'Drew a playable card! Play it or pass your turn.';
+      } else {
+        $status.textContent = 'Drew a card — can\'t play it. Pass your turn.';
+      }
+      $endTurn.style.display = 'inline-block';
       renderHand(state.currentPlayer);
       renderScores();
     });
