@@ -1,11 +1,14 @@
-# Indexing Report — 2026-04-07 00:21
+# Indexing Report — 2026-04-07 00:27
 
 Total pages: 1
 Checked: 1
-Indexed: 1 (100%)
-Not indexed: 0
+Indexed: 0 (0%)
+Not indexed: 1
 Errors: 0
 
-## Indexed Pages (1)
+## Not Indexed Pages
 
-- /games/
+| Page | Reason |
+|---|---|
+| /games/color-cards/ | URL is unknown to Google |
+
