@@ -92,6 +92,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'iPhone Storage Calculator',d:'Calculate exactly how much iPhone storage you need based on your photos, videos, apps, and music habits. Find the right model — 128GB to 1TB. Free t',h:'/apple/iphone-storage-calculator/'},
   {t:'iPhone Photo &amp; Video Format Size Calculator',d:'Calculate iPhone photo and video file sizes by format. Compare HEIF vs JPEG vs ProRAW vs ProRes to see exactly how much storage each format uses. Free',h:'/apple/photo-format-size-checker/'},
   {t:'Screen Time Analyzer',d:'Calculate how much time you spend on your phone daily, weekly, and yearly. See what you could accomplish with that time and get personalized usage tip',h:'/apple/screen-time-analyzer/'},
+  {t:'AlwaysReady Care',d:'AlwaysReady Care is a compliance evidence layer for UK social care providers. Record, review, and manage care evidence for CQC inspections.',h:'/apps/always-ready-care/'},
   {t:'Brutto Netto Rechner Österreich 2026',d:'Berechnen Sie Ihr Nettogehalt in Österreich. Lohnsteuer, Sozialversicherung und Sonderzahlungen. Kostenlos, privat, ohne Anmeldung.',h:'/at/brutto-netto-rechner/'},
   {t:'Einkommensteuer Rechner Österreich 2026',d:'Berechnen Sie Ihre Einkommensteuer in Österreich mit dem Steuertarif 2026 und allen Stufen. Kostenloser Rechner, privat und ohne Anmeldung.',h:'/at/einkommensteuer-rechner/'},
   {t:'Familienbeihilfe Rechner Österreich 2026',d:'Berechnen Sie Ihre Familienbeihilfe in Österreich. Beträge nach Alter und Kinderanzahl. Kostenlos, privat, ohne Anmeldung.',h:'/at/familienbeihilfe-rechner/'},

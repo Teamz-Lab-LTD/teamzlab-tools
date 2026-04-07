@@ -206,29 +206,30 @@
         <!-- Online mode options -->
         <div id="cc-online-options" style="display:none">
           <div class="cc-player-row" style="margin-bottom:0.75rem">
-            <span class="cc-color-dot" style="background:var(--cc-blue)"></span>
-            <input type="text" id="cc-online-name" value="" placeholder="Your Name" maxlength="12">
+            <input type="text" id="cc-online-name" value="" placeholder="Enter your name" maxlength="12" style="font-size:1rem">
           </div>
-          <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
-            <button class="cc-start-btn" id="cc-create-room" style="flex:1">Create Room</button>
-            <button class="cc-start-btn" id="cc-join-room-btn" style="flex:1;background:var(--surface);color:var(--heading);border:1px solid var(--border)">Join Room</button>
-          </div>
-          <div id="cc-join-input" style="display:none;margin-bottom:0.75rem">
-            <div class="cc-player-row">
-              <input type="text" id="cc-room-code-input" placeholder="Enter 4-digit room code" maxlength="4" style="text-transform:uppercase;text-align:center;font-size:1.2rem;letter-spacing:4px;font-weight:800">
+
+          <!-- Step 1: Create or Join -->
+          <div id="cc-online-step1">
+            <button class="cc-start-btn" id="cc-create-room" style="margin-bottom:0.5rem">Create New Room</button>
+            <div style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-bottom:0.5rem">— or join a friend's room —</div>
+            <div style="display:flex;gap:0.5rem">
+              <input type="text" id="cc-room-code-input" placeholder="Room code" maxlength="6" style="flex:1;text-transform:uppercase;text-align:center;font-size:1.1rem;letter-spacing:3px;font-weight:800;padding:0.7rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--heading);font-family:inherit">
+              <button class="cc-start-btn" id="cc-join-go" style="white-space:nowrap;padding:0.7rem 1.2rem">Join</button>
             </div>
-            <button class="cc-start-btn" id="cc-join-go" style="margin-top:0.5rem">Join Game</button>
           </div>
+
+          <!-- Step 2: Lobby -->
           <div id="cc-room-lobby" style="display:none">
             <div style="text-align:center;padding:1rem;background:var(--surface);border-radius:10px;border:1px solid var(--border)">
-              <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.25rem">Room Code</div>
-              <div id="cc-room-code-display" style="font-size:2rem;font-weight:900;letter-spacing:6px;color:var(--heading)"></div>
-              <button id="cc-copy-room" style="margin-top:0.5rem;padding:0.4rem 1rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--heading);font-family:inherit;font-weight:600;cursor:pointer;font-size:0.8rem">Copy Link</button>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">Share this room code with friends</div>
+              <div id="cc-room-code-display" style="font-size:2.2rem;font-weight:900;letter-spacing:8px;color:var(--heading)"></div>
+              <button id="cc-copy-room" style="margin-top:0.5rem;padding:0.4rem 1rem;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--heading);font-family:inherit;font-weight:600;cursor:pointer;font-size:0.8rem">Copy Invite Link</button>
             </div>
-            <div style="margin-top:0.75rem;font-weight:700;color:var(--heading);font-size:0.9rem">Players in room:</div>
+            <div style="margin-top:0.75rem;font-weight:700;color:var(--heading);font-size:0.9rem">Players:</div>
             <div id="cc-lobby-players" style="margin-top:0.25rem"></div>
-            <div id="cc-lobby-status" style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-top:0.5rem">Waiting for players...</div>
-            <button class="cc-start-btn" id="cc-online-start" style="margin-top:0.75rem;display:none">Start Online Game</button>
+            <div id="cc-lobby-status" style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-top:0.5rem">Waiting for players to join...</div>
+            <button class="cc-start-btn" id="cc-online-start" style="margin-top:0.75rem;display:none">Start Game</button>
           </div>
         </div>
       </div>
@@ -1054,6 +1055,10 @@
 
     // Create Room
     document.getElementById('cc-create-room').addEventListener('click', function() {
+      var btn = this;
+      var name = getMyName();
+      if (!name) { if (window.showToast) window.showToast('Please enter your name first'); return; }
+      btn.disabled = true; btn.textContent = 'Creating...';
       initFirebase().then(function() {
         var code = genRoomCode();
         onlineRoom = code;
@@ -1064,57 +1069,53 @@
           state: 'lobby',
           players: {}
         };
-        roomData.players[fbUser.uid] = { name: getMyName(), idx: 0, online: true };
+        roomData.players[fbUser.uid] = { name: name, idx: 0, online: true };
         onlineRoomRef = fbDb.ref('color-cards/' + code);
-        onlineRoomRef.set(roomData).then(function() {
+        return onlineRoomRef.set(roomData).then(function() {
           showLobby(code);
-          // Set disconnect cleanup
           onlineRoomRef.child('players/' + fbUser.uid + '/online').onDisconnect().set(false);
-        }).catch(function(e) {
-          if (window.showToast) window.showToast('Error creating room: ' + e.message);
+          if (window.showToast) window.showToast('Room ' + code + ' created! Share the code.');
         });
-      }).catch(function() {});
+      }).catch(function(e) {
+        console.error('Create room error:', e);
+        if (window.showToast) window.showToast('Error: ' + (e.message || 'Could not create room'));
+      }).finally(function() {
+        btn.disabled = false; btn.textContent = 'Create New Room';
+      });
     });
 
     // Join Room button toggle
-    document.getElementById('cc-join-room-btn').addEventListener('click', function() {
-      var joinDiv = document.getElementById('cc-join-input');
-      joinDiv.style.display = joinDiv.style.display === 'none' ? 'block' : 'none';
-    });
 
     // Join Room
     document.getElementById('cc-join-go').addEventListener('click', function() {
+      var btn = this;
       var code = document.getElementById('cc-room-code-input').value.trim().toUpperCase();
-      if (code.length !== 4) {
-        if (window.showToast) window.showToast('Enter a 4-digit room code');
-        return;
-      }
+      var name = getMyName();
+      if (!name) { if (window.showToast) window.showToast('Please enter your name first'); return; }
+      if (!code || code.length < 3) { if (window.showToast) window.showToast('Enter the room code your friend shared'); return; }
+      btn.disabled = true; btn.textContent = 'Joining...';
       initFirebase().then(function() {
         onlineRoom = code;
         isHost = false;
         onlineRoomRef = fbDb.ref('color-cards/' + code);
-        onlineRoomRef.once('value').then(function(snap) {
+        return onlineRoomRef.once('value').then(function(snap) {
           var data = snap.val();
-          if (!data) {
-            if (window.showToast) window.showToast('Room not found: ' + code);
-            return;
-          }
-          if (data.state !== 'lobby') {
-            if (window.showToast) window.showToast('Game already started in this room');
-            return;
-          }
+          if (!data) { if (window.showToast) window.showToast('Room "' + code + '" not found'); return; }
+          if (data.state !== 'lobby') { if (window.showToast) window.showToast('Game already started'); return; }
           var playerCount = Object.keys(data.players || {}).length;
-          if (playerCount >= 4) {
-            if (window.showToast) window.showToast('Room is full (4 players max)');
-            return;
-          }
-          var myData = { name: getMyName(), idx: playerCount, online: true };
-          onlineRoomRef.child('players/' + fbUser.uid).set(myData).then(function() {
+          if (playerCount >= 4) { if (window.showToast) window.showToast('Room is full (max 4)'); return; }
+          return onlineRoomRef.child('players/' + fbUser.uid).set({ name: name, idx: playerCount, online: true }).then(function() {
             showLobby(code);
             onlineRoomRef.child('players/' + fbUser.uid + '/online').onDisconnect().set(false);
+            if (window.showToast) window.showToast('Joined room ' + code + '!');
           });
         });
-      }).catch(function() {});
+      }).catch(function(e) {
+        console.error('Join error:', e);
+        if (window.showToast) window.showToast('Error: ' + (e.message || 'Could not join'));
+      }).finally(function() {
+        btn.disabled = false; btn.textContent = 'Join';
+      });
     });
 
     // Copy link
@@ -1128,11 +1129,9 @@
     });
 
     function showLobby(code) {
-      document.getElementById('cc-join-input').style.display = 'none';
+      document.getElementById('cc-online-step1').style.display = 'none';
       document.getElementById('cc-room-lobby').style.display = 'block';
       document.getElementById('cc-room-code-display').textContent = code;
-      document.getElementById('cc-create-room').style.display = 'none';
-      document.getElementById('cc-join-room-btn').style.display = 'none';
 
       // Listen for player changes
       onlineRoomRef.child('players').on('value', function(snap) {
@@ -1446,10 +1445,13 @@
       $localOpts.style.display = 'none';
       $onlineOpts.style.display = 'block';
       document.getElementById('cc-room-code-input').value = roomFromUrl.toUpperCase();
-      // Auto-trigger join after small delay for Firebase to init
+      // Set a default name if empty
+      var nameInput = document.getElementById('cc-online-name');
+      if (!nameInput.value.trim()) nameInput.value = 'Player ' + Math.floor(Math.random() * 99 + 1);
+      // Auto-trigger join after Firebase loads
       setTimeout(function() {
         document.getElementById('cc-join-go').click();
-      }, 500);
+      }, 1500);
     }
 
   })();
