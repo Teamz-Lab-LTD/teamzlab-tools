@@ -96,42 +96,60 @@
     .cc-win .cc-final-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-weight: 600; }
     .cc-win-actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
 
+    /* ── Fullscreen mode ── */
+    .tool-calculator:fullscreen, .tool-calculator:-webkit-full-screen {
+      background: var(--bg); padding: 1rem; overflow-y: auto;
+    }
+    .tool-calculator:fullscreen h1, .tool-calculator:-webkit-full-screen h1,
+    .tool-calculator:fullscreen > p, .tool-calculator:-webkit-full-screen > p {
+      display: none;
+    }
+
     /* ── Responsive ── */
     .tool-calculator h2 { font-size: var(--text-lg); }
     .tool-content h2 { font-size: var(--text-lg); }
 
-    /* Mobile — cards fill screen width, 4 per row */
+    /* Fullscreen button */
+    #cc-fullscreen { display: inline-block; }
+
+    /* Mobile */
     @media (max-width: 600px) {
       .cc-game { max-width: 100%; padding: 0; }
       .cc-setup { padding: 0 0.5rem; }
+      .tool-calculator > h1 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+      .tool-calculator > p { font-size: 0.85rem; margin-bottom: 0.5rem; }
+      .cc-setup h2 { font-size: 1rem; margin-bottom: 0.5rem; }
       .cc-mode-pick { flex-direction: column; }
 
-      /* Pile + Deck on mobile */
-      .cc-pile, .cc-deck { width: 90px; height: 135px; }
-      .cc-table { gap: 0.75rem; margin: 0.5rem 0; }
+      /* Hide H1 and intro during active game to save space */
+      .cc-game ~ .ad-slot { display: none; }
 
-      /* Hand cards on mobile */
-      .cc-hand { gap: 6px; padding: 0.25rem; }
-      .cc-hand .cc-card { width: 80px; height: 120px; border-radius: 10px; flex-shrink: 0; }
+      /* Pile + Deck on mobile */
+      .cc-pile, .cc-deck { width: 80px; height: 120px; }
+      .cc-table { gap: 0.75rem; margin: 0.25rem 0; }
+
+      /* Hand cards on mobile — scrollable horizontal strip */
+      .cc-hand { gap: 6px; padding: 0.25rem; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; padding-bottom: 0.5rem; }
+      .cc-hand .cc-card { width: 75px; height: 112px; border-radius: 10px; flex-shrink: 0; scroll-snap-align: start; }
 
       /* Color picker */
       .cc-cpick { width: 44px; height: 44px; }
       .cc-color-picker { gap: 0.5rem; }
 
-      /* Actions — full width buttons */
+      /* Actions — compact row */
       .cc-actions { gap: 0.4rem; }
-      .cc-actions button { font-size: 0.8rem; padding: 0.6rem 1rem; flex: 1; }
+      .cc-actions button { font-size: 0.8rem; padding: 0.55rem 0.8rem; }
 
       /* Scores wrap nicely */
       .cc-scores { gap: 0.25rem; }
       .cc-score-chip { font-size: 0.7rem; padding: 0.2rem 0.4rem; }
 
       /* Top bar compact */
-      .cc-top-bar { margin-bottom: 0.5rem; }
+      .cc-top-bar { margin-bottom: 0.25rem; }
       .cc-turn-info { font-size: 0.9rem; }
-      .cc-direction { font-size: 0.75rem; }
-      .cc-hand-label { font-size: 0.85rem; margin: 0.5rem 0 0.25rem; }
-      .cc-status { font-size: 0.85rem; }
+      .cc-direction { font-size: 0.7rem; }
+      .cc-hand-label { font-size: 0.85rem; margin: 0.35rem 0 0.2rem; }
+      .cc-status { font-size: 0.85rem; min-height: 1.2rem; }
 
       /* Pass screen */
       .cc-pass-screen { margin: 1rem auto; }
@@ -213,6 +231,7 @@
         <div class="cc-actions" id="cc-actions">
           <button id="cc-end-turn" style="display:none">End Turn</button>
           <button id="cc-call-one">Call "ONE!"</button>
+          <button id="cc-fullscreen" title="Fullscreen">&#x26F6; Fullscreen</button>
         </div>
       </div>
 
@@ -351,6 +370,7 @@
     document.getElementById('cc-play-again').addEventListener('click', function() {
       window.hideEl($win);
       window.showEl($setup, 'block');
+      $setup.scrollIntoView({ behavior: 'auto', block: 'start' });
     });
 
     function startGame() {
@@ -543,6 +563,8 @@
           playCard(parseInt(el.dataset.idx));
         });
       });
+      // Keep view on the game, don't scroll to top
+      setTimeout(function() { $pile.scrollIntoView({ behavior: 'auto', block: 'nearest' }); }, 50);
     }
 
     function renderScores() {
@@ -588,6 +610,7 @@
         window.hideEl($game);
         $passScreen.style.display = 'block';
         $passName.textContent = player.name + "'s Turn";
+        $passScreen.scrollIntoView({ behavior: 'auto', block: 'start' });
       } else if (player.isComputer) {
         // Show board but computer plays
         showBoard();
@@ -614,6 +637,7 @@
     $revealBtn.addEventListener('click', function() {
       showBoard();
       renderHand(state.currentPlayer);
+      $pile.scrollIntoView({ behavior: 'auto', block: 'start' });
     });
 
     // Draw card
@@ -785,6 +809,22 @@
     // End turn button (for pass mode after drawing)
     $endTurn.addEventListener('click', function() {
       advanceTurn();
+    });
+
+    // Fullscreen toggle — fullscreen the entire game section
+    var $gameSection = document.querySelector('.tool-calculator');
+    document.getElementById('cc-fullscreen').addEventListener('click', function() {
+      try {
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          if (document.exitFullscreen) document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } else {
+          if ($gameSection.requestFullscreen) $gameSection.requestFullscreen();
+          else if ($gameSection.webkitRequestFullscreen) $gameSection.webkitRequestFullscreen();
+        }
+      } catch(e) {
+        if (window.showToast) window.showToast('Fullscreen not supported on this browser');
+      }
     });
 
     /* ═══════════════════════════════════════════
