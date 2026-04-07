@@ -30,10 +30,35 @@ try { chromium = require('playwright').chromium; } catch(e) {
   }
 }
 
+const fs = require('fs');
 const BASE_URL = 'http://localhost:9090';
+const LAST_RUN_FILE = path.join(__dirname, '..', 'logs', 'e2e-last-run.json');
 const args = process.argv.slice(2);
 const toolPath = args.find(a => !a.startsWith('--')) || '';
 const flags = new Set(args.filter(a => a.startsWith('--')));
+
+// ══════════════════════════════════════════
+// SKIP TRACKING — don't re-test today
+// ══════════════════════════════════════════
+function getLastRuns() {
+  try { return JSON.parse(fs.readFileSync(LAST_RUN_FILE, 'utf8')); } catch(e) { return {}; }
+}
+function saveLastRun(tool, passed, failed) {
+  const runs = getLastRuns();
+  runs[tool] = { date: new Date().toISOString().slice(0, 10), ts: Date.now(), passed, failed };
+  try { fs.mkdirSync(path.dirname(LAST_RUN_FILE), { recursive: true }); } catch(e) {}
+  fs.writeFileSync(LAST_RUN_FILE, JSON.stringify(runs, null, 2));
+}
+function wasTestedToday(tool) {
+  const runs = getLastRuns();
+  if (!runs[tool]) return false;
+  return runs[tool].date === new Date().toISOString().slice(0, 10);
+}
+function wasTestedRecently(tool, days) {
+  const runs = getLastRuns();
+  if (!runs[tool]) return false;
+  return (Date.now() - runs[tool].ts) < days * 86400000;
+}
 
 // ══════════════════════════════════════════
 // TEST RUNNER
@@ -293,7 +318,20 @@ async function testFirebase(t) {
 
   for (const tool of tools) {
     if (!tool) continue;
+
+    // Skip if already tested today (unless --force)
+    if (!flags.has('--force') && wasTestedToday(tool)) {
+      console.log('  ⏭ Skipping ' + tool + ' — already tested today. Use --force to re-test.');
+      continue;
+    }
+    // Skip if tested in last 7 days and no code change (unless --force or --full)
+    if (!flags.has('--force') && !flags.has('--full') && wasTestedRecently(tool, 7)) {
+      console.log('  ⏭ Skipping ' + tool + ' — tested within 7 days. Use --force to re-test.');
+      continue;
+    }
+
     const url = BASE_URL + '/' + tool + '/';
+    const beforeFail = t.failed;
     console.log('══════════════════════════════════════════');
     console.log('  Testing: ' + tool);
     console.log('══════════════════════════════════════════\n');
@@ -324,7 +362,6 @@ async function testFirebase(t) {
     }
 
     // Firebase test (if tool uses online features)
-    const fs = require('fs');
     const htmlPath = path.join(process.cwd(), tool, 'index.html');
     if (fs.existsSync(htmlPath)) {
       const html = fs.readFileSync(htmlPath, 'utf8');
@@ -332,6 +369,9 @@ async function testFirebase(t) {
         await testFirebase(t);
       }
     }
+
+    // Save result — skip re-testing today
+    saveLastRun(tool, t.passed, t.failed - beforeFail);
   }
 
   // JS errors summary
