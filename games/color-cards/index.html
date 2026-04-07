@@ -309,11 +309,6 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
-  <!-- Firebase SDKs for online multiplayer — app MUST load before auth/database -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script>
   (function() {
     'use strict';
@@ -1001,34 +996,47 @@
     var onlineRoom = null; var onlineRoomRef = null; var isHost = false;
     var myOnlineIdx = -1;
 
+    function loadScript(url) {
+      return new Promise(function(ok, fail) {
+        if (document.querySelector('script[src="' + url + '"]')) return ok();
+        var s = document.createElement('script'); s.src = url; s.onload = ok; s.onerror = fail;
+        document.head.appendChild(s);
+      });
+    }
+
     function initFirebase() {
       if (fb) return Promise.resolve();
-      // All Firebase SDKs loaded via static script tags — init immediately
-      try {
-        if (!firebase.apps.length) {
-          firebase.initializeApp({
-            apiKey: 'AIzaSyC9Spv8AEEST24cqHWOfWe4PKTJflJ6lPg',
-            authDomain: 'teamzlab-tools.firebaseapp.com',
-            databaseURL: 'https://teamzlab-tools-default-rtdb.firebaseio.com',
-            projectId: 'teamzlab-tools'
-          });
-        }
-        if (firebase.appCheck && !window._fbAppCheckActive) {
-          firebase.appCheck().activate('6LdTN48sAAAAABRarboqZwlBDY-YTPjD9A4MzRWn', true);
-          window._fbAppCheckActive = true;
-        }
-        fb = firebase.apps[0];
-        fbDb = firebase.database();
-        fbAuth = firebase.auth();
-        return fbAuth.signInAnonymously().then(function(cred) {
+      var CDN = 'https://www.gstatic.com/firebasejs/10.14.1/';
+      // Load all required SDKs in sequence
+      return loadScript(CDN + 'firebase-app-compat.js')
+        .then(function() { return loadScript(CDN + 'firebase-app-check-compat.js'); })
+        .then(function() { return loadScript(CDN + 'firebase-auth-compat.js'); })
+        .then(function() { return loadScript(CDN + 'firebase-database-compat.js'); })
+        .then(function() {
+          if (!firebase.apps.length) {
+            firebase.initializeApp({
+              apiKey: 'AIzaSyC9Spv8AEEST24cqHWOfWe4PKTJflJ6lPg',
+              authDomain: 'teamzlab-tools.firebaseapp.com',
+              databaseURL: 'https://teamzlab-tools-default-rtdb.firebaseio.com',
+              projectId: 'teamzlab-tools'
+            });
+          }
+          if (firebase.appCheck && !window._fbAppCheckActive) {
+            firebase.appCheck().activate('6LdTN48sAAAAABRarboqZwlBDY-YTPjD9A4MzRWn', true);
+            window._fbAppCheckActive = true;
+          }
+          fb = firebase.apps[0];
+          fbDb = firebase.database();
+          fbAuth = firebase.auth();
+          return fbAuth.signInAnonymously();
+        }).then(function(cred) {
           fbUser = cred.user;
           console.log('Firebase ready, uid:', fbUser.uid);
+        }).catch(function(e) {
+          console.error('Firebase init error:', e);
+          if (window.showToast) window.showToast('Connection error: ' + e.message);
+          throw e;
         });
-      } catch(e) {
-        console.error('Firebase init error:', e);
-        if (window.showToast) window.showToast('Connection error: ' + e.message);
-        return Promise.reject(e);
-      }
     }
 
     function genRoomCode() {
