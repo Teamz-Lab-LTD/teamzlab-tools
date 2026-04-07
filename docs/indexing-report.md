@@ -1,14 +1,11 @@
-# Indexing Report — 2026-04-07 06:56
+# Indexing Report — 2026-04-07 07:57
 
 Total pages: 1
 Checked: 1
-Indexed: 0 (0%)
-Not indexed: 1
+Indexed: 1 (100%)
+Not indexed: 0
 Errors: 0
 
-## Not Indexed Pages
+## Indexed Pages (1)
 
-| Page | Reason |
-|---|---|
-| /games/color-cards/ | URL is unknown to Google |
-
+- /evergreen/scientific-calculator/
