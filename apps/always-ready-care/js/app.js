@@ -17,6 +17,111 @@ var auth = firebase.auth();
 var db = firebase.firestore();
 var storage = firebase.storage();
 
+// Enable Firestore offline persistence
+db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
+  if (err.code === 'failed-precondition') {
+    console.warn('[Firestore] Persistence failed: multiple tabs open');
+  } else if (err.code === 'unimplemented') {
+    console.warn('[Firestore] Persistence not supported in this browser');
+  }
+});
+
+// ── Service Worker Registration ───────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/apps/always-ready-care/sw.js', {
+    scope: '/apps/always-ready-care/'
+  }).then(function(reg) {
+    console.log('[SW] Registered:', reg.scope);
+  }).catch(function(err) {
+    console.warn('[SW] Registration failed:', err);
+  });
+
+  // Listen for sync messages from service worker
+  navigator.serviceWorker.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'sync-evidence') {
+      syncOfflineEvidence();
+    }
+  });
+}
+
+// ── Offline Evidence Queue (IndexedDB) ────────────────────
+var OFFLINE_DB_NAME = 'arc-offline';
+var OFFLINE_STORE = 'evidence-queue';
+
+function openOfflineDB() {
+  return new Promise(function(resolve, reject) {
+    var request = indexedDB.open(OFFLINE_DB_NAME, 1);
+    request.onupgradeneeded = function(event) {
+      var idb = event.target.result;
+      if (!idb.objectStoreNames.contains(OFFLINE_STORE)) {
+        idb.createObjectStore(OFFLINE_STORE, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = function(event) { resolve(event.target.result); };
+    request.onerror = function(event) { reject(event.target.error); };
+  });
+}
+
+function queueOfflineEvidence(evidenceData) {
+  return openOfflineDB().then(function(idb) {
+    return new Promise(function(resolve, reject) {
+      var tx = idb.transaction(OFFLINE_STORE, 'readwrite');
+      tx.objectStore(OFFLINE_STORE).put(evidenceData);
+      tx.oncomplete = function() {
+        showToast('Saved offline — will sync when back online', 'info');
+        resolve();
+      };
+      tx.onerror = function() { reject(tx.error); };
+    });
+  });
+}
+
+function syncOfflineEvidence() {
+  if (!navigator.onLine || !AppState.orgId) return Promise.resolve();
+
+  return openOfflineDB().then(function(idb) {
+    return new Promise(function(resolve, reject) {
+      var tx = idb.transaction(OFFLINE_STORE, 'readonly');
+      var store = tx.objectStore(OFFLINE_STORE);
+      var request = store.getAll();
+      request.onsuccess = function() {
+        var items = request.result || [];
+        if (items.length === 0) return resolve();
+
+        var promises = items.map(function(item) {
+          return db.collection('orgs').doc(item.orgId)
+            .collection('evidence').doc(item.id).set(item)
+            .then(function() {
+              // Remove from queue after successful sync
+              return openOfflineDB().then(function(idb2) {
+                var tx2 = idb2.transaction(OFFLINE_STORE, 'readwrite');
+                tx2.objectStore(OFFLINE_STORE).delete(item.id);
+              });
+            });
+        });
+
+        Promise.all(promises).then(function() {
+          if (items.length > 0) {
+            showToast(items.length + ' offline record(s) synced', 'success');
+          }
+          resolve();
+        }).catch(function(err) {
+          console.error('[Offline] Sync error:', err);
+          resolve(); // Don't block on sync errors
+        });
+      };
+      request.onerror = function() { resolve(); };
+    });
+  }).catch(function(err) {
+    console.warn('[Offline] DB error:', err);
+  });
+}
+
+// Sync when coming back online
+window.addEventListener('online', function() {
+  syncOfflineEvidence();
+});
+
 // ── State Store ────────────────────────────────────────────
 var AppState = {
   user: null,
@@ -85,26 +190,95 @@ var TEMPLATES = [
     icon: 'fas fa-triangle-exclamation',
     desc: 'Report falls, injuries, safeguarding concerns, or other significant events.',
     text: 'INCIDENT REPORT — [Date] at [Time]\n\nResident: [Name]\nLocation: [Where the incident occurred]\n\nDescription of incident:\n[Detailed description of what happened]\n\nInjuries sustained: [None / Description]\nFirst aid given: [Yes/No — details]\nGP/paramedic called: [Yes/No]\n\nWitnesses: [Names]\nActions taken: [Immediate response]\nFollow-up required: [Description]\n\nReported to: [Manager name] at [Time]\nFamily notified: [Yes/No — time and person contacted]'
+  },
+  {
+    id: 'safeguarding-concern',
+    name: 'Safeguarding Concern',
+    icon: 'fas fa-shield-halved',
+    desc: 'Record safeguarding concerns, allegations, or protective actions taken.',
+    text: 'SAFEGUARDING CONCERN — [Date] at [Time]\n\nResident: [Name]\nType of concern: [Physical / Emotional / Financial / Neglect / Self-neglect / Sexual / Organisational]\n\nDescription:\n[What was observed, disclosed, or reported]\n\nImmediate actions taken:\n- [Ensured resident safety]\n- [Preserved any evidence]\n- [Reported to safeguarding lead]\n\nReported to: [Manager/Safeguarding Lead name] at [Time]\nLocal authority referral: [Yes/No — reference number if known]\nFamily notified: [Yes/No — if appropriate]\n\nFollow-up plan:\n[Next steps and review date]'
+  },
+  {
+    id: 'night-care',
+    name: 'Night Care Check',
+    icon: 'fas fa-moon',
+    desc: 'Document overnight welfare checks, sleep patterns, and night-time support.',
+    text: 'NIGHT CARE RECORD — [Date]\n\nResident: [Name]\nCheck time: [Time]\n\nSleep status: [Asleep / Awake / Restless / Required assistance]\nPosition: [Comfortable / Repositioned]\nContinent: [Dry / Pad changed / Toileting assistance]\n\nAny concerns: [None / Description]\nAction taken: [Description if applicable]\n\nStaff member: [Name]'
+  },
+  {
+    id: 'morning-handover',
+    name: 'Morning Handover',
+    icon: 'fas fa-sun',
+    desc: 'Record shift handover notes for continuity of care.',
+    text: 'SHIFT HANDOVER — [Date] at [Time]\n\nOutgoing shift: [Night / Day / Evening]\nIncoming shift: [Day / Evening / Night]\n\nKey updates:\n1. [Resident name] — [Update]\n2. [Resident name] — [Update]\n3. [Resident name] — [Update]\n\nIncidents during shift: [None / Summary]\nMedication concerns: [None / Description]\nStaff issues: [None / Description]\nVisitors expected: [None / Details]\n\nHandover given by: [Name]\nHandover received by: [Name]'
+  },
+  {
+    id: 'staff-supervision',
+    name: 'Staff Supervision',
+    icon: 'fas fa-user-check',
+    desc: 'Document one-to-one supervision sessions with care staff.',
+    text: 'SUPERVISION RECORD — [Date]\n\nStaff member: [Name]\nRole: [Carer / Senior / Other]\nSupervisor: [Name]\n\nTopics discussed:\n- Workload and wellbeing\n- Training and development needs\n- Performance and observations\n- Safeguarding awareness\n- Any concerns raised by staff member\n\nAgreed actions:\n1. [Action] — Due: [Date]\n2. [Action] — Due: [Date]\n\nNext supervision date: [Date]\n\nSigned: Staff member [Y/N] | Supervisor [Y/N]'
+  },
+  {
+    id: 'complaint-record',
+    name: 'Complaint Received',
+    icon: 'fas fa-comment-dots',
+    desc: 'Log complaints from residents, families, or staff with investigation and outcome.',
+    text: 'COMPLAINT RECORD — [Date] at [Time]\n\nComplainant: [Name and relationship to resident]\nMethod: [Verbal / Written / Phone / Email]\n\nNature of complaint:\n[Detailed description]\n\nResident involved: [Name if applicable]\n\nImmediate response:\n[What was said/done]\n\nInvestigation plan:\n[Steps to be taken and by whom]\n\nTarget response date: [Date]\nDuty of Candour applies: [Yes / No]\n\nReceived by: [Name and role]'
+  },
+  {
+    id: 'mental-capacity',
+    name: 'Mental Capacity Assessment',
+    icon: 'fas fa-brain',
+    desc: 'Document decision-specific mental capacity assessments under the MCA 2005.',
+    text: 'MENTAL CAPACITY ASSESSMENT — [Date]\n\nResident: [Name]\nDecision to be made: [Specific decision]\nAssessor: [Name and role]\n\nDoes the person have an impairment or disturbance in the functioning of their mind or brain?\n[Yes/No — details]\n\nCan the person:\n1. Understand the relevant information? [Yes/No]\n2. Retain the information? [Yes/No]\n3. Use or weigh the information? [Yes/No]\n4. Communicate their decision? [Yes/No]\n\nConclusion: [Has capacity / Lacks capacity for this specific decision]\n\nIf lacks capacity — best interests decision:\n[Who was consulted, what was decided, and why]\n\nDoLS application required: [Yes/No]\nReview date: [Date]'
+  },
+  {
+    id: 'health-monitoring',
+    name: 'Health Observation',
+    icon: 'fas fa-heart-pulse',
+    desc: 'Record vital signs, GP visits, hospital appointments, and health changes.',
+    text: 'HEALTH OBSERVATION — [Date] at [Time]\n\nResident: [Name]\n\nObservation type: [Routine / GP visit / Hospital / Concern]\n\nVital signs (if taken):\n- Temperature: [°C]\n- Blood pressure: [/mmHg]\n- Pulse: [bpm]\n- Oxygen saturation: [%]\n- Blood sugar: [mmol/L]\n- Weight: [kg]\n\nObservations:\n[Description of health status, changes, or concerns]\n\nAction taken:\n[Description — GP called, medication adjusted, hospital referral, etc.]\n\nRecorded by: [Name]'
   }
 ];
 
-// ── Compliance Categories ──────────────────────────────────
+// ── Compliance Categories (mapped to CQC 5 Key Questions) ─
 var COMPLIANCE_CATEGORIES = [
+  // SAFE
   'Medication Management',
-  'Personal Care',
-  'Nutrition & Hydration',
-  'Skin Integrity',
-  'Falls Prevention',
-  'Mental Health & Wellbeing',
-  'Activities & Engagement',
-  'Infection Control',
   'Safeguarding',
-  'Health & Safety',
-  'Staff Training',
+  'Incident & Accident',
+  'Infection Control',
+  'Risk Assessment',
+  'Falls Prevention',
+  // EFFECTIVE
   'Care Planning',
+  'Nutrition & Hydration',
+  'Health Monitoring',
+  'Mental Capacity & DoLS',
+  'Staff Training & Competency',
+  // CARING
+  'Personal Care & Dignity',
+  'Activities & Wellbeing',
+  'Communication & Engagement',
+  // RESPONSIVE
+  'Complaints & Feedback',
   'End of Life Care',
-  'Communication'
+  'Person-Centred Care',
+  // WELL-LED
+  'Governance & Audits',
+  'Staff Supervision',
+  'Night Care',
+  'Duty of Candour'
 ];
+
+var CQC_KEY_QUESTIONS = {
+  'Safe': ['Medication Management', 'Safeguarding', 'Incident & Accident', 'Infection Control', 'Risk Assessment', 'Falls Prevention'],
+  'Effective': ['Care Planning', 'Nutrition & Hydration', 'Health Monitoring', 'Mental Capacity & DoLS', 'Staff Training & Competency'],
+  'Caring': ['Personal Care & Dignity', 'Activities & Wellbeing', 'Communication & Engagement'],
+  'Responsive': ['Complaints & Feedback', 'End of Life Care', 'Person-Centred Care'],
+  'Well-led': ['Governance & Audits', 'Staff Supervision', 'Night Care', 'Duty of Candour']
+};
 
 // ── AI Analysis Engine (rule-based) ────────────────────────
 var AIEngine = {
@@ -118,7 +292,17 @@ var AIEngine = {
     'social': ['activity', 'social', 'engage', 'participation', 'group', 'visit', 'family', 'recreation', 'conversation'],
     'safety': ['safety', 'risk', 'hazard', 'fire', 'emergency', 'alarm', 'check', 'inspection'],
     'infection-control': ['infection', 'hygiene', 'PPE', 'handwashing', 'isolation', 'outbreak', 'cleaning', 'sanitise'],
-    'safeguarding': ['safeguarding', 'abuse', 'neglect', 'concern', 'disclosure', 'vulnerable', 'protection']
+    'safeguarding': ['safeguarding', 'abuse', 'neglect', 'allegation', 'disclosure', 'referral', 'protection', 'vulnerable', 'concern'],
+    'risk-assessment': ['risk', 'assessment', 'hazard', 'mitigation', 'prevention', 'likelihood'],
+    'infection-control': ['infection', 'hygiene', 'handwashing', 'PPE', 'outbreak', 'isolation', 'clean', 'sanitise'],
+    'health-monitoring': ['blood pressure', 'temperature', 'pulse', 'oxygen', 'weight', 'GP', 'hospital', 'appointment', 'vital signs'],
+    'mental-capacity': ['capacity', 'consent', 'best interests', 'DoLS', 'deprivation', 'MCA', 'decision', 'advocate'],
+    'complaints': ['complaint', 'feedback', 'concern raised', 'response', 'investigation', 'resolution'],
+    'staff-training': ['training', 'supervision', 'competency', 'NVQ', 'diploma', 'mandatory', 'induction', 'certificate'],
+    'governance': ['audit', 'quality', 'governance', 'policy', 'procedure', 'review', 'compliance check', 'improvement'],
+    'night-care': ['night', 'overnight', 'sleep', 'check', 'repositioned', 'nocturnal'],
+    'end-of-life': ['palliative', 'end of life', 'DNAR', 'advance', 'preferred place', 'comfort', 'bereavement'],
+    'duty-of-candour': ['candour', 'duty', 'open', 'transparent', 'apology', 'notification']
   },
 
   riskKeywords: ['fall', 'fell', 'injury', 'injured', 'bruise', 'bruising', 'bleeding', 'bleed', 'error', 'mistake', 'missing', 'absent', 'choking', 'choke', 'unconscious', 'unresponsive', 'aggressive', 'aggression', 'abuse', 'safeguarding', 'ambulance', 'hospital', 'emergency', 'death', 'deceased', 'fracture', 'broken'],
@@ -964,7 +1148,31 @@ async function submitEvidence(e) {
 
   } catch (err) {
     console.error('Submit error:', err);
-    showToast('Failed to submit: ' + err.message, 'error');
+    // If offline, queue locally
+    if (!navigator.onLine) {
+      var offlineDoc = {
+        id: 'offline_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        orgId: AppState.orgId,
+        type: type,
+        rawText: rawText,
+        status: 'submitted',
+        manualTags: AIEngine.analyze(rawText).tags,
+        siteId: siteId,
+        createdByUid: AppState.user ? AppState.user.uid : 'offline',
+        createdByName: AppState.user ? (AppState.user.displayName || AppState.user.email || 'Guest') : 'Offline User',
+        createdAt: new Date().toISOString(),
+        _offlineQueued: true
+      };
+      await queueOfflineEvidence(offlineDoc);
+      resetCaptureForm();
+      // Request background sync when online
+      if ('serviceWorker' in navigator && 'SyncManager' in window) {
+        var reg = await navigator.serviceWorker.ready;
+        await reg.sync.register('sync-evidence').catch(function() {});
+      }
+    } else {
+      showToast('Failed to submit: ' + err.message, 'error');
+    }
   } finally {
     if (btn) btn.disabled = false;
     if (btnText) btnText.textContent = 'Submit Evidence';
