@@ -532,6 +532,7 @@ function navigate(viewName) {
 
   // Store current view
   AppState.currentView = viewName;
+  updateFloatingCTA();
 
   // Load view-specific data
   loadViewData(viewName);
@@ -1987,6 +1988,57 @@ function switchEvidenceType(type) {
 }
 
 // ======================================================================
+// ── Lead Capture ──────────────────────────────────────────
+function handleLeadCapture(e) {
+  if (e) e.preventDefault();
+  var emailInput = document.getElementById('input-lead-email');
+  var btn = document.getElementById('btn-lead-submit');
+  var email = emailInput ? emailInput.value.trim() : '';
+
+  if (!email) {
+    showToast('Please enter your email', 'warning');
+    return false;
+  }
+
+  if (btn) btn.disabled = true;
+
+  // Save lead to Firestore (public collection)
+  db.collection('leads').add({
+    email: email,
+    source: 'landing-page',
+    product: 'always-ready-care',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    userAgent: navigator.userAgent
+  }).then(function() {
+    showToast('Subscribed! We\'ll keep you updated.', 'success');
+    if (emailInput) emailInput.value = '';
+    // Also log as audit
+    logAudit('lead_captured', 'Email: ' + email);
+  }).catch(function(err) {
+    console.error('Lead capture error:', err);
+    showToast('Something went wrong. Please try again.', 'error');
+  }).finally(function() {
+    if (btn) btn.disabled = false;
+  });
+
+  return false;
+}
+
+// Make it available globally for inline onsubmit
+window.handleLeadCapture = handleLeadCapture;
+
+// ── Floating CTA visibility ──────────────────────────────
+function updateFloatingCTA() {
+  var floatingCTA = document.getElementById('floating-cta');
+  if (!floatingCTA) return;
+  // Only show on landing page (when not logged in)
+  if (AppState.currentView === 'login') {
+    floatingCTA.style.display = 'flex';
+  } else {
+    floatingCTA.style.display = 'none';
+  }
+}
+
 // ── PWA Install Prompt ────────────────────────────────────
 var deferredInstallPrompt = null;
 
