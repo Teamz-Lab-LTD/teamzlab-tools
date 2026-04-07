@@ -35,19 +35,20 @@
     tax: ['taxation', 'income tax', 'vat', 'gst', 'duty', 'deduction', 'refund'],
     salary: ['wage', 'pay', 'income', 'earnings', 'compensation', 'paycheck', 'payroll'],
     loan: ['mortgage', 'emi', 'debt', 'borrow', 'interest', 'repayment', 'amortization'],
-    mortgage: ['loan', 'home loan', 'housing', 'emi', 'property', 'interest'],
+    mortgage: ['loan', 'home loan', 'housing', 'emi', 'property', 'interest', 'refinance'],
     invest: ['investment', 'stock', 'mutual fund', 'portfolio', 'returns', 'compound interest', 'sip'],
     investment: ['invest', 'stock', 'returns', 'portfolio', 'compound', 'sip', 'mutual fund'],
     retirement: ['pension', 'superannuation', '401k', 'ira', 'epf', 'ppf', 'savings'],
     pension: ['retirement', 'superannuation', '401k', 'ira', 'provident fund'],
     tip: ['gratuity', 'service charge', 'restaurant'],
-    invoice: ['bill', 'receipt', 'billing', 'payment'],
+    invoice: ['bill', 'receipt', 'billing', 'payment', 'estimate', 'quote'],
     receipt: ['invoice', 'bill', 'proof of purchase'],
 
     // Health & Fitness
     health: ['fitness', 'wellness', 'medical', 'body', 'diet', 'nutrition', 'exercise', 'weight', 'bmi'],
     fitness: ['health', 'exercise', 'workout', 'gym', 'training', 'body', 'weight'],
-    weight: ['body weight', 'mass', 'bmi', 'obesity', 'fat', 'pounds', 'kilograms', 'kg', 'lbs'],
+    weight: ['body weight', 'mass', 'bmi', 'obesity', 'fat', 'pounds', 'kilograms', 'kg', 'lbs', 'meters', 'feet', 'inches', 'grams', 'ounces', 'overweight'],
+    overweight: ['bmi', 'obesity', 'weight', 'body mass', 'fat', 'health', 'diet'],
     bmi: ['body mass index', 'weight', 'obesity', 'health', 'overweight'],
     calorie: ['calories', 'kcal', 'nutrition', 'diet', 'food', 'energy', 'intake', 'burn', 'tdee'],
     diet: ['nutrition', 'calorie', 'food', 'meal', 'eating', 'macros', 'protein'],
@@ -128,7 +129,7 @@
     // Unit & Measurement
     unit: ['measurement', 'convert', 'metric', 'imperial'],
     length: ['distance', 'height', 'width', 'meters', 'feet', 'inches', 'centimeters', 'miles', 'kilometers'],
-    weight: ['mass', 'kg', 'lbs', 'pounds', 'kilograms', 'grams', 'ounces'],
+    // weight — merged into Health section above (includes both health + unit terms)
     temperature: ['celsius', 'fahrenheit', 'kelvin', 'degrees', 'heat', 'cold'],
     speed: ['velocity', 'mph', 'kmh', 'knots', 'pace'],
     area: ['square', 'acres', 'hectares', 'sqft', 'square feet', 'square meters'],
@@ -173,7 +174,7 @@
     print: ['printing', 'printer', 'paper', 'document', 'hard copy'],
 
     // Crypto
-    crypto: ['cryptocurrency', 'bitcoin', 'ethereum', 'blockchain', 'web3', 'defi', 'token'],
+    crypto: ['cryptocurrency', 'bitcoin', 'ethereum', 'blockchain', 'web3', 'defi', 'token', 'nft'],
     bitcoin: ['btc', 'crypto', 'cryptocurrency', 'blockchain', 'mining'],
 
     // Network & Security
@@ -193,15 +194,20 @@
     uae: ['emirates', 'dubai', 'abu dhabi', 'aed', 'dirham'],
     canada: ['canadian', 'cad', 'rrsp', 'tfsa'],
     australia: ['australian', 'aud', 'super', 'superannuation'],
-    germany: ['german', 'deutsch', 'eur', 'euro'],
-    japan: ['japanese', 'jpy', 'yen'],
+    germany: ['german', 'deutsch', 'eur', 'euro', 'steuer', 'rechner'],
+    japan: ['japanese', 'jpy', 'yen', 'nihon'],
+    egypt: ['egyptian', 'egp', 'cairo', 'masr'],
+    saudi: ['saudi arabia', 'ksa', 'riyadh', 'sar', 'saudi arabian'],
 
     // Common natural-language phrases mapped to tool concepts
     smaller: ['compress', 'resize', 'reduce', 'shrink', 'minify'],
+    shrink: ['compress', 'resize', 'reduce', 'smaller', 'minify', 'optimize'],
     bigger: ['enlarge', 'upscale', 'resize', 'expand', 'zoom'],
     faster: ['optimize', 'speed', 'performance', 'compress', 'minify'],
     compare: ['comparison', 'versus', 'vs', 'diff', 'difference'],
     check: ['validate', 'verify', 'test', 'inspect', 'audit', 'scan'],
+    scan: ['scanner', 'detect', 'check', 'audit', 'analyze', 'inspect', 'qr'],
+    scanner: ['scan', 'detector', 'checker', 'analyzer', 'reader'],
     fix: ['repair', 'correct', 'solve', 'debug', 'troubleshoot'],
     make: ['create', 'generate', 'build', 'produce', 'design'],
     track: ['tracker', 'monitor', 'log', 'record', 'history'],
@@ -218,7 +224,63 @@
     holiday: ['vacation', 'festival', 'celebration', 'eid', 'christmas', 'easter', 'diwali'],
     eid: ['ramadan', 'islamic', 'muslim', 'celebration', 'festival', 'mubarak'],
     christmas: ['xmas', 'holiday', 'santa', 'gift', 'december'],
-    military: ['army', 'navy', 'armed forces', 'soldier', 'defense', 'rank']
+    military: ['army', 'navy', 'armed forces', 'soldier', 'defense', 'rank'],
+
+    // Missing mappings — paycheck, theme, dark mode, etc.
+    paycheck: ['salary', 'wage', 'pay', 'income', 'earnings', 'payroll', 'payslip'],
+    payslip: ['paycheck', 'salary', 'wage', 'pay stub', 'earnings'],
+    theme: ['dark mode', 'light mode', 'color', 'palette', 'design', 'style', 'template'],
+    dark: ['theme', 'night', 'mode', 'contrast'],
+    template: ['theme', 'layout', 'boilerplate', 'starter', 'scaffold', 'preset'],
+    bill: ['invoice', 'receipt', 'payment', 'expense', 'utility', 'split'],
+    split: ['divide', 'share', 'bill', 'expense', 'roommate'],
+    savings: ['save', 'budget', 'deposit', 'interest', 'emergency fund', 'piggy bank'],
+    margin: ['profit', 'markup', 'percentage', 'revenue', 'cost'],
+    markup: ['margin', 'profit', 'price', 'cost', 'wholesale'],
+    debug: ['fix', 'error', 'bug', 'troubleshoot', 'inspect', 'console'],
+    whiteboard: ['draw', 'sketch', 'canvas', 'diagram', 'brainstorm'],
+    diagram: ['flowchart', 'chart', 'graph', 'whiteboard', 'mindmap', 'visual'],
+    chart: ['graph', 'diagram', 'plot', 'visualization', 'bar', 'pie', 'line'],
+    embed: ['iframe', 'widget', 'code', 'snippet', 'share'],
+    clipboard: ['copy', 'paste', 'text', 'snippet'],
+    notification: ['alert', 'reminder', 'push', 'alarm', 'bell'],
+    reminder: ['notification', 'alarm', 'countdown', 'deadline', 'todo'],
+    todo: ['task', 'checklist', 'list', 'planner', 'organize'],
+    clean: ['remove', 'strip', 'sanitize', 'purify', 'clear', 'format'],
+    beautiful: ['pretty', 'format', 'beautify', 'design', 'aesthetic'],
+    ugly: ['minify', 'compress', 'obfuscate'],
+    fake: ['dummy', 'mock', 'sample', 'test', 'placeholder', 'lorem'],
+    dummy: ['fake', 'mock', 'sample', 'test', 'placeholder', 'lorem'],
+    lorem: ['ipsum', 'dummy', 'placeholder', 'text', 'filler'],
+    emoji: ['emoticon', 'smiley', 'icon', 'symbol', 'unicode'],
+    hashtag: ['tag', 'social', 'trending', 'instagram', 'twitter'],
+    story: ['stories', 'instagram', 'reel', 'tiktok', 'content'],
+    reel: ['video', 'short', 'tiktok', 'instagram', 'story'],
+    poster: ['flyer', 'banner', 'design', 'print', 'graphic'],
+    banner: ['poster', 'header', 'cover', 'hero', 'ad', 'display'],
+    // invoice — merged into Finance section above
+    estimate: ['quote', 'invoice', 'proposal', 'bid', 'cost'],
+    // mortgage — merged into Finance section above
+    refinance: ['mortgage', 'loan', 'rate', 'interest', 'home'],
+    // crypto — merged into Crypto section above
+    nft: ['crypto', 'token', 'blockchain', 'digital art', 'collectible'],
+    startup: ['business', 'entrepreneur', 'founder', 'mvp', 'pitch', 'lean'],
+    freelance: ['freelancer', 'contractor', 'gig', 'self employed', 'hourly', 'rate'],
+    hourly: ['rate', 'freelance', 'wage', 'time', 'billing'],
+    streak: ['habit', 'daily', 'consistency', 'track', 'routine'],
+    habit: ['streak', 'routine', 'daily', 'track', 'productivity'],
+    productive: ['productivity', 'pomodoro', 'timer', 'focus', 'habit', 'todo', 'planner', 'efficiency'],
+    productivity: ['productive', 'pomodoro', 'timer', 'focus', 'habit', 'todo', 'planner', 'efficiency'],
+    focus: ['pomodoro', 'timer', 'productivity', 'concentration', 'distraction'],
+    pomodoro: ['timer', 'focus', 'productivity', 'break', 'work'],
+    anxiety: ['stress', 'mental health', 'calm', 'breathing', 'meditation', 'wellness'],
+    meditation: ['mindfulness', 'calm', 'breathing', 'relax', 'wellness', 'anxiety'],
+    breathing: ['meditation', 'calm', 'relax', 'anxiety', 'exercise'],
+    water: ['hydration', 'drink', 'intake', 'fluid', 'h2o'],
+    hydration: ['water', 'drink', 'fluid', 'intake'],
+    fasting: ['intermittent', 'diet', 'health', 'ramadan', 'fast'],
+    step: ['steps', 'walking', 'pedometer', 'distance', 'fitness'],
+    walking: ['step', 'pedometer', 'distance', 'exercise', 'hiking']
   };
 
   /* =========================================
@@ -234,7 +296,18 @@
     'stay healthy': ['bmi', 'calorie', 'exercise', 'diet', 'sleep', 'water', 'fitness'],
     'learn coding': ['html', 'css', 'json', 'regex', 'git', 'developer', 'code'],
     'protect privacy': ['password', 'encrypt', 'hash', 'private', 'vpn', 'security'],
-    'plan event': ['countdown', 'invitation', 'party', 'wedding', 'birthday', 'schedule']
+    'plan event': ['countdown', 'invitation', 'party', 'wedding', 'birthday', 'schedule'],
+    'lose weight': ['bmi', 'calorie', 'tdee', 'diet', 'exercise', 'macro', 'fat', 'fitness'],
+    'stay productive': ['pomodoro', 'timer', 'todo', 'planner', 'focus', 'habit', 'schedule'],
+    'get productive': ['pomodoro', 'timer', 'todo', 'planner', 'focus', 'habit', 'schedule'],
+    'make money': ['freelance', 'invoice', 'roi', 'profit', 'margin', 'startup', 'business'],
+    'reduce stress': ['meditation', 'breathing', 'calm', 'sleep', 'anxiety', 'wellness'],
+    'cook food': ['recipe', 'baking', 'cooking', 'kitchen', 'meal', 'coffee', 'tea'],
+    'sell online': ['amazon', 'fba', 'product', 'listing', 'keyword', 'pricing', 'profit'],
+    'build website': ['html', 'css', 'design', 'font', 'color', 'seo', 'meta'],
+    'manage money': ['budget', 'expense', 'savings', 'investment', 'retirement', 'loan'],
+    'study exam': ['quiz', 'flashcard', 'timer', 'pomodoro', 'gpa', 'grade', 'study'],
+    'move abroad': ['visa', 'currency', 'tax', 'cost of living', 'salary', 'timezone']
   };
 
   /* =========================================
@@ -333,15 +406,21 @@
     var score = 0;
 
     // Phase 1: Original words — exact matches (highest weight)
+    // Semi-stop words get reduced weight when mixed with meaningful words
+    var hasMeaningful = originalWords.some(function(w) { return !SEMI_STOPS[w]; });
     var allOriginalFound = true;
     originalWords.forEach(function (w) {
+      var isSemi = hasMeaningful && SEMI_STOPS[w];
+      var titleW = isSemi ? 4 : 15;
+      var hrefW = isSemi ? 3 : 10;
+      var descW = isSemi ? 1 : 5;
       if (title.indexOf(w) !== -1) {
-        score += 15; // Title exact match
-        if (title.indexOf(w) === 0 || title.indexOf(' ' + w) !== -1) score += 5; // Word boundary bonus
+        score += titleW;
+        if (!isSemi && (title.indexOf(w) === 0 || title.indexOf(' ' + w) !== -1)) score += 5; // Word boundary bonus
       } else if (href.indexOf(w) !== -1) {
-        score += 10; // URL/slug match (strong signal)
+        score += hrefW;
       } else if (desc.indexOf(w) !== -1) {
-        score += 5; // Description match
+        score += descW;
       } else {
         allOriginalFound = false;
       }
@@ -351,38 +430,63 @@
     if (allOriginalFound && originalWords.length > 0) score += 20;
 
     // Phase 2: Expanded words (synonyms/stems) — lower weight
+    // Build set of direct synonyms (first-level from original words) for higher boost
+    var directSynonyms = {};
+    originalWords.forEach(function(ow) {
+      var syns = SYNONYMS[ow];
+      if (syns) syns.forEach(function(s) { directSynonyms[s] = true; });
+      var stemSyns = SYNONYMS[stem(ow)];
+      if (stemSyns) stemSyns.forEach(function(s) { directSynonyms[s] = true; });
+    });
+
     expandedWords.forEach(function (w) {
       // Skip if it's an original word (already scored)
       if (originalWords.indexOf(w) !== -1) return;
+      // Direct synonyms get higher weight than stems-of-synonyms
+      var boost = directSynonyms[w] ? 1.5 : 1;
       if (title.indexOf(w) !== -1) {
-        score += 6;
+        score += Math.round(8 * boost);
       } else if (href.indexOf(w) !== -1) {
-        score += 4;
+        score += Math.round(5 * boost);
       } else if (desc.indexOf(w) !== -1) {
-        score += 2;
+        score += Math.round(3 * boost);
       }
     });
 
     // Phase 3: Fuzzy matching on title words (catches typos)
+    // Only run when score is 0 (no exact/synonym matches) — expensive operation
     if (score === 0 && originalWords.length > 0) {
       var titleWords = title.split(/[\s\-—\/&,]+/).filter(function(tw) { return tw.length > 2; });
-      originalWords.forEach(function (w) {
-        if (w.length < 3) return;
-        for (var i = 0; i < titleWords.length; i++) {
-          var dist = levenshtein(w, titleWords[i]);
-          if (dist === 1) { score += 8; break; }
-          if (dist === 2 && w.length > 4) { score += 4; break; }
+      // Limit fuzzy to first 8 title words (perf optimization)
+      if (titleWords.length > 8) titleWords = titleWords.slice(0, 8);
+      for (var oi = 0; oi < originalWords.length; oi++) {
+        var w = originalWords[oi];
+        if (w.length < 3) continue;
+        var found = false;
+        for (var ti = 0; ti < titleWords.length; ti++) {
+          // Quick length check before expensive Levenshtein
+          if (Math.abs(w.length - titleWords[ti].length) > 2) continue;
+          var dist = levenshtein(w, titleWords[ti]);
+          if (dist === 1) { score += 8; found = true; break; }
+          if (dist === 2 && w.length > 4) { score += 4; found = true; break; }
         }
-      });
-      // Also fuzzy on slug
-      var slugWords = href.replace(/\//g, ' ').split(/[\s\-]+/).filter(function(sw) { return sw.length > 2; });
-      originalWords.forEach(function (w) {
-        if (w.length < 3) return;
-        for (var i = 0; i < slugWords.length; i++) {
-          var dist = levenshtein(w, slugWords[i]);
-          if (dist === 1) { score += 5; break; }
+        if (found) break; // One fuzzy match is enough to include this tool
+      }
+      // Fuzzy on slug only if title fuzzy found nothing
+      if (score === 0) {
+        var slugWords = href.replace(/\//g, ' ').split(/[\s\-]+/).filter(function(sw) { return sw.length > 2; });
+        if (slugWords.length > 6) slugWords = slugWords.slice(0, 6);
+        for (var si = 0; si < originalWords.length; si++) {
+          var sw = originalWords[si];
+          if (sw.length < 3) continue;
+          for (var sj = 0; sj < slugWords.length; sj++) {
+            if (Math.abs(sw.length - slugWords[sj].length) > 2) continue;
+            var sdist = levenshtein(sw, slugWords[sj]);
+            if (sdist === 1) { score += 5; break; }
+          }
+          if (score > 0) break;
         }
-      });
+      }
     }
 
     // Phase 4: Multi-word phrase matching (e.g., "pdf to jpg")
@@ -405,12 +509,21 @@
   /* =========================================
      MAIN SEARCH FUNCTION
      ========================================= */
+  // Stop words — too common to be useful as search terms when mixed with real keywords
+  var STOP_WORDS = { a:1, an:1, the:1, is:1, it:1, in:1, on:1, at:1, to:1, of:1, for:1, be:1, am:1, are:1, was:1, were:1, do:1, does:1, did:1, has:1, have:1, had:1, i:1, me:1, my:1, we:1, our:1, you:1, your:1, he:1, she:1, they:1, them:1, this:1, that:1, if:1, or:1, and:1, but:1, not:1, no:1, so:1, up:1, as:1, by:1, with:1, from:1, into:1, how:1, what:1, when:1, where:1, who:1, can:1, will:1, just:1, get:1, got:1 };
+  // Semi-stop words — demoted when combined with meaningful words (still searched alone)
+  var SEMI_STOPS = { tool:1, tools:1, app:1, online:1, free:1, best:1, top:1, new:1, good:1, simple:1, easy:1 };
+
   function smartSearch(query, searchPool, maxResults) {
     maxResults = maxResults || 15;
     if (!query || query.length < 2) return [];
 
     var words = query.toLowerCase().trim().split(/\s+/).filter(function (w) { return w.length > 0; });
     if (words.length === 0) return [];
+
+    // Filter stop words only when there are other meaningful words
+    var meaningful = words.filter(function(w) { return !STOP_WORDS[w]; });
+    if (meaningful.length > 0) words = meaningful;
 
     var expandedWords = expandQuery(words);
 
@@ -439,6 +552,7 @@
      Tier 3: Concept tag matching (rule-based)
      ========================================= */
   var _aiSearchAbort = null;
+  var _cachedAISession = null;
 
   function buildHubContext(searchPool) {
     var toolSamples = {};
@@ -509,9 +623,10 @@
       }
 
       if (hasChromeAI) {
-        var session = await window.ai.languageModel.create({ systemPrompt: AI_SYSTEM_PROMPT });
-        var response = await session.prompt(userPrompt);
-        session.destroy();
+        if (!_cachedAISession) {
+          _cachedAISession = await window.ai.languageModel.create({ systemPrompt: AI_SYSTEM_PROMPT });
+        }
+        var response = await _cachedAISession.prompt(userPrompt);
         var keywords = parseAIKeywords(response);
         if (keywords.length > 0) {
           var results = searchWithKeywords(keywords, searchPool, maxResults);
@@ -519,6 +634,8 @@
         }
       }
     } catch (e) {
+      // Reset cached session on failure so next search retries cleanly
+      if (_cachedAISession) { try { _cachedAISession.destroy(); } catch(_){} _cachedAISession = null; }
       console.warn('[SmartSearch] Chrome AI fallback failed:', e);
     }
 
@@ -571,7 +688,9 @@
           if (qw === pw || pw.indexOf(qw) !== -1 || qw.indexOf(pw) !== -1) overlap++;
         });
       });
-      if (overlap >= 1) {
+      // Require at least 2 word overlaps for concept match (prevents "be" matching "be productive")
+      var minOverlap = phraseWords.length <= 2 ? 2 : 2;
+      if (overlap >= minOverlap) {
         matchedConcepts = matchedConcepts.concat(CONCEPT_TAGS[phrase]);
       }
     }

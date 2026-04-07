@@ -2299,27 +2299,35 @@ var TeamzAnalytics = (function () {
 
         _renderSearchResults(results, query, null);
 
-        // AI fallback when few/no results
-        if (results.length < 3 && window.TeamzSearch && query.length >= 3) {
+        // AI-powered search enhancement
+        // < 3 results: aggressive AI fallback (600ms delay)
+        // 3-7 results: AI supplement to find better matches (1200ms delay, non-intrusive)
+        // 8+ results: skip AI (static search already found plenty)
+        if (window.TeamzSearch && query.length >= 3 && results.length < 8) {
           clearTimeout(aiDebounce);
           var captured = results.slice();
+          var aiDelay = results.length < 3 ? 600 : 1200;
           aiDebounce = setTimeout(function () {
             window.TeamzSearch.aiSearch(query, searchPool, 12, function (aiR, src) {
               if (searchInput.value.trim().toLowerCase() !== query.toLowerCase()) return;
               var merged = captured.slice();
               var seenH = {};
               merged.forEach(function (r) { seenH[r.h] = true; });
-              aiR.forEach(function (r) { if (!seenH[r.h]) { seenH[r.h] = true; merged.push(r); } });
-              _renderSearchResults(merged, query, src);
+              var added = 0;
+              aiR.forEach(function (r) {
+                if (!seenH[r.h]) { seenH[r.h] = true; merged.push(r); added++; }
+              });
+              // Only re-render if AI actually found new results
+              if (added > 0) _renderSearchResults(merged, query, src);
             });
-          }, 600);
+          }, aiDelay);
         }
 
         // "Did you mean" for zero results
         if (results.length === 0 && window.TeamzSearch) {
           var sug = window.TeamzSearch.didYouMean(query, searchPool);
           if (sug) {
-            searchResults.innerHTML += '<p style="color:var(--text-muted);text-align:center;font-size:var(--text-sm);margin-top:0.5rem;">Did you mean: <a href="#" style="color:var(--heading);text-decoration:underline;" data-suggest="' + sug + '">' + sug + '</a>?</p>';
+            searchResults.innerHTML += '<p style="color:var(--text-muted);text-align:center;font-size:var(--text-sm);margin-top:0.5rem;">Did you mean: <a href="#" style="color:var(--heading);text-decoration:underline;" data-suggest="' + _esc(sug) + '">' + _esc(sug) + '</a>?</p>';
             searchResults.querySelector('[data-suggest]').addEventListener('click', function (e) {
               e.preventDefault();
               searchInput.value = this.getAttribute('data-suggest');
@@ -2330,7 +2338,37 @@ var TeamzAnalytics = (function () {
       });
     });
 
+    // Hub slug → readable name mapping
+    var HUB_LABELS = {
+      '3d': '3D', accessibility: 'Accessibility', ae: 'UAE', ai: 'AI', amazon: 'Amazon',
+      astrology: 'Astrology', auto: 'Auto', baking: 'Baking', bd: 'Bangladesh', business: 'Business',
+      ca: 'Canada', career: 'Career', coffee: 'Coffee', cooking: 'Cooking', craft: 'Craft',
+      crypto: 'Crypto', de: 'Germany', design: 'Design', dev: 'Dev', diagnostic: 'Diagnostic',
+      diy: 'DIY', education: 'Education', eg: 'Egypt', entertainment: 'Entertainment',
+      evergreen: 'Evergreen', fi: 'Finland', finance: 'Finance', fr: 'France', games: 'Games',
+      garden: 'Garden', grooming: 'Grooming', health: 'Health', home: 'Home', id: 'Indonesia',
+      image: 'Image', in: 'India', jp: 'Japan', kids: 'Kids', legal: 'Legal', lifestyle: 'Lifestyle',
+      ma: 'Morocco', math: 'Math', music: 'Music', network: 'Network', nl: 'Netherlands',
+      no: 'Norway', parenting: 'Parenting', pdf: 'PDF', pet: 'Pet', physics: 'Physics',
+      productivity: 'Productivity', research: 'Research', restaurant: 'Restaurant',
+      sa: 'Saudi Arabia', se: 'Sweden', security: 'Security', seo: 'SEO', social: 'Social',
+      tea: 'Tea', text: 'Text', tools: 'Tools', travel: 'Travel', uk: 'UK', us: 'USA',
+      video: 'Video', writing: 'Writing'
+    };
+
+    function _getHubLabel(href) {
+      var parts = (href || '').split('/').filter(Boolean);
+      if (parts.length < 1) return '';
+      var slug = parts[0];
+      return HUB_LABELS[slug] || slug.charAt(0).toUpperCase() + slug.slice(1);
+    }
+
+    // Keyboard navigation state
+    var _activeIdx = -1;
+
     function _renderSearchResults(matches, query, aiSource) {
+      // Preserve keyboard position if AI supplement re-renders while user navigates
+      if (aiSource !== 'ai') _activeIdx = -1;
       if (matches.length === 0) {
         searchResults.innerHTML = '<p style="color:var(--text-muted);text-align:center;">No tools found for "' + _esc(query) + '"</p>';
         searchResults.style.display = 'block';
@@ -2342,10 +2380,15 @@ var TeamzAnalytics = (function () {
         html += '<p style="color:var(--text-muted);text-align:center;font-size:var(--text-sm);margin-bottom:0.5rem;">Smart suggestions</p>';
       }
       html += '<div class="tools-grid" style="grid-template-columns:1fr;">';
-      matches.forEach(function (m) {
+      matches.forEach(function (m, idx) {
         var desc = (m.d || '').substring(0, 120);
-        html += '<a href="' + m.h + '" class="tool-card" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + _esc(m.t) + '</h3>';
-        if (desc) html += '<p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);">' + _esc(desc) + '</p>';
+        var hub = _getHubLabel(m.h);
+        var safeHref = (m.h && m.h.charAt(0) === '/') ? m.h : '#';
+        html += '<a href="' + safeHref + '" class="tool-card search-result-item" style="text-decoration:none;"><div class="card" style="padding:0.75rem 1rem;display:flex;align-items:flex-start;gap:0.5rem;">';
+        html += '<div style="flex:1;min-width:0;"><h3 style="font-size:var(--text-md);margin:0 0 0.2rem;">' + _esc(m.t) + '</h3>';
+        if (desc) html += '<p style="font-size:var(--text-sm);margin:0;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(desc) + '</p>';
+        html += '</div>';
+        if (hub) html += '<span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:9999px;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);white-space:nowrap;margin-top:2px;">' + _esc(hub) + '</span>';
         html += '</div></a>';
       });
       html += '</div>';
@@ -2356,15 +2399,50 @@ var TeamzAnalytics = (function () {
 
     function _esc(str) { var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-    // Escape clears search and restores hub grid
+    // Keyboard navigation: Arrow Up/Down to move, Enter to select, Escape to clear
     searchInput.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         searchInput.value = '';
         searchResults.style.display = 'none';
         searchResults.innerHTML = '';
+        _activeIdx = -1;
         showToolsGrid();
+        return;
+      }
+
+      var items = searchResults.querySelectorAll('.search-result-item');
+      if (items.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _activeIdx = (_activeIdx + 1) % items.length;
+        _highlightItem(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _activeIdx = _activeIdx <= 0 ? items.length - 1 : _activeIdx - 1;
+        _highlightItem(items);
+      } else if (e.key === 'Enter') {
+        if (_activeIdx >= 0 && _activeIdx < items.length) {
+          e.preventDefault();
+          items[_activeIdx].click();
+        }
       }
     });
+
+    function _highlightItem(items) {
+      for (var i = 0; i < items.length; i++) {
+        var card = items[i].querySelector('.card');
+        if (!card) continue;
+        if (i === _activeIdx) {
+          card.style.outline = '2px solid var(--accent)';
+          card.style.outlineOffset = '-2px';
+          items[i].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          card.style.outline = '';
+          card.style.outlineOffset = '';
+        }
+      }
+    }
   });
 })();
 
