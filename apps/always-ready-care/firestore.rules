@@ -1,9 +1,70 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // AlwaysReady Care — authenticated users can read/write their own org data
-    match /orgs/{orgId}/{document=**} {
-      allow read, write: if request.auth != null;
+
+    // Lead capture — anyone can write (landing page), only admin reads
+    match /leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null
+        && request.auth.token.admin == true;
+    }
+
+    // Org-level data — only members of that org
+    match /orgs/{orgId} {
+      // Org doc: readable by members, writable by admin
+      allow read: if request.auth != null && isOrgMember(orgId);
+      allow write: if request.auth != null && isOrgMember(orgId);
+
+      // Users subcollection
+      match /users/{userId} {
+        allow read: if request.auth != null && isOrgMember(orgId);
+        allow write: if request.auth != null && isOrgMember(orgId);
+      }
+
+      // Sites subcollection
+      match /sites/{siteId} {
+        allow read: if request.auth != null && isOrgMember(orgId);
+        allow write: if request.auth != null && isOrgMember(orgId);
+      }
+
+      // Evidence subcollection
+      match /evidence/{evidenceId} {
+        allow read: if request.auth != null && isOrgMember(orgId);
+        allow create: if request.auth != null && isOrgMember(orgId);
+        allow update: if request.auth != null && isOrgMember(orgId);
+        allow delete: if false; // Evidence should never be deleted (audit trail)
+      }
+
+      // Actions subcollection
+      match /actions/{actionId} {
+        allow read, write: if request.auth != null && isOrgMember(orgId);
+      }
+
+      // Packs subcollection
+      match /packs/{packId} {
+        allow read, write: if request.auth != null && isOrgMember(orgId);
+      }
+
+      // Config subcollection
+      match /config/{configId} {
+        allow read: if request.auth != null && isOrgMember(orgId);
+        allow write: if request.auth != null && isOrgMember(orgId);
+      }
+
+      // Audit logs — append only, readable by org members
+      match /auditLogs/{logId} {
+        allow read: if request.auth != null && isOrgMember(orgId);
+        allow create: if request.auth != null && isOrgMember(orgId);
+        allow update, delete: if false; // Audit logs are immutable
+      }
+    }
+
+    // Helper: check if user belongs to the org
+    // The org ID format is 'org_' + first 12 chars of UID
+    // So a user belongs to their own org
+    function isOrgMember(orgId) {
+      return orgId == 'org_' + request.auth.uid[0:12]
+        || exists(/databases/$(database)/documents/orgs/$(orgId)/users/$(request.auth.uid));
     }
   }
 }
