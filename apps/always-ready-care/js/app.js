@@ -449,6 +449,10 @@ function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('arc-theme', theme);
   updateThemeUI(theme);
+  // Update PWA status bar color
+  var themeColor = theme === 'dark' ? '#12151A' : '#F4F5F5';
+  var metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', themeColor);
 }
 
 function updateThemeUI(theme) {
@@ -1983,6 +1987,47 @@ function switchEvidenceType(type) {
 }
 
 // ======================================================================
+// ── PWA Install Prompt ────────────────────────────────────
+var deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show install banner after 3 seconds (not immediately)
+  setTimeout(function() {
+    var banner = document.getElementById('pwa-install-banner');
+    if (banner && !localStorage.getItem('arc-pwa-dismissed')) {
+      banner.classList.remove('hidden');
+    }
+  }, 3000);
+});
+
+function installPWA() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(function(result) {
+    if (result.outcome === 'accepted') {
+      showToast('App installed! Check your home screen.', 'success');
+    }
+    deferredInstallPrompt = null;
+    var banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.classList.add('hidden');
+  });
+}
+
+function dismissPWABanner() {
+  var banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('hidden');
+  localStorage.setItem('arc-pwa-dismissed', 'true');
+}
+
+window.addEventListener('appinstalled', function() {
+  showToast('AlwaysReady Care installed successfully!', 'success');
+  var banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('hidden');
+  deferredInstallPrompt = null;
+});
+
 //  EVENT LISTENERS — Wired up on DOMContentLoaded
 // ======================================================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -2217,6 +2262,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
+
+  // ── PWA Install buttons ──
+  var pwaInstallBtn = document.getElementById('btn-pwa-install');
+  if (pwaInstallBtn) pwaInstallBtn.addEventListener('click', installPWA);
+  var pwaDismissBtn = document.getElementById('btn-pwa-dismiss');
+  if (pwaDismissBtn) pwaDismissBtn.addEventListener('click', dismissPWABanner);
 });
 
 // Make functions available for inline onclick handlers

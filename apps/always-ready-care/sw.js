@@ -1,11 +1,14 @@
 /* AlwaysReady Care — Service Worker for Offline Support */
-var CACHE_NAME = 'arc-v1';
+var CACHE_NAME = 'arc-v2';
 var ASSETS = [
   '/apps/always-ready-care/',
   '/apps/always-ready-care/index.html',
   '/apps/always-ready-care/css/app.css',
   '/apps/always-ready-care/js/app.js',
   '/apps/always-ready-care/guide.html',
+  '/apps/always-ready-care/manifest.json',
+  '/apps/always-ready-care/icons/icon-192.png',
+  '/apps/always-ready-care/icons/icon-512.png',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css'
 ];
