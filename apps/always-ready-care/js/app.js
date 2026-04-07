@@ -326,6 +326,8 @@ function navigate(viewName) {
     compliance: 'Compliance',
     actions: 'Actions',
     packs: 'Inspection Packs',
+    admin: 'Team Management',
+    help: 'Help & FAQ',
     profile: 'Profile & Settings'
   };
   var topbarTitle = document.getElementById('topbar-title');
@@ -351,6 +353,8 @@ function loadViewData(viewName) {
   else if (viewName === 'compliance') loadCompliance();
   else if (viewName === 'actions') loadActions();
   else if (viewName === 'packs') loadPacks();
+  else if (viewName === 'admin') loadAdmin();
+  else if (viewName === 'help') { /* static content, no data load needed */ }
   else if (viewName === 'profile') loadProfile();
 }
 
@@ -391,6 +395,12 @@ function updateSidebarForRole(role) {
     reviewsStat.style.display = Permissions.canReview(role) ? '' : 'none';
   }
 
+  // Admin items
+  var adminItems = document.querySelectorAll('[data-requires="admin"]');
+  adminItems.forEach(function(el) {
+    el.style.display = Permissions.canManageTeam(role) ? '' : 'none';
+  });
+
   // Quick action review card
   var qaReview = document.getElementById('qa-review');
   if (qaReview) {
@@ -426,7 +436,7 @@ function showApp() {
 
   // Navigate to hash or dashboard
   var hash = window.location.hash.replace('#', '');
-  var validViews = ['dashboard', 'capture', 'review', 'compliance', 'actions', 'packs', 'profile'];
+  var validViews = ['dashboard', 'capture', 'review', 'compliance', 'actions', 'packs', 'admin', 'help', 'profile'];
   if (hash && validViews.indexOf(hash) !== -1) {
     navigate(hash);
   } else {
@@ -1563,7 +1573,8 @@ async function changeRole(newRole) {
   var restricted = {
     review: Permissions.canReview(newRole),
     compliance: Permissions.canViewCompliance(newRole),
-    packs: Permissions.canGeneratePacks(newRole)
+    packs: Permissions.canGeneratePacks(newRole),
+    admin: Permissions.canManageTeam(newRole)
   };
   if (restricted[AppState.currentView] === false) {
     navigate('dashboard');
@@ -1964,7 +1975,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('hashchange', function() {
     if (AppState.user && AppState.currentView !== 'login') {
       var hash = window.location.hash.replace('#', '');
-      var validViews = ['dashboard', 'capture', 'review', 'compliance', 'actions', 'packs', 'profile'];
+      var validViews = ['dashboard', 'capture', 'review', 'compliance', 'actions', 'packs', 'admin', 'help', 'profile'];
       if (hash && validViews.indexOf(hash) !== -1 && hash !== AppState.currentView) {
         navigate(hash);
       }
@@ -1976,3 +1987,243 @@ document.addEventListener('DOMContentLoaded', function() {
 window.approveEvidence = approveEvidence;
 window.openRejectModal = openRejectModal;
 window.completeAction = completeAction;
+
+// ======================================================================
+//  VIEW: ADMIN / TEAM MANAGEMENT
+// ======================================================================
+function loadAdmin() {
+  var denied = document.getElementById('admin-denied');
+  var content = document.getElementById('admin-content');
+  if (!Permissions.canManageTeam(AppState.userRole)) {
+    if (denied) denied.classList.remove('hidden');
+    if (content) content.style.display = 'none';
+    return;
+  }
+  if (denied) denied.classList.add('hidden');
+  if (content) content.style.display = '';
+  loadHomeSettings();
+  loadStaffList();
+}
+
+async function loadHomeSettings() {
+  if (!AppState.orgId) return;
+  try {
+    var orgDoc = await db.collection('orgs').doc(AppState.orgId).get();
+    if (orgDoc.exists) {
+      var data = orgDoc.data();
+      var nameInput = document.getElementById('input-home-name');
+      var addressInput = document.getElementById('input-home-address');
+      if (nameInput) nameInput.value = data.name || '';
+      if (addressInput) addressInput.value = data.address || '';
+    }
+  } catch (err) {
+    console.error('Failed to load home settings:', err);
+  }
+}
+
+async function saveHomeSettings() {
+  var btn = document.getElementById('btn-save-home');
+  var btnText = btn ? btn.querySelector('.btn-text') : null;
+  var spinner = btn ? btn.querySelector('.spinner') : null;
+  var name = (document.getElementById('input-home-name') || {}).value || '';
+  var address = (document.getElementById('input-home-address') || {}).value || '';
+  if (!name.trim()) { showToast('Please enter a care home name', 'warning'); return; }
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Saving...';
+  if (spinner) spinner.classList.remove('hidden');
+  try {
+    await db.collection('orgs').doc(AppState.orgId).update({ name: name.trim(), address: address.trim() });
+    logAudit('home_settings_updated', 'Name: ' + name.trim());
+    showToast('Care home settings saved', 'success');
+    var subtitle = document.getElementById('dashboard-subtitle');
+    if (subtitle) subtitle.textContent = name.trim() + ' \u2014 compliance overview';
+  } catch (err) {
+    console.error('Save home settings error:', err);
+    showToast('Failed to save: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Save Changes';
+    if (spinner) spinner.classList.add('hidden');
+  }
+}
+
+async function loadStaffList() {
+  if (!AppState.orgId) return;
+  var container = document.getElementById('admin-staff-list');
+  var countBadge = document.getElementById('admin-staff-count');
+  if (!container) return;
+  try {
+    var snap = await db.collection('orgs').doc(AppState.orgId).collection('users').get();
+    var staff = [];
+    snap.forEach(function(doc) { staff.push(Object.assign({ id: doc.id }, doc.data())); });
+    if (countBadge) countBadge.textContent = staff.length;
+    if (staff.length === 0) {
+      container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No staff members yet.</p></div>';
+      return;
+    }
+    var html = '';
+    staff.forEach(function(member) {
+      var isCurrentUser = AppState.user && member.id === AppState.user.uid;
+      html += '<div class="staff-card"><div class="staff-card-info"><div class="staff-card-name">' + escapeHtml(member.name || 'Unknown') + (isCurrentUser ? ' <span style="font-size:11px;color:var(--text-muted);">(you)</span>' : '') + '</div><div class="staff-card-email">' + escapeHtml(member.email || 'No email') + '</div></div><div class="staff-card-actions"><select class="staff-role-select" data-user-id="' + escapeHtml(member.id) + '" onchange="changeStaffRole(\'' + escapeHtml(member.id) + '\', this.value)"><option value="carer"' + (member.role === 'carer' ? ' selected' : '') + '>Carer</option><option value="senior"' + (member.role === 'senior' ? ' selected' : '') + '>Senior</option><option value="manager"' + (member.role === 'manager' ? ' selected' : '') + '>Manager</option><option value="director"' + (member.role === 'director' ? ' selected' : '') + '>Director</option><option value="admin"' + (member.role === 'admin' ? ' selected' : '') + '>Admin</option></select>' + (isCurrentUser ? '' : '<button class="btn-remove-staff" onclick="removeStaffMember(\'' + escapeHtml(member.id) + '\', \'' + escapeHtml(member.name || 'this member') + '\')" title="Remove"><i class="fas fa-trash-can"></i></button>') + '</div></div>';
+    });
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('Failed to load staff:', err);
+    container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Failed to load staff list.</p></div>';
+  }
+}
+
+async function addStaffMember() {
+  var btn = document.getElementById('btn-add-staff');
+  var btnText = btn ? btn.querySelector('.btn-text') : null;
+  var spinner = btn ? btn.querySelector('.spinner') : null;
+  var email = (document.getElementById('input-staff-email') || {}).value || '';
+  var name = (document.getElementById('input-staff-name') || {}).value || '';
+  var role = (document.getElementById('select-staff-role') || {}).value || 'carer';
+  if (!email.trim() || !name.trim()) { showToast('Please enter both email and name', 'warning'); return; }
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Adding...';
+  if (spinner) spinner.classList.remove('hidden');
+  try {
+    await db.collection('orgs').doc(AppState.orgId).collection('users').add({
+      name: name.trim(), email: email.trim(), role: role,
+      siteIds: [AppState.siteId || 'site_main'],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    logAudit('staff_added', 'Name: ' + name.trim() + ', Role: ' + role);
+    showToast('Staff member added: ' + name.trim(), 'success');
+    var emailInput = document.getElementById('input-staff-email');
+    var nameInput = document.getElementById('input-staff-name');
+    var roleSelect = document.getElementById('select-staff-role');
+    if (emailInput) emailInput.value = '';
+    if (nameInput) nameInput.value = '';
+    if (roleSelect) roleSelect.selectedIndex = 0;
+    loadStaffList();
+  } catch (err) {
+    console.error('Add staff error:', err);
+    showToast('Failed to add staff: ' + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Add Staff Member';
+    if (spinner) spinner.classList.add('hidden');
+  }
+}
+
+async function changeStaffRole(userId, newRole) {
+  try {
+    await db.collection('orgs').doc(AppState.orgId).collection('users').doc(userId).update({ role: newRole });
+    logAudit('staff_role_changed', 'User: ' + userId + ', New role: ' + newRole);
+    showToast('Role updated to ' + newRole, 'success');
+  } catch (err) {
+    console.error('Change staff role error:', err);
+    showToast('Failed to update role: ' + err.message, 'error');
+    loadStaffList();
+  }
+}
+
+async function removeStaffMember(userId, memberName) {
+  var btn = document.querySelector('.btn-remove-staff[onclick*="' + userId + '"]');
+  if (btn && !btn.getAttribute('data-confirm')) {
+    btn.setAttribute('data-confirm', 'true');
+    btn.innerHTML = '<i class="fas fa-check"></i>';
+    btn.title = 'Click again to confirm removal';
+    showToast('Click again to confirm removing ' + memberName, 'warning');
+    setTimeout(function() { if (btn) { btn.removeAttribute('data-confirm'); btn.innerHTML = '<i class="fas fa-trash-can"></i>'; btn.title = 'Remove'; } }, 3000);
+    return;
+  }
+  try {
+    await db.collection('orgs').doc(AppState.orgId).collection('users').doc(userId).delete();
+    logAudit('staff_removed', 'User: ' + userId + ', Name: ' + memberName);
+    showToast(memberName + ' has been removed', 'success');
+    loadStaffList();
+  } catch (err) {
+    console.error('Remove staff error:', err);
+    showToast('Failed to remove: ' + err.message, 'error');
+  }
+}
+
+// ======================================================================
+//  ONBOARDING
+// ======================================================================
+var ONBOARDING_STEPS = [
+  { icon: 'fas fa-shield-heart', title: 'Welcome to AlwaysReady Care', desc: 'Your compliance evidence layer. Record care, review evidence, and always be ready for CQC.' },
+  { icon: 'fas fa-clipboard-check', title: 'Record Evidence in 60 Seconds', desc: 'Use templates to quickly document medication, personal care, meals, activities, and incidents.' },
+  { icon: 'fas fa-circle-check', title: 'Review & Approve', desc: 'Seniors and managers review evidence. Only approved records count towards compliance.' },
+  { icon: 'fas fa-chart-bar', title: 'Always Inspection Ready', desc: 'See your compliance score, spot gaps, and generate inspection packs with one click.' }
+];
+var onboardingStep = 0;
+
+function showOnboarding() {
+  if (localStorage.getItem('arc-onboarded')) return;
+  onboardingStep = 0;
+  renderOnboardingStep(0);
+  var modal = document.getElementById('modal-onboarding');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function renderOnboardingStep(index) {
+  var step = ONBOARDING_STEPS[index];
+  if (!step) return;
+  var content = document.getElementById('onboarding-content');
+  if (content) {
+    content.innerHTML = '<div class="onboarding-icon"><i class="' + escapeHtml(step.icon) + '"></i></div><h2 class="onboarding-title">' + escapeHtml(step.title) + '</h2><p class="onboarding-desc">' + escapeHtml(step.desc) + '</p>';
+  }
+  var dotsContainer = document.getElementById('onboarding-dots');
+  if (dotsContainer) {
+    var dotsHtml = '';
+    for (var i = 0; i < ONBOARDING_STEPS.length; i++) { dotsHtml += '<div class="onboarding-dot' + (i === index ? ' active' : '') + '"></div>'; }
+    dotsContainer.innerHTML = dotsHtml;
+  }
+  var nextBtn = document.getElementById('btn-onboarding-next');
+  if (nextBtn) nextBtn.textContent = (index === ONBOARDING_STEPS.length - 1) ? 'Get Started' : 'Next';
+}
+
+function nextOnboardingStep() {
+  onboardingStep++;
+  if (onboardingStep >= ONBOARDING_STEPS.length) { completeOnboarding(); }
+  else { renderOnboardingStep(onboardingStep); }
+}
+
+function completeOnboarding() {
+  localStorage.setItem('arc-onboarded', 'true');
+  var modal = document.getElementById('modal-onboarding');
+  if (modal) modal.classList.add('hidden');
+  showToast("You're all set!", 'success');
+}
+
+function skipOnboarding() { completeOnboarding(); }
+
+// ======================================================================
+//  FAQ ACCORDION
+// ======================================================================
+function initFAQAccordion() {
+  document.querySelectorAll('.faq-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var answer = this.nextElementSibling;
+      var isOpen = !answer.classList.contains('hidden');
+      if (isOpen) { answer.classList.add('hidden'); this.classList.remove('open'); }
+      else { answer.classList.remove('hidden'); this.classList.add('open'); }
+    });
+  });
+}
+
+// ======================================================================
+//  ORG NAME LOADER (Feature 5)
+// ======================================================================
+async function loadOrgName() {
+  if (!AppState.orgId) return;
+  try {
+    var orgDoc = await db.collection('orgs').doc(AppState.orgId).get();
+    if (orgDoc.exists) {
+      var orgData = orgDoc.data();
+      var homeName = orgData.name || '';
+      var subtitle = document.getElementById('dashboard-subtitle');
+      if (subtitle && homeName && homeName !== 'Demo Care Home') {
+        subtitle.textContent = homeName + ' \u2014 compliance overview';
+      }
+    }
+  } catch (err) { console.error('Failed to load org name:', err); }
+}
+
+window.changeStaffRole = changeStaffRole;
+window.removeStaffMember = removeStaffMember;
