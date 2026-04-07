@@ -307,9 +307,7 @@
   </main>
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <!-- Firebase Auth + Realtime DB loaded on demand by initFirebase() -->
   <script src="/shared/js/common.js"></script>
   <script>
   (function() {
@@ -998,24 +996,48 @@
     var onlineRoom = null; var onlineRoomRef = null; var isHost = false;
     var myOnlineIdx = -1;
 
+    function loadScript(url) {
+      return new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = url; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+
     function initFirebase() {
       if (fb) return Promise.resolve();
-      try {
-        fb = firebase.initializeApp({
-          apiKey: 'AIzaSyC9Spv8AEEST24cqHWOfWe4PKTJflJ6lPg',
-          authDomain: 'teamzlab-tools.firebaseapp.com',
-          databaseURL: 'https://teamzlab-tools-default-rtdb.firebaseio.com',
-          projectId: 'teamzlab-tools'
-        });
-        fbDb = firebase.database();
-        fbAuth = firebase.auth();
-        return fbAuth.signInAnonymously().then(function(cred) {
-          fbUser = cred.user;
-        });
-      } catch(e) {
-        if (window.showToast) window.showToast('Online mode unavailable: ' + e.message);
-        return Promise.reject(e);
-      }
+      if (window.showToast) window.showToast('Connecting...');
+      return new Promise(function(resolve, reject) {
+        // Wait for common.js Firebase (has App Check) — poll up to 6 seconds
+        var attempts = 0;
+        function waitForFirebase() {
+          attempts++;
+          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+            // common.js initialized Firebase with App Check — load auth + database SDKs
+            var authReady = firebase.auth ? Promise.resolve() : loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js');
+            var dbReady = firebase.database ? Promise.resolve() : loadScript('https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js');
+            Promise.all([authReady, dbReady]).then(function() {
+              fb = firebase.apps[0];
+              fbDb = firebase.database();
+              fbAuth = firebase.auth();
+              return fbAuth.signInAnonymously();
+            }).then(function(cred) {
+              fbUser = cred.user;
+              if (window.showToast) window.showToast('Connected!');
+              resolve();
+            }).catch(function(e) {
+              if (window.showToast) window.showToast('Connection failed: ' + e.message);
+              reject(e);
+            });
+          } else if (attempts < 30) {
+            setTimeout(waitForFirebase, 200);
+          } else {
+            if (window.showToast) window.showToast('Could not connect. Check your internet.');
+            reject(new Error('Firebase not loaded'));
+          }
+        }
+        waitForFirebase();
+      });
     }
 
     function genRoomCode() {
