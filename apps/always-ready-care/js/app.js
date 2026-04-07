@@ -151,6 +151,9 @@ var Permissions = {
   },
   canGeneratePacks: function(role) {
     return ['manager', 'director', 'admin'].indexOf(role) !== -1;
+  },
+  canManageTeam: function(role) {
+    return role === 'admin';
   }
 };
 
