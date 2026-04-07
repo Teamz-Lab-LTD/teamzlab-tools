@@ -475,6 +475,7 @@ async function onUserSignedIn(user) {
     updateUserUI(user);
     updateSidebarForRole(AppState.userRole);
     showApp();
+    showOnboarding();
     setupRealtimeListeners();
 
   } catch (err) {
@@ -484,6 +485,7 @@ async function onUserSignedIn(user) {
     updateUserUI(user);
     updateSidebarForRole('manager');
     showApp();
+    showOnboarding();
   }
 }
 
@@ -503,6 +505,9 @@ function updateUserUI(user) {
       avatarEl.innerHTML = '<i class="fas fa-user-circle"></i>';
     }
   }
+
+  // Load and display org name on dashboard
+  loadOrgName();
 
   updateSidebarForRole(AppState.userRole);
 }
@@ -917,16 +922,21 @@ async function submitEvidence(e) {
 
     // Upload photos if any
     if (type === 'photo' && AppState.selectedPhotos.length > 0) {
-      var urls = [];
-      for (var i = 0; i < AppState.selectedPhotos.length; i++) {
-        var file = AppState.selectedPhotos[i];
-        var path = 'orgs/' + AppState.orgId + '/evidence/' + Date.now() + '_' + i + '_' + file.name;
-        var ref = storage.ref().child(path);
-        await ref.put(file);
-        var url = await ref.getDownloadURL();
-        urls.push(url);
+      try {
+        var urls = [];
+        for (var i = 0; i < AppState.selectedPhotos.length; i++) {
+          var file = AppState.selectedPhotos[i];
+          var path = 'orgs/' + AppState.orgId + '/evidence/' + Date.now() + '_' + i + '_' + file.name;
+          var storageRef = storage.ref().child(path);
+          await storageRef.put(file);
+          var url = await storageRef.getDownloadURL();
+          urls.push(url);
+        }
+        doc.attachments = urls;
+      } catch (storageErr) {
+        console.error('Photo upload failed:', storageErr);
+        showToast('Photo upload is not available yet. Your text evidence has been saved.', 'warning');
       }
-      doc.attachments = urls;
     }
 
     await db.collection('orgs').doc(AppState.orgId).collection('evidence').add(doc);
@@ -1942,6 +1952,21 @@ document.addEventListener('DOMContentLoaded', function() {
       showToast('Active site updated', 'info');
     });
   }
+
+  // ── Admin panel ──
+  var saveHomeBtn = document.getElementById('btn-save-home');
+  if (saveHomeBtn) saveHomeBtn.addEventListener('click', saveHomeSettings);
+  var addStaffBtn = document.getElementById('btn-add-staff');
+  if (addStaffBtn) addStaffBtn.addEventListener('click', addStaffMember);
+
+  // ── Onboarding ──
+  var onboardingNext = document.getElementById('btn-onboarding-next');
+  if (onboardingNext) onboardingNext.addEventListener('click', nextOnboardingStep);
+  var onboardingSkip = document.getElementById('btn-onboarding-skip');
+  if (onboardingSkip) onboardingSkip.addEventListener('click', skipOnboarding);
+
+  // ── FAQ accordion ──
+  initFAQAccordion();
 
   // ── Modal close (generic) ──
   document.querySelectorAll('[data-modal-close]').forEach(function(el) {
