@@ -1003,63 +1003,32 @@
 
     function initFirebase() {
       if (fb) return Promise.resolve();
-      if (window.showToast) window.showToast('Connecting...');
-      return new Promise(function(resolve, reject) {
-        var attempts = 0;
-        function waitForFirebase() {
-          attempts++;
-          // Check if Firebase is ready (loaded by common.js with App Check)
-          if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0 && firebase.auth && firebase.database) {
-            fb = firebase.apps[0];
-            fbDb = firebase.database();
-            fbAuth = firebase.auth();
-            fbAuth.signInAnonymously().then(function(cred) {
-              fbUser = cred.user;
-              if (window.showToast) window.showToast('Connected!');
-              resolve();
-            }).catch(function(e) {
-              console.error('Auth error:', e);
-              if (window.showToast) window.showToast('Auth failed: ' + e.message);
-              reject(e);
-            });
-          } else if (typeof firebase !== 'undefined' && firebase.initializeApp && !firebase.apps.length) {
-            // common.js hasn't init'd yet — do it ourselves
-            try {
-              firebase.initializeApp({
-                apiKey: 'AIzaSyC9Spv8AEEST24cqHWOfWe4PKTJflJ6lPg',
-                authDomain: 'teamzlab-tools.firebaseapp.com',
-                databaseURL: 'https://teamzlab-tools-default-rtdb.firebaseio.com',
-                projectId: 'teamzlab-tools'
-              });
-              if (firebase.appCheck) {
-                firebase.appCheck().activate('6LdTN48sAAAAABRarboqZwlBDY-YTPjD9A4MzRWn', true);
-              }
-              fb = firebase.apps[0];
-              fbDb = firebase.database();
-              fbAuth = firebase.auth();
-              fbAuth.signInAnonymously().then(function(cred) {
-                fbUser = cred.user;
-                if (window.showToast) window.showToast('Connected!');
-                resolve();
-              }).catch(function(e) {
-                console.error('Auth error:', e);
-                if (window.showToast) window.showToast('Auth failed: ' + e.message);
-                reject(e);
-              });
-            } catch(e) {
-              console.error('Firebase init error:', e);
-              if (window.showToast) window.showToast('Error: ' + e.message);
-              reject(e);
-            }
-          } else if (attempts < 50) {
-            setTimeout(waitForFirebase, 200);
-          } else {
-            if (window.showToast) window.showToast('Could not connect. Try refreshing.');
-            reject(new Error('Firebase not loaded after 10s'));
-          }
+      // All Firebase SDKs loaded via static script tags — init immediately
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp({
+            apiKey: 'AIzaSyC9Spv8AEEST24cqHWOfWe4PKTJflJ6lPg',
+            authDomain: 'teamzlab-tools.firebaseapp.com',
+            databaseURL: 'https://teamzlab-tools-default-rtdb.firebaseio.com',
+            projectId: 'teamzlab-tools'
+          });
         }
-        waitForFirebase();
-      });
+        if (firebase.appCheck && !window._fbAppCheckActive) {
+          firebase.appCheck().activate('6LdTN48sAAAAABRarboqZwlBDY-YTPjD9A4MzRWn', true);
+          window._fbAppCheckActive = true;
+        }
+        fb = firebase.apps[0];
+        fbDb = firebase.database();
+        fbAuth = firebase.auth();
+        return fbAuth.signInAnonymously().then(function(cred) {
+          fbUser = cred.user;
+          console.log('Firebase ready, uid:', fbUser.uid);
+        });
+      } catch(e) {
+        console.error('Firebase init error:', e);
+        if (window.showToast) window.showToast('Connection error: ' + e.message);
+        return Promise.reject(e);
+      }
     }
 
     function genRoomCode() {
