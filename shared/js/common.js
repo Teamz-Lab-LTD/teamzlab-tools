@@ -2941,6 +2941,15 @@ document.addEventListener('DOMContentLoaded', function () {
       '</button>';
     }
 
+    // Full Screen button (only if Fullscreen API is supported)
+    if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
+      barHTML += '<button class="share-btn share-btn--fullscreen" title="Full Screen" aria-label="Full Screen">' +
+        '<svg class="fs-icon-expand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
+        '<svg class="fs-icon-compress" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>' +
+        '<span class="share-fullscreen-text"> Full Screen</span>' +
+      '</button>';
+    }
+
     bar.innerHTML = barHTML;
 
     // Insert after the tool calculator
@@ -3056,6 +3065,56 @@ document.addEventListener('DOMContentLoaded', function () {
           _showInstallInstructions('generic');
         }
       });
+    }
+
+    // Full Screen toggle
+    var fsBtn = bar.querySelector('.share-btn--fullscreen');
+    if (fsBtn) {
+      var _fsTarget = calc;
+      fsBtn.addEventListener('click', function () {
+        var isFs = document.fullscreenElement || document.webkitFullscreenElement;
+        if (!isFs) {
+          var req = _fsTarget.requestFullscreen || _fsTarget.webkitRequestFullscreen;
+          if (req) {
+            req.call(_fsTarget).catch(function() {
+              window.showToast('Full screen not available');
+            });
+          }
+        } else {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        }
+      });
+
+      // Floating exit button (injected inside calculator during fullscreen)
+      var _fsExitBtn = document.createElement('button');
+      _fsExitBtn.className = 'fs-exit-btn';
+      _fsExitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg> Exit Full Screen';
+      _fsExitBtn.addEventListener('click', function() {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      });
+
+      // Update button state on fullscreen change
+      function _onFsChange() {
+        var isFs = document.fullscreenElement || document.webkitFullscreenElement;
+        var expandIcon = fsBtn.querySelector('.fs-icon-expand');
+        var compressIcon = fsBtn.querySelector('.fs-icon-compress');
+        var label = fsBtn.querySelector('.share-fullscreen-text');
+        if (isFs) {
+          expandIcon.style.display = 'none';
+          compressIcon.style.display = '';
+          if (label) label.textContent = ' Exit Full Screen';
+          fsBtn.title = 'Exit Full Screen';
+          _fsTarget.appendChild(_fsExitBtn);
+        } else {
+          expandIcon.style.display = '';
+          compressIcon.style.display = 'none';
+          if (label) label.textContent = ' Full Screen';
+          fsBtn.title = 'Full Screen';
+          if (_fsExitBtn.parentNode) _fsExitBtn.parentNode.removeChild(_fsExitBtn);
+        }
+      }
+      document.addEventListener('fullscreenchange', _onFsChange);
+      document.addEventListener('webkitfullscreenchange', _onFsChange);
     }
 
     function _showInstallInstructions(type) {
