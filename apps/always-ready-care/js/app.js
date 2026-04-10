@@ -246,42 +246,106 @@ var TEMPLATES = [
 ];
 
 // ── Compliance Categories (mapped to CQC 5 Key Questions) ─
-var COMPLIANCE_CATEGORIES = [
-  // SAFE
-  'Medication Management',
-  'Safeguarding',
-  'Incident & Accident',
-  'Infection Control',
-  'Risk Assessment',
-  'Falls Prevention',
-  // EFFECTIVE
-  'Care Planning',
-  'Nutrition & Hydration',
-  'Health Monitoring',
-  'Mental Capacity & DoLS',
-  'Staff Training & Competency',
-  // CARING
-  'Personal Care & Dignity',
-  'Activities & Wellbeing',
-  'Communication & Engagement',
-  // RESPONSIVE
-  'Complaints & Feedback',
-  'End of Life Care',
-  'Person-Centred Care',
-  // WELL-LED
-  'Governance & Audits',
-  'Staff Supervision',
-  'Night Care',
-  'Duty of Candour'
-];
-
-var CQC_KEY_QUESTIONS = {
-  'Safe': ['Medication Management', 'Safeguarding', 'Incident & Accident', 'Infection Control', 'Risk Assessment', 'Falls Prevention'],
-  'Effective': ['Care Planning', 'Nutrition & Hydration', 'Health Monitoring', 'Mental Capacity & DoLS', 'Staff Training & Competency'],
-  'Caring': ['Personal Care & Dignity', 'Activities & Wellbeing', 'Communication & Engagement'],
-  'Responsive': ['Complaints & Feedback', 'End of Life Care', 'Person-Centred Care'],
-  'Well-led': ['Governance & Audits', 'Staff Supervision', 'Night Care', 'Duty of Candour']
+// ── Multi-Region Compliance Frameworks ────────────────────
+var REGION_CONFIGS = {
+  uk: {
+    name: 'United Kingdom',
+    regulator: 'CQC (Care Quality Commission)',
+    regulatorShort: 'CQC',
+    currency: '£',
+    locale: 'en-GB',
+    categories: [
+      'Medication Management', 'Safeguarding', 'Incident & Accident', 'Infection Control',
+      'Risk Assessment', 'Falls Prevention', 'Care Planning', 'Nutrition & Hydration',
+      'Health Monitoring', 'Mental Capacity & DoLS', 'Staff Training & Competency',
+      'Personal Care & Dignity', 'Activities & Wellbeing', 'Communication & Engagement',
+      'Complaints & Feedback', 'End of Life Care', 'Person-Centred Care',
+      'Governance & Audits', 'Staff Supervision', 'Night Care', 'Duty of Candour'
+    ],
+    framework: {
+      'Safe': ['Medication Management', 'Safeguarding', 'Incident & Accident', 'Infection Control', 'Risk Assessment', 'Falls Prevention'],
+      'Effective': ['Care Planning', 'Nutrition & Hydration', 'Health Monitoring', 'Mental Capacity & DoLS', 'Staff Training & Competency'],
+      'Caring': ['Personal Care & Dignity', 'Activities & Wellbeing', 'Communication & Engagement'],
+      'Responsive': ['Complaints & Feedback', 'End of Life Care', 'Person-Centred Care'],
+      'Well-led': ['Governance & Audits', 'Staff Supervision', 'Night Care', 'Duty of Candour']
+    },
+    frameworkLabel: 'CQC 5 Key Questions',
+    inspectionLabel: 'CQC Inspection',
+    packLabel: 'CQC Inspection Pack',
+    readinessLabel: 'CQC Readiness'
+  },
+  au: {
+    name: 'Australia',
+    regulator: 'Aged Care Quality and Safety Commission',
+    regulatorShort: 'ACQSC',
+    currency: 'A$',
+    locale: 'en-AU',
+    categories: [
+      'Identity & Preferences', 'Autonomy & Informed Consent', 'Dignity & Respect',
+      'Governance & Leadership', 'Risk Management', 'Quality Improvement',
+      'Workforce Planning', 'Staff Competency & Training', 'Staff Wellbeing',
+      'Clinical Care & Assessment', 'Medication Management', 'Infection Prevention',
+      'Falls Prevention', 'Restrictive Practices', 'Palliative & End of Life',
+      'Living Environment', 'Equipment & Maintenance', 'Emergency Planning',
+      'Meals & Nutrition', 'Daily Living Support', 'Social & Recreational Activities',
+      'Feedback & Complaints', 'Incident Management', 'Open Disclosure'
+    ],
+    framework: {
+      'Standard 1 — The Person': ['Identity & Preferences', 'Autonomy & Informed Consent', 'Dignity & Respect'],
+      'Standard 2 — The Organisation': ['Governance & Leadership', 'Risk Management', 'Quality Improvement'],
+      'Standard 3 — The Workforce': ['Workforce Planning', 'Staff Competency & Training', 'Staff Wellbeing'],
+      'Standard 4 — Clinical Care': ['Clinical Care & Assessment', 'Medication Management', 'Infection Prevention', 'Falls Prevention', 'Restrictive Practices', 'Palliative & End of Life'],
+      'Standard 5 — The Environment': ['Living Environment', 'Equipment & Maintenance', 'Emergency Planning'],
+      'Standard 6 — Food & Nutrition': ['Meals & Nutrition', 'Daily Living Support', 'Social & Recreational Activities'],
+      'Standard 7 — Feedback & Improvement': ['Feedback & Complaints', 'Incident Management', 'Open Disclosure']
+    },
+    frameworkLabel: '7 Strengthened Quality Standards',
+    inspectionLabel: 'Quality Assessment',
+    packLabel: 'Assessment Evidence Pack',
+    readinessLabel: 'Compliance Readiness'
+  }
 };
+
+// Active region (loaded from org settings, default UK)
+var ActiveRegion = REGION_CONFIGS.uk;
+
+function setRegion(regionCode) {
+  if (REGION_CONFIGS[regionCode]) {
+    ActiveRegion = REGION_CONFIGS[regionCode];
+    // Store in org if possible
+    if (AppState.orgId) {
+      db.collection('orgs').doc(AppState.orgId).update({ region: regionCode }).catch(function() {});
+    }
+    localStorage.setItem('arc-region', regionCode);
+  }
+}
+
+function loadRegionFromOrg() {
+  // Check org doc for region, fallback to localStorage, fallback to UK
+  if (AppState.orgId) {
+    return db.collection('orgs').doc(AppState.orgId).get().then(function(doc) {
+      if (doc.exists && doc.data().region && REGION_CONFIGS[doc.data().region]) {
+        ActiveRegion = REGION_CONFIGS[doc.data().region];
+      } else {
+        var saved = localStorage.getItem('arc-region');
+        if (saved && REGION_CONFIGS[saved]) ActiveRegion = REGION_CONFIGS[saved];
+      }
+    }).catch(function() {});
+  }
+  var saved = localStorage.getItem('arc-region');
+  if (saved && REGION_CONFIGS[saved]) ActiveRegion = REGION_CONFIGS[saved];
+  return Promise.resolve();
+}
+
+// Backwards-compatible aliases (existing code references these)
+var COMPLIANCE_CATEGORIES = REGION_CONFIGS.uk.categories;
+var CQC_KEY_QUESTIONS = REGION_CONFIGS.uk.framework;
+
+// Update aliases when region changes
+function updateComplianceAliases() {
+  COMPLIANCE_CATEGORIES = ActiveRegion.categories;
+  CQC_KEY_QUESTIONS = ActiveRegion.framework;
+}
 
 // ── AI Analysis Engine (rule-based) ────────────────────────
 var AIEngine = {
@@ -662,6 +726,10 @@ async function onUserSignedIn(user) {
 
     // Load sites
     await loadSites();
+
+    // Load region config from org
+    await loadRegionFromOrg();
+    updateComplianceAliases();
 
     // Update UI
     updateUserUI(user);
@@ -2354,6 +2422,11 @@ async function loadHomeSettings() {
       var addressInput = document.getElementById('input-home-address');
       if (nameInput) nameInput.value = data.name || '';
       if (addressInput) addressInput.value = data.address || '';
+      // Set region dropdown
+      var regionSelect = document.getElementById('select-region');
+      if (regionSelect && data.region && REGION_CONFIGS[data.region]) {
+        regionSelect.value = data.region;
+      }
     }
   } catch (err) {
     console.error('Failed to load home settings:', err);
@@ -2371,8 +2444,18 @@ async function saveHomeSettings() {
   if (btnText) btnText.textContent = 'Saving...';
   if (spinner) spinner.classList.remove('hidden');
   try {
-    await db.collection('orgs').doc(AppState.orgId).update({ name: name.trim(), address: address.trim() });
-    logAudit('home_settings_updated', 'Name: ' + name.trim());
+    // Save region selection
+    var regionSelect = document.getElementById('select-region');
+    var selectedRegion = regionSelect ? regionSelect.value : 'uk';
+    setRegion(selectedRegion);
+    updateComplianceAliases();
+
+    await db.collection('orgs').doc(AppState.orgId).update({
+      name: name.trim(),
+      address: address.trim(),
+      region: selectedRegion
+    });
+    logAudit('home_settings_updated', 'Name: ' + name.trim() + ', Region: ' + selectedRegion);
     showToast('Care home settings saved', 'success');
     var subtitle = document.getElementById('dashboard-subtitle');
     if (subtitle) subtitle.textContent = name.trim() + ' \u2014 compliance overview';
