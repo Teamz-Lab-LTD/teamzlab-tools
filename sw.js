@@ -10,7 +10,7 @@
  * - AdSense/Analytics: always skip (never cache)
  */
 
-var CACHE_NAME = 'teamztools-202604100328';
+var CACHE_NAME = 'teamztools-202604102141';
 var PRECACHE_URLS = [
   '/',
   '/branding/css/teamz-branding.css',
