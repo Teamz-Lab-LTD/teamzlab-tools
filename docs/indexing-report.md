@@ -1,11 +1,14 @@
-# Indexing Report — 2026-04-11 00:34
+# Indexing Report — 2026-04-11 00:47
 
 Total pages: 1
 Checked: 1
-Indexed: 1 (100%)
-Not indexed: 0
+Indexed: 0 (0%)
+Not indexed: 1
 Errors: 0
 
-## Indexed Pages (1)
+## Not Indexed Pages
 
-- /apps/always-ready-care/
+| Page | Reason |
+|---|---|
+| /au-care/aged-care-compliance-hobart/ | URL is unknown to Google |
+
