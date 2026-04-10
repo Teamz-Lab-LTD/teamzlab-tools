@@ -711,7 +711,7 @@ async function onUserSignedIn(user) {
 
     if (!userDoc.exists) {
       // First time — seed demo data
-      await seedDemoData(user, orgId);
+      await initNewOrg(user, orgId);
       // Re-read
       userDoc = await db.collection('orgs').doc(orgId).collection('users').doc(user.uid).get();
     }
@@ -807,21 +807,22 @@ function populateSiteDropdowns() {
 }
 
 // ── Demo Data Seeding ──────────────────────────────────────
-async function seedDemoData(user, orgId) {
+async function initNewOrg(user, orgId) {
   var batch = db.batch();
   var now = firebase.firestore.Timestamp.now();
 
-  // Org doc
+  // Org doc — blank name, user sets it in Team Management
   batch.set(db.collection('orgs').doc(orgId), {
-    name: 'Demo Care Home',
+    name: '',
+    region: 'uk',
     createdAt: now,
     ownerUid: user.uid
   });
 
-  // Site
+  // Site — blank name, user sets it in Team Management
   var siteRef = db.collection('orgs').doc(orgId).collection('sites').doc('site_main');
   batch.set(siteRef, {
-    name: 'Sunrise Care Home',
+    name: 'Main Site',
     address: '42 Maple Drive, Bristol, BS1 4QR',
     createdAt: now
   });
@@ -845,95 +846,8 @@ async function seedDemoData(user, orgId) {
 
   await batch.commit();
 
-  // Create sample evidence (separate batch for subcollections)
-  var batch2 = db.batch();
-
-  var sampleEvidence = [
-    {
-      type: 'text',
-      rawText: 'Medication administered to Mrs. Johnson at 08:00. Paracetamol 500mg given orally as prescribed. Resident was alert and cooperative. No adverse reactions observed. Medication taken with water and breakfast.',
-      status: 'approved',
-      manualTags: ['medication'],
-      siteId: 'site_main',
-      createdByUid: user.uid,
-      createdByName: displayName,
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(0)),
-      reviewedByUid: user.uid,
-      reviewedAt: now
-    },
-    {
-      type: 'text',
-      rawText: 'Personal care provided to Mr. Smith at 09:30. Assisted with morning wash, oral hygiene, and dressing. Skin integrity checked — no concerns noted. Resident chose own clothing. Dignity and privacy maintained throughout. Mood was pleasant.',
-      status: 'submitted',
-      manualTags: ['personal-care'],
-      siteId: 'site_main',
-      createdByUid: user.uid,
-      createdByName: displayName,
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(0))
-    },
-    {
-      type: 'text',
-      rawText: 'Meal support provided to Mrs. Davies during lunch. Soft diet served as per care plan. Consumed most of main course and all dessert. Fluid intake approximately 200ml. No signs of swallowing difficulties. Resident enjoyed the meal and chatted with tablemates.',
-      status: 'approved',
-      manualTags: ['nutrition'],
-      siteId: 'site_main',
-      createdByUid: user.uid,
-      createdByName: displayName,
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(1)),
-      reviewedByUid: user.uid,
-      reviewedAt: now
-    },
-    {
-      type: 'incident',
-      rawText: 'INCIDENT: Mr. Wilson had a fall in the corridor at 14:20. Found on the floor near room 12. No visible injuries sustained. Resident was alert and oriented. Assisted back to feet with two staff. Vital signs checked — all within normal range. GP notified. Family informed at 15:00. Falls risk assessment to be reviewed.',
-      status: 'submitted',
-      manualTags: ['safety'],
-      siteId: 'site_main',
-      createdByUid: user.uid,
-      createdByName: displayName,
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(2))
-    }
-  ];
-
-  sampleEvidence.forEach(function(ev) {
-    var ref = db.collection('orgs').doc(orgId).collection('evidence').doc();
-    batch2.set(ref, ev);
-  });
-
-  // Sample actions
-  var sampleActions = [
-    {
-      title: 'Review falls risk assessment for Mr. Wilson',
-      priority: 'high',
-      status: 'open',
-      dueDate: firebase.firestore.Timestamp.fromDate(daysAgo(-1)),
-      siteId: 'site_main',
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(2))
-    },
-    {
-      title: 'Update medication chart for Mrs. Johnson',
-      priority: 'medium',
-      status: 'open',
-      dueDate: firebase.firestore.Timestamp.fromDate(daysAgo(-3)),
-      siteId: 'site_main',
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(1))
-    },
-    {
-      title: 'Complete monthly fire safety check',
-      priority: 'critical',
-      status: 'open',
-      dueDate: firebase.firestore.Timestamp.fromDate(daysAgo(1)),
-      siteId: 'site_main',
-      createdAt: firebase.firestore.Timestamp.fromDate(daysAgo(5))
-    }
-  ];
-
-  sampleActions.forEach(function(ac) {
-    var ref = db.collection('orgs').doc(orgId).collection('actions').doc();
-    batch2.set(ref, ac);
-  });
-
-  await batch2.commit();
+  // Production: no sample data. Users start with a clean slate.
+  // The onboarding flow guides them to record their first evidence.
   AppState.siteId = 'site_main';
 }
 
@@ -2640,7 +2554,7 @@ async function loadOrgName() {
       var orgData = orgDoc.data();
       var homeName = orgData.name || '';
       var subtitle = document.getElementById('dashboard-subtitle');
-      if (subtitle && homeName && homeName !== 'Demo Care Home') {
+      if (subtitle && homeName) {
         subtitle.textContent = homeName + ' \u2014 compliance overview';
       }
     }
