@@ -1,12 +1,12 @@
-# Indexing Report — 2026-04-10 01:46
+# Indexing Report — 2026-04-10 21:18
 
 Total pages: 30
 Checked: 30
-Indexed: 30 (100%)
+Indexed: 29 (96%)
 Not indexed: 0
-Errors: 0
+Errors: 1
 
-## Indexed Pages (30)
+## Indexed Pages (29)
 
 - /
 - /diagnostic/dns-leak-test/
@@ -36,5 +36,4 @@ Errors: 0
 - /bd/freelancer-tax-calculator/
 - /au/student-visa-cost-calculator/
 - /football/ucl-group-stage-simulator/
-- /health/screen-distance-checker/
 - /health/time-blindness-calculator/
