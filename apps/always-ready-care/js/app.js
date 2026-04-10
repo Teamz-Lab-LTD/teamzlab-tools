@@ -303,6 +303,60 @@ var REGION_CONFIGS = {
     inspectionLabel: 'Quality Assessment',
     packLabel: 'Assessment Evidence Pack',
     readinessLabel: 'Compliance Readiness'
+  },
+  ie: {
+    name: 'Ireland',
+    regulator: 'HIQA (Health Information and Quality Authority)',
+    regulatorShort: 'HIQA',
+    currency: '€',
+    locale: 'en-IE',
+    categories: [
+      'Person-Centred Care & Support', 'Effective Services', 'Safe Services',
+      'Health & Wellbeing', 'Leadership & Governance', 'Workforce',
+      'Use of Resources', 'Use of Information',
+      'Medication Management', 'Nutrition & Hydration', 'Infection Prevention',
+      'Falls Prevention', 'Safeguarding & Protection', 'Complaints Management',
+      'End of Life Care', 'Activities & Social Care', 'Risk Management',
+      'Staff Supervision & Training', 'Records & Documentation', 'Residents\' Rights'
+    ],
+    framework: {
+      'Person-Centred': ['Person-Centred Care & Support', 'Residents\' Rights', 'Activities & Social Care', 'End of Life Care'],
+      'Effective': ['Effective Services', 'Health & Wellbeing', 'Nutrition & Hydration', 'Medication Management'],
+      'Safe': ['Safe Services', 'Infection Prevention', 'Falls Prevention', 'Safeguarding & Protection', 'Risk Management'],
+      'Well-Led': ['Leadership & Governance', 'Workforce', 'Staff Supervision & Training', 'Use of Resources', 'Use of Information', 'Records & Documentation', 'Complaints Management']
+    },
+    frameworkLabel: 'HIQA 8 National Standards',
+    inspectionLabel: 'HIQA Inspection',
+    packLabel: 'HIQA Inspection Pack',
+    readinessLabel: 'HIQA Readiness'
+  },
+  nz: {
+    name: 'New Zealand',
+    regulator: 'Ministry of Health (Designated Auditing Agencies)',
+    regulatorShort: 'MoH/DAA',
+    currency: 'NZ$',
+    locale: 'en-NZ',
+    categories: [
+      'Consumer Rights', 'Organisational Management', 'Continuum of Service Delivery',
+      'Safe & Appropriate Environment', 'Restraint Minimisation',
+      'Infection Prevention & Control', 'Medication Management',
+      'Nutrition & Fluid Balance', 'Personal Care & Dignity',
+      'Activities & Recreation', 'Clinical Assessment & Care Planning',
+      'Wound & Skin Care', 'Falls Prevention', 'Pain Management',
+      'Palliative & End of Life', 'Complaints & Feedback',
+      'Staffing & Workforce', 'Training & Competency',
+      'Governance & Quality Improvement', 'Documentation & Records'
+    ],
+    framework: {
+      'NZS 8134.1 — Consumer Rights': ['Consumer Rights', 'Complaints & Feedback', 'Personal Care & Dignity'],
+      'NZS 8134.2 — Organisational Management': ['Organisational Management', 'Governance & Quality Improvement', 'Staffing & Workforce', 'Training & Competency', 'Documentation & Records'],
+      'NZS 8134.3 — Continuum of Service': ['Continuum of Service Delivery', 'Clinical Assessment & Care Planning', 'Medication Management', 'Nutrition & Fluid Balance', 'Activities & Recreation', 'Palliative & End of Life', 'Pain Management', 'Wound & Skin Care'],
+      'NZS 8134.4 — Safe Environment': ['Safe & Appropriate Environment', 'Infection Prevention & Control', 'Falls Prevention', 'Restraint Minimisation']
+    },
+    frameworkLabel: 'NZS 8134 Health & Disability Standards',
+    inspectionLabel: 'Certification Audit',
+    packLabel: 'Audit Evidence Pack',
+    readinessLabel: 'Audit Readiness'
   }
 };
 
