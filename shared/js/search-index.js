@@ -930,7 +930,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Daily Word Grid',d:'Solve a free daily 5x5 mini crossword puzzle with simple clues. Track your time, build streaks, and share results. New puzzle every day, runs offline.',h:'/games/daily-word-grid/'},
   {t:'Free Word Puzzle Games Online',d:'Play free word puzzle games online — word groups, word guess, letter hive, crossword, and word search. No login, no paywall. Private and unlimited.',h:'/games/'},
   {t:'Letter Hive — Free Word Puzzle',d:'Play Letter Hive free word puzzle. Form words from 7 honeycomb letters — center letter required. Find pangrams, climb ranks. Daily and practice mode',h:'/games/letter-hive/'},
-  {t:'Chain',d:'Tap one orb to trigger a chain reaction that pops them all. Free daily logic puzzle with 200+ levels, star ratings, and difficulty tiers. No signup ne',h:'/games/route/'},
+  {t:'Blockout',d:'Tap colored blocks in the right order to slide them off the grid. Free daily logic puzzle with 200+ levels, star ratings, and 4 difficulty tiers.',h:'/games/route/'},
   {t:'Thread Words',d:'Trace hidden themed words in a letter grid. Find all words, uncover the theme, and solve the spangram. Free daily puzzle with practice mode. Private.',h:'/games/thread-words/'},
   {t:'Word Groups Puzzle',d:'Sort 16 words into 4 secret categories. Find hidden connections between words before you run out of guesses. Daily puzzle plus unlimited practice mode',h:'/games/word-groups-puzzle/'},
   {t:'Word Guess Game',d:'Guess the 5-letter word in 6 tries with color-coded clues. Play the daily puzzle or unlimited practice mode. Free, private, no login required.',h:'/games/word-guess/'},

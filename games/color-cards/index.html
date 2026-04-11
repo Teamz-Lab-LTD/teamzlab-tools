@@ -357,6 +357,7 @@
       drawnCardIdx: -1,      // index of drawn card (-1 = not drawn, used to restrict play)
       gameOver: false,
       turnLocked: false,     // prevents double-play / race conditions
+      lastPlayedBy: -1,      // who played last card (for correct ONE! check after advanceIndex)
       pendingWild: null      // card waiting for color pick
     };
 
@@ -447,6 +448,7 @@
       state.drawnCardIdx = -1;
       state.gameOver = false;
       state.turnLocked = false;
+      state.lastPlayedBy = -1;
       state.pendingWild = null;
 
       // Build and shuffle deck
@@ -506,12 +508,13 @@
 
     function drawFromDeck() {
       if (state.deck.length === 0) {
+        if (state.discardPile.length <= 1) return null;
         var top = state.discardPile.pop();
         state.deck = state.discardPile;
         state.discardPile = [top];
         shuffle(state.deck);
       }
-      return state.deck.pop();
+      return state.deck.length > 0 ? state.deck.pop() : null;
     }
 
     /* ═══════════════════════════════════════════
@@ -607,7 +610,7 @@
       var divs = [];
       for (var i = 0; i < hand.length; i++) {
         // After drawing: only the drawn card is playable (official rule)
-        var isPlayable = canPlay(hand[i]) && !state.turnLocked;
+        var isPlayable = canPlay(hand[i]) && !state.turnLocked && !state.pendingWild;
         if (state.hasDrawn && state.drawnCardIdx >= 0 && i !== state.drawnCardIdx) {
           isPlayable = false;
         }
@@ -680,9 +683,13 @@
       state.drawnCardIdx = -1;
       state.pendingWild = null;
       state.turnLocked = false;
+      state.lastPlayedBy = -1;
       $colorPicker.classList.remove('show');
       $endTurn.style.display = 'none';
       $status.textContent = '';
+      $callOne.style.background = '';
+      $callOne.style.color = '';
+      $callOne.style.borderColor = '';
 
       var player = state.players[state.currentPlayer];
 
@@ -745,6 +752,16 @@
         return;
       }
       var card = drawFromDeck();
+      if (!card) {
+        if (hasPlayableCard(state.currentPlayer)) {
+          if (window.showToast) window.showToast('Deck is empty \u2014 play a card from your hand!');
+        } else {
+          if (window.showToast) window.showToast('No cards left \u2014 skipping your turn.');
+          state.turnLocked = true;
+          advanceTurn();
+        }
+        return;
+      }
       player.hand.push(card);
       player.calledOne = false;
       state.hasDrawn = true;
@@ -771,6 +788,7 @@
 
       // Lock turn to prevent rapid double-plays
       state.turnLocked = true;
+      state.lastPlayedBy = state.currentPlayer;
       $endTurn.style.display = 'none';
 
       // Remove from hand
@@ -829,10 +847,10 @@
     function applyWinPenalty(card) {
       if (card.value === 'draw2') {
         var target = nextPlayer();
-        for (var d = 0; d < 2; d++) state.players[target].hand.push(drawFromDeck());
+        for (var d = 0; d < 2; d++) { var c = drawFromDeck(); if (c) state.players[target].hand.push(c); }
       } else if (card.value === 'wild4') {
         var target = nextPlayer();
-        for (var d = 0; d < 4; d++) state.players[target].hand.push(drawFromDeck());
+        for (var d = 0; d < 4; d++) { var c = drawFromDeck(); if (c) state.players[target].hand.push(c); }
       }
     }
 
@@ -877,13 +895,13 @@
         setTimeout(function() { advanceTurn(); }, 1000);
       } else if (card.value === 'draw2') {
         var target = nextPlayer();
-        for (var d = 0; d < 2; d++) state.players[target].hand.push(drawFromDeck());
+        for (var d = 0; d < 2; d++) { var c = drawFromDeck(); if (c) state.players[target].hand.push(c); }
         $status.textContent = state.players[target].name + ' draws 2 and is skipped!';
         advanceIndex();
         setTimeout(function() { advanceTurn(); }, 1000);
       } else if (card.value === 'wild4') {
         var target = nextPlayer();
-        for (var d = 0; d < 4; d++) state.players[target].hand.push(drawFromDeck());
+        for (var d = 0; d < 4; d++) { var c = drawFromDeck(); if (c) state.players[target].hand.push(c); }
         $status.textContent = state.players[target].name + ' draws 4 and is skipped!';
         advanceIndex();
         setTimeout(function() { advanceTurn(); }, 1000);
@@ -904,13 +922,13 @@
     }
 
     function advanceTurn() {
-      // Check if previous player forgot to call "ONE!"
-      var prev = state.currentPlayer;
-      var prevPlayer = state.players[prev];
+      // Check the player who PLAYED (not current — advanceIndex may have shifted it)
+      var checkIdx = state.lastPlayedBy >= 0 ? state.lastPlayedBy : state.currentPlayer;
+      var prevPlayer = state.players[checkIdx];
       if (prevPlayer.hand.length === 1 && !prevPlayer.calledOne) {
         // Penalty — draw 2
-        prevPlayer.hand.push(drawFromDeck());
-        prevPlayer.hand.push(drawFromDeck());
+        var p1 = drawFromDeck(); if (p1) prevPlayer.hand.push(p1);
+        var p2 = drawFromDeck(); if (p2) prevPlayer.hand.push(p2);
         if (window.showToast) window.showToast(prevPlayer.name + ' forgot to call ONE! +2 penalty cards');
       }
 
@@ -918,9 +936,10 @@
       beginTurn();
     }
 
-    // Call ONE! button
+    // Call ONE! button — targets player who played, not (possibly advanced) current player
     $callOne.addEventListener('click', function() {
-      var player = state.players[state.currentPlayer];
+      var targetIdx = state.lastPlayedBy >= 0 ? state.lastPlayedBy : state.currentPlayer;
+      var player = state.players[targetIdx];
       if (player.isComputer) {
         if (window.showToast) window.showToast('Wait for your turn!');
         return;
@@ -990,12 +1009,13 @@
 
       if (playable.length === 0) {
         // Draw
-        hand.push(drawFromDeck());
+        var drawn = drawFromDeck();
+        if (!drawn) { advanceTurn(); return; }
+        hand.push(drawn);
         player.calledOne = false;
         state.hasDrawn = true;
         renderScores();
         // Check if drawn card is playable
-        var drawn = hand[hand.length - 1];
         if (canPlay(drawn)) {
           setTimeout(function() {
             computerPlayCard(hand.length - 1);
@@ -1035,6 +1055,7 @@
 
     function computerPlayCard(handIdx) {
       var player = state.players[state.currentPlayer];
+      state.lastPlayedBy = state.currentPlayer;
       var card = player.hand[handIdx];
       player.hand.splice(handIdx, 1);
 
