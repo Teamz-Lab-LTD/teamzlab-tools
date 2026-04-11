@@ -703,8 +703,11 @@ function localiseLandingPage() {
   var problemBanner = document.querySelector('.landing-problem-banner');
   if (problemBanner && regionCode !== 'uk') {
     var inspectorTerms = { au: 'assessor', nz: 'auditor', ie: 'inspector' };
-    problemBanner.querySelector('p:first-child').textContent = 'You provide great care. Can you prove it when the ' + inspectorTerms[regionCode] + ' arrives?';
-    problemBanner.querySelector('p:last-child').textContent = 'Evidence scattered across WhatsApp, paper notes, and spreadsheets. Hours spent pulling records together. We fix that \u2014 one app, 60 seconds per record, always audit-ready.';
+    var ps = problemBanner.querySelectorAll('p');
+    if (ps.length >= 2) {
+      ps[0].textContent = 'You provide great care. Can you prove it when the ' + inspectorTerms[regionCode] + ' arrives?';
+      ps[1].innerHTML = 'Evidence scattered everywhere. Hours pulling records together. <span style="color:var(--heading);font-weight:500;">See how we fix that \u2193</span>';
+    }
   }
 
   // Hero
