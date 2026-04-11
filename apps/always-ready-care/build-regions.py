@@ -210,23 +210,14 @@ for region_code, r in REGIONS.items():
 
     # Problem banner — localise for Googlebot
     PROBLEM_LINE1 = {
-        'au': "Aged care facilities don't fail assessments because of bad care.",
-        'nz': "Rest homes don't fail audits because of bad care.",
-        'ie': "Nursing homes don't fail inspections because of bad care.",
-    }
-    PROBLEM_LINE2 = {
-        'au': 'They fail because their evidence is scattered across WhatsApp, paper notes, and spreadsheets. When the assessor arrives, managers spend hours pulling records together. We fix that.',
-        'nz': 'They fail because their evidence is scattered across WhatsApp, paper notes, and spreadsheets. When the auditor arrives, managers spend hours pulling records together. We fix that.',
-        'ie': 'They fail because their evidence is scattered across WhatsApp, paper notes, and spreadsheets. When the inspector arrives, managers spend hours pulling records together. We fix that.',
+        'au': "You provide great care. Can you prove it when the assessor arrives?",
+        'nz': "You provide great care. Can you prove it when the auditor arrives?",
+        'ie': "You provide great care. Can you prove it when the inspector arrives?",
     }
     if region_code in PROBLEM_LINE1:
         html = html.replace(
-            "Care homes don't fail inspections because of bad care.",
+            "You provide great care. Can you prove it when the inspector arrives?",
             PROBLEM_LINE1[region_code]
-        )
-        html = html.replace(
-            "They fail because their evidence is scattered across WhatsApp, paper notes, and spreadsheets. When the inspector arrives, managers spend hours pulling records together. We fix that.",
-            PROBLEM_LINE2[region_code]
         )
 
     # Hero subtitle — localise for Googlebot
