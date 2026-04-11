@@ -1,5 +1,5 @@
 /* AlwaysReady Care — Service Worker for Offline Support */
-var CACHE_NAME = 'arc-v2';
+var CACHE_NAME = 'arc-v3';
 var ASSETS = [
   '/apps/always-ready-care/',
   '/apps/always-ready-care/index.html',
@@ -64,7 +64,12 @@ self.addEventListener('fetch', function(event) {
     }).catch(function() {
       // Offline — serve from cache
       return caches.match(event.request).then(function(cached) {
-        return cached || new Response('Offline — please reconnect to continue.', {
+        if (cached) return cached;
+        // For navigation requests, serve the app shell so the SPA can handle it
+        if (event.request.mode === 'navigate') {
+          return caches.match('/apps/always-ready-care/index.html');
+        }
+        return new Response('Offline — please reconnect to continue.', {
           status: 503,
           headers: { 'Content-Type': 'text/plain' }
         });

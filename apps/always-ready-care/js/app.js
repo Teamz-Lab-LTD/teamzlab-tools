@@ -245,6 +245,50 @@ var TEMPLATES = [
   }
 ];
 
+// ── Region-Specific Templates ─────────────────────────────
+// These are appended based on active region
+var REGION_TEMPLATES = {
+  au: [
+    {
+      id: 'sirs-priority1',
+      name: 'SIRS — Priority 1 Incident',
+      icon: 'fas fa-exclamation-circle',
+      desc: 'Report a Priority 1 serious incident (must be reported within 24 hours).',
+      text: 'SIRS PRIORITY 1 INCIDENT — [Date] at [Time]\n\nFacility: [Name]\nConsumer: [Name]\n\nIncident type: [Unreasonable use of force / Unlawful sexual contact / Psychological or emotional abuse / Stealing or financial coercion / Neglect / Unexpected death / Use of restrictive practice causing injury or trauma / Missing consumer]\n\nDescription:\n[Detailed description of the incident]\n\nImmediate actions taken:\n- [Ensured consumer safety]\n- [First aid / medical attention provided]\n- [Staff involved stood down if appropriate]\n\nWitnesses: [Names]\nPolice notified: [Yes/No — reference number]\nFamily/representative notified: [Yes/No — time and person]\n\nSIRS REPORTING:\n- Reported to Aged Care Quality and Safety Commission: [Yes — within 24 hours]\n- Notification ID: [If submitted]\n- Reported by: [Name and role]\n\nInvestigation plan:\n[Steps to be taken, responsible person, timeline]\n\nReview date: [Date]'
+    },
+    {
+      id: 'sirs-priority2',
+      name: 'SIRS — Priority 2 Incident',
+      icon: 'fas fa-exclamation-triangle',
+      desc: 'Report a Priority 2 serious incident (must be reported within 30 days).',
+      text: 'SIRS PRIORITY 2 INCIDENT — [Date] at [Time]\n\nFacility: [Name]\nConsumer: [Name]\n\nIncident type: [Unreasonable use of force not causing injury / Rough or inappropriate handling / Use of restrictive practice not consistent with guidelines / Emotional abuse pattern / Unexplained absence / Neglect pattern]\n\nDescription:\n[Detailed description of the incident or pattern]\n\nActions taken:\n- [Description of immediate response]\n- [Support provided to consumer]\n\nFamily/representative notified: [Yes/No]\n\nSIRS REPORTING:\n- To be reported within 30 days of becoming aware\n- Reported to Commission: [Yes/No — date]\n- Notification ID: [If submitted]\n- Reported by: [Name and role]\n\nRoot cause analysis:\n[Initial assessment of contributing factors]\n\nCorrective actions:\n1. [Action] — Due: [Date] — Responsible: [Name]\n2. [Action] — Due: [Date] — Responsible: [Name]\n\nReview date: [Date]'
+    },
+    {
+      id: 'restrictive-practice',
+      name: 'Restrictive Practice Record',
+      icon: 'fas fa-lock',
+      desc: 'Document any use of restrictive practices as required under ACQS Standard 4.',
+      text: 'RESTRICTIVE PRACTICE RECORD — [Date] at [Time]\n\nConsumer: [Name]\nFacility: [Name]\n\nType of restraint: [Physical / Chemical / Mechanical / Environmental / Seclusion]\n\nReason for use:\n[Description of circumstances requiring restrictive practice]\n\nAlternatives tried before restraint:\n1. [Alternative attempted]\n2. [Alternative attempted]\n3. [Alternative attempted]\n\nDuration: [Start time] to [End time]\nConsumer response: [Description]\nMonitoring during restraint: [Frequency and observations]\n\nAuthorised by: [Name and role]\nInformed consent obtained: [Yes/No — details]\nBehavior support plan in place: [Yes/No]\n\nPost-incident review:\n[Consumer wellbeing check, debrief, documentation]\n\nReported to: [Manager name]\nSIRS reportable: [Yes/No]\nReview date: [Date]'
+    }
+  ],
+  nz: [
+    {
+      id: 'restraint-minimisation',
+      name: 'Restraint Minimisation Record',
+      icon: 'fas fa-lock',
+      desc: 'Document restraint use under NZS 8134.4 Safe Environment requirements.',
+      text: 'RESTRAINT MINIMISATION RECORD — [Date] at [Time]\n\nResident: [Name]\nFacility: [Name]\n\nType of restraint: [Physical / Environmental / Enabler]\nReason: [Description of circumstances]\n\nAlternatives tried:\n1. [Alternative attempted]\n2. [Alternative attempted]\n\nDuration: [Start time] to [End time]\nResident response: [Description]\n\nAuthorised by: [Name and role]\nConsent: [Resident/family/EPOA informed — Yes/No]\nCare plan updated: [Yes/No]\n\nReview date: [Date]\nRecorded by: [Name]'
+    }
+  ]
+};
+
+// Get templates for current region (base + region-specific)
+function getActiveTemplates() {
+  var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+  var extra = REGION_TEMPLATES[regionCode] || [];
+  return TEMPLATES.concat(extra);
+}
+
 // ── Compliance Categories (mapped to CQC 5 Key Questions) ─
 // ── Multi-Region Compliance Frameworks ────────────────────
 var REGION_CONFIGS = {
@@ -360,8 +404,21 @@ var REGION_CONFIGS = {
   }
 };
 
-// Active region (loaded from org settings, default UK)
-var ActiveRegion = REGION_CONFIGS.uk;
+// Auto-detect region from browser timezone
+function detectRegionFromTimezone() {
+  try {
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (/Australia/.test(tz)) return 'au';
+    if (/Pacific\/Auckland|Pacific\/Chatham/.test(tz)) return 'nz';
+    if (/Europe\/Dublin/.test(tz)) return 'ie';
+  } catch (e) {}
+  return 'uk';
+}
+
+// Active region priority: localStorage (set by /au/, /nz/, /ie/ pages) > timezone > UK default
+var _savedRegion = localStorage.getItem('arc-region');
+var _detectedRegion = detectRegionFromTimezone();
+var ActiveRegion = REGION_CONFIGS[_savedRegion || _detectedRegion] || REGION_CONFIGS.uk;
 
 function setRegion(regionCode) {
   if (REGION_CONFIGS[regionCode]) {
@@ -375,20 +432,550 @@ function setRegion(regionCode) {
 }
 
 function loadRegionFromOrg() {
-  // Check org doc for region, fallback to localStorage, fallback to UK
+  // Priority: org doc > localStorage > timezone detection > UK default
+  var detected = detectRegionFromTimezone();
   if (AppState.orgId) {
     return db.collection('orgs').doc(AppState.orgId).get().then(function(doc) {
       if (doc.exists && doc.data().region && REGION_CONFIGS[doc.data().region]) {
         ActiveRegion = REGION_CONFIGS[doc.data().region];
       } else {
         var saved = localStorage.getItem('arc-region');
-        if (saved && REGION_CONFIGS[saved]) ActiveRegion = REGION_CONFIGS[saved];
+        ActiveRegion = REGION_CONFIGS[saved] || REGION_CONFIGS[detected] || REGION_CONFIGS.uk;
       }
     }).catch(function() {});
   }
   var saved = localStorage.getItem('arc-region');
-  if (saved && REGION_CONFIGS[saved]) ActiveRegion = REGION_CONFIGS[saved];
+  ActiveRegion = REGION_CONFIGS[saved] || REGION_CONFIGS[detected] || REGION_CONFIGS.uk;
   return Promise.resolve();
+}
+
+// ── Landing page localisation per region ──────────────────
+var LANDING_CONTENT = {
+  uk: {
+    badge: 'Free Care Home Software UK',
+    h1: 'Care Home Compliance Software That Keeps You CQC-Ready Every Day',
+    heroSub: 'Keep your care planning system. We make your evidence inspection-ready. AlwaysReady Care captures, structures, reviews, and exports CQC-ready evidence — mapped to 5 key questions, 34 quality statements, and 6 evidence categories. Built for the 29,700+ CQC-regulated service locations across England.',
+    trustGdpr: 'UK GDPR compliant',
+    trustReg: 'Reg 17 governance ready',
+    featDashTitle: 'See Your CQC Readiness',
+    featDashDesc: 'A live compliance dashboard mapped to CQC\'s 5 key questions — Safe, Effective, Caring, Responsive, Well-led. See which of the 21 compliance categories have gaps before an inspector finds them.',
+    featPackDesc: 'When CQC visits, generate a professional inspection-ready evidence pack in one click. Filter by date range, evidence type, or compliance area. Download, print, or share instantly.',
+    painEvidence: 'Paper notes, WhatsApp messages, Excel spreadsheets, emails — your compliance evidence is in 5 different places. CQC asks for it and you spend hours pulling it together.',
+    painAudit: 'You can show the audit, but not the action taken, who owns it, when it\'s due, or proof of improvement. CQC calls this a Regulation 17 governance failure — the #1 reason homes get "Requires Improvement".',
+    painRecords: 'Staffing pressure means carers write evidence at the end of a shift — or not at all. Retrospective, incomplete records are a red flag for inspectors under Regulation 12 (safe care).',
+    painInspection: 'Teams scramble before a CQC visit instead of running a continuous evidence process. Skills for Care data shows this is the single biggest gap in services rated "Requires Improvement".',
+    audienceTitle: 'Best Care Home Software for Every Role',
+    audienceManager: 'See compliance readiness at a glance. Spot gaps across all 21 CQC categories. Generate inspection packs. Manage your team\'s access and roles.',
+    frameworkTitle: 'CQC Compliance Audit Tool — Mapped to 5 Key Questions',
+    frameworkSub: 'The only free care home audit tool that tracks 21 compliance categories across Safe, Effective, Caring, Responsive, and Well-led',
+    regsTitle: 'Built on CQC Regulatory Requirements',
+    regsSub: 'AlwaysReady Care helps you evidence compliance with the Health and Social Care Act 2008 (Regulated Activities) Regulations 2014',
+    regsItems: [
+      { code: 'Reg 9', label: 'Person-centred care' },
+      { code: 'Reg 11', label: 'Need for consent & MCA' },
+      { code: 'Reg 12', label: 'Safe care and treatment' },
+      { code: 'Reg 13', label: 'Safeguarding from abuse' },
+      { code: 'Reg 16', label: 'Receiving complaints' },
+      { code: 'Reg 17', label: 'Good governance' },
+      { code: 'Reg 18', label: 'Staffing competency' },
+      { code: 'Reg 20', label: 'Duty of candour' }
+    ],
+    regsNote: 'UK GDPR & Data Protection Act 2018 compliant. Evidence retained per Digital Care Hub guidance: care records 8 years, serious incidents 20 years.',
+    proofTitle: 'Why UK Care Homes Choose This Compliance Software',
+    proofCategories: '21',
+    proofCatLabel: 'CQC compliance categories tracked',
+    proofQuestions: '5',
+    proofQLabel: 'CQC Key Questions mapped',
+    proCatFeature: '21 CQC compliance categories',
+    priceFree: '£0', pricePro: '£79',
+    priceUnit: '/home/month',
+    leadNote: 'No spam, unsubscribe anytime. We respect UK GDPR.',
+    leadSub: 'Get CQC compliance tips, product updates, and early access to new features',
+    footerDesc: 'Free care home compliance software for UK social care providers',
+    footerGdpr: '© 2026 Teamz Lab Ltd. All rights reserved. UK GDPR & Data Protection Act 2018 compliant.',
+    facilityTerm: 'care home',
+    workflowSub: 'From frontline carer to CQC inspector — the best care home compliance workflow in the UK'
+  },
+  au: {
+    badge: 'Free Aged Care Software Australia',
+    h1: 'Aged Care Compliance Software That Keeps You Audit-Ready Every Day',
+    heroSub: 'Keep your care management system. We make your evidence audit-ready. AlwaysReady Care captures, structures, reviews, and exports evidence mapped to the 7 Strengthened Aged Care Quality Standards — 24 compliance categories across the new ACQS 2025 framework. Built for 3,600+ aged care facilities across Australia.',
+    trustGdpr: 'Privacy Act 1988 compliant',
+    trustReg: 'SIRS reporting ready',
+    featDashTitle: 'See Your Compliance Readiness',
+    featDashDesc: 'A live compliance dashboard mapped to 7 Strengthened Quality Standards — The Person, The Organisation, The Workforce, Clinical Care, The Environment, Food & Nutrition, Feedback & Improvement. See which of the 24 compliance categories have gaps before an assessor finds them.',
+    featPackDesc: 'When the Aged Care Quality and Safety Commission visits, generate a professional assessment-ready evidence pack in one click. Filter by date range, evidence type, or compliance area.',
+    painEvidence: 'Paper notes, WhatsApp messages, Excel spreadsheets, emails — your compliance evidence is scattered across systems. When the Commission requests it, you spend hours pulling it together.',
+    painAudit: 'You can show the audit, but not the action taken, who owns it, when it\'s due, or proof of improvement. Under the Strengthened Standards, continuous improvement evidence is mandatory.',
+    painRecords: 'Staffing pressure means care workers write evidence at the end of a shift — or not at all. Incomplete records are a red flag for assessors under the new ACQS 2025 requirements.',
+    painInspection: 'Teams scramble before an assessment visit instead of running a continuous evidence process. The Aged Care Quality and Safety Commission expects ongoing compliance, not last-minute preparation.',
+    audienceTitle: 'Best Aged Care Software for Every Role',
+    audienceManager: 'See compliance readiness at a glance. Spot gaps across all 24 ACQS categories. Generate assessment packs. Manage your team\'s access and roles.',
+    frameworkTitle: 'ACQS Compliance Tool — Mapped to 7 Strengthened Quality Standards',
+    frameworkSub: 'The only free aged care compliance tool that tracks 24 categories across the new Aged Care Quality Standards (ACQS 2025)',
+    regsTitle: 'Built on Aged Care Quality Standards 2025',
+    regsSub: 'AlwaysReady Care helps you evidence compliance with the Aged Care Act 1997 and the Strengthened Aged Care Quality Standards',
+    regsItems: [
+      { code: 'Std 1', label: 'The Person — identity, autonomy, dignity' },
+      { code: 'Std 2', label: 'The Organisation — governance, risk, quality' },
+      { code: 'Std 3', label: 'The Workforce — planning, competency, wellbeing' },
+      { code: 'Std 4', label: 'Clinical Care — assessment, medication, infection' },
+      { code: 'Std 5', label: 'The Environment — living, equipment, emergency' },
+      { code: 'Std 6', label: 'Food & Nutrition — meals, daily living, activities' },
+      { code: 'Std 7', label: 'Feedback & Improvement — complaints, incidents, disclosure' }
+    ],
+    regsNote: 'Privacy Act 1988 & Australian Privacy Principles compliant. SIRS (Serious Incident Response Scheme) reporting integrated. Records retained per Commonwealth guidelines.',
+    proofTitle: 'Why Australian Aged Care Facilities Choose This Software',
+    proofCategories: '24',
+    proofCatLabel: 'ACQS compliance categories tracked',
+    proofQuestions: '7',
+    proofQLabel: 'Quality Standards mapped',
+    proCatFeature: '24 ACQS compliance categories',
+    priceFree: 'A$0', pricePro: 'A$129',
+    priceUnit: '/facility/month',
+    leadNote: 'No spam, unsubscribe anytime. We respect Australian Privacy Principles.',
+    leadSub: 'Get aged care compliance tips, product updates, and early access to new features',
+    footerDesc: 'Free aged care compliance software for Australian care providers',
+    footerGdpr: '© 2026 Teamz Lab Ltd. All rights reserved. Privacy Act 1988 & Australian Privacy Principles compliant.',
+    facilityTerm: 'aged care facility',
+    workflowSub: 'From frontline care worker to quality assessor — the best aged care compliance workflow in Australia'
+  },
+  nz: {
+    badge: 'Free Rest Home Software New Zealand',
+    h1: 'Rest Home Compliance Software That Keeps You Audit-Ready Every Day',
+    heroSub: 'Keep your care management system. We make your evidence audit-ready. AlwaysReady Care captures, structures, reviews, and exports evidence mapped to NZS 8134 Health and Disability Services Standards — 20 compliance categories across 4 standards. Built for 900+ aged residential care facilities across New Zealand.',
+    trustGdpr: 'Privacy Act 2020 compliant',
+    trustReg: 'NZS 8134 audit ready',
+    featDashTitle: 'See Your Audit Readiness',
+    featDashDesc: 'A live compliance dashboard mapped to NZS 8134 standards — Consumer Rights, Organisational Management, Continuum of Service, Safe Environment. See which of the 20 compliance categories have gaps before an auditor finds them.',
+    featPackDesc: 'When the Designated Auditing Agency visits, generate a professional audit-ready evidence pack in one click. Filter by date range, evidence type, or compliance area.',
+    painEvidence: 'Paper notes, WhatsApp messages, Excel spreadsheets, emails — your compliance evidence is scattered across systems. When the auditing agency requests it, you spend hours pulling it together.',
+    painAudit: 'You can show the audit, but not the action taken, who owns it, when it\'s due, or proof of improvement. Under the Health and Disability Services Standards, continuous improvement evidence is mandatory.',
+    painRecords: 'Staffing pressure means caregivers write evidence at the end of a shift — or not at all. Incomplete records are a red flag for auditors under NZS 8134 requirements.',
+    painInspection: 'Teams scramble before a certification audit instead of running a continuous evidence process. The Ministry of Health expects ongoing compliance, not last-minute preparation.',
+    audienceTitle: 'Best Rest Home Software for Every Role',
+    audienceManager: 'See compliance readiness at a glance. Spot gaps across all 20 NZS 8134 categories. Generate audit packs. Manage your team\'s access and roles.',
+    frameworkTitle: 'NZS 8134 Compliance Tool — Mapped to Health & Disability Standards',
+    frameworkSub: 'The only free rest home compliance tool that tracks 20 categories across NZS 8134.1 to NZS 8134.4',
+    regsTitle: 'Built on NZS 8134 Health & Disability Standards',
+    regsSub: 'AlwaysReady Care helps you evidence compliance with the Health and Disability Services (Safety) Act 2001 and NZS 8134:2021',
+    regsItems: [
+      { code: 'NZS 8134.1', label: 'Consumer Rights — rights, complaints, dignity' },
+      { code: 'NZS 8134.2', label: 'Organisational Management — governance, staffing, training' },
+      { code: 'NZS 8134.3', label: 'Continuum of Service — clinical care, medication, nutrition' },
+      { code: 'NZS 8134.4', label: 'Safe Environment — infection control, falls, restraint' }
+    ],
+    regsNote: 'Privacy Act 2020 & Health Information Privacy Code compliant. Records retained per NZ Health and Disability Commissioner guidelines.',
+    proofTitle: 'Why New Zealand Rest Homes Choose This Software',
+    proofCategories: '20',
+    proofCatLabel: 'NZS 8134 compliance categories tracked',
+    proofQuestions: '4',
+    proofQLabel: 'NZS 8134 Standards mapped',
+    proCatFeature: '20 NZS 8134 compliance categories',
+    priceFree: 'NZ$0', pricePro: 'NZ$99',
+    priceUnit: '/facility/month',
+    leadNote: 'No spam, unsubscribe anytime. We respect the NZ Privacy Act 2020.',
+    leadSub: 'Get aged care compliance tips, product updates, and early access to new features',
+    footerDesc: 'Free rest home compliance software for New Zealand care providers',
+    footerGdpr: '© 2026 Teamz Lab Ltd. All rights reserved. Privacy Act 2020 & Health Information Privacy Code compliant.',
+    facilityTerm: 'rest home',
+    workflowSub: 'From frontline caregiver to certification auditor — the best rest home compliance workflow in New Zealand'
+  },
+  ie: {
+    badge: 'Free Nursing Home Software Ireland',
+    h1: 'Nursing Home Compliance Software That Keeps You HIQA-Ready Every Day',
+    heroSub: 'Keep your care management system. We make your evidence inspection-ready. AlwaysReady Care captures, structures, reviews, and exports HIQA-ready evidence — mapped to 8 National Standards and 20 compliance categories. Built for 580+ HIQA-registered designated centres across Ireland.',
+    trustGdpr: 'GDPR compliant',
+    trustReg: 'HIQA standards ready',
+    featDashTitle: 'See Your HIQA Readiness',
+    featDashDesc: 'A live compliance dashboard mapped to HIQA\'s National Standards — Person-Centred, Effective, Safe, Well-Led. See which of the 20 compliance categories have gaps before an inspector finds them.',
+    featPackDesc: 'When HIQA visits, generate a professional inspection-ready evidence pack in one click. Filter by date range, evidence type, or compliance area.',
+    painEvidence: 'Paper notes, WhatsApp messages, Excel spreadsheets, emails — your compliance evidence is scattered across systems. When HIQA requests it, you spend hours pulling it together.',
+    painAudit: 'You can show the audit, but not the action taken, who owns it, when it\'s due, or proof of improvement. HIQA expects governance evidence under the National Standards for Residential Care.',
+    painRecords: 'Staffing pressure means carers write evidence at the end of a shift — or not at all. Incomplete records are a red flag for HIQA inspectors.',
+    painInspection: 'Teams scramble before a HIQA visit instead of running a continuous evidence process. Continuous compliance is now a core expectation under the National Standards.',
+    audienceTitle: 'Best Nursing Home Software for Every Role',
+    audienceManager: 'See compliance readiness at a glance. Spot gaps across all 20 HIQA categories. Generate inspection packs. Manage your team\'s access and roles.',
+    frameworkTitle: 'HIQA Compliance Tool — Mapped to 8 National Standards',
+    frameworkSub: 'The only free nursing home compliance tool that tracks 20 categories across HIQA\'s National Standards for Residential Care',
+    regsTitle: 'Built on HIQA National Standards',
+    regsSub: 'AlwaysReady Care helps you evidence compliance with the Health Act 2007 and HIQA National Standards for Residential Care Settings',
+    regsItems: [
+      { code: 'Theme 1', label: 'Person-Centred Care & Support' },
+      { code: 'Theme 2', label: 'Effective Services' },
+      { code: 'Theme 3', label: 'Safe Services' },
+      { code: 'Theme 4', label: 'Health & Wellbeing' },
+      { code: 'Theme 5', label: 'Leadership, Governance & Management' },
+      { code: 'Theme 6', label: 'Workforce' },
+      { code: 'Theme 7', label: 'Use of Resources' },
+      { code: 'Theme 8', label: 'Use of Information' }
+    ],
+    regsNote: 'GDPR & Data Protection Acts 1988-2018 compliant. Records retained per HIQA and HSE guidance.',
+    proofTitle: 'Why Irish Nursing Homes Choose This Software',
+    proofCategories: '20',
+    proofCatLabel: 'HIQA compliance categories tracked',
+    proofQuestions: '8',
+    proofQLabel: 'National Standards mapped',
+    proCatFeature: '20 HIQA compliance categories',
+    priceFree: '€0', pricePro: '€89',
+    priceUnit: '/centre/month',
+    leadNote: 'No spam, unsubscribe anytime. We respect GDPR.',
+    leadSub: 'Get nursing home compliance tips, product updates, and early access to new features',
+    footerDesc: 'Free nursing home compliance software for Irish care providers',
+    footerGdpr: '© 2026 Teamz Lab Ltd. All rights reserved. GDPR & Data Protection Acts 1988-2018 compliant.',
+    facilityTerm: 'nursing home',
+    workflowSub: 'From frontline carer to HIQA inspector — the best nursing home compliance workflow in Ireland'
+  }
+};
+
+// Region-specific FAQ schema data
+var LANDING_FAQS = {
+  uk: [
+    { q: 'What is CQC compliance software?', a: 'CQC compliance software helps UK care homes capture, organise, and export evidence that proves they meet Care Quality Commission standards across 5 key questions: Safe, Effective, Caring, Responsive, and Well-led. AlwaysReady Care does this in under 60 seconds per record.' },
+    { q: 'How do I prepare for a CQC inspection?', a: 'Preparing for a CQC inspection requires continuous evidence collection across compliance categories like medication management, safeguarding, personal care, and governance. AlwaysReady Care tracks 21 categories mapped to CQC\'s 34 quality statements, showing your readiness score in real-time.' },
+    { q: 'What is the best care home software UK?', a: 'For full care planning, options include Person Centred Software, Nourish Care, and Log my Care. For compliance evidence specifically, AlwaysReady Care works alongside any existing system as a dedicated evidence layer — no rip-and-replace needed.' },
+    { q: 'What triggers a CQC inspection?', a: 'CQC inspections can be triggered by complaints, safeguarding referrals, whistleblowing, changes in ratings, or routine scheduling. Having continuous, well-structured evidence ensures you are ready whenever an inspection happens.' },
+    { q: 'Is this care home software free?', a: 'AlwaysReady Care is free to start with full evidence capture, compliance tracking, and inspection pack generation. Pro plans with advanced features start from £79 per care home per month.' }
+  ],
+  au: [
+    { q: 'What is aged care compliance software?', a: 'Aged care compliance software helps Australian facilities capture, organise, and export evidence that proves they meet the Strengthened Aged Care Quality Standards (ACQS 2025) across 7 standards. AlwaysReady Care tracks 24 compliance categories in under 60 seconds per record.' },
+    { q: 'How do I prepare for an ACQSC quality assessment?', a: 'Preparing for a quality assessment requires continuous evidence collection across categories like clinical care, medication, infection prevention, and governance. AlwaysReady Care tracks 24 categories mapped to the 7 Strengthened Standards, showing your readiness score in real-time.' },
+    { q: 'What is the best aged care software Australia?', a: 'For full care management, options include AlayaCare, Statura Care, and MYP. For compliance evidence specifically, AlwaysReady Care works alongside any existing system as a dedicated evidence layer — no rip-and-replace needed.' },
+    { q: 'What is the SIRS reporting scheme?', a: 'The Serious Incident Response Scheme (SIRS) requires aged care providers to report priority 1 incidents within 24 hours and priority 2 within 30 days to the Commission. AlwaysReady Care includes SIRS incident templates with automatic priority classification.' },
+    { q: 'Is this aged care software free?', a: 'AlwaysReady Care is free to start with full evidence capture, compliance tracking, and assessment pack generation. Pro plans with advanced features start from A$129 per facility per month.' }
+  ],
+  nz: [
+    { q: 'What is rest home compliance software?', a: 'Rest home compliance software helps New Zealand aged residential care facilities capture, organise, and export evidence that proves they meet NZS 8134 Health and Disability Services Standards across 4 standards. AlwaysReady Care tracks 20 categories in under 60 seconds per record.' },
+    { q: 'How do I prepare for a certification audit?', a: 'Preparing for a certification audit requires continuous evidence collection across categories like consumer rights, clinical care, medication management, and organisational management. AlwaysReady Care tracks 20 categories mapped to NZS 8134.1 through 8134.4, showing your readiness score in real-time.' },
+    { q: 'What is the best rest home software New Zealand?', a: 'For full care management, VCare is the market leader. For compliance evidence specifically, AlwaysReady Care works alongside any existing system as a dedicated evidence layer — no rip-and-replace needed.' },
+    { q: 'How does the NZS 8134 certification cycle work?', a: 'New Zealand rest homes undergo certification audits by Designated Auditing Agencies on a 3-year cycle. Facilities must demonstrate continuous compliance with NZS 8134 standards between audits. AlwaysReady Care helps maintain audit-readiness throughout the cycle.' },
+    { q: 'Is this rest home software free?', a: 'AlwaysReady Care is free to start with full evidence capture, compliance tracking, and audit pack generation. Pro plans with advanced features start from NZ$99 per facility per month.' }
+  ],
+  ie: [
+    { q: 'What is HIQA compliance software?', a: 'HIQA compliance software helps Irish nursing homes capture, organise, and export evidence that proves they meet the National Standards for Residential Care Settings across 8 themes. AlwaysReady Care tracks 20 categories in under 60 seconds per record.' },
+    { q: 'How do I prepare for a HIQA inspection?', a: 'Preparing for a HIQA inspection requires continuous evidence collection across areas like person-centred care, safe services, and governance. AlwaysReady Care tracks 20 categories mapped to the National Standards, showing your readiness score in real-time.' },
+    { q: 'What is the best nursing home software Ireland?', a: 'For compliance evidence specifically, AlwaysReady Care works alongside any existing system as a dedicated evidence layer — no rip-and-replace needed. It covers all 8 HIQA National Standards themes.' },
+    { q: 'What triggers a HIQA inspection?', a: 'HIQA inspections can be triggered by complaints, notifiable incidents, risk assessments, or routine scheduling. Having continuous, well-structured evidence ensures your designated centre is ready whenever an inspection happens.' },
+    { q: 'Is this nursing home software free?', a: 'AlwaysReady Care is free to start with full evidence capture, compliance tracking, and inspection pack generation. Pro plans with advanced features start from €89 per centre per month.' }
+  ]
+};
+
+// Inject region-specific FAQ schema into page head
+function injectRegionalFAQSchema() {
+  var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+  var faqs = LANDING_FAQS[regionCode] || LANDING_FAQS.uk;
+
+  // Remove existing FAQ schema
+  var existing = document.querySelector('script[type="application/ld+json"]');
+  var scripts = document.querySelectorAll('script[type="application/ld+json"]');
+  scripts.forEach(function(s) {
+    try {
+      var data = JSON.parse(s.textContent);
+      if (data['@type'] === 'FAQPage') s.remove();
+    } catch (e) {}
+  });
+
+  // Inject new FAQ schema
+  var schema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(function(f) {
+      return { '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } };
+    })
+  };
+  var script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify(schema);
+  document.head.appendChild(script);
+}
+
+// Localise landing page based on detected/selected region
+function localiseLandingPage() {
+  var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+  var L = LANDING_CONTENT[regionCode] || LANDING_CONTENT.uk;
+  var R = ActiveRegion;
+
+  // Helper
+  function setText(sel, text) { var el = document.querySelector(sel); if (el) el.textContent = text; }
+  function setHtml(sel, html) { var el = document.querySelector(sel); if (el) el.innerHTML = html; }
+
+  // Problem banner
+  var problemBanner = document.querySelector('.landing-problem-banner');
+  if (problemBanner && regionCode !== 'uk') {
+    var facilityTerms = { au: 'Aged care facilities', nz: 'Rest homes', ie: 'Nursing homes' };
+    var inspectorTerms = { au: 'assessor', nz: 'auditor', ie: 'inspector' };
+    problemBanner.querySelector('p:first-child').textContent = facilityTerms[regionCode] + " don\u2019t fail inspections because of bad care.";
+    problemBanner.querySelector('p:last-child').textContent = 'They fail because their evidence is scattered across WhatsApp, paper notes, and spreadsheets. When the ' + inspectorTerms[regionCode] + ' arrives, managers spend hours pulling records together. We fix that.';
+  }
+
+  // Hero
+  setText('.landing-badge', '');
+  setHtml('.landing-badge', '<i class="fas fa-shield-heart"></i> ' + L.badge);
+  setText('.landing-h1', L.h1);
+  setText('.landing-hero-sub', L.heroSub);
+
+  // Trust badges
+  var trustSpans = document.querySelectorAll('.landing-trust span');
+  if (trustSpans.length >= 5) {
+    trustSpans[2].innerHTML = '<i class="fas fa-check-circle"></i> ' + L.trustGdpr;
+    trustSpans[4].innerHTML = '<i class="fas fa-check-circle"></i> ' + L.trustReg;
+  }
+
+  // Feature section title
+  var featuresTitle = document.getElementById('features-title');
+  if (featuresTitle) {
+    var facilityTerms = { uk: 'Care Home', au: 'Aged Care', nz: 'Rest Home', ie: 'Nursing Home' };
+    featuresTitle.textContent = 'How This ' + (facilityTerms[regionCode] || 'Care Home') + ' Software Works';
+  }
+
+  // Feature cards
+  setText('.landing-features .landing-section-sub', L.workflowSub);
+  var featureCards = document.querySelectorAll('.landing-feature-card');
+  if (featureCards.length >= 5) {
+    featureCards[3].querySelector('h3').textContent = L.featDashTitle;
+    featureCards[3].querySelector('p').textContent = L.featDashDesc;
+    featureCards[4].querySelector('p').textContent = L.featPackDesc;
+  }
+
+  // Pain points subtitle
+  var painSub = document.getElementById('pain-subtitle');
+  if (painSub) {
+    var managerTerms = { uk: 'care home managers', au: 'aged care facility managers', nz: 'rest home managers', ie: 'nursing home managers' };
+    painSub.textContent = 'The top 5 compliance frustrations ' + (managerTerms[regionCode] || managerTerms.uk) + ' face every day';
+  }
+
+  // Pain points
+  var painCards = document.querySelectorAll('.landing-pain-card p');
+  if (painCards.length >= 4) {
+    painCards[0].textContent = L.painEvidence;
+    painCards[1].textContent = L.painAudit;
+    painCards[2].textContent = L.painRecords;
+    painCards[3].textContent = L.painInspection;
+  }
+
+  // Audience
+  setText('.landing-audience .landing-section-title', L.audienceTitle);
+  var audienceCards = document.querySelectorAll('.landing-audience-card p');
+  if (audienceCards.length >= 3) audienceCards[2].textContent = L.audienceManager;
+
+  // Framework section
+  setText('.landing-cqc .landing-section-title', L.frameworkTitle);
+  setText('.landing-cqc .landing-section-sub', L.frameworkSub);
+  // Rebuild framework cards from ActiveRegion.framework
+  var cqcGrid = document.querySelector('.landing-cqc-grid');
+  if (cqcGrid) {
+    cqcGrid.innerHTML = '';
+    Object.keys(R.framework).forEach(function(key) {
+      var card = document.createElement('div');
+      card.className = 'landing-cqc-card';
+      card.innerHTML = '<strong>' + key + '</strong><span>' + R.framework[key].join(', ') + '</span>';
+      cqcGrid.appendChild(card);
+    });
+  }
+
+  // Regulatory section
+  setText('.landing-regs .landing-section-title', L.regsTitle);
+  setText('.landing-regs .landing-section-sub', L.regsSub);
+  var regsGrid = document.querySelector('.landing-regs-grid');
+  if (regsGrid) {
+    regsGrid.innerHTML = '';
+    L.regsItems.forEach(function(item) {
+      var div = document.createElement('div');
+      div.className = 'landing-reg-item';
+      div.innerHTML = '<strong>' + item.code + '</strong> ' + item.label;
+      regsGrid.appendChild(div);
+    });
+  }
+  setText('.landing-regs-note', L.regsNote);
+
+  // Social proof
+  setText('.landing-proof .landing-section-title', L.proofTitle);
+  var proofItems = document.querySelectorAll('.landing-proof-item');
+  if (proofItems.length >= 4) {
+    proofItems[2].querySelector('.landing-proof-num').textContent = L.proofCategories;
+    proofItems[2].querySelector('span:last-child').textContent = L.proofCatLabel;
+    proofItems[3].querySelector('.landing-proof-num').textContent = L.proofQuestions;
+    proofItems[3].querySelector('span:last-child').textContent = L.proofQLabel;
+  }
+
+  // Pricing
+  var priceFreeEl = document.querySelector('.pricing-card:first-child .pricing-amount');
+  var priceProEl = document.querySelector('.pricing-featured .pricing-amount');
+  if (priceFreeEl) priceFreeEl.textContent = L.priceFree;
+  if (priceProEl) priceProEl.textContent = L.pricePro;
+  var priceUnits = document.querySelectorAll('.pricing-period');
+  priceUnits.forEach(function(el) { el.textContent = L.priceUnit; });
+  // Pro feature line
+  var proFeatures = document.querySelectorAll('.pricing-featured .pricing-features li');
+  if (proFeatures.length >= 7) proFeatures[6].innerHTML = '<i class="fas fa-check"></i> ' + L.proCatFeature;
+
+  // Lead / newsletter
+  setText('.landing-lead .landing-section-sub', L.leadSub);
+  setText('.lead-note', L.leadNote);
+
+  // Footer
+  var footerP = document.querySelector('.landing-footer > p:first-child');
+  if (footerP) footerP.innerHTML = '<strong>AlwaysReady Care</strong> — ' + L.footerDesc;
+  setText('.landing-footer-copy', L.footerGdpr);
+
+  // Update WhatsApp links with region-appropriate message
+  var waMessages = {
+    uk: 'Hi, I run a care home and need help with CQC compliance.',
+    au: 'Hi, I run an aged care facility in Australia and need help with ACQS compliance.',
+    nz: 'Hi, I run a rest home in New Zealand and need help with NZS 8134 compliance.',
+    ie: 'Hi, I run a nursing home in Ireland and need help with HIQA compliance.'
+  };
+  var waMsg = encodeURIComponent(waMessages[regionCode] || waMessages.uk);
+  var waBase = 'https://wa.me/447490356046?text=' + waMsg;
+  document.querySelectorAll('a[href*="wa.me"]').forEach(function(a) { a.href = waBase; });
+
+  // Update footer compatibility text per region
+  var footerCompat = document.querySelector('.landing-footer > p:nth-child(2)');
+  if (footerCompat && regionCode !== 'uk') {
+    var compatTexts = {
+      au: 'Works alongside AlayaCare, Statura Care, MYP, Willow, FlowLogic, and any care management system. Not a replacement — a compliance evidence layer on top.',
+      nz: 'Works alongside VCare, Hercules Health, and any care management system. Not a replacement — a compliance evidence layer on top.',
+      ie: 'Works alongside any care management system in Ireland. Not a replacement — a compliance evidence layer on top.'
+    };
+    if (compatTexts[regionCode]) footerCompat.textContent = compatTexts[regionCode];
+  }
+
+  // Inject region-specific FAQ schema
+  injectRegionalFAQSchema();
+
+  // Update SoftwareApplication schema for region
+  if (regionCode !== 'uk') {
+    var appSchemas = document.querySelectorAll('script[type="application/ld+json"]');
+    appSchemas.forEach(function(s) {
+      try {
+        var data = JSON.parse(s.textContent);
+        if (data['@type'] === 'SoftwareApplication') {
+          data.description = 'Free ' + L.facilityTerm + ' compliance software for ' + R.name + ' care providers. Record ' + R.regulatorShort + '-ready evidence in 60 seconds, track compliance across ' + R.categories.length + ' categories, generate ' + R.packLabel.toLowerCase() + 's instantly.';
+          data.offers.priceCurrency = { au: 'AUD', nz: 'NZD', ie: 'EUR' }[regionCode] || 'GBP';
+          data.offers.description = 'Free to start. Pro plans from ' + L.pricePro + '/month per ' + L.facilityTerm + '.';
+          s.textContent = JSON.stringify(data);
+        }
+      } catch (e) {}
+    });
+  }
+
+  // Update meta tags for SEO
+  var titleEl = document.querySelector('title');
+  if (titleEl && regionCode !== 'uk') {
+    var titles = {
+      au: 'Aged Care Compliance Software Australia — Free ACQS Evidence Tool | AlwaysReady Care',
+      nz: 'Rest Home Compliance Software NZ — Free NZS 8134 Audit Tool | AlwaysReady Care',
+      ie: 'Nursing Home Compliance Software Ireland — Free HIQA Evidence Tool | AlwaysReady Care'
+    };
+    if (titles[regionCode]) titleEl.textContent = titles[regionCode];
+  }
+  var descEl = document.querySelector('meta[name="description"]');
+  if (descEl && regionCode !== 'uk') {
+    var descs = {
+      au: 'Free aged care software for Australian compliance. Record care evidence in 60 seconds, track ACQS readiness across 24 categories, generate assessment packs instantly.',
+      nz: 'Free rest home software for NZ compliance. Record care evidence in 60 seconds, track NZS 8134 readiness across 20 categories, generate audit packs instantly.',
+      ie: 'Free nursing home software for Irish compliance. Record care evidence in 60 seconds, track HIQA readiness across 20 categories, generate inspection packs instantly.'
+    };
+    if (descs[regionCode]) descEl.setAttribute('content', descs[regionCode]);
+  }
+}
+
+// Localise in-app labels (after login, when region is known)
+function localiseAppShell() {
+  var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+  var R = ActiveRegion;
+
+  // Dashboard subtitle
+  var dashSub = document.querySelector('#view-dashboard .view-subtitle');
+  if (dashSub) dashSub.textContent = 'Your ' + R.readinessLabel.toLowerCase() + ' at a glance';
+
+  // Compliance view subtitle
+  var compSub = document.getElementById('compliance-subtitle');
+  if (compSub) compSub.textContent = 'Your ' + R.readinessLabel.toLowerCase() + ' at a glance';
+
+  // Inspection pack title + subtitle
+  var packsTitle = document.getElementById('packs-title');
+  if (packsTitle) packsTitle.textContent = R.packLabel;
+  var packsSub = document.getElementById('packs-subtitle');
+  if (packsSub) packsSub.textContent = 'Generate evidence packs for ' + R.inspectionLabel.toLowerCase() + 's';
+
+  // Admin subtitle & labels
+  var adminSub = document.querySelector('#view-admin .view-subtitle');
+  if (adminSub) adminSub.textContent = 'Add staff, assign roles, manage your ' + (LANDING_CONTENT[regionCode] || LANDING_CONTENT.uk).facilityTerm;
+
+  var homeSettingsTitle = document.querySelector('#view-admin .section-title');
+  if (homeSettingsTitle && homeSettingsTitle.textContent.indexOf('Care Home') !== -1) {
+    var facilityName = { uk: 'Care Home', au: 'Facility', nz: 'Rest Home', ie: 'Nursing Home' };
+    homeSettingsTitle.innerHTML = '<i class="fas fa-building"></i> ' + (facilityName[regionCode] || 'Care Home') + ' Settings';
+  }
+
+  var homeNameInput = document.getElementById('input-home-name');
+  if (homeNameInput) {
+    var placeholders = { uk: 'Enter your care home name', au: 'Enter your facility name', nz: 'Enter your rest home name', ie: 'Enter your nursing home name' };
+    homeNameInput.placeholder = placeholders[regionCode] || placeholders.uk;
+  }
+
+  // In-app help text
+  var helpText = document.querySelector('.help-text');
+  if (helpText) {
+    var helpTexts = {
+      uk: 'AlwaysReady Care is a simple tool that helps care homes record and organise evidence of the care they provide. It keeps all your records in one place so you are always ready if CQC comes to inspect. Everything runs in your browser and your data stays private.',
+      au: 'AlwaysReady Care is a simple tool that helps aged care facilities record and organise evidence of the care they provide. It keeps all your records in one place so you are always ready for quality assessments. Everything runs in your browser and your data stays private.',
+      nz: 'AlwaysReady Care is a simple tool that helps rest homes record and organise evidence of the care they provide. It keeps all your records in one place so you are always ready for certification audits. Everything runs in your browser and your data stays private.',
+      ie: 'AlwaysReady Care is a simple tool that helps nursing homes record and organise evidence of the care they provide. It keeps all your records in one place so you are always ready if HIQA comes to inspect. Everything runs in your browser and your data stays private.'
+    };
+    helpText.textContent = helpTexts[regionCode] || helpTexts.uk;
+  }
+
+  // In-app FAQ answers
+  var faqAnswers = document.querySelectorAll('.faq-answer');
+  faqAnswers.forEach(function(el) {
+    if (regionCode !== 'uk') {
+      var text = el.textContent;
+      text = text.replace(/CQC evidence categories/g, R.regulatorShort + ' compliance categories');
+      text = text.replace(/CQC/g, R.regulatorShort);
+      text = text.replace(/care home/gi, (LANDING_CONTENT[regionCode] || LANDING_CONTENT.uk).facilityTerm);
+      el.textContent = text;
+    }
+  });
+
+  // In-app trust strip
+  var trustPrivacy = document.getElementById('trust-privacy');
+  var trustFramework = document.getElementById('trust-framework');
+  if (trustPrivacy) {
+    var privacyLabels = { uk: 'UK GDPR Compliant', au: 'Privacy Act 1988 Compliant', nz: 'Privacy Act 2020 Compliant', ie: 'GDPR Compliant' };
+    trustPrivacy.textContent = privacyLabels[regionCode] || privacyLabels.uk;
+  }
+  if (trustFramework) {
+    trustFramework.textContent = R.regulatorShort + ' Framework';
+  }
+
+  // Sidebar sales contact
+  var salesLink = document.getElementById('sidebar-contact-sales');
+  if (salesLink) {
+    var salesMsgs = {
+      uk: 'Hi, I tried the demo and want to learn more about CQC compliance.',
+      au: 'Hi, I tried the demo and want to learn more about ACQS compliance for our aged care facility.',
+      nz: 'Hi, I tried the demo and want to learn more about NZS 8134 compliance for our rest home.',
+      ie: 'Hi, I tried the demo and want to learn more about HIQA compliance for our nursing home.'
+    };
+    salesLink.href = 'https://wa.me/447490356046?text=' + encodeURIComponent(salesMsgs[regionCode] || salesMsgs.uk);
+  }
+
+  // Sidebar nav label
+  var navPacksLabel = document.getElementById('nav-packs-label');
+  if (navPacksLabel) navPacksLabel.textContent = R.packLabel;
+
+  // Refresh onboarding steps
+  ONBOARDING_STEPS = getOnboardingSteps();
+
+  // Update guide links with region param
+  document.querySelectorAll('a[href*="guide.html"]').forEach(function(a) {
+    a.href = 'guide.html' + (regionCode !== 'uk' ? '?region=' + regionCode : '');
+  });
+
+  // Re-render templates for region
+  renderTemplateList();
 }
 
 // Backwards-compatible aliases (existing code references these)
@@ -479,7 +1066,14 @@ var AIEngine = {
     }
     if (risks.indexOf('Abuse') !== -1 || risks.indexOf('Safeguarding') !== -1) {
       actions.push('Raise safeguarding alert immediately');
-      actions.push('Notify registered manager and local authority');
+      var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+      var safeguardingActions = {
+        uk: 'Notify registered manager and local authority',
+        au: 'Notify facility manager and report via SIRS if applicable',
+        nz: 'Notify facility manager and contact relevant authorities',
+        ie: 'Notify person in charge and notify HIQA if required'
+      };
+      actions.push(safeguardingActions[regionCode] || safeguardingActions.uk);
       actions.push('Preserve any evidence and document timeline');
     }
     if (risks.indexOf('Error') !== -1 || risks.indexOf('Mistake') !== -1) {
@@ -494,6 +1088,14 @@ var AIEngine = {
       actions.push('Record all observations and vital signs');
       actions.push('Notify next of kin');
     }
+    // AU-specific: SIRS reporting trigger
+    var rCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+    if (rCode === 'au' && (riskLevel === 'high' || risks.indexOf('Abuse') !== -1 || risks.indexOf('Death') !== -1 || risks.indexOf('Deceased') !== -1)) {
+      actions.push('Assess if SIRS Priority 1 reportable (24-hour deadline)');
+    } else if (rCode === 'au' && riskLevel === 'medium') {
+      actions.push('Assess if SIRS Priority 2 reportable (30-day deadline)');
+    }
+
     if (actions.length === 0 && tags.length > 0) {
       actions.push('File under relevant care plan section');
       actions.push('Review at next care plan update');
@@ -784,6 +1386,7 @@ async function onUserSignedIn(user) {
     // Load region config from org
     await loadRegionFromOrg();
     updateComplianceAliases();
+    localiseAppShell();
 
     // Update UI
     updateUserUI(user);
@@ -865,10 +1468,19 @@ async function initNewOrg(user, orgId) {
   var batch = db.batch();
   var now = firebase.firestore.Timestamp.now();
 
+  // Detect region for new org
+  var detectedRegion = detectRegionFromTimezone();
+  var sampleAddresses = {
+    uk: '42 Maple Drive, Bristol, BS1 4QR',
+    au: '15 Wattle Street, Melbourne, VIC 3000',
+    nz: '8 Kauri Lane, Auckland 1010',
+    ie: '12 Liffey Road, Dublin, D01 X2Y3'
+  };
+
   // Org doc — blank name, user sets it in Team Management
   batch.set(db.collection('orgs').doc(orgId), {
     name: '',
-    region: 'uk',
+    region: detectedRegion,
     createdAt: now,
     ownerUid: user.uid
   });
@@ -877,17 +1489,19 @@ async function initNewOrg(user, orgId) {
   var siteRef = db.collection('orgs').doc(orgId).collection('sites').doc('site_main');
   batch.set(siteRef, {
     name: 'Main Site',
-    address: '42 Maple Drive, Bristol, BS1 4QR',
+    address: sampleAddresses[detectedRegion] || sampleAddresses.uk,
     createdAt: now
   });
 
   // User
   var displayName = user.displayName || user.email || 'Guest User';
   if (user.isAnonymous) displayName = 'Guest (Demo)';
+  // Demo users get admin role so they can test ALL features
+  var demoRole = user.isAnonymous ? 'admin' : 'manager';
   batch.set(db.collection('orgs').doc(orgId).collection('users').doc(user.uid), {
     name: displayName,
     email: user.email || '',
-    role: 'manager',
+    role: demoRole,
     siteIds: ['site_main'],
     createdAt: now
   });
@@ -899,10 +1513,133 @@ async function initNewOrg(user, orgId) {
   });
 
   await batch.commit();
-
-  // Production: no sample data. Users start with a clean slate.
-  // The onboarding flow guides them to record their first evidence.
   AppState.siteId = 'site_main';
+
+  // For demo/guest users: seed sample evidence so dashboard isn't empty
+  if (user.isAnonymous) {
+    await seedDemoEvidence(orgId, user, detectedRegion);
+  }
+}
+
+// Sample evidence for demo mode — shows dashboard working immediately
+async function seedDemoEvidence(orgId, user, region) {
+  var R = REGION_CONFIGS[region] || REGION_CONFIGS.uk;
+  var cats = R.categories;
+  var batch = db.batch();
+  var evCol = db.collection('orgs').doc(orgId).collection('evidence');
+  var now = new Date();
+
+  // Create 8 sample evidence records across different categories (some approved, some pending)
+  var samples = [
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Medication administered to Mrs. Johnson at 08:15. Paracetamol 500mg (2 tablets) given orally with water. Resident alert and cooperative. No adverse reactions. Witnessed by Sarah.',
+      manualTags: ['medication'], riskLevel: 'low',
+      daysAgo: 1
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Personal care provided to Mr. Davies at 07:30. Assisted with morning wash, oral hygiene, and dressing. Skin integrity checked — small redness noted on left heel, cream applied. Resident chose own clothing. Dignity maintained throughout.',
+      manualTags: ['personal-care', 'skin-care'], riskLevel: 'low',
+      daysAgo: 1
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Lunch served to Mrs. Chen at 12:30. Soft diet as per care plan. Consumed most of main course (fish pie) and full dessert. Fluid intake: 200ml water, 150ml juice. Sat in dining room with other residents. Mood cheerful.',
+      manualTags: ['nutrition'], riskLevel: 'low',
+      daysAgo: 2
+    },
+    {
+      type: 'incident', status: 'approved',
+      rawText: 'INCIDENT: Mr. Thompson found on floor beside bed at 23:45. No visible injuries. Helped back to bed. Vital signs normal. GP not called — resident declined. Falls risk assessment updated. Family notified 08:00 next day.',
+      manualTags: ['safety', 'risk-assessment'], riskLevel: 'medium',
+      daysAgo: 3
+    },
+    {
+      type: 'text', status: 'submitted',
+      rawText: 'Night check completed at 02:00. All residents checked. Mrs. Johnson sleeping well. Mr. Davies repositioned — no skin concerns. Mr. Thompson sleeping after earlier fall — checked every 30 minutes as per updated care plan.',
+      manualTags: ['night-care'], riskLevel: 'low',
+      daysAgo: 1
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Staff supervision session with Nurse Sarah completed. Discussed recent safeguarding training, medication round audit results (98% accuracy), and upcoming mandatory training due dates. Sarah flagged staffing concern on weekends — escalated to manager.',
+      manualTags: ['staff-training', 'governance'], riskLevel: 'low',
+      daysAgo: 5
+    },
+    {
+      type: 'text', status: 'submitted',
+      rawText: 'Activity session: Music therapy group at 14:00. Six residents participated. Mrs. Chen sang along to familiar songs — strong engagement. Mr. Thompson observed but smiled. Session lasted 45 minutes. Wellbeing scores recorded.',
+      manualTags: ['social'], riskLevel: 'low',
+      daysAgo: 2
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Infection control audit completed. Hand hygiene stations checked — all dispensers full. PPE stock adequate. Laundry procedure reviewed with staff. No outbreak concerns. Monthly cleaning schedule up to date.',
+      manualTags: ['infection-control'], riskLevel: 'low',
+      daysAgo: 7
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Health monitoring: Blood pressure check for Mrs. Johnson — 130/85 mmHg. Pulse 72 bpm, oxygen 97%. Weight stable at 68kg. GP appointment scheduled for annual medication review next week.',
+      manualTags: ['health-monitoring'], riskLevel: 'low',
+      daysAgo: 3
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'Complaint received from family of Mr. Davies regarding laundry mix-up. Clean clothing belonging to another resident was placed in his wardrobe. Apology given, laundry team briefed. New labelling procedure implemented. Family satisfied with response.',
+      manualTags: ['complaints', 'duty-of-candour'], riskLevel: 'low',
+      daysAgo: 6
+    },
+    {
+      type: 'text', status: 'approved',
+      rawText: 'End of life care planning meeting held with Mrs. Williams and her daughter. Advance care preferences discussed and documented. DNAR form completed with GP. Preferred place of death confirmed as the facility. Palliative care team notified.',
+      manualTags: ['end-of-life', 'mental-capacity'], riskLevel: 'low',
+      daysAgo: 10
+    },
+    {
+      type: 'text', status: 'submitted',
+      rawText: 'Monthly governance review completed. Audit of medication administration records — 98.5% accuracy. 2 minor discrepancies identified and corrected. Risk register reviewed and updated. Next audit scheduled for 15th.',
+      manualTags: ['governance', 'risk-assessment'], riskLevel: 'low',
+      daysAgo: 4
+    }
+  ];
+
+  samples.forEach(function(s, i) {
+    var ref = evCol.doc('demo_' + i);
+    var createdAt = new Date(now.getTime() - s.daysAgo * 24 * 60 * 60 * 1000);
+    batch.set(ref, {
+      type: s.type,
+      rawText: s.rawText,
+      status: s.status,
+      manualTags: s.manualTags,
+      riskLevel: s.riskLevel,
+      region: region,
+      complianceFramework: R.regulatorShort,
+      siteId: 'site_main',
+      createdByUid: user.uid,
+      createdByName: 'Demo Staff',
+      createdAt: firebase.firestore.Timestamp.fromDate(createdAt),
+      reviewedByName: s.status === 'approved' ? 'Demo Manager' : '',
+      reviewedAt: s.status === 'approved' ? firebase.firestore.Timestamp.fromDate(createdAt) : null
+    });
+  });
+
+  // Add one follow-up action (from the fall incident)
+  var actionRef = db.collection('orgs').doc(orgId).collection('actions').doc('demo_action_1');
+  batch.set(actionRef, {
+    title: 'Update falls risk assessment for Mr. Thompson',
+    description: 'Following fall incident on ' + new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString() + '. Review mobility care plan and bed rail assessment.',
+    priority: 'high',
+    status: 'open',
+    dueDate: firebase.firestore.Timestamp.fromDate(new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000)),
+    evidenceId: 'demo_3',
+    siteId: 'site_main',
+    assignedTo: user.uid,
+    createdAt: firebase.firestore.Timestamp.fromDate(new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000))
+  });
+
+  await batch.commit();
 }
 
 // ── Realtime Listeners ─────────────────────────────────────
@@ -1136,12 +1873,17 @@ async function submitEvidence(e) {
     // Run AI analysis
     var analysis = AIEngine.analyze(rawText);
 
+    // Determine current region code
+    var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+
     var doc = {
       type: type,
       rawText: rawText,
       status: 'submitted',
       manualTags: analysis.tags,
       riskLevel: analysis.riskLevel,
+      region: regionCode,
+      complianceFramework: ActiveRegion.regulatorShort,
       siteId: siteId,
       createdByUid: AppState.user.uid,
       createdByName: AppState.user.displayName || AppState.user.email || 'Guest',
@@ -1194,6 +1936,7 @@ async function submitEvidence(e) {
     console.error('Submit error:', err);
     // If offline, queue locally
     if (!navigator.onLine) {
+      var offRegion = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
       var offlineDoc = {
         id: 'offline_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
         orgId: AppState.orgId,
@@ -1201,6 +1944,8 @@ async function submitEvidence(e) {
         rawText: rawText,
         status: 'submitted',
         manualTags: AIEngine.analyze(rawText).tags,
+        region: offRegion,
+        complianceFramework: ActiveRegion.regulatorShort,
         siteId: siteId,
         createdByUid: AppState.user ? AppState.user.uid : 'offline',
         createdByName: AppState.user ? (AppState.user.displayName || AppState.user.email || 'Guest') : 'Offline User',
@@ -1438,18 +2183,59 @@ function renderComplianceData() {
   var categoryCounts = {};
   COMPLIANCE_CATEGORIES.forEach(function(cat) { categoryCounts[cat] = 0; });
 
-  var tagToCategoryMap = {
-    'medication': 'Medication Management',
-    'personal-care': 'Personal Care',
-    'nutrition': 'Nutrition & Hydration',
-    'skin-care': 'Skin Integrity',
-    'mobility': 'Falls Prevention',
-    'mental-health': 'Mental Health & Wellbeing',
-    'social': 'Activities & Engagement',
-    'infection-control': 'Infection Control',
-    'safeguarding': 'Safeguarding',
-    'safety': 'Health & Safety'
+  // Region-aware tag-to-category mapping
+  var TAG_CATEGORY_MAPS = {
+    uk: {
+      'medication': 'Medication Management', 'personal-care': 'Personal Care & Dignity',
+      'nutrition': 'Nutrition & Hydration', 'skin-care': 'Personal Care & Dignity',
+      'mobility': 'Falls Prevention', 'mental-health': 'Mental Capacity & DoLS',
+      'social': 'Activities & Wellbeing', 'infection-control': 'Infection Control',
+      'safeguarding': 'Safeguarding', 'safety': 'Risk Assessment',
+      'risk-assessment': 'Risk Assessment', 'health-monitoring': 'Health Monitoring',
+      'complaints': 'Complaints & Feedback', 'staff-training': 'Staff Training & Competency',
+      'governance': 'Governance & Audits', 'night-care': 'Night Care',
+      'end-of-life': 'End of Life Care', 'duty-of-candour': 'Duty of Candour',
+      'mental-capacity': 'Mental Capacity & DoLS'
+    },
+    au: {
+      'medication': 'Medication Management', 'personal-care': 'Daily Living Support',
+      'nutrition': 'Meals & Nutrition', 'skin-care': 'Clinical Care & Assessment',
+      'mobility': 'Falls Prevention', 'mental-health': 'Clinical Care & Assessment',
+      'social': 'Social & Recreational Activities', 'infection-control': 'Infection Prevention',
+      'safeguarding': 'Incident Management', 'safety': 'Risk Management',
+      'risk-assessment': 'Risk Management', 'health-monitoring': 'Clinical Care & Assessment',
+      'complaints': 'Feedback & Complaints', 'staff-training': 'Staff Competency & Training',
+      'governance': 'Governance & Leadership', 'night-care': 'Daily Living Support',
+      'end-of-life': 'Palliative & End of Life', 'duty-of-candour': 'Open Disclosure',
+      'mental-capacity': 'Autonomy & Informed Consent'
+    },
+    nz: {
+      'medication': 'Medication Management', 'personal-care': 'Personal Care & Dignity',
+      'nutrition': 'Nutrition & Fluid Balance', 'skin-care': 'Wound & Skin Care',
+      'mobility': 'Falls Prevention', 'mental-health': 'Clinical Assessment & Care Planning',
+      'social': 'Activities & Recreation', 'infection-control': 'Infection Prevention & Control',
+      'safeguarding': 'Consumer Rights', 'safety': 'Safe & Appropriate Environment',
+      'risk-assessment': 'Governance & Quality Improvement', 'health-monitoring': 'Clinical Assessment & Care Planning',
+      'complaints': 'Complaints & Feedback', 'staff-training': 'Training & Competency',
+      'governance': 'Governance & Quality Improvement', 'night-care': 'Continuum of Service Delivery',
+      'end-of-life': 'Palliative & End of Life', 'duty-of-candour': 'Consumer Rights',
+      'mental-capacity': 'Consumer Rights'
+    },
+    ie: {
+      'medication': 'Medication Management', 'personal-care': 'Person-Centred Care & Support',
+      'nutrition': 'Nutrition & Hydration', 'skin-care': 'Safe Services',
+      'mobility': 'Falls Prevention', 'mental-health': 'Health & Wellbeing',
+      'social': 'Activities & Social Care', 'infection-control': 'Infection Prevention',
+      'safeguarding': 'Safeguarding & Protection', 'safety': 'Risk Management',
+      'risk-assessment': 'Risk Management', 'health-monitoring': 'Effective Services',
+      'complaints': 'Complaints Management', 'staff-training': 'Staff Supervision & Training',
+      'governance': 'Leadership & Governance', 'night-care': 'Safe Services',
+      'end-of-life': 'End of Life Care', 'duty-of-candour': 'Leadership & Governance',
+      'mental-capacity': "Residents' Rights"
+    }
   };
+  var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+  var tagToCategoryMap = TAG_CATEGORY_MAPS[regionCode] || TAG_CATEGORY_MAPS.uk;
 
   evidence.forEach(function(ev) {
     var d = ev.createdAt ? (ev.createdAt.toDate ? ev.createdAt.toDate() : new Date(ev.createdAt)) : new Date(0);
@@ -1727,9 +2513,10 @@ async function generatePack() {
       '.text{background:#e3f2fd;color:#1565c0;}.photo{background:#e8f5e9;color:#2e7d32;}' +
       '.incident{background:#ffebee;color:#c62828;}.meta{color:#888;font-size:12px;margin-top:8px;}' +
       '</style></head><body>' +
-      '<h1>AlwaysReady Care — Inspection Evidence Pack</h1>' +
+      '<h1>AlwaysReady Care — ' + escapeHtml(ActiveRegion.packLabel) + '</h1>' +
       '<p><strong>Period:</strong> ' + escapeHtml(startDate) + ' to ' + escapeHtml(endDate) + '</p>' +
-      '<p><strong>Generated:</strong> ' + new Date().toLocaleDateString('en-GB') + '</p>' +
+      '<p><strong>Framework:</strong> ' + escapeHtml(ActiveRegion.regulator) + '</p>' +
+      '<p><strong>Generated:</strong> ' + new Date().toLocaleDateString(ActiveRegion.locale || 'en-GB') + '</p>' +
       '<p><strong>Evidence count:</strong> ' + items.length + '</p>' +
       '<h2>Evidence Records</h2>';
 
@@ -1749,7 +2536,7 @@ async function generatePack() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'inspection-pack-' + startDate + '-to-' + endDate + '.html';
+    a.download = ActiveRegion.packLabel.toLowerCase().replace(/\s+/g, '-') + '-' + startDate + '-to-' + endDate + '.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1964,7 +2751,7 @@ function renderTemplateList() {
   var list = document.getElementById('template-list');
   if (!list) return;
   var html = '';
-  TEMPLATES.forEach(function(tpl) {
+  getActiveTemplates().forEach(function(tpl) {
     html += '<li><button type="button" class="card-template" data-template-id="' + escapeHtml(tpl.id) + '">' +
       '<div class="template-icon"><i class="' + escapeHtml(tpl.icon) + '"></i></div>' +
       '<div class="template-info">' +
@@ -1984,7 +2771,7 @@ function renderTemplateList() {
 }
 
 function selectTemplate(templateId) {
-  var tpl = TEMPLATES.find(function(t) { return t.id === templateId; });
+  var tpl = getActiveTemplates().find(function(t) { return t.id === templateId; });
   if (!tpl) return;
 
   // Apply to the current evidence type textarea
@@ -2000,8 +2787,9 @@ function selectTemplate(templateId) {
     if (el3) el3.value = tpl.text;
   }
 
-  // If template is incident, switch to incident type
-  if (tpl.id === 'incident-occurred') {
+  // If template is incident-type, switch to incident type
+  var incidentTemplates = ['incident-occurred', 'safeguarding-concern', 'sirs-priority1', 'sirs-priority2', 'restrictive-practice', 'restraint-minimisation'];
+  if (incidentTemplates.indexOf(tpl.id) !== -1) {
     switchEvidenceType('incident');
     var incidentEl = document.getElementById('input-incident');
     if (incidentEl) incidentEl.value = tpl.text;
@@ -2121,6 +2909,9 @@ window.addEventListener('appinstalled', function() {
 document.addEventListener('DOMContentLoaded', function() {
   // Apply saved theme
   setTheme(getTheme());
+
+  // Localise landing page for detected region (AU/NZ/IE/UK)
+  localiseLandingPage();
 
   // Render template list
   renderTemplateList();
@@ -2407,7 +3198,9 @@ async function saveHomeSettings() {
   var spinner = btn ? btn.querySelector('.spinner') : null;
   var name = (document.getElementById('input-home-name') || {}).value || '';
   var address = (document.getElementById('input-home-address') || {}).value || '';
-  if (!name.trim()) { showToast('Please enter a care home name', 'warning'); return; }
+  var regionCode = Object.keys(REGION_CONFIGS).find(function(k) { return REGION_CONFIGS[k] === ActiveRegion; }) || 'uk';
+  var ft = { uk: 'care home', au: 'facility', nz: 'rest home', ie: 'nursing home' };
+  if (!name.trim()) { showToast('Please enter a ' + (ft[regionCode] || 'care home') + ' name', 'warning'); return; }
   if (btn) btn.disabled = true;
   if (btnText) btnText.textContent = 'Saving...';
   if (spinner) spinner.classList.remove('hidden');
@@ -2417,14 +3210,16 @@ async function saveHomeSettings() {
     var selectedRegion = regionSelect ? regionSelect.value : 'uk';
     setRegion(selectedRegion);
     updateComplianceAliases();
+    localiseAppShell();
 
     await db.collection('orgs').doc(AppState.orgId).update({
       name: name.trim(),
       address: address.trim(),
       region: selectedRegion
     });
+    var facilityTerms = { uk: 'Care home', au: 'Facility', nz: 'Rest home', ie: 'Nursing home' };
     logAudit('home_settings_updated', 'Name: ' + name.trim() + ', Region: ' + selectedRegion);
-    showToast('Care home settings saved', 'success');
+    showToast((facilityTerms[selectedRegion] || 'Care home') + ' settings saved', 'success');
     var subtitle = document.getElementById('dashboard-subtitle');
     if (subtitle) subtitle.textContent = name.trim() + ' \u2014 compliance overview';
   } catch (err) {
@@ -2535,12 +3330,16 @@ async function removeStaffMember(userId, memberName) {
 // ======================================================================
 //  ONBOARDING
 // ======================================================================
-var ONBOARDING_STEPS = [
-  { icon: 'fas fa-shield-heart', title: 'Welcome to AlwaysReady Care', desc: 'Your compliance evidence layer. Record care, review evidence, and always be ready for CQC.' },
-  { icon: 'fas fa-clipboard-check', title: 'Record Evidence in 60 Seconds', desc: 'Use templates to quickly document medication, personal care, meals, activities, and incidents.' },
-  { icon: 'fas fa-circle-check', title: 'Review & Approve', desc: 'Seniors and managers review evidence. Only approved records count towards compliance.' },
-  { icon: 'fas fa-chart-bar', title: 'Always Inspection Ready', desc: 'See your compliance score, spot gaps, and generate inspection packs with one click.' }
-];
+function getOnboardingSteps() {
+  var R = ActiveRegion;
+  return [
+    { icon: 'fas fa-shield-heart', title: 'Welcome to AlwaysReady Care', desc: 'Your compliance evidence layer. Record care, review evidence, and always be ready for ' + R.regulatorShort + ' ' + R.inspectionLabel.toLowerCase() + 's.' },
+    { icon: 'fas fa-clipboard-check', title: 'Record Evidence in 60 Seconds', desc: 'Use templates to quickly document medication, personal care, meals, activities, and incidents.' },
+    { icon: 'fas fa-circle-check', title: 'Review & Approve', desc: 'Seniors and managers review evidence. Only approved records count towards compliance.' },
+    { icon: 'fas fa-chart-bar', title: 'Always ' + R.inspectionLabel + ' Ready', desc: 'See your compliance score, spot gaps, and generate ' + R.packLabel.toLowerCase() + 's with one click.' }
+  ];
+}
+var ONBOARDING_STEPS = getOnboardingSteps();
 var onboardingStep = 0;
 
 function showOnboarding() {
