@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mortgage Recast Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate new mortgage payment after a lump-sum recast. See monthly savings, total interest saved, and payoff date without refinancing. Free and private.">
+  <meta property="og:title" content="Mortgage Recast Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate new mortgage payment after a lump-sum recast. See monthly savings, total interest saved, and payoff date without refinancing. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/mortgage-recast-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Mortgage Recast Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate new mortgage payment after a lump-sum recast. See monthly savings, total interest saved, and payoff date without refinancing. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/mortgage-recast-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Mortgage Recast Calculator</h1>
+      <p class="tool-description">Calculate your new monthly mortgage payment after making a lump-sum principal payment and recasting your loan. See how much you save each month, total interest saved, and your updated payoff timeline — all without refinancing.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How Mortgage Recasting Works</h2>
+      <p>A mortgage recast (also called re-amortization) is when you make a large lump-sum payment toward your principal balance and your lender re-amortizes the loan over the remaining term. The result is a lower monthly payment at the same interest rate, without the closing costs or credit checks of a refinance. Most lenders charge a small recast fee (typically $150 to $500) and require a minimum lump-sum payment, often $5,000 or $10,000.</p>
+
+      <p>This calculator takes your current loan balance, interest rate, remaining term, and lump-sum payment to compute your new monthly payment and lifetime savings. The formula uses standard fixed-rate amortization: the new payment is calculated against the reduced balance over the original remaining term.</p>
+
+      <h2>Recast vs Refinance vs Extra Payments</h2>
+      <p>Recasting is ideal when you already have a low interest rate and simply want a lower monthly payment after receiving a windfall like an inheritance, bonus, or home sale proceeds. Refinancing replaces your loan entirely and only makes sense when rates have dropped significantly. Making extra principal payments without recasting shortens your loan term but keeps your monthly payment the same.</p>
+
+      <p>For example, on a $300,000 mortgage at 6.5% with 25 years remaining, a $50,000 recast lump sum drops the monthly payment from about $2,025 to around $1,687 — saving $338 per month and tens of thousands in interest. The same $50,000 as an extra payment without recasting keeps payments at $2,025 but shortens the term by roughly 5 years.</p>
+
+      <h2>When a Recast Makes Sense</h2>
+      <p>Recasting works best if you have a large sum to deploy, a competitive existing rate, and want cash flow relief rather than a faster payoff. It preserves your loan terms, credit score is unaffected, and there's no appraisal. Not all loans qualify — FHA, VA, and most USDA loans cannot be recast. Conventional conforming loans through Fannie Mae and Freddie Mac typically allow it, but always check with your servicer first.</p>
+
+      <h2>Running the Numbers Before You Commit</h2>
+      <p>Before making a recast, run three scenarios in this calculator: lump sums at 5%, 10%, and 20% of your balance. Compare the monthly savings against the opportunity cost of investing that cash elsewhere. A 6.5% mortgage rate is effectively a 6.5% guaranteed after-tax return on the recast amount. If you expect higher returns investing, extra payments may not be optimal. But for risk-averse borrowers or anyone seeking monthly cash flow, a recast delivers immediate, guaranteed relief.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/mortgage-recast-calculator', title: 'Mortgage Recast Calculator',
+      description: 'Calculate new mortgage payment after a lump-sum recast.',
+      inputs: [
+        { id: 'current_balance', type: 'number', label: 'Current Loan Balance ($)', placeholder: 'e.g. 300000', min: 1000, step: 1000, error: 'Enter your current balance.' },
+        { id: 'interest_rate', type: 'number', label: 'Interest Rate (%)', placeholder: 'e.g. 6.5', min: 0.01, max: 30, step: 0.01, error: 'Enter your interest rate.' },
+        { id: 'remaining_years', type: 'number', label: 'Remaining Term (Years)', placeholder: 'e.g. 25', min: 1, max: 40, step: 1, error: 'Enter remaining years.' },
+        { id: 'lump_sum', type: 'number', label: 'Lump-Sum Recast Payment ($)', placeholder: 'e.g. 50000', min: 1000, step: 500, error: 'Enter lump-sum amount.' },
+        { id: 'recast_fee', type: 'number', label: 'Recast Fee ($)', placeholder: 'e.g. 250', min: 0, step: 10, default: 250 }
+      ],
+      calculate: function (v) {
+        if (!v.current_balance || !v.interest_rate || !v.remaining_years || !v.lump_sum) return null;
+        if (v.lump_sum >= v.current_balance) return null;
+
+        var monthlyRate = (v.interest_rate / 100) / 12;
+        var months = v.remaining_years * 12;
+        var newBalance = v.current_balance - v.lump_sum;
+
+        var amort = function(p, r, n) {
+          if (r === 0) return p / n;
+          var pow = Math.pow(1 + r, n);
+          return p * (r * pow) / (pow - 1);
+        };
+
+        var currentPayment = amort(v.current_balance, monthlyRate, months);
+        var newPayment = amort(newBalance, monthlyRate, months);
+        var monthlySavings = currentPayment - newPayment;
+
+        var currentTotal = currentPayment * months;
+        var currentInterest = currentTotal - v.current_balance;
+        var newTotal = newPayment * months;
+        var newInterest = newTotal - newBalance;
+        var interestSaved = currentInterest - newInterest;
+        var netSavings = interestSaved - (v.recast_fee || 0);
+
+        var fmt = function(n) { return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        var fmtR = function(n) { return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 }); };
+
+        return {
+          items: [
+            { label: 'Current Monthly Payment', value: fmt(currentPayment) },
+            { label: 'New Monthly Payment (After Recast)', value: fmt(newPayment) },
+            { label: 'Monthly Savings', value: fmt(monthlySavings) + '/mo' },
+            { label: 'New Loan Balance', value: fmtR(newBalance) },
+            { label: 'Total Interest Saved', value: fmtR(interestSaved) },
+            { label: 'Recast Fee', value: fmtR(v.recast_fee || 0) },
+            { label: 'Net Lifetime Savings', value: fmtR(netSavings) },
+            { label: 'Loan Term', value: 'Unchanged at ' + v.remaining_years + ' years' }
+          ],
+          summary: 'A ' + fmtR(v.lump_sum) + ' recast on your ' + fmtR(v.current_balance) + ' mortgage at ' + v.interest_rate + '% drops your monthly payment from ' + fmt(currentPayment) + ' to ' + fmt(newPayment) + ' — saving ' + fmt(monthlySavings) + '/month and ' + fmtR(interestSaved) + ' in total interest over the remaining ' + v.remaining_years + '-year term.'
+        };
+      }
+    };
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Mortgage Recast Calculator' }];
+    var FAQS = [
+      { q: 'What is a mortgage recast?', a: 'A recast is when you make a large lump-sum principal payment and your lender re-amortizes the loan over the remaining term, lowering your monthly payment at the same interest rate. No refinance, no closing costs, no credit check.' },
+      { q: 'How much does a mortgage recast cost?', a: 'Most lenders charge a recast fee between $150 and $500. This is far cheaper than refinancing, which can cost 2-5% of the loan balance in closing costs. Some lenders offer one free recast over the life of the loan.' },
+      { q: 'What loans can be recast?', a: 'Most conventional conforming mortgages (Fannie Mae and Freddie Mac) allow recasting. FHA, VA, and USDA loans generally do not. Jumbo loans and portfolio loans vary by lender. Always confirm with your servicer before sending a lump sum.' },
+      { q: 'Recast vs refinance — which saves more?', a: 'If your current rate is already low, recasting wins because there are no closing costs. If rates have dropped 0.75%+ below your rate, refinancing usually wins despite closing costs. Refinancing also lets you change the term; recasting keeps your original term.' },
+      { q: 'Does recasting affect my credit score?', a: 'No. A recast does not involve a credit pull, new loan, or change in reported terms to credit bureaus. Your loan continues as-is, just with a lower balance and payment. This makes it ideal for borrowers with credit concerns.' },
+      { q: 'What is the minimum lump sum for a recast?', a: 'Most lenders require $5,000 or $10,000 minimum, though some require 10% of the original loan amount. Check your loan agreement or contact your servicer for specific requirements before planning a recast.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Calculate monthly mortgage payments.' },
+      { slug: 'evergreen/mortgage-overpayment-calculator', name: 'Mortgage Overpayment Calculator', description: 'See how extra payments shorten your loan.' },
+      { slug: 'evergreen/refinance-calculator', name: 'Refinance Calculator', description: 'Compare refinancing vs keeping your loan.' },
+      { slug: 'evergreen/heloc-payment-calculator', name: 'HELOC Payment Calculator', description: 'Calculate home equity line of credit payments.' },
+      { slug: 'evergreen/loan-amortization-calculator', name: 'Loan Amortization Calculator', description: 'View full amortization schedule.' },
+      { slug: 'evergreen/home-equity-calculator', name: 'Home Equity Calculator', description: 'Calculate your total home equity.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>
