@@ -137,6 +137,24 @@ def main():
             }
         categories[hub]["count"] += 1
 
+    # Auto-generate hub search aliases from the most common tokens across
+    # each hub's tool titles + tags. Means new hubs get smart-search recall
+    # immediately, with no manual config in the Flutter app.
+    from collections import Counter
+    STOP = {'a','an','the','to','of','in','on','for','and','or','with','by','from',
+            'free','online','best','top','your','how','what','tool','tools','app',
+            'is','it','my','me','we','you','this','that','at','as','be','do','no'}
+    hub_tokens = {h: Counter() for h in categories}
+    for t in tools:
+        h = t['hub']
+        words = re.findall(r'[a-z0-9]+', (t['title'] + ' ' + ' '.join(t['tags'])).lower())
+        for w in words:
+            if len(w) >= 3 and w not in STOP and w != h:
+                hub_tokens[h][w] += 1
+    for h, cat in categories.items():
+        # Top 8 most-distinctive tokens become aliases for that hub
+        cat['aliases'] = [w for w, _ in hub_tokens[h].most_common(8)]
+
     # Sort categories: main hubs first, then country hubs
     main_cats = sorted(
         [c for c in categories.values() if len(c["slug"]) > 2 or c["slug"] in ('ai','us','uk','eu','3d')],
