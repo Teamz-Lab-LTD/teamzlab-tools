@@ -311,7 +311,37 @@ python3 scripts/build-programmatic-seo.py us-income-tax    # Generate US state t
 python3 scripts/build-programmatic-seo.py --dry-run [name] # Preview without writing
 python3 scripts/build-multilang.py status                  # Show translation status (ES/PT/DE/FR/JP)
 python3 scripts/build-multilang.py suggest                 # Suggest which tools to translate next
+python3 scripts/build-webview-incompat.py                  # Scan tools for mobile-WebView incompatibilities → webview-incompat.json
 ```
+
+## Mobile-WebView compatibility manifest — `webview-incompat.json`
+
+The Toolz mobile app (toss_app) loads tools in an in-app WebView. Some tools
+cannot run there (WebGPU missing, 60 MB+ WASM models OOM, ffmpeg.wasm kills
+the renderer). `scripts/build-webview-incompat.py` scans every tool and emits
+`webview-incompat.json` at repo root. The app fetches this file at runtime
+and redirects flagged tools to the system browser.
+
+- **Auto-runs** inside `build-search-index.sh` right after `build-tools-json.py`
+  — every normal build regenerates it. You don't run it by hand.
+- **Two tiers**: `always` (redirect on every device) vs `heavy` (redirect only
+  when device RAM < `low_ram_threshold_mb`, default 4096 MB).
+- **Detection**: text-based scan for `navigator.gpu`, `@ffmpeg/ffmpeg`,
+  `@huggingface/transformers`, `@xenova/transformers`, `onnxruntime-web`,
+  `@mediapipe/tasks-*`, `@tensorflow/tfjs`, `opencv.js`; plus sibling
+  `.bin/.onnx/.wasm/.pt/.gguf/.tflite` files sized ≥ 12 MB (heavy) or ≥ 40 MB
+  (always).
+- **If a tool is wrongly flagged** → edit the scanner's markers or add an
+  opt-out (currently none; ask before adding). False positive is safer than
+  false negative here.
+- **If a new tool fails silently on mobile** → add its library's signature to
+  `ALWAYS_MARKERS` or `HEAVY_MARKERS` in the scanner, not to the app.
+- **To tune the RAM threshold** app-side → change `low_ram_threshold_mb` at
+  the top of `build-webview-incompat.py`; ships to users on next build, no
+  app release needed.
+
+Companion code on the app side lives in
+`toss_app/lib/screens/tools/tool_webview_screen.dart`.
 
 ## Keyword Intelligence (FREE Ubersuggest Alternative)
 ```bash
