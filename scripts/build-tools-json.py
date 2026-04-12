@@ -102,6 +102,16 @@ def main():
         d = re.search(r'name="description" content="([^"]*)"', content)
         desc = html.unescape(d.group(1).strip()) if d else ''
 
+        # Extract meta keywords (used for smart fuzzy search in mobile app)
+        k = re.search(r'name="keywords" content="([^"]*)"', content)
+        tags = []
+        if k:
+            tags = [t.strip().lower() for t in html.unescape(k.group(1)).split(',') if t.strip()]
+        # Add slug tokens as implicit tags (e.g. "tip-calculator" → ["tip", "calculator"])
+        for tok in slug.replace('-', ' ').split():
+            if len(tok) > 2 and tok.lower() not in tags:
+                tags.append(tok.lower())
+
         # Detect language
         lang_match = re.search(r'<html[^>]*lang="([^"]*)"', content)
         lang = lang_match.group(1) if lang_match else 'en'
@@ -112,6 +122,7 @@ def main():
             "url": f"/{hub}/{slug}/",
             "title": title,
             "description": desc,
+            "tags": tags,
             "lang": lang,
         }
         tools.append(tool)
