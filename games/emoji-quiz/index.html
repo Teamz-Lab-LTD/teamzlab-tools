@@ -273,6 +273,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script>
   (function() {
     'use strict';
@@ -761,7 +762,19 @@
         state.score += points;
         state.streak++;
         if (state.streak > state.bestStreak) state.bestStreak = state.streak;
-        $feedback.textContent = '\u2705 Correct! +' + points + ' points';
+        var fb = '\u2705 Correct! +' + points + ' points';
+        if (window.TeamzGame) {
+          TeamzGame.sound.play('correct');
+          if (state.streak === 3) { fb = '\u2705 ' + TeamzGame.microcopy('streak3') + ' +' + points; TeamzGame.sound.play('streak1'); }
+          else if (state.streak === 5) { fb = '\u2705 ' + TeamzGame.microcopy('streak5') + ' +' + points; TeamzGame.sound.play('streak2'); }
+          else if (state.streak === 8) { TeamzGame.sound.play('streak3'); }
+          else if (state.streak === 10) { fb = '\u2705 ' + TeamzGame.microcopy('streak10') + ' +' + points; TeamzGame.sound.play('streak3'); }
+          else {
+            var mc = TeamzGame.microcopy('correct');
+            if (mc) fb = '\u2705 ' + mc + ' +' + points;
+          }
+        }
+        $feedback.textContent = fb;
 
         if (btnEl) btnEl.classList.add('correct');
 
@@ -772,6 +785,7 @@
         }
       } else {
         state.streak = 0;
+        if (window.TeamzGame) TeamzGame.sound.play('wrong');
         $feedback.textContent = '\u274C ' + question.answer;
 
         if (btnEl) {
@@ -940,11 +954,111 @@
 
       // Save stats
       var stats = loadStats();
+      var prevBest = stats.bestScore || 0;
+      var isPB = state.score > prevBest;
       stats.gamesPlayed++;
       if (state.score > stats.bestScore) stats.bestScore = state.score;
       if (state.bestStreak > stats.bestStreak) stats.bestStreak = state.bestStreak;
       if (state.mode === 'daily') stats.lastDaily = 'daily-' + getDayNumber();
+      /* Track categories played */
+      stats.categoriesPlayed = stats.categoriesPlayed || {};
+      if (state.category && state.category !== 'all') stats.categoriesPlayed[state.category] = true;
+      state.results.forEach(function(r) { if (r.category) stats.categoriesPlayed[r.category] = true; });
       saveStats(stats);
+
+      /* ====== TeamzGame addiction layer ====== */
+      if (window.TeamzGame) {
+        var SLUG = 'emoji-quiz';
+        var stars = correctCount >= 13 ? 3 : correctCount >= 10 ? 2 : 1;
+        var resultHeader = $result.querySelector('.eq-result-header');
+
+        /* Hide default title/subtitle so celebrate owns the hero area */
+        var origTitle = document.getElementById('eq-result-title');
+        var origSubtitle = document.getElementById('eq-result-subtitle');
+        if (origTitle) origTitle.style.display = 'none';
+        if (origSubtitle) origSubtitle.style.display = 'none';
+
+        /* Celebrate container */
+        var celebContainer = document.getElementById('eq-celebrate');
+        if (!celebContainer) {
+          celebContainer = document.createElement('div');
+          celebContainer.id = 'eq-celebrate';
+          resultHeader.insertBefore(celebContainer, resultHeader.firstChild);
+        }
+        celebContainer.innerHTML = '';
+
+        var actions = $result.querySelector('.eq-result-actions');
+        if (actions) actions.style.opacity = '0';
+
+        /* Clean up prior addons */
+        ['eq-tzg-streak','eq-tzg-countdown','eq-tzg-rank'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+
+        if (state.mode === 'daily') {
+          TeamzGame.recordStreak(SLUG);
+          var streakBadge = document.createElement('div');
+          streakBadge.id = 'eq-tzg-streak';
+          streakBadge.style.cssText = 'margin: 12px auto; text-align: center;';
+          TeamzGame.renderStreakBadge(streakBadge);
+          resultHeader.appendChild(streakBadge);
+
+          var countdownBox = document.createElement('div');
+          countdownBox.id = 'eq-tzg-countdown';
+          countdownBox.style.cssText = 'margin: 6px auto; text-align: center;';
+          TeamzGame.countdownToMidnight(countdownBox);
+          resultHeader.appendChild(countdownBox);
+        }
+
+        TeamzGame.celebrate(celebContainer, {
+          score: state.score,
+          title: state.mode === 'daily' ? 'DAILY COMPLETE' : (correctCount >= 14 ? 'PERFECT!' : 'GREAT RUN'),
+          stars: stars,
+          personalBest: isPB
+        }).then(function() {
+          var rankBox = document.createElement('div');
+          rankBox.id = 'eq-tzg-rank';
+          rankBox.style.cssText = 'margin: 10px auto; text-align: center; color: var(--text-muted); font-size: 14px; font-weight: 600;';
+          rankBox.textContent = '🏆 ' + TeamzGame.ghostRank(state.score, SLUG);
+          resultHeader.appendChild(rankBox);
+          if (actions) {
+            actions.style.transition = 'opacity 300ms ease';
+            actions.style.opacity = '1';
+          }
+        });
+
+        /* Achievements */
+        if (stats.gamesPlayed === 1 && correctCount >= ROUNDS / 2) {
+          TeamzGame.grantAchievement('first-win-emoji-quiz', 'First Win 🎯', SLUG);
+        }
+        if (correctCount === ROUNDS) {
+          TeamzGame.grantAchievement('perfect-15-emoji-quiz', 'Perfect Run 💎', SLUG);
+        }
+        if (state.bestStreak >= 8) {
+          TeamzGame.grantAchievement('streak-8-emoji-quiz', '8 Streak 🔥', SLUG);
+        }
+        if (stats.categoriesPlayed && Object.keys(stats.categoriesPlayed).length >= 3) {
+          TeamzGame.grantAchievement('multi-category-emoji-quiz', 'Multi-Category 🎨', SLUG);
+        }
+        /* Category master: 100% in a single-category practice round */
+        if (state.category && state.category !== 'all' && correctCount === ROUNDS) {
+          TeamzGame.grantAchievement('category-master-' + state.category + '-emoji-quiz', state.category.charAt(0).toUpperCase() + state.category.slice(1) + ' Master 🏅', SLUG);
+        }
+
+        /* Near-miss: 14/15 */
+        if (correctCount === ROUNDS - 1) {
+          setTimeout(function() {
+            TeamzGame.nearMiss({
+              correctHave: correctCount,
+              correctNeeded: ROUNDS,
+              onRetry: function() { startGame('practice', state.category); }
+            });
+          }, 2800);
+        }
+
+        TeamzGame.adaptiveDifficulty(SLUG, correctCount, ROUNDS);
+      }
     }
 
     function getShareText() {
@@ -1023,6 +1137,14 @@
 
     /* ── Init ── */
     updateStatsDisplay();
+
+    if (window.TeamzGame) {
+      TeamzGame.init('emoji-quiz', { enableSound: true });
+      var ep = TeamzGame.endowedProgress('emoji-quiz');
+      if (ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! You unlocked level 2.'); }, 600);
+      }
+    }
 
     /* ── FAQs ── */
     if (typeof TeamzTools !== 'undefined') {

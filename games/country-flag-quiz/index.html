@@ -249,6 +249,7 @@
 
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script>
   (function() {
     'use strict';
@@ -731,16 +732,32 @@
         state.correctCount++;
         state.streak++;
         state.maxStreak = Math.max(state.maxStreak, state.streak);
+        /* Track region correct counts for achievement */
+        state.regionCorrect = state.regionCorrect || {};
+        state.regionCorrect[q.country.region] = (state.regionCorrect[q.country.region] || 0) + 1;
         /* Score: base 100 + time bonus (up to 50) + streak bonus */
         var timeBonus = Math.round((state.timerRemaining / (TIMER_SEC * 10)) * 50);
         var streakBonus = Math.min(state.streak - 1, 5) * 10;
         var points = 100 + timeBonus + streakBonus;
         state.score += points;
         $scoreNum.textContent = state.score;
-        $feedback.textContent = 'Correct! +' + points + ' pts';
+        var msg = 'Correct! +' + points + ' pts';
+        if (window.TeamzGame) {
+          TeamzGame.sound.play('correct');
+          /* Streak microcopy + sound */
+          if (state.streak === 3) { msg = TeamzGame.microcopy('streak3') + ' +' + points; TeamzGame.sound.play('streak1'); }
+          else if (state.streak === 5) { msg = TeamzGame.microcopy('streak5') + ' +' + points; TeamzGame.sound.play('streak2'); }
+          else if (state.streak === 10) { msg = TeamzGame.microcopy('streak10') + ' +' + points; TeamzGame.sound.play('streak3'); }
+          else {
+            var mc = TeamzGame.microcopy('correct');
+            if (mc) msg = mc + ' +' + points;
+          }
+        }
+        $feedback.textContent = msg;
         state.results.push(true);
       } else {
         state.streak = 0;
+        if (window.TeamzGame) TeamzGame.sound.play('wrong');
         $feedback.textContent = 'Wrong! It was ' + q.country.flag + ' ' + q.country.name;
         state.results.push(false);
       }
@@ -801,6 +818,8 @@
       document.getElementById('fq-emoji-grid').textContent = emojiRows.join('\n');
 
       /* Save */
+      var prevBest = (loadStats().bestScore || 0);
+      var isPB = state.score > prevBest;
       recordGame(state.score, state.correctCount, total, state.maxStreak);
       if (state.mode === 'daily') {
         markDailyDone(state.score, state.results);
@@ -809,6 +828,112 @@
 
       showScreen($result);
       updateStatsUI();
+
+      /* ====== TeamzGame addiction layer ====== */
+      if (window.TeamzGame) {
+        var SLUG = 'country-flag-quiz';
+        var stars = accuracy >= 90 ? 3 : accuracy >= 70 ? 2 : 1;
+        var resultCard = $result.querySelector('.fq-result-card');
+        var actions = $result.querySelector('.fq-result-actions');
+
+        /* Hide default title/subtitle/score so celebrate owns the hero area */
+        var origTitle = document.getElementById('fq-result-title');
+        var origSubtitle = document.getElementById('fq-result-subtitle');
+        var origScore = document.getElementById('fq-result-score');
+        var origScoreLabel = resultCard.querySelector('.fq-result-score-label');
+        if (origTitle) origTitle.style.display = 'none';
+        if (origSubtitle) origSubtitle.style.display = 'none';
+        if (origScore) origScore.style.display = 'none';
+        if (origScoreLabel) origScoreLabel.style.display = 'none';
+
+        /* Celebrate container */
+        var celebContainer = document.getElementById('fq-celebrate') || (function() {
+          var el = document.createElement('div');
+          el.id = 'fq-celebrate';
+          resultCard.insertBefore(el, resultCard.firstChild);
+          return el;
+        })();
+        celebContainer.innerHTML = '';
+
+        /* Hide action buttons during crescendo */
+        if (actions) actions.style.opacity = '0';
+
+        /* Record daily streak + add badge + countdown (daily only) */
+        var streakBadge = document.getElementById('fq-tzg-streak');
+        if (streakBadge && streakBadge.parentNode) streakBadge.parentNode.removeChild(streakBadge);
+        var countdownBox = document.getElementById('fq-tzg-countdown');
+        if (countdownBox && countdownBox.parentNode) countdownBox.parentNode.removeChild(countdownBox);
+        var rankBox = document.getElementById('fq-tzg-rank');
+        if (rankBox && rankBox.parentNode) rankBox.parentNode.removeChild(rankBox);
+
+        if (state.mode === 'daily') {
+          TeamzGame.recordStreak(SLUG);
+          streakBadge = document.createElement('div');
+          streakBadge.id = 'fq-tzg-streak';
+          streakBadge.style.cssText = 'margin: 12px 0;';
+          TeamzGame.renderStreakBadge(streakBadge);
+          resultCard.appendChild(streakBadge);
+
+          countdownBox = document.createElement('div');
+          countdownBox.id = 'fq-tzg-countdown';
+          countdownBox.style.cssText = 'margin: 8px 0 4px;';
+          TeamzGame.countdownToMidnight(countdownBox);
+          resultCard.appendChild(countdownBox);
+        }
+
+        TeamzGame.celebrate(celebContainer, {
+          score: state.score,
+          title: state.mode === 'daily' ? 'DAILY COMPLETE' : (accuracy >= 90 ? 'FLAG MASTER' : 'GREAT RUN'),
+          stars: stars,
+          personalBest: isPB
+        }).then(function() {
+          /* Ghost rank */
+          rankBox = document.createElement('div');
+          rankBox.id = 'fq-tzg-rank';
+          rankBox.style.cssText = 'margin: 10px 0; color: var(--text-muted); font-size: 14px; font-weight: 600;';
+          rankBox.textContent = '🏆 ' + TeamzGame.ghostRank(state.score, SLUG);
+          resultCard.appendChild(rankBox);
+
+          /* Fade in actions */
+          if (actions) {
+            actions.style.transition = 'opacity 300ms ease';
+            actions.style.opacity = '1';
+          }
+        });
+
+        /* Achievements */
+        var gstats = loadStats();
+        if ((gstats.played || 0) === 1 && state.correctCount > total / 2) {
+          TeamzGame.grantAchievement('first-win-country-flag-quiz', 'First Win 🎯', SLUG);
+        }
+        if (state.correctCount === total) {
+          TeamzGame.grantAchievement('perfect-20-country-flag-quiz', 'Perfect Run 💎', SLUG);
+        }
+        if (state.maxStreak >= 10) {
+          TeamzGame.grantAchievement('streak-10-country-flag-quiz', '10 Streak 🔥', SLUG);
+        }
+        if (state.regionCorrect) {
+          Object.keys(state.regionCorrect).forEach(function(region) {
+            if (state.regionCorrect[region] >= 10) {
+              TeamzGame.grantAchievement('region-expert-' + region.toLowerCase() + '-country-flag-quiz', region + ' Expert 🌍', SLUG);
+            }
+          });
+        }
+
+        /* Near-miss: 19/20 correct */
+        if (state.correctCount === total - 1 && total >= 15) {
+          setTimeout(function() {
+            TeamzGame.nearMiss({
+              correctHave: state.correctCount,
+              correctNeeded: total,
+              onRetry: function() { startGame('practice'); }
+            });
+          }, 2800);
+        }
+
+        /* Adaptive difficulty (informational — used next round) */
+        TeamzGame.adaptiveDifficulty(SLUG, state.correctCount, total);
+      }
     }
 
     /* ====== SHARE ====== */
@@ -908,6 +1033,15 @@
     /* ====== INIT ====== */
     updateStatsUI();
     if (isDailyDone()) $dailyBtn.classList.add('fq-daily-done');
+
+    /* TeamzGame init */
+    if (window.TeamzGame) {
+      TeamzGame.init('country-flag-quiz', { enableSound: true });
+      var ep = TeamzGame.endowedProgress('country-flag-quiz');
+      if (ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! You unlocked level 2.'); }, 600);
+      }
+    }
 
     /* ====== SCHEMAS & COMMON ====== */
     if (window.TeamzTools) {

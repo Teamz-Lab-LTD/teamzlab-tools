@@ -218,10 +218,20 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
   <script>
   (function() {
     'use strict';
+
+    // TeamzGame: initialize addiction layer
+    if (window.TeamzGame) {
+      TeamzGame.init('word-guess', {enableSound: true});
+      var _ep = TeamzGame.endowedProgress('word-guess');
+      if (_ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! Achievement unlocked.'); }, 800);
+      }
+    }
 
     // ==================== WORD LISTS ====================
     // Answer words: common, well-known 5-letter words (curated for fairness)
@@ -1371,7 +1381,24 @@
           showMessage(messages[row] || 'Well done!');
           recordResult(true, row + 1);
           if (mode === 'daily') saveDailyState();
-          setTimeout(showStats, 1500);
+          // TeamzGame: daily completion hook — streak + badge + countdown
+          if (mode === 'daily' && window.TeamzGame) {
+            TeamzGame.recordStreak('word-guess');
+            TeamzGame.sound.play('win');
+            TeamzGame.grantAchievement('first-daily-word-guess', 'First Daily Win 🎯', 'word-guess');
+            setTimeout(function() {
+              var host = document.getElementById('wg-stats-actions') || document.getElementById('wg-stats-modal');
+              if (host && !host.querySelector('.tzgame-badge-slot')) {
+                var badge = document.createElement('div');
+                badge.className = 'tzgame-badge-slot';
+                badge.style.cssText = 'margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;align-items:center;';
+                var b1 = document.createElement('div'); TeamzGame.renderStreakBadge(b1);
+                var b2 = document.createElement('div'); TeamzGame.countdownToMidnight(b2);
+                badge.appendChild(b1); badge.appendChild(b2);
+                host.appendChild(badge);
+              }
+            }, 1600);
+          }
           generateAIInsight(targetWord, true, row + 1);
         } else if (currentRow >= ROWS) {
           gameOver = true;

@@ -215,9 +215,19 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
+
+    // TeamzGame: initialize addiction layer
+    if (window.TeamzGame) {
+      TeamzGame.init('word-groups-puzzle', {enableSound: true});
+      var _ep = TeamzGame.endowedProgress('word-groups-puzzle');
+      if (_ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! Achievement unlocked.'); }, 800);
+      }
+    }
 
     /* ===== BREADCRUMBS + SCHEMAS ===== */
     var crumbs = [{name:'Home',url:'/'},{name:'Word Puzzle Games',url:'/games/'},{name:'Word Groups Puzzle'}];
@@ -736,6 +746,23 @@
         startNewGame();
       });
       document.getElementById('btn-show-stats').addEventListener('click', showStats);
+
+      // TeamzGame: daily completion hook — streak + badge + countdown
+      if (won && mode === 'daily' && window.TeamzGame) {
+        TeamzGame.recordStreak('word-groups-puzzle');
+        TeamzGame.sound.play('win');
+        TeamzGame.grantAchievement('first-daily-word-groups-puzzle', 'First Daily Win 🎯', 'word-groups-puzzle');
+        var _badge = document.createElement('div');
+        _badge.className = 'tzgame-badge-slot';
+        _badge.style.cssText = 'margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;align-items:center;';
+        var _b1 = document.createElement('div');
+        TeamzGame.renderStreakBadge(_b1);
+        var _b2 = document.createElement('div');
+        TeamzGame.countdownToMidnight(_b2);
+        _badge.appendChild(_b1);
+        _badge.appendChild(_b2);
+        el.appendChild(_badge);
+      }
 
       /* Fire AI insight in background — non-blocking */
       generateAIInsight(currentPuzzle, won, mistakes);

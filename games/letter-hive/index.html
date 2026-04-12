@@ -236,9 +236,19 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
+
+    // TeamzGame: initialize addiction layer
+    if (window.TeamzGame) {
+      TeamzGame.init('letter-hive', {enableSound: true});
+      var _ep = TeamzGame.endowedProgress('letter-hive');
+      if (_ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! Achievement unlocked.'); }, 800);
+      }
+    }
 
     /* ========== PUZZLE DATA (203 puzzles) ========== */
     var PUZZLES = [
@@ -981,6 +991,23 @@
       if (geniusCongratulated) return;
       if (getRankIndex() < 6) return; // not Genius yet
       geniusCongratulated = true;
+
+      // TeamzGame: daily completion hook — Genius rank = daily win
+      if (isDaily && window.TeamzGame) {
+        TeamzGame.recordStreak('letter-hive');
+        TeamzGame.sound.play('win');
+        TeamzGame.grantAchievement('first-daily-letter-hive', 'First Daily Win 🎯', 'letter-hive');
+        var host = document.querySelector('.rank-section') || document.querySelector('.site-main');
+        if (host && !host.querySelector('.tzgame-badge-slot')) {
+          var badge = document.createElement('div');
+          badge.className = 'tzgame-badge-slot';
+          badge.style.cssText = 'margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;align-items:center;';
+          var b1 = document.createElement('div'); TeamzGame.renderStreakBadge(b1);
+          var b2 = document.createElement('div'); TeamzGame.countdownToMidnight(b2);
+          badge.appendChild(b1); badge.appendChild(b2);
+          host.appendChild(badge);
+        }
+      }
 
       if (aiReady && typeof TeamzAI !== 'undefined') {
         TeamzAI.generate({

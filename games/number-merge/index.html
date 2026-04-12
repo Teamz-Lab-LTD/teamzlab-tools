@@ -232,6 +232,7 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script>
   (function() {
     'use strict';
@@ -495,6 +496,12 @@
       if (mergesThisMove > 0) {
         currentCombo += mergesThisMove;
         if (currentCombo > bestCombo) { bestCombo = currentCombo; }
+        if (window.TeamzGame) {
+          TeamzGame.sound.play('pop');
+          if (currentCombo === 3) TeamzGame.sound.play('streak1');
+          else if (currentCombo === 5) TeamzGame.sound.play('streak2');
+          else if (currentCombo === 8) TeamzGame.sound.play('streak3');
+        }
       } else {
         currentCombo = 0;
       }
@@ -715,6 +722,8 @@
 
     /* ── Game Over ── */
     function showGameOver() {
+      var prevBestScore = allStats.bestScore || 0;
+      var prevBestTile = allStats.highestTile || 0;
       clearSavedGame();
       saveData();
 
@@ -725,7 +734,8 @@
       var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
 
       var title = maxTile >= 2048 ? 'You reached ' + maxTile + '!' : 'Game Over!';
-      document.getElementById('nm-result-title').textContent = title;
+      var origTitleEl = document.getElementById('nm-result-title');
+      origTitleEl.textContent = title;
       document.getElementById('nm-r-score').textContent = score.toLocaleString();
       document.getElementById('nm-r-tile').textContent = maxTile;
       document.getElementById('nm-r-moves').textContent = moves;
@@ -736,6 +746,95 @@
       document.getElementById('nm-share-preview').textContent = shareText;
 
       showScreen('result');
+
+      /* ====== TeamzGame addiction layer ====== */
+      if (window.TeamzGame) {
+        var SLUG = 'number-merge';
+        var stars = maxTile >= 2048 ? 3 : maxTile >= 1024 ? 2 : maxTile >= 512 ? 1 : 0;
+        var isPB = score > prevBestScore;
+        var resultRoot = resultEl;
+
+        /* Hide default title so celebrate owns hero */
+        origTitleEl.style.display = 'none';
+
+        /* Celebrate container */
+        var celebContainer = document.getElementById('nm-celebrate');
+        if (!celebContainer) {
+          celebContainer = document.createElement('div');
+          celebContainer.id = 'nm-celebrate';
+          resultRoot.insertBefore(celebContainer, resultRoot.firstChild);
+        }
+        celebContainer.innerHTML = '';
+
+        var actions = resultRoot.querySelector('.nm-result-actions');
+        if (actions) actions.style.opacity = '0';
+
+        ['nm-tzg-streak','nm-tzg-countdown','nm-tzg-rank'].forEach(function(id) {
+          var el = document.getElementById(id);
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+
+        if (isDaily) {
+          TeamzGame.recordStreak(SLUG);
+          var streakBadge = document.createElement('div');
+          streakBadge.id = 'nm-tzg-streak';
+          streakBadge.style.cssText = 'margin: 12px auto; text-align: center;';
+          TeamzGame.renderStreakBadge(streakBadge);
+          resultRoot.insertBefore(streakBadge, actions);
+
+          var countdownBox = document.createElement('div');
+          countdownBox.id = 'nm-tzg-countdown';
+          countdownBox.style.cssText = 'margin: 6px auto; text-align: center;';
+          TeamzGame.countdownToMidnight(countdownBox);
+          resultRoot.insertBefore(countdownBox, actions);
+        }
+
+        var celebTitle = maxTile >= 2048 ? 'YOU REACHED ' + maxTile + '!' : (isDaily ? 'DAILY COMPLETE' : 'GAME OVER');
+        TeamzGame.celebrate(celebContainer, {
+          score: score,
+          title: celebTitle,
+          stars: stars,
+          personalBest: isPB
+        }).then(function() {
+          var rankBox = document.createElement('div');
+          rankBox.id = 'nm-tzg-rank';
+          rankBox.style.cssText = 'margin: 10px auto; text-align: center; color: var(--text-muted); font-size: 14px; font-weight: 600;';
+          rankBox.textContent = '🏆 ' + TeamzGame.ghostRank(score, SLUG);
+          resultRoot.insertBefore(rankBox, actions);
+          if (actions) {
+            actions.style.transition = 'opacity 300ms ease';
+            actions.style.opacity = '1';
+          }
+        });
+
+        /* Achievements */
+        if (gamesPlayed === 1 && maxTile >= 64) {
+          TeamzGame.grantAchievement('first-win-number-merge', 'First Win 🎯', SLUG);
+        }
+        if (maxTile >= 2048 && prevBestTile < 2048) {
+          TeamzGame.grantAchievement('tile-2048-number-merge', 'Reached 2048 💎', SLUG);
+        }
+        if (maxTile >= 4096 && prevBestTile < 4096) {
+          TeamzGame.grantAchievement('tile-4096-number-merge', 'Reached 4096 🔥', SLUG);
+        }
+        if (maxTile >= 8192 && prevBestTile < 8192) {
+          TeamzGame.grantAchievement('tile-8192-number-merge', 'Legend: 8192 👑', SLUG);
+        }
+        if (bestCombo >= 5) {
+          TeamzGame.grantAchievement('combo-5-number-merge', 'Combo x5 ⚡', SLUG);
+        }
+
+        /* Near-miss: reached 1024 but not 2048 */
+        if (maxTile === 1024) {
+          setTimeout(function() {
+            TeamzGame.nearMiss({
+              correctHave: 1024,
+              correctNeeded: 2048,
+              onRetry: function() { startGame(false); }
+            });
+          }, 2800);
+        }
+      }
     }
 
     function buildShareText(maxTile, timeStr) {
@@ -886,6 +985,15 @@
       }
     }
 
+    /* TeamzGame init */
+    if (window.TeamzGame) {
+      TeamzGame.init('number-merge', { enableSound: true });
+      var ep = TeamzGame.endowedProgress('number-merge');
+      if (ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! You unlocked level 2.'); }, 600);
+      }
+    }
+
     /* ── Init ── */
     loadData();
     updateMenuStats();
@@ -928,7 +1036,6 @@
       }
       if (TeamzTools.renderBreadcrumbs) TeamzTools.renderBreadcrumbs();
       if (TeamzTools.injectBreadcrumbSchema) TeamzTools.injectBreadcrumbSchema();
-      }
     }
 
   })();

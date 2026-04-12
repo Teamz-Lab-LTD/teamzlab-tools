@@ -176,9 +176,19 @@
   <footer id="site-footer" class="site-footer"></footer>
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script src="/shared/js/ai-engine.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
+
+    // TeamzGame: initialize addiction layer
+    if (window.TeamzGame) {
+      TeamzGame.init('thread-words', {enableSound: true});
+      var _ep = TeamzGame.endowedProgress('thread-words');
+      if (_ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! Achievement unlocked.'); }, 800);
+      }
+    }
 
     /* ==============================
        PUZZLES — 60+ carefully crafted
@@ -3577,6 +3587,20 @@
       if (state.hintsUsed > 0) text += ' | Hints used: ' + state.hintsUsed;
       if (state.mistakes > 0) text += ' | Mistakes: ' + state.mistakes;
       document.getElementById('tw-complete-text').textContent = text;
+
+      // TeamzGame: daily completion hook — streak + badge + countdown
+      if (state.mode === 'daily' && window.TeamzGame && !el.querySelector('.tzgame-badge-slot')) {
+        TeamzGame.recordStreak('thread-words');
+        TeamzGame.sound.play('win');
+        TeamzGame.grantAchievement('first-daily-thread-words', 'First Daily Win 🎯', 'thread-words');
+        var badge = document.createElement('div');
+        badge.className = 'tzgame-badge-slot';
+        badge.style.cssText = 'margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;align-items:center;';
+        var b1 = document.createElement('div'); TeamzGame.renderStreakBadge(b1);
+        var b2 = document.createElement('div'); TeamzGame.countdownToMidnight(b2);
+        badge.appendChild(b1); badge.appendChild(b2);
+        el.appendChild(badge);
+      }
     }
 
     function shareResults() {

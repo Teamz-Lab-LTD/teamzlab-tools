@@ -209,9 +209,19 @@
 
   <script src="/branding/js/theme.js"></script>
   <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/game-engine.js"></script>
   <script>
   (function() {
     'use strict';
+
+    // TeamzGame: initialize addiction layer
+    if (window.TeamzGame) {
+      TeamzGame.init('oddone', {enableSound: true});
+      var _ep = TeamzGame.endowedProgress('oddone');
+      if (_ep.isFirstVisit && window.showToast) {
+        setTimeout(function() { window.showToast('🌱 Welcome! Achievement unlocked.'); }, 800);
+      }
+    }
 
     /* ════════════════════════════════════════════
        SEEDED PRNG — mulberry32
@@ -1063,6 +1073,24 @@
       document.getElementById('res-replay').style.display = stars < 3 ? 'block' : 'none';
 
       document.getElementById('share-preview').style.display = 'none';
+
+      // TeamzGame: daily completion hook — streak + badge + countdown
+      if (isDaily && window.TeamzGame) {
+        TeamzGame.recordStreak('oddone');
+        TeamzGame.sound.play('win');
+        TeamzGame.grantAchievement('first-daily-oddone', 'First Daily Win 🎯', 'oddone');
+        var _host = document.getElementById('share-preview') || document.getElementById('res-stars');
+        var _resScreen = document.querySelector('.screen.active') || document.getElementById('result') || _host;
+        if (_resScreen && !_resScreen.querySelector('.tzgame-badge-slot')) {
+          var _badge = document.createElement('div');
+          _badge.className = 'tzgame-badge-slot';
+          _badge.style.cssText = 'margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;align-items:center;';
+          var _b1 = document.createElement('div'); TeamzGame.renderStreakBadge(_b1);
+          var _b2 = document.createElement('div'); TeamzGame.countdownToMidnight(_b2);
+          _badge.appendChild(_b1); _badge.appendChild(_b2);
+          _resScreen.appendChild(_badge);
+        }
+      }
 
       showScreen('result');
     }
