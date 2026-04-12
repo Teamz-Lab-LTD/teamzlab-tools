@@ -927,7 +927,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Phone Storage Calculator',d:'Calculate how much phone storage you need. Enter your photo, video, app, and music habits to get a personalized GB recommendation before buying.',h:'/gadgets/phone-storage-calculator/'},
   {t:'Screen Time Lifetime Calculator',d:'Calculate how much of your life you spend on screens. See total hours, days, and years of screen time over your lifetime with productivity cost analys',h:'/gadgets/screen-time-lifetime-calculator/'},
   {t:'Color Cards — Free Card Game Online',d:'Play Color Cards free online with friends — match colors and numbers, use action cards. Online multiplayer, pass-and-play, or vs computer. No signup',h:'/games/color-cards/'},
-  {t:'Country Flag Quiz Game',d:'Test your flag knowledge with 197 countries. Play the daily challenge or unlimited practice by region. Free, private, no sign-up needed.',h:'/games/country-flag-quiz/'},
+  {t:'Country Flag Quiz — Guess the Flag Game',d:'Test your flag knowledge with 197 countries. Play the daily challenge or unlimited practice by region. Free, private, no sign-up needed.',h:'/games/country-flag-quiz/'},
   {t:'Daily Word Grid',d:'Solve a free daily 5x5 mini crossword puzzle with simple clues. Track your time, build streaks, and share results. New puzzle every day, runs offline.',h:'/games/daily-word-grid/'},
   {t:'Emoji Quiz Game',d:'Guess movies, countries, food, and animals from emoji clues. Play daily or unlimited mode with 150+ puzzles. Free, private, no sign-up needed.',h:'/games/emoji-quiz/'},
   {t:'Free Puzzle Games Online',d:'Play free puzzle games online — word games, brain teasers, tap away puzzles, odd one out challenges. No login, no paywall. Private and unlimited.',h:'/games/'},
