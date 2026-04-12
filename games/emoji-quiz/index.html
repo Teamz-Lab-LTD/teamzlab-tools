@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emoji Quiz Game — Guess the Emoji Puzzle — Teamz Lab Tools</title>
+  <meta name="description" content="Guess movies, countries, food, and animals from emoji clues. Play daily or unlimited mode with 150+ puzzles. Free, private, no sign-up needed.">
+  <meta property="og:title" content="Emoji Quiz Game — Guess the Emoji Puzzle — Teamz Lab Tools">
+  <meta property="og:description" content="Guess movies, countries, food, and animals from emoji clues. 150+ puzzles. Free, private, no sign-up.">
+  <meta property="og:url" content="https://tool.teamzlab.com/games/emoji-quiz/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/games.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Emoji Quiz Game — Guess the Emoji Puzzle — Teamz Lab Tools">
+  <meta name="twitter:description" content="Guess movies, countries, food, animals from emoji clues. 150+ puzzles, daily + unlimited mode.">
+  <link rel="canonical" href="https://tool.teamzlab.com/games/emoji-quiz/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* ── Emoji Quiz Styles (eq- prefix) ── */
+    .eq-game { max-width: 520px; margin: 0 auto; user-select: none; }
+
+    /* Menu Screen */
+    .eq-screen { display: none; }
+    .eq-screen.active { display: block; }
+    .eq-menu-title { text-align: center; font-size: clamp(1.8rem, 5vw, 2.5rem); margin: 0 0 0.25rem; color: var(--heading); }
+    .eq-menu-subtitle { text-align: center; color: var(--text-muted); margin: 0 0 1.5rem; font-size: 0.95rem; }
+    .eq-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .eq-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 0.5rem; text-align: center; }
+    .eq-stat-value { font-size: clamp(1.4rem, 4vw, 1.8rem); font-weight: 800; color: var(--heading); display: block; }
+    .eq-stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; display: block; }
+
+    .eq-daily-btn { width: 100%; padding: 0.9rem; border: none; border-radius: 10px; background: var(--accent); color: var(--accent-text); font-size: 1.05rem; font-weight: 700; cursor: pointer; font-family: inherit; margin-bottom: 0.75rem; transition: opacity 0.2s; }
+    .eq-daily-btn:hover { opacity: 0.9; }
+    .eq-daily-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .eq-practice-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .eq-category-select { flex: 1; padding: 0.7rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .eq-practice-btn { padding: 0.7rem 1.2rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--heading); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; transition: all 0.2s; }
+    .eq-practice-btn:hover { border-color: var(--heading); }
+
+    .eq-mode-toggle { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.5rem; }
+    .eq-mode-btn { padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-muted); font-weight: 600; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .eq-mode-btn.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+
+    /* Game Screen */
+    .eq-game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+    .eq-round-info { font-size: 0.85rem; font-weight: 700; color: var(--heading); }
+    .eq-score-display { font-size: 0.85rem; font-weight: 700; color: var(--heading); }
+    .eq-category-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .eq-streak-badge { font-size: 0.8rem; color: var(--heading); font-weight: 700; }
+
+    .eq-timer-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 1rem; overflow: hidden; }
+    .eq-timer-fill { height: 100%; background: var(--heading); border-radius: 2px; transition: width 0.3s linear; width: 100%; }
+    .eq-timer-fill.warning { background: var(--accent); }
+    .eq-timer-fill.danger { background: var(--heading); opacity: 0.5; }
+
+    .eq-emoji-display { text-align: center; padding: 2rem 1rem; min-height: 120px; display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; }
+    .eq-emoji-char { font-size: clamp(2.5rem, 8vw, 5rem); line-height: 1.2; transition: transform 0.3s ease, opacity 0.3s ease; display: inline-block; }
+    .eq-emoji-char.pop { animation: eq-emoji-pop 0.4s ease; }
+    @keyframes eq-emoji-pop {
+      0% { transform: scale(0.3); opacity: 0; }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .eq-hint-area { text-align: center; min-height: 1.5rem; margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; letter-spacing: 2px; }
+
+    /* Type Mode */
+    .eq-type-area { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .eq-type-input { flex: 1; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 1rem; font-family: inherit; text-align: center; }
+    .eq-type-input:focus { outline: none; border-color: var(--heading); }
+    .eq-submit-btn { padding: 0.75rem 1.2rem; border: none; border-radius: 8px; background: var(--heading); color: var(--bg); font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.95rem; transition: opacity 0.2s; }
+    .eq-submit-btn:hover { opacity: 0.85; }
+
+    /* Multiple Choice Mode */
+    .eq-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .eq-choice-btn { padding: 0.75rem 0.5rem; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-weight: 600; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: all 0.2s; text-align: center; word-break: break-word; }
+    .eq-choice-btn:hover:not(:disabled) { border-color: var(--heading); color: var(--heading); }
+    .eq-choice-btn.correct { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+    .eq-choice-btn.wrong { border-color: var(--text-muted); opacity: 0.4; }
+    .eq-choice-btn:disabled { cursor: default; }
+
+    .eq-skip-btn { display: block; margin: 0 auto; padding: 0.5rem 1.5rem; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .eq-skip-btn:hover { color: var(--heading); border-color: var(--heading); }
+
+    .eq-feedback { text-align: center; min-height: 2rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; color: var(--heading); margin-bottom: 0.5rem; }
+
+    /* Result Screen */
+    .eq-result-header { text-align: center; margin-bottom: 1.5rem; }
+    .eq-result-header h2 { margin: 0 0 0.25rem; font-size: clamp(1.4rem, 4vw, 1.8rem); color: var(--heading); }
+    .eq-result-header p { color: var(--text-muted); margin: 0; font-size: 0.9rem; }
+
+    .eq-result-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
+    .eq-result-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem; text-align: center; }
+    .eq-result-stat .eq-stat-value { font-size: clamp(1.2rem, 3vw, 1.5rem); }
+
+    .eq-result-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-bottom: 1.25rem; }
+    .eq-result-cell { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+
+    .eq-result-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .eq-result-actions button { flex: 1; min-width: 100px; padding: 0.75rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.9rem; transition: all 0.2s; }
+    .eq-share-btn-main { border: none; background: var(--accent); color: var(--accent-text); }
+    .eq-share-btn-main:hover { opacity: 0.9; }
+    .eq-replay-btn { border: 1px solid var(--border); background: var(--surface); color: var(--heading); }
+    .eq-replay-btn:hover { border-color: var(--heading); }
+    .eq-menu-btn-bottom { border: 1px solid var(--border); background: transparent; color: var(--text-muted); }
+    .eq-menu-btn-bottom:hover { color: var(--heading); border-color: var(--heading); }
+
+    /* Answer Review */
+    .eq-answer-review { margin-bottom: 1.25rem; }
+    .eq-answer-review h3 { font-size: 1rem; color: var(--heading); margin: 0 0 0.5rem; }
+    .eq-answer-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.35rem; max-height: 200px; overflow-y: auto; }
+    .eq-answer-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: var(--surface); border-radius: 6px; font-size: 0.8rem; }
+    .eq-answer-item .eq-ai { flex-shrink: 0; font-size: 1rem; }
+    .eq-answer-item .eq-an { font-weight: 600; color: var(--heading); }
+    .eq-answer-item .eq-ar { margin-left: auto; font-size: 0.75rem; font-weight: 700; }
+    .eq-answer-item .eq-ar.correct { color: var(--heading); }
+    .eq-answer-item .eq-ar.wrong { color: var(--text-muted); }
+
+    @media (max-width: 600px) {
+      .eq-stats-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+      .eq-stat-card { padding: 0.75rem 0.25rem; }
+      .eq-practice-row { flex-direction: column; }
+      .eq-choices { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+      .eq-choice-btn { padding: 0.65rem 0.4rem; font-size: 0.8rem; }
+      .eq-result-actions { flex-direction: column; }
+      .eq-result-actions button { min-width: auto; }
+      .eq-type-area { flex-direction: column; }
+      .eq-game-header { font-size: 0.8rem; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How many emoji puzzles are available?", "acceptedAnswer": {"@type": "Answer", "text": "The game includes over 150 handcrafted puzzles across 7 categories: movies, countries, food, animals, professions, phrases, and sports. New puzzles are added regularly."}}, {"@type": "Question", "name": "What is the difference between Daily and Practice mode?", "acceptedAnswer": {"@type": "Answer", "text": "Daily mode gives everyone the same 15 puzzles based on today's date, perfect for comparing scores with friends. Practice mode lets you pick a category and generates a random set each time."}}, {"@type": "Question", "name": "How does the scoring system work?", "acceptedAnswer": {"@type": "Answer", "text": "You earn 100 base points for each correct answer plus a time bonus for fast responses. A streak of 3+ correct answers gives a 1.5x multiplier, and 5+ gives 2x. Maximum possible score is around 3000 points."}}, {"@type": "Question", "name": "Can I switch between typing and multiple choice?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. On the menu screen, toggle between Multiple Choice and Type Answer modes before starting a game. Multiple choice shows 4 options, while type mode accepts partial and case-insensitive matches."}}, {"@type": "Question", "name": "Does this game track my data or require an account?", "acceptedAnswer": {"@type": "Answer", "text": "No. Emoji Quiz runs entirely in your browser. Your scores and stats are saved in local storage on your device. No account, no login, no data sent to any server."}}, {"@type": "Question", "name": "How do the hints work?", "acceptedAnswer": {"@type": "Answer", "text": "After 10 seconds without answering, the first letter of the answer is revealed. After 15 seconds, the word pattern and total letter count are shown. If 20 seconds pass, the question is marked as timed out."}}, {"@type": "Question", "name": "Can I share my results without spoilers?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. The share button copies a spoiler-free result card showing green and red squares for correct and incorrect answers, plus your score and streak, without revealing the actual answers."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Emoji Quiz Game", "description": "Guess movies, countries, food, and animals from emoji clues. 150+ puzzles across 7 categories with daily and practice modes.", "url": "https://tool.teamzlab.com/games/emoji-quiz/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <div id="breadcrumbs"></div>
+  <main class="site-main">
+    <section class="tool-calculator">
+      <h1>Emoji Quiz Game</h1>
+      <p class="tool-subtitle">Guess movies, countries, food, animals, and more from emoji clues</p>
+
+      <div class="eq-game">
+        <!-- Menu Screen -->
+        <div id="eq-menu" class="eq-screen active">
+          <div class="eq-stats-grid">
+            <div class="eq-stat-card">
+              <span id="eq-stat-best" class="eq-stat-value">0</span>
+              <span class="eq-stat-label">Best Score</span>
+            </div>
+            <div class="eq-stat-card">
+              <span id="eq-stat-played" class="eq-stat-value">0</span>
+              <span class="eq-stat-label">Games Played</span>
+            </div>
+            <div class="eq-stat-card">
+              <span id="eq-stat-streak" class="eq-stat-value">0</span>
+              <span class="eq-stat-label">Best Streak</span>
+            </div>
+          </div>
+
+          <button id="eq-daily-btn" class="eq-daily-btn">Play Daily Quiz</button>
+
+          <div class="eq-mode-toggle">
+            <button class="eq-mode-btn active" data-mode="choice">Multiple Choice</button>
+            <button class="eq-mode-btn" data-mode="type">Type Answer</button>
+          </div>
+
+          <div class="eq-practice-row">
+            <select id="eq-category" class="eq-category-select">
+              <option value="all">All Categories</option>
+              <option value="movies">Movies</option>
+              <option value="countries">Countries</option>
+              <option value="food">Food</option>
+              <option value="animals">Animals</option>
+              <option value="professions">Professions</option>
+              <option value="phrases">Phrases &amp; Idioms</option>
+              <option value="sports">Sports</option>
+            </select>
+            <button id="eq-practice-btn" class="eq-practice-btn">Start Practice</button>
+          </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="eq-game-screen" class="eq-screen">
+          <div class="eq-game-header">
+            <span class="eq-round-info">Round <span id="eq-round">1</span>/15</span>
+            <span id="eq-cat-badge" class="eq-category-badge">Movies</span>
+            <span class="eq-streak-badge" id="eq-streak-display"></span>
+            <span class="eq-score-display">Score: <span id="eq-score">0</span></span>
+          </div>
+          <div class="eq-timer-bar"><div id="eq-timer-fill" class="eq-timer-fill"></div></div>
+          <div id="eq-emoji-display" class="eq-emoji-display"></div>
+          <div id="eq-hint" class="eq-hint-area"></div>
+          <div id="eq-feedback" class="eq-feedback"></div>
+
+          <!-- Type Mode -->
+          <div id="eq-type-mode" class="eq-type-area" style="display:none;">
+            <input type="text" id="eq-answer-input" class="eq-type-input" placeholder="Type your answer..." autocomplete="off" autocapitalize="off">
+            <button id="eq-submit-answer" class="eq-submit-btn">Submit</button>
+          </div>
+
+          <!-- Choice Mode -->
+          <div id="eq-choice-mode" class="eq-choices"></div>
+
+          <button id="eq-skip" class="eq-skip-btn">Skip</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="eq-result" class="eq-screen">
+          <div class="eq-result-header">
+            <h2 id="eq-result-title">Great Job!</h2>
+            <p id="eq-result-subtitle"></p>
+          </div>
+          <div class="eq-result-stats">
+            <div class="eq-result-stat">
+              <span id="eq-result-score" class="eq-stat-value">0</span>
+              <span class="eq-stat-label">Score</span>
+            </div>
+            <div class="eq-result-stat">
+              <span id="eq-result-correct" class="eq-stat-value">0/15</span>
+              <span class="eq-stat-label">Correct</span>
+            </div>
+            <div class="eq-result-stat">
+              <span id="eq-result-time" class="eq-stat-value">0:00</span>
+              <span class="eq-stat-label">Total Time</span>
+            </div>
+            <div class="eq-result-stat">
+              <span id="eq-result-streak" class="eq-stat-value">0</span>
+              <span class="eq-stat-label">Best Streak</span>
+            </div>
+          </div>
+          <div id="eq-result-grid" class="eq-result-grid"></div>
+          <div id="eq-answer-review" class="eq-answer-review">
+            <h3>Answer Review</h3>
+            <ul id="eq-answer-list" class="eq-answer-list"></ul>
+          </div>
+          <div class="eq-result-actions">
+            <button id="eq-share-result" class="eq-share-btn-main">Share Result</button>
+            <button id="eq-replay" class="eq-replay-btn">Play Again</button>
+            <button id="eq-back-menu" class="eq-menu-btn-bottom">Menu</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How the Emoji Quiz Works</h2>
+      <p>The Emoji Quiz Game challenges you to decode emoji combinations into real-world answers. Each round presents 2 to 5 emojis that represent a movie, country, food, animal, profession, phrase, or sport. You have 20 seconds to guess the answer in either multiple-choice or free-type mode. The game includes 150+ handcrafted puzzles across 7 categories, making every session unique and engaging.</p>
+      <p>Score points based on speed and accuracy. Correct answers earn a base of 100 points plus a time bonus for quick responses. Build a streak of consecutive correct answers to activate a score multiplier that rewards consistent performance. If you get stuck, hints appear automatically after 10 seconds (first letter) and 15 seconds (word length), giving you a fair chance without giving away the answer.</p>
+
+      <h2>Daily Mode vs Practice Mode</h2>
+      <p>Daily Mode selects 15 puzzles seeded by today's date, so every player around the world gets the same set of questions. Compare your score with friends by sharing your result card, which shows a spoiler-free emoji grid of correct and incorrect answers. Practice Mode lets you choose a specific category or play across all categories with a fresh random selection each time. Both modes track your best score, total games played, and longest streak in local storage.</p>
+      <p>Whether you are warming up your brain during a morning commute, competing with coworkers, or just looking for a quick mental break, Emoji Quiz adapts to your schedule. A full round takes about 3 to 5 minutes, making it ideal for short play sessions.</p>
+
+      <h2>Tips for Higher Scores</h2>
+      <p>Think about the emoji combination as a whole rather than focusing on individual symbols. Context clues like a crown next to a lion likely point to "The Lion King" rather than just "lion" or "king." In type mode, the game accepts partial matches and ignores case, so you do not need to type the full official title perfectly. Speed matters because the time bonus decays every second, so trust your first instinct when you feel confident.</p>
+      <p>The streak multiplier is your biggest scoring advantage. A streak of 5 or more doubles your base points for each correct answer, so maintaining accuracy is more valuable than guessing quickly and risking a wrong answer. Use the skip button strategically when you are truly stuck, as it preserves your time for questions you can answer. Share your results to challenge friends and track improvement over time.</p>
+
+      <h2>Emoji Quiz for Parties and Classrooms</h2>
+      <p>Emoji Quiz works great as a group activity. Project the game on a screen and let teams compete to shout the answer first. Teachers use emoji puzzles to engage students in vocabulary building, geography, and cultural literacy. The visual nature of emojis transcends language barriers, making this game accessible to players of all ages and backgrounds. All processing happens in your browser with no data sent to any server, so it is safe to use on school networks and shared devices.</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    /* ── Puzzle Data (150+ puzzles) ── */
+    var PUZZLES = {
+      movies: [
+        { emoji: '\u{1F981}\u{1F451}', answer: 'The Lion King', alt: ['lion king'] },
+        { emoji: '\u{1F577}\uFE0F\u{1F9D1}', answer: 'Spider-Man', alt: ['spiderman'] },
+        { emoji: '\u{1F9CA}\u2744\uFE0F\u{1F478}', answer: 'Frozen', alt: [] },
+        { emoji: '\u{1F3F4}\u200D\u2620\uFE0F\u{1F6A2}', answer: 'Pirates of the Caribbean', alt: ['pirates'] },
+        { emoji: '\u{1F987}\u{1F303}', answer: 'Batman', alt: [] },
+        { emoji: '\u{1F9D9}\u200D\u2642\uFE0F\u{1F48D}', answer: 'Lord of the Rings', alt: ['lotr'] },
+        { emoji: '\u{1F47B}\u{1F47B}\u{1F47B}\u{1F6AB}', answer: 'Ghostbusters', alt: [] },
+        { emoji: '\u{1F988}\u{1F3CA}', answer: 'Jaws', alt: [] },
+        { emoji: '\u{1F916}\u{1F44D}', answer: 'Terminator', alt: ['the terminator'] },
+        { emoji: '\u{1F680}\u2B50\u{1F52B}', answer: 'Star Wars', alt: [] },
+        { emoji: '\u{1F9DB}\u200D\u2642\uFE0F\u{1FA78}', answer: 'Dracula', alt: [] },
+        { emoji: '\u{1F47D}\u{1F3E0}\u{1F4DE}', answer: 'E.T.', alt: ['et', 'e.t. the extra-terrestrial'] },
+        { emoji: '\u{1F996}\u{1F334}', answer: 'Jurassic Park', alt: [] },
+        { emoji: '\u{1F3A9}\u{1F430}\u{1F573}\uFE0F', answer: 'Alice in Wonderland', alt: ['alice'] },
+        { emoji: '\u{1F420}\u{1F50D}', answer: 'Finding Nemo', alt: ['nemo'] },
+        { emoji: '\u{1F3CE}\uFE0F\u26A1', answer: 'Cars', alt: [] },
+        { emoji: '\u{1F934}\u{1F339}\u{1F478}', answer: 'Beauty and the Beast', alt: [] },
+        { emoji: '\u{1F42D}\u{1F468}\u200D\u{1F373}', answer: 'Ratatouille', alt: [] },
+        { emoji: '\u{1F3E0}\u2B06\uFE0F\u{1F388}', answer: 'Up', alt: [] },
+        { emoji: '\u{1F9F8}\u{1F42F}\u{1F36F}', answer: 'Winnie the Pooh', alt: ['winnie'] },
+        { emoji: '\u{1F9DF}\u200D\u2642\uFE0F\u{1F30D}', answer: 'World War Z', alt: [] },
+        { emoji: '\u{1F57A}\u{1F3B6}\u{1F319}', answer: 'La La Land', alt: [] },
+        { emoji: '\u{1F94A}\u{1F3CB}\uFE0F', answer: 'Rocky', alt: [] },
+        { emoji: '\u{1F3AA}\u{1F418}\u2728', answer: 'Dumbo', alt: [] },
+        { emoji: '\u{1F409}\u{1F466}\u{1F3FB}', answer: 'How to Train Your Dragon', alt: [] },
+        { emoji: '\u{1F9CA}\u{1F6A2}\u{1F491}', answer: 'Titanic', alt: [] },
+        { emoji: '\u{1F9B8}\u200D\u2642\uFE0F\u{1F528}\u26A1', answer: 'Thor', alt: [] },
+        { emoji: '\u{1F468}\u200D\u{1F680}\u{1F30D}\u{1F680}', answer: 'Interstellar', alt: [] },
+        { emoji: '\u{1F43C}\u{1F94B}', answer: 'Kung Fu Panda', alt: [] },
+        { emoji: '\u{1F9DE}\u200D\u2642\uFE0F\u{1FA84}\u{1F435}', answer: 'Aladdin', alt: [] }
+      ],
+      countries: [
+        { emoji: '\u{1F5FC}\u{1F950}\u{1F377}', answer: 'France', alt: [] },
+        { emoji: '\u{1F355}\u{1F3DB}\uFE0F\u26BD', answer: 'Italy', alt: [] },
+        { emoji: '\u{1F5FD}\u{1F985}\u{1F354}', answer: 'USA', alt: ['united states', 'america', 'united states of america'] },
+        { emoji: '\u{1F338}\u26E9\uFE0F\u{1F363}', answer: 'Japan', alt: [] },
+        { emoji: '\u{1F428}\u{1F998}\u{1F3D6}\uFE0F', answer: 'Australia', alt: [] },
+        { emoji: '\u{1F3CF}\u{1F404}\u{1F54C}', answer: 'India', alt: [] },
+        { emoji: '\u{1F402}\u{1F3D6}\uFE0F\u{1F94A}', answer: 'Spain', alt: [] },
+        { emoji: '\u{1F341}\u{1F3D2}\u2744\uFE0F', answer: 'Canada', alt: [] },
+        { emoji: '\u{1F43B}\u{1F3D4}\uFE0F\u2744\uFE0F', answer: 'Russia', alt: [] },
+        { emoji: '\u{1F981}\u{1F30D}\u{1F941}', answer: 'Kenya', alt: [] },
+        { emoji: '\u{1F409}\u{1F3EF}\u{1F962}', answer: 'China', alt: [] },
+        { emoji: '\u{1F3D4}\uFE0F\u{1F9C0}\u231A', answer: 'Switzerland', alt: [] },
+        { emoji: '\u{1F337}\u{1F6B2}\u{1F9C0}', answer: 'Netherlands', alt: ['holland'] },
+        { emoji: '\u{1F37A}\u{1F968}\u{1F3F0}', answer: 'Germany', alt: [] },
+        { emoji: '\u{1F42A}\u{1F3DC}\uFE0F\u{1F54C}', answer: 'Egypt', alt: [] },
+        { emoji: '\u{1F95D}\u{1F411}\u{1F3D4}\uFE0F', answer: 'New Zealand', alt: [] },
+        { emoji: '\u{1F418}\u{1F3D6}\uFE0F\u{1F965}', answer: 'Thailand', alt: [] },
+        { emoji: '\u{1F32E}\u{1F336}\uFE0F\u{1F3AD}', answer: 'Mexico', alt: [] },
+        { emoji: '\u{1F3F4}\u200D\u2620\uFE0F\u{1F3B6}\u{1F3DD}\uFE0F', answer: 'Jamaica', alt: [] },
+        { emoji: '\u2618\uFE0F\u{1F340}\u{1F37A}', answer: 'Ireland', alt: [] },
+        { emoji: '\u{1F1EC}\u{1F1E7}\u{1F451}\u{1FAD6}', answer: 'United Kingdom', alt: ['uk', 'england', 'britain'] },
+        { emoji: '\u{1F427}\u2744\uFE0F\u{1F30A}', answer: 'Antarctica', alt: [] },
+        { emoji: '\u{1F3D6}\uFE0F\u{1F483}\u{1F3AD}', answer: 'Brazil', alt: [] },
+        { emoji: '\u{1F36B}\u{1F9C7}\u{1F35F}', answer: 'Belgium', alt: [] },
+        { emoji: '\u{1F999}\u{1F3D4}\uFE0F\u{1F33D}', answer: 'Peru', alt: [] }
+      ],
+      food: [
+        { emoji: '\u{1F355}\u{1F9C0}\u{1F345}', answer: 'Pizza', alt: [] },
+        { emoji: '\u{1F354}\u{1F969}\u{1F9C5}', answer: 'Burger', alt: ['hamburger'] },
+        { emoji: '\u{1F32E}\u{1F9C0}\u{1F96C}', answer: 'Taco', alt: [] },
+        { emoji: '\u{1F363}\u{1F41F}\u{1F35A}', answer: 'Sushi', alt: [] },
+        { emoji: '\u{1F950}\u{1F9C8}\u2615', answer: 'Croissant', alt: [] },
+        { emoji: '\u{1F35D}\u{1F9C4}\u{1F345}', answer: 'Spaghetti', alt: ['pasta'] },
+        { emoji: '\u{1F95E}\u{1F341}\u{1F9C8}', answer: 'Pancakes', alt: ['pancake'] },
+        { emoji: '\u{1F32D}\u{1F956}\u{1F9C5}', answer: 'Hot Dog', alt: ['hotdog'] },
+        { emoji: '\u{1F369}\u2615\u{1F9C1}', answer: 'Donut', alt: ['doughnut'] },
+        { emoji: '\u{1F957}\u{1F96C}\u{1F345}', answer: 'Salad', alt: [] },
+        { emoji: '\u{1F9C1}\u{1F382}\u{1F370}', answer: 'Cake', alt: [] },
+        { emoji: '\u{1F37F}\u{1F3AC}\u{1F9C8}', answer: 'Popcorn', alt: [] },
+        { emoji: '\u{1F32F}\u{1F969}\u{1F9C0}', answer: 'Burrito', alt: [] },
+        { emoji: '\u{1F35C}\u{1F962}\u{1F336}\uFE0F', answer: 'Ramen', alt: ['noodles'] },
+        { emoji: '\u{1F95F}\u{1F962}\u{1F9C4}', answer: 'Dumpling', alt: ['dumplings'] },
+        { emoji: '\u{1F9C7}\u{1F353}\u{1F36B}', answer: 'Waffle', alt: ['waffles'] },
+        { emoji: '\u{1F366}\u{1F36B}\u{1F352}', answer: 'Ice Cream Sundae', alt: ['ice cream', 'sundae'] },
+        { emoji: '\u{1F959}\u{1F9C6}\u{1F96C}', answer: 'Falafel Wrap', alt: ['falafel', 'wrap'] },
+        { emoji: '\u{1F35B}\u{1F35A}\u{1F336}\uFE0F', answer: 'Curry', alt: [] },
+        { emoji: '\u{1F96F}\u{1F9C0}\u{1F953}', answer: 'Bagel', alt: [] },
+        { emoji: '\u{1FAD4}\u{1F33D}\u{1F9C0}', answer: 'Tamale', alt: ['tamales'] },
+        { emoji: '\u{1F371}\u{1F35A}\u{1F41F}', answer: 'Bento Box', alt: ['bento'] },
+        { emoji: '\u{1F9C6}\u{1F959}\u{1F9C5}', answer: 'Falafel', alt: [] },
+        { emoji: '\u{1F372}\u{1F955}\u{1F954}', answer: 'Stew', alt: [] },
+        { emoji: '\u{1F958}\u{1F35A}\u{1F414}', answer: 'Paella', alt: [] }
+      ],
+      animals: [
+        { emoji: '\u{1F981}\u{1F3DC}\uFE0F\u{1F451}', answer: 'Lion', alt: [] },
+        { emoji: '\u{1F427}\u2744\uFE0F\u{1F3D4}\uFE0F', answer: 'Penguin', alt: [] },
+        { emoji: '\u{1F42C}\u{1F30A}\u{1F41F}', answer: 'Dolphin', alt: [] },
+        { emoji: '\u{1F985}\u{1F3D4}\uFE0F\u{1FAB6}', answer: 'Eagle', alt: [] },
+        { emoji: '\u{1F422}\u{1F40C}\u{1F3D6}\uFE0F', answer: 'Turtle', alt: ['tortoise'] },
+        { emoji: '\u{1F98B}\u{1F338}\u{1F308}', answer: 'Butterfly', alt: [] },
+        { emoji: '\u{1F419}\u{1F30A}\u{1F991}', answer: 'Octopus', alt: [] },
+        { emoji: '\u{1F99C}\u{1F334}\u{1F308}', answer: 'Parrot', alt: [] },
+        { emoji: '\u{1F43A}\u{1F319}\u{1F3D4}\uFE0F', answer: 'Wolf', alt: [] },
+        { emoji: '\u{1F41D}\u{1F33B}\u{1F36F}', answer: 'Bee', alt: ['honey bee'] },
+        { emoji: '\u{1F43B}\u2744\uFE0F\u{1F41F}', answer: 'Bear', alt: [] },
+        { emoji: '\u{1F992}\u{1F333}\u{1F30D}', answer: 'Giraffe', alt: [] },
+        { emoji: '\u{1F418}\u{1F33F}\u{1F3DC}\uFE0F', answer: 'Elephant', alt: [] },
+        { emoji: '\u{1F988}\u{1F30A}\u{1F9B7}', answer: 'Shark', alt: [] },
+        { emoji: '\u{1F40A}\u{1F33F}\u{1F4A7}', answer: 'Crocodile', alt: ['alligator'] },
+        { emoji: '\u{1F989}\u{1F319}\u{1F333}', answer: 'Owl', alt: [] },
+        { emoji: '\u{1F406}\u{1F3DC}\uFE0F\u{1F4A8}', answer: 'Cheetah', alt: ['leopard'] },
+        { emoji: '\u{1F9A9}\u{1F33A}\u{1F495}', answer: 'Flamingo', alt: [] },
+        { emoji: '\u{1F433}\u{1F30A}\u{1F4A6}', answer: 'Whale', alt: [] },
+        { emoji: '\u{1F98A}\u{1F332}\u{1F414}', answer: 'Fox', alt: [] },
+        { emoji: '\u{1F428}\u{1F33F}\u{1F1E6}\u{1F1FA}', answer: 'Koala', alt: [] },
+        { emoji: '\u{1F40D}\u{1F33F}\u{1F3DC}\uFE0F', answer: 'Snake', alt: [] },
+        { emoji: '\u{1F99A}\u{1F308}\u{1FAB6}', answer: 'Peacock', alt: [] },
+        { emoji: '\u{1F438}\u{1F327}\uFE0F\u{1FAB7}', answer: 'Frog', alt: ['toad'] },
+        { emoji: '\u{1F99E}\u{1F30A}\u{1F980}', answer: 'Lobster', alt: [] }
+      ],
+      professions: [
+        { emoji: '\u{1F468}\u200D\u{1F692}\u{1F525}\u{1F692}', answer: 'Firefighter', alt: ['fireman'] },
+        { emoji: '\u{1F468}\u200D\u{1F373}\u{1F373}\u{1F52A}', answer: 'Chef', alt: ['cook'] },
+        { emoji: '\u{1F468}\u200D\u{1F680}\u{1F680}\u{1F319}', answer: 'Astronaut', alt: [] },
+        { emoji: '\u{1F3A8}\u{1F58C}\uFE0F\u{1F5BC}\uFE0F', answer: 'Painter', alt: ['artist'] },
+        { emoji: '\u{1F3AC}\u{1F3A5}\u{1F39E}\uFE0F', answer: 'Director', alt: ['filmmaker'] },
+        { emoji: '\u{1F468}\u200D\u2695\uFE0F\u{1F489}\u{1F3E5}', answer: 'Doctor', alt: ['physician'] },
+        { emoji: '\u{1F46E}\u200D\u2642\uFE0F\u{1F694}\u{1F52B}', answer: 'Police Officer', alt: ['police', 'cop'] },
+        { emoji: '\u2708\uFE0F\u{1F468}\u200D\u2708\uFE0F\u2601\uFE0F', answer: 'Pilot', alt: [] },
+        { emoji: '\u{1F4F8}\u{1F4F7}\u{1F5BC}\uFE0F', answer: 'Photographer', alt: [] },
+        { emoji: '\u26BD\u{1F3DF}\uFE0F\u{1F945}', answer: 'Football Player', alt: ['soccer player', 'footballer'] },
+        { emoji: '\u{1F3B8}\u{1F3A4}\u{1F3B5}', answer: 'Musician', alt: ['singer', 'rockstar'] },
+        { emoji: '\u{1F4DA}\u270F\uFE0F\u{1F3EB}', answer: 'Teacher', alt: ['professor'] },
+        { emoji: '\u{1F52C}\u{1F9EA}\u{1F9EC}', answer: 'Scientist', alt: ['researcher'] },
+        { emoji: '\u{1F4BB}\u{1F5A5}\uFE0F\u{1F468}\u200D\u{1F4BB}', answer: 'Programmer', alt: ['developer', 'coder', 'software engineer'] },
+        { emoji: '\u{1F3D7}\uFE0F\u{1F477}\u{1F9F1}', answer: 'Builder', alt: ['construction worker'] },
+        { emoji: '\u{1F69C}\u{1F33E}\u{1F404}', answer: 'Farmer', alt: [] },
+        { emoji: '\u2696\uFE0F\u{1F4DC}\u{1F468}\u200D\u2696\uFE0F', answer: 'Lawyer', alt: ['judge', 'attorney'] },
+        { emoji: '\u{1F9B7}\u{1F601}\u{1F489}', answer: 'Dentist', alt: [] },
+        { emoji: '\u{1F487}\u200D\u2642\uFE0F\u2702\uFE0F\u{1F488}', answer: 'Barber', alt: ['hairdresser'] },
+        { emoji: '\u{1F3A4}\u{1F4F0}\u{1F4FA}', answer: 'News Anchor', alt: ['journalist', 'reporter'] }
+      ],
+      phrases: [
+        { emoji: '\u{1F494}\u{1F9CA}', answer: 'Cold Hearted', alt: ['cold heart', 'heartbreak'] },
+        { emoji: '\u{1F327}\uFE0F\u{1F431}\u{1F436}', answer: 'Raining Cats and Dogs', alt: ['raining cats dogs'] },
+        { emoji: '\u{1F418}\u{1F3E0}', answer: 'Elephant in the Room', alt: [] },
+        { emoji: '\u23F0\u{1F4A3}', answer: 'Time Bomb', alt: ['ticking time bomb'] },
+        { emoji: '\u{1F9CA}\u{1F3D4}\uFE0F', answer: 'Tip of the Iceberg', alt: ['iceberg'] },
+        { emoji: '\u{1F525}\u{1F456}', answer: 'Liar Liar Pants on Fire', alt: ['pants on fire', 'liar'] },
+        { emoji: '\u{1F414}\u{1F95A}', answer: 'Chicken or the Egg', alt: ['chicken and egg', 'chicken egg'] },
+        { emoji: '\u{1F308}\u{1F984}', answer: 'Unicorn', alt: ['rare find'] },
+        { emoji: '\u{1F382}\u{1F370}\u{1F9C1}', answer: 'Piece of Cake', alt: ['easy', 'cakewalk'] },
+        { emoji: '\u{1F511}\u{1F513}\u2764\uFE0F', answer: 'Key to My Heart', alt: [] },
+        { emoji: '\u{1F41D}\u{1F9CE}', answer: "Bee's Knees", alt: ['bees knees'] },
+        { emoji: '\u{1F4A1}\u{1F4AD}', answer: 'Bright Idea', alt: ['lightbulb moment'] },
+        { emoji: '\u{1F30A}\u{1F41F}', answer: 'Plenty of Fish', alt: ['fish in the sea'] },
+        { emoji: '\u2B50\u2B50\u2B50\u2B50\u2B50', answer: 'Five Star', alt: ['5 star', 'five stars'] },
+        { emoji: '\u{1F435}\u{1F440}\u{1F648}', answer: 'Monkey See Monkey Do', alt: [] },
+        { emoji: '\u{1F3AF}\u{1F3AA}', answer: 'Hit the Bullseye', alt: ['bullseye'] },
+        { emoji: '\u{1F30D}\u{1F41B}', answer: 'Bookworm', alt: [] },
+        { emoji: '\u{1F3AD}\u{1F602}\u{1F622}', answer: 'Drama', alt: ['drama queen'] },
+        { emoji: '\u2600\uFE0F\u{1F33B}\u{1F60E}', answer: 'Sunny Day', alt: ['sunshine'] },
+        { emoji: '\u{1F9E9}\u{1F9E0}', answer: 'Brain Teaser', alt: ['puzzle', 'brainteaser'] }
+      ],
+      sports: [
+        { emoji: '\u26BD\u{1F3DF}\uFE0F\u{1F3C6}', answer: 'Football', alt: ['soccer'] },
+        { emoji: '\u{1F3C0}\u{1F3C0}\u{1F3C6}', answer: 'Basketball', alt: [] },
+        { emoji: '\u{1F3BE}\u{1F3BE}\u{1F3C6}', answer: 'Tennis', alt: [] },
+        { emoji: '\u{1F3CF}\u{1F3CF}\u{1F3C6}', answer: 'Cricket', alt: [] },
+        { emoji: '\u{1F3D2}\u2744\uFE0F\u{1F94C}', answer: 'Ice Hockey', alt: ['hockey'] },
+        { emoji: '\u{1F3C8}\u{1F3DF}\uFE0F\u{1F3C8}', answer: 'American Football', alt: ['nfl'] },
+        { emoji: '\u26BE\u{1F3DF}\uFE0F\u{1F9E4}', answer: 'Baseball', alt: [] },
+        { emoji: '\u{1F3D3}\u{1F3D3}\u{1F3C5}', answer: 'Table Tennis', alt: ['ping pong'] },
+        { emoji: '\u{1F3CA}\u200D\u2642\uFE0F\u{1F30A}\u{1F3C5}', answer: 'Swimming', alt: [] },
+        { emoji: '\u{1F93A}\u2694\uFE0F\u{1F3C5}', answer: 'Fencing', alt: [] },
+        { emoji: '\u{1F94A}\u{1F94A}\u{1F3C6}', answer: 'Boxing', alt: [] },
+        { emoji: '\u{1F3F9}\u{1F3AF}\u{1F3C5}', answer: 'Archery', alt: [] },
+        { emoji: '\u{1F6B4}\u200D\u2642\uFE0F\u{1F3D4}\uFE0F\u{1F3C5}', answer: 'Cycling', alt: ['biking'] },
+        { emoji: '\u{1F3CB}\uFE0F\u{1F4AA}\u{1F3C6}', answer: 'Weightlifting', alt: ['powerlifting'] },
+        { emoji: '\u{1F3C4}\u200D\u2642\uFE0F\u{1F30A}\u{1F3C5}', answer: 'Surfing', alt: [] }
+      ]
+    };
+
+    /* ── State ── */
+    var ROUNDS = 15;
+    var TIME_LIMIT = 20;
+    var state = {
+      mode: 'daily',          // daily | practice
+      inputMode: 'choice',    // choice | type
+      category: 'all',
+      questions: [],
+      current: 0,
+      score: 0,
+      streak: 0,
+      bestStreak: 0,
+      results: [],            // {emoji, answer, correct, userAnswer, timeUsed}
+      timerInterval: null,
+      timeLeft: TIME_LIMIT,
+      totalTime: 0,
+      hintStage: 0,
+      answered: false,
+      startTime: 0
+    };
+
+    /* ── DOM ── */
+    var $menu = document.getElementById('eq-menu');
+    var $game = document.getElementById('eq-game-screen');
+    var $result = document.getElementById('eq-result');
+    var $dailyBtn = document.getElementById('eq-daily-btn');
+    var $practiceBtn = document.getElementById('eq-practice-btn');
+    var $categorySelect = document.getElementById('eq-category');
+    var $round = document.getElementById('eq-round');
+    var $catBadge = document.getElementById('eq-cat-badge');
+    var $streakDisplay = document.getElementById('eq-streak-display');
+    var $score = document.getElementById('eq-score');
+    var $timerFill = document.getElementById('eq-timer-fill');
+    var $emojiDisplay = document.getElementById('eq-emoji-display');
+    var $hint = document.getElementById('eq-hint');
+    var $feedback = document.getElementById('eq-feedback');
+    var $typeMode = document.getElementById('eq-type-mode');
+    var $choiceMode = document.getElementById('eq-choice-mode');
+    var $answerInput = document.getElementById('eq-answer-input');
+    var $submitAnswer = document.getElementById('eq-submit-answer');
+    var $skip = document.getElementById('eq-skip');
+
+    /* ── Utility ── */
+    function showScreen(el) {
+      [$menu, $game, $result].forEach(function(s) { s.classList.remove('active'); });
+      el.classList.add('active');
+    }
+
+    function getDayNumber() {
+      var epoch = new Date(2024, 0, 1).getTime();
+      return Math.floor((Date.now() - epoch) / 86400000);
+    }
+
+    function seededRandom(seed) {
+      var s = seed;
+      return function() {
+        s = (s * 16807 + 0) % 2147483647;
+        return (s - 1) / 2147483646;
+      };
+    }
+
+    function shuffleArray(arr, rng) {
+      var fn = rng || Math.random;
+      var a = arr.slice();
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(fn() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+
+    function getAllPuzzles(cat) {
+      if (cat === 'all') {
+        var all = [];
+        Object.keys(PUZZLES).forEach(function(k) {
+          PUZZLES[k].forEach(function(p) {
+            all.push({ emoji: p.emoji, answer: p.answer, alt: p.alt, category: k });
+          });
+        });
+        return all;
+      }
+      return (PUZZLES[cat] || []).map(function(p) {
+        return { emoji: p.emoji, answer: p.answer, alt: p.alt, category: cat };
+      });
+    }
+
+    function normalize(s) {
+      return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    }
+
+    function checkAnswer(userAnswer, puzzle) {
+      var ua = normalize(userAnswer);
+      var ca = normalize(puzzle.answer);
+      if (ua === ca) return true;
+      if (ca.indexOf(ua) !== -1 && ua.length >= 3) return true;
+      if (ua.indexOf(ca) !== -1) return true;
+      for (var i = 0; i < puzzle.alt.length; i++) {
+        if (ua === normalize(puzzle.alt[i])) return true;
+      }
+      return false;
+    }
+
+    function getWrongChoices(correctAnswer, category) {
+      var pool = getAllPuzzles(category).map(function(p) { return p.answer; });
+      var allPool = getAllPuzzles('all').map(function(p) { return p.answer; });
+      pool = pool.concat(allPool);
+      var unique = [];
+      var seen = {};
+      seen[normalize(correctAnswer)] = true;
+      pool.forEach(function(a) {
+        var n = normalize(a);
+        if (!seen[n]) { seen[n] = true; unique.push(a); }
+      });
+      var shuffled = shuffleArray(unique);
+      return shuffled.slice(0, 3);
+    }
+
+    /* ── Stats ── */
+    function loadStats() {
+      try {
+        return JSON.parse(localStorage.getItem('eq-stats')) || { bestScore: 0, gamesPlayed: 0, bestStreak: 0, lastDaily: '' };
+      } catch(e) { return { bestScore: 0, gamesPlayed: 0, bestStreak: 0, lastDaily: '' }; }
+    }
+
+    function saveStats(s) {
+      try { localStorage.setItem('eq-stats', JSON.stringify(s)); } catch(e) {}
+    }
+
+    function updateStatsDisplay() {
+      var s = loadStats();
+      document.getElementById('eq-stat-best').textContent = s.bestScore;
+      document.getElementById('eq-stat-played').textContent = s.gamesPlayed;
+      document.getElementById('eq-stat-streak').textContent = s.bestStreak;
+
+      var dayKey = 'daily-' + getDayNumber();
+      if (s.lastDaily === dayKey) {
+        $dailyBtn.textContent = 'Daily Completed \u2713';
+        $dailyBtn.disabled = true;
+      } else {
+        $dailyBtn.textContent = 'Play Daily Quiz';
+        $dailyBtn.disabled = false;
+      }
+    }
+
+    /* ── Game Logic ── */
+    function startGame(mode, category) {
+      state.mode = mode;
+      state.category = category;
+      state.current = 0;
+      state.score = 0;
+      state.streak = 0;
+      state.bestStreak = 0;
+      state.results = [];
+      state.totalTime = 0;
+
+      var pool = getAllPuzzles(category);
+      if (mode === 'daily') {
+        var rng = seededRandom(getDayNumber() * 7919);
+        state.questions = shuffleArray(pool, rng).slice(0, ROUNDS);
+      } else {
+        state.questions = shuffleArray(pool).slice(0, ROUNDS);
+      }
+
+      if (state.questions.length < ROUNDS) {
+        var extra = getAllPuzzles('all');
+        extra = shuffleArray(extra);
+        var needed = ROUNDS - state.questions.length;
+        var existing = state.questions.map(function(q) { return normalize(q.answer); });
+        for (var i = 0; i < extra.length && needed > 0; i++) {
+          if (existing.indexOf(normalize(extra[i].answer)) === -1) {
+            state.questions.push(extra[i]);
+            existing.push(normalize(extra[i].answer));
+            needed--;
+          }
+        }
+      }
+
+      showScreen($game);
+      showQuestion();
+    }
+
+    function showQuestion() {
+      if (state.current >= state.questions.length) {
+        endGame();
+        return;
+      }
+
+      state.answered = false;
+      state.timeLeft = TIME_LIMIT;
+      state.hintStage = 0;
+      state.startTime = Date.now();
+
+      var q = state.questions[state.current];
+      $round.textContent = (state.current + 1);
+      $catBadge.textContent = q.category.charAt(0).toUpperCase() + q.category.slice(1);
+      $score.textContent = state.score;
+      $streakDisplay.textContent = state.streak > 0 ? '\u{1F525} ' + state.streak : '';
+      $feedback.textContent = '';
+      $hint.textContent = '';
+
+      // Display emojis with animation
+      $emojiDisplay.innerHTML = '';
+      var chars = Array.from(q.emoji);
+      chars.forEach(function(ch, idx) {
+        var span = document.createElement('span');
+        span.className = 'eq-emoji-char';
+        span.textContent = ch;
+        span.style.animationDelay = (idx * 0.1) + 's';
+        span.classList.add('pop');
+        $emojiDisplay.appendChild(span);
+      });
+
+      // Input mode
+      if (state.inputMode === 'type') {
+        $typeMode.style.display = 'flex';
+        $choiceMode.style.display = 'none';
+        $answerInput.value = '';
+        $answerInput.disabled = false;
+        $submitAnswer.disabled = false;
+        setTimeout(function() { $answerInput.focus(); }, 100);
+      } else {
+        $typeMode.style.display = 'none';
+        $choiceMode.style.display = 'grid';
+        renderChoices(q);
+      }
+
+      $skip.disabled = false;
+
+      // Timer
+      startTimer();
+    }
+
+    function renderChoices(q) {
+      var wrong = getWrongChoices(q.answer, q.category);
+      var options = shuffleArray([q.answer].concat(wrong));
+      $choiceMode.innerHTML = '';
+      options.forEach(function(opt) {
+        var btn = document.createElement('button');
+        btn.className = 'eq-choice-btn';
+        btn.textContent = opt;
+        btn.addEventListener('click', function() {
+          if (state.answered) return;
+          handleAnswer(opt, q, btn);
+        });
+        $choiceMode.appendChild(btn);
+      });
+    }
+
+    function startTimer() {
+      clearInterval(state.timerInterval);
+      $timerFill.style.width = '100%';
+      $timerFill.classList.remove('warning', 'danger');
+
+      state.timerInterval = setInterval(function() {
+        if (state.answered) return;
+        state.timeLeft -= 0.1;
+
+        var pct = Math.max(0, (state.timeLeft / TIME_LIMIT) * 100);
+        $timerFill.style.width = pct + '%';
+
+        if (state.timeLeft <= 5) {
+          $timerFill.classList.add('danger');
+        } else if (state.timeLeft <= 10) {
+          $timerFill.classList.add('warning');
+        }
+
+        // Hints
+        var elapsed = TIME_LIMIT - state.timeLeft;
+        if (elapsed >= 10 && state.hintStage === 0) {
+          state.hintStage = 1;
+          var answer = state.questions[state.current].answer;
+          $hint.textContent = 'Hint: starts with "' + answer.charAt(0).toUpperCase() + '"';
+        }
+        if (elapsed >= 15 && state.hintStage === 1) {
+          state.hintStage = 2;
+          var answer2 = state.questions[state.current].answer;
+          var words = answer2.split(' ');
+          var pattern = words.map(function(w) {
+            return w.charAt(0).toUpperCase() + '_'.repeat(w.length - 1);
+          }).join(' ');
+          $hint.textContent = 'Hint: ' + pattern + ' (' + answer2.length + ' letters)';
+        }
+
+        if (state.timeLeft <= 0) {
+          state.timeLeft = 0;
+          handleTimeout();
+        }
+      }, 100);
+    }
+
+    function handleAnswer(userAnswer, question, btnEl) {
+      if (state.answered) return;
+      state.answered = true;
+      clearInterval(state.timerInterval);
+
+      var timeUsed = (Date.now() - state.startTime) / 1000;
+      state.totalTime += timeUsed;
+      var correct = checkAnswer(userAnswer, question);
+
+      if (correct) {
+        var timeBonus = Math.max(0, Math.floor((state.timeLeft / TIME_LIMIT) * 50));
+        var streakMultiplier = state.streak >= 5 ? 2 : (state.streak >= 3 ? 1.5 : 1);
+        var points = Math.floor((100 + timeBonus) * streakMultiplier);
+        state.score += points;
+        state.streak++;
+        if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+        $feedback.textContent = '\u2705 Correct! +' + points + ' points';
+
+        if (btnEl) btnEl.classList.add('correct');
+
+        // Disable other choices
+        if (state.inputMode === 'choice') {
+          var btns = $choiceMode.querySelectorAll('.eq-choice-btn');
+          btns.forEach(function(b) { b.disabled = true; });
+        }
+      } else {
+        state.streak = 0;
+        $feedback.textContent = '\u274C ' + question.answer;
+
+        if (btnEl) {
+          btnEl.classList.add('wrong');
+          // Highlight correct
+          if (state.inputMode === 'choice') {
+            var btns = $choiceMode.querySelectorAll('.eq-choice-btn');
+            btns.forEach(function(b) {
+              if (b.textContent === question.answer) b.classList.add('correct');
+              b.disabled = true;
+            });
+          }
+        }
+      }
+
+      if (state.inputMode === 'type') {
+        $answerInput.disabled = true;
+        $submitAnswer.disabled = true;
+      }
+      $skip.disabled = true;
+      $score.textContent = state.score;
+      $streakDisplay.textContent = state.streak > 0 ? '\u{1F525} ' + state.streak : '';
+
+      state.results.push({
+        emoji: question.emoji,
+        answer: question.answer,
+        category: question.category,
+        correct: correct,
+        userAnswer: userAnswer,
+        timeUsed: Math.round(timeUsed)
+      });
+
+      setTimeout(function() {
+        state.current++;
+        showQuestion();
+      }, correct ? 1200 : 2000);
+    }
+
+    function handleTimeout() {
+      var q = state.questions[state.current];
+      state.answered = true;
+      clearInterval(state.timerInterval);
+      state.streak = 0;
+      state.totalTime += TIME_LIMIT;
+
+      $feedback.textContent = '\u23F0 Time\'s up! ' + q.answer;
+      $streakDisplay.textContent = '';
+
+      if (state.inputMode === 'choice') {
+        var btns = $choiceMode.querySelectorAll('.eq-choice-btn');
+        btns.forEach(function(b) {
+          if (b.textContent === q.answer) b.classList.add('correct');
+          b.disabled = true;
+        });
+      }
+      if (state.inputMode === 'type') {
+        $answerInput.disabled = true;
+        $submitAnswer.disabled = true;
+      }
+      $skip.disabled = true;
+
+      state.results.push({
+        emoji: q.emoji,
+        answer: q.answer,
+        category: q.category,
+        correct: false,
+        userAnswer: '(timed out)',
+        timeUsed: TIME_LIMIT
+      });
+
+      setTimeout(function() {
+        state.current++;
+        showQuestion();
+      }, 2000);
+    }
+
+    function handleSkip() {
+      if (state.answered) return;
+      var q = state.questions[state.current];
+      state.answered = true;
+      clearInterval(state.timerInterval);
+      state.streak = 0;
+      var timeUsed = (Date.now() - state.startTime) / 1000;
+      state.totalTime += timeUsed;
+
+      $feedback.textContent = '\u23E9 Skipped! ' + q.answer;
+      $streakDisplay.textContent = '';
+
+      if (state.inputMode === 'choice') {
+        var btns = $choiceMode.querySelectorAll('.eq-choice-btn');
+        btns.forEach(function(b) {
+          if (b.textContent === q.answer) b.classList.add('correct');
+          b.disabled = true;
+        });
+      }
+      if (state.inputMode === 'type') {
+        $answerInput.disabled = true;
+        $submitAnswer.disabled = true;
+      }
+      $skip.disabled = true;
+
+      state.results.push({
+        emoji: q.emoji,
+        answer: q.answer,
+        category: q.category,
+        correct: false,
+        userAnswer: '(skipped)',
+        timeUsed: Math.round(timeUsed)
+      });
+
+      setTimeout(function() {
+        state.current++;
+        showQuestion();
+      }, 2000);
+    }
+
+    /* ── End Game ── */
+    function endGame() {
+      clearInterval(state.timerInterval);
+      showScreen($result);
+
+      var correctCount = state.results.filter(function(r) { return r.correct; }).length;
+      var totalMins = Math.floor(state.totalTime / 60);
+      var totalSecs = Math.floor(state.totalTime % 60);
+      var timeStr = totalMins + ':' + (totalSecs < 10 ? '0' : '') + totalSecs;
+
+      // Title
+      var title = 'Good Try!';
+      if (correctCount >= 14) title = 'Perfect!';
+      else if (correctCount >= 12) title = 'Amazing!';
+      else if (correctCount >= 10) title = 'Great Job!';
+      else if (correctCount >= 7) title = 'Nice Work!';
+      document.getElementById('eq-result-title').textContent = title;
+      document.getElementById('eq-result-subtitle').textContent =
+        (state.mode === 'daily' ? 'Daily Quiz #' + getDayNumber() : 'Practice Mode');
+
+      document.getElementById('eq-result-score').textContent = state.score;
+      document.getElementById('eq-result-correct').textContent = correctCount + '/' + ROUNDS;
+      document.getElementById('eq-result-time').textContent = timeStr;
+      document.getElementById('eq-result-streak').textContent = state.bestStreak;
+
+      // Result grid
+      var gridEl = document.getElementById('eq-result-grid');
+      gridEl.innerHTML = '';
+      state.results.forEach(function(r) {
+        var cell = document.createElement('div');
+        cell.className = 'eq-result-cell';
+        cell.style.background = r.correct ? 'var(--heading)' : 'var(--border)';
+        cell.style.color = r.correct ? 'var(--bg)' : 'var(--text-muted)';
+        cell.textContent = r.correct ? '\u2713' : '\u2717';
+        gridEl.appendChild(cell);
+      });
+
+      // Answer review
+      var listEl = document.getElementById('eq-answer-list');
+      listEl.innerHTML = '';
+      state.results.forEach(function(r) {
+        var li = document.createElement('li');
+        li.className = 'eq-answer-item';
+        li.innerHTML = '<span class="eq-ai">' + r.emoji + '</span>' +
+          '<span class="eq-an">' + r.answer + '</span>' +
+          '<span class="eq-ar ' + (r.correct ? 'correct' : 'wrong') + '">' +
+          (r.correct ? '\u2713' : '\u2717') + '</span>';
+        listEl.appendChild(li);
+      });
+
+      // Save stats
+      var stats = loadStats();
+      stats.gamesPlayed++;
+      if (state.score > stats.bestScore) stats.bestScore = state.score;
+      if (state.bestStreak > stats.bestStreak) stats.bestStreak = state.bestStreak;
+      if (state.mode === 'daily') stats.lastDaily = 'daily-' + getDayNumber();
+      saveStats(stats);
+    }
+
+    function getShareText() {
+      var correctCount = state.results.filter(function(r) { return r.correct; }).length;
+      var totalMins = Math.floor(state.totalTime / 60);
+      var totalSecs = Math.floor(state.totalTime % 60);
+      var timeStr = totalMins + 'm ' + totalSecs + 's';
+
+      var grid = state.results.map(function(r) { return r.correct ? '\u{1F7E9}' : '\u{1F7E5}'; });
+      var line1 = grid.slice(0, 10).join('');
+      var line2 = grid.slice(10).join('');
+
+      var dayLabel = state.mode === 'daily' ? ' Daily #' + getDayNumber() : '';
+      var text = '\u{1F3AD} Emoji Quiz' + dayLabel + '\n' +
+        'Score: ' + state.score + ' | ' + correctCount + '/' + ROUNDS + ' correct\n' +
+        line1 + '\n' + line2 + '\n' +
+        '\u23F1\uFE0F ' + timeStr + ' | \u{1F525} Streak: ' + state.bestStreak + '\n' +
+        'Play free: tool.teamzlab.com/games/emoji-quiz/';
+      return text;
+    }
+
+    /* ── Event Listeners ── */
+    $dailyBtn.addEventListener('click', function() {
+      startGame('daily', 'all');
+    });
+
+    $practiceBtn.addEventListener('click', function() {
+      startGame('practice', $categorySelect.value);
+    });
+
+    // Mode toggle
+    document.querySelectorAll('.eq-mode-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.eq-mode-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        state.inputMode = btn.getAttribute('data-mode');
+      });
+    });
+
+    // Submit answer (type mode)
+    $submitAnswer.addEventListener('click', function() {
+      if (state.answered) return;
+      var val = $answerInput.value.trim();
+      if (!val) return;
+      handleAnswer(val, state.questions[state.current], null);
+    });
+
+    $answerInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        $submitAnswer.click();
+      }
+    });
+
+    // Skip
+    $skip.addEventListener('click', handleSkip);
+
+    // Result actions
+    document.getElementById('eq-share-result').addEventListener('click', function() {
+      var text = getShareText();
+      navigator.clipboard.writeText(text).then(function() {
+        if (window.showToast) window.showToast('Result copied to clipboard!');
+      }).catch(function() {
+        if (window.showToast) window.showToast('Could not copy — try manually');
+      });
+    });
+
+    document.getElementById('eq-replay').addEventListener('click', function() {
+      startGame(state.mode, state.category);
+    });
+
+    document.getElementById('eq-back-menu').addEventListener('click', function() {
+      showScreen($menu);
+      updateStatsDisplay();
+    });
+
+    /* ── Init ── */
+    updateStatsDisplay();
+
+    /* ── FAQs ── */
+    if (typeof TeamzTools !== 'undefined') {
+      var faqs = [
+        { q: 'How many emoji puzzles are available?', a: 'The game includes over 150 handcrafted puzzles across 7 categories: movies, countries, food, animals, professions, phrases, and sports. New puzzles are added regularly.' },
+        { q: 'What is the difference between Daily and Practice mode?', a: 'Daily mode gives everyone the same 15 puzzles based on today\'s date, perfect for comparing scores with friends. Practice mode lets you pick a category and generates a random set each time.' },
+        { q: 'How does the scoring system work?', a: 'You earn 100 base points for each correct answer plus a time bonus for fast responses. A streak of 3+ correct answers gives a 1.5x multiplier, and 5+ gives 2x. Maximum possible score is around 3000 points.' },
+        { q: 'Can I switch between typing and multiple choice?', a: 'Yes. On the menu screen, toggle between Multiple Choice and Type Answer modes before starting a game. Multiple choice shows 4 options, while type mode accepts partial and case-insensitive matches.' },
+        { q: 'Does this game track my data or require an account?', a: 'No. Emoji Quiz runs entirely in your browser. Your scores and stats are saved in local storage on your device. No account, no login, no data sent to any server.' },
+        { q: 'How do the hints work?', a: 'After 10 seconds without answering, the first letter of the answer is revealed. After 15 seconds, the word pattern and total letter count are shown. If 20 seconds pass, the question is marked as timed out.' },
+        { q: 'Can I share my results without spoilers?', a: 'Yes. The share button copies a spoiler-free result card showing green and red squares for correct and incorrect answers, plus your score and streak, without revealing the actual answers.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+    }
+
+    /* ── Related Tools ── */
+    if (typeof TeamzTools !== 'undefined') {
+      TeamzTools.renderRelatedTools([
+        { slug: '/games/word-groups-puzzle/', name: 'Word Groups Puzzle', description: 'Sort 16 words into 4 secret categories in this challenging word association game.' },
+        { slug: '/games/word-guess/', name: 'Word Guess Game', description: 'Guess the 5-letter word in 6 tries with color-coded clues, daily and unlimited modes.' },
+        { slug: '/games/letter-hive/', name: 'Letter Hive', description: 'Find as many words as you can using the letters in a honeycomb grid puzzle.' },
+        { slug: '/games/country-flag-quiz/', name: 'Country Flag Quiz', description: 'Test your geography knowledge by identifying flags from around the world.' },
+        { slug: '/games/oddone/', name: 'Odd One Out', description: 'Spot the odd item among a group of similar-looking objects in each round.' },
+        { slug: '/games/thread-words/', name: 'Thread Words', description: 'Connect letter threads to form words in this unique chain-spelling puzzle game.' }
+      ]);
+    }
+
+    /* ── Schemas ── */
+    if (typeof TeamzTools !== 'undefined') {
+      TeamzTools.renderBreadcrumbs();
+      TeamzTools.injectBreadcrumbSchema();
+    }
+
+  })();
+  </script>
+</body>
+</html>

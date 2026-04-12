@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Number Merge Puzzle (2048 Game) — Teamz Lab Tools</title>
+  <meta name="description" content="Play the classic 2048 number merge puzzle free in your browser. Slide tiles, merge matching numbers, and reach 2048. Daily challenge plus 3 grid sizes.">
+  <meta property="og:title" content="Number Merge Puzzle (2048 Game) — Teamz Lab Tools">
+  <meta property="og:description" content="Play the classic 2048 number merge puzzle free in your browser. Slide tiles, merge matching numbers, and reach 2048.">
+  <meta property="og:url" content="https://tool.teamzlab.com/games/number-merge/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/games.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Number Merge Puzzle (2048 Game) — Teamz Lab Tools">
+  <meta name="twitter:description" content="Play the classic 2048 number merge puzzle free in your browser. Slide tiles, merge matching numbers, and reach 2048.">
+  <link rel="canonical" href="https://tool.teamzlab.com/games/number-merge/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* ── Menu Screen ── */
+    .nm-menu { text-align: center; }
+    .nm-menu h2 { font-size: clamp(1.4rem, 4vw, 1.8rem); color: var(--heading); margin: 0 0 0.25rem; }
+    .nm-menu p { color: var(--text-muted); margin-bottom: 1.25rem; font-size: 0.95rem; }
+
+    .nm-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; }
+    .nm-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.75rem 0.5rem; text-align: center; }
+    .nm-stat-val { font-size: clamp(1.1rem, 3vw, 1.4rem); font-weight: 800; color: var(--heading); display: block; }
+    .nm-stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; }
+
+    .nm-daily-banner { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; cursor: pointer; transition: border-color 0.2s; }
+    .nm-daily-banner:hover { border-color: var(--heading); }
+    .nm-daily-icon { font-size: 1.6rem; }
+    .nm-daily-text { text-align: left; }
+    .nm-daily-title { font-weight: 700; color: var(--heading); font-size: 0.95rem; }
+    .nm-daily-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+    .nm-mode-selector { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.25rem; }
+    .nm-mode-btn { padding: 0.5rem 1.1rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--heading); font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .nm-mode-btn.active { background: var(--heading); color: var(--bg); border-color: var(--heading); }
+
+    .nm-start-btn { background: var(--heading); color: var(--bg); border: none; padding: 0.75rem 2.5rem; border-radius: 12px; font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .nm-start-btn:hover { opacity: 0.9; }
+
+    /* ── Game Screen ── */
+    .nm-game { display: none; }
+    .nm-game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+    .nm-score-area { display: flex; gap: 0.75rem; }
+    .nm-score-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.4rem 0.9rem; text-align: center; min-width: 70px; }
+    .nm-score-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); font-weight: 600; }
+    .nm-score-val { font-size: clamp(1rem, 3vw, 1.25rem); font-weight: 800; color: var(--heading); display: block; }
+
+    .nm-game-actions { display: flex; gap: 0.5rem; }
+    .nm-action-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: inherit; color: var(--heading); transition: all 0.2s; display: flex; align-items: center; gap: 0.3rem; }
+    .nm-action-btn:hover { border-color: var(--heading); }
+    .nm-undo-count { font-size: 0.7rem; background: var(--border); border-radius: 50%; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+
+    /* ── Grid ── */
+    .nm-grid-wrapper { display: flex; justify-content: center; margin-bottom: 0.75rem; }
+    .nm-grid { position: relative; background: var(--border); border-radius: 12px; padding: 8px; display: grid; gap: 8px; touch-action: none; user-select: none; width: 100%; max-width: 400px; aspect-ratio: 1 / 1; }
+    .nm-grid-3 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); }
+    .nm-grid-4 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); }
+    .nm-grid-5 { grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); }
+
+    .nm-cell { background: var(--surface); border-radius: 8px; opacity: 0.4; }
+
+    .nm-tile { position: absolute; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 800; transition: top 150ms ease-in-out, left 150ms ease-in-out; z-index: 2; }
+    .nm-tile span { transition: transform 100ms ease; }
+    .nm-tile.nm-merged span { animation: nmPop 200ms ease; }
+    .nm-tile.nm-new { animation: nmAppear 200ms ease; }
+
+    @keyframes nmPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+    @keyframes nmAppear {
+      0% { opacity: 0; transform: scale(0); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Tile value classes — no hardcoded colors */
+    .nm-tile-2 { background: var(--surface); color: var(--heading); }
+    .nm-tile-4 { background: var(--border); color: var(--heading); }
+    .nm-tile-8 { background: var(--heading); color: var(--bg); }
+    .nm-tile-16 { background: var(--heading); color: var(--bg); filter: brightness(1.1); }
+    .nm-tile-32 { background: var(--heading); color: var(--bg); filter: brightness(1.2); }
+    .nm-tile-64 { background: var(--heading); color: var(--bg); filter: brightness(1.3); }
+    .nm-tile-128 { background: var(--accent); color: var(--accent-text); }
+    .nm-tile-256 { background: var(--accent); color: var(--accent-text); filter: brightness(0.95); }
+    .nm-tile-512 { background: var(--accent); color: var(--accent-text); filter: brightness(0.9); }
+    .nm-tile-1024 { background: var(--accent); color: var(--accent-text); filter: brightness(0.85); }
+    .nm-tile-2048 { background: var(--accent); color: var(--accent-text); filter: brightness(0.8); font-weight: 900; }
+    .nm-tile-super { background: var(--accent); color: var(--accent-text); filter: brightness(0.75); font-weight: 900; }
+
+    /* ── Game Over Overlay ── */
+    .nm-overlay { display: none; position: absolute; inset: 0; background: var(--bg); opacity: 0; border-radius: 12px; z-index: 10; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem; transition: opacity 300ms ease; }
+    .nm-overlay.active { display: flex; opacity: 0.95; }
+    .nm-overlay h3 { font-size: clamp(1.2rem, 4vw, 1.6rem); color: var(--heading); margin: 0 0 0.25rem; }
+    .nm-overlay p { color: var(--text-muted); font-size: 0.9rem; margin: 0.2rem 0; }
+    .nm-overlay-val { font-weight: 800; color: var(--heading); }
+
+    /* ── Result Screen ── */
+    .nm-result { display: none; text-align: center; }
+    .nm-result h3 { font-size: clamp(1.2rem, 4vw, 1.6rem); color: var(--heading); margin: 0 0 0.5rem; }
+    .nm-result-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+    .nm-result-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.65rem; }
+    .nm-result-stat .nm-stat-val { font-size: 1.1rem; }
+    .nm-result-share { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; font-family: monospace; font-size: 0.85rem; line-height: 1.4; white-space: pre-wrap; word-break: break-word; color: var(--text); text-align: left; }
+    .nm-result-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    .nm-result-actions button { padding: 0.65rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+    .nm-btn-primary { background: var(--heading); color: var(--bg); }
+    .nm-btn-secondary { background: var(--surface); color: var(--heading); border: 1px solid var(--border) !important; }
+
+    /* ── Mode info ── */
+    .nm-mode-info { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+
+    /* ── Win banner ── */
+    .nm-win-banner { display: none; background: var(--accent); color: var(--accent-text); text-align: center; padding: 0.6rem; border-radius: 10px; margin-bottom: 0.75rem; font-weight: 800; font-size: 0.95rem; animation: nmPop 400ms ease; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .nm-stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .nm-mode-selector { flex-wrap: wrap; }
+      .nm-grid { max-width: 95vw; }
+      .nm-game-header { flex-direction: column; align-items: stretch; }
+      .nm-score-area { justify-content: center; }
+      .nm-game-actions { justify-content: center; }
+      .nm-result-stats { grid-template-columns: repeat(2, 1fr); }
+      .nm-result-actions { flex-direction: column; align-items: center; }
+      .nm-result-actions button { width: 100%; max-width: 280px; }
+      .tool-content h2 { font-size: var(--text-lg); }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I play Number Merge Puzzle?", "acceptedAnswer": {"@type": "Answer", "text": "Use arrow keys on desktop or swipe on mobile to slide all tiles in one direction. When two tiles with the same number collide, they merge into one tile with double the value. The goal is to create a tile with the value 2048."}}, {"@type": "Question", "name": "What is the Daily Challenge mode?", "acceptedAnswer": {"@type": "Answer", "text": "The Daily Challenge gives every player the same starting tiles and tile sequence using a date-seeded random number generator. This means you can compare scores with friends who play the same day's puzzle."}}, {"@type": "Question", "name": "What are the different grid sizes?", "acceptedAnswer": {"@type": "Answer", "text": "Mini 3x3 has 9 cells for a fast, challenging game. Classic 4x4 is the standard 2048 experience with 16 cells. Big 5x5 has 25 cells for a more relaxed game where reaching higher tiles is easier."}}, {"@type": "Question", "name": "How does the undo feature work?", "acceptedAnswer": {"@type": "Answer", "text": "You start each game with 1 undo. You earn additional undos by reaching milestone tiles: 128 gives you 2 total, 256 gives 3, 512 gives 4, and 1024 gives 5 undos. Use them strategically when a move breaks your tile arrangement."}}, {"@type": "Question", "name": "Is the game private and does it work offline?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, Number Merge runs entirely in your browser using JavaScript. No data is sent to any server. Your scores and game state are saved in localStorage on your device. The game works offline once loaded."}}, {"@type": "Question", "name": "What happens after I reach 2048?", "acceptedAnswer": {"@type": "Answer", "text": "Reaching 2048 shows a congratulations banner, but the game continues. You can keep merging tiles to reach 4096, 8192, and beyond. Your highest tile is tracked in the stats on the menu screen."}}, {"@type": "Question", "name": "Can I continue a game if I close the browser?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, the game auto-saves your grid, score, and moves after every turn. When you return, it restores your exact game state so you can continue where you left off."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Number Merge Puzzle (2048 Game)", "description": "Play the classic 2048 number merge puzzle free in your browser. Slide tiles, merge matching numbers, and reach 2048.", "url": "https://tool.teamzlab.com/games/number-merge/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <div id="breadcrumbs"></div>
+  <main class="site-main">
+    <section class="tool-calculator">
+      <h1>Number Merge Puzzle — Free 2048 Game</h1>
+      <p class="tool-intro">Slide numbered tiles on a grid, merge matching numbers, and try to reach 2048. A classic brain-training puzzle that sharpens your strategic thinking.</p>
+
+      <!-- Menu Screen -->
+      <div id="nm-menu" class="nm-menu">
+        <div class="nm-stats-grid">
+          <div class="nm-stat-card"><span id="nm-stat-best" class="nm-stat-val">0</span><span class="nm-stat-label">Best Score</span></div>
+          <div class="nm-stat-card"><span id="nm-stat-tile" class="nm-stat-val">0</span><span class="nm-stat-label">Best Tile</span></div>
+          <div class="nm-stat-card"><span id="nm-stat-played" class="nm-stat-val">0</span><span class="nm-stat-label">Played</span></div>
+          <div class="nm-stat-card"><span id="nm-stat-combo" class="nm-stat-val">0</span><span class="nm-stat-label">Best Combo</span></div>
+        </div>
+
+        <div id="nm-daily-banner" class="nm-daily-banner">
+          <span class="nm-daily-icon">📅</span>
+          <div class="nm-daily-text">
+            <div class="nm-daily-title">Daily Challenge #<span id="nm-daily-num">1</span></div>
+            <div class="nm-daily-sub" id="nm-daily-sub">Tap to play today's seeded puzzle</div>
+          </div>
+        </div>
+
+        <div class="nm-mode-selector">
+          <button class="nm-mode-btn" data-size="3" id="nm-mode-3">Mini 3x3</button>
+          <button class="nm-mode-btn active" data-size="4" id="nm-mode-4">Classic 4x4</button>
+          <button class="nm-mode-btn" data-size="5" id="nm-mode-5">Big 5x5</button>
+        </div>
+
+        <button class="nm-start-btn" id="nm-start">Start Game</button>
+      </div>
+
+      <!-- Game Screen -->
+      <div id="nm-game" class="nm-game">
+        <div class="nm-game-header">
+          <div class="nm-score-area">
+            <div class="nm-score-box"><span class="nm-score-label">Score</span><span id="nm-score" class="nm-score-val">0</span></div>
+            <div class="nm-score-box"><span class="nm-score-label">Best</span><span id="nm-best" class="nm-score-val">0</span></div>
+          </div>
+          <div class="nm-game-actions">
+            <button class="nm-action-btn" id="nm-undo-btn">↩ Undo <span id="nm-undo-count" class="nm-undo-count">1</span></button>
+            <button class="nm-action-btn" id="nm-new-btn">New</button>
+            <button class="nm-action-btn" id="nm-menu-btn">Menu</button>
+          </div>
+        </div>
+        <div id="nm-win-banner" class="nm-win-banner">You reached 2048! Keep going!</div>
+        <div class="nm-mode-info" id="nm-mode-info">Classic 4x4</div>
+        <div class="nm-grid-wrapper">
+          <div id="nm-grid" class="nm-grid nm-grid-4"></div>
+        </div>
+      </div>
+
+      <!-- Result Screen -->
+      <div id="nm-result" class="nm-result">
+        <h3 id="nm-result-title">Game Over!</h3>
+        <div class="nm-result-stats">
+          <div class="nm-result-stat"><span id="nm-r-score" class="nm-stat-val">0</span><span class="nm-stat-label">Score</span></div>
+          <div class="nm-result-stat"><span id="nm-r-tile" class="nm-stat-val">0</span><span class="nm-stat-label">Best Tile</span></div>
+          <div class="nm-result-stat"><span id="nm-r-moves" class="nm-stat-val">0</span><span class="nm-stat-label">Moves</span></div>
+          <div class="nm-result-stat"><span id="nm-r-time" class="nm-stat-val">0:00</span><span class="nm-stat-label">Time</span></div>
+        </div>
+        <div id="nm-share-preview" class="nm-result-share"></div>
+        <div class="nm-result-actions">
+          <button class="nm-btn-primary" id="nm-share-btn">Share Result</button>
+          <button class="nm-btn-secondary" id="nm-play-again-btn">Play Again</button>
+          <button class="nm-btn-secondary" id="nm-result-menu-btn">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>How to Play Number Merge Puzzle</h2>
+      <p>Number Merge Puzzle is a free browser-based version of the classic 2048 sliding tile game. The objective is straightforward: slide numbered tiles across a grid, combine tiles with matching values, and build your way to the coveted 2048 tile. Every move adds a new tile to the board, so you need to plan ahead to avoid filling the grid and running out of moves.</p>
+      <p>Use arrow keys on desktop or swipe gestures on mobile to move all tiles in one direction. When two tiles with the same number collide, they merge into one tile with double the value. For example, two 4-tiles become an 8-tile. Your score increases by the value of every merged tile. The game ends when the grid is full and no adjacent tiles can merge.</p>
+
+      <h2>Game Modes and Grid Sizes</h2>
+      <p>Choose from three grid sizes to match your skill level. The <strong>Mini 3x3</strong> mode is a compressed challenge with only 9 cells, making every move critical and games fast-paced. The <strong>Classic 4x4</strong> mode delivers the standard 2048 experience with 16 cells and balanced difficulty. The <strong>Big 5x5</strong> mode gives you 25 cells for a more relaxed game where higher tile values are achievable.</p>
+      <p>The <strong>Daily Challenge</strong> uses a date-seeded random number generator, meaning every player worldwide gets the same starting tiles and tile sequence for that day. Compare your score with friends to see who plays the same puzzle better. Daily challenges reset at midnight.</p>
+
+      <h2>Strategy Tips for Reaching 2048</h2>
+      <p>Keep your highest-value tile in one corner. Build a chain of descending values along one edge so that merges cascade naturally. Avoid pushing tiles into the center where they become difficult to combine. Use the undo feature strategically — save it for moves that accidentally break your tile arrangement. On Mini 3x3, prioritize keeping one row or column clear for maneuvering space. On Big 5x5, you have room to experiment with multiple merge chains simultaneously.</p>
+
+      <h2>Why Number Merge Trains Your Brain</h2>
+      <p>Research shows that spatial reasoning games like 2048 improve working memory and pattern recognition. Each move requires evaluating the entire board state, predicting tile movements, and planning several steps ahead. Regular play builds mathematical intuition as you naturally learn powers of 2 (2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048). The game runs entirely in your browser with no data sent to any server — 100% private, no sign-up required, and free forever.</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  (function() {
+    'use strict';
+
+    /* ── Constants ── */
+    var STORAGE_KEY = 'nm-2048-data';
+    var DAILY_EPOCH = new Date('2025-01-01').getTime();
+
+    /* ── DOM refs ── */
+    var menuEl = document.getElementById('nm-menu');
+    var gameEl = document.getElementById('nm-game');
+    var resultEl = document.getElementById('nm-result');
+    var gridEl = document.getElementById('nm-grid');
+    var scoreEl = document.getElementById('nm-score');
+    var bestEl = document.getElementById('nm-best');
+    var undoBtn = document.getElementById('nm-undo-btn');
+    var undoCountEl = document.getElementById('nm-undo-count');
+    var winBanner = document.getElementById('nm-win-banner');
+    var modeInfo = document.getElementById('nm-mode-info');
+
+    /* ── State ── */
+    var grid = [];
+    var size = 4;
+    var score = 0;
+    var moves = 0;
+    var bestScore = 0;
+    var highestTile = 0;
+    var undos = 1;
+    var prevState = null;
+    var gameActive = false;
+    var won = false;
+    var isDaily = false;
+    var dailyNum = 0;
+    var startTime = 0;
+    var gamesPlayed = 0;
+    var bestCombo = 0;
+    var currentCombo = 0;
+    var rng = null;
+    var tileIdCounter = 0;
+    var allStats = {};
+
+    /* ── Seeded RNG (Mulberry32) ── */
+    function mulberry32(seed) {
+      return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    function getDailyNumber() {
+      var now = new Date();
+      var dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      return Math.floor((dayStart - DAILY_EPOCH) / 86400000) + 1;
+    }
+
+    /* ── Persistence ── */
+    function loadData() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          allStats = JSON.parse(raw);
+        }
+      } catch(e) { allStats = {}; }
+      bestScore = allStats.bestScore || 0;
+      highestTile = allStats.highestTile || 0;
+      gamesPlayed = allStats.gamesPlayed || 0;
+      bestCombo = allStats.bestCombo || 0;
+    }
+
+    function saveData() {
+      allStats.bestScore = bestScore;
+      allStats.highestTile = highestTile;
+      allStats.gamesPlayed = gamesPlayed;
+      allStats.bestCombo = bestCombo;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allStats)); } catch(e) {}
+    }
+
+    function saveGameState() {
+      if (!gameActive) return;
+      allStats.savedGame = {
+        grid: grid.map(function(r) { return r.map(function(c) { return c ? c.value : 0; }); }),
+        size: size,
+        score: score,
+        moves: moves,
+        undos: undos,
+        won: won,
+        isDaily: isDaily,
+        dailyNum: dailyNum,
+        startTime: startTime,
+        currentCombo: currentCombo
+      };
+      saveData();
+    }
+
+    function clearSavedGame() {
+      delete allStats.savedGame;
+      saveData();
+    }
+
+    /* ── Tile Management ── */
+    function createTileObj(value, row, col) {
+      return { id: ++tileIdCounter, value: value, row: row, col: col, merged: false, isNew: false };
+    }
+
+    /* ── Grid Logic ── */
+    function initGrid() {
+      grid = [];
+      for (var r = 0; r < size; r++) {
+        grid[r] = [];
+        for (var c = 0; c < size; c++) {
+          grid[r][c] = null;
+        }
+      }
+    }
+
+    function getEmpty() {
+      var cells = [];
+      for (var r = 0; r < size; r++) {
+        for (var c = 0; c < size; c++) {
+          if (!grid[r][c]) cells.push({ r: r, c: c });
+        }
+      }
+      return cells;
+    }
+
+    function addRandomTile() {
+      var empty = getEmpty();
+      if (empty.length === 0) return false;
+      var rand = rng ? rng() : Math.random();
+      var idx = Math.floor(rand * empty.length);
+      var cell = empty[idx];
+      var val = (rng ? rng() : Math.random()) < 0.9 ? 2 : 4;
+      var tile = createTileObj(val, cell.r, cell.c);
+      tile.isNew = true;
+      grid[cell.r][cell.c] = tile;
+      return true;
+    }
+
+    function getMaxTile() {
+      var max = 0;
+      for (var r = 0; r < size; r++) {
+        for (var c = 0; c < size; c++) {
+          if (grid[r][c] && grid[r][c].value > max) max = grid[r][c].value;
+        }
+      }
+      return max;
+    }
+
+    function canMove() {
+      for (var r = 0; r < size; r++) {
+        for (var c = 0; c < size; c++) {
+          if (!grid[r][c]) return true;
+          var val = grid[r][c].value;
+          if (c < size - 1 && grid[r][c + 1] && grid[r][c + 1].value === val) return true;
+          if (r < size - 1 && grid[r + 1][c] && grid[r + 1][c].value === val) return true;
+        }
+      }
+      return false;
+    }
+
+    function cloneGrid() {
+      return grid.map(function(row) {
+        return row.map(function(cell) {
+          return cell ? { id: cell.id, value: cell.value, row: cell.row, col: cell.col, merged: false, isNew: false } : null;
+        });
+      });
+    }
+
+    /* ── Move Logic ── */
+    function move(direction) {
+      if (!gameActive) return false;
+
+      // Save prev state for undo
+      var prevGrid = cloneGrid();
+      var prevScore = score;
+      var prevMoves = moves;
+      var prevUndos = undos;
+
+      // Clear merge/new flags
+      for (var r = 0; r < size; r++) {
+        for (var c = 0; c < size; c++) {
+          if (grid[r][c]) { grid[r][c].merged = false; grid[r][c].isNew = false; }
+        }
+      }
+
+      var moved = false;
+      var mergeScore = 0;
+      var mergesThisMove = 0;
+
+      function getTraversals() {
+        var rowOrder = [], colOrder = [];
+        for (var i = 0; i < size; i++) { rowOrder.push(i); colOrder.push(i); }
+        if (direction === 'down') rowOrder.reverse();
+        if (direction === 'right') colOrder.reverse();
+        return { rows: rowOrder, cols: colOrder };
+      }
+
+      function getVector() {
+        switch(direction) {
+          case 'up': return { dr: -1, dc: 0 };
+          case 'down': return { dr: 1, dc: 0 };
+          case 'left': return { dr: 0, dc: -1 };
+          case 'right': return { dr: 0, dc: 1 };
+        }
+      }
+
+      function findFarthest(row, col, vec) {
+        var prev;
+        do {
+          prev = { r: row, c: col };
+          row += vec.dr;
+          col += vec.dc;
+        } while (row >= 0 && row < size && col >= 0 && col < size && !grid[row][col]);
+        var next = (row >= 0 && row < size && col >= 0 && col < size) ? grid[row][col] : null;
+        return { farthest: prev, next: next, nextPos: { r: row, c: col } };
+      }
+
+      var trav = getTraversals();
+      var vec = getVector();
+
+      for (var ri = 0; ri < trav.rows.length; ri++) {
+        for (var ci = 0; ci < trav.cols.length; ci++) {
+          var r = trav.rows[ri];
+          var c = trav.cols[ci];
+          var tile = grid[r][c];
+          if (!tile) continue;
+
+          var result = findFarthest(r, c, vec);
+          var next = result.next;
+
+          if (next && next.value === tile.value && !next.merged) {
+            // Merge
+            var merged = createTileObj(tile.value * 2, result.nextPos.r, result.nextPos.c);
+            merged.merged = true;
+            grid[result.nextPos.r][result.nextPos.c] = merged;
+            grid[r][c] = null;
+            tile.row = result.nextPos.r;
+            tile.col = result.nextPos.c;
+            mergeScore += merged.value;
+            mergesThisMove++;
+            moved = true;
+          } else if (result.farthest.r !== r || result.farthest.c !== c) {
+            // Move to farthest
+            grid[result.farthest.r][result.farthest.c] = tile;
+            grid[r][c] = null;
+            tile.row = result.farthest.r;
+            tile.col = result.farthest.c;
+            moved = true;
+          }
+        }
+      }
+
+      if (!moved) return false;
+
+      score += mergeScore;
+      moves++;
+
+      // Combo tracking
+      if (mergesThisMove > 0) {
+        currentCombo += mergesThisMove;
+        if (currentCombo > bestCombo) { bestCombo = currentCombo; }
+      } else {
+        currentCombo = 0;
+      }
+
+      // Check win
+      var maxTile = getMaxTile();
+      if (maxTile >= 2048 && !won) {
+        won = true;
+        winBanner.style.display = 'block';
+        setTimeout(function() { winBanner.style.display = 'none'; }, 3000);
+      }
+
+      // Update best
+      if (score > bestScore) bestScore = score;
+      if (maxTile > highestTile) highestTile = maxTile;
+
+      // Milestone undos
+      if (maxTile === 128 && undos < 2) undos = 2;
+      if (maxTile === 256 && undos < 3) undos = 3;
+      if (maxTile === 512 && undos < 4) undos = 4;
+      if (maxTile === 1024 && undos < 5) undos = 5;
+
+      // Save prev for undo
+      prevState = { grid: prevGrid, score: prevScore, moves: prevMoves, undos: prevUndos };
+
+      addRandomTile();
+      renderGrid();
+      updateScoreDisplay();
+      saveGameState();
+
+      // Check game over
+      if (!canMove()) {
+        gameActive = false;
+        setTimeout(showGameOver, 600);
+      }
+
+      return true;
+    }
+
+    /* ── Undo ── */
+    function doUndo() {
+      if (!prevState || undos <= 0 || !gameActive) return;
+      grid = prevState.grid;
+      score = prevState.score;
+      moves = prevState.moves;
+      undos--;
+      prevState = null;
+      currentCombo = 0;
+      renderGrid();
+      updateScoreDisplay();
+      saveGameState();
+    }
+
+    /* ── Rendering ── */
+    function getTileClass(val) {
+      if (val <= 2048) return 'nm-tile-' + val;
+      return 'nm-tile-super';
+    }
+
+    function getTileFontSize(val, gridSize) {
+      var base = gridSize === 3 ? 28 : gridSize === 5 ? 18 : 22;
+      if (val >= 1024) base -= 4;
+      if (val >= 16384) base -= 3;
+      return base + 'px';
+    }
+
+    function renderGrid() {
+      // Remove old tiles
+      var oldTiles = gridEl.querySelectorAll('.nm-tile');
+      for (var i = 0; i < oldTiles.length; i++) oldTiles[i].remove();
+
+      // Calculate cell size
+      var gridW = gridEl.offsetWidth;
+      var padding = 8;
+      var gap = 8;
+      var cellSize = (gridW - padding * 2 - gap * (size - 1)) / size;
+
+      // Render cells
+      var cells = gridEl.querySelectorAll('.nm-cell');
+      if (cells.length !== size * size) {
+        gridEl.innerHTML = '';
+        for (var r = 0; r < size; r++) {
+          for (var c = 0; c < size; c++) {
+            var cell = document.createElement('div');
+            cell.className = 'nm-cell';
+            gridEl.appendChild(cell);
+          }
+        }
+      }
+
+      // Render tiles
+      for (var r = 0; r < size; r++) {
+        for (var c = 0; c < size; c++) {
+          var t = grid[r][c];
+          if (!t) continue;
+          var el = document.createElement('div');
+          el.className = 'nm-tile ' + getTileClass(t.value);
+          if (t.merged) el.className += ' nm-merged';
+          if (t.isNew) el.className += ' nm-new';
+          el.style.width = cellSize + 'px';
+          el.style.height = cellSize + 'px';
+          el.style.top = (padding + r * (cellSize + gap)) + 'px';
+          el.style.left = (padding + c * (cellSize + gap)) + 'px';
+          el.style.fontSize = getTileFontSize(t.value, size);
+          var span = document.createElement('span');
+          span.textContent = t.value;
+          el.appendChild(span);
+          gridEl.appendChild(el);
+        }
+      }
+    }
+
+    function updateScoreDisplay() {
+      scoreEl.textContent = score.toLocaleString();
+      bestEl.textContent = bestScore.toLocaleString();
+      undoCountEl.textContent = undos;
+    }
+
+    function updateMenuStats() {
+      document.getElementById('nm-stat-best').textContent = bestScore.toLocaleString();
+      document.getElementById('nm-stat-tile').textContent = highestTile || '-';
+      document.getElementById('nm-stat-played').textContent = gamesPlayed;
+      document.getElementById('nm-stat-combo').textContent = bestCombo;
+    }
+
+    /* ── Screen Switching ── */
+    function showScreen(name) {
+      menuEl.style.display = name === 'menu' ? 'block' : 'none';
+      gameEl.style.display = name === 'game' ? 'block' : 'none';
+      resultEl.style.display = name === 'result' ? 'block' : 'none';
+    }
+
+    /* ── Game Start ── */
+    function startGame(daily) {
+      isDaily = !!daily;
+      dailyNum = getDailyNumber();
+
+      if (daily) {
+        rng = mulberry32(dailyNum * 31337);
+      } else {
+        rng = null;
+      }
+
+      initGrid();
+      score = 0;
+      moves = 0;
+      undos = 1;
+      won = false;
+      gameActive = true;
+      prevState = null;
+      currentCombo = 0;
+      startTime = Date.now();
+      tileIdCounter = 0;
+      winBanner.style.display = 'none';
+
+      addRandomTile();
+      addRandomTile();
+
+      var modeNames = { 3: 'Mini 3x3', 4: 'Classic 4x4', 5: 'Big 5x5' };
+      modeInfo.textContent = modeNames[size] + (isDaily ? ' — Daily #' + dailyNum : '');
+
+      gridEl.className = 'nm-grid nm-grid-' + size;
+
+      showScreen('game');
+      updateScoreDisplay();
+
+      // Need small delay for grid to layout before rendering
+      requestAnimationFrame(function() { renderGrid(); });
+
+      gamesPlayed++;
+      saveData();
+      saveGameState();
+    }
+
+    function restoreSavedGame() {
+      var saved = allStats.savedGame;
+      if (!saved) return false;
+
+      size = saved.size || 4;
+      score = saved.score || 0;
+      moves = saved.moves || 0;
+      undos = saved.undos || 1;
+      won = saved.won || false;
+      isDaily = saved.isDaily || false;
+      dailyNum = saved.dailyNum || 0;
+      startTime = saved.startTime || Date.now();
+      currentCombo = saved.currentCombo || 0;
+      gameActive = true;
+      prevState = null;
+      tileIdCounter = 0;
+      winBanner.style.display = 'none';
+
+      // If daily and different day, don't restore
+      if (isDaily && dailyNum !== getDailyNumber()) {
+        clearSavedGame();
+        return false;
+      }
+
+      initGrid();
+      var sg = saved.grid;
+      for (var r = 0; r < size; r++) {
+        for (var c = 0; c < size; c++) {
+          if (sg[r] && sg[r][c]) {
+            grid[r][c] = createTileObj(sg[r][c], r, c);
+          }
+        }
+      }
+
+      gridEl.className = 'nm-grid nm-grid-' + size;
+      var modeNames = { 3: 'Mini 3x3', 4: 'Classic 4x4', 5: 'Big 5x5' };
+      modeInfo.textContent = modeNames[size] + (isDaily ? ' — Daily #' + dailyNum : '');
+
+      showScreen('game');
+      updateScoreDisplay();
+      requestAnimationFrame(function() { renderGrid(); });
+      return true;
+    }
+
+    /* ── Game Over ── */
+    function showGameOver() {
+      clearSavedGame();
+      saveData();
+
+      var maxTile = getMaxTile();
+      var elapsed = Math.floor((Date.now() - startTime) / 1000);
+      var mins = Math.floor(elapsed / 60);
+      var secs = elapsed % 60;
+      var timeStr = mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+      var title = maxTile >= 2048 ? 'You reached ' + maxTile + '!' : 'Game Over!';
+      document.getElementById('nm-result-title').textContent = title;
+      document.getElementById('nm-r-score').textContent = score.toLocaleString();
+      document.getElementById('nm-r-tile').textContent = maxTile;
+      document.getElementById('nm-r-moves').textContent = moves;
+      document.getElementById('nm-r-time').textContent = timeStr;
+
+      // Build share text
+      var shareText = buildShareText(maxTile, timeStr);
+      document.getElementById('nm-share-preview').textContent = shareText;
+
+      showScreen('result');
+    }
+
+    function buildShareText(maxTile, timeStr) {
+      var header = isDaily
+        ? '🔢 Number Merge — Daily #' + dailyNum
+        : '🔢 Number Merge — ' + size + 'x' + size;
+      var line1 = 'Score: ' + score.toLocaleString() + ' | Best Tile: ' + maxTile;
+
+      // Grid visualization
+      var gridVis = '';
+      for (var r = 0; r < size; r++) {
+        var row = '';
+        for (var c = 0; c < size; c++) {
+          var t = grid[r][c];
+          if (!t) { row += '\u2b1c'; }
+          else if (t.value <= 8) { row += '\ud83d\udfe6'; }
+          else if (t.value <= 64) { row += '\ud83d\udfe8'; }
+          else if (t.value <= 512) { row += '\ud83d\udfe7'; }
+          else { row += '\ud83d\udfe5'; }
+        }
+        gridVis += row + '\n';
+      }
+
+      return header + '\n' + line1 + '\n' + gridVis + 'Moves: ' + moves + ' | \u23f1\ufe0f ' + timeStr + '\nPlay free: tool.teamzlab.com/games/number-merge/';
+    }
+
+    /* ── Share ── */
+    function shareResult() {
+      var text = document.getElementById('nm-share-preview').textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          if (window.showToast) window.showToast('Result copied to clipboard!');
+        }).catch(function() {
+          if (window.showToast) window.showToast('Could not copy — try manually');
+        });
+      } else {
+        if (window.showToast) window.showToast('Clipboard not available');
+      }
+    }
+
+    /* ── Input: Keyboard ── */
+    document.addEventListener('keydown', function(e) {
+      if (!gameActive) return;
+      var dir = null;
+      switch (e.key) {
+        case 'ArrowUp': dir = 'up'; break;
+        case 'ArrowDown': dir = 'down'; break;
+        case 'ArrowLeft': dir = 'left'; break;
+        case 'ArrowRight': dir = 'right'; break;
+      }
+      if (dir) {
+        e.preventDefault();
+        move(dir);
+      }
+    });
+
+    /* ── Input: Touch Swipe ── */
+    var touchStartX, touchStartY;
+    gridEl.addEventListener('touchstart', function(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    gridEl.addEventListener('touchend', function(e) {
+      if (!gameActive) return;
+      var dx = e.changedTouches[0].clientX - touchStartX;
+      var dy = e.changedTouches[0].clientY - touchStartY;
+      var absDx = Math.abs(dx), absDy = Math.abs(dy);
+      if (Math.max(absDx, absDy) < 30) return;
+      if (absDx > absDy) {
+        move(dx > 0 ? 'right' : 'left');
+      } else {
+        move(dy > 0 ? 'down' : 'up');
+      }
+    });
+
+    /* ── Input: Pointer Swipe (mouse) ── */
+    var pointerDown = false, pointerX, pointerY;
+    gridEl.addEventListener('mousedown', function(e) {
+      pointerDown = true;
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+    });
+    document.addEventListener('mouseup', function(e) {
+      if (!pointerDown || !gameActive) { pointerDown = false; return; }
+      pointerDown = false;
+      var dx = e.clientX - pointerX;
+      var dy = e.clientY - pointerY;
+      var absDx = Math.abs(dx), absDy = Math.abs(dy);
+      if (Math.max(absDx, absDy) < 30) return;
+      if (absDx > absDy) {
+        move(dx > 0 ? 'right' : 'left');
+      } else {
+        move(dy > 0 ? 'down' : 'up');
+      }
+    });
+
+    /* ── Window resize ── */
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        if (gameActive) renderGrid();
+      }, 100);
+    });
+
+    /* ── Button Events ── */
+    // Mode selector
+    var modeButtons = document.querySelectorAll('.nm-mode-btn');
+    for (var i = 0; i < modeButtons.length; i++) {
+      modeButtons[i].addEventListener('click', function() {
+        for (var j = 0; j < modeButtons.length; j++) modeButtons[j].classList.remove('active');
+        this.classList.add('active');
+        size = parseInt(this.getAttribute('data-size'));
+      });
+    }
+
+    document.getElementById('nm-start').addEventListener('click', function() { startGame(false); });
+    document.getElementById('nm-daily-banner').addEventListener('click', function() { startGame(true); });
+    document.getElementById('nm-new-btn').addEventListener('click', function() {
+      clearSavedGame();
+      startGame(isDaily);
+    });
+    document.getElementById('nm-menu-btn').addEventListener('click', function() {
+      gameActive = false;
+      saveGameState();
+      updateMenuStats();
+      showScreen('menu');
+    });
+    undoBtn.addEventListener('click', doUndo);
+    document.getElementById('nm-share-btn').addEventListener('click', shareResult);
+    document.getElementById('nm-play-again-btn').addEventListener('click', function() { startGame(false); });
+    document.getElementById('nm-result-menu-btn').addEventListener('click', function() {
+      updateMenuStats();
+      showScreen('menu');
+    });
+
+    /* ── Daily Number ── */
+    function updateDailyDisplay() {
+      dailyNum = getDailyNumber();
+      document.getElementById('nm-daily-num').textContent = dailyNum;
+      // Check if daily completed today
+      var dailyKey = 'nm-daily-' + dailyNum;
+      if (allStats[dailyKey]) {
+        document.getElementById('nm-daily-sub').textContent = 'Completed! Score: ' + (allStats[dailyKey].score || 0).toLocaleString();
+      } else {
+        document.getElementById('nm-daily-sub').textContent = 'Tap to play today\'s seeded puzzle';
+      }
+    }
+
+    /* ── Init ── */
+    loadData();
+    updateMenuStats();
+    updateDailyDisplay();
+
+    // Try restore saved game
+    if (allStats.savedGame) {
+      if (!restoreSavedGame()) {
+        showScreen('menu');
+      }
+    } else {
+      showScreen('menu');
+    }
+
+    /* ── FAQs ── */
+    if (typeof TeamzTools !== 'undefined' && TeamzTools.renderFAQs) {
+      var faqs = [
+        { q: 'How do I play Number Merge Puzzle?', a: 'Use arrow keys on desktop or swipe on mobile to slide all tiles in one direction. When two tiles with the same number collide, they merge into one tile with double the value. The goal is to create a tile with the value 2048.' },
+        { q: 'What is the Daily Challenge mode?', a: 'The Daily Challenge gives every player the same starting tiles and tile sequence using a date-seeded random number generator. This means you can compare scores with friends who play the same day\'s puzzle.' },
+        { q: 'What are the different grid sizes?', a: 'Mini 3x3 has 9 cells for a fast, challenging game. Classic 4x4 is the standard 2048 experience with 16 cells. Big 5x5 has 25 cells for a more relaxed game where reaching higher tiles is easier.' },
+        { q: 'How does the undo feature work?', a: 'You start each game with 1 undo. You earn additional undos by reaching milestone tiles: 128 gives you 2 total, 256 gives 3, 512 gives 4, and 1024 gives 5 undos. Use them strategically when a move breaks your tile arrangement.' },
+        { q: 'Is the game private and does it work offline?', a: 'Yes, Number Merge runs entirely in your browser using JavaScript. No data is sent to any server. Your scores and game state are saved in localStorage on your device. The game works offline once loaded.' },
+        { q: 'What happens after I reach 2048?', a: 'Reaching 2048 shows a congratulations banner, but the game continues. You can keep merging tiles to reach 4096, 8192, and beyond. Your highest tile is tracked in the stats on the menu screen.' },
+        { q: 'Can I continue a game if I close the browser?', a: 'Yes, the game auto-saves your grid, score, and moves after every turn. When you return, it restores your exact game state so you can continue where you left off.' }
+      ];
+      TeamzTools.renderFAQs(faqs);
+    }
+
+    /* ── Schemas ── */
+    if (typeof TeamzTools !== 'undefined') {
+      if (TeamzTools.renderBreadcrumbs) TeamzTools.renderBreadcrumbs();
+      if (TeamzTools.injectBreadcrumbSchema) TeamzTools.injectBreadcrumbSchema();
+      if (TeamzTools.injectWebAppSchema)
+    }
+
+  })();
+  </script>
+</body>
+</html>
