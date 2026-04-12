@@ -62,7 +62,7 @@ HUB_ICONS = {
 
 def main():
     # Find project root (where this script is run from, or go up from scripts/)
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     os.chdir(base)
 
     tools = []

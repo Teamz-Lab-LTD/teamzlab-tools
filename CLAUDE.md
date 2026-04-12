@@ -71,7 +71,7 @@ Example output to user:
    - `python3 scripts/build-fix-orphans.py fix` — fixes orphan pages (adds cross-links in related tools)
    - `scripts/build-internal-links.sh --quick` — checks internal link health score
 
-3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, search placeholder, llms.txt, llms-full.txt, or twitter tags. The pre-commit hook does it all automatically.
+3. **You do NOT need to manually update**: search index, sitemap, homepage card counts, search placeholder, llms.txt, llms-full.txt, twitter tags, **or `tools.json`/`tools-debug.json`** (mobile app registry — toss_app fetches `tools-debug.json` on launch, so pushing the rebuilt JSON to live instantly refreshes all installed apps with no app store update). The pre-commit hook detects when any `hub/tool/index.html` is added/modified/deleted and runs `scripts/build-tools-json.py` automatically, then auto-stages the result.
 
 3b. **Google Search Console API** is connected:
    - Run `./build-search-console.sh` to pull live data (queries, pages, indexing, devices, countries)
