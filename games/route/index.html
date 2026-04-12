@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blockout — Tap Away Puzzle Game | Teamz Lab Tools</title>
+  <meta name="description" content="Tap colored blocks in the right order to slide them off the grid. Free daily logic puzzle with 200+ levels, star ratings, and 4 difficulty tiers.">
+  <meta property="og:title" content="Blockout — Tap Away Puzzle Game | Teamz Lab Tools">
+  <meta property="og:description" content="Clear blocks by tapping them in the right order. Free daily puzzle with 200+ levels. No signup, plays in browser.">
+  <meta property="og:url" content="https://tool.teamzlab.com/games/route/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/games.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Blockout — Tap Away Puzzle Game | Teamz Lab Tools">
+  <meta name="twitter:description" content="Tap blocks in the right order to slide them off. 200+ levels, daily puzzle, star ratings.">
+  <link rel="canonical" href="https://tool.teamzlab.com/games/route/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    /* ── Screen System ── */
+    .bo-screen { display: none; }
+    .bo-screen.active { display: block; }
+
+    /* ── Menu Screen ── */
+    .bo-menu { text-align: center; max-width: 400px; margin: 0 auto; }
+    .bo-menu-title { font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 900; color: var(--heading); margin: 0 0 0.25rem; line-height: 1.3; }
+    .bo-menu-sub { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .bo-stats-bar { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .bo-stat { padding: 0.5rem 1rem; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); text-align: center; min-width: 80px; }
+    .bo-stat-val { font-size: 1.2rem; font-weight: 800; color: var(--heading); display: block; }
+    .bo-stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+    .bo-daily-btn { width: 100%; padding: 1rem; border: none; border-radius: 12px; background: var(--accent); color: var(--accent-text); font-family: inherit; font-size: 1.1rem; font-weight: 800; cursor: pointer; margin-bottom: 1rem; transition: opacity 0.2s; }
+    .bo-daily-btn:hover { opacity: 0.85; }
+
+    .bo-tier { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: all 0.2s; }
+    .bo-tier:hover { border-color: var(--accent); }
+    .bo-tier.locked { opacity: 0.5; cursor: not-allowed; }
+    .bo-tier.locked:hover { border-color: var(--border); }
+    .bo-tier-info { flex: 1; text-align: left; }
+    .bo-tier-name { font-weight: 800; color: var(--heading); font-size: 1rem; }
+    .bo-tier-desc { font-size: 0.8rem; color: var(--text-muted); }
+    .bo-tier-progress { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+    .bo-tier-stars { font-size: 0.85rem; color: var(--heading); font-weight: 700; }
+    .bo-lock-msg { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ── Level Select ── */
+    .bo-levels-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .bo-levels-header h2 { margin: 0; font-size: var(--text-lg); color: var(--heading); line-height: 1.3; }
+    .bo-back-btn { padding: 0.4rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--heading); font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+    .bo-levels-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; max-width: 400px; margin: 0 auto; }
+    .bo-lvl-btn { aspect-ratio: 1; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--heading); font-family: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: all 0.2s; }
+    .bo-lvl-btn:hover { border-color: var(--accent); }
+    .bo-lvl-btn.current { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+    .bo-lvl-btn.locked { opacity: 0.3; cursor: not-allowed; }
+    .bo-lvl-btn .bo-lvl-stars { font-size: 0.6rem; letter-spacing: 1px; }
+
+    /* ── Game Screen ── */
+    .bo-game-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem; }
+    .bo-game-left { font-weight: 700; color: var(--heading); font-size: 0.95rem; }
+    .bo-game-right { display: flex; gap: 0.5rem; align-items: center; }
+    .bo-badge { padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+    .bo-timer-wrap { max-width: 480px; margin: 0 auto 0.25rem; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bo-timer-bar { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 1s linear; }
+    .bo-timer-text { text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; font-variant-numeric: tabular-nums; }
+    .bo-canvas-wrap { display: flex; justify-content: center; margin-bottom: 0.5rem; }
+    #bo-canvas { border-radius: 12px; max-width: 100%; touch-action: none; cursor: pointer; }
+
+    .bo-game-hint { text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600; }
+    .bo-game-actions { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .bo-btn { padding: 0.55rem 1.2rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--heading); font-family: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+    .bo-btn:hover { border-color: var(--accent); }
+    .bo-btn--accent { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+    .bo-btn--accent:hover { opacity: 0.85; }
+    .bo-btn--big { padding: 0.85rem 2rem; font-size: 1rem; border-radius: 12px; }
+
+    /* ── Result Screen ── */
+    .bo-result { text-align: center; max-width: 380px; margin: 0 auto; }
+    .bo-result-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
+    .bo-result-title { font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: 900; color: var(--heading); margin: 0 0 0.5rem; line-height: 1.3; }
+    .bo-result-stars { font-size: 2rem; margin-bottom: 1rem; letter-spacing: 4px; }
+    .bo-result-stats { margin-bottom: 1.25rem; }
+    .bo-result-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text); font-size: 0.95rem; }
+    .bo-result-row span:last-child { color: var(--heading); }
+    .bo-result-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    /* ── Responsive ── */
+    .tool-calculator h2, .tool-content h2 { font-size: var(--text-lg); line-height: 1.3; }
+    @media (max-width: 600px) {
+      .bo-levels-grid { grid-template-columns: repeat(5, 1fr); gap: 0.4rem; }
+      .bo-lvl-btn { font-size: 0.85rem; }
+      .bo-stats-bar { gap: 0.5rem; }
+      .bo-stat { min-width: 70px; padding: 0.4rem 0.6rem; }
+      .bo-game-actions { gap: 0.35rem; }
+      .bo-btn { padding: 0.5rem 0.9rem; font-size: 0.8rem; }
+      .bo-tier { padding: 0.75rem; gap: 0.75rem; }
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Blockout?", "acceptedAnswer": {"@type": "Answer", "text": "Blockout is a tap-away puzzle where colored blocks on a grid each have a directional arrow. Tap a block to slide it off the grid in its arrow direction, but only if the path is clear. Find the correct order to clear them all."}}, {"@type": "Question", "name": "How do I play?", "acceptedAnswer": {"@type": "Answer", "text": "Tap any block. If the path from that block to the grid edge (in its arrow direction) is completely empty, it slides out. If another block is in the way, you lose a heart. Clear all blocks to win."}}, {"@type": "Question", "name": "What do the arrows on blocks mean?", "acceptedAnswer": {"@type": "Answer", "text": "Each arrow shows which direction the block wants to exit: up, down, left, or right. The block can only slide out in that specific direction, and every cell in its path must be empty."}}, {"@type": "Question", "name": "How do stars work?", "acceptedAnswer": {"@type": "Answer", "text": "Clear a level with 0 wrong taps for 3 stars, 1-2 wrong taps for 2 stars, or 3+ wrong taps for 1 star. Stars unlock harder difficulty tiers and track your mastery."}}, {"@type": "Question", "name": "How do I unlock Medium, Hard, and Expert?", "acceptedAnswer": {"@type": "Answer", "text": "Collect stars from earlier tiers. Medium needs 30 total stars, Hard needs 80 stars, and Expert needs 150 stars. Replay levels for better ratings to unlock faster."}}, {"@type": "Question", "name": "What about hearts and lives?", "acceptedAnswer": {"@type": "Answer", "text": "You start with 5 hearts. Each wrong tap costs 1 heart. Hearts regenerate 1 every 10 minutes, up to 5 maximum. Running out of hearts means game over for that level."}}, {"@type": "Question", "name": "Is there a daily puzzle?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. A new puzzle appears every day, identical for all players worldwide. Solve it daily to build your streak. The grid size increases as your streak grows."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Blockout — Tap Away Puzzle Game", "description": "Tap colored blocks in the right order to slide them off the grid. Free daily logic puzzle with 200+ levels.", "url": "https://tool.teamzlab.com/games/route/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <div class="site-main">
+    <div id="breadcrumbs"></div>
+
+    <section class="tool-calculator">
+      <h1>Blockout</h1>
+
+      <!-- ── SCREEN: Menu ── -->
+      <div id="screen-menu" class="bo-screen active">
+        <div class="bo-menu">
+          <p class="bo-menu-sub">Clear the blocks. Find the order.</p>
+          <div class="bo-stats-bar">
+            <div class="bo-stat"><span class="bo-stat-val" id="stat-stars">0</span><span class="bo-stat-label">Stars</span></div>
+            <div class="bo-stat"><span class="bo-stat-val" id="stat-streak">0</span><span class="bo-stat-label">Streak</span></div>
+            <div class="bo-stat"><span class="bo-stat-val" id="stat-hearts">5</span><span class="bo-stat-label">Hearts</span></div>
+          </div>
+          <button class="bo-daily-btn" id="btn-daily">Daily Puzzle #1</button>
+          <div id="tier-list"></div>
+        </div>
+      </div>
+
+      <!-- ── SCREEN: Levels ── -->
+      <div id="screen-levels" class="bo-screen">
+        <div class="bo-levels-header">
+          <button class="bo-back-btn" id="btn-levels-back">← Back</button>
+          <h2 id="levels-title">Easy</h2>
+        </div>
+        <div class="bo-levels-grid" id="levels-grid"></div>
+      </div>
+
+      <!-- ── SCREEN: Game ── -->
+      <div id="screen-game" class="bo-screen">
+        <div class="bo-game-bar">
+          <span class="bo-game-left" id="game-label">Easy — Level 1</span>
+          <div class="bo-game-right">
+            <span class="bo-badge" id="game-blocks">Blocks: 0/0</span>
+            <span class="bo-badge" id="game-hearts">♥ 5</span>
+          </div>
+        </div>
+        <div class="bo-timer-wrap">
+          <div class="bo-timer-bar" id="timer-bar"></div>
+        </div>
+        <div class="bo-timer-text" id="timer-text">0:00</div>
+        <div class="bo-canvas-wrap">
+          <canvas id="bo-canvas" width="400" height="400"></canvas>
+        </div>
+        <p class="bo-game-hint" id="game-hint">Tap a block to slide it out</p>
+        <div class="bo-game-actions">
+          <button class="bo-btn" id="btn-hint">💡 Hint</button>
+          <button class="bo-btn" id="btn-retry">🔄 Retry</button>
+          <button class="bo-btn" id="btn-back-levels">← Levels</button>
+        </div>
+      </div>
+
+      <!-- ── SCREEN: Result ── -->
+      <div id="screen-result" class="bo-screen">
+        <div class="bo-result">
+          <div class="bo-result-emoji" id="result-emoji">🎉</div>
+          <h2 class="bo-result-title" id="result-title">Level Complete!</h2>
+          <div class="bo-result-stars" id="result-stars">★★★</div>
+          <div class="bo-result-stats" id="result-stats"></div>
+          <div class="bo-result-actions" id="result-actions"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What Is Blockout</h2>
+      <p>Blockout is a free tap away puzzle online where colored blocks fill a grid, each marked with a directional arrow. Your goal is to figure out the extraction order puzzle — tap blocks to slide them off the grid in the correct sequence. This block puzzle game free of ads and logins runs entirely in your browser with 200 levels and a fresh daily challenge.</p>
+
+      <h2>How to Play This Tap Away Puzzle</h2>
+      <p>Each block shows an arrow pointing up, down, left, or right. Tap a block to attempt sliding it out. If every cell between the block and the edge of the grid in that direction is empty, the block slides off with a satisfying animation. If another block is in the way, the tap fails and you lose a heart. Start by identifying blocks on the edges with clear exit paths, then work inward as new paths open. Mastering this extraction order puzzle means planning several moves ahead — earn 3 stars by clearing the board with zero wrong taps.</p>
+
+      <h2>Difficulty Tiers and Progression</h2>
+      <p>Blockout offers four difficulty tiers across 200 levels. Easy puzzles use a 4x4 grid with 6 to 8 blocks. Medium scales up to 5x5 with 10 to 12 blocks and fewer hearts. Hard uses a 6x6 grid with up to 18 blocks, and Expert pushes to 7x7 with 24 blocks. Each tier has 50 levels that must be completed in order. Collect stars from easier tiers to unlock harder ones. The daily puzzle gives everyone the same board each day to compare results.</p>
+
+      <h2>Why Order Puzzles Train Your Brain</h2>
+      <p>Solving order-based spatial puzzles strengthens planning and sequencing skills used in real-world problem solving. Research from cognitive science shows that constraint-satisfaction puzzles like this block puzzle game improve working memory and spatial reasoning. Each level requires you to mentally simulate outcomes before acting, building the same analytical thinking used in programming, engineering, and strategic planning. The escalating difficulty keeps your brain engaged without frustration.</p>
+      <p style="margin-top:1.5rem;font-size:0.85rem;color:var(--text-muted);">Last updated: April 2026</p>
+    </section>
+
+    <div id="tool-faqs"></div>
+    <div id="related-tools"></div>
+  </div>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+
+    /* ===== BREADCRUMBS + SCHEMAS ===== */
+    var crumbs = [{name:'Home',url:'/'},{name:'Games',url:'/games/'},{name:'Blockout'}];
+    TeamzTools.renderBreadcrumbs(crumbs);
+    TeamzTools.injectBreadcrumbSchema(crumbs);
+
+    var faqs = [
+      {q:'What is Blockout?',a:'Blockout is a tap-away puzzle where colored blocks on a grid each have a directional arrow. Tap a block to slide it off the grid in its arrow direction, but only if the path is clear. Find the correct order to clear them all.'},
+      {q:'How do I play?',a:'Tap any block. If the path from that block to the grid edge (in its arrow direction) is completely empty, it slides out. If another block is in the way, you lose a heart. Clear all blocks to win.'},
+      {q:'What do the arrows on blocks mean?',a:'Each arrow shows which direction the block wants to exit: up, down, left, or right. The block can only slide out in that specific direction, and every cell in its path must be empty.'},
+      {q:'How do stars work?',a:'Clear a level with 0 wrong taps for 3 stars, 1-2 wrong taps for 2 stars, or 3+ wrong taps for 1 star. Stars unlock harder difficulty tiers and track your mastery.'},
+      {q:'How do I unlock Medium, Hard, and Expert?',a:'Collect stars from earlier tiers. Medium needs 30 total stars, Hard needs 80 stars, and Expert needs 150 stars. Replay levels for better ratings to unlock faster.'},
+      {q:'What about hearts and lives?',a:'You start with 5 hearts. Each wrong tap costs 1 heart. Hearts regenerate 1 every 10 minutes, up to 5 maximum. Running out of hearts means game over for that level.'},
+      {q:'Is there a daily puzzle?',a:'Yes. A new puzzle appears every day, identical for all players worldwide. Solve it daily to build your streak. The grid size increases as your streak grows.'}
+    ];
+    TeamzTools.renderFAQs(faqs);
+
+    TeamzTools.renderRelatedTools([
+      {slug:'games/word-groups-puzzle',name:'Word Groups Puzzle',description:'Find four groups of four words that share a hidden connection.'},
+      {slug:'games/word-guess',name:'Word Guess',description:'Guess the 5-letter word in 6 tries with color-coded clues.'},
+      {slug:'games/letter-hive',name:'Letter Hive',description:'Make words from 7 letters. Center letter must be used.'},
+      {slug:'games/daily-word-grid',name:'Daily Word Grid',description:'Solve a quick 5x5 mini crossword with daily clues.'},
+      {slug:'games/thread-words',name:'Thread Words',description:'Find themed words hidden in a letter grid by tracing paths.'},
+      {slug:'games/color-cards',name:'Color Cards',description:'Play Color Cards free online — match colors and numbers using action cards.'},
+      { slug: 'games/oddone', name: 'OddOne — Odd One Out', description: 'Find what doesn\'t belong. 200 levels of brain teasers where the obvious answer is often wrong.' }
+    ]);
+
+
+    /* ===== CONSTANTS ===== */
+    var TIERS = [
+      { name: 'Easy',   gridSize: 4, minBlocks: 6,  maxBlocks: 8,  hearts: 5, starsNeeded: 0 },
+      { name: 'Medium', gridSize: 5, minBlocks: 10, maxBlocks: 12, hearts: 4, starsNeeded: 30 },
+      { name: 'Hard',   gridSize: 6, minBlocks: 14, maxBlocks: 18, hearts: 3, starsNeeded: 80 },
+      { name: 'Expert', gridSize: 7, minBlocks: 20, maxBlocks: 24, hearts: 3, starsNeeded: 150 }
+    ];
+    var LEVELS_PER_TIER = 50;
+    var DIRECTIONS = [
+      { name: 'up',    dx: 0,  dy: -1 },
+      { name: 'down',  dx: 0,  dy: 1 },
+      { name: 'left',  dx: -1, dy: 0 },
+      { name: 'right', dx: 1,  dy: 0 }
+    ];
+    var BLOCK_COLORS = [
+      'rgb(231, 76, 60)',
+      'rgb(52, 152, 219)',
+      'rgb(46, 204, 113)',
+      'rgb(241, 196, 15)',
+      'rgb(155, 89, 182)',
+      'rgb(230, 126, 34)',
+      'rgb(26, 188, 156)',
+      'rgb(236, 100, 159)'
+    ];
+    var DAILY_EPOCH = new Date(2026, 3, 12); // April 12, 2026
+
+    /* ===== SEEDED PRNG (mulberry32) ===== */
+    function mulberry32(a) {
+      return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      };
+    }
+
+    /* ===== SAVE SYSTEM ===== */
+    var SAVE_KEY = 'bo-save';
+    var save;
+
+    function loadSave() {
+      try {
+        var raw = localStorage.getItem(SAVE_KEY);
+        if (raw) { save = JSON.parse(raw); } else { save = {}; }
+      } catch(e) { save = {}; }
+      if (!save.levels) save.levels = {};
+      if (!save.streak) save.streak = 0;
+      if (!save.lastDaily) save.lastDaily = '';
+      if (typeof save.hearts !== 'number') save.hearts = 5;
+      if (!save.heartsTime) save.heartsTime = Date.now();
+      if (!save.hintsUsed) save.hintsUsed = {};
+      regenHearts();
+    }
+
+    function writeSave() {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e) {}
+    }
+
+    function regenHearts() {
+      if (save.hearts >= 5) { save.heartsTime = Date.now(); return; }
+      var elapsed = Date.now() - save.heartsTime;
+      var gained = Math.floor(elapsed / 600000); // 10 min per heart
+      if (gained > 0) {
+        save.hearts = Math.min(5, save.hearts + gained);
+        save.heartsTime = Date.now();
+        writeSave();
+      }
+    }
+
+    function getTotalStars() {
+      var total = 0;
+      var keys = Object.keys(save.levels);
+      for (var i = 0; i < keys.length; i++) {
+        total += (save.levels[keys[i]] || 0);
+      }
+      return total;
+    }
+
+    function getLevelKey(tierIdx, levelNum) {
+      return 't' + tierIdx + 'l' + levelNum;
+    }
+
+    function getHighestUnlockedLevel(tierIdx) {
+      for (var i = 1; i <= LEVELS_PER_TIER; i++) {
+        var key = getLevelKey(tierIdx, i);
+        if (!save.levels[key] || save.levels[key] < 1) return i;
+      }
+      return LEVELS_PER_TIER;
+    }
+
+    /* ===== DAILY PUZZLE ===== */
+    function getDailyNumber() {
+      var now = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var diff = Math.floor((today - DAILY_EPOCH) / 86400000);
+      return diff + 1;
+    }
+
+    function getDailySeed() {
+      var now = new Date();
+      return now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+    }
+
+    function getDailyDateStr() {
+      var now = new Date();
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function getDailyGridSize() {
+      var num = getDailyNumber();
+      if (num <= 7) return 4;
+      if (num <= 30) return 5;
+      if (num <= 90) return 6;
+      return [5, 6, 7][num % 3];
+    }
+
+    /* ===== PUZZLE GENERATION ===== */
+    function generatePuzzle(gridSize, minBlocks, maxBlocks, seed) {
+      var rng = mulberry32(seed);
+      var maxAttempts = 200;
+
+      for (var attempt = 0; attempt < maxAttempts; attempt++) {
+        var numBlocks = minBlocks + Math.floor(rng() * (maxBlocks - minBlocks + 1));
+        var blocks = [];
+        var occupied = {};
+
+        // Place blocks randomly
+        var placeTries = 0;
+        while (blocks.length < numBlocks && placeTries < 500) {
+          placeTries++;
+          var r = Math.floor(rng() * gridSize);
+          var c = Math.floor(rng() * gridSize);
+          var posKey = r + ',' + c;
+          if (occupied[posKey]) continue;
+
+          var dirIdx = Math.floor(rng() * 4);
+          var colorIdx = Math.floor(rng() * BLOCK_COLORS.length);
+          blocks.push({ row: r, col: c, dir: dirIdx, color: colorIdx, id: blocks.length });
+          occupied[posKey] = true;
+        }
+
+        if (blocks.length < minBlocks) continue;
+
+        // Simulate solving to verify solvable + record solution order
+        var solution = simulateSolve(blocks, gridSize);
+        if (solution && solution.length === blocks.length) {
+          return { blocks: blocks, gridSize: gridSize, solution: solution };
+        }
+      }
+
+      // Fallback: guaranteed solvable puzzle — place blocks along edges with outward arrows
+      return generateFallbackPuzzle(gridSize, minBlocks, seed);
+    }
+
+    function simulateSolve(blocks, gridSize) {
+      var remaining = [];
+      for (var i = 0; i < blocks.length; i++) {
+        remaining.push({ row: blocks[i].row, col: blocks[i].col, dir: blocks[i].dir, id: blocks[i].id });
+      }
+      var order = [];
+
+      var maxIter = remaining.length * remaining.length + 10;
+      var iter = 0;
+      while (remaining.length > 0 && iter < maxIter) {
+        iter++;
+        var found = false;
+        for (var j = 0; j < remaining.length; j++) {
+          if (canExit(remaining[j], remaining, gridSize)) {
+            order.push(remaining[j].id);
+            remaining.splice(j, 1);
+            found = true;
+            break;
+          }
+        }
+        if (!found) return null; // stuck
+      }
+      return order;
+    }
+
+    function canExit(block, allBlocks, gridSize) {
+      var dir = DIRECTIONS[block.dir];
+      var r = block.row + dir.dy;
+      var c = block.col + dir.dx;
+
+      while (r >= 0 && r < gridSize && c >= 0 && c < gridSize) {
+        for (var i = 0; i < allBlocks.length; i++) {
+          if (allBlocks[i].id !== block.id && allBlocks[i].row === r && allBlocks[i].col === c) {
+            return false;
+          }
+        }
+        r += dir.dy;
+        c += dir.dx;
+      }
+      return true;
+    }
+
+    function generateFallbackPuzzle(gridSize, minBlocks, seed) {
+      var rng = mulberry32(seed + 99999);
+      var blocks = [];
+      var occupied = {};
+      var id = 0;
+
+      // Place blocks along edges first with outward directions
+      var edges = [];
+      for (var r = 0; r < gridSize; r++) {
+        for (var c = 0; c < gridSize; c++) {
+          var dirs = [];
+          if (r === 0) dirs.push(0); // up
+          if (r === gridSize - 1) dirs.push(1); // down
+          if (c === 0) dirs.push(2); // left
+          if (c === gridSize - 1) dirs.push(3); // right
+          if (dirs.length > 0) edges.push({ r: r, c: c, dirs: dirs });
+        }
+      }
+
+      // Shuffle edges
+      for (var i = edges.length - 1; i > 0; i--) {
+        var j = Math.floor(rng() * (i + 1));
+        var tmp = edges[i]; edges[i] = edges[j]; edges[j] = tmp;
+      }
+
+      for (var k = 0; k < edges.length && blocks.length < minBlocks; k++) {
+        var e = edges[k];
+        var posKey = e.r + ',' + e.c;
+        if (occupied[posKey]) continue;
+        var dirIdx = e.dirs[Math.floor(rng() * e.dirs.length)];
+        var colorIdx = Math.floor(rng() * BLOCK_COLORS.length);
+        blocks.push({ row: e.r, col: e.c, dir: dirIdx, color: colorIdx, id: id++ });
+        occupied[posKey] = true;
+      }
+
+      var solution = simulateSolve(blocks, gridSize);
+      return { blocks: blocks, gridSize: gridSize, solution: solution || [] };
+    }
+
+
+    /* ===== GAME STATE ===== */
+    var gameState = {
+      puzzle: null,
+      remaining: [],     // blocks still on grid
+      sliding: null,     // block currently animating out
+      slideAnim: 0,      // 0..1
+      shaking: null,     // { block, t }
+      cleared: 0,
+      totalBlocks: 0,
+      wrongTaps: 0,
+      hearts: 5,
+      maxHearts: 5,
+      hintsLeft: 3,
+      tierIdx: -1,       // -1 = daily
+      levelNum: 0,
+      startTime: 0,
+      isDaily: false,
+      gameOver: false,
+      highlightId: -1    // hint highlight
+    };
+
+    /* ===== CANVAS + DRAWING ===== */
+    var canvas = document.getElementById('bo-canvas');
+    var ctx = canvas.getContext('2d');
+    var cellSize = 60;
+    var gridPadding = 12;
+    var animFrame = null;
+
+    function getThemeColors() {
+      var cs = getComputedStyle(document.documentElement);
+      return {
+        bg: cs.getPropertyValue('--bg').trim(),
+        surface: cs.getPropertyValue('--surface').trim(),
+        border: cs.getPropertyValue('--border').trim(),
+        accent: cs.getPropertyValue('--accent').trim(),
+        accentText: cs.getPropertyValue('--accent-text').trim(),
+        heading: cs.getPropertyValue('--heading').trim(),
+        text: cs.getPropertyValue('--text').trim(),
+        textMuted: cs.getPropertyValue('--text-muted').trim()
+      };
+    }
+
+    function resizeCanvas() {
+      if (!gameState.puzzle) return;
+      var gs = gameState.puzzle.gridSize;
+      var maxW = Math.min(440, window.innerWidth - 32);
+      cellSize = Math.floor((maxW - gridPadding * 2) / gs);
+      var totalSize = cellSize * gs + gridPadding * 2;
+      canvas.width = totalSize;
+      canvas.height = totalSize;
+      drawGrid();
+    }
+
+    function drawGrid() {
+      if (!gameState.puzzle) return;
+      var tc = getThemeColors();
+      var gs = gameState.puzzle.gridSize;
+      var totalSize = cellSize * gs + gridPadding * 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background
+      ctx.fillStyle = tc.surface;
+      ctx.beginPath();
+      roundRect(ctx, 0, 0, totalSize, totalSize, 12);
+      ctx.fill();
+
+      // Grid lines
+      ctx.strokeStyle = tc.border;
+      ctx.lineWidth = 1;
+      for (var i = 0; i <= gs; i++) {
+        var x = gridPadding + i * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(x, gridPadding);
+        ctx.lineTo(x, gridPadding + gs * cellSize);
+        ctx.stroke();
+
+        var y = gridPadding + i * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(gridPadding, y);
+        ctx.lineTo(gridPadding + gs * cellSize, y);
+        ctx.stroke();
+      }
+
+      // Draw remaining blocks
+      for (var b = 0; b < gameState.remaining.length; b++) {
+        var block = gameState.remaining[b];
+        if (gameState.sliding && gameState.sliding.id === block.id) continue; // drawn separately
+        var isShaking = gameState.shaking && gameState.shaking.block.id === block.id;
+        var isHint = gameState.highlightId === block.id;
+        drawBlock(block, 0, 0, isShaking, isHint, tc);
+      }
+
+      // Draw sliding block
+      if (gameState.sliding && gameState.slideAnim >= 0) {
+        var sb = gameState.sliding;
+        var dir = DIRECTIONS[sb.dir];
+        // Calculate slide distance: from current position to off-screen
+        var maxSlide = 0;
+        if (dir.dx !== 0) maxSlide = canvas.width + cellSize;
+        else maxSlide = canvas.height + cellSize;
+
+        var offsetX = dir.dx * maxSlide * easeOut(gameState.slideAnim);
+        var offsetY = dir.dy * maxSlide * easeOut(gameState.slideAnim);
+
+        // Fade out at end
+        var alpha = 1 - Math.max(0, gameState.slideAnim - 0.5) * 2;
+        ctx.globalAlpha = Math.max(0, alpha);
+        drawBlock(sb, offsetX, offsetY, false, false, tc);
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function drawBlock(block, offsetX, offsetY, shaking, highlight, tc) {
+      var x = gridPadding + block.col * cellSize + 3 + offsetX;
+      var y = gridPadding + block.row * cellSize + 3 + offsetY;
+      var w = cellSize - 6;
+      var h = cellSize - 6;
+
+      // Shake offset
+      if (shaking && gameState.shaking) {
+        var t = gameState.shaking.t;
+        var shake = Math.sin(t * Math.PI * 8) * 4 * (1 - t);
+        x += shake;
+      }
+
+      // Block body
+      var isShakeRed = shaking && gameState.shaking && gameState.shaking.t < 0.8;
+      ctx.fillStyle = isShakeRed ? 'rgb(220, 50, 50)' : BLOCK_COLORS[block.color];
+      ctx.beginPath();
+      roundRect(ctx, x, y, w, h, 8);
+      ctx.fill();
+
+      // Highlight glow for hint
+      if (highlight) {
+        ctx.save();
+        ctx.strokeStyle = tc.accent;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        roundRect(ctx, x - 1, y - 1, w + 2, h + 2, 9);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Direction arrow
+      var cx = x + w / 2;
+      var cy = y + h / 2;
+      var arrowSize = Math.min(w, h) * 0.3;
+      var dir = DIRECTIONS[block.dir];
+
+      ctx.fillStyle = 'rgb(255, 255, 255)';
+      ctx.beginPath();
+
+      if (dir.name === 'up') {
+        ctx.moveTo(cx, cy - arrowSize);
+        ctx.lineTo(cx - arrowSize * 0.7, cy + arrowSize * 0.4);
+        ctx.lineTo(cx + arrowSize * 0.7, cy + arrowSize * 0.4);
+      } else if (dir.name === 'down') {
+        ctx.moveTo(cx, cy + arrowSize);
+        ctx.lineTo(cx - arrowSize * 0.7, cy - arrowSize * 0.4);
+        ctx.lineTo(cx + arrowSize * 0.7, cy - arrowSize * 0.4);
+      } else if (dir.name === 'left') {
+        ctx.moveTo(cx - arrowSize, cy);
+        ctx.lineTo(cx + arrowSize * 0.4, cy - arrowSize * 0.7);
+        ctx.lineTo(cx + arrowSize * 0.4, cy + arrowSize * 0.7);
+      } else if (dir.name === 'right') {
+        ctx.moveTo(cx + arrowSize, cy);
+        ctx.lineTo(cx - arrowSize * 0.4, cy - arrowSize * 0.7);
+        ctx.lineTo(cx - arrowSize * 0.4, cy + arrowSize * 0.7);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function easeOut(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+
+    /* ===== ANIMATION LOOP ===== */
+    var lastFrameTime = 0;
+
+    function animate(timestamp) {
+      if (!lastFrameTime) lastFrameTime = timestamp;
+      var dt = (timestamp - lastFrameTime) / 1000;
+      lastFrameTime = timestamp;
+
+      var needsRedraw = false;
+
+      // Slide animation
+      if (gameState.sliding) {
+        gameState.slideAnim += dt / 0.4; // 400ms
+        if (gameState.slideAnim >= 1) {
+          // Remove block from remaining
+          var slideId = gameState.sliding.id;
+          for (var i = 0; i < gameState.remaining.length; i++) {
+            if (gameState.remaining[i].id === slideId) {
+              gameState.remaining.splice(i, 1);
+              break;
+            }
+          }
+          gameState.cleared++;
+          gameState.sliding = null;
+          gameState.slideAnim = 0;
+          updateGameUI();
+
+          // Check win
+          if (gameState.remaining.length === 0) {
+            // Delay before showing result
+            setTimeout(showResult, 800);
+          }
+        }
+        needsRedraw = true;
+      }
+
+      // Shake animation
+      if (gameState.shaking) {
+        gameState.shaking.t += dt / 0.3; // 300ms
+        if (gameState.shaking.t >= 1) {
+          gameState.shaking = null;
+        }
+        needsRedraw = true;
+      }
+
+      if (needsRedraw) drawGrid();
+
+      // Update live timer
+      if (!gameState.gameOver && gameState.startTime) {
+        var elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+        var mins = Math.floor(elapsed / 60);
+        var secs = elapsed % 60;
+        document.getElementById('timer-text').textContent = mins + ':' + String(secs).padStart(2, '0');
+
+        // Timer bar: fills up over time (visual pressure, no penalty)
+        // Easy: 120s, Medium: 90s, Hard: 60s, Expert: 45s
+        var maxTime = gameState.isDaily ? 120 : [120, 90, 60, 45][gameState.tierIdx] || 120;
+        var pct = Math.min(100, (elapsed / maxTime) * 100);
+        document.getElementById('timer-bar').style.width = pct + '%';
+      }
+
+      animFrame = requestAnimationFrame(animate);
+    }
+
+
+    /* ===== SCREEN MANAGEMENT ===== */
+    function showScreen(id) {
+      var screens = document.querySelectorAll('.bo-screen');
+      for (var i = 0; i < screens.length; i++) {
+        screens[i].classList.remove('active');
+      }
+      document.getElementById(id).classList.add('active');
+    }
+
+
+    /* ===== MENU SCREEN ===== */
+    function renderMenu() {
+      regenHearts();
+      var totalStars = getTotalStars();
+
+      document.getElementById('stat-stars').textContent = totalStars;
+      document.getElementById('stat-streak').textContent = save.streak;
+      document.getElementById('stat-hearts').textContent = save.hearts;
+
+      var dailyNum = getDailyNumber();
+      var dailyBtn = document.getElementById('btn-daily');
+      var todayStr = getDailyDateStr();
+      if (save.lastDaily === todayStr && save.levels['daily-' + todayStr]) {
+        dailyBtn.textContent = 'Daily #' + dailyNum + ' ✓ Solved';
+      } else {
+        dailyBtn.textContent = 'Daily Puzzle #' + dailyNum;
+      }
+
+      // Render tier cards
+      var tierList = document.getElementById('tier-list');
+      tierList.innerHTML = '';
+      for (var t = 0; t < TIERS.length; t++) {
+        var tier = TIERS[t];
+        var unlocked = totalStars >= tier.starsNeeded;
+        var tierStars = 0;
+        for (var lv = 1; lv <= LEVELS_PER_TIER; lv++) {
+          tierStars += (save.levels[getLevelKey(t, lv)] || 0);
+        }
+        var maxStars = LEVELS_PER_TIER * 3;
+        var completed = 0;
+        for (var lv2 = 1; lv2 <= LEVELS_PER_TIER; lv2++) {
+          if (save.levels[getLevelKey(t, lv2)] >= 1) completed++;
+        }
+
+        var card = document.createElement('div');
+        card.className = 'bo-tier' + (unlocked ? '' : ' locked');
+        card.setAttribute('data-tier', t);
+
+        var infoDiv = document.createElement('div');
+        infoDiv.className = 'bo-tier-info';
+
+        var nameSpan = document.createElement('div');
+        nameSpan.className = 'bo-tier-name';
+        nameSpan.textContent = tier.name;
+
+        var descSpan = document.createElement('div');
+        descSpan.className = 'bo-tier-desc';
+        descSpan.textContent = tier.gridSize + 'x' + tier.gridSize + ' grid, ' + tier.minBlocks + '-' + tier.maxBlocks + ' blocks, ' + tier.hearts + ' hearts';
+
+        infoDiv.appendChild(nameSpan);
+        infoDiv.appendChild(descSpan);
+        card.appendChild(infoDiv);
+
+        var rightDiv = document.createElement('div');
+        rightDiv.className = 'bo-tier-progress';
+
+        if (unlocked) {
+          var starsText = document.createElement('div');
+          starsText.className = 'bo-tier-stars';
+          starsText.textContent = tierStars + '/' + maxStars + ' ★';
+          rightDiv.appendChild(starsText);
+
+          var progText = document.createElement('div');
+          progText.textContent = completed + '/' + LEVELS_PER_TIER + ' levels';
+          rightDiv.appendChild(progText);
+        } else {
+          var lockText = document.createElement('div');
+          lockText.className = 'bo-lock-msg';
+          lockText.textContent = '🔒 Need ' + tier.starsNeeded + ' ★';
+          rightDiv.appendChild(lockText);
+        }
+
+        card.appendChild(rightDiv);
+        tierList.appendChild(card);
+
+        (function(tierIdx, isUnlocked) {
+          card.addEventListener('click', function() {
+            if (!isUnlocked) {
+              window.showToast('Need ' + TIERS[tierIdx].starsNeeded + ' stars to unlock ' + TIERS[tierIdx].name);
+              return;
+            }
+            currentTierIdx = tierIdx;
+            renderLevels(tierIdx);
+            showScreen('screen-levels');
+          });
+        })(t, unlocked);
+      }
+
+      showScreen('screen-menu');
+    }
+
+    var currentTierIdx = 0;
+
+    /* ===== LEVEL SELECT ===== */
+    function renderLevels(tierIdx) {
+      currentTierIdx = tierIdx;
+      var tier = TIERS[tierIdx];
+      document.getElementById('levels-title').textContent = tier.name;
+
+      var grid = document.getElementById('levels-grid');
+      grid.innerHTML = '';
+
+      var highest = getHighestUnlockedLevel(tierIdx);
+
+      for (var i = 1; i <= LEVELS_PER_TIER; i++) {
+        var btn = document.createElement('button');
+        btn.className = 'bo-lvl-btn';
+        var stars = save.levels[getLevelKey(tierIdx, i)] || 0;
+        var isUnlocked = i <= highest;
+        var isCurrent = i === highest;
+
+        if (!isUnlocked) btn.classList.add('locked');
+        if (isCurrent) btn.classList.add('current');
+
+        var numSpan = document.createElement('span');
+        numSpan.textContent = i;
+
+        var starsSpan = document.createElement('span');
+        starsSpan.className = 'bo-lvl-stars';
+        if (stars > 0) {
+          var s = '';
+          for (var j = 0; j < 3; j++) s += (j < stars ? '★' : '☆');
+          starsSpan.textContent = s;
+        }
+
+        btn.appendChild(numSpan);
+        btn.appendChild(starsSpan);
+
+        (function(levelNum, unlocked) {
+          btn.addEventListener('click', function() {
+            if (!unlocked) {
+              window.showToast('Complete level ' + (levelNum - 1) + ' first');
+              return;
+            }
+            startGame(tierIdx, levelNum, false);
+          });
+        })(i, isUnlocked);
+
+        grid.appendChild(btn);
+      }
+    }
+
+    /* ===== START GAME ===== */
+    function startGame(tierIdx, levelNum, isDaily) {
+      regenHearts();
+      // Always allow playing — give at least 3 hearts
+      if (save.hearts <= 0) {
+        save.hearts = 3;
+        writeSave();
+      }
+
+      var gs, minB, maxB, maxH, seed;
+
+      if (isDaily) {
+        gs = getDailyGridSize();
+        minB = Math.max(6, gs * gs * 0.3 | 0);
+        maxB = Math.min(gs * gs - 2, gs * gs * 0.5 | 0);
+        maxH = 5;
+        seed = getDailySeed();
+        gameState.isDaily = true;
+        gameState.tierIdx = -1;
+        gameState.levelNum = getDailyNumber();
+      } else {
+        var tier = TIERS[tierIdx];
+        gs = tier.gridSize;
+        // Blocks scale UP within each tier: level 1 gets minBlocks, level 50 gets maxBlocks
+        var progress = (levelNum - 1) / 49; // 0 to 1
+        minB = tier.minBlocks + Math.floor(progress * (tier.maxBlocks - tier.minBlocks));
+        maxB = Math.min(tier.maxBlocks, minB + 2);
+        maxH = tier.hearts;
+        seed = tierIdx * 10000 + levelNum;
+        gameState.isDaily = false;
+        gameState.tierIdx = tierIdx;
+        gameState.levelNum = levelNum;
+      }
+
+      var puzzle = generatePuzzle(gs, minB, maxB, seed);
+      gameState.puzzle = puzzle;
+      gameState.remaining = [];
+      for (var i = 0; i < puzzle.blocks.length; i++) {
+        var b = puzzle.blocks[i];
+        gameState.remaining.push({ row: b.row, col: b.col, dir: b.dir, color: b.color, id: b.id });
+      }
+      gameState.totalBlocks = puzzle.blocks.length;
+      gameState.cleared = 0;
+      gameState.wrongTaps = 0;
+      gameState.hearts = Math.min(save.hearts, maxH);
+      gameState.maxHearts = maxH;
+      gameState.hintsLeft = 3;
+      gameState.sliding = null;
+      gameState.shaking = null;
+      gameState.slideAnim = 0;
+      gameState.startTime = Date.now();
+      gameState.gameOver = false;
+      gameState.highlightId = -1;
+
+      // Label
+      if (isDaily) {
+        document.getElementById('game-label').textContent = 'Daily #' + gameState.levelNum;
+      } else {
+        document.getElementById('game-label').textContent = TIERS[tierIdx].name + ' — Level ' + levelNum;
+      }
+
+      updateGameUI();
+      showScreen('screen-game');
+      resizeCanvas();
+
+      // Start animation loop
+      lastFrameTime = 0;
+      if (animFrame) cancelAnimationFrame(animFrame);
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    function updateGameUI() {
+      document.getElementById('game-blocks').textContent = 'Blocks: ' + gameState.cleared + '/' + gameState.totalBlocks;
+      document.getElementById('game-hearts').textContent = '♥ ' + gameState.hearts;
+    }
+
+
+    /* ===== TAP HANDLING ===== */
+    function handleTap(px, py) {
+      if (gameState.gameOver) return;
+      if (gameState.sliding) return; // wait for animation
+      if (gameState.shaking) return;
+
+      var gs = gameState.puzzle.gridSize;
+      var col = Math.floor((px - gridPadding) / cellSize);
+      var row = Math.floor((py - gridPadding) / cellSize);
+
+      if (row < 0 || row >= gs || col < 0 || col >= gs) return;
+
+      // Find block at this position
+      var tapped = null;
+      for (var i = 0; i < gameState.remaining.length; i++) {
+        if (gameState.remaining[i].row === row && gameState.remaining[i].col === col) {
+          tapped = gameState.remaining[i];
+          break;
+        }
+      }
+
+      if (!tapped) return;
+
+      gameState.highlightId = -1; // clear hint
+
+      // Check if path is clear
+      if (canExit(tapped, gameState.remaining, gs)) {
+        // Correct! Slide out
+        gameState.sliding = tapped;
+        gameState.slideAnim = 0;
+      } else {
+        // Wrong tap
+        gameState.wrongTaps++;
+        gameState.hearts--;
+        save.hearts = Math.max(0, save.hearts - 1);
+        if (save.heartsTime === 0 || save.hearts < 5) {
+          save.heartsTime = Date.now();
+        }
+        writeSave();
+        updateGameUI();
+
+        gameState.shaking = { block: tapped, t: 0 };
+        document.getElementById('game-hint').textContent = 'Path blocked! Wrong order.';
+        setTimeout(function() {
+          if (!gameState.gameOver) {
+            document.getElementById('game-hint').textContent = 'Tap a block to slide it out';
+          }
+        }, 1500);
+
+        if (gameState.hearts <= 0) {
+          gameState.gameOver = true;
+          document.getElementById('game-hint').textContent = 'Out of hearts! Try again.';
+          setTimeout(function() {
+            showGameOver();
+          }, 1000);
+        }
+      }
+    }
+
+    function getCanvasCoords(e) {
+      var rect = canvas.getBoundingClientRect();
+      var scaleX = canvas.width / rect.width;
+      var scaleY = canvas.height / rect.height;
+      var clientX, clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    canvas.addEventListener('click', function(e) {
+      var coords = getCanvasCoords(e);
+      handleTap(coords.x, coords.y);
+    });
+
+    canvas.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      var coords = getCanvasCoords(e);
+      handleTap(coords.x, coords.y);
+    }, { passive: false });
+
+
+    /* ===== HINT ===== */
+    document.getElementById('btn-hint').addEventListener('click', function() {
+      if (gameState.gameOver) return;
+      if (gameState.hintsLeft <= 0) {
+        window.showToast('No hints left for this level');
+        return;
+      }
+      if (gameState.sliding || gameState.shaking) return;
+
+      // Find a block that can exit
+      var gs = gameState.puzzle.gridSize;
+      for (var i = 0; i < gameState.remaining.length; i++) {
+        if (canExit(gameState.remaining[i], gameState.remaining, gs)) {
+          gameState.highlightId = gameState.remaining[i].id;
+          gameState.hintsLeft--;
+          document.getElementById('btn-hint').textContent = '💡 Hint (' + gameState.hintsLeft + ')';
+          drawGrid();
+          window.showToast('Tap the highlighted block!');
+          return;
+        }
+      }
+      window.showToast('No movable blocks found — try retry');
+    });
+
+    /* ===== RETRY ===== */
+    document.getElementById('btn-retry').addEventListener('click', function() {
+      if (animFrame) cancelAnimationFrame(animFrame);
+      // Restore hearts for retry
+      regenHearts();
+      if (save.hearts <= 0) {
+        save.hearts = 1; // give at least 1 heart for retry
+        writeSave();
+      }
+      if (gameState.isDaily) {
+        startGame(-1, 0, true);
+      } else {
+        startGame(gameState.tierIdx, gameState.levelNum, false);
+      }
+    });
+
+    /* ===== BACK TO LEVELS ===== */
+    document.getElementById('btn-back-levels').addEventListener('click', function() {
+      if (animFrame) cancelAnimationFrame(animFrame);
+      if (gameState.isDaily) {
+        renderMenu();
+      } else {
+        renderLevels(gameState.tierIdx);
+        showScreen('screen-levels');
+      }
+    });
+
+    /* ===== LEVELS BACK ===== */
+    document.getElementById('btn-levels-back').addEventListener('click', function() {
+      renderMenu();
+    });
+
+    /* ===== DAILY BUTTON ===== */
+    document.getElementById('btn-daily').addEventListener('click', function() {
+      var todayStr = getDailyDateStr();
+      if (save.lastDaily === todayStr && save.levels['daily-' + todayStr]) {
+        window.showToast('Already solved today! Come back tomorrow.');
+        return;
+      }
+      startGame(-1, 0, true);
+    });
+
+
+    /* ===== RESULT SCREEN ===== */
+    function showResult() {
+      gameState.gameOver = true;
+      if (animFrame) cancelAnimationFrame(animFrame);
+
+      var elapsed = Math.round((Date.now() - gameState.startTime) / 1000);
+      var mins = Math.floor(elapsed / 60);
+      var secs = elapsed % 60;
+      var timeStr = mins + ':' + String(secs).padStart(2, '0');
+
+      // Stars based on wrong taps AND time
+      var maxTime = gameState.isDaily ? 120 : [120, 90, 60, 45][gameState.tierIdx] || 120;
+      var stars = 3;
+      if (gameState.wrongTaps >= 3 || elapsed > maxTime * 2) stars = 1;
+      else if (gameState.wrongTaps >= 1 || elapsed > maxTime) stars = 2;
+
+      // Save stars
+      if (gameState.isDaily) {
+        var todayStr = getDailyDateStr();
+        var existingStars = save.levels['daily-' + todayStr] || 0;
+        save.levels['daily-' + todayStr] = Math.max(existingStars, stars);
+        save.lastDaily = todayStr;
+
+        // Streak logic
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        var yStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth() + 1).padStart(2, '0') + '-' + String(yesterday.getDate()).padStart(2, '0');
+        if (save.lastDailyCompleted === yStr || !save.lastDailyCompleted) {
+          save.streak = (save.streak || 0) + 1;
+        } else if (save.lastDailyCompleted !== todayStr) {
+          save.streak = 1;
+        }
+        save.lastDailyCompleted = todayStr;
+      } else {
+        var key = getLevelKey(gameState.tierIdx, gameState.levelNum);
+        var prev = save.levels[key] || 0;
+        save.levels[key] = Math.max(prev, stars);
+      }
+      writeSave();
+
+      // Render result
+      var emoji = stars === 3 ? '🎉' : (stars === 2 ? '👏' : '✅');
+      document.getElementById('result-emoji').textContent = emoji;
+      document.getElementById('result-title').textContent = gameState.isDaily ? 'Daily Solved!' : 'Level Complete!';
+
+      var starsStr = '';
+      for (var i = 0; i < 3; i++) starsStr += (i < stars ? '★' : '☆');
+      document.getElementById('result-stars').textContent = starsStr;
+
+      var statsDiv = document.getElementById('result-stats');
+      statsDiv.innerHTML = '';
+
+      var rows = [
+        ['Wrong Taps', gameState.wrongTaps],
+        ['Blocks Cleared', gameState.cleared],
+        ['Time', timeStr]
+      ];
+      for (var r = 0; r < rows.length; r++) {
+        var row = document.createElement('div');
+        row.className = 'bo-result-row';
+        var label = document.createElement('span');
+        label.textContent = rows[r][0];
+        var val = document.createElement('span');
+        val.textContent = rows[r][1];
+        row.appendChild(label);
+        row.appendChild(val);
+        statsDiv.appendChild(row);
+      }
+
+      // Actions
+      var actDiv = document.getElementById('result-actions');
+      actDiv.innerHTML = '';
+
+      // Next Level button (primary)
+      if (!gameState.isDaily && gameState.levelNum < LEVELS_PER_TIER) {
+        var nextBtn = document.createElement('button');
+        nextBtn.className = 'bo-btn bo-btn--accent bo-btn--big';
+        nextBtn.textContent = 'Level ' + (gameState.levelNum + 1) + ' →';
+        nextBtn.addEventListener('click', function() {
+          startGame(gameState.tierIdx, gameState.levelNum + 1, false);
+        });
+        actDiv.appendChild(nextBtn);
+      }
+
+      // Replay for 3 stars
+      if (stars < 3) {
+        var replayBtn = document.createElement('button');
+        replayBtn.className = 'bo-btn bo-btn--big';
+        replayBtn.textContent = 'Replay for 3★';
+        replayBtn.addEventListener('click', function() {
+          if (gameState.isDaily) {
+            startGame(-1, 0, true);
+          } else {
+            startGame(gameState.tierIdx, gameState.levelNum, false);
+          }
+        });
+        actDiv.appendChild(replayBtn);
+      }
+
+      // Share
+      var shareBtn = document.createElement('button');
+      shareBtn.className = 'bo-btn bo-btn--big';
+      shareBtn.textContent = 'Share Result';
+      shareBtn.addEventListener('click', function() {
+        var dailyNum = gameState.isDaily ? getDailyNumber() : gameState.levelNum;
+        var label = gameState.isDaily ? 'Blockout #' + dailyNum : 'Blockout ' + TIERS[gameState.tierIdx].name + ' L' + gameState.levelNum;
+        var shareStars = '';
+        for (var s = 0; s < 3; s++) shareStars += (s < stars ? '★' : '☆');
+        var text = label + ' 🎯\n' + shareStars + ' — ' + gameState.wrongTaps + ' wrong taps';
+        if (gameState.isDaily) text += '\n🔥 Streak: ' + save.streak + ' days';
+        text += '\nhttps://tool.teamzlab.com/games/route/';
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            window.showToast('Result copied to clipboard!');
+          }).catch(function() {
+            window.showToast('Copy failed — try manually');
+          });
+        } else {
+          window.showToast('Clipboard not available');
+        }
+      });
+      actDiv.appendChild(shareBtn);
+
+      // Back to levels / menu
+      var backBtn = document.createElement('button');
+      backBtn.className = 'bo-btn bo-btn--big';
+      backBtn.textContent = gameState.isDaily ? 'Back to Menu' : 'Back to Levels';
+      backBtn.addEventListener('click', function() {
+        if (gameState.isDaily) {
+          renderMenu();
+        } else {
+          renderLevels(gameState.tierIdx);
+          showScreen('screen-levels');
+        }
+      });
+      actDiv.appendChild(backBtn);
+
+      showScreen('screen-result');
+    }
+
+    function showGameOver() {
+      if (animFrame) cancelAnimationFrame(animFrame);
+
+      document.getElementById('result-emoji').textContent = '💔';
+      document.getElementById('result-title').textContent = 'Out of Hearts!';
+      document.getElementById('result-stars').textContent = '☆☆☆';
+
+      var statsDiv = document.getElementById('result-stats');
+      statsDiv.innerHTML = '';
+
+      var elapsed = Math.round((Date.now() - gameState.startTime) / 1000);
+      var mins = Math.floor(elapsed / 60);
+      var secs = elapsed % 60;
+      var timeStr = mins + ':' + String(secs).padStart(2, '0');
+
+      var rows = [
+        ['Wrong Taps', gameState.wrongTaps],
+        ['Blocks Cleared', gameState.cleared + '/' + gameState.totalBlocks],
+        ['Time', timeStr]
+      ];
+      for (var r = 0; r < rows.length; r++) {
+        var row = document.createElement('div');
+        row.className = 'bo-result-row';
+        var label = document.createElement('span');
+        label.textContent = rows[r][0];
+        var val = document.createElement('span');
+        val.textContent = rows[r][1];
+        row.appendChild(label);
+        row.appendChild(val);
+        statsDiv.appendChild(row);
+      }
+
+      var actDiv = document.getElementById('result-actions');
+      actDiv.innerHTML = '';
+
+      // Retry
+      var retryBtn = document.createElement('button');
+      retryBtn.className = 'bo-btn bo-btn--accent bo-btn--big';
+      retryBtn.textContent = '🔄 Retry Level';
+      retryBtn.addEventListener('click', function() {
+        regenHearts();
+        if (save.hearts <= 0) {
+          save.hearts = 3;
+          writeSave();
+        }
+        if (gameState.isDaily) {
+          startGame(-1, 0, true);
+        } else {
+          startGame(gameState.tierIdx, gameState.levelNum, false);
+        }
+      });
+      actDiv.appendChild(retryBtn);
+
+      // Back
+      var backBtn = document.createElement('button');
+      backBtn.className = 'bo-btn bo-btn--big';
+      backBtn.textContent = gameState.isDaily ? 'Back to Menu' : 'Back to Levels';
+      backBtn.addEventListener('click', function() {
+        if (gameState.isDaily) {
+          renderMenu();
+        } else {
+          renderLevels(gameState.tierIdx);
+          showScreen('screen-levels');
+        }
+      });
+      actDiv.appendChild(backBtn);
+
+      showScreen('screen-result');
+    }
+
+
+    /* ===== THEME CHANGE OBSERVER ===== */
+    var observer = new MutationObserver(function(mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        if (mutations[i].attributeName === 'data-theme') {
+          drawGrid();
+          break;
+        }
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true });
+
+    /* ===== WINDOW RESIZE ===== */
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        resizeCanvas();
+      }, 100);
+    });
+
+
+    /* ===== INIT ===== */
+    loadSave();
+    renderMenu();
+
+  });
+  </script>
+</body>
+</html>

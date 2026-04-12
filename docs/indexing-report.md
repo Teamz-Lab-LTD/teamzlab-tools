@@ -1,4 +1,4 @@
-# Indexing Report — 2026-04-11 00:47
+# Indexing Report — 2026-04-11 00:51
 
 Total pages: 1
 Checked: 1
@@ -10,5 +10,5 @@ Errors: 0
 
 | Page | Reason |
 |---|---|
-| /au-care/aged-care-compliance-hobart/ | URL is unknown to Google |
+| /compliance/rest-home-audit-checklist-nz/ | URL is unknown to Google |
 
