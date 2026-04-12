@@ -31,6 +31,26 @@ var TeamzTools = (function () {
   var SITE_URL = 'https://tool.teamzlab.com';
   var TEAMZ_URL = 'https://teamzlab.com';
 
+  // ===== Native App Mode (?app query param) =====
+  // When loaded inside the Toss app WebView, hide site chrome and skip in-app overlay.
+  var _isNativeApp = new URLSearchParams(window.location.search).has('app');
+  if (_isNativeApp) {
+    // Persist across navigations within the same session
+    try { sessionStorage.setItem('tz_native_app', '1'); } catch(e) {}
+  } else {
+    try { _isNativeApp = sessionStorage.getItem('tz_native_app') === '1'; } catch(e) {}
+  }
+  if (_isNativeApp) {
+    var appStyle = document.createElement('style');
+    appStyle.textContent =
+      '#site-header, #site-footer, .floating-cta, .inapp-overlay, .cookie-banner { display: none !important; }' +
+      'body { padding-top: 0 !important; margin-top: 0 !important; }' +
+      '.tool-container, .page-content, main { padding-top: 8px !important; }';
+    document.head.appendChild(appStyle);
+    // Pre-dismiss in-app overlay so it never triggers
+    try { sessionStorage.setItem('tz_inapp_closed', '1'); } catch(e) {}
+  }
+
   // ===== Global Toast Notification =====
   var _toastStyle = null;
   function _showToast(msg) {

@@ -53,6 +53,11 @@
   var ua = navigator.userAgent || '';
   if (/HeadlessChrome|PhantomJS|Puppeteer|Selenium|Lighthouse|PageSpeed/i.test(ua)) return;
 
+  // Skip AdSense in native app mode — the app has its own Google Mobile Ads
+  var _isNativeApp = new URLSearchParams(window.location.search).has('app');
+  if (!_isNativeApp) { try { _isNativeApp = sessionStorage.getItem('tz_native_app') === '1'; } catch(e) {} }
+  if (_isNativeApp) return;
+
   // In-app browser detection
   var isInApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|Line\/|Twitter|Snapchat|MicroMessenger|WeChat|TikTok|BytedanceWebview/i.test(ua);
 
