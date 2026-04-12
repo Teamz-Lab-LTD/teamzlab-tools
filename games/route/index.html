@@ -1863,15 +1863,39 @@
       var actDiv = document.getElementById('result-actions');
       actDiv.innerHTML = '';
 
-      // Next Level button (primary)
+      // Next Level button (primary) — auto-advances after a countdown
+      var autoAdvanceTimer = null;
+      var autoAdvanceTick = null;
+      function cancelAutoAdvance() {
+        if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+        if (autoAdvanceTick) { clearInterval(autoAdvanceTick); autoAdvanceTick = null; }
+      }
       if (!gameState.isDaily && gameState.levelNum < LEVELS_PER_TIER) {
         var nextBtn = document.createElement('button');
         nextBtn.className = 'bo-btn bo-btn--accent bo-btn--big';
-        nextBtn.textContent = 'Level ' + (gameState.levelNum + 1) + ' →';
+        var nextLevelNum = gameState.levelNum + 1;
+        var baseLabel = 'Level ' + nextLevelNum + ' →';
+        // Only auto-advance when player earned at least 1 star (success path)
+        var AUTO_ADVANCE_MS = 3500;
+        var remaining = Math.ceil(AUTO_ADVANCE_MS / 1000);
+        nextBtn.textContent = baseLabel + ' (' + remaining + ')';
         nextBtn.addEventListener('click', function() {
-          startGame(gameState.tierIdx, gameState.levelNum + 1, false);
+          cancelAutoAdvance();
+          startGame(gameState.tierIdx, nextLevelNum, false);
         });
         actDiv.appendChild(nextBtn);
+        // Start countdown AFTER the crescendo (stars + count-up finish around 2600ms)
+        setTimeout(function() {
+          autoAdvanceTick = setInterval(function() {
+            remaining--;
+            if (remaining > 0) nextBtn.textContent = baseLabel + ' (' + remaining + ')';
+            else nextBtn.textContent = baseLabel;
+          }, 1000);
+          autoAdvanceTimer = setTimeout(function() {
+            cancelAutoAdvance();
+            startGame(gameState.tierIdx, nextLevelNum, false);
+          }, AUTO_ADVANCE_MS);
+        }, 2600);
       }
 
       // Replay for 3 stars
@@ -1880,6 +1904,7 @@
         replayBtn.className = 'bo-btn bo-btn--big';
         replayBtn.textContent = 'Replay for 3★';
         replayBtn.addEventListener('click', function() {
+          cancelAutoAdvance();
           if (gameState.isDaily) {
             startGame(-1, 0, true);
           } else {
@@ -1894,6 +1919,7 @@
       shareBtn.className = 'bo-btn bo-btn--big';
       shareBtn.textContent = 'Share Result';
       shareBtn.addEventListener('click', function() {
+        cancelAutoAdvance();
         var dailyNum = gameState.isDaily ? getDailyNumber() : gameState.levelNum;
         var label = gameState.isDaily ? 'Blockout #' + dailyNum : 'Blockout ' + TIERS[gameState.tierIdx].name + ' L' + gameState.levelNum;
         var shareStars = '';

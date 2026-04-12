@@ -1278,7 +1278,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Child Growth Tracker',d:'Track your child\'s height and weight with free growth percentile charts. Based on WHO/CDC data. Save measurements over time. Private, no sign-up.',h:'/kids/child-growth-tracker/'},
   {t:'Child Height Predictor',d:'Predict your child\'s adult height using the mid-parental height method. Enter parents\' heights and child\'s gender for an estimated range. Free tool',h:'/kids/child-height-predictor/'},
   {t:'Child Sleep Calculator',d:'Calculate how much sleep your child needs based on AAP guidelines. Get ideal bedtime, sleep cycle count, nap recommendations, and hygiene tips. Free.',h:'/kids/child-sleep-calculator/'},
-  {t:'Decode Teen Texts',d:'Decode what your teen\'s texts actually mean. Translates Gen Z slang to plain English, flags concerning terms (drugs, bullying, self-harm). 100% priva',h:'/kids/decode-teen-texts/'},
+  {t:'Decode Teen Texts',d:'Gen Z slang translator for parents. Decode teen texts to plain English or encode your messages into teen slang with a cringe-o-meter. Flags drug, bull',h:'/kids/decode-teen-texts/'},
   {t:'Diaper Cost Calculator',d:'Estimate total diaper costs until potty training. Calculate monthly and yearly spending by brand tier, see cloth diaper savings. Free budget planner.',h:'/kids/diaper-cost-calculator/'},
   {t:'Handwriting Practice',d:'Practice handwriting with this free letter tracing tool. Trace uppercase, lowercase letters and numbers on screen. Touch and mouse support. Private.',h:'/kids/handwriting-practice/'},
   {t:'Kids & Education Tools',d:'Free kids education and health tools — times tables quiz, spelling, reading tests, growth tracker, BMI calculator, and more. Safe and private.',h:'/kids/'},
