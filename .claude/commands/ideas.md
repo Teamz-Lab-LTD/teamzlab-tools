@@ -215,6 +215,50 @@ python3 scripts/seo-keyword-engine.py ph-trending 2>/dev/null | head -20 || true
 # LOOK FOR: hubs with rising trends → build more tools there ASAP
 ```
 
+### Phase 4d: REVENUE VELOCITY SCORING (the PRIMARY ranking metric)
+
+**STOP using vague "high RPM" or "low competition" as the deciding factor.** Use ONE composite number — expected $/mo by month 3 — produced by `build-revenue-velocity-score.py`. This is the PRIMARY sort key; everything else is informational.
+
+```bash
+# 1. Refresh RPM benchmarks if stale (>30 days)
+python3 scripts/build-public-rpm-benchmarks.py            # writes data/rpm-benchmarks.json
+python3 scripts/build-public-rpm-benchmarks.py --top 20   # peek at highest-RPM niches
+
+# 2. Refresh Reddit crowd RPM data (quarterly is enough; --quick for daily checks)
+python3 scripts/build-reddit-rpm-tracker.py --quick       # ~3 min, hits 7 subreddits
+python3 scripts/build-reddit-rpm-tracker.py --report      # show aggregated crowd RPM data
+
+# 3. Build candidate ideas list as JSON, then score
+# Format: [{slug, niche, country, est_visitors_mo3, time_to_rank_months, serp_winnability,
+#           programmatic_variants, multilang_variants, retention_score, lead_gen?, named_affiliate_cpa?}]
+# Save to /tmp/candidates.json then:
+python3 scripts/build-revenue-velocity-score.py --input /tmp/candidates.json
+
+# Or test the scorer with built-in samples:
+python3 scripts/build-revenue-velocity-score.py --demo
+```
+
+**The scorer's formula (transparency):**
+- `monthly_$ = visitors_mo3 × (rpm/1000) × bot_resistance(0.74) × time_to_rank_factor × winnability_factor × programmatic_mult × multilang_mult × retention_mult × adsense_maturity(0.55)`
+- For lead-gen ideas: switches to `leads × CPA` math (0.5% conversion).
+
+**Your input fields when building the JSON:**
+- `niche` — must match a key in `data/rpm-benchmarks.json` (finance, tax, mortgage, insurance, longevity, b2b-leadgen, etc.)
+- `country` — ISO code; tier-S countries auto-multiply 1.5x, emerging 0.05x
+- `est_visitors_mo3` — be HONEST. New tool with 0 backlinks gets 50-300 visitors month-3 in low-comp niche, 200-800 in moderate, almost 0 if SERP entrenched
+- `time_to_rank_months` — 1-2 for blog-post SERPs, 3-4 for moderate competition, 5-6+ for entrenched
+- `serp_winnability` — 1-10 (10 = blog post #1, 1 = NerdWallet/Calculator.net own SERP)
+- `programmatic_variants` — 0 = none, 51 = US states, 47 = JP prefectures, 27 = EU countries
+- `multilang_variants` — 0=EN only, 2=+ES+PT, 4=+ES+PT+DE+FR
+- `retention_score` — 1-10 (10 = daily biological trigger, 2 = one-shot calculator)
+- `lead_gen` (bool) + `named_affiliate_cpa` (USD per conversion)
+
+**Use the output to RANK Build NOW ideas.** Highest expected $/mo wins, regardless of whether it's calculator/quiz/wizard/embeddable. The scorer tells you whether a fancy retention tool with low RPM beats a one-shot calculator with high RPM (or vice versa) — for YOUR situation, with YOUR account maturity, with YOUR bot rate.
+
+**Calibration:** the scorer's defaults reflect 2026-04-13 reality (AdSense account 25 days old, 26% bot rate). Update `ADSENSE_MATURITY_FACTOR` and `BOT_RESISTANCE_BASE` in the script every 30 days as account ages and bots are filtered.
+
+---
+
 ### Phase 4c: INVOKE SEO SKILLS (chain expert AI workflows on top of script data)
 
 After scripts produce raw data, **invoke these SEO skills** via the `Skill` tool to layer expert AI analysis. Skills apply specialist knowledge that scripts cannot — they're how you turn data into strategy.
@@ -396,9 +440,11 @@ Search using WebSearch:
 
 Present **10-15+ tool ideas** in this summary table:
 
-| # | Tool Name | Target Keyword | Region | Niche RPM | Programmatic | Multilang | Score | Tier | Est. $/mo |
-|---|-----------|---------------|--------|-----------|-------------|-----------|-------|------|-----------|
-| 1 | ... | ... | US | Finance ($15-30) | ×50 states | +ES +PT | 9.2 | Build NOW | $200-400 |
+| # | Tool Name | Target Keyword | Region | Niche RPM | Programmatic | Multilang | **Velocity $/mo (mo3)** | Tier |
+|---|-----------|---------------|--------|-----------|-------------|-----------|-------------------------|------|
+| 1 | ... | ... | US | Finance ($18-45) | ×50 states | +ES +PT | **$48** | Build NOW |
+
+**Sort STRICTLY by Velocity $/mo descending.** That column is the output of `build-revenue-velocity-score.py` (Phase 4d). Top 5 = Build NOW; rest = Build Soon / Backlog. The old composite "Score 1-10" formula is OBSOLETE — do not use.
 
 **For EACH idea, provide ALL of these details:**
 
@@ -457,7 +503,9 @@ Group related ideas into **hub clusters** — this is how you beat bigger sites:
 ## Phase 9: Rank & Score
 
 Sort ALL ideas by this formula:
-**Score = (Traffic Potential × 3) + (Low Competition × 3) + (Revenue/RPM × 2) + (Virality × 2) + (Backlink Potential × 1) + (Repeat Usage × 1) + (Programmatic Multiplier × 2) + (Multilang Multiplier × 1) - (Build Difficulty × 1)**
+**OBSOLETE — DO NOT USE.** Replaced 2026-04-13 by `build-revenue-velocity-score.py` which produces a single $/mo number. The composite formula below is kept only for legacy comparison; the velocity script's $/mo is the actual ranking key.
+
+~~Score = (Traffic Potential × 3) + (Low Competition × 3) + (Revenue/RPM × 2) + (Virality × 2) + (Backlink Potential × 1) + (Repeat Usage × 1) + (Programmatic Multiplier × 2) + (Multilang Multiplier × 1) - (Build Difficulty × 1)~~
 
 **Multiplier bonuses:**
 - **Programmatic Multiplier**: 0 = no variants, 1 = ×8 states, 2 = ×16 regions, 3 = ×30+ cities/states
