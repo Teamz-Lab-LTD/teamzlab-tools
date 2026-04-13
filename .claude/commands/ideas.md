@@ -2,10 +2,88 @@
 
 The user has provided input (keyword, URL, screenshot, or topic). Your job: find **high-traffic, low-competition, high-revenue tool ideas** for tool.teamzlab.com.
 
-**CORE PRINCIPLE**: Start from "how does this make money?" and work backwards to keywords. Revenue per visitor matters more than raw traffic.
+**CORE PRINCIPLE**: Start from "how does this make money?" and work backwards to keywords. Revenue per visitor matters more than raw traffic. **Daily/weekly RETENTION matters more than one-shot pageviews.**
 
 ## User Input
 $ARGUMENTS
+
+---
+
+## Phase 0: HARD GATES (MANDATORY — apply BEFORE generating any idea)
+
+The 2026-04-13 deep research synthesis (`teamz-company-automation/MONEY_MACHINE_2026_2027.md`) is the source of truth. Read it FIRST and align every idea with it. Past failures (GLP-1 tracker, perimenopause journal, burnout test) all flunked these gates — apply them ruthlessly.
+
+### Gate 1 — Master plan alignment
+```bash
+test -f teamz-company-automation/MONEY_MACHINE_2026_2027.md && head -120 teamz-company-automation/MONEY_MACHINE_2026_2027.md
+```
+- Does this idea fit one of the active GO clusters (TCJA-2027, Singapore, Japan English, CSRD/SME, Longevity/PhenoAge) or sleeper bets (oral-health-longevity, Neko Health prep, vSME)?
+- If NO → it must clear an even higher bar (10/10 score, named affiliate, retention-native).
+
+### Gate 2 — SERP reality check (kills the "looks great but actually saturated" trap)
+For EVERY candidate keyword, ACTUALLY search the SERP via WebSearch. Auto-FAIL if:
+- **Top 10 = 5+ funded mobile apps** (e.g., GLP-1 tracker → Shotsy/Glapp/Pep — web tool loses)
+- **Top 3 = MD-backed/clinically-certified app** (e.g., Balance by Dr. Newson — trust moat)
+- **Top 3 includes a behind-paywall licensed instrument** (e.g., Maslach Burnout Inventory — can't republish)
+- **Top 3 = entrenched generic site** (calculator.net, omnicalculator.com) AND you have no programmatic + multilang + AI angle to differentiate
+
+Validate-new score is NECESSARY but NOT SUFFICIENT. SERP evidence overrides score.
+
+### Gate 3 — Retention-native preferred over one-shot
+Before approving, ask: "Would a user open this tomorrow?" Score:
+- **10/10** — biological/seasonal trigger forces return (cycle day, injection day, lab day, deadline countdown, daily streak)
+- **7/10** — likely to return weekly/monthly (planner, tracker with history, journal)
+- **4/10** — bookmarks for later, returns occasionally
+- **2/10** — pure one-shot calculator (no save state, no compare, no track)
+
+Reject 2/10 **unless** it's high-RPM finance/tax (e.g., TCJA bracket calc) AND part of a hub cluster AND has a programmatic SEO multiplier (×50 states).
+
+### Gate 4 — Named affiliate program required
+"Affiliate potential" is not enough. Each Build NOW idea must name a SPECIFIC program with terms:
+- ✅ "AgelessRx Rx longevity meds — $50-150 CPA, 30-day cookie"
+- ✅ "Hims weight loss — $175-250 CPA"
+- ✅ "MoneySmart SG credit cards — $80-150 CPA"
+- ❌ "Has affiliate potential" / "could monetize via X"
+
+If you can't name the program after a WebSearch, downgrade the idea.
+
+### Gate 5 — AdSense + content compliance
+Auto-skip niches with restricted ads or licensed instruments:
+- Mental health diagnosis / therapy direct (BetterHelp lawsuits reduced payouts)
+- Maslach Burnout Inventory or other proprietary clinical instruments
+- Alcohol, gambling, weapons, betting
+- Direct medical/pharma claims without licensed sourcing
+- Crypto trading (volatile, AdSense hostile)
+- Surveillance / employee monitoring (ad policy risk)
+
+### Gate 6 — Programmatic + Multilang flag (MUST evaluate every idea)
+For every Build NOW idea, answer:
+- **Programmatic count:** how many variant pages can `build-programmatic-seo.py` generate? (×50 states / ×47 prefectures / ×27 EU countries / ×30 cities / 0 = generic)
+- **Multilang verdict:** Finance/Tax/Career/Legal/Business → MUST have +ES +PT version. Health → +DE +FR. Otherwise EN only.
+
+Idea WITHOUT programmatic OR multilang potential needs a 9+ score to reach Build NOW.
+
+### Gate 7 — Halal check (user is Muslim)
+- ❌ Alcohol / wine / beer / cocktail / spirit calculators
+- ❌ Gambling / betting / lottery / casino tools
+- ❌ Conventional interest-heavy framing where takaful/Islamic finance alternative exists
+- ✅ Re-frame interest products with takaful/halal-aware angle when possible
+
+### Gate 8 — AdSense reality (£0 problem is REAL)
+Until AdSense is unblocked (see MONEY_MACHINE_2026_2027.md section 1), every idea MUST have a non-AdSense revenue path (named affiliate, lead-gen, premium tier). Pure-AdSense ideas earn £0 right now.
+
+### Gate 9 — Stop building in bloated hubs
+- Bloated hubs (≥100 tools): `/evergreen/`, `/tools/`, `/health/`, `/us/` — diminishing returns. Only add if it's a GO-cluster member.
+- Fat hubs (50-75): `/dev/`. Same rule.
+- Pour energy into thin hubs: `/sg/` (16), `/jp/` (9), `/it/` (9), `/fr/` (9), `/ae/` (10), `/longevity/` (new), `/eu/csrd/` (new).
+
+### Gate 10 — Fatal patterns to detect (auto-SKIP if any match)
+- "Tracker app" niche where 5+ funded native mobile apps own the SERP
+- Health niche with MD/clinician moat in top 3
+- "Streak counter" feature already built into existing platforms (Buffer, Metricool, Apple Health)
+- Generic English calculator (BMI, tip, compound interest) — saturated, RPM collapsed
+- Trend-jack with <30-day momentum (decays before SEO compounds)
+- AI image/meme generators (saturated, ad-blocker heavy, retention near zero)
 
 ---
 
@@ -136,6 +214,60 @@ python3 scripts/seo-keyword-engine.py ph-trending 2>/dev/null | head -20 || true
 ./scripts/build-seo-audit.sh --batch-trends 2>/dev/null | head -30
 # LOOK FOR: hubs with rising trends → build more tools there ASAP
 ```
+
+### Phase 4c: INVOKE SEO SKILLS (chain expert AI workflows on top of script data)
+
+After scripts produce raw data, **invoke these SEO skills** via the `Skill` tool to layer expert AI analysis. Skills apply specialist knowledge that scripts cannot — they're how you turn data into strategy.
+
+**Mandatory chain (run in this order):**
+
+1. **`seo`** — the orchestrator. Pass it the user's input + topic. It coordinates a full SEO snapshot (site health, top winners, competitive landscape) and returns a baseline brief that informs every later step.
+
+1b. **`seo-google`** — pulls live Search Console (queries, impressions, CTR, indexation), PageSpeed Insights v5 (CWV with INP), CrUX field data (25-week history), GA4 organic traffic, Indexing API status. **Use this BEFORE proposing ideas** — never recommend a tool in a niche where you haven't checked what's already ranking and how it's performing.
+
+1c. **`seo-audit`** — full site audit with parallel subagent delegation. Run when input is broad (e.g. "what should I build for finance?") to detect business type, score topical authority per hub, and surface where new tools have the biggest leverage.
+
+1d. **`seo-plan`** — strategic SEO planning. Use when user asks for a roadmap (not just one idea). Industry templates + competitive analysis + content strategy + implementation roadmap. Pair with MONEY_MACHINE_2026_2027.md to align with the active 90-day plan.
+
+2. **`seo-geo`** — Generative Engine Optimization. **CRITICAL** because ChatGPT/Perplexity already send more traffic than Google for tool.teamzlab.com. Pass it each Build NOW candidate slug → returns AI-citation hooks, llms.txt entry suggestions, intro paragraph format that maximizes Perplexity/ChatGPT citation probability.
+
+3. **`seo-programmatic`** — for every Build NOW idea, ask: "Can this become 50-500 variant pages?" If yes, get the full programmatic blueprint (template axis, uniqueness strategy, thin-content gates, internal linking automation, index bloat prevention). This is the single biggest scale lever.
+
+4. **`seo-content`** — E-E-A-T + AI-citation readiness analysis on the proposed content angle. Validates: is this content authoritative enough for AI search to cite? Does it pass YMYL trust thresholds for health/finance niches?
+
+5. **`seo-schema`** — for each Build NOW idea, design the JSON-LD stack (FAQPage + WebApplication + BreadcrumbList + niche-specific: FinancialProduct / GovernmentService / MedicalWebPage / Dataset / Report).
+
+6. **`seo-backlinks`** — for each Build NOW idea, name 3-5 SPECIFIC niche-relevant backlink targets (not generic directories). Uses Moz/Bing/Common Crawl free APIs.
+
+7. **`seo-hreflang`** — for any Finance/Tax/Career/Legal/Business idea, generate the multilang (ES/PT/DE/FR) hreflang plan + canonical strategy.
+
+8. **`seo-competitor-pages`** — if the idea has a "free alternative to [paid tool]" or "X vs Y" angle, invoke this for comparison page architecture.
+
+**Conditional chain (invoke if relevant):**
+
+- **`seo-page`** — when user gives you a competitor URL, run this on it to extract weaknesses we can exploit.
+- **`seo-firecrawl`** — when user wants competitor SITE inventory (not just one page), use this to crawl all their tools.
+- **`seo-dataforseo`** — when validate-new + Bing volume return ambiguous data, use DataForSEO MCP for authoritative SERP/keyword/backlink data.
+- **`seo-images`** — if any idea benefits from social/OG imagery (Pinterest plays especially), run this on hub-level OG images.
+- **`seo-image-gen`** — when user wants new OG/social images for a launch, use this.
+- **`seo-local`** + **`seo-maps`** — if the idea is geo-anchored (city-by-city services), invoke these.
+- **`seo-technical`** — if the idea exposes a new template at scale, audit for crawlability/Core Web Vitals BEFORE shipping 50 variants.
+- **`seo-sitemap`** — after shipping a programmatic batch, regenerate sitemap with priority/changefreq tuning.
+- **`content-research-writer`** — for any idea where the SEO content section is the differentiator (300-600 words with citations, hooks, outlines).
+- **`twitter-algorithm-optimizer`** — if a Build NOW idea has a planned Twitter launch, optimize the launch tweet.
+- **`competitive-ads-extractor`** — if a Build NOW idea has a paid-competitor for whom we should mine ad messaging.
+- **`webapp-testing`** — once a tool is built, invoke for automated browser QA before publishing.
+- **`domain-name-brainstormer`** — only if user is considering spinning out a tool to its own domain.
+
+**Skip these (not relevant to /ideas):**
+- `update-config`, `keybindings-help`, `setup-fastlane`, `simplify`, `mcp-builder`, `claude-api`, `skill-creator`, `theme-factory`, `canvas-design`, `brand-guidelines`, `loop`, `schedule`, `changelog-generator`, `artifacts-builder`.
+
+**How to chain:** for each skill, send the upstream skill's output as input to the next. Example:
+- `seo` → snapshot → feed to `seo-geo` → AI-citation hooks → feed to `seo-programmatic` → variant blueprint → feed to `seo-schema` → JSON-LD stack → feed to `seo-backlinks` → outreach targets.
+
+The output of this chain becomes the **complete playbook per Build NOW idea** that goes into the final ranked table (Phase 7).
+
+---
 
 ### Phase 4b: ASO Research (ONLY if user's input is about a mobile app or app keyword)
 If the user's keyword relates to mobile apps, ALSO run:
