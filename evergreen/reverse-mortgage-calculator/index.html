@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse Mortgage Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Estimate your HECM reverse mortgage principal limit by age, home value, and expected rate. See lump sum, line of credit, and fees. Free and private.">
+  <meta property="og:title" content="Reverse Mortgage Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Estimate your HECM reverse mortgage principal limit by age, home value, and expected rate. See lump sum, line of credit, and fees. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/reverse-mortgage-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Reverse Mortgage Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Estimate your HECM reverse mortgage principal limit by age, home value, and expected rate. See lump sum, line of credit, and fees. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/reverse-mortgage-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Reverse Mortgage Calculator</h1>
+      <p class="tool-description">Estimate how much you can borrow through a Home Equity Conversion Mortgage (HECM) — the federally insured reverse mortgage available to U.S. homeowners age 62 and older. See your principal limit, net proceeds after fees, and how payout option affects what you receive.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is a Reverse Mortgage?</h2>
+      <p>A reverse mortgage is a home loan for homeowners age 62 and older that converts home equity into cash without requiring monthly mortgage payments. The loan balance grows over time as interest accrues, and repayment is due when the last borrower moves, sells, or dies. The most common version in the U.S. is the HECM, insured by the Federal Housing Administration (FHA) with a 2026 lending limit of $1,209,750.</p>
+      <h2>How the Principal Limit Is Calculated</h2>
+      <p>HECM borrowing power is driven by three factors: the age of the youngest borrower, the home value (capped at the FHA limit), and the expected interest rate. FHA publishes principal limit factors (PLF) tables. As a rough guide, at age 62 you can access about 52% of home value, age 70 about 58%, age 80 about 66%, and age 85 about 72%. Higher rates reduce the factor; lower rates raise it. This calculator uses age-based factors to approximate your principal limit.</p>
+      <h2>Fees and Net Proceeds</h2>
+      <p>HECM fees include an origination fee (2% of the first $200K, 1% above, capped at $6,000), an upfront FHA mortgage insurance premium of 2% of the home value, third-party closing costs (title, appraisal, recording) of roughly $2,500, and ongoing MIP of 0.5% per year on the loan balance. These fees reduce the net cash you receive. The tool subtracts estimated fees from your principal limit to show realistic proceeds.</p>
+      <h2>Payout Options</h2>
+      <p>HECM borrowers choose from lump sum (fixed rate), line of credit with a growth feature, term payments for a set period, tenure payments for life, or a combination. A line of credit is often the most efficient because the unused portion grows at the note rate plus 0.5% — effectively earning interest on money you have not yet taken. Most advisors recommend the line-of-credit strategy unless a specific need demands a lump sum.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/reverse-mortgage-calculator', title: 'Reverse Mortgage Calculator',
+      description: 'Estimate HECM reverse mortgage principal limit.',
+      inputs: [
+        { id: 'age', type: 'number', label: 'Age of Youngest Borrower', placeholder: 'e.g. 72', min: 62, max: 99, step: 1, error: 'Age must be 62+.' },
+        { id: 'home_value', type: 'number', label: 'Home Value ($)', placeholder: 'e.g. 500000', min: 50000, max: 10000000, step: 1000, error: 'Enter home value.' },
+        { id: 'existing_mortgage', type: 'number', label: 'Existing Mortgage Balance ($)', placeholder: 'e.g. 50000', min: 0, max: 10000000, step: 100, default: 0 },
+        { id: 'expected_rate', type: 'number', label: 'Expected Interest Rate (%)', placeholder: 'e.g. 7.5', min: 3, max: 12, step: 0.01, default: 7.5 }
+      ],
+      calculate: function (v) {
+        if (!v.age || v.age < 62 || !v.home_value) return null;
+        var fhaLimit = 1209750; // 2026 HECM limit
+        var valueForPLF = Math.min(v.home_value, fhaLimit);
+
+        // Approximate principal limit factor by age (based on FHA PLF tables at ~7.5% rate)
+        // Linear interpolation between anchor points
+        var age = v.age;
+        var plf;
+        if (age <= 62) plf = 0.52;
+        else if (age <= 65) plf = 0.52 + (age - 62) * (0.545 - 0.52) / 3;
+        else if (age <= 70) plf = 0.545 + (age - 65) * (0.58 - 0.545) / 5;
+        else if (age <= 75) plf = 0.58 + (age - 70) * (0.62 - 0.58) / 5;
+        else if (age <= 80) plf = 0.62 + (age - 75) * (0.66 - 0.62) / 5;
+        else if (age <= 85) plf = 0.66 + (age - 80) * (0.72 - 0.66) / 5;
+        else plf = Math.min(0.75, 0.72 + (age - 85) * 0.005);
+
+        // Rate adjustment: higher rates reduce PLF (roughly 1% PLF per 0.25% rate above 7%)
+        var rateAdj = (v.expected_rate - 7.5) * -0.04;
+        plf = Math.max(0.30, Math.min(0.78, plf + rateAdj));
+
+        var principalLimit = valueForPLF * plf;
+
+        // Fees
+        var origFee = 0;
+        if (v.home_value <= 200000) origFee = Math.max(2500, v.home_value * 0.02);
+        else origFee = Math.min(6000, 4000 + (v.home_value - 200000) * 0.01);
+        var upfrontMIP = v.home_value * 0.02;
+        var thirdParty = 2500;
+        var totalFees = origFee + upfrontMIP + thirdParty;
+
+        var availableAfterPayoff = principalLimit - v.existing_mortgage - totalFees;
+        var netLumpSum = Math.max(0, availableAfterPayoff);
+
+        // Approximate LOC growth: unused amount grows at rate + 0.5% annually
+        var locGrowth1yr = netLumpSum * (1 + (v.expected_rate + 0.5) / 100);
+        var locGrowth5yr = netLumpSum * Math.pow(1 + (v.expected_rate + 0.5) / 100, 5);
+
+        // Tenure monthly payment approximation: principal / (expected years × 12)
+        var lifeExpectancy = Math.max(5, 100 - age);
+        var tenureMonthly = netLumpSum / (lifeExpectancy * 12) * 1.1;
+
+        return {
+          items: [
+            { label: 'Principal Limit Factor (PLF)', value: (plf * 100).toFixed(1) + '%' },
+            { label: 'Principal Limit (gross)', value: '$' + principalLimit.toFixed(2) },
+            { label: 'Origination Fee', value: '$' + origFee.toFixed(2) },
+            { label: 'Upfront FHA MIP (2%)', value: '$' + upfrontMIP.toFixed(2) },
+            { label: 'Third-Party Closing Costs', value: '$' + thirdParty.toFixed(2) },
+            { label: 'Existing Mortgage Payoff', value: '$' + v.existing_mortgage.toFixed(2) },
+            { label: 'Net Cash Available (lump sum)', value: '$' + netLumpSum.toFixed(2) },
+            { label: 'Line of Credit in 5 Years (if unused)', value: '$' + locGrowth5yr.toFixed(2) },
+            { label: 'Approx Tenure Monthly Payment', value: '$' + tenureMonthly.toFixed(2) }
+          ],
+          summary: 'At age ' + age + ' with a $' + v.home_value.toFixed(0) + ' home, you qualify for roughly $' + principalLimit.toFixed(0) + ' in principal limit. After fees and existing mortgage payoff, net cash available is about $' + netLumpSum.toFixed(0) + '.'
+        };
+      }
+    };
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'Reverse Mortgage Calculator' }];
+    var FAQS = [
+      { q: 'Who qualifies for a HECM reverse mortgage?', a: 'You must be at least 62 years old, own your home outright or have substantial equity, occupy it as your primary residence, and complete HUD-approved counseling. The home must meet FHA property standards. Credit and income are evaluated for a financial assessment but requirements are relaxed versus forward mortgages.' },
+      { q: 'Do I still own my home with a reverse mortgage?', a: 'Yes. You retain title and can sell, bequeath, or refinance at any time. The lender places a lien for the loan balance, but ownership stays in your name. You must continue paying property taxes, homeowners insurance, and HOA dues, and maintain the property.' },
+      { q: 'What happens when I die or move out?', a: 'The loan becomes due. Heirs can sell the home to pay off the balance and keep any remaining equity, pay off the loan from other funds and keep the home, or sign a deed in lieu. Because HECMs are non-recourse, heirs never owe more than the home is worth, even if the balance exceeds value.' },
+      { q: 'How much does a reverse mortgage cost?', a: 'Typical upfront costs are 4-6% of home value: origination fee (up to $6,000), FHA MIP (2% of home value), and closing costs ($2,000-3,000). Ongoing costs include interest on the balance plus 0.5% annual MIP. These are high compared to a HELOC but include lifetime non-recourse protection.' },
+      { q: 'Line of credit vs lump sum — which is better?', a: 'For most borrowers, the HECM line of credit is more efficient because the unused credit line grows at the note rate plus 0.5% annually, giving you more borrowing power over time. A lump sum makes sense only when you have an immediate large expense like paying off a forward mortgage.' },
+      { q: 'Can a reverse mortgage run out?', a: 'The principal limit is set at closing and does not run out as long as you meet occupancy and property obligations. Tenure payments are guaranteed for life even if the principal is exhausted. The home serves as collateral, not a depleting bank account.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Standard mortgage payment calculator.' },
+      { slug: 'evergreen/heloc-payment-calculator', name: 'HELOC Payment Calculator', description: 'Home equity line of credit payments.' },
+      { slug: 'evergreen/home-equity-calculator', name: 'Home Equity Calculator', description: 'Calculate your home equity.' },
+      { slug: 'evergreen/mortgage-refinance-break-even-calculator', name: 'Refinance Break-Even', description: 'When refinancing pays off.' },
+      { slug: 'evergreen/mortgage-affordability-calculator', name: 'Mortgage Affordability', description: 'How much house you can afford.' },
+      { slug: 'evergreen/home-loan-calculator', name: 'Home Loan Calculator', description: 'Complete home loan cost breakdown.' },
+      { slug: "evergreen/fsa-dependent-care-calculator", name: "Dependent Care FSA Calculator", description: "Calculate your 2026 Dependent Care FSA tax savings on up to $5,000 of childcare." }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSU Vesting Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate RSU vesting free and private on a standard 4-year schedule with 1-year cliff. See total shares, monthly vest dollars, and the full 48-month schedule.">
+  <meta property="og:title" content="RSU Vesting Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate RSU vesting free and private on a standard 4-year schedule with 1-year cliff. See total shares, monthly vest dollars, and the full 48-month schedule.">
+  <meta property="og:url" content="https://tool.teamzlab.com/career/rsu-vesting-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/career.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="RSU Vesting Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate RSU vesting free and private on a standard 4-year schedule with 1-year cliff. See total shares, monthly vest dollars, and the full 48-month schedule.">
+  <link rel="canonical" href="https://tool.teamzlab.com/career/rsu-vesting-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>RSU Vesting Calculator</h1>
+      <p class="tool-description">Enter total RSU grant shares, current share price, and grant date to see a 4-year vesting schedule with a 1-year cliff. Get share counts and dollar value per vest.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is RSU Vesting?</h2>
+      <p>Restricted stock units (RSUs) are company shares a company promises to deliver on a schedule if you stay employed. Vesting is the point shares convert from a promise to actual stock you own. The standard schedule at most US public tech companies is 4 years with a 1-year cliff: 25% vests at the 12-month mark, then roughly 1/48 of the grant vests each month for the next 36 months.</p>
+      <h2>How the Standard Schedule Works</h2>
+      <p>The 1-year cliff means nothing vests until the employee completes the first 12 months — that single vesting event delivers 25% of the grant at once. After the cliff, monthly vests begin. Some companies use quarterly vests of 6.25% per quarter instead. Always check your grant agreement for the exact cadence, because the dollar-per-month number depends on it.</p>
+      <h2>Taxes on RSU Vesting</h2>
+      <p>RSUs are taxed as ordinary income the day they vest, based on the share price at vest. Employers typically withhold 22% federal (or 37% above $1M annual supplemental income), plus state and FICA. If you are in a higher tax bracket, the 22% default withholding is not enough and you may owe at tax time. Selling immediately at vest avoids extra capital gains risk, but creates a concentration question worth discussing with an advisor.</p>
+      <h2>Planning and Refresh Grants</h2>
+      <p>Many companies add annual refresh grants on top of the initial grant, so total unvested RSUs rise each year you stay. When evaluating a job change, compare unvested value at your current employer against new-job grant plus signing bonus. This calculator is informational only and does not include taxes, withholding, or stock price changes — use it to visualize your schedule, not to plan taxes.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'career/rsu-vesting-calculator', title: 'RSU Vesting Calculator',
+      description: 'Calculate a 4-year RSU vesting schedule with 1-year cliff.',
+      inputs: [
+        { id: 'total_shares', type: 'number', label: 'Total Grant Shares', placeholder: 'e.g. 4800', min: 1, max: 10000000, step: 1, error: 'Enter total shares in the grant.' },
+        { id: 'share_price', type: 'number', label: 'Current Share Price ($)', placeholder: 'e.g. 175', min: 0.01, max: 100000, step: 0.01, error: 'Enter current share price.' },
+        { id: 'grant_date', type: 'date', label: 'Grant Date', error: 'Enter grant date.' }
+      ],
+      calculate: function (v) {
+        if (!v.total_shares || !v.share_price || !v.grant_date) return null;
+        var grant = new Date(v.grant_date);
+        if (isNaN(grant.getTime())) return null;
+
+        var cliffShares = Math.floor(v.total_shares * 0.25);
+        var remaining = v.total_shares - cliffShares;
+        var monthlyShares = remaining / 36;
+
+        var totalValue = v.total_shares * v.share_price;
+        var cliffValue = cliffShares * v.share_price;
+        var monthlyValue = monthlyShares * v.share_price;
+
+        function addMonths(d, m) { var x = new Date(d); x.setMonth(x.getMonth() + m); return x; }
+        var cliffDate = addMonths(grant, 12);
+        var endDate = addMonths(grant, 48);
+
+        return {
+          items: [
+            { label: 'Total Grant Value (today\'s price)', value: '$' + Math.round(totalValue).toLocaleString() },
+            { label: '1-Year Cliff Vest', value: cliffShares.toLocaleString() + ' shares · $' + Math.round(cliffValue).toLocaleString() + ' on ' + cliffDate.toLocaleDateString() },
+            { label: 'Monthly Vest (months 13-48)', value: monthlyShares.toFixed(2) + ' shares · $' + Math.round(monthlyValue).toLocaleString() + '/month' },
+            { label: 'Annual Vest Value (post-cliff)', value: '$' + Math.round(monthlyValue * 12).toLocaleString() + '/year' },
+            { label: 'Full Vest Date', value: endDate.toLocaleDateString() + ' (48 months after grant)' },
+            { label: 'Estimated Federal Withholding (22%)', value: '$' + Math.round(totalValue * 0.22).toLocaleString() + ' over the schedule' }
+          ],
+          summary: 'Your ' + v.total_shares.toLocaleString() + '-share RSU grant is worth about $' + Math.round(totalValue).toLocaleString() + ' today. You hit the 1-year cliff on ' + cliffDate.toLocaleDateString() + ' (' + cliffShares + ' shares), then vest about $' + Math.round(monthlyValue).toLocaleString() + '/month through ' + endDate.toLocaleDateString() + '.'
+        };
+      }
+    };
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Career Tools', url: '/career/' }, { name: 'RSU Vesting Calculator' }];
+    var FAQS = [
+      { q: 'What is a 1-year cliff on RSUs?', a: 'A 1-year cliff means no shares vest during your first 12 months of employment. On the first anniversary, a full 25% of the grant vests at once. After that, vesting usually switches to monthly or quarterly increments over the remaining three years.' },
+      { q: 'What happens to unvested RSUs if I leave the company?', a: 'Unvested RSUs are forfeited when you leave — they simply disappear. Some companies offer partial acceleration at acquisition or death, but voluntary resignation almost always means you walk away from everything unvested. Time your departure around a vest date if possible.' },
+      { q: 'How are RSUs taxed?', a: 'Vested RSUs are taxed as ordinary income at vest, based on the share price that day. Employers withhold at the 22% federal supplemental rate (or 37% above $1M annually), plus state and FICA. High earners often owe more at tax time because 22% does not cover their full marginal rate.' },
+      { q: 'Should I sell RSUs as soon as they vest?', a: 'Many advisors suggest selling at vest to avoid concentration risk — you already hold significant exposure to the company through your job. Selling at vest incurs no extra tax because you already paid ordinary income tax at the vest price. Holding exposes the shares to both market and single-stock risk.' },
+      { q: 'Is this calculator tax advice?', a: 'No. This is a vesting schedule visualizer. It does not include federal, state, FICA, AMT, estimated tax safe-harbor rules, or stock price changes over the vesting period. Talk to a CPA or tax advisor for planning around large RSU grants.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'career/rsu-vesting-tax-calculator', name: 'RSU Vesting Tax Calculator', description: 'Estimate federal and state tax on RSU vests.' },
+      { slug: 'career/job-offer-equity-calculator', name: 'Job Offer Equity Calculator', description: 'Value the equity in your offer.' },
+      { slug: 'career/offer-comparison-calculator', name: 'Offer Comparison Calculator', description: 'Compare multiple job offers.' },
+      { slug: 'career/take-home-pay-estimator', name: 'Take Home Pay Estimator', description: 'See your paycheck after tax.' },
+      { slug: 'career/salary-negotiation-script-generator', name: 'Salary Negotiation Script Generator', description: 'Scripts for negotiating comp.' },
+      { slug: 'career/relocation-package-calculator', name: 'Relocation Package Calculator', description: 'Value relocation benefits.' }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>

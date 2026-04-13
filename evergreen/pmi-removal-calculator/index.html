@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PMI Removal Calculator — Teamz Lab Tools</title>
+  <meta name="description" content="Calculate when PMI drops off your mortgage — 80% LTV request date and 78% automatic termination. See extra payment impact. Free and private.">
+  <meta property="og:title" content="PMI Removal Calculator — Teamz Lab Tools">
+  <meta property="og:description" content="Calculate when PMI drops off your mortgage — 80% LTV request date and 78% automatic termination. See extra payment impact. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/evergreen/pmi-removal-calculator/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/evergreen.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PMI Removal Calculator — Teamz Lab Tools">
+  <meta name="twitter:description" content="Calculate when PMI drops off your mortgage — 80% LTV request date and 78% automatic termination. See extra payment impact. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/evergreen/pmi-removal-calculator/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>PMI Removal Calculator</h1>
+      <p class="tool-description">Find out exactly when you can request private mortgage insurance (PMI) removal and when it automatically terminates under the federal Homeowners Protection Act. Enter your loan details to see both milestone dates and the total PMI you will pay before removal.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator"></section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>What Is PMI and When Does It Drop Off?</h2>
+      <p>Private mortgage insurance (PMI) is required on conventional mortgages when your down payment is less than 20%. It protects the lender, not you, against default. Under the Homeowners Protection Act of 1998, PMI must automatically terminate when your loan balance reaches 78% of the original home value (scheduled, on the normal amortization path). You can also request cancellation once you reach 80% LTV — either through scheduled payments, extra principal, or documented home appreciation.</p>
+      <h2>80% Borrower Request vs 78% Automatic</h2>
+      <p>The 80% threshold is a request-based right. You must submit a written request, be current on payments, have no second liens, and sometimes pay for a new appraisal. The 78% threshold is automatic — the servicer must cancel PMI at the scheduled 78% point without any action from you. Midpoint cancellation is also mandated at the halfway point of the loan term (year 15 of a 30-year), even if LTV has not dropped to 78%.</p>
+      <h2>How Extra Payments Accelerate PMI Removal</h2>
+      <p>Adding just $100 a month in extra principal on a $400,000 loan can shave 2-3 years off the time to 80% LTV. The PMI premium itself (typically 0.5%-1.5% of the loan annually) makes every extra dollar of principal doubly valuable: you save interest on the main loan plus you retire the PMI cost sooner. This calculator projects removal dates both with and without your extra payments so you can quantify the payoff.</p>
+      <h2>Can Home Appreciation Remove PMI Faster?</h2>
+      <p>Yes — if your home has risen in value, you can request PMI cancellation when the current LTV (based on current appraised value, not purchase price) reaches 80%, assuming you have owned the home at least 2 years and 5 years for Freddie Mac loans. You will typically need to pay $400-600 for an appraisal. If the property has appreciated significantly, this can drop PMI years ahead of the amortization-based schedule.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="/shared/js/tool-engine.js"></script>
+  <script>
+    var TOOL_CONFIG = {
+      slug: 'evergreen/pmi-removal-calculator', title: 'PMI Removal Calculator',
+      description: 'Calculate when PMI drops off your mortgage.',
+      inputs: [
+        { id: 'home_price', type: 'number', label: 'Original Home Value ($)', placeholder: 'e.g. 400000', min: 10000, max: 10000000, step: 100, error: 'Enter home value.' },
+        { id: 'loan', type: 'number', label: 'Original Loan Amount ($)', placeholder: 'e.g. 380000', min: 1000, max: 10000000, step: 100, error: 'Enter loan amount.' },
+        { id: 'rate', type: 'number', label: 'Interest Rate (%)', placeholder: 'e.g. 7.0', min: 0.1, max: 25, step: 0.01, error: 'Enter rate.' },
+        { id: 'term_years', type: 'number', label: 'Loan Term (years)', placeholder: 'e.g. 30', min: 5, max: 40, step: 1, default: 30 },
+        { id: 'pmi_rate', type: 'number', label: 'PMI Rate (% per year)', placeholder: 'e.g. 0.75', min: 0.1, max: 3, step: 0.01, default: 0.75 },
+        { id: 'extra_monthly', type: 'number', label: 'Extra Monthly Payment ($)', placeholder: 'e.g. 100', min: 0, max: 100000, step: 10, default: 0 }
+      ],
+      calculate: function (v) {
+        if (!v.home_price || !v.loan || !v.rate) return null;
+        var r = v.rate / 100 / 12;
+        var n = v.term_years * 12;
+        var pmt = v.loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        var monthlyPMI = (v.loan * (v.pmi_rate / 100)) / 12;
+
+        var threshold80 = v.home_price * 0.80;
+        var threshold78 = v.home_price * 0.78;
+
+        function simulate(extra) {
+          var bal = v.loan;
+          var month80 = null, month78 = null;
+          var totalPMI = 0;
+          for (var m = 1; m <= n; m++) {
+            var interest = bal * r;
+            var principal = pmt - interest + extra;
+            bal -= principal;
+            if (bal < 0) bal = 0;
+            if (bal <= threshold80 && month80 === null) month80 = m;
+            if (bal <= threshold78 && month78 === null) {
+              month78 = m;
+              break;
+            }
+            totalPMI += monthlyPMI;
+          }
+          return { month80: month80, month78: month78, totalPMI: totalPMI };
+        }
+
+        var base = simulate(0);
+        var withExtra = simulate(v.extra_monthly || 0);
+        var savings = base.totalPMI - withExtra.totalPMI;
+
+        function fmtMonth(m) {
+          if (!m) return 'Not reached';
+          var years = Math.floor(m / 12);
+          var months = m % 12;
+          return years + 'y ' + months + 'm (month ' + m + ')';
+        }
+
+        var midpoint = Math.floor(n / 2);
+
+        return {
+          items: [
+            { label: 'Monthly P&I Payment', value: '$' + pmt.toFixed(2) },
+            { label: 'Monthly PMI Premium', value: '$' + monthlyPMI.toFixed(2) },
+            { label: 'Original LTV', value: ((v.loan / v.home_price) * 100).toFixed(1) + '%' },
+            { label: '80% LTV Reached (request cancellation)', value: fmtMonth(base.month80) },
+            { label: '78% LTV Reached (automatic termination)', value: fmtMonth(base.month78) },
+            { label: 'Midpoint of Loan (mandatory cancel)', value: fmtMonth(midpoint) },
+            { label: 'Total PMI Paid (no extra)', value: '$' + base.totalPMI.toFixed(2) },
+            { label: 'Total PMI Paid (with $' + (v.extra_monthly || 0) + ' extra)', value: '$' + withExtra.totalPMI.toFixed(2) },
+            { label: 'PMI Saved by Extra Payments', value: '$' + savings.toFixed(2) },
+            { label: '78% LTV Reached (with extra)', value: fmtMonth(withExtra.month78) }
+          ],
+          summary: 'PMI drops at 80% LTV (request) in ' + fmtMonth(base.month80) + ' and terminates automatically at 78% in ' + fmtMonth(base.month78) + '. Adding $' + (v.extra_monthly || 0) + '/month extra saves $' + savings.toFixed(0) + ' in total PMI cost.'
+        };
+      }
+    };
+
+    var BREADCRUMBS = [{ name: 'Home', url: '/' }, { name: 'Evergreen Tools', url: '/evergreen/' }, { name: 'PMI Removal Calculator' }];
+    var FAQS = [
+      { q: 'What is the difference between 80% and 78% LTV for PMI?', a: 'At 80% LTV you can request PMI cancellation in writing. At 78% LTV, PMI must automatically terminate without any request. The 78% figure is based on the original amortization schedule, not extra payments — but you can use extra payments to hit 80% earlier and request cancellation.' },
+      { q: 'Can I remove PMI if my home has appreciated?', a: 'Yes. If the current market value supports 80% LTV, you can request cancellation after 2 years of ownership (5 for Freddie Mac loans). You must pay for a new appraisal ($400-600 typically), have a clean payment history, and no second liens on the property.' },
+      { q: 'Does FHA MIP work the same way?', a: 'No. FHA mortgage insurance premium (MIP) rules are different. For FHA loans originated after June 2013 with less than 10% down, MIP lasts the life of the loan. With 10%+ down, MIP drops after 11 years. To escape FHA MIP, most borrowers refinance to a conventional loan once they reach 20% equity.' },
+      { q: 'What is the midpoint cancellation rule?', a: 'The Homeowners Protection Act requires PMI cancellation at the midpoint of your loan term — year 15 on a 30-year loan — regardless of LTV, as long as you are current. This protects borrowers whose amortization is slow (low rates with long terms).' },
+      { q: 'Can I pay off extra to drop PMI faster?', a: 'Yes. Extra principal payments reduce your loan balance and drive LTV down faster. Every dollar extra is especially valuable because it reduces both the loan interest and the PMI base. A $100/month extra payment on a $400K loan often removes PMI 2-3 years early.' },
+      { q: 'What PMI rate should I expect?', a: 'PMI rates range from 0.3% to 1.5% of the loan balance per year, based on credit score, LTV, and loan type. A borrower with a 760 credit score at 90% LTV might pay 0.4% annually, while a 680 score at 95% LTV could pay 1.2%+.' }
+    ];
+    var RELATED_TOOLS = [
+      { slug: 'evergreen/mortgage-calculator', name: 'Mortgage Calculator', description: 'Standard mortgage payment calculator.' },
+      { slug: 'evergreen/mortgage-overpayment-calculator', name: 'Mortgage Overpayment Calculator', description: 'Pay off your mortgage faster.' },
+      { slug: 'evergreen/loan-amortization-calculator', name: 'Loan Amortization Calculator', description: 'See full amortization schedule.' },
+      { slug: 'evergreen/mortgage-refinance-break-even-calculator', name: 'Refinance Break-Even', description: 'When refinancing pays off.' },
+      { slug: 'evergreen/mortgage-affordability-calculator', name: 'Mortgage Affordability', description: 'How much house you can afford.' },
+      { slug: 'evergreen/home-equity-calculator', name: 'Home Equity Calculator', description: 'Calculate your home equity.' },
+      { slug: "evergreen/fix-and-flip-calculator", name: "Fix and Flip Calculator", description: "Calculate profit on a house flip using the 70% rule, holding costs, and closing " }
+    ];
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+      ToolEngine.init(TOOL_CONFIG);
+    });
+  </script>
+</body>
+</html>
