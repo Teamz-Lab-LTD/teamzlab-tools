@@ -93,7 +93,7 @@ PRIVACY_TMPL = '''<!DOCTYPE html>
             <p><strong>Teamz Lab Ltd</strong> (registered in England &amp; Wales)</p>
             <p>Company number: <span data-fill="company-number">[to be filled]</span></p>
             <p>Registered office: <span data-fill="uk-address">[to be filled]</span></p>
-            <p>Contact: <a href="mailto:support@alwaysreadycare.co.uk">support@alwaysreadycare.co.uk</a></p>
+            <p>Contact: <a href="mailto:hello@teamzlab.com">hello@teamzlab.com</a></p>
         </div>
 
         <h2>2. What we collect and why</h2>
@@ -147,7 +147,7 @@ PRIVACY_TMPL = '''<!DOCTYPE html>
             <li>Portability (receive a copy in a common format)</li>
             <li>Complain to {authority} — <a href="{authority_url}" target="_blank" rel="noopener">{authority_url}</a></li>
         </ul>
-        <p>To exercise any of these rights, contact <a href="mailto:support@alwaysreadycare.co.uk">support@alwaysreadycare.co.uk</a>. We respond within statutory timeframes.</p>
+        <p>To exercise any of these rights, contact <a href="mailto:hello@teamzlab.com">hello@teamzlab.com</a>. We respond within statutory timeframes.</p>
 
         <h2>8. Cookies</h2>
         <p>We do not use tracking cookies, Google Analytics, or advertising pixels on this site. See our <a href="{cookies_href}">Cookie Policy</a> for full details.</p>
@@ -232,7 +232,7 @@ COOKIES_TMPL = '''<!DOCTYPE html>
         <p>Any modern browser can clear localStorage. See <a href="https://support.google.com/chrome/answer/2392709" target="_blank" rel="noopener">Chrome</a>, <a href="https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox" target="_blank" rel="noopener">Firefox</a>, <a href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noopener">Safari</a>.</p>
 
         <h2>Contact</h2>
-        <p>Questions? Contact <a href="mailto:support@alwaysreadycare.co.uk">support@alwaysreadycare.co.uk</a>.</p>
+        <p>Questions? Contact <a href="mailto:hello@teamzlab.com">hello@teamzlab.com</a>.</p>
     </main>
 </body>
 </html>
