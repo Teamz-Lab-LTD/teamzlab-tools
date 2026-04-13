@@ -401,6 +401,70 @@ var REGION_CONFIGS = {
     inspectionLabel: 'Certification Audit',
     packLabel: 'Audit Evidence Pack',
     readinessLabel: 'Audit Readiness'
+  },
+  de: {
+    name: 'Deutschland',
+    regulator: 'Medizinischer Dienst (MD)',
+    regulatorShort: 'MD',
+    currency: '€',
+    locale: 'de-DE',
+    categories: [
+      'Mobilität & Sturzprophylaxe', 'Körperpflege & Selbstversorgung',
+      'Ernährung & Flüssigkeitsversorgung', 'Kontinenzförderung',
+      'Medikamentenmanagement', 'Wundversorgung & Dekubitusprophylaxe',
+      'Schmerzmanagement', 'Vitalzeichen & Gesundheitsbeobachtung',
+      'Biografie & Gewohnheiten', 'Soziale Teilhabe & Aktivitäten', 'Angehörigenarbeit',
+      'Demenzversorgung', 'Palliativversorgung & Sterbebegleitung',
+      'Freiheitseinschränkende Maßnahmen', 'Umgang mit herausforderndem Verhalten',
+      'Hygiene & Infektionsschutz', 'Pflegedokumentation (SIS)',
+      'Risikomanagement', 'Beratung & Information',
+      'Qualitätsmanagement & Audits', 'Personalqualifikation & Fortbildung',
+      'Beschwerdemanagement', 'Notfallmanagement', 'Leitung & Governance'
+    ],
+    framework: {
+      'QB 1 — Mobilität & Selbstversorgung': ['Mobilität & Sturzprophylaxe', 'Körperpflege & Selbstversorgung', 'Ernährung & Flüssigkeitsversorgung', 'Kontinenzförderung'],
+      'QB 2 — Krankheits-/Therapieanforderungen': ['Medikamentenmanagement', 'Wundversorgung & Dekubitusprophylaxe', 'Schmerzmanagement', 'Vitalzeichen & Gesundheitsbeobachtung'],
+      'QB 3 — Alltag & soziale Kontakte': ['Biografie & Gewohnheiten', 'Soziale Teilhabe & Aktivitäten', 'Angehörigenarbeit'],
+      'QB 4 — Besondere Versorgungssituationen': ['Demenzversorgung', 'Palliativversorgung & Sterbebegleitung', 'Freiheitseinschränkende Maßnahmen', 'Umgang mit herausforderndem Verhalten'],
+      'QB 5 — Fachliche Anforderungen': ['Hygiene & Infektionsschutz', 'Pflegedokumentation (SIS)', 'Risikomanagement', 'Beratung & Information'],
+      'QB 6 — Organisation & QM': ['Qualitätsmanagement & Audits', 'Personalqualifikation & Fortbildung', 'Beschwerdemanagement', 'Notfallmanagement', 'Leitung & Governance']
+    },
+    frameworkLabel: 'QPR 6 Qualitätsbereiche',
+    inspectionLabel: 'MD-Prüfung',
+    packLabel: 'MD-Prüfungsmappe',
+    readinessLabel: 'MD-Bereitschaft'
+  },
+  'de-en': {
+    name: 'Germany (English)',
+    regulator: 'Medizinischer Dienst (MD)',
+    regulatorShort: 'MD',
+    currency: '€',
+    locale: 'en-DE',
+    categories: [
+      'Mobility & Falls Prevention', 'Personal Care & Self-Care',
+      'Nutrition & Hydration', 'Continence Support',
+      'Medication Management', 'Wound Care & Pressure Ulcer Prevention',
+      'Pain Management', 'Vital Signs & Health Observation',
+      'Biography & Preferences', 'Social Participation & Activities', 'Family Liaison',
+      'Dementia Care', 'Palliative & End of Life Care',
+      'Restrictive Practices (FEM)', 'Challenging Behaviour Management',
+      'Hygiene & Infection Control', 'Care Documentation (SIS)',
+      'Risk Management', 'Advice & Information',
+      'Quality Management & Audits', 'Staff Qualification & Training',
+      'Complaints Management', 'Emergency Management', 'Leadership & Governance'
+    ],
+    framework: {
+      'QB 1 — Mobility & Self-Care': ['Mobility & Falls Prevention', 'Personal Care & Self-Care', 'Nutrition & Hydration', 'Continence Support'],
+      'QB 2 — Illness/Therapy Requirements': ['Medication Management', 'Wound Care & Pressure Ulcer Prevention', 'Pain Management', 'Vital Signs & Health Observation'],
+      'QB 3 — Daily Life & Social Contact': ['Biography & Preferences', 'Social Participation & Activities', 'Family Liaison'],
+      'QB 4 — Special Care Situations': ['Dementia Care', 'Palliative & End of Life Care', 'Restrictive Practices (FEM)', 'Challenging Behaviour Management'],
+      'QB 5 — Professional Requirements': ['Hygiene & Infection Control', 'Care Documentation (SIS)', 'Risk Management', 'Advice & Information'],
+      'QB 6 — Organisation & Quality Management': ['Quality Management & Audits', 'Staff Qualification & Training', 'Complaints Management', 'Emergency Management', 'Leadership & Governance']
+    },
+    frameworkLabel: 'QPR 6 Quality Areas',
+    inspectionLabel: 'MD Audit',
+    packLabel: 'MD Audit Pack',
+    readinessLabel: 'MD Readiness'
   }
 };
 
@@ -411,6 +475,12 @@ function detectRegionFromTimezone() {
     if (/Australia/.test(tz)) return 'au';
     if (/Pacific\/Auckland|Pacific\/Chatham/.test(tz)) return 'nz';
     if (/Europe\/Dublin/.test(tz)) return 'ie';
+    if (/Europe\/Berlin|Europe\/Busingen/.test(tz)) {
+      try {
+        var lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+        return lang.indexOf('de') === 0 ? 'de' : 'de-en';
+      } catch (e) { return 'de'; }
+    }
   } catch (e) {}
   return 'uk';
 }
@@ -625,6 +695,96 @@ var LANDING_CONTENT = {
     footerGdpr: '© 2026 Teamz Lab Ltd. All rights reserved. GDPR & Data Protection Acts 1988-2018 compliant.',
     facilityTerm: 'nursing home',
     workflowSub: 'From frontline carer to HIQA inspector — the best nursing home compliance workflow in Ireland'
+  },
+  de: {
+    badge: 'Kostenlose Pflegesoftware Deutschland',
+    h1: 'Pflegesoftware für die MD-Prüfung — jeden Tag prüfbereit',
+    heroSub: 'Behalten Sie Ihr bestehendes Pflegesystem. Wir machen Ihre Nachweise MD-prüfungstauglich. AlwaysReady Care erfasst, strukturiert, prüft und exportiert MD-konforme Nachweise — abgebildet auf die 6 QPR-Qualitätsbereiche, 9 DNQP-Expertenstandards und 24 Kategorien nach SGB XI. Für über 27.000 Pflegeeinrichtungen und ambulante Pflegedienste in Deutschland.',
+    trustGdpr: 'DSGVO & SGB X konform',
+    trustReg: 'SGB XI § 114 bereit',
+    featDashTitle: 'Ihre MD-Prüfungsbereitschaft auf einen Blick',
+    featDashDesc: 'Ein Live-Compliance-Dashboard abgebildet auf die 6 QPR-Qualitätsbereiche — Mobilität, Krankheits-/Therapieanforderungen, Alltag & soziale Kontakte, besondere Versorgung, fachliche Anforderungen, Organisation & QM. Erkennen Sie Lücken in allen 24 Kategorien, bevor der MD sie findet.',
+    featPackDesc: 'Wenn der Medizinische Dienst kommt, erstellen Sie mit einem Klick eine professionelle MD-Prüfungsmappe. Filtern Sie nach Zeitraum, Nachweistyp oder QPR-Qualitätsbereich. Herunterladen, drucken oder teilen.',
+    painEvidence: 'Papiernotizen, WhatsApp-Nachrichten, Excel-Tabellen, E-Mails — Ihre Qualitätsnachweise sind über 5 Orte verteilt. Der MD fragt danach, und Sie verlieren Stunden beim Zusammentragen.',
+    painAudit: 'Sie können die Maßnahme zeigen — aber nicht die umgesetzte Handlung, wer verantwortlich ist, die Frist oder den Verbesserungsnachweis. Genau das bewertet der MD als QM-Schwäche nach QPR-Bereich 6.',
+    painRecords: 'Personalknappheit bedeutet: Nachweise werden am Schichtende geschrieben — oder gar nicht. Rückwirkende, lückenhafte Pflegedokumentation ist ein rotes Tuch bei der indikatorengestützten Qualitätsprüfung.',
+    painInspection: 'Teams bereiten sich hektisch auf die MD-Prüfung vor statt kontinuierlich Nachweise zu führen. Seit Einführung der indikatorengestützten Qualitätsprüfung 2019 ist das die größte Schwachstelle deutscher Pflegeeinrichtungen.',
+    audienceTitle: 'Die beste Pflegesoftware für jede Rolle',
+    audienceManager: 'Sehen Sie die MD-Prüfungsbereitschaft auf einen Blick. Erkennen Sie Lücken in allen 24 QPR-Kategorien. Erstellen Sie Prüfungsmappen. Verwalten Sie Team-Zugriffe und Rollen.',
+    frameworkTitle: 'Pflegesoftware mit QPR-Struktur — 6 Qualitätsbereiche, 24 Kategorien',
+    frameworkSub: 'Die einzige kostenlose Pflegesoftware, die 24 Kategorien nach den 6 QPR-Qualitätsbereichen und allen 9 DNQP-Expertenstandards verfolgt',
+    regsTitle: 'Aufgebaut auf SGB XI & QPR-Richtlinien',
+    regsSub: 'AlwaysReady Care hilft Ihnen, die Qualität gemäß § 113 SGB XI, QPR des Qualitätsausschusses Pflege und den DNQP-Expertenstandards zu belegen',
+    regsItems: [
+      { code: 'QB 1', label: 'Mobilität & Selbstversorgung' },
+      { code: 'QB 2', label: 'Krankheits-/Therapieanforderungen' },
+      { code: 'QB 3', label: 'Alltag & soziale Kontakte' },
+      { code: 'QB 4', label: 'Besondere Versorgungssituationen' },
+      { code: 'QB 5', label: 'Fachliche Anforderungen' },
+      { code: 'QB 6', label: 'Organisation & QM' },
+      { code: '§ 114', label: 'SGB XI — MD-Prüfung' },
+      { code: 'DNQP', label: '9 Expertenstandards' }
+    ],
+    regsNote: 'DSGVO, BDSG und Sozialgeheimnis (SGB X) konform. Nachweise werden mindestens 10 Jahre gemäß SGB XI-Aufbewahrungsfrist sicher gespeichert.',
+    proofTitle: 'Warum deutsche Pflegeeinrichtungen diese Software wählen',
+    proofCategories: '24',
+    proofCatLabel: 'QPR-Kategorien erfasst',
+    proofQuestions: '6',
+    proofQLabel: 'QPR-Qualitätsbereiche abgebildet',
+    proCatFeature: '24 QPR-Kategorien',
+    priceFree: '0 €', pricePro: '99 €',
+    priceUnit: '/Einrichtung/Monat',
+    leadNote: 'Kein Spam, jederzeit abbestellbar. Wir respektieren die DSGVO.',
+    leadSub: 'Erhalten Sie Tipps zur MD-Prüfung, Produktupdates und Zugang zu neuen Funktionen',
+    footerDesc: 'Kostenlose Pflegesoftware für deutsche Pflegeeinrichtungen nach SGB XI',
+    footerGdpr: '© 2026 Teamz Lab Ltd. Alle Rechte vorbehalten. DSGVO, BDSG und SGB X konform.',
+    facilityTerm: 'Pflegeeinrichtung',
+    workflowSub: 'Von der Pflegefachkraft bis zum MD-Prüfer — der beste Compliance-Workflow für deutsche Pflegeeinrichtungen'
+  },
+  'de-en': {
+    badge: 'Free Care Compliance Software Germany',
+    h1: 'Care Compliance Software for German MD Audits — SGB XI Ready Every Day',
+    heroSub: 'Keep your existing care management system. We make your evidence MD audit-ready. AlwaysReady Care captures, structures, reviews, and exports MD-ready evidence — mapped to the 6 QPR Qualitätsbereiche, 9 DNQP expert standards, and 24 categories under SGB XI. Built for 27,000+ Pflegeeinrichtungen and ambulante Pflegedienste in Germany. English interface for international operators.',
+    trustGdpr: 'GDPR & SGB X compliant',
+    trustReg: 'SGB XI § 114 ready',
+    featDashTitle: 'See Your MD Audit Readiness',
+    featDashDesc: 'A live compliance dashboard mapped to the 6 QPR Qualitätsbereiche — Mobility & Self-Care, Illness/Therapy Requirements, Daily Life & Social Contact, Special Care Situations, Professional Requirements, Organisation & QM. Spot gaps across all 24 categories before the Medizinischer Dienst finds them.',
+    featPackDesc: 'When the MD (Medical Service) audit happens, generate a professional audit-ready evidence pack in one click. Filter by date range, evidence type, or QPR Qualitätsbereich. Download, print, or share instantly.',
+    painEvidence: 'Paper notes, WhatsApp messages, Excel spreadsheets, emails — your quality evidence is scattered across 5 places. When the MD requests it, you lose hours assembling it.',
+    painAudit: 'You can show the measure, but not the action taken, who owns it, the deadline, or proof of improvement. The MD rates this as a QM weakness under QPR Qualitätsbereich 6.',
+    painRecords: 'Staffing pressure means carers write evidence at end of shift — or not at all. Retrospective, incomplete documentation is a red flag under the indikatorengestützte Qualitätsprüfung (indicator-based assessment).',
+    painInspection: 'Teams scramble before the MD audit instead of running continuous evidence. Since the 2019 shift to indicator-based assessment, this is the single biggest weakness in German care facilities.',
+    audienceTitle: 'Best Care Compliance Software for Every Role',
+    audienceManager: 'See MD audit readiness at a glance. Spot gaps across all 24 QPR categories. Generate audit packs. Manage team access and roles.',
+    frameworkTitle: 'Care Compliance Tool with QPR Structure — 6 Quality Areas, 24 Categories',
+    frameworkSub: 'The only free care compliance tool that tracks 24 categories across the 6 QPR Qualitätsbereiche and all 9 DNQP expert standards',
+    regsTitle: 'Built on SGB XI & QPR Requirements',
+    regsSub: 'AlwaysReady Care helps you evidence quality under § 113 SGB XI, the QPR issued by the Qualitätsausschuss Pflege, and all 9 DNQP expert standards',
+    regsItems: [
+      { code: 'QB 1', label: 'Mobility & Self-Care' },
+      { code: 'QB 2', label: 'Illness/Therapy Requirements' },
+      { code: 'QB 3', label: 'Daily Life & Social Contact' },
+      { code: 'QB 4', label: 'Special Care Situations' },
+      { code: 'QB 5', label: 'Professional Requirements' },
+      { code: 'QB 6', label: 'Organisation & Quality Management' },
+      { code: '§ 114', label: 'SGB XI — MD Audit' },
+      { code: 'DNQP', label: '9 Expert Standards' }
+    ],
+    regsNote: 'GDPR, BDSG and SGB X social data secrecy compliant. Evidence retained for the 10-year minimum required under SGB XI.',
+    proofTitle: 'Why International Care Operators in Germany Choose This Software',
+    proofCategories: '24',
+    proofCatLabel: 'QPR categories tracked',
+    proofQuestions: '6',
+    proofQLabel: 'QPR Qualitätsbereiche mapped',
+    proCatFeature: '24 QPR categories',
+    priceFree: '€0', pricePro: '€99',
+    priceUnit: '/facility/month',
+    leadNote: 'No spam, unsubscribe anytime. We respect GDPR.',
+    leadSub: 'Get MD audit tips, product updates, and early access to new features',
+    footerDesc: 'Free care compliance software for German Pflegeeinrichtungen under SGB XI',
+    footerGdpr: '© 2026 Teamz Lab Ltd. All rights reserved. GDPR, BDSG & SGB X compliant.',
+    facilityTerm: 'Pflegeeinrichtung',
+    workflowSub: 'From frontline Pflegefachkraft to MD auditor — the best compliance workflow for German care facilities'
   }
 };
 
@@ -657,6 +817,22 @@ var LANDING_FAQS = {
     { q: 'What is the best nursing home software Ireland?', a: 'For compliance evidence specifically, AlwaysReady Care works alongside any existing system as a dedicated evidence layer — no rip-and-replace needed. It covers all 8 HIQA National Standards themes.' },
     { q: 'What triggers a HIQA inspection?', a: 'HIQA inspections can be triggered by complaints, notifiable incidents, risk assessments, or routine scheduling. Having continuous, well-structured evidence ensures your designated centre is ready whenever an inspection happens.' },
     { q: 'Is this nursing home software free?', a: 'AlwaysReady Care is free to start with full evidence capture, compliance tracking, and inspection pack generation. Pro plans with advanced features start from €89 per centre per month.' }
+  ],
+  de: [
+    { q: 'Was ist eine Pflegesoftware für die MD-Prüfung?', a: 'Eine Pflegesoftware für die MD-Prüfung hilft deutschen Pflegeeinrichtungen, Nachweise zu erfassen, zu strukturieren und zu exportieren, die die Qualität nach den Qualitätsprüfungs-Richtlinien (QPR) des Qualitätsausschusses Pflege belegen. AlwaysReady Care verfolgt 24 Kategorien über die 6 QPR-Qualitätsbereiche in unter 60 Sekunden pro Eintrag.' },
+    { q: 'Wie bereite ich mich auf die MD-Prüfung vor?', a: 'Die Vorbereitung auf eine MD-Prüfung (früher MDK) erfordert kontinuierliche Nachweise in Bereichen wie Mobilität, Medikamentenmanagement, Dekubitusprophylaxe, Schmerzmanagement und Qualitätsmanagement. AlwaysReady Care bildet alle 24 Kategorien nach QPR ab und zeigt Ihren Prüfungsstand in Echtzeit.' },
+    { q: 'Wie oft findet die MD-Prüfung statt?', a: 'Nach § 114 SGB XI prüft der Medizinische Dienst stationäre Pflegeeinrichtungen und ambulante Pflegedienste einmal pro Jahr unangekündigt. Seit 2019 erfolgt die Prüfung indikatorengestützt — kontinuierliche Nachweise sind daher unverzichtbar.' },
+    { q: 'Welche Expertenstandards deckt die Software ab?', a: 'Alle 9 DNQP-Expertenstandards: Dekubitusprophylaxe, Entlassungsmanagement, Schmerzmanagement, Sturzprophylaxe, Kontinenzförderung, chronische Wunden, Ernährungsmanagement, Demenz sowie Mobilitätsförderung — jeweils mit eigenen Vorlagen.' },
+    { q: 'Ist die Software DSGVO-konform?', a: 'Ja. AlwaysReady Care erfüllt DSGVO, BDSG und das Sozialgeheimnis nach SGB X. Daten werden verschlüsselt gespeichert und entsprechen den Aufbewahrungsfristen nach SGB XI (mindestens 10 Jahre).' },
+    { q: 'Was kostet die Pflegesoftware?', a: 'AlwaysReady Care ist kostenlos nutzbar mit vollständiger Pflegedokumentation, Compliance-Tracking und MD-Prüfungsmappen-Generierung. Pro-Pläne mit erweiterten Funktionen beginnen bei 99 € pro Einrichtung und Monat.' }
+  ],
+  'de-en': [
+    { q: 'What is care compliance software for Germany?', a: 'Care compliance software for Germany helps Pflegeeinrichtungen (nursing homes and home care services) capture, organise, and export evidence that proves quality under the Qualitätsprüfungs-Richtlinien (QPR) issued by the Qualitätsausschuss Pflege. AlwaysReady Care tracks 24 categories aligned to the 6 QPR Qualitätsbereiche in under 60 seconds per record.' },
+    { q: 'What is the MD audit in Germany?', a: 'The MD-Prüfung (Medical Service audit, formerly MDK until 2020) is an unannounced annual inspection under § 114 SGB XI. Since 2019 it uses indicator-based quality assessment (indikatorengestützte Qualitätsprüfung) replacing the old Pflege-TÜV grades. Continuous evidence is essential.' },
+    { q: 'Does it work alongside Vivendi, Medifox or SNAP?', a: 'Yes. AlwaysReady Care is a dedicated evidence layer designed to sit alongside existing German care management systems such as Vivendi, Medifox, SNAP or DAN. No rip-and-replace — we handle MD audit evidence while your primary system handles care planning and billing.' },
+    { q: 'Is this software GDPR & SGB X compliant?', a: 'Yes. AlwaysReady Care is built for GDPR (DSGVO), the German Federal Data Protection Act (BDSG) and the social data secrecy requirements of SGB X. Data is encrypted and retained according to the minimum 10-year documentation requirement under SGB XI.' },
+    { q: 'Which expert standards does it cover?', a: 'The tool covers all 9 DNQP expert standards: pressure ulcer prevention, discharge management, pain management, falls prevention, continence promotion, chronic wound care, nutritional management, dementia care and mobility promotion — each with dedicated templates.' },
+    { q: 'Is this care software free?', a: 'AlwaysReady Care is free to start with full evidence capture, compliance tracking, and MD audit pack generation. Pro plans with advanced features start from €99 per facility per month.' }
   ]
 };
 
@@ -702,7 +878,7 @@ function localiseLandingPage() {
   // Problem banner
   var problemBanner = document.querySelector('.landing-problem-banner');
   if (problemBanner && regionCode !== 'uk') {
-    var inspectorTerms = { au: 'assessor', nz: 'auditor', ie: 'inspector' };
+    var inspectorTerms = { au: 'assessor', nz: 'auditor', ie: 'inspector', de: 'MD-Prüfer', 'de-en': 'MD auditor' };
     var ps = problemBanner.querySelectorAll('p');
     if (ps.length >= 2) {
       ps[0].textContent = 'You provide great care. Can you prove it when the ' + inspectorTerms[regionCode] + ' arrives?';
@@ -726,8 +902,15 @@ function localiseLandingPage() {
   // Feature section title
   var featuresTitle = document.getElementById('features-title');
   if (featuresTitle) {
-    var facilityTerms = { uk: 'Care Home', au: 'Aged Care', nz: 'Rest Home', ie: 'Nursing Home' };
-    featuresTitle.textContent = 'How This ' + (facilityTerms[regionCode] || 'Care Home') + ' Software Works';
+    var featuresTitleByRegion = {
+      uk: 'How This Care Home Software Works',
+      au: 'How This Aged Care Software Works',
+      nz: 'How This Rest Home Software Works',
+      ie: 'How This Nursing Home Software Works',
+      de: 'So funktioniert diese Pflegesoftware',
+      'de-en': 'How This Care Compliance Software Works'
+    };
+    featuresTitle.textContent = featuresTitleByRegion[regionCode] || featuresTitleByRegion.uk;
   }
 
   // Feature cards
@@ -3219,7 +3402,7 @@ async function saveHomeSettings() {
       address: address.trim(),
       region: selectedRegion
     });
-    var facilityTerms = { uk: 'Care home', au: 'Facility', nz: 'Rest home', ie: 'Nursing home' };
+    var facilityTerms = { uk: 'Care home', au: 'Facility', nz: 'Rest home', ie: 'Nursing home', de: 'Pflegeeinrichtung', 'de-en': 'Pflegeeinrichtung' };
     logAudit('home_settings_updated', 'Name: ' + name.trim() + ', Region: ' + selectedRegion);
     showToast((facilityTerms[selectedRegion] || 'Care home') + ' settings saved', 'success');
     var subtitle = document.getElementById('dashboard-subtitle');
