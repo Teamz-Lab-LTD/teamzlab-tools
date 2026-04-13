@@ -381,6 +381,17 @@ for region_code, r in REGIONS.items():
             HERO_SUB[region_code]
         )
 
+    # ── Strip the UK country-resource strip. apply-country-resources.py
+    #    re-injects a region-appropriate one on au/nz/ie after build;
+    #    de/de-en inject their own via the replacements below. ──
+    html = re.sub(
+        r'<span id="arc-country-resources">.*?</span>\s*',
+        '',
+        html,
+        count=1,
+        flags=re.DOTALL
+    )
+
     # ── Full German landing-page translation (static, SEO-perfect) ──
     if region_code == 'de':
         DE_REPLACEMENTS = [
