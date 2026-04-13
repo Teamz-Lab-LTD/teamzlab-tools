@@ -551,6 +551,28 @@ for region_code, r in REGIONS.items():
         for eng, de in DE_REPLACEMENTS:
             html = html.replace(eng, de)
 
+    # ── /de-en/ gets English labels but the same tool links (tools live under /de/) ──
+    if region_code == 'de-en':
+        DE_EN_RESOURCES = (
+            '<span id="arc-de-en-resources">Free tools for the German market: '
+            '<a href="../de/md-pruefung-checkliste/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 MD Audit Checklist</a> &middot; '
+            '<a href="../de/expertenstandards/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 9 DNQP Expert Standards</a> &middot; '
+            '<a href="../de/sis-formulierungshilfen/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 SIS Formularies</a> &middot; '
+            '<a href="../de/qualitaetsindikatoren-check/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Quality Indicators Self-Check</a> &middot; '
+            '<a href="../de/pflegedokumentation-vorlagen/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 12 Documentation Templates</a> &middot; '
+            '<a href="../de/pflegesoftware-vergleich/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Care Software Comparison</a> &middot; '
+            '<a href="../de/pflegegrad-rechner/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Pflegegrad Calculator</a> &middot; '
+            '<a href="../de/bundeslaender/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 MD Audit by Bundesland</a> &middot; '
+            '<a href="../de/md-pruefung-vorbereitung/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 12-Week Prep Plan</a> &middot; '
+            '<a href="../de/pflegeheim-eroeffnen/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Open a Care Facility</a> &middot; '
+            '<a href="../de/schweiz/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Switzerland (CH)</a> &middot; '
+            '<a href="../de/oesterreich/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Austria (AT)</a> &middot; '
+            '<a href="../de/impressum/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Impressum</a> &middot; '
+            '<a href="../de/datenschutz/" style="color:var(--accent);text-decoration:underline;font-weight:600;">\u2192 Datenschutz</a>'
+            '</span><br><br>Also available for:'
+        )
+        html = html.replace('Also available for:', DE_EN_RESOURCES, 1)
+
     # Language toggle — ONE-button switch between /de/ and /de-en/
     if region_code in ('de', 'de-en'):
         target = '../de-en/' if region_code == 'de' else '../de/'
