@@ -510,7 +510,22 @@ for region_code, r in REGIONS.items():
             ('Works alongside Person Centred Software, Nourish Care, Log my Care, Care Control, Birdie, CareDocs, StoriiCare, and any care planning system. Not a replacement \u2014 a compliance evidence layer on top.', 'L\u00e4uft parallel zu Vivendi, Medifox, SNAP, DAN Produkte und jedem anderen Pflegesystem. Kein Ersatz \u2014 eine Compliance-Nachweis-Schicht obendrauf.'),
             ('>User Guide<', '>Bedienungsanleitung<'),
             ('>Contact<', '>Kontakt<'),
-            ('>Sign In<', '>Anmelden</a> &middot;\n                <a href="impressum/">Impressum</a> &middot;\n                <a href="datenschutz/">Datenschutz<'),
+            # Target specifically the footer anchor version (not the span in the login button).
+            ('>Sign In</a>', '>Anmelden</a> &middot;\n                <a href="impressum/">Impressum</a> &middot;\n                <a href="datenschutz/">Datenschutz</a>'),
+            # Login + demo UI translations (visible for any DE user who scrolls to the login card)
+            ('>Get Started<', '>Jetzt starten<'),
+            ('Sign in or try the free demo', 'Anmelden oder Demo testen'),
+            ('>Email<', '>E-Mail<'),
+            ('>Password<', '>Passwort<'),
+            ('<span class="btn-text">Sign In</span>', '<span class="btn-text">Anmelden</span>'),
+            ('Sign in with Google', 'Mit Google anmelden'),
+            ('Try Free Demo', 'Demo kostenlos testen'),
+            ('>Free Demo<', '>Demo<'),
+            ('title="Try free demo"', 'title="Demo kostenlos testen"'),
+            ('>Submit Evidence<', '>Nachweis einreichen<'),
+            ('>Guest User<', '>Gast<'),
+            ('>Not signed in<', '>Nicht angemeldet<'),
+            ('Staff member\'s email', 'E-Mail-Adresse Mitarbeiter'),
             ('UK GDPR &amp; Data Protection Act 2018 compliant.', 'DSGVO, BDSG und SGB X konform.'),
             # Login form
             ('you@example.com', 'sie@beispiel.de'),
