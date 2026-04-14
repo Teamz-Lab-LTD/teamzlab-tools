@@ -94,6 +94,55 @@ Until AdSense is unblocked (see MONEY_MACHINE_2026_2027.md section 1), every ide
 - If it's a **screenshot**: analyze what's shown → extract the core topic and 3-5 seed keywords
 - If it's a **topic/niche**: break it into 5-10 seed keywords covering different user intents
 - If it's a **competitor site**: extract their top tools and find what they're MISSING
+- If **EMPTY / no input / "autonomous" / "you pick"**: use the Autonomous Default protocol below — DO NOT ask user to pick.
+
+### Autonomous Default protocol (when no seed given)
+
+When the user invokes `/ideas` with no arguments OR says "you decide / autonomous / pick the best for me":
+
+```bash
+cd "/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
+
+# 1. Read MONEY_MACHINE top velocity picks (Build NOW + sleeper bets)
+head -250 teamz-company-automation/MONEY_MACHINE_2026_2027.md
+
+# 2. Dedup check — which MONEY_MACHINE picks are ALREADY built?
+for slug in \
+  "eu/csrd/vsme-report-generator" \
+  "eu/csrd/scope-1-2-calculator-sme" \
+  "eu/csrd/carbon-factor-by-country" \
+  "eu/csrd/esrs-e1-datapoint-lookup" \
+  "eu/csrd/taxonomy-alignment-check" \
+  "us/tcja-bracket-2027" \
+  "us/salt-40k-cap-calculator" \
+  "us/401k-catch-up-8000-calculator" \
+  "us/estate-exemption-2027-halving" \
+  "us/bonus-depreciation-phaseout-2026" \
+  "longevity/phenoage-calculator" \
+  "longevity/dunedinpace-estimator" \
+  "longevity/zone-2-heart-rate-calculator" \
+  "longevity/bio-vs-chrono-age-gap" \
+  "longevity/longevity-stack-tracker" \
+  "longevity/gum-health-longevity-score" \
+  "longevity/neko-health-prep-checklist"
+do
+  [ -d "$slug" ] && echo "BUILT: $slug" || echo "MISSING: $slug"
+done
+
+# 3. Run velocity scorer on MISSING ones only (build a fresh candidates.json
+#    from the "MISSING:" lines above, run the scorer, pick the top 1-3 by $/mo)
+python3 scripts/build-revenue-velocity-score.py --input /tmp/autonomous-candidates.json
+```
+
+**Behavior in autonomous mode:**
+- Skip Phase 3 "existing site data" DEEP DIVE — just quick Search Console + AdSense sanity check
+- Skip Phase 4 keyword suggest/trends/PH/batch-trends — those seed exploration; we already have the seed from MONEY_MACHINE
+- KEEP Phase 4d velocity scoring (mandatory)
+- KEEP SERP check (Gate 2) for the TOP picked slug only
+- KEEP all 10 hard gates
+- Output: top 1-3 missing Build NOW picks with Velocity $/mo, then ASK user to confirm build OR auto-build if user said "ship it"
+
+**Never duplicate:** if all 5 GO cluster Build NOWs are already built, pick from Build Soon tier (6-10). If all 10 are built, pick from sleeper bets. If all sleeper bets built, report "all high-velocity picks from MONEY_MACHINE shipped; run cycle review or give me a seed keyword."
 
 ---
 
