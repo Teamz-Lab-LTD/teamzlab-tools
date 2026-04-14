@@ -1,6 +1,46 @@
 # Tool Backlog — Teamz Lab Tools
 
-*Last updated: 2026-03-30 (nightly build #17)*
+*Last updated: 2026-04-15 (nightly build #18)*
+
+---
+
+## Completed This Build (nightly build #18)
+
+| Tool | Hub | Status |
+|------|-----|--------|
+| NZ Mortgage Rate Rise Calculator | /nz/ | ✅ Built |
+| SG Rental Income Tax Calculator 2026 | /sg/ | ✅ Built |
+| IE Auto-Enrolment Pension Calculator | /ie/ | ✅ Built |
+| Remote Worker Burnout Risk Score | /work/ | ✅ Built |
+| UK Employment Rights Bill 2025 Checker | /uk/ | ✅ Built |
+
+---
+
+## Next Build Queue — Build #19 (prioritized by RPM + gap analysis)
+
+### High Priority (Tier S/A, Finance, RPM $8-20)
+- AU Tax Loss Harvesting Calculator (/au/) — offset capital gains with losses, EOFY season now
+- SG CPF OA vs Mortgage Calculator (/sg/) — should I use CPF OA to pay off mortgage? #1 SG question
+- NZ Bright Line Test Extension Checker (/nz/) — 10-year bright line (not 2yr), catches investors
+- IE USC Marginal Rate Explainer (/ie/) — why 8% USC on income >€100k confuses many
+- CH English Pillar 3b Calculator (/ch/) — English-language (existing CH tools are all German)
+- CA Alberta Income Tax Calculator (/ca/) — AB has flat tax, popular with expats
+- IL Rental Income Tax Israel (/il/) — 15% flat rate option vs marginal rate, unique to IL
+
+### Medium Priority (Career/Legal, RPM $6-12)
+- UK P11D Benefit in Kind Calculator (/uk/) — company car, health insurance BIK tax 2025/26
+- US W-4 Withholding Estimator (/us/) — new 2020 form, many employees still filling incorrectly
+- Career: STAR Method Answer Evaluator (/career/) — paste your answer, get score + feedback
+- Legal: Remote Work Agreement Generator (/legal/) — employer + employee version
+
+### Multilang Queue
+- /es/calculadora-pension-jubilacion/ — Spanish retirement pension calculator (500M speakers)
+- /pt/calculadora-fgts/ — Brazilian FGTS severance calculator (high volume in PT)
+- /fr/calculateur-impot-revenu/ — French income tax 2026 (already have /fr/ hub)
+
+### Programmatic SEO Queue
+- US State tax pages for: MT, ND, WY, SD (no income tax states — "X state income tax" = $0)
+- NZ city-specific stamp duty pages (Wellington/Auckland/Christchurch land transfer tax)
 
 ---
 
