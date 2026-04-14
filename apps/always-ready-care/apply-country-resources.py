@@ -53,7 +53,7 @@ COUNTRIES = {
     },
 }
 
-LINK_STYLE = 'color:var(--accent);text-decoration:underline;font-weight:600;'
+LINK_STYLE = 'color:var(--heading);text-decoration:underline;font-weight:600;'
 
 def build_strip(links):
     items = ' &middot; '.join(
