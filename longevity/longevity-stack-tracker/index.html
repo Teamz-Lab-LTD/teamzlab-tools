@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Longevity Supplement Stack Tracker — Teamz Lab Tools</title>
+  <meta name="description" content="Track your daily longevity supplement stack with streaks, 30-day heatmap, and CSV export. Private, free, and works offline in your browser.">
+  <meta property="og:title" content="Longevity Supplement Stack Tracker — Teamz Lab Tools">
+  <meta property="og:description" content="Log NMN, omega-3, vitamin D and more. Build streaks, see 30-day adherence heatmap, export CSV. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/longevity/longevity-stack-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/health.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Longevity Supplement Stack Tracker">
+  <meta name="twitter:description" content="Track your longevity stack daily. Streaks, heatmap, CSV export. Free and private.">
+  <link rel="canonical" href="https://tool.teamzlab.com/longevity/longevity-stack-tracker/">
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .lst-disclaimer{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--heading);padding:12px 16px;margin:12px 0;border-radius:8px;font-size:var(--text-sm);color:var(--text)}
+    .lst-streak{display:flex;align-items:center;gap:14px;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:14px 0}
+    .lst-streak-num{font-size:clamp(36px,8vw,56px);font-weight:800;color:var(--heading);line-height:1}
+    .lst-streak-label{font-size:var(--text-sm);color:var(--text-muted);margin-top:4px}
+    .lst-flame{width:48px;height:48px;flex-shrink:0}
+    .lst-today{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:12px 0}
+    .lst-row{display:flex;align-items:center;gap:12px;padding:10px;border-bottom:1px solid var(--border)}
+    .lst-row:last-child{border-bottom:none}
+    .lst-row input[type=checkbox]{width:22px;height:22px;accent-color:var(--heading);cursor:pointer;flex-shrink:0}
+    .lst-row-main{flex:1;min-width:0}
+    .lst-row-name{font-weight:600;color:var(--text);font-size:var(--text-base)}
+    .lst-row-meta{font-size:var(--text-xs);color:var(--text-muted);margin-top:2px}
+    .lst-badge{display:inline-block;padding:2px 8px;border-radius:10px;background:var(--bg);border:1px solid var(--border);font-size:10px;font-weight:600;color:var(--text);margin-right:4px;text-transform:uppercase;letter-spacing:.04em}
+    .lst-badge.am{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+    .lst-row-actions{display:flex;gap:6px;flex-shrink:0}
+    .lst-mini-btn{padding:4px 8px;font-size:var(--text-xs);background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer}
+    .lst-mini-btn:hover{background:var(--surface)}
+    .lst-heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:12px 0;max-width:420px}
+    .lst-cell{aspect-ratio:1;border:1px solid var(--border);border-radius:4px;background:var(--bg);position:relative;cursor:default;font-size:9px;display:flex;align-items:flex-start;justify-content:flex-end;padding:2px;color:var(--text-muted)}
+    .lst-cell.lvl-1{background:color-mix(in srgb,var(--heading) 25%,var(--bg))}
+    .lst-cell.lvl-2{background:color-mix(in srgb,var(--heading) 55%,var(--bg))}
+    .lst-cell.lvl-3{background:var(--heading);color:var(--bg)}
+    .lst-cell.lvl-0{background:var(--surface)}
+    .lst-cell.future{opacity:.3}
+    .lst-legend{display:flex;align-items:center;gap:6px;font-size:var(--text-xs);color:var(--text-muted);margin-top:4px}
+    .lst-legend-box{width:14px;height:14px;border-radius:3px;border:1px solid var(--border)}
+    .lst-stack-form{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin:10px 0}
+    .lst-stack-form input,.lst-stack-form select{padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:var(--text-sm)}
+    .lst-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+    .lst-evidence{margin-top:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:var(--text-sm);color:var(--text)}
+    .lst-evidence h4{margin:0 0 6px;color:var(--heading);font-size:var(--text-base)}
+    .lst-evidence-item{padding:6px 0;border-bottom:1px dashed var(--border)}
+    .lst-evidence-item:last-child{border-bottom:none}
+    .lst-affiliate{margin-top:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:var(--text-sm);color:var(--text)}
+    .lst-empty{padding:18px;text-align:center;color:var(--text-muted);font-style:italic}
+    @media (max-width:600px){
+      .lst-stack-form{grid-template-columns:1fr 1fr}
+      .lst-actions{flex-direction:column}
+      .lst-actions button{width:100%}
+      .tool-content h2{font-size:var(--text-lg)}
+      .lst-streak-num{font-size:clamp(32px,10vw,44px)}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.comhttps://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Longevity", "item": "https://tool.teamzlab.comhttps://tool.teamzlab.com/longevity/"}, {"@type": "ListItem", "position": 3, "name": "Supplement Stack Tracker", "item": "https://tool.teamzlab.comhttps://tool.teamzlab.com/longevity/longevity-stack-tracker/"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Does the tracker save my data anywhere online?", "acceptedAnswer": {"@type": "Answer", "text": "No. Every dose log is saved only in your browser localStorage. Nothing is sent to a server, no account is created, no cookies are used for tracking. Export your CSV regularly to keep a copy."}}, {"@type": "Question", "name": "What counts as a \"streak day\"?", "acceptedAnswer": {"@type": "Answer", "text": "A day counts toward your streak only if every supplement currently in your stack has been checked off for that day. Add or remove items from your stack and the calculation updates immediately."}}, {"@type": "Question", "name": "Why does the heatmap have green, yellow, and faded cells?", "acceptedAnswer": {"@type": "Answer", "text": "Each cell is colored by the percentage of your stack you took that day. Faded = none logged, light = under 50%, medium = 50–99%, deep = 100% adherence."}}, {"@type": "Question", "name": "Can I track prescription drugs like rapamycin or metformin?", "acceptedAnswer": {"@type": "Answer", "text": "Yes — you can add any item with custom dose and notes, but the tool is informational only. Always follow your physician's dosing schedule for prescription medication."}}, {"@type": "Question", "name": "How do I add NMN, NR, or peptides?", "acceptedAnswer": {"@type": "Answer", "text": "Use the \"Add a supplement\" form. Enter the name, dose, time of day, and tag the purpose (NAD, mitochondrial, inflammation, sleep, other). New items appear in tomorrow's checklist as well."}}, {"@type": "Question", "name": "What if I forget to log yesterday?", "acceptedAnswer": {"@type": "Answer", "text": "Past days are locked once the date changes — only today's row is editable. This keeps your history honest. The streak resets but your CSV export still shows the gap."}}, {"@type": "Question", "name": "Is this tool a replacement for blood testing?", "acceptedAnswer": {"@type": "Answer", "text": "No. Tracking adherence is one input. To know whether your stack is working, retest CRP, fasting glucose, vitamin D, and omega-3 index every 3 to 6 months and use the Biological Age Gap calculator."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Longevity Supplement Stack Tracker", "description": "Track daily longevity supplement intake with streaks, 30-day heatmap, and CSV export. Free and private.", "url": "https://tool.teamzlab.com/longevity/longevity-stack-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <div id="site-header"></div>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Longevity Supplement Stack Tracker</h1>
+      <p class="tool-intro">Log your daily NMN, omega-3, vitamin D, magnesium and more. Build a streak, watch your 30-day adherence heatmap fill in, and export your full intake history as CSV. Everything stays on your device — no sign-up, no cloud, no ads in your data.</p>
+      <div class="lst-disclaimer"><strong>For educational use only.</strong> Consult a physician before starting any supplement regimen. Not medical advice and not a substitute for clinical care.</div>
+    </section>
+
+    <section class="tool-calculator">
+      <h2>Today &middot; <span id="today-date">—</span></h2>
+      <div class="lst-today" id="today-panel">
+        <div class="lst-empty">Loading your stack…</div>
+      </div>
+
+      <div class="lst-streak" id="streak-panel">
+        <svg class="lst-flame" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2C12 6 8 7 8 12a4 4 0 0 0 8 0c0-2-1-3-1-5 3 2 5 5 5 9a8 8 0 0 1-16 0c0-5 4-7 4-12 0-1 1-2 4-2z" fill="var(--heading)"/>
+          <path d="M12 12c0 3 2 4 2 6a2 2 0 0 1-4 0c0-2 2-3 2-6z" fill="var(--accent)"/>
+        </svg>
+        <div>
+          <div class="lst-streak-num"><span id="streak-num">0</span></div>
+          <div class="lst-streak-label">day streak &middot; <span id="streak-message">log every supplement to start</span></div>
+        </div>
+      </div>
+
+      <h2>Last 30 Days</h2>
+      <div class="lst-heatmap" id="heatmap" aria-label="30-day adherence heatmap"></div>
+      <div class="lst-legend">
+        <span>Less</span>
+        <span class="lst-legend-box lvl-0"></span>
+        <span class="lst-legend-box lvl-1"></span>
+        <span class="lst-legend-box lvl-2"></span>
+        <span class="lst-legend-box lvl-3"></span>
+        <span>More</span>
+      </div>
+
+      <h2>Your Stack</h2>
+      <div id="stack-list"></div>
+      <h3 style="margin-top:14px;font-size:var(--text-base)">Add a supplement</h3>
+      <div class="lst-stack-form">
+        <input type="text" id="add-name" placeholder="Name (e.g. NMN)">
+        <input type="text" id="add-dose" placeholder="Dose (e.g. 500 mg)">
+        <select id="add-time">
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+          <option value="meal">With meal</option>
+          <option value="any">Any time</option>
+        </select>
+        <select id="add-purpose">
+          <option value="NAD">NAD</option>
+          <option value="mitochondrial">Mitochondrial</option>
+          <option value="inflammation">Inflammation</option>
+          <option value="sleep">Sleep</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <input type="text" id="add-note" placeholder="Optional note (e.g. with breakfast)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:var(--text-sm);margin-bottom:10px">
+
+      <div class="lst-actions">
+        <button id="add-btn" class="btn-primary">Add to stack</button>
+        <button id="export-btn" class="btn-secondary">Download CSV</button>
+        <button id="reset-btn" class="btn-secondary tool-clear-btn">Reset all data</button>
+      </div>
+
+      <div class="lst-evidence">
+        <h4>Evidence snapshot for default stack</h4>
+        <div class="lst-evidence-item"><strong>NMN 500mg</strong> — precursor to NAD+, supports mitochondrial energy (Martens 2018, PMID 29490774).</div>
+        <div class="lst-evidence-item"><strong>Omega-3 EPA/DHA 2g</strong> — anti-inflammatory, cardiovascular support (Harris 2017, PMID 28264838).</div>
+        <div class="lst-evidence-item"><strong>Vitamin D3 2000 IU</strong> — bone, immune, and metabolic regulation (Autier 2014, PMID 24107181).</div>
+        <div class="lst-evidence-item"><strong>Creatine 5g</strong> — muscle and cognitive performance (Kreider 2017, PMID 28615996).</div>
+        <div class="lst-evidence-item"><strong>Magnesium glycinate 400mg</strong> — sleep and nervous system (see manufacturer documentation).</div>
+        <div class="lst-evidence-item"><strong>Coenzyme Q10 100mg</strong> — mitochondrial cofactor (see manufacturer documentation).</div>
+        <div class="lst-evidence-item"><strong>Taurine 2g, Glycine 3g</strong> — sleep and metabolic markers (see manufacturer documentation).</div>
+        <div class="lst-evidence-item"><strong>Rapamycin / Metformin</strong> — prescription only; consult a longevity-aware physician.</div>
+      </div>
+
+      <div class="lst-affiliate">
+        We recommend pharmaceutical-grade brands such as <a href="https://www.thorne.com/" target="_blank" rel="nofollow sponsored noopener">Thorne</a> for third-party tested supplements.
+        <!-- AFFILIATE_LINK — Thorne placeholder, swap with affiliate tag -->
+      </div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section class="tool-content">
+      <h2>What is a Longevity Supplement Stack?</h2>
+      <p>A longevity supplement stack is a personalized combination of vitamins, minerals, peptides, and small molecules taken daily to support healthspan, mitochondrial function, NAD+ levels, inflammation control, and sleep quality. Popular stacks combine NAD+ precursors like NMN or NR with omega-3 fatty acids, vitamin D3, magnesium glycinate, and creatine. The Longevity Supplement Stack Tracker logs your daily intake locally in your browser, builds a streak counter, and shows a 30-day adherence heatmap so you can see consistency at a glance.</p>
+
+      <h2>Why Tracking Adherence Matters More Than the Stack Itself</h2>
+      <p>Most longevity research shows that consistency over months and years drives biomarker change — not occasional dosing. A 90% adherence rate to a simple stack will outperform a 40% adherence rate to a complex one. By logging every dose taken, you create a behavioral feedback loop: streaks reward consistency, and the heatmap exposes weeks where life got in the way. Studies on habit formation suggest 66 days of consistent action are needed to make a routine automatic. Your streak counter is the simplest measure of whether your stack is actually a stack or just a shelf.</p>
+
+      <h2>How to Build a Sensible Stack</h2>
+      <p>Start with the well-evidenced basics: omega-3 EPA/DHA (Harris 2017, PMID 28264838), vitamin D3 if you are deficient (Autier 2014, PMID 24107181), creatine for muscle and cognition (Kreider 2017, PMID 28615996), and magnesium glycinate for sleep. Add NAD+ precursors like NMN (Martens 2018, PMID 29490774) if you tolerate them. Avoid stacking more than 8 to 10 active compounds without bloodwork — the goal is signal you can measure, not a maximalist routine. Re-test biomarkers (CRP, glucose, vitamin D, omega-3 index) every 3 to 6 months.</p>
+
+      <h2>Privacy and Data Export</h2>
+      <p>Every checkbox click is saved to your browser's localStorage with a per-day key (YYYY-MM-DD). Nothing is sent to a server. Use the Download CSV button to export your full intake history for your doctor, your spreadsheet, or your own analysis. Clearing browser data will erase your log, so export periodically. Last updated: April 2026.</p>
+
+      <div class="lst-disclaimer"><strong>Disclaimer.</strong> This page is an educational habit-tracker, not medical advice and not a diagnostic device. Supplements can interact with prescription medication, pregnancy, kidney or liver disease. Talk to a licensed clinician before starting any new regimen.</div>
+    </section>
+
+    <div class="ad-slot">Ad Space</div>
+
+    <section>
+      <h2>Frequently Asked Questions</h2>
+      <div id="tool-faqs"></div>
+    </section>
+
+    <section>
+      <h2>Related tools</h2>
+      <div id="related-tools"></div>
+    </section>
+  </main>
+  <div id="site-footer"></div>
+
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      if (window.TeamzTools) {
+        TeamzTools.renderBreadcrumbs([
+          {name:'Home',url:'/'},
+          {name:'Longevity',url:'/longevity/'},
+          {name:'Supplement Stack Tracker'}
+        ]);
+
+        var faqs = [
+          {q:'Does the tracker save my data anywhere online?', a:'No. Every dose log is saved only in your browser localStorage. Nothing is sent to a server, no account is created, no cookies are used for tracking. Export your CSV regularly to keep a copy.'},
+          {q:'What counts as a "streak day"?', a:'A day counts toward your streak only if every supplement currently in your stack has been checked off for that day. Add or remove items from your stack and the calculation updates immediately.'},
+          {q:'Why does the heatmap have green, yellow, and faded cells?', a:'Each cell is colored by the percentage of your stack you took that day. Faded = none logged, light = under 50%, medium = 50–99%, deep = 100% adherence.'},
+          {q:'Can I track prescription drugs like rapamycin or metformin?', a:'Yes — you can add any item with custom dose and notes, but the tool is informational only. Always follow your physician\'s dosing schedule for prescription medication.'},
+          {q:'How do I add NMN, NR, or peptides?', a:'Use the "Add a supplement" form. Enter the name, dose, time of day, and tag the purpose (NAD, mitochondrial, inflammation, sleep, other). New items appear in tomorrow\'s checklist as well.'},
+          {q:'What if I forget to log yesterday?', a:'Past days are locked once the date changes — only today\'s row is editable. This keeps your history honest. The streak resets but your CSV export still shows the gap.'},
+          {q:'Is this tool a replacement for blood testing?', a:'No. Tracking adherence is one input. To know whether your stack is working, retest CRP, fasting glucose, vitamin D, and omega-3 index every 3 to 6 months and use the Biological Age Gap calculator.'}
+        ];
+        TeamzTools.renderFAQs(faqs);
+
+        TeamzTools.renderRelatedTools([
+          {slug:'/longevity/bio-vs-chrono-age-gap/', name:'Biological vs Chronological Age Gap', description:'Levine PhenoAge from 9 blood biomarkers.'},
+          {slug:'/health/sleep-calculator/', name:'Sleep Calculator', description:'Find optimal bedtimes using 90-minute cycles.'},
+          {slug:'/health/water-intake-calculator/', name:'Water Intake Calculator', description:'Daily hydration target by weight and climate.'},
+          {slug:'/health/bmi-calculator/', name:'BMI Calculator', description:'Body mass index with healthy range guidance.'},
+          {slug:'/health/calorie-calculator/', name:'Calorie Calculator', description:'Daily energy needs from BMR and activity.'},
+          {slug:'/health/protein-intake-calculator/', name:'Protein Intake Calculator', description:'Daily protein target for muscle and longevity.'}
+        ]);
+      }
+
+      // ---------- Storage ----------
+      var STACK_KEY = 'lst-stack-v1';
+      var LOG_KEY = 'lst-log-v1'; // { 'YYYY-MM-DD': { itemId: timestamp, ... } }
+
+      var DEFAULT_STACK = [
+        {id:'nmn', name:'NMN', dose:'500 mg', time:'AM', purpose:'NAD', note:''},
+        {id:'omega3', name:'Omega-3 EPA/DHA', dose:'2 g', time:'meal', purpose:'inflammation', note:''},
+        {id:'vitd', name:'Vitamin D3', dose:'2000 IU', time:'meal', purpose:'other', note:''},
+        {id:'magglyc', name:'Magnesium glycinate', dose:'400 mg', time:'PM', purpose:'sleep', note:''},
+        {id:'rapa', name:'Rapamycin (Rx)', dose:'6 mg', time:'AM', purpose:'other', note:'weekly only'},
+        {id:'metf', name:'Metformin (Rx)', dose:'500 mg', time:'meal', purpose:'other', note:'physician-prescribed'},
+        {id:'coq10', name:'Coenzyme Q10', dose:'100 mg', time:'meal', purpose:'mitochondrial', note:''},
+        {id:'creatine', name:'Creatine monohydrate', dose:'5 g', time:'any', purpose:'mitochondrial', note:''},
+        {id:'taurine', name:'Taurine', dose:'2 g', time:'PM', purpose:'other', note:''},
+        {id:'glycine', name:'Glycine', dose:'3 g', time:'PM', purpose:'sleep', note:''}
+      ];
+
+      function loadStack(){
+        try {
+          var raw = localStorage.getItem(STACK_KEY);
+          if (!raw) { localStorage.setItem(STACK_KEY, JSON.stringify(DEFAULT_STACK)); return DEFAULT_STACK.slice(); }
+          var arr = JSON.parse(raw);
+          return Array.isArray(arr) ? arr : DEFAULT_STACK.slice();
+        } catch(e) { return DEFAULT_STACK.slice(); }
+      }
+      function saveStack(s){ localStorage.setItem(STACK_KEY, JSON.stringify(s)); }
+      function loadLog(){
+        try { return JSON.parse(localStorage.getItem(LOG_KEY) || '{}'); } catch(e) { return {}; }
+      }
+      function saveLog(l){ localStorage.setItem(LOG_KEY, JSON.stringify(l)); }
+
+      function todayKey(d){
+        d = d || new Date();
+        var y = d.getFullYear();
+        var m = String(d.getMonth()+1).padStart(2,'0');
+        var day = String(d.getDate()).padStart(2,'0');
+        return y+'-'+m+'-'+day;
+      }
+      function prettyDate(d){
+        d = d || new Date();
+        return d.toLocaleDateString(undefined, {weekday:'long', month:'short', day:'numeric'});
+      }
+
+      var stack = loadStack();
+      var log = loadLog();
+
+      // ---------- Today panel ----------
+      function renderToday(){
+        document.getElementById('today-date').textContent = prettyDate();
+        var key = todayKey();
+        var dayLog = log[key] || {};
+        var panel = document.getElementById('today-panel');
+        if (!stack.length){
+          panel.innerHTML = '<div class="lst-empty">Your stack is empty. Add a supplement below to start tracking.</div>';
+          return;
+        }
+        panel.innerHTML = '';
+        stack.forEach(function(item){
+          var row = document.createElement('div');
+          row.className = 'lst-row';
+          var checked = !!dayLog[item.id];
+          var badgeClass = item.time === 'AM' ? 'am' : '';
+          row.innerHTML = '<input type="checkbox" id="chk-'+item.id+'" '+(checked?'checked':'')+'>' +
+            '<div class="lst-row-main">' +
+              '<div class="lst-row-name">'+escapeHtml(item.name)+' <span style="font-weight:400;color:var(--text-muted)">'+escapeHtml(item.dose)+'</span></div>' +
+              '<div class="lst-row-meta"><span class="lst-badge '+badgeClass+'">'+escapeHtml(item.time)+'</span><span class="lst-badge">'+escapeHtml(item.purpose)+'</span>'+ (item.note ? escapeHtml(item.note) : '') + '</div>' +
+            '</div>';
+          var chk = row.querySelector('input');
+          chk.addEventListener('change', function(){
+            var l = loadLog();
+            l[key] = l[key] || {};
+            if (chk.checked) l[key][item.id] = Date.now();
+            else delete l[key][item.id];
+            saveLog(l); log = l;
+            renderStreak(); renderHeatmap();
+          });
+          panel.appendChild(row);
+        });
+      }
+
+      // ---------- Streak ----------
+      function dayPercent(key){
+        var dayLog = log[key] || {};
+        if (!stack.length) return 0;
+        var taken = 0;
+        stack.forEach(function(it){ if (dayLog[it.id]) taken++; });
+        return taken / stack.length;
+      }
+      function computeStreak(){
+        var streak = 0;
+        var d = new Date();
+        for (var i=0;i<400;i++){
+          var k = todayKey(d);
+          if (dayPercent(k) >= 0.999) streak++;
+          else if (i === 0) { /* today incomplete still allows yesterday-back streak */ }
+          else break;
+          d.setDate(d.getDate()-1);
+        }
+        return streak;
+      }
+      function renderStreak(){
+        var n = computeStreak();
+        document.getElementById('streak-num').textContent = n;
+        var msg = document.getElementById('streak-message');
+        if (n === 0) msg.textContent = 'log every supplement today to start';
+        else if (n < 7) msg.textContent = 'You\'re on day '+n+' of your stack';
+        else if (n < 30) msg.textContent = 'Strong week — '+n+' days in a row';
+        else if (n < 66) msg.textContent = n+' days — building the habit';
+        else msg.textContent = n+' days — this is now automatic';
+      }
+
+      // ---------- Heatmap ----------
+      function renderHeatmap(){
+        var hm = document.getElementById('heatmap');
+        hm.innerHTML = '';
+        var d = new Date();
+        d.setDate(d.getDate() - 29);
+        for (var i=0;i<30;i++){
+          var k = todayKey(d);
+          var pct = dayPercent(k);
+          var lvl = 0;
+          if (pct >= 0.999) lvl = 3;
+          else if (pct >= 0.5) lvl = 2;
+          else if (pct > 0) lvl = 1;
+          var cell = document.createElement('div');
+          cell.className = 'lst-cell lvl-'+lvl;
+          cell.title = k + ' — ' + Math.round(pct*100) + '% taken';
+          cell.textContent = d.getDate();
+          hm.appendChild(cell);
+          d.setDate(d.getDate()+1);
+        }
+      }
+
+      // ---------- Stack list ----------
+      function renderStackList(){
+        var list = document.getElementById('stack-list');
+        list.innerHTML = '';
+        if (!stack.length){
+          list.innerHTML = '<div class="lst-empty">No items yet — add your first supplement below.</div>';
+          return;
+        }
+        stack.forEach(function(item, idx){
+          var row = document.createElement('div');
+          row.className = 'lst-row';
+          row.innerHTML = '<div class="lst-row-main"><div class="lst-row-name">'+escapeHtml(item.name)+' <span style="font-weight:400;color:var(--text-muted)">'+escapeHtml(item.dose)+'</span></div>' +
+            '<div class="lst-row-meta"><span class="lst-badge">'+escapeHtml(item.time)+'</span><span class="lst-badge">'+escapeHtml(item.purpose)+'</span>'+(item.note?escapeHtml(item.note):'')+'</div></div>' +
+            '<div class="lst-row-actions"><button class="lst-mini-btn" data-act="del" data-idx="'+idx+'">Remove</button></div>';
+          list.appendChild(row);
+        });
+        list.querySelectorAll('button[data-act="del"]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var i = parseInt(btn.getAttribute('data-idx'),10);
+            stack.splice(i,1);
+            saveStack(stack);
+            renderAll();
+            if (window.showToast) window.showToast('Removed from stack');
+          });
+        });
+      }
+
+      function escapeHtml(s){
+        return String(s||'').replace(/[&<>"']/g, function(c){
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'})[c];
+        });
+      }
+
+      function makeId(name){
+        return name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20) + '-' + Math.random().toString(36).slice(2,6);
+      }
+
+      // ---------- Add supplement ----------
+      document.getElementById('add-btn').addEventListener('click', function(){
+        var name = document.getElementById('add-name').value.trim();
+        var dose = document.getElementById('add-dose').value.trim();
+        var time = document.getElementById('add-time').value;
+        var purpose = document.getElementById('add-purpose').value;
+        var note = document.getElementById('add-note').value.trim();
+        if (!name){ if (window.showToast) window.showToast('Enter a supplement name'); return; }
+        stack.push({id: makeId(name), name:name, dose:dose||'—', time:time, purpose:purpose, note:note});
+        saveStack(stack);
+        document.getElementById('add-name').value='';
+        document.getElementById('add-dose').value='';
+        document.getElementById('add-note').value='';
+        renderAll();
+        if (window.showToast) window.showToast('Added to stack');
+      });
+
+      // ---------- Export CSV ----------
+      document.getElementById('export-btn').addEventListener('click', function(){
+        var rows = [['date','supplement_id','supplement_name','dose','time','purpose','timestamp_iso']];
+        var keys = Object.keys(log).sort();
+        keys.forEach(function(k){
+          var dayLog = log[k] || {};
+          Object.keys(dayLog).forEach(function(id){
+            var item = stack.filter(function(s){return s.id===id;})[0] || {name:id, dose:'', time:'', purpose:''};
+            var iso = new Date(dayLog[id]).toISOString();
+            rows.push([k, id, item.name, item.dose, item.time, item.purpose, iso]);
+          });
+        });
+        if (rows.length === 1){
+          if (window.showToast) window.showToast('No log data yet — check off today first');
+          return;
+        }
+        var csv = rows.map(function(r){
+          return r.map(function(v){
+            v = String(v||'');
+            return /[,"\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
+          }).join(',');
+        }).join('\n');
+        var blob = new Blob([csv], {type:'text/csv'});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'longevity-stack-log-'+todayKey()+'.csv';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+        if (window.showToast) window.showToast('CSV downloaded');
+      });
+
+      // ---------- Reset ----------
+      document.getElementById('reset-btn').addEventListener('click', function(){
+        if (!confirm('Reset stack and log? This cannot be undone.')) return;
+        localStorage.removeItem(STACK_KEY);
+        localStorage.removeItem(LOG_KEY);
+        stack = loadStack();
+        log = loadLog();
+        renderAll();
+        if (window.showToast) window.showToast('All data reset');
+      });
+
+      function renderAll(){
+        renderToday();
+        renderStackList();
+        renderStreak();
+        renderHeatmap();
+      }
+      renderAll();
+    });
+  </script>
+</body>
+</html>
