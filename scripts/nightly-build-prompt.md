@@ -48,37 +48,23 @@ THEN DO:
 
 TARGET: 5-8 base tools + variants + 4-8 multilang + QA fixes + backlog update.
 
-7. DISTRIBUTION DRAFTING (MANDATORY — do this for EVERY new tool built tonight):
-   For each tool you built in step 1, write a 200-500 word markdown article to
-   scripts/distribute/articles/[slug].md with this frontmatter:
+7. DISTRIBUTION + YOUTUBE (MANDATORY — do this for EVERY new tool built tonight):
+   Read the full distribute skill at .claude/commands/distribute.md and follow it.
+   Summary of what it does (don't re-derive):
 
-   ---
-   title: [compelling hook, not the tool's meta title — different angle]
-   slug: [tool-slug]
-   tags: [5 comma-separated tags]
-   canonical_url: https://tool.teamzlab.com/[hub]/[slug]/
-   og_image: https://tool.teamzlab.com/og-images/[hub].png
-   ---
+   a) For each new tool built this run, write a 200-500 word markdown article to
+      scripts/distribute/articles/[slug].md with frontmatter containing
+      title/slug/tags/canonical_url/og_image (title is MANDATORY).
+   b) Register each via: python3 scripts/distribute/distribute.py draft [file] --priority high
+   c) Phase 0 health check (drafts, status, safety, render-batch --status).
+   d) python3 scripts/distribute/distribute.py next --count 3
+      — this safely posts to web platforms AND auto-calls Remotion autopilot to
+        render + upload 1 YouTube Short (youtube is a platform in next).
+      — rate limits auto-enforced; never use --force, --clear, or --platforms all.
+   e) If render-batch --status shows stockpile ≥ 30, SKIP new video rendering
+      and post from existing stockpile only.
+   f) Follow all Hard Gates in .claude/commands/distribute.md.
 
-   Article structure:
-   - H1 with compelling hook (problem → stat → solution)
-   - 2-3 paragraphs explaining WHY this matters (use real stats, cite sources)
-   - "What It Does" section
-   - "Who It's For" section
-   - Clear CTA link to the tool
-   - Link to the hub page at the bottom
+   Print: "Drafted [N] articles. next --count 3 → [published] / [queued] / [blocked]. YouTube: [rendered/uploaded or skipped-stockpile-full]."
 
-   Then register each as a draft with priority=high:
-     python3 scripts/distribute/distribute.py draft scripts/distribute/articles/[slug].md --priority high
-
-   Finally, safely post what rate-limits allow (NEVER force, NEVER --clear):
-     python3 scripts/distribute/distribute.py flush
-     python3 scripts/distribute/distribute.py next --count 3
-
-   The flush command auto-respects per-platform daily/weekly limits and will
-   QUEUE anything unsafe for tomorrow. It is SAFE to run — it will never
-   trigger spam flags. Do NOT use --force or --clear.
-
-   Print: "Drafted [N] articles. Flushed [M] posts safely. Queued [K] for next run."
-
-UPDATED TARGET: 5-8 tools + 5-8 distribution drafts + safe flush + variants + multilang + QA + backlog.
+UPDATED TARGET: 5-8 tools + 5-8 distribution drafts + safe flush + 1 YouTube Short + variants + multilang + QA + backlog.
