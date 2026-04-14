@@ -103,34 +103,34 @@ When the user invokes `/ideas` with no arguments OR says "you decide / autonomou
 ```bash
 cd "/Users/mdgolamkibriaemon/Projects/Teamz Lab Projects/teamz-projects/teamzlab-tools"
 
-# 1. Read MONEY_MACHINE top velocity picks (Build NOW + sleeper bets)
+# 1. Read MONEY_MACHINE top velocity picks (Build NOW + Build Soon + sleeper bets)
 head -250 teamz-company-automation/MONEY_MACHINE_2026_2027.md
 
-# 2. Dedup check — which MONEY_MACHINE picks are ALREADY built?
-for slug in \
-  "eu/csrd/vsme-report-generator" \
-  "eu/csrd/scope-1-2-calculator-sme" \
-  "eu/csrd/carbon-factor-by-country" \
-  "eu/csrd/esrs-e1-datapoint-lookup" \
-  "eu/csrd/taxonomy-alignment-check" \
-  "us/tcja-bracket-2027" \
-  "us/salt-40k-cap-calculator" \
-  "us/401k-catch-up-8000-calculator" \
-  "us/estate-exemption-2027-halving" \
-  "us/bonus-depreciation-phaseout-2026" \
-  "longevity/phenoage-calculator" \
-  "longevity/dunedinpace-estimator" \
-  "longevity/zone-2-heart-rate-calculator" \
-  "longevity/bio-vs-chrono-age-gap" \
-  "longevity/longevity-stack-tracker" \
-  "longevity/gum-health-longevity-score" \
-  "longevity/neko-health-prep-checklist"
-do
-  [ -d "$slug" ] && echo "BUILT: $slug" || echo "MISSING: $slug"
-done
+# 2. Extract candidate slugs from the master plan (parse "| `/slug/` |" table rows
+#    in Build NOW + Build Soon + sleeper sections). This is the candidate pool.
 
-# 3. Run velocity scorer on MISSING ones only (build a fresh candidates.json
-#    from the "MISSING:" lines above, run the scorer, pick the top 1-3 by $/mo)
+# 3. Dedup using EXISTING infrastructure — do NOT reinvent. Run these against each candidate:
+#
+#    a) Broad concept search (CLAUDE.md Rule: search concept, not just slug)
+for KW in "vsme" "scope-1-2" "carbon-factor" "tcja" "phenoage" "dunedinpace" "zone-2" ...; do
+  find . -type d -iname "*${KW}*" 2>/dev/null
+done
+#
+#    b) Authoritative validation for the exact keyword (uses existing engine)
+./scripts/build-seo-audit.sh --validate-new "<candidate keyword>"
+#    -> GO/CAUTION/STOP verdict includes cannibalization detection
+#
+#    c) Cannibalization check against all 2200+ existing tools
+./scripts/build-seo-audit.sh --cannibalize 2>&1 | grep -iE "<candidate concept>"
+#    -> lists conflicts with existing pages
+#
+#    d) Pre-commit hook runs its OWN dedup on staging, so even a missed duplicate
+#       gets caught before commit (see .git/hooks/pre-commit "POSSIBLE DUPLICATE" logic)
+
+# 4. Drop candidates that return any BUILT / CAUTION / STOP / cannibalization hit.
+#    Keep only verified-missing concepts.
+
+# 5. Run velocity scorer on the filtered list
 python3 scripts/build-revenue-velocity-score.py --input /tmp/autonomous-candidates.json
 ```
 
@@ -142,7 +142,14 @@ python3 scripts/build-revenue-velocity-score.py --input /tmp/autonomous-candidat
 - KEEP all 10 hard gates
 - Output: top 1-3 missing Build NOW picks with Velocity $/mo, then ASK user to confirm build OR auto-build if user said "ship it"
 
-**Never duplicate:** if all 5 GO cluster Build NOWs are already built, pick from Build Soon tier (6-10). If all 10 are built, pick from sleeper bets. If all sleeper bets built, report "all high-velocity picks from MONEY_MACHINE shipped; run cycle review or give me a seed keyword."
+**Why use existing scripts, not a hardcoded slug list:**
+1. `build-seo-audit.sh --validate-new` already checks against ALL existing tool slugs, titles, and keywords (not just the MONEY_MACHINE list)
+2. `--cannibalize` finds the 498 existing keyword conflicts in the codebase so new picks don't collide
+3. `find . -type d -iname "*concept*"` catches variants like `meme-maker` vs `meme-generator` (per CLAUDE.md Rule 21)
+4. Pre-commit hook's `POSSIBLE DUPLICATE` check is a final safety net — it'll block the commit if the build somehow slipped through
+5. Hardcoded lists go stale; scripts stay accurate against current repo state
+
+**Never duplicate:** if the filtered candidate list is empty, report "all MONEY_MACHINE high-velocity picks either shipped or cannibalized; run the 90-day cycle review or give me a new seed keyword." Do NOT invent new picks outside the master plan.
 
 ---
 
