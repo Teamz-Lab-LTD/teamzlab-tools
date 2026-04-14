@@ -493,6 +493,7 @@ var TOOL_SEARCH_INDEX = [
   {t:'Crypto Tax Calculator by Country',d:'Calculate your crypto capital gains tax in 40+ countries. Free, private, no signup. Updated for 2026 DAC8 and CARF rules.',h:'/crypto/crypto-tax-by-country/'},
   {t:'Crypto DCA Calculator',d:'Calculate dollar-cost averaging results for any cryptocurrency. Compare DCA vs lump sum, track ROI, and plan your investment strategy. Free and privat',h:'/crypto/dca-calculator/'},
   {t:'Fear &amp; Greed DCA Calculator',d:'Backtest a fear-based DCA strategy for Bitcoin. Compare buying during Extreme Fear vs regular DCA. Free, private, no signup.',h:'/crypto/fear-greed-dca-calculator/'},
+  {t:'FOMO Crypto Calculator',d:'See how much you\'d have today if you invested in Bitcoin, Ethereum, Dogecoin or Solana years ago. Free FOMO calculator — private, instant, no signu',h:'/crypto/fomo-calculator/'},
   {t:'Ethereum Gas Fee Calculator',d:'Calculate Ethereum gas fees and transaction costs instantly. Compare L1 vs L2 fees across Arbitrum, Optimism, Base, and zkSync. Free, private, no sign',h:'/crypto/gas-fee-calculator/'},
   {t:'Impermanent Loss Calculator',d:'Calculate impermanent loss for DeFi liquidity pools instantly. See IL percentage, dollar impact, and whether pool fees offset your risk.',h:'/crypto/impermanent-loss-calculator/'},
   {t:'Crypto & Web3 Tools',d:'Free crypto calculators for gas fees, staking rewards, DeFi impermanent loss, NFT royalties, tax, and more. Private, no sign-up, runs in your browser.',h:'/crypto/'},
