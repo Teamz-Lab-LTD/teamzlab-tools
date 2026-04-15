@@ -1,12 +1,12 @@
-# Indexing Report — 2026-04-15 08:53
+# Indexing Report — 2026-04-15 09:16
 
 Total pages: 30
 Checked: 30
-Indexed: 28 (93%)
+Indexed: 30 (100%)
 Not indexed: 0
-Errors: 2
+Errors: 0
 
-## Indexed Pages (28)
+## Indexed Pages (30)
 
 - /
 - /diagnostic/dns-leak-test/
@@ -31,7 +31,9 @@ Errors: 2
 - /accessibility/wcag-accessibility-checklist/
 - /bd/cgpa-calculator/
 - /cricket/economy-rate-calculator/
+- /cricket/dls-calculator/
 - /ramadan/eid-salami-scratch-challenge/
+- /bd/freelancer-tax-calculator/
 - /au/student-visa-cost-calculator/
 - /football/ucl-group-stage-simulator/
 - /health/screen-distance-checker/
