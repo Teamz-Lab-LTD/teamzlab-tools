@@ -34,6 +34,37 @@ ALWAYS_MARKERS = [
     ("ffmpeg-wasm", re.compile(r"@ffmpeg/ffmpeg|ffmpeg-core\.js|createFFmpeg\s*\(|FFmpeg\.load\s*\(", re.I)),
     ("transformers-js", re.compile(r"@xenova/transformers|@huggingface/transformers|transformers\.min\.js|huggingface\.co/.+?/resolve", re.I)),
     ("onnx-heavy", re.compile(r"onnxruntime-web.+?\.onnx|ort\.InferenceSession\.create", re.I)),
+    # Login/auth flows: Firebase OAuth popups, Google Sign-In, password forms, and
+    # generic OAuth redirects all break inside in-app WebViews — popup windows are
+    # blocked, third-party cookies are partitioned, and OAuth redirect domains
+    # often reject the WebView user agent. Redirect these to the system browser
+    # regardless of device RAM.
+    ("auth-required", re.compile(
+        r"TeamzAuth\.(?:requireAuth|signIn|login|isLoggedIn|getUser|getToken|onAuthChange)\s*\("
+        r"|signInWith(?:Popup|Redirect|Credential|EmailAndPassword|PhoneNumber)\s*\("
+        r"|(?:Google|Facebook|Github|Twitter|OAuth|Apple)AuthProvider\b"
+        r"|accounts\.google\.com/gsi/client"
+        r"|google\.accounts\.id\.(?:initialize|renderButton|prompt)"
+        r"|firebase/auth|firebase-auth\.js|firebaseui"
+        r"|<input[^>]+type\s*=\s*[\"']password[\"']",
+        re.I,
+    )),
+    # APIs that are blocked or unreliable in in-app WebViews with no practical
+    # fallback: WebAuthn/passkeys (platform authenticator blocked),
+    # getDisplayMedia (screen capture blocked on iOS WebView), Web Bluetooth /
+    # USB / Serial (hardware access refused). These tools ARE the API — if the
+    # API is missing, the tool has nothing to show.
+    # Intentionally excluded: navigator.clipboard.readText, showOpenFilePicker,
+    # EyeDropper — those are conveniences with HTML-input/manual fallbacks, so
+    # the tool still works without redirect.
+    ("webview-api-blocked", re.compile(
+        r"navigator\.credentials\.(?:create|get)\s*\("
+        r"|(?:navigator\.mediaDevices\.)?getDisplayMedia\s*\("
+        r"|navigator\.bluetooth\b"
+        r"|navigator\.usb\b"
+        r"|navigator\.serial\b",
+        re.I,
+    )),
 ]
 
 # Heavier-than-average but runnable on flagships. Redirected only on low-RAM devices.
@@ -47,7 +78,7 @@ HEAVY_ASSET_ALWAYS_BYTES = 40 * 1024 * 1024   # sibling model/wasm >= 40MB → a
 HEAVY_ASSET_HEAVY_BYTES = 12 * 1024 * 1024    # >= 12MB but <40MB → redirect on low-RAM
 HEAVY_ASSET_EXTS = {".bin", ".onnx", ".wasm", ".pt", ".gguf", ".tflite"}
 
-ALWAYS_TAGS = {"webgpu", "ffmpeg-wasm", "transformers-js", "onnx-heavy", "heavy-asset"}
+ALWAYS_TAGS = {"webgpu", "ffmpeg-wasm", "transformers-js", "onnx-heavy", "heavy-asset", "auth-required", "webview-api-blocked"}
 HEAVY_TAGS = {"mediapipe", "tfjs", "opencv-js", "medium-asset"}
 
 # Files we scan within a tool directory.
@@ -72,11 +103,29 @@ def scan_file(path: Path) -> set[str]:
     return hits
 
 
+SKIP_DIRS = {"node_modules", ".git", "dist", "build", "__pycache__"}
+MAX_SCAN_DEPTH = 4  # tool_dir/js/vendor/foo.js is deep enough; deeper usually == bundles
+
+
 def scan_tool(tool_dir: Path) -> set[str]:
+    """Scan a tool directory recursively for capability markers.
+
+    We recurse because auth code and heavy assets often live in subdirs like
+    `js/app.js`, `assets/model.onnx`, etc. — scanning only top-level files
+    misses them (e.g. apps/always-ready-care puts firebase/auth in js/app.js).
+    Depth is bounded so bundled CDN mirrors don't explode scan time.
+    """
     reasons: set[str] = set()
     if not tool_dir.is_dir():
         return reasons
-    for entry in tool_dir.iterdir():
+    base_depth = len(tool_dir.parts)
+    for entry in tool_dir.rglob("*"):
+        # Skip anything inside a banned directory (node_modules, etc.)
+        if any(part in SKIP_DIRS for part in entry.parts):
+            continue
+        depth = len(entry.parts) - base_depth
+        if depth > MAX_SCAN_DEPTH:
+            continue
         if not entry.is_file():
             continue
         ext = entry.suffix.lower()

@@ -318,9 +318,10 @@ python3 scripts/build-webview-incompat.py                  # Scan tools for mobi
 
 The Toolz mobile app (toss_app) loads tools in an in-app WebView. Some tools
 cannot run there (WebGPU missing, 60 MB+ WASM models OOM, ffmpeg.wasm kills
-the renderer). `scripts/build-webview-incompat.py` scans every tool and emits
-`webview-incompat.json` at repo root. The app fetches this file at runtime
-and redirects flagged tools to the system browser.
+the renderer, Firebase/Google OAuth popups are blocked, password forms get
+flagged by the WebView). `scripts/build-webview-incompat.py` scans every tool
+and emits `webview-incompat.json` at repo root. The app fetches this file at
+runtime and redirects flagged tools to the system browser.
 
 - **Auto-runs** inside `build-search-index.sh` right after `build-tools-json.py`
   — every normal build regenerates it. You don't run it by hand.
@@ -330,7 +331,10 @@ and redirects flagged tools to the system browser.
   `@huggingface/transformers`, `@xenova/transformers`, `onnxruntime-web`,
   `@mediapipe/tasks-*`, `@tensorflow/tfjs`, `opencv.js`; plus sibling
   `.bin/.onnx/.wasm/.pt/.gguf/.tflite` files sized ≥ 12 MB (heavy) or ≥ 40 MB
-  (always).
+  (always); plus auth markers `TeamzAuth.requireAuth/isLoggedIn/etc`,
+  `signInWithPopup|Redirect`, `*AuthProvider` (Google/Facebook/Github/etc),
+  `accounts.google.com/gsi`, `firebase/auth`, and `<input type="password">`
+  (always tier — OAuth popups and password prompts break in WebView).
 - **If a tool is wrongly flagged** → edit the scanner's markers or add an
   opt-out (currently none; ask before adding). False positive is safer than
   false negative here.

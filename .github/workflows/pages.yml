@@ -28,6 +28,23 @@ jobs:
       - name: Checkout branding submodule only
         run: git submodule update --init branding
 
+      - name: Regenerate mobile app manifests
+        # Safety net: even if a commit bypasses the pre-commit hook
+        # (--no-verify), CI rebuilds the mobile app's registries before
+        # publishing. This guarantees both files deployed to GitHub Pages
+        # always reflect the current tool tree:
+        #   - tools.json / tools-debug.json — the mobile app's tool registry
+        #     (toss_app fetches on launch; new tools appear without app
+        #     release)
+        #   - webview-incompat.json — WebView redirect list (auth,
+        #     WebAuthn, ffmpeg, transformers, screen-capture, hardware APIs,
+        #     heavy assets; flagged tools open in Safari/Chrome instead of
+        #     the in-app WebView)
+        # build-tools-json runs first so webview-incompat scans the fresh list.
+        run: |
+          python3 scripts/build-tools-json.py
+          python3 scripts/build-webview-incompat.py
+
       - name: Prepare site directory
         # Copy only the static site files to a clean staging dir.
         # Excludes: private submodule, runtime logs, SEO logs, build scripts, Python cache.
