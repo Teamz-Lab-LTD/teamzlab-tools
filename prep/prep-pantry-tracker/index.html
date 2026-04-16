@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prep Pantry Tracker — FIFO Food Rotation &amp; Expiry Alerts</title>
+  <meta name="description" content="Free prep pantry tracker. Log emergency food stores with expiry dates, rotate FIFO, get alerts 30 days before expiry. Auto-generates shopping list. Private, browser-based.">
+  <meta property="og:title" content="Prep Pantry Tracker — FIFO Food Rotation">
+  <meta property="og:description" content="Track your emergency food stores with expiry alerts and a FIFO rotation view. Free and private.">
+  <meta property="og:url" content="https://tool.teamzlab.com/prep/prep-pantry-tracker/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/icons/og-default.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Prep Pantry Tracker — FIFO Food Rotation">
+  <meta name="twitter:description" content="Track your emergency food stores with expiry alerts and a FIFO rotation view.">
+  <link rel="canonical" href="https://tool.teamzlab.com/prep/prep-pantry-tracker/">
+  <!-- TEAMZ-PERF -->
+  <link rel="preload" href="/branding/fonts/poppins-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/branding/fonts/poppins-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net">
+  <!-- /TEAMZ-PERF -->
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <style>
+    .pantry-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem}
+    .pantry-stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.85rem;text-align:center}
+    .pantry-stat .s-val{font-size:1.5rem;font-weight:700;color:var(--heading);line-height:1}
+    .pantry-stat .s-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:.3rem}
+    .pantry-stat.danger .s-val{color: var(--heading)}
+
+    .pantry-add{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1.5rem}
+    .pantry-add h3{color:var(--heading);font-size:1rem;margin:0 0 1rem}
+    .pantry-form-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr 1.5fr;gap:.75rem;align-items:end}
+    .pantry-form-grid label{display:block;color:var(--text-muted);font-size:.75rem;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.5px}
+    .pantry-form-grid input,.pantry-form-grid select{width:100%;padding:.55rem;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:.9rem}
+    .pantry-add-btn{padding:.6rem 1.25rem;background: var(--heading); color: var(--bg);border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:.9rem;white-space:nowrap}
+
+    .pantry-filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+    .pantry-filter{padding:.4rem .85rem;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--text-muted);cursor:pointer;font-size:.85rem;font-weight:500}
+    .pantry-filter.active{background: var(--heading); color: var(--bg);border-color:var(--heading);font-weight:700}
+    .pantry-filter-count{opacity:.8;margin-left:.35rem}
+
+    .pantry-list{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+    .pantry-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 80px;gap:1rem;padding:.85rem 1rem;align-items:center;border-bottom:1px solid var(--border);font-size:.9rem}
+    .pantry-row:last-child{border-bottom:none}
+    .pantry-row.expired{background:rgba(217,254,6,.06)}
+    .pantry-row.expiring .p-status{color:var(--heading);font-weight:700}
+    .pantry-row.expired .p-status{color:var(--heading);font-weight:700}
+    .pantry-head{background:var(--bg);font-weight:600;color:var(--text-muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.5px}
+    .pantry-row .p-name{color:var(--text);font-weight:500}
+    .pantry-row .p-meta{color:var(--text-muted);font-size:.85rem}
+    .p-del-btn{padding:.3rem .6rem;background:var(--bg);color:var(--text-muted);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.75rem}
+    .p-del-btn:hover{color:var(--heading);border-color:var(--heading)}
+
+    .pantry-empty{text-align:center;padding:3rem 1rem;color:var(--text-muted)}
+    .pantry-empty .empty-icon{font-size:3rem;display:block;margin-bottom:.5rem}
+
+    .pantry-shopping{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-top:1.5rem}
+    .pantry-shopping h3{color:var(--heading);font-size:1rem;margin:0 0 .75rem}
+    .pantry-shopping .shop-item{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;color:var(--text);font-size:.9rem;border-bottom:1px dashed var(--border)}
+    .pantry-shopping .shop-item:last-child{border-bottom:none}
+
+    .pantry-actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem}
+    .pantry-actions button{padding:.55rem 1.25rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);cursor:pointer;font-size:.85rem}
+
+    @media (max-width: 700px){
+      .pantry-form-grid{grid-template-columns:1fr 1fr;gap:.6rem}
+      .pantry-form-grid .add-col{grid-column:1 / -1}
+      .pantry-row{grid-template-columns:1fr 70px;gap:.5rem;padding:.75rem .85rem}
+      .pantry-head{display:none}
+      .pantry-row .p-qty,.pantry-row .p-cat,.pantry-row .p-exp{grid-column:1}
+      .pantry-row .p-name{grid-column:1}
+      .pantry-row .p-del{grid-row:1 / 5;grid-column:2}
+      .pantry-actions button{width:100%}
+    }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Emergency Preparedness Tools", "item": "https://tool.teamzlab.com/prep/"}, {"@type": "ListItem", "position": 3, "name": "Prep Pantry Tracker"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How long does canned food last in a prep pantry?", "acceptedAnswer": {"@type": "Answer", "text": "Most commercially canned food is safe for 2-5 years past the printed date if the can is undamaged and stored in a cool, dark place. High-acid foods (tomatoes, fruits) degrade faster — use within 18 months of the best-by date. Low-acid foods (beans, meats, vegetables) stay safe far longer but lose texture and nutrients over time. Rotate FIFO to catch items before quality drops."}}, {"@type": "Question", "name": "What is FIFO rotation and why does it matter for prep food?", "acceptedAnswer": {"@type": "Answer", "text": "FIFO means First In, First Out — you eat the oldest stock first during normal meals, then replace with fresh. This keeps your emergency supply always current without waste. The alternative (stock and forget) leads to throwing out expired food in year 2 or 3, which wastes money and leaves you under-prepared when an emergency hits."}}, {"@type": "Question", "name": "How much emergency food should I store per person?", "acceptedAnswer": {"@type": "Answer", "text": "FEMA recommends 72 hours minimum, 2 weeks ideal. Budget 2,000 calories per adult per day, so a 2-week supply for a family of four is about 112,000 calories. In practical terms: 14 large cans of soup, 14 pounds of rice, 14 cans of beans, 14 pounds of pasta, plus shelf-stable protein. The tracker helps you see totals at a glance."}}, {"@type": "Question", "name": "Do I need to track expiry dates on water?", "acceptedAnswer": {"@type": "Answer", "text": "Sealed commercial bottled water has no true expiry — the plastic may leach trace chemicals after long periods, but it remains safe to drink. Tap water stored in food-grade containers is safe about 6 months before rotation. Treat the printed date as a rotation reminder, not a hard cutoff."}}, {"@type": "Question", "name": "Is my data safe if I use this tool?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Your pantry inventory is stored only in your browser using localStorage. Nothing is sent to any server, no account is required, and no analytics run on your item data. The tradeoff is that your pantry does not sync between devices — use the Export CSV feature if you want a backup."}}, {"@type": "Question", "name": "What happens if I clear my browser data?", "acceptedAnswer": {"@type": "Answer", "text": "Your pantry list will be lost. To prevent this, export a CSV periodically (weekly is fine) and store it in your regular file backup. You can rebuild the pantry from a CSV if needed, though currently the tool does not support import — expert users can manually re-add items."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Prep Pantry Tracker", "description": "Track emergency food stores with FIFO rotation and expiry alerts.", "url": "https://tool.teamzlab.com/prep/prep-pantry-tracker/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Prep Pantry Tracker</h1>
+      <p class="tool-description">Log emergency food stores with expiry dates. Sorted FIFO (first expire, first use). Items expiring within 30 days auto-flag for replacement. Data stays in your browser — nothing uploaded.</p>
+    </section>
+    <section class="tool-calculator" id="tool-area">
+      <div class="pantry-summary" id="pantry-summary"></div>
+
+      <div class="pantry-add">
+        <h3>Add Item to Pantry</h3>
+        <div class="pantry-form-grid">
+          <div>
+            <label for="p-name-input">Item name</label>
+            <input type="text" id="p-name-input" placeholder="e.g., Canned beans">
+          </div>
+          <div>
+            <label for="p-qty-input">Qty</label>
+            <input type="number" id="p-qty-input" value="1" min="1">
+          </div>
+          <div>
+            <label for="p-cat-input">Category</label>
+            <select id="p-cat-input">
+              <option value="Canned">Canned</option>
+              <option value="Dry Goods">Dry Goods</option>
+              <option value="Water">Water</option>
+              <option value="Freeze-Dried">Freeze-Dried</option>
+              <option value="MRE">MRE</option>
+              <option value="Medical">Medical</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="p-exp-input">Expires on</label>
+            <input type="date" id="p-exp-input">
+          </div>
+          <div class="add-col">
+            <button type="button" id="p-add-btn" class="pantry-add-btn">Add to Pantry</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pantry-filters" id="pantry-filters"></div>
+
+      <div id="pantry-list-wrap"></div>
+
+      <div id="pantry-shopping-wrap"></div>
+
+      <div class="pantry-actions">
+        <button type="button" id="p-export-btn">Export CSV</button>
+        <button type="button" id="p-clear-btn" class="tool-clear-btn">Clear Pantry</button>
+      </div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Prep Pantry Tracker Works</h2>
+      <p>This tracker logs every emergency food item with its expiry date, then sorts the list FIFO — first to expire, first to use. Items expiring within 30 days are flagged in the "Expiring Soon" filter; items already past their date move to "Expired." Nothing uploads anywhere: your pantry data lives only in your browser's localStorage, which means closing the tab keeps it, but clearing browser data wipes it.</p>
+
+      <h2>Why FIFO Rotation Matters for Prep Food</h2>
+      <p>The single biggest failure mode in long-term food storage is not spoilage from bad conditions — it is forgetting. A family spends $400 stocking a prep shelf, then two years later discovers half of it expired unused. FIFO rotation prevents this: you eat the oldest stock first during normal meals, replace it with fresh, and the emergency supply stays current. This tool surfaces what is about to expire so you cook it on a Tuesday instead of throwing it out in a year.</p>
+
+      <h3>The 30-Day Expiry Warning</h3>
+      <p>Most commercially canned food has a "best by" date rather than a hard expiry. Canned meats, vegetables, and soups are safe well beyond that date if the can is undamaged, but texture and nutrition degrade. The tool flags 30 days before the printed date so you have time to eat or donate items before they drop in quality. For water, flour, and medications the warning window matters more — treat those flags seriously.</p>
+
+      <h3>Shopping List Auto-Generation</h3>
+      <p>Every item in the Expired or Expiring Soon filter gets added to the Shopping List panel below. One-click copy sends the entire list to your clipboard, ready to paste into a grocery order or notes app. The list uses the item name and category so you can group similar purchases.</p>
+
+      <h3>Privacy: Nothing Leaves Your Browser</h3>
+      <p>Your pantry inventory reveals what food you have, what medications you store, and how prepared you are. None of that data leaves this tool. There is no account, no cloud sync, no analytics on your items. The tradeoff: you cannot access the pantry from a different device. If you need multi-device sync, use the Export CSV button and store the file somewhere you control.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script>
+    var BREADCRUMBS = [{name:'Home',url:'/'},{name:'Emergency Preparedness Tools',url:'/prep/'},{name:'Prep Pantry Tracker'}];
+    var FAQS = [
+      {q:'How long does canned food last in a prep pantry?',a:'Most commercially canned food is safe for 2-5 years past the printed date if the can is undamaged and stored in a cool, dark place. High-acid foods (tomatoes, fruits) degrade faster — use within 18 months of the best-by date. Low-acid foods (beans, meats, vegetables) stay safe far longer but lose texture and nutrients over time. Rotate FIFO to catch items before quality drops.'},
+      {q:'What is FIFO rotation and why does it matter for prep food?',a:'FIFO means First In, First Out — you eat the oldest stock first during normal meals, then replace with fresh. This keeps your emergency supply always current without waste. The alternative (stock and forget) leads to throwing out expired food in year 2 or 3, which wastes money and leaves you under-prepared when an emergency hits.'},
+      {q:'How much emergency food should I store per person?',a:'FEMA recommends 72 hours minimum, 2 weeks ideal. Budget 2,000 calories per adult per day, so a 2-week supply for a family of four is about 112,000 calories. In practical terms: 14 large cans of soup, 14 pounds of rice, 14 cans of beans, 14 pounds of pasta, plus shelf-stable protein. The tracker helps you see totals at a glance.'},
+      {q:'Do I need to track expiry dates on water?',a:'Sealed commercial bottled water has no true expiry — the plastic may leach trace chemicals after long periods, but it remains safe to drink. Tap water stored in food-grade containers is safe about 6 months before rotation. Treat the printed date as a rotation reminder, not a hard cutoff.'},
+      {q:'Is my data safe if I use this tool?',a:'Yes. Your pantry inventory is stored only in your browser using localStorage. Nothing is sent to any server, no account is required, and no analytics run on your item data. The tradeoff is that your pantry does not sync between devices — use the Export CSV feature if you want a backup.'},
+      {q:'What happens if I clear my browser data?',a:'Your pantry list will be lost. To prevent this, export a CSV periodically (weekly is fine) and store it in your regular file backup. You can rebuild the pantry from a CSV if needed, though currently the tool does not support import — expert users can manually re-add items.'}
+    ];
+    var RELATED_TOOLS = [
+      {name:'Emergency Preparedness Score',url:'/prep/emergency-preparedness-score/',desc:'Score your family disaster readiness in 2 minutes'},
+      {name:'Survival Kit Builder',url:'/outdoor/survival-kit-builder/',desc:'Build a custom 72-hour kit by scenario and climate'},
+      {name:'Camping Meal Planner',url:'/outdoor/camping-meal-planner/',desc:'Build a meal plan with shopping list'},
+      {name:'Hiking Calorie Calculator',url:'/outdoor/hiking-calorie-calculator/',desc:'Plan food needs for wilderness travel'},
+      {name:'Water Purification Guide',url:'/outdoor/water-purification-guide/',desc:'Methods to purify water in emergencies'},
+      {name:'First Aid Kit Checklist',url:'/health/first-aid-kit-checklist/',desc:'Build a complete home first aid kit'}
+    ];
+
+    var STORAGE_KEY = 'teamz-prep-pantry-v1';
+    var pantry = [];
+    var currentFilter = 'all';
+
+    function loadPantry() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) pantry = JSON.parse(raw) || [];
+      } catch(e) { pantry = []; }
+    }
+
+    function savePantry() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(pantry)); } catch(e) {}
+    }
+
+    function daysUntil(dateStr) {
+      if (!dateStr) return null;
+      var d = new Date(dateStr);
+      var now = new Date();
+      now.setHours(0,0,0,0);
+      d.setHours(0,0,0,0);
+      return Math.floor((d - now) / (1000*60*60*24));
+    }
+
+    function statusForItem(item) {
+      var days = daysUntil(item.expiry);
+      if (days === null) return {kind:'no-date', label:'No date', days:null};
+      if (days < 0) return {kind:'expired', label:'Expired ' + Math.abs(days) + 'd ago', days:days};
+      if (days <= 30) return {kind:'expiring', label:'Expires in ' + days + 'd', days:days};
+      return {kind:'fresh', label:days + 'd remaining', days:days};
+    }
+
+    function filteredItems() {
+      var list = pantry.slice();
+      list.sort(function(a,b){
+        var da = daysUntil(a.expiry);
+        var db = daysUntil(b.expiry);
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return da - db;
+      });
+      if (currentFilter === 'all') return list;
+      return list.filter(function(it){ return statusForItem(it).kind === currentFilter; });
+    }
+
+    function countByStatus(kind) {
+      var n = 0;
+      pantry.forEach(function(it){ if (statusForItem(it).kind === kind) n++; });
+      return n;
+    }
+
+    function renderFilters() {
+      var counts = {
+        all: pantry.length,
+        expired: countByStatus('expired'),
+        expiring: countByStatus('expiring'),
+        fresh: countByStatus('fresh')
+      };
+      var filters = [
+        {key:'all', label:'All'},
+        {key:'expired', label:'Expired'},
+        {key:'expiring', label:'Expiring Soon'},
+        {key:'fresh', label:'Fresh'}
+      ];
+      var html = filters.map(function(f){
+        var cls = 'pantry-filter' + (currentFilter === f.key ? ' active' : '');
+        return '<button type="button" class="' + cls + '" data-filter="' + f.key + '">' + f.label + '<span class="pantry-filter-count">(' + counts[f.key] + ')</span></button>';
+      }).join('');
+      document.getElementById('pantry-filters').innerHTML = html;
+      var btns = document.querySelectorAll('#pantry-filters .pantry-filter');
+      btns.forEach(function(b){
+        b.addEventListener('click', function(){
+          currentFilter = b.getAttribute('data-filter');
+          renderAll();
+        });
+      });
+    }
+
+    function renderSummary() {
+      var total = pantry.length;
+      var expired = countByStatus('expired');
+      var expiring = countByStatus('expiring');
+      var fresh = countByStatus('fresh');
+      var html = '' +
+        '<div class="pantry-stat"><div class="s-val">' + total + '</div><div class="s-label">Total Items</div></div>' +
+        '<div class="pantry-stat ' + (expired > 0 ? 'danger' : '') + '"><div class="s-val">' + expired + '</div><div class="s-label">Expired</div></div>' +
+        '<div class="pantry-stat ' + (expiring > 0 ? 'danger' : '') + '"><div class="s-val">' + expiring + '</div><div class="s-label">Expiring &lt;30d</div></div>' +
+        '<div class="pantry-stat"><div class="s-val">' + fresh + '</div><div class="s-label">Fresh</div></div>';
+      document.getElementById('pantry-summary').innerHTML = html;
+    }
+
+    function escapeHtml(s) {
+      return String(s || '').replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+
+    function renderList() {
+      var items = filteredItems();
+      var wrap = document.getElementById('pantry-list-wrap');
+      if (items.length === 0) {
+        if (pantry.length === 0) {
+          wrap.innerHTML = '<div class="pantry-list"><div class="pantry-empty"><span class="empty-icon">&#128230;</span>Your pantry is empty. Add your first item above.</div></div>';
+        } else {
+          wrap.innerHTML = '<div class="pantry-list"><div class="pantry-empty">No items match this filter.</div></div>';
+        }
+        return;
+      }
+      var rows = '<div class="pantry-row pantry-head"><div>Item</div><div>Qty</div><div>Category</div><div>Status</div><div></div></div>';
+      items.forEach(function(it) {
+        var st = statusForItem(it);
+        var rowCls = 'pantry-row';
+        if (st.kind === 'expired') rowCls += ' expired';
+        else if (st.kind === 'expiring') rowCls += ' expiring';
+        rows += '<div class="' + rowCls + '" data-id="' + it.id + '">' +
+                '<div class="p-name">' + escapeHtml(it.name) + '</div>' +
+                '<div class="p-qty p-meta">' + it.qty + '</div>' +
+                '<div class="p-cat p-meta">' + escapeHtml(it.category) + '</div>' +
+                '<div class="p-exp p-status">' + st.label + '</div>' +
+                '<div class="p-del"><button type="button" class="p-del-btn" data-del="' + it.id + '">Remove</button></div>' +
+                '</div>';
+      });
+      wrap.innerHTML = '<div class="pantry-list">' + rows + '</div>';
+      var delBtns = wrap.querySelectorAll('[data-del]');
+      delBtns.forEach(function(b){
+        b.addEventListener('click', function(){
+          var id = b.getAttribute('data-del');
+          pantry = pantry.filter(function(x){ return String(x.id) !== String(id); });
+          savePantry();
+          renderAll();
+          if (window.showToast) window.showToast('Item removed');
+        });
+      });
+    }
+
+    function renderShoppingList() {
+      var needs = pantry.filter(function(it) {
+        var k = statusForItem(it).kind;
+        return k === 'expired' || k === 'expiring';
+      });
+      var wrap = document.getElementById('pantry-shopping-wrap');
+      if (needs.length === 0) { wrap.innerHTML = ''; return; }
+      var html = '<div class="pantry-shopping"><h3>Shopping List — Items to Replace (' + needs.length + ')</h3>';
+      needs.forEach(function(it){
+        html += '<div class="shop-item"><span>&#9744;</span><span>' + escapeHtml(it.name) + ' &middot; <span style="color:var(--text-muted)">' + it.qty + ' x ' + escapeHtml(it.category) + '</span></span></div>';
+      });
+      html += '<button type="button" id="p-copy-shop" style="margin-top:.75rem;padding:.5rem 1rem;background: var(--heading); color: var(--bg);border:none;border-radius:6px;cursor:pointer;font-weight:600">Copy Shopping List</button></div>';
+      wrap.innerHTML = html;
+      var copyBtn = document.getElementById('p-copy-shop');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function(){
+          var text = needs.map(function(it){ return '- ' + it.name + ' (x' + it.qty + ', ' + it.category + ')'; }).join('\n');
+          if (window.safeClipboardText) {
+            window.safeClipboardText(text, 'Shopping list copied', 'Copy failed — select and copy manually');
+          } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function(){
+              if (window.showToast) window.showToast('Shopping list copied');
+            }).catch(function(){
+              if (window.showToast) window.showToast('Copy failed');
+            });
+          }
+        });
+      }
+    }
+
+    function renderAll() {
+      renderSummary();
+      renderFilters();
+      renderList();
+      renderShoppingList();
+    }
+
+    function addItem() {
+      var name = document.getElementById('p-name-input').value.trim();
+      var qty = parseInt(document.getElementById('p-qty-input').value, 10) || 1;
+      var cat = document.getElementById('p-cat-input').value;
+      var exp = document.getElementById('p-exp-input').value;
+      if (!name) {
+        if (window.showToast) window.showToast('Enter an item name');
+        return;
+      }
+      pantry.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2,8),
+        name: name,
+        qty: qty,
+        category: cat,
+        expiry: exp || null,
+        added: new Date().toISOString()
+      });
+      savePantry();
+      renderAll();
+      document.getElementById('p-name-input').value = '';
+      document.getElementById('p-qty-input').value = 1;
+      document.getElementById('p-exp-input').value = '';
+      document.getElementById('p-name-input').focus();
+      if (window.showToast) window.showToast('Added to pantry');
+    }
+
+    function exportCsv() {
+      if (pantry.length === 0) {
+        if (window.showToast) window.showToast('Pantry is empty');
+        return;
+      }
+      var header = 'Name,Quantity,Category,Expiry,Added\n';
+      var rows = pantry.map(function(it){
+        var cells = [it.name, it.qty, it.category, it.expiry || '', it.added || ''];
+        return cells.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(',');
+      }).join('\n');
+      var csv = header + rows;
+      var blob = new Blob([csv], {type:'text/csv'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'prep-pantry-' + new Date().toISOString().slice(0,10) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast('CSV exported');
+    }
+
+    function clearPantry() {
+      if (pantry.length === 0) return;
+      var ok = window.confirm('Clear all ' + pantry.length + ' items from your pantry? This cannot be undone.');
+      if (!ok) return;
+      pantry = [];
+      savePantry();
+      renderAll();
+      if (window.showToast) window.showToast('Pantry cleared');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      loadPantry();
+      renderAll();
+
+      document.getElementById('p-add-btn').addEventListener('click', addItem);
+      document.getElementById('p-name-input').addEventListener('keydown', function(e){
+        if (e.key === 'Enter') addItem();
+      });
+      document.getElementById('p-export-btn').addEventListener('click', exportCsv);
+      document.getElementById('p-clear-btn').addEventListener('click', clearPantry);
+    });
+  </script>
+</body>
+</html>
