@@ -8,8 +8,18 @@ Usage: python3 scripts/build-tools-json.py
 Output: tools.json in project root (served at tool.teamzlab.com/tools.json)
 """
 
-import glob, re, html, json, os
+import argparse, glob, re, html, json, os, sys
 from datetime import datetime, timezone
+
+# Canonical locale list (matches the Flutter app's ARB files at lib/l10n/app_*.arb).
+# Flutter uses Locale.toString() which produces underscore format — keep these exact
+# strings as the keys in name_locales / title_locales / description_locales so the
+# app can index the map directly without normalization.
+LOCALES = [
+    'ar','ca','cs','da','de','el','en_AU','en_GB','es','es_419','es_ES','fi',
+    'fr','fr_CA','he','hi','hr','hu','id','it','ja','ko','ms','nb','nl','pl',
+    'pt','pt_BR','pt_PT','ro','ru','sk','sv','th','tr','uk','vi','zh','zh_Hans',
+]
 
 # Hub display names (same as build-search-index.sh)
 HUB_NAMES = {
@@ -32,6 +42,18 @@ HUB_NAMES = {
     'it':'Italy','jp':'Japan','ke':'Kenya','ma':'Morocco','my':'Malaysia','ng':'Nigeria',
     'nl':'Netherlands','no':'Norway','ph':'Philippines','sa':'Saudi Arabia','se':'Sweden',
     'sg':'Singapore','uk':'United Kingdom','us':'United States','vn':'Vietnam','za':'South Africa',
+    # Additional country hubs that previously fell through to `.title()` and
+    # emitted useless two-letter display names (e.g. "At", "Be", "Cz").
+    'at':'Austria','be':'Belgium','ch':'Switzerland','cz':'Czech Republic',
+    'da':'Denmark','dk':'Denmark','es':'Spain','ie':'Ireland','il':'Israel',
+    'lu':'Luxembourg','nz':'New Zealand','pl':'Poland','pt':'Portugal',
+    'ru':'Russia','tr':'Turkey',
+    # Language-keyed content hubs (Hebrew/Hindi/Korean/Swedish/Chinese tools).
+    # Named after the country so non-native users see a recognisable label.
+    'he':'Israel','hi':'India','ko':'Korea','sv':'Sweden','zh':'China',
+    # Care-software verticals — scoped per region.
+    'apps':'Apps','au-care':'Australia Care','ie-care':'Ireland Care',
+    'nz-care':'New Zealand Care','uk-care':'UK Care',
 }
 
 SKIP_HUBS = {'about','contact','privacy','terms','docs','shared','branding','og-images','icons',
@@ -60,10 +82,92 @@ HUB_ICONS = {
     'sg':'flag','uk':'flag','us':'flag','vn':'flag','za':'flag',
 }
 
+def _load_existing_translations(existing_path):
+    """Load translations from the previous tools.json so they survive regeneration.
+
+    Returns two dicts:
+      cat_prev[slug]  = {"name": <str>, "name_locales": {...}}
+      tool_prev[slug] = {"title": <str>, "title_locales": {...},
+                         "description": <str>, "description_locales": {...}}
+
+    If the file is absent or malformed, returns empty dicts — a fresh build with
+    no translations simply emits English and warns. Non-fatal by design.
+    """
+    cat_prev, tool_prev = {}, {}
+    if not os.path.exists(existing_path):
+        return cat_prev, tool_prev
+    try:
+        with open(existing_path, encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"  WARN: could not parse existing tools.json for translation preservation: {e}",
+              file=sys.stderr)
+        return cat_prev, tool_prev
+    for cat in data.get('categories', []):
+        slug = cat.get('slug')
+        if not slug:
+            continue
+        entry = {'name': cat.get('name', '')}
+        if isinstance(cat.get('name_locales'), dict):
+            entry['name_locales'] = cat['name_locales']
+        cat_prev[slug] = entry
+    for t in data.get('tools', []):
+        slug = t.get('slug')
+        if not slug:
+            continue
+        entry = {'title': t.get('title', ''), 'description': t.get('description', '')}
+        if isinstance(t.get('title_locales'), dict):
+            entry['title_locales'] = t['title_locales']
+        if isinstance(t.get('description_locales'), dict):
+            entry['description_locales'] = t['description_locales']
+        tool_prev[slug] = entry
+    return cat_prev, tool_prev
+
+
+def _carry_locales(target, prev, english_field, locales_field, source_lang, stale, missing, label):
+    """Merge a preserved *_locales dict into `target` if the English source is
+    unchanged. When the source text has drifted, drop the translations and list
+    the item in `stale`. When no translations exist at all, list it in `missing`.
+
+    Tools whose `lang` field is NOT 'en' are skipped for translation preservation
+    — their canonical string is in the source language, and translations into the
+    other 38 locales come from a separate flow (see docs/localization.md). We
+    still preserve whatever locales were stored previously, but we do NOT flag
+    them as missing just because en_AU is absent on an Arabic tool.
+    """
+    prev_locales = (prev or {}).get(locales_field)
+    prev_english = (prev or {}).get(english_field)
+    current = target.get(english_field, '')
+
+    if prev_locales and prev_english == current:
+        # Source text unchanged → carry translations forward verbatim.
+        target[locales_field] = prev_locales
+    elif prev_locales and prev_english != current:
+        # Source drifted → drop translations and report staleness.
+        stale.append(f"{label}  (English changed from {prev_english!r} to {current!r})")
+    else:
+        # Never translated. Only complain about English-source items; non-English
+        # tools get translated via a separate sweep.
+        if source_lang in (None, '', 'en'):
+            missing.append(label)
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--strict', action='store_true',
+                        help='Exit non-zero if any categories or English-source tools '
+                             'are missing translations. Use in CI to block deploys.')
+    args = parser.parse_args()
+
     # Find project root (where this script is run from, or go up from scripts/)
     base = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     os.chdir(base)
+
+    # Preserve translations from the previous build so regeneration isn't
+    # destructive. If English source text changed since last build, the
+    # translation is dropped and reported as stale.
+    cat_prev, tool_prev = _load_existing_translations(os.path.join(base, 'tools.json'))
+    stale_items, missing_items = [], []
 
     tools = []
     categories = {}
@@ -125,6 +229,16 @@ def main():
             "tags": tags,
             "lang": lang,
         }
+
+        # Carry translations forward from the previous tools.json. The English
+        # source text is the freshness key — if it changed, translations are
+        # dropped for this item and reported on stderr.
+        prev = tool_prev.get(slug)
+        _carry_locales(tool, prev, 'title', 'title_locales', lang,
+                       stale_items, missing_items, f"tool:{hub}/{slug} [title]")
+        _carry_locales(tool, prev, 'description', 'description_locales', lang,
+                       stale_items, missing_items, f"tool:{hub}/{slug} [description]")
+
         tools.append(tool)
 
         # Build category data
@@ -155,6 +269,13 @@ def main():
         # Top 8 most-distinctive tokens become aliases for that hub
         cat['aliases'] = [w for w, _ in hub_tokens[h].most_common(8)]
 
+    # Carry category name translations forward. Every category name originates
+    # in English (HUB_NAMES) so source_lang is always 'en' here.
+    for h, cat in categories.items():
+        prev = cat_prev.get(h)
+        _carry_locales(cat, prev, 'name', 'name_locales', 'en',
+                       stale_items, missing_items, f"category:{h} [name]")
+
     # Sort categories: main hubs first, then country hubs
     main_cats = sorted(
         [c for c in categories.values() if len(c["slug"]) > 2 or c["slug"] in ('ai','us','uk','eu','3d')],
@@ -184,6 +305,30 @@ def main():
 
     print(f"  tools.json: {len(tools)} tools, {len(categories)} categories ({os.path.getsize(out_path) // 1024}KB)")
 
+    # --- Localization report -------------------------------------------------
+    # Surface anything that needs a follow-up translation pass. In --strict mode
+    # (used by CI) any untranslated English-source item blocks the deploy.
+    if stale_items:
+        print(f"  ⚠ {len(stale_items)} locale block(s) stale (English source changed — retranslate):",
+              file=sys.stderr)
+        for s in stale_items[:20]:
+            print(f"     {s}", file=sys.stderr)
+        if len(stale_items) > 20:
+            print(f"     …and {len(stale_items) - 20} more", file=sys.stderr)
+
+    if missing_items:
+        print(f"  ⚠ {len(missing_items)} item(s) missing *_locales (need first translation):",
+              file=sys.stderr)
+        for m in missing_items[:20]:
+            print(f"     {m}", file=sys.stderr)
+        if len(missing_items) > 20:
+            print(f"     …and {len(missing_items) - 20} more", file=sys.stderr)
+
+    if args.strict and (stale_items or missing_items):
+        print("  ✗ --strict: translations incomplete. Deploy blocked.", file=sys.stderr)
+        return 1
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
