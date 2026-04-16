@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Walkability Score Checker for Vancouver — Teamz Lab Tools</title>
+  <meta name="description" content="Free walkability score for Vancouver addresses. Live OpenStreetMap data — groceries, transit, parks within a 10-min walk. Private, no sign-up.">
+  <meta property="og:title" content="Walkability Score Checker for Vancouver — Teamz Lab Tools">
+  <meta property="og:description" content="Free walkability score for Vancouver addresses. Live OpenStreetMap data — groceries, transit, parks within a 10-min walk. Private, no sign-up.">
+  <meta property="og:url" content="https://tool.teamzlab.com/housing/walkability-score-checker-vancouver/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Teamz Lab Tools">
+  <meta property="og:image" content="https://tool.teamzlab.com/og-images/housing.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Walkability Score Checker for Vancouver — Teamz Lab Tools">
+  <meta name="twitter:description" content="Free walkability score for Vancouver addresses. Live OpenStreetMap data — groceries, transit, parks within a 10-min walk. Private, no sign-up.">
+  <link rel="canonical" href="https://tool.teamzlab.com/housing/walkability-score-checker-vancouver/">
+  <!-- TEAMZ-PERF -->
+  <link rel="preload" href="/branding/fonts/poppins-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/branding/fonts/poppins-600.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+  <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
+  <link rel="preconnect" href="https://overpass-api.de" crossorigin>
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <link rel="dns-prefetch" href="https://googleads.g.doubleclick.net">
+  <link rel="dns-prefetch" href="https://{s}.tile.openstreetmap.org">
+  <!-- /TEAMZ-PERF -->
+  <link rel="stylesheet" href="/branding/css/teamz-branding.css">
+  <link rel="stylesheet" href="/shared/css/tools.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    .walk-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; margin-bottom: 20px; }
+    .walk-form input { padding: 14px; font-size: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+    .walk-form button { padding: 14px 24px; background: var(--heading); color: var(--bg); border: none; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 16px; }
+    .walk-map { width: 100%; height: 380px; border-radius: 12px; margin-bottom: 20px; background: var(--surface); }
+    .walk-score { display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+    .walk-score-num { font-size: clamp(48px, 10vw, 72px); font-weight: 700; color: var(--heading); line-height: 1; }
+    .walk-score-label { font-size: 18px; color: var(--text); }
+    .walk-grade { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+    .walk-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 16px; }
+    .walk-cat { padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .walk-cat-name { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+    .walk-cat-count { font-size: 22px; font-weight: 600; color: var(--heading); }
+    .walk-cat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .walk-loading { padding: 24px; text-align: center; color: var(--text-muted); }
+    .walk-err { padding: 14px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--heading); border-radius: 8px; color: var(--text); }
+    .walk-share { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .walk-share button { padding: 10px 18px; background: var(--surface); color: var(--heading); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-weight: 600; }
+    @media (max-width: 600px) { .walk-form { grid-template-columns: 1fr; } .walk-map { height: 280px; } }
+  </style>
+<!-- STATIC-SCHEMA -->
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tool.teamzlab.com/"}, {"@type": "ListItem", "position": 2, "name": "Housing Tools", "item": "https://tool.teamzlab.com/housing/"}, {"@type": "ListItem", "position": 3, "name": "Walkability Score Checker for Vancouver"}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Which Vancouver neighbourhoods score highest for walkability?", "acceptedAnswer": {"@type": "Answer", "text": "West End and Commercial Drive are among the highest-scoring Vancouver neighbourhoods because they combine pre-car street grids, mixed-use zoning, and strong transit access. Actual scores for specific addresses can still vary widely \u2014 always check the exact address rather than relying on neighbourhood averages."}}, {"@type": "Question", "name": "How is the walkability score calculated for Vancouver addresses?", "acceptedAnswer": {"@type": "Answer", "text": "The score counts amenities within 800 metres of any Vancouver address you enter \u2014 supermarkets, restaurants, schools, parks, public transport stops, and healthcare providers \u2014 using live OpenStreetMap data. Each category is weighted; groceries and transit count most because they represent daily-needs access. The combined score ranges from 0 (car-dependent) to 100 (Walker's Paradise)."}}, {"@type": "Question", "name": "Does this tool account for Vancouver's public transport?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Every OpenStreetMap-tagged public transport stop within 800 metres \u2014 whether it's metro, bus, tram, or rail \u2014 counts toward the transit category. Vancouver stops are generally well mapped in OSM, so this category tends to be accurate in central districts."}}, {"@type": "Question", "name": "Can I use this score to compare Vancouver neighbourhoods before renting?", "acceptedAnswer": {"@type": "Answer", "text": "Absolutely \u2014 in fact that's one of the best uses. Run the tool on three or four candidate Vancouver addresses and compare both the total score and the category breakdown. A neighbourhood with a 75 walkability score plus strong transit may be more liveable than an 82 that scores mostly on restaurants."}}, {"@type": "Question", "name": "Is my Vancouver address stored anywhere?", "acceptedAnswer": {"@type": "Answer", "text": "No. Your address is sent only to the free OpenStreetMap Nominatim geocoder and Overpass amenity API \u2014 both public community services. Nothing is logged on teamzlab.com, nothing is sold, nothing goes to advertisers. Everything else runs locally in your browser."}}, {"@type": "Question", "name": "Why might a real Vancouver shop be missing from the map?", "acceptedAnswer": {"@type": "Answer", "text": "OpenStreetMap is volunteer-maintained. Vancouver has strong OSM coverage for most major categories, but newly-opened shops or small independent businesses may not yet be tagged. You can add any missing business yourself at openstreetmap.org \u2014 it takes a minute and helps every future user of this tool."}}]}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "Walkability Score Checker for Vancouver \u2014 Teamz Lab Tools", "description": "Free walkability score for Vancouver addresses. Live OpenStreetMap data \u2014 groceries, transit, parks within a 10-min walk. Private, no sign-up.", "url": "https://tool.teamzlab.com/housing/walkability-score-checker-vancouver/", "applicationCategory": "UtilityApplication", "operatingSystem": "All", "browserRequirements": "Requires JavaScript", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "author": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com", "foundingDate": "2023"}, "publisher": {"@type": "Organization", "name": "Teamz Lab", "url": "https://teamzlab.com"}, "inLanguage": "en"}</script>
+<!-- STATIC-SCHEMA -->
+</head>
+<body>
+  <header id="site-header" class="site-header"></header>
+  <main class="site-main">
+    <div id="breadcrumbs"></div>
+    <section class="tool-hero">
+      <h1>Walkability Score Checker for Vancouver</h1>
+      <p class="tool-description">Enter any Vancouver address and see a walkability score based on live OpenStreetMap data. Vancouver has a metro population of about 675K, and neighbourhoods like West End and Commercial Drive consistently rank among the most walkable parts of the city.</p>
+    </section>
+    <section id="tool-calculator" class="tool-calculator">
+      <div class="walk-form">
+        <input id="walk-addr" type="text" placeholder="e.g. street address in Vancouver" value="" autocomplete="off">
+        <button id="walk-go" type="button">Score</button>
+      </div>
+      <div id="walk-map" class="walk-map" aria-label="Map of walkable amenities around the address"></div>
+      <div id="walk-result" aria-live="polite"></div>
+    </section>
+    <div class="ad-slot">Ad Space</div>
+    <section class="tool-content">
+      <h2>How the Walkability Score Checker Works</h2>
+      <p>Paste any Vancouver street address or a local landmark into the box above. The tool geocodes the address using the free OpenStreetMap Nominatim service, then queries the Overpass API for every amenity within 800 metres — supermarkets, cafes, schools, parks, British Columbia transit stops, and healthcare providers. A weighted score is calculated where daily essentials (groceries, transit) count more than non-essentials.</p>
+      <h2>Walkability in Vancouver: Neighbourhood Patterns</h2>
+      <p>Vancouver is the most walkable large Canadian city by most measures, with the West End in particular achieving densities and amenity coverage comparable to central European cities. West End and Commercial Drive typically deliver the strongest amenity density and therefore the highest walkability scores, while outer neighbourhoods such as outside city proper often score lower because amenities are more spread out and car infrastructure dominates. Vancouver deliberately froze downtown highway expansion in the 1970s — a decision now credited with its walkability. Run this tool on a few candidate Vancouver addresses before signing a lease or making an offer — a twenty-point score difference between two Vancouver postcodes can translate into thousands of pounds, dollars, or euros per year in avoided car costs.</p>
+      <h2>What Counts Toward a Good Walk Score</h2>
+      <p>A high walkability score means you can reach daily needs — groceries, restaurants, schools, parks, transit stops, and healthcare — within a comfortable walking distance, typically 800 metres or about ten minutes on foot. Our scoring engine queries live OpenStreetMap data via the Overpass API and counts amenities across six categories around the address you enter. Categories are weighted: a supermarket within five minutes contributes more to the score than a fifth restaurant, because daily necessities dominate real-world walkability better than pure amenity count.</p>
+      <h2>Why We Use OpenStreetMap Data</h2>
+      <p>Most commercial walkability scores are paywalled or sell your address to real-estate advertisers. This tool runs entirely in your browser and reads free, community-maintained OpenStreetMap data — the same source that powers Wikipedia maps, Apple Maps coverage gaps, and most open-data government dashboards. Nothing about your query is saved, logged, or sent to third-party advertisers. If your neighbourhood looks under-scored, it's almost always because OSM contributors have not yet mapped every local shop — a situation that improves month over month.</p>
+      <h2>Tips for Using This Score in a Move or Buy Decision</h2>
+      <p>Treat the score as a starting point, not a verdict. A 90+ score confirms dense amenity access but says nothing about noise, air quality, school quality, or property taxes — factors that can matter more than walkability for long-term satisfaction. Conversely, scores in the 40-60 range can be perfectly liveable if the address is within a short cycle or transit ride of a denser hub. Always walk the neighbourhood at different times of day before committing to a move.</p>
+    </section>
+    <section id="tool-faqs"></section>
+    <section id="related-tools"></section>
+  </main>
+  <footer id="site-footer" class="site-footer"></footer>
+  <script src="/branding/js/theme.js"></script>
+  <script src="/shared/js/common.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>
+    var BREADCRUMBS = [{"name": "Home", "url": "/"}, {"name": "Housing Tools", "url": "/housing/"}, {"name": "Walkability Score Checker for Vancouver"}];
+    var FAQS = [{"q": "Which Vancouver neighbourhoods score highest for walkability?", "a": "West End and Commercial Drive are among the highest-scoring Vancouver neighbourhoods because they combine pre-car street grids, mixed-use zoning, and strong transit access. Actual scores for specific addresses can still vary widely \u2014 always check the exact address rather than relying on neighbourhood averages."}, {"q": "How is the walkability score calculated for Vancouver addresses?", "a": "The score counts amenities within 800 metres of any Vancouver address you enter \u2014 supermarkets, restaurants, schools, parks, public transport stops, and healthcare providers \u2014 using live OpenStreetMap data. Each category is weighted; groceries and transit count most because they represent daily-needs access. The combined score ranges from 0 (car-dependent) to 100 (Walker's Paradise)."}, {"q": "Does this tool account for Vancouver's public transport?", "a": "Yes. Every OpenStreetMap-tagged public transport stop within 800 metres \u2014 whether it's metro, bus, tram, or rail \u2014 counts toward the transit category. Vancouver stops are generally well mapped in OSM, so this category tends to be accurate in central districts."}, {"q": "Can I use this score to compare Vancouver neighbourhoods before renting?", "a": "Absolutely \u2014 in fact that's one of the best uses. Run the tool on three or four candidate Vancouver addresses and compare both the total score and the category breakdown. A neighbourhood with a 75 walkability score plus strong transit may be more liveable than an 82 that scores mostly on restaurants."}, {"q": "Is my Vancouver address stored anywhere?", "a": "No. Your address is sent only to the free OpenStreetMap Nominatim geocoder and Overpass amenity API \u2014 both public community services. Nothing is logged on teamzlab.com, nothing is sold, nothing goes to advertisers. Everything else runs locally in your browser."}, {"q": "Why might a real Vancouver shop be missing from the map?", "a": "OpenStreetMap is volunteer-maintained. Vancouver has strong OSM coverage for most major categories, but newly-opened shops or small independent businesses may not yet be tagged. You can add any missing business yourself at openstreetmap.org \u2014 it takes a minute and helps every future user of this tool."}];
+    var RELATED_TOOLS = [{"slug": "housing/walkability-score-checker", "name": "Walkability Score (any city)", "description": "Check any address worldwide."}, {"slug": "housing/commute-cost-vs-rent-calculator", "name": "Commute Cost vs Rent", "description": "Compare commute savings vs rent."}, {"slug": "housing/how-much-house-can-i-afford", "name": "How Much House Can I Afford", "description": "Maximum home price by income."}, {"slug": "housing/rent-burden-calculator", "name": "Rent Burden Calculator", "description": "Is your rent affordable?"}, {"slug": "housing/moving-cost-estimator", "name": "Moving Cost Estimator", "description": "Estimate your moving expenses."}, {"slug": "housing/salary-needed-for-rent-calculator", "name": "Salary Needed for Rent", "description": "Income required for a given rent."}];
+    var PREFILL_LAT = 49.2827;
+    var PREFILL_LNG = -123.1207;
+    var PREFILL_LABEL = "Vancouver";
+
+    document.addEventListener('DOMContentLoaded', function() {
+      TeamzTools.renderBreadcrumbs(BREADCRUMBS);
+      TeamzTools.renderFAQs(FAQS);
+      TeamzTools.renderRelatedTools(RELATED_TOOLS);
+
+      var markerColor = getComputedStyle(document.documentElement).getPropertyValue('--heading').trim() || 'currentColor';
+      var map = L.map('walk-map').setView([PREFILL_LAT, PREFILL_LNG], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data &copy; OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+      var markerGroup = L.layerGroup().addTo(map);
+      var centerMarker = null;
+
+      function weights() {
+        return {
+          grocery: 3.0, restaurant: 1.0, school: 2.0,
+          park: 1.5, transit: 2.5, healthcare: 2.0
+        };
+      }
+      function categoryScore(cnt, w) {
+        if (cnt <= 0) return 0;
+        var raw = Math.min(cnt, 10) / 10;
+        return raw * w;
+      }
+      function grade(score) {
+        if (score >= 85) return {g: "Walker's Paradise", d: "Daily errands do not require a car."};
+        if (score >= 70) return {g: "Very Walkable", d: "Most errands can be done on foot."};
+        if (score >= 50) return {g: "Somewhat Walkable", d: "Some errands need a car or transit."};
+        if (score >= 25) return {g: "Car-Dependent", d: "Most errands require a car."};
+        return {g: "Car-Dependent", d: "Almost all errands require a car."};
+      }
+
+      async function geocode(q) {
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q);
+        var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('Geocode failed');
+        var arr = await res.json();
+        if (!arr || !arr.length) throw new Error('Address not found');
+        return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), label: arr[0].display_name };
+      }
+
+      async function overpass(lat, lng) {
+        var radius = 800;
+        var q = '[out:json][timeout:20];(' +
+          'nwr["shop"~"supermarket|convenience|greengrocer|bakery"](around:' + radius + ',' + lat + ',' + lng + ');' +
+          'nwr["amenity"~"restaurant|cafe|fast_food"](around:' + radius + ',' + lat + ',' + lng + ');' +
+          'nwr["amenity"~"school|kindergarten|college|university"](around:' + radius + ',' + lat + ',' + lng + ');' +
+          'nwr["leisure"~"park|playground"](around:' + radius + ',' + lat + ',' + lng + ');' +
+          'nwr["public_transport"~"stop_position|station|platform"](around:' + radius + ',' + lat + ',' + lng + ');' +
+          'nwr["amenity"~"pharmacy|clinic|hospital|doctors"](around:' + radius + ',' + lat + ',' + lng + ');' +
+          ');out center tags;';
+        var res = await fetch('https://overpass-api.de/api/interpreter', {
+          method: 'POST',
+          body: 'data=' + encodeURIComponent(q)
+        });
+        if (!res.ok) throw new Error('Overpass API unavailable');
+        return await res.json();
+      }
+
+      function categorize(el) {
+        var t = el.tags || {};
+        if (t.shop && /supermarket|convenience|greengrocer|bakery/.test(t.shop)) return 'grocery';
+        if (t.amenity && /restaurant|cafe|fast_food/.test(t.amenity)) return 'restaurant';
+        if (t.amenity && /school|kindergarten|college|university/.test(t.amenity)) return 'school';
+        if (t.leisure && /park|playground/.test(t.leisure)) return 'park';
+        if (t.public_transport) return 'transit';
+        if (t.amenity && /pharmacy|clinic|hospital|doctors/.test(t.amenity)) return 'healthcare';
+        return null;
+      }
+
+      async function run(lat, lng, label) {
+        var result = document.getElementById('walk-result');
+        result.innerHTML = '<div class="walk-loading">Scanning amenities around ' + (label || 'this location') + '…</div>';
+        markerGroup.clearLayers();
+        if (centerMarker) map.removeLayer(centerMarker);
+        map.setView([lat, lng], 15);
+        centerMarker = L.marker([lat, lng]).addTo(map);
+
+        try {
+          var data = await overpass(lat, lng);
+          var counts = { grocery: 0, restaurant: 0, school: 0, park: 0, transit: 0, healthcare: 0 };
+          var seen = {};
+          (data.elements || []).forEach(function(el) {
+            var cat = categorize(el);
+            if (!cat) return;
+            var key = cat + ':' + (el.tags && el.tags.name ? el.tags.name : el.id);
+            if (seen[key]) return;
+            seen[key] = true;
+            counts[cat]++;
+            var lat2 = el.lat || (el.center && el.center.lat);
+            var lng2 = el.lon || (el.center && el.center.lon);
+            if (lat2 && lng2) {
+              L.circleMarker([lat2, lng2], { radius: 5, color: markerColor, fillOpacity: 0.7 })
+                .bindPopup((el.tags && el.tags.name) || cat)
+                .addTo(markerGroup);
+            }
+          });
+
+          var w = weights();
+          var raw = 0, maxRaw = 0;
+          Object.keys(counts).forEach(function(k) { raw += categoryScore(counts[k], w[k]); maxRaw += w[k]; });
+          var score = Math.round((raw / maxRaw) * 100);
+          var g = grade(score);
+
+          var html = '<div class="walk-score"><div class="walk-score-num">' + score + '</div>' +
+            '<div><div class="walk-score-label"><strong>' + g.g + '</strong></div>' +
+            '<div class="walk-grade">' + g.d + '</div></div></div>' +
+            '<div class="walk-breakdown">' +
+              cat('Groceries', counts.grocery, 'within 10-min walk') +
+              cat('Restaurants &amp; Cafes', counts.restaurant, 'within 10-min walk') +
+              cat('Schools', counts.school, 'within 10-min walk') +
+              cat('Parks', counts.park, 'within 10-min walk') +
+              cat('Transit Stops', counts.transit, 'within 10-min walk') +
+              cat('Healthcare', counts.healthcare, 'within 10-min walk') +
+            '</div>' +
+            '<div class="walk-share"><button id="walk-copy" type="button">Copy share link</button></div>';
+          result.innerHTML = html;
+
+          document.getElementById('walk-copy').addEventListener('click', function() {
+            var url = window.location.origin + window.location.pathname + '?q=' + encodeURIComponent(label || (lat + ',' + lng));
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(url).then(function() {
+                if (window.showToast) window.showToast('Link copied!');
+              }).catch(function() {
+                if (window.showToast) window.showToast('Copy not supported — long-press the URL bar instead.');
+              });
+            }
+          });
+        } catch (err) {
+          result.innerHTML = '<div class="walk-err">Could not load live OpenStreetMap data: ' + (err.message || 'network error') + '. The Overpass API is free but occasionally rate-limited — please retry in a minute.</div>';
+        }
+      }
+      function cat(name, n, sub) {
+        return '<div class="walk-cat"><div class="walk-cat-name">' + name + '</div>' +
+          '<div class="walk-cat-count">' + n + '</div>' +
+          '<div class="walk-cat-sub">' + sub + '</div></div>';
+      }
+
+      document.getElementById('walk-go').addEventListener('click', async function() {
+        var q = document.getElementById('walk-addr').value.trim();
+        if (!q) return;
+        var btn = this;
+        btn.disabled = true;
+        var result = document.getElementById('walk-result');
+        result.innerHTML = '<div class="walk-loading">Finding address…</div>';
+        try {
+          var loc = await geocode(q);
+          await run(loc.lat, loc.lng, loc.label);
+        } catch (err) {
+          result.innerHTML = '<div class="walk-err">' + (err.message || 'Address not found') + '. Try a more specific query (street + city).</div>';
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      document.getElementById('walk-addr').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('walk-go').click();
+      });
+
+      var params = new URLSearchParams(window.location.search);
+      var shareQ = params.get('q');
+      if (shareQ) {
+        document.getElementById('walk-addr').value = shareQ;
+        document.getElementById('walk-go').click();
+      } else if (PREFILL_LAT && PREFILL_LNG) {
+        run(PREFILL_LAT, PREFILL_LNG, PREFILL_LABEL);
+      }
+    });
+  </script>
+</body>
+</html>
