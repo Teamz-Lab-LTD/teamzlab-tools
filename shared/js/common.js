@@ -3,6 +3,58 @@
  * Header, footer, theme, FAQ schema, breadcrumbs
  */
 
+// App Store review guideline 2.1 fix: hide PWA install UI inside the native
+// WebView. The reviewer can't use "Add to Home Screen" without a Safari share
+// button, so showing the banner/button/modal looks broken.
+//
+// Detection priority:
+//   1. window.flutter_inappwebview — always present in the flutter_inappwebview
+//      plugin runtime, available before any user script.
+//   2. window.__tzBridgeInstalled — set by the app's bridge JS once installed.
+//   3. navigator.userAgent contains "TeamzLabApp" or "Flutter" — safety net in
+//      case bridge JS runs after this file and flutter_inappwebview is not
+//      exposed in the exact moment we checked.
+//
+// We hide via CSS (`display:none !important`) on a `tz-native-app` root class
+// rather than removing DOM nodes, so a regular Safari/Chrome visitor on
+// tool.teamzlab.com still sees the full PWA install flow.
+(function () {
+  function isNativeApp() {
+    var ua = navigator.userAgent || '';
+    return !!window.flutter_inappwebview
+      || window.__tzBridgeInstalled === true
+      || /TeamzLabApp|Flutter/i.test(ua);
+  }
+  function applyNativeAppGuard() {
+    if (!isNativeApp()) return;
+    document.documentElement.classList.add('tz-native-app');
+    if (document.getElementById('tz-native-app-style')) return;
+    var style = document.createElement('style');
+    style.id = 'tz-native-app-style';
+    // Hide both the in-flow PWA install banner and any modal/button trigger.
+    // Extra selectors here cover variations across tool-engine.js and inline
+    // tool pages that render their own "Add to Home" button.
+    style.textContent =
+      '.tz-native-app .offline-banner,' +
+      '.tz-native-app .pwa-install-banner,' +
+      '.tz-native-app .pwa-ios-modal,' +
+      '.tz-native-app .share-btn--install,' +
+      '.tz-native-app #pwa-install-btn,' +
+      '.tz-native-app #pwa-install-close,' +
+      '.tz-native-app #tool-add-home,' +
+      '.tz-native-app [data-pwa-install]' +
+      '{display:none !important;}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+  applyNativeAppGuard();
+  // Re-check on DOMContentLoaded and load in case the bridge installs the
+  // global after this script ran (rare, but cheap to re-check).
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyNativeAppGuard);
+  }
+  window.addEventListener('load', applyNativeAppGuard);
+})();
+
 // CWV: Preload critical font weights so font-display:optional uses them within 100ms window
 (function() {
   var fonts = ['/branding/fonts/poppins-400.woff2', '/branding/fonts/poppins-700.woff2'];
